@@ -121,7 +121,33 @@ Accession（例: `PRJDB12345`）入力時は、横断検索結果を表示しつ
 
 DDBJ Account は DDBJ が運用する統合認証基盤で、OpenID Connect（OIDC）provider として Keycloak を使用する。
 
-第一段階では認証を必須とする機能はないが、認証基盤との連携を組み込んでおく。ログイン / ログアウトの UI はヘッダーに配置する。認証フローの詳細は別途定義する。
+第一段階では認証を必須とする機能はないが、認証基盤との連携を組み込んでおく。ログイン / ログアウトの UI はヘッダーに配置する。
+
+### 認証フロー
+
+Authorization Code Flow + PKCE を使用する。
+
+```
+db-portal              Keycloak
+    |                      |
+    |  1. Login button     |
+    |--------------------->|
+    |  2. User login       |
+    |--------------------->|
+    |  3. Redirect (code)  |
+    |<---------------------|
+    |  4. Exchange (JWT)   |
+    |--------------------->|
+    |<---------------------|
+    |                      |
+    |  (JWT stored in      |
+    |   localStorage)      |
+```
+
+- ライブラリ: react-oidc-context（oidc-client-ts ベース）
+- トークン保存: localStorage
+- Keycloak クライアント: db-portal 用に新設
+- 匿名ユーザーフローは不要（ログインなしで全機能利用可能）
 
 ## i18n
 
@@ -129,7 +155,14 @@ DDBJ Account は DDBJ が運用する統合認証基盤で、OpenID Connect（OI
 
 - URL は言語によって変わらない（同一 URL）
 - 言語切り替えは UI トグルで行う
-- 実装方式（ライブラリ選定、翻訳リソースの管理方式）は別途定義する
+- ライブラリ: react-i18next
+
+### 翻訳リソースの管理
+
+UI テキスト（ボタンラベル、見出し等の短い文字列）とコンテンツページ（長い文章）で管理方式を分ける:
+
+- **UI テキスト**: react-i18next の JSON 翻訳ファイル（`locales/ja.json`, `locales/en.json`）
+- **コンテンツページ**: 言語別 TSX コンポーネント（例: `GenomeQuickStart.ja.tsx`, `GenomeQuickStart.en.tsx`）
 
 ## 技術スタック
 
@@ -138,7 +171,8 @@ DDBJ Account は DDBJ が運用する統合認証基盤で、OpenID Connect（OI
 | フロントエンド | Vite + React Router v7（framework mode） + TypeScript |
 | スタイル | Tailwind CSS |
 | データフェッチ | TanStack Query |
-| 認証 | DDBJ Account（Keycloak、OIDC） |
+| 認証 | react-oidc-context（Keycloak、OIDC、Authorization Code Flow + PKCE） |
+| i18n | react-i18next |
 | SEO | React Router v7 の SSR / プリレンダリング |
 | テスト | Vitest |
 | リンター | ESLint + @stylistic/eslint-plugin |
