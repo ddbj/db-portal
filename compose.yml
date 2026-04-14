@@ -13,6 +13,8 @@ services:
       DB_PORTAL_ENV: ${DB_PORTAL_ENV:-dev}
       PORT: ${APP_INTERNAL_PORT:-3000}
       HOST: "0.0.0.0"
+      KEYCLOAK_REALM_URL: ${KEYCLOAK_REALM_URL:-}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-}
     working_dir: /app
     command: ${APP_COMMAND:-sleep infinity}
     ports:
