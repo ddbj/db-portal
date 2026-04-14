@@ -7,6 +7,9 @@ DDBJ の登録・検索サービスへの統合ポータル。
 ## ドキュメント
 
 - [overview.md](docs/overview.md) - プロジェクト概要・スコープ・技術スタック
+- [development.md](docs/development.md) - 開発環境・テスト
+- [deployment.md](docs/deployment.md) - デプロイ・環境変数
+- [keycloak-setup.md](docs/keycloak-setup.md) - Keycloak クライアント設定
 
 ## ライセンス
 

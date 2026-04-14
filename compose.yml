@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: db-portal-${DB_PORTAL_ENV:-dev}
+    container_name: db-portal-app-${DB_PORTAL_ENV:-dev}
+    volumes:
+      - .:/app:rw
+      - node_modules:/app/node_modules:rw
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      DB_PORTAL_ENV: ${DB_PORTAL_ENV:-dev}
+      PORT: ${APP_INTERNAL_PORT:-3000}
+      HOST: "0.0.0.0"
+    working_dir: /app
+    command: ${APP_COMMAND:-sleep infinity}
+    ports:
+      - "${APP_PORT:-3000}:${APP_INTERNAL_PORT:-3000}"
+    networks:
+      - default
+
+networks:
+  default:
+    name: db-portal-${DB_PORTAL_ENV:-dev}
+
+volumes:
+  node_modules:
+    name: db-portal-node_modules-${DB_PORTAL_ENV:-dev}

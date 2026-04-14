@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+# Allow files needed for build
+!package.json
+!package-lock.json
+!src/
+!react-router.config.ts
+!tsconfig.json
+!vite.config.ts
