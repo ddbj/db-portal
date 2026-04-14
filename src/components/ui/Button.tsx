@@ -1,5 +1,7 @@
 import type { ComponentProps } from "react"
 
+import cn from "./cn"
+
 const variantStyles = {
   primary: "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-200",
   secondary: "border border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 focus:ring-primary-200",
@@ -21,16 +23,23 @@ type ButtonProps = ComponentProps<"button"> & {
 const Button = ({
   variant = "primary",
   size = "md",
+  type = "button",
   disabled,
-  className = "",
+  className,
   ...props
 }: ButtonProps) => {
-  const base = "rounded-md font-medium focus:ring-2 focus:ring-offset-2 focus:outline-none transition-colors"
-  const disabledStyle = "bg-gray-200 text-gray-400 cursor-not-allowed"
 
   return (
     <button
-      className={`${base} ${sizeStyles[size]} ${disabled ? disabledStyle : variantStyles[variant]} ${className}`}
+      type={type}
+      className={cn(
+        "rounded-md font-medium focus:ring-2 focus:ring-offset-2 focus:outline-none",
+        sizeStyles[size],
+        disabled
+          ? "cursor-not-allowed bg-gray-200 text-gray-400"
+          : variantStyles[variant],
+        className,
+      )}
       disabled={disabled}
       {...props}
     />

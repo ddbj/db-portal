@@ -1,4 +1,4 @@
-import { Button, Callout, CodeBlock, InlineCode, LinkCard, Prose, TextLink } from "@/components/ui"
+import { Badge, Breadcrumb, Button, Callout, CodeBlock, InlineCode, LinkCard, Prose, Skeleton, SkeletonCard, SkeletonText, TextLink } from "@/components/ui"
 
 import type { Route } from "./+types/design-system"
 
@@ -438,6 +438,46 @@ const DesignSystem = () => {
             </p>
             <pre><code>{"COMMON    SUBMITTER\n            contact     Taro Yamada"}</code></pre>
           </Prose>
+        </div>
+
+        {/* ===== NEW COMPONENTS ===== */}
+        <SH2>Additional Components</SH2>
+
+        <SH3>Badge</SH3>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Badge variant="primary">BioProject</Badge>
+          <Badge variant="secondary">登録済み</Badge>
+          <Badge variant="gray">Draft</Badge>
+          <Badge variant="success">Complete</Badge>
+          <Badge variant="warning">Pending</Badge>
+          <Badge variant="error">Error</Badge>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge size="sm" variant="primary">sm</Badge>
+          <Badge size="md" variant="primary">md（default）</Badge>
+        </div>
+
+        <SH3>Breadcrumb</SH3>
+        <div className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
+          <Breadcrumb items={[
+            { label: "トップ", to: "#" },
+            { label: "登録" },
+            { label: "ゲノム登録 QuickStart" },
+          ]} />
+        </div>
+
+        <SH3>Skeleton / Loading</SH3>
+        <p className="mt-1 text-sm text-gray-500">TanStack Query のローディング表示に使用。</p>
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="mt-4 max-w-md rounded-lg border border-gray-200 bg-white p-5">
+          <Skeleton className="h-5 w-1/3" />
+          <div className="mt-3">
+            <SkeletonText lines={4} />
+          </div>
         </div>
 
         <div className="h-16" />

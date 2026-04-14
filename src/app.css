@@ -106,6 +106,31 @@ select {
     @apply list-decimal;
   }
 
+  & li > ul,
+  & li > ol {
+    @apply my-1;
+  }
+
+  & strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  & em {
+    @apply italic;
+  }
+
+  & img {
+    @apply my-4 max-w-full rounded;
+  }
+
+  & figure {
+    @apply my-4;
+
+    & figcaption {
+      @apply mt-2 text-center text-xs text-gray-500;
+    }
+  }
+
   & a {
     @apply font-medium text-primary-600 underline decoration-primary-300 underline-offset-2 hover:text-primary-800 hover:decoration-primary-600;
   }
@@ -120,6 +145,22 @@ select {
     & code {
       @apply rounded-none bg-transparent p-0 text-inherit;
     }
+  }
+
+  & dl {
+    @apply my-4 text-sm;
+  }
+
+  & dt {
+    @apply mt-2 font-semibold text-gray-800;
+
+    &:first-child {
+      @apply mt-0;
+    }
+  }
+
+  & dd {
+    @apply mt-0.5 pl-4 text-gray-600;
   }
 
   & blockquote {
@@ -143,9 +184,9 @@ select {
   }
 }
 
-/* Base transitions */
-a,
-button {
+/* Scoped transitions (avoid global side effects on all a/button) */
+.prose-ddbj a,
+button[class] {
   transition: color 0.15s, background-color 0.15s, border-color 0.15s,
     box-shadow 0.15s;
 }
