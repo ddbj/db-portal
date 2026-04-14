@@ -1,3 +1,5 @@
+import { Button, Callout, CodeBlock, InlineCode, LinkCard, Prose, TextLink } from "@/components/ui"
+
 import type { Route } from "./+types/design-system"
 
 export const meta = (_args: Route.MetaArgs) => {
@@ -314,18 +316,18 @@ const DesignSystem = () => {
         {/* ===== COMPONENTS ===== */}
         <SH2>Components</SH2>
 
-        <SH3>Buttons</SH3>
+        <SH3>Button</SH3>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="button" className="bg-primary-600 hover:bg-primary-700 focus:ring-primary-200 rounded-md px-4 py-2 text-sm font-medium text-white focus:ring-2 focus:ring-offset-2 focus:outline-none">Primary</button>
-          <button type="button" className="border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 focus:ring-primary-200 rounded-md border px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-offset-2 focus:outline-none">Secondary</button>
-          <button type="button" className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:outline-none">Tertiary</button>
-          <button type="button" className="bg-secondary-600 hover:bg-secondary-700 focus:ring-secondary-200 rounded-md px-4 py-2 text-sm font-medium text-white focus:ring-2 focus:ring-offset-2 focus:outline-none">Accent</button>
-          <button type="button" className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-400" disabled>Disabled</button>
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="tertiary">Tertiary</Button>
+          <Button variant="accent">Accent</Button>
+          <Button disabled>Disabled</Button>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="button" className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">Small</button>
-          <button type="button" className="bg-primary-600 rounded-md px-4 py-2 text-sm font-medium text-white">Default</button>
-          <button type="button" className="bg-primary-600 rounded-md px-5 py-2.5 text-base font-medium text-white">Large</button>
+          <Button size="sm">Small</Button>
+          <Button size="md">Default</Button>
+          <Button size="lg">Large</Button>
         </div>
 
         <SH3>Form Controls</SH3>
@@ -356,7 +358,7 @@ const DesignSystem = () => {
             <div className="mt-2 space-y-2">
               {["BioProject", "BioSample", "SRA"].map(label => (
                 <label key={label} className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" className="text-primary-600 focus:ring-primary-200 h-4 w-4 rounded border-gray-300" defaultChecked={label === "BioProject"} />
+                  <input type="checkbox" defaultChecked={label === "BioProject"} />
                   {label}
                 </label>
               ))}
@@ -367,7 +369,7 @@ const DesignSystem = () => {
             <div className="mt-2 space-y-2">
               {["ゲノム登録", "RNA-seq", "メタゲノム"].map((label, i) => (
                 <label key={label} className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="radio" name="ds-radio" className="text-primary-600 focus:ring-primary-200 h-4 w-4 border-gray-300" defaultChecked={i === 0} />
+                  <input type="radio" name="ds-radio" defaultChecked={i === 0} />
                   {label}
                 </label>
               ))}
@@ -375,44 +377,67 @@ const DesignSystem = () => {
           </div>
         </div>
 
-        <SH3>Cards</SH3>
+        <SH3>LinkCard</SH3>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {[
-            { title: "DDBJ Search", desc: "塩基配列・メタデータの統合検索" },
-            { title: "BioProject", desc: "研究プロジェクトの登録・管理" },
-            { title: "BioSample", desc: "生物学的サンプル情報の登録" },
-          ].map(c => (
-            <a key={c.title} href="#" className="group hover:border-primary-300 rounded-lg border border-gray-200 bg-white p-5 transition-all hover:-translate-y-px hover:shadow-md">
-              <h4 className="group-hover:text-primary-700 text-sm font-semibold text-gray-900">{c.title}</h4>
-              <p className="mt-1 text-xs text-gray-500">{c.desc}</p>
-              <span className="text-primary-600 decoration-primary-200 group-hover:decoration-primary-500 mt-3 inline-block text-xs font-medium underline underline-offset-2">詳細を見る</span>
-            </a>
-          ))}
+          <LinkCard to="#" title="DDBJ Search" description="塩基配列・メタデータの統合検索" linkText="詳細を見る" />
+          <LinkCard to="#" title="BioProject" description="研究プロジェクトの登録・管理" linkText="詳細を見る" />
+          <LinkCard to="#" title="BioSample" description="生物学的サンプル情報の登録" linkText="詳細を見る" color="secondary" />
         </div>
 
-        <SH3>Callout / Alert</SH3>
+        <SH3>Callout</SH3>
         <div className="mt-3 space-y-2">
-          {[
-            { border: "border-info", bg: "bg-blue-50", text: "検索結果は最大 1000 件まで表示されます。" },
-            { border: "border-success", bg: "bg-green-50", text: "登録が完了しました。" },
-            { border: "border-warning", bg: "bg-yellow-50", text: "この操作は取り消せません。" },
-            { border: "border-error", bg: "bg-red-50", text: "データの取得に失敗しました。" },
-          ].map(a => (
-            <div key={a.text} className={`rounded border-l-4 p-3 ${a.border} ${a.bg}`}>
-              <p className="text-sm text-gray-800">{a.text}</p>
-            </div>
-          ))}
+          <Callout type="info">検索結果は最大 1000 件まで表示されます。</Callout>
+          <Callout type="success">登録が完了しました。</Callout>
+          <Callout type="warning">この操作は取り消せません。</Callout>
+          <Callout type="error">データの取得に失敗しました。</Callout>
         </div>
 
-        <SH3>Links</SH3>
+        <SH3>TextLink / InlineCode</SH3>
         <div className="mt-3 max-w-2xl rounded-lg border border-gray-200 bg-white p-6">
           <p className="text-sm text-gray-600">
             ゲノムデータの登録には、
-            <a href="#" className="text-primary-600 decoration-primary-300 hover:text-primary-800 hover:decoration-primary-600 font-medium underline underline-offset-2">BioProject</a>、
-            <a href="#" className="text-primary-600 decoration-primary-300 hover:text-primary-800 hover:decoration-primary-600 font-medium underline underline-offset-2">BioSample</a>、
-            <a href="#" className="text-primary-600 decoration-primary-300 hover:text-primary-800 hover:decoration-primary-600 font-medium underline underline-offset-2">SRA</a>
+            <TextLink to="#">BioProject</TextLink>、
+            <TextLink to="#">BioSample</TextLink>、
+            <TextLink to="#">SRA</TextLink>
             への登録が必要です。
+            Accession <InlineCode>PRJDB12345</InlineCode> で検索できます。
           </p>
+        </div>
+
+        <SH3>CodeBlock</SH3>
+        <div className="mt-3 max-w-3xl space-y-3">
+          <CodeBlock theme="dark">{"COMMON    SUBMITTER\n            contact     Taro Yamada\n            institute   National Institute of Genetics"}</CodeBlock>
+          <CodeBlock theme="light">{"$ curl https://ddbj.nig.ac.jp/search/entry/PRJDB12345"}</CodeBlock>
+        </div>
+
+        {/* ===== PROSE ===== */}
+        <SH2>Prose</SH2>
+        <p className="mt-2 text-sm text-gray-500">Markdown 相当のコンテンツを自動スタイリングする CSS コンテナ。</p>
+        <div className="mt-4 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <Prose>
+            <h1>ゲノム登録 QuickStart</h1>
+            <p>
+              ゲノムデータの DDBJ への登録手順を説明します。登録には BioProject、BioSample、SRA、DDBJ Trad の 4 つのデータベースへの登録が必要です。
+            </p>
+            <h2>1. BioProject の登録</h2>
+            <p>
+              BioProject は研究プロジェクトの情報を管理するデータベースです。<a href="#">D-way</a> から登録できます。
+            </p>
+            <h3>プロジェクト情報の入力</h3>
+            <p>以下のフィールドを入力してください。</p>
+            <h4>必須フィールド</h4>
+            <ul>
+              <li>Project title</li>
+              <li>Project description</li>
+              <li>Relevance（Medical, Agricultural, etc.）</li>
+            </ul>
+            <blockquote>初めて登録する場合は、まず DDBJ Account を作成してください。</blockquote>
+            <h2>2. BioSample の登録</h2>
+            <p>
+              BioSample は生物学的サンプルの情報を管理します。Accession は <code>SAMD00000001</code> のような形式です。
+            </p>
+            <pre><code>{"COMMON    SUBMITTER\n            contact     Taro Yamada"}</code></pre>
+          </Prose>
         </div>
 
         <div className="h-16" />
