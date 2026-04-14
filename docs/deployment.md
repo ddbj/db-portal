@@ -2,13 +2,13 @@
 
 ## 環境一覧
 
-| 環境 | インフラ | ランタイム | ポート | Keycloak |
-|---|---|---|---|---|
-| dev | 開発サーバー | docker compose | 3000 | idp-staging.ddbj.nig.ac.jp |
-| staging | 遺伝研スパコン | podman-compose | 3100 | idp-staging.ddbj.nig.ac.jp |
-| production | 遺伝研スパコン | podman-compose | 3100 | idp.ddbj.nig.ac.jp |
+| 環境 | ドメイン | インフラ | ランタイム | ポート | Keycloak |
+|---|---|---|---|---|---|
+| dev | localhost:3000 | 開発サーバー | docker compose | 3000 | idp-staging.ddbj.nig.ac.jp |
+| staging | portal-staging.ddbj.nig.ac.jp | 遺伝研スパコン (a012) | podman-compose | 3100 | idp-staging.ddbj.nig.ac.jp |
+| production | portal.ddbj.nig.ac.jp | 遺伝研スパコン (a011) | podman-compose | 3100 | idp.ddbj.nig.ac.jp |
 
-上流の Nginx（リバースプロキシ）は DDBJ インフラ側で管理する。本リポジトリには含めない。
+上流の Nginx（リバースプロキシ）は DDBJ インフラ側で管理する（[ddbj/service-gateway-conf](https://github.com/ddbj/service-gateway-conf)）。本リポジトリには含めない。
 
 ## デプロイ手順（staging / production）
 
