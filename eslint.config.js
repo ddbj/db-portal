@@ -24,6 +24,9 @@ export default tseslint.config(
     settings: {
       tailwindcss: { config: {} },
     },
+    rules: {
+      "tailwindcss/no-custom-classname": "off",
+    },
   },
 
   // App code

@@ -1,10 +1,73 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/forms";
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+@theme {
+  --font-sans: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", Meiryo, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+    monospace;
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  --color-primary-50: #f7f3fa;
+  --color-primary-100: #ede3f8;
+  --color-primary-200: #dfcaf3;
+  --color-primary-300: #c7a8e4;
+  --color-primary-400: #a37ac7;
+  --color-primary-500: #875aab;
+  --color-primary-600: #6f4392;
+  --color-primary-700: #553172;
+  --color-primary-800: #402455;
+  --color-primary-900: #2b163b;
+  --color-primary-950: #180a22;
+
+  --color-secondary-50: #eef7fa;
+  --color-secondary-100: #d3edf6;
+  --color-secondary-200: #a9def0;
+  --color-secondary-300: #7bc4db;
+  --color-secondary-400: #389db9;
+  --color-secondary-500: #017e9a;
+  --color-secondary-600: #006781;
+  --color-secondary-700: #004f66;
+  --color-secondary-800: #003a4b;
+  --color-secondary-900: #002735;
+  --color-secondary-950: #00151e;
+
+  --color-success: #1c882d;
+  --color-warning: #cd9c1f;
+  --color-error: #cc272e;
+  --color-info: #4270bd;
+}
+
+/* Japanese typography base */
+html {
+  line-height: 1.8;
+  overflow-wrap: break-word;
+  word-break: auto-phrase;
+}
+
+/* Form: rounded + primary focus ring */
+[type="text"],
+[type="email"],
+[type="url"],
+[type="password"],
+[type="number"],
+[type="search"],
+[type="tel"],
+textarea,
+select {
+  @apply rounded-md focus:border-primary-500 focus:ring-primary-200;
+}
+
+[type="checkbox"] {
+  @apply rounded text-primary-600 focus:ring-primary-200;
+}
+
+[type="radio"] {
+  @apply text-primary-600 focus:ring-primary-200;
+}
+
+/* Base transitions */
+a,
+button {
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s,
+    box-shadow 0.15s;
 }
