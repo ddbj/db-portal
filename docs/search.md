@@ -156,7 +156,7 @@ proxy 層でユーザ入力を次のように正規化する:
 - フィールドプルダウンには**ポータル共通語彙のみ**を出し、バックエンド固有のフィールド名（`PrimaryAccessionNumber`・`scientific_name` 等）はユーザに見せない（共通語彙と DB 別フィールドのマッピングは [search-backends.md の共通のフィールド対応](./search-backends.md#共通のフィールド対応) に記載）
 - 生成クエリは検索ボックス文字列として可視化し、URL パラメータにも載せてブックマーク可能にする
 - 対応機能: `AND`/`OR`/`NOT`・括弧グルーピング・ワイルドカード・フィールド指定・範囲検索・`identifier` 完全一致
-- 履歴（Search History）・Saved Search は DDBJ Account 連携で永続化（リリース後フェーズ）
+- 履歴（Search History）・Saved Search は DDBJ Account 連携で永続化（将来拡張）
 - 将来的には「Copy as API Request」（ENA の curl 出力機能相当）を検討
 
 ### シンプル検索ボックスの UI 補助
@@ -170,11 +170,45 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 具体的なプレースホルダ文言と Examples の一覧は UI design で詰める。
 
-### マイルストーン対応
+### 段階的な積み上げ
 
-- **2026/4 モック**: シンプル検索ボックスが動作。proxy 統合（ARSA / TXSearch）は必須ではなく、Trad / Taxonomy の count 欄はモックデータ or 「未接続」表示で可。Advanced Search は画面モックのみ
-- **2026/6 リリース**: proxy 統合完了 + シンプル検索ボックス本番稼働 + Advanced Search 初期実装（フィールド選択・AND/OR/NOT・URL 共有）
-- **リリース後**: 履歴・Saved Search・API Export・オートサジェスト・ES analyzer 再設計など
+- **インターナルリリース**: シンプル検索ボックス本番稼働。Trad / Taxonomy は ARSA / TXSearch proxy で本番データを返す。GEA / MetaboBank は ES インデックス接続済み。Advanced Search は UI のみ先行
+- **ファーストリリース**: Advanced Search 動作（フィールド選択・AND/OR/NOT・URL 共有）
+- **将来拡張**: 履歴・Saved Search・API Export・オートサジェスト・ES analyzer 再設計など
+
+## 検索結果 UI
+
+### ヒット件数表示
+
+横断検索結果・DB 指定検索結果のいずれも、**ヒット件数を目立つ位置に必ず表示する**。ユーザは「何件見つかったか」を真っ先に知りたいため、結果リストの上部・DB タブの横などに件数バッジを配置する。
+
+- 横断検索: DB カードに件数を大きく表示（`noindex` なのでクロール負荷は気にせず同期取得）
+- DB 指定検索: 「全 X 件中 N-M 件を表示」形式でページネーション近傍に置く
+- 10,000 件超で cursor 非対応（Solr バックエンド）の場合は「10,000 件以上」と表記し、正確な件数は出さない
+- ES バックエンドで `track_total_hits` により正確な件数が取れるケースでも、上限を超える場合は「X 件以上（正確な件数は絞り込みを推奨）」と表記する
+
+### 10,000 件超のハンドリング
+
+| バックエンド | 件数表示 | ページ送り |
+|---|---|---|
+| ES（`sra`/`bioproject`/`biosample`/`jga`/`gea`/`metabobank`） | 正確な件数 | 10,000 件までは `page` ベース、超過時は cursor-based |
+| Solr（Trad / Taxonomy） | 10,000 件以上の場合「10,000 件以上」と表記 | 10,000 件まで。500 ページ目（`perPage=20` 換算）でページャは無効化 |
+
+10,000 件目で止まるバックエンドでは、ページャの下に「10,000 件を超える結果は表示できません。キーワードを絞り込むか、Advanced Search をご利用ください」の案内を Callout で出す。
+
+### loading / error 状態
+
+横断検索は部分失敗許容（search-backends.md 参照）のため、UI も DB カード単位で 3 状態を扱う:
+
+| 状態 | 表示 |
+|---|---|
+| loading | Skeleton（`role="status"` 付き）で件数欄をプレースホルダ化 |
+| success（`count != null`） | 件数 + DB 詳細へのリンク |
+| error（`count = null` + `error != null`） | 「取得に失敗しました」バッジ + 再試行ボタン。エラー種別（`timeout` / `upstream_5xx` 等）は tooltip や detail 領域で補足 |
+
+段階表示（progressive rendering）: 3 並列 fan-out のうち先に返ってきた DB から順に表示する（全バックエンドの完了を待たない）。TanStack Query の `useQueries` で 3 本独立に fetch し、各 DB カードがそれぞれの状態を持つ。
+
+全 DB が error の場合は上部に「検索が一時的に利用できません」ロールアラートを出し、再試行 CTA を置く。
 
 ## ページネーション仕様
 
@@ -216,9 +250,18 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 #### 正規化ルール
 
-デフォルト値と同じパラメータは URL から自動で省く。例えば `?q=xxx&page=1&sort=relevance` は `?q=xxx` に正規化する。canonical URL と共有 URL を短く保つためなのだ。
+デフォルト値と同じパラメータは URL から自動で省く。例えば `?q=xxx&page=1&sort=relevance` は `?q=xxx` に正規化する。canonical URL と共有 URL を短く保つため。
 
 パラメータの順序も固定する（canonical 化）: `q` → `db` → `page` → `perPage` → `sort` → `cursor` → `adv`。
+
+#### CSR 上での正規化実装
+
+`/search` は CSR（サーバサイドで URL を書き換えられない）のため、正規化はクライアントで行う:
+
+- 初回描画直後、URL を正規化し `history.replaceState` で履歴エントリを増やさずに書き換える（`navigate(canonicalUrl, { replace: true })` 相当）
+- ユーザ操作（ページ送り・ソート変更等）による URL 更新は `pushState` で履歴に積む（戻るボタンで前状態へ戻せる）
+- 初期 HTML（SSR が返す骨組み）には `<meta name="robots" content="noindex, follow">` を常に埋め込む。正規化前の非正規 URL でもクロールは抑止する
+- canonical link（`<link rel="canonical">`）はクライアント側でクエリ確定後に React Router の `meta` 関数から出力する
 
 ### `db` パラメータの値
 
@@ -296,17 +339,17 @@ organism:"Homo sapiens" AND date:[2020-01-01 TO 2024-12-31] AND (title:cancer OR
 
 #### 採用根拠（業界デファクト）
 
-NCBI PubMed・EBI Search・ENA Portal API の 3 大サービス全てが「単一 query パラメータに DSL 文字列を載せる」方式で一致している。base64 や個別パラメータ展開を採用している先行例は見つからない。Lucene 風構文（EBI Search はそのまま採用、PubMed もブラケットフィールド以外は Lucene）が最も普及している。
+NCBI PubMed・EBI Search・ENA Portal API の 3 大サービス全てが「単一 query パラメータに DSL 文字列を載せる」方式で一致している。base64 や個別パラメータ展開を採用している先行例は見つからない。構文そのものは各サービスで異なるが、いずれも単一文字列の DSL を URL 1 本に載せる点は共通。
 
 | サービス | パラメータ | 構文 |
 |---|---|---|
-| NCBI PubMed | `?term=...` | Lucene 風 + `term[fieldtag]` ブラケット |
+| NCBI PubMed | `?term=...` | 独自記法（`cancer[Title]` の `term[fieldtag]` ブラケット。Lucene とは別系統） |
 | EBI Search | `?query=...` | Apache Lucene query syntax |
 | ENA Portal API | `?query=...` | SQL 風 `field="value"` + 関数記法 |
 
-DDBJ ポータルは EBI Search 流（フィールド区切り `:`、範囲 `[a TO b]`）を採用する。ドメイン固有関数（ENA `tax_eq` 等）は将来拡張余地として予約し、初期実装には含めない。boost 記法 `^` も GUI クエリビルダから生成しないため初期は非対応。
+DDBJ ポータルは「単一パラメータに DSL 文字列を載せる」点を 3 社共通の業界デファクトとして踏襲しつつ、構文は EBI Search 流の Lucene query syntax（フィールド区切り `:`、範囲 `[a TO b]`）を採用する。ドメイン固有関数（ENA `tax_eq` 等）は将来拡張余地として予約し、初期実装には含めない。boost 記法 `^` も GUI クエリビルダから生成しないため初期は非対応。
 
-**参考文献（2026/04/15 調査）**:
+**参考文献**:
 
 - [PubMed Advanced Search Help](https://pubmed.ncbi.nlm.nih.gov/help/) — `term` パラメータ・`[fieldtag]` 記法
 - [EBI Search REST API](https://www.ebi.ac.uk/ebisearch/documentation/rest-api) — `query` パラメータに Apache Lucene query syntax
