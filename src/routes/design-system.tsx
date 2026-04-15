@@ -144,8 +144,8 @@ const DesignSystem = () => {
               <h3 className="text-xs font-semibold tracking-widest text-gray-400 uppercase">登録</h3>
               <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {[{ title: "ゲノム登録 QuickStart", desc: "BioProject, BioSample, SRA, DDBJ Trad への登録手順" }, { title: "何を登録すればいい？", desc: "質問に答えて適切な登録先を見つける" }].map(item => (
-                  <a key={item.title} href="#" className="group hover:border-secondary-300 rounded-lg border border-gray-200 p-5 transition-all hover:-translate-y-px hover:shadow-md">
-                    <div className="group-hover:text-secondary-700 text-sm font-semibold text-gray-900">{item.title}</div>
+                  <a key={item.title} href="#" className="group hover:border-primary-300 rounded-lg border border-gray-200 p-5 transition-all hover:-translate-y-px hover:shadow-md">
+                    <div className="group-hover:text-primary-700 text-sm font-semibold text-gray-900">{item.title}</div>
                     <div className="mt-0.5 text-xs text-gray-600">{item.desc}</div>
                   </a>
                 ))}
@@ -189,7 +189,7 @@ const DesignSystem = () => {
         <div className="mt-3"><GradientBar prefix="primary" scale={primaryScale} /></div>
 
         <SH3>Secondary — Cyan Blue (hue 220)</SH3>
-        <p className="mt-1 text-sm text-gray-500">紫との補色。登録系 UI に使用。</p>
+        <p className="mt-1 text-sm text-gray-500">紫との補色。特殊操作・注意喚起用に限定して使用。</p>
         <div className="mt-3"><GradientBar prefix="secondary" scale={secondaryScale} /></div>
 
         <SH3>Semantic</SH3>
@@ -203,22 +203,22 @@ const DesignSystem = () => {
         </div>
 
         <SH3>Secondary の使い方</SH3>
-        <p className="mt-1 text-sm text-gray-500">迷ったら primary。secondary は登録フロー内だけ。</p>
+        <p className="mt-1 text-sm text-gray-500">迷ったら primary。secondary は特殊操作（外部遷移・破壊的操作・primary と区別したい局面）に限定。</p>
         <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <div className="text-xs font-medium text-gray-400">Primary = 検索・一般 UI</div>
+            <div className="text-xs font-medium text-gray-400">Primary = 一般 UI（検索・登録・ナビ・CTA）</div>
             <div className="mt-3 space-y-3">
               <button type="button" className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">検索する</button>
-              <p className="text-sm text-gray-700"><a href="#" className="text-primary-600 decoration-primary-300 font-medium underline underline-offset-2">DDBJ Search</a> で検索</p>
-              <div className="border-primary-400 bg-primary-50 text-primary-900 rounded border-l-4 p-3 text-xs">Accession を入力すると直接リンクが表示されます。</div>
+              <p className="text-sm text-gray-700"><a href="#" className="text-primary-600 decoration-primary-300 font-medium underline underline-offset-2">ゲノム登録 QuickStart</a> を見る</p>
+              <div className="border-primary-400 bg-primary-50 text-primary-900 rounded border-l-4 p-3 text-xs">Step 1: BioProject を登録してください。</div>
             </div>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <div className="text-xs font-medium text-gray-400">Secondary = 登録・ワークフロー</div>
+            <div className="text-xs font-medium text-gray-400">Secondary = 特殊操作・注意喚起</div>
             <div className="mt-3 space-y-3">
-              <button type="button" className="bg-secondary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">登録を始める</button>
-              <p className="text-sm text-gray-700"><a href="#" className="text-secondary-600 decoration-secondary-300 font-medium underline underline-offset-2">ゲノム登録 QuickStart</a> を見る</p>
-              <div className="border-secondary-400 bg-secondary-50 text-secondary-900 rounded border-l-4 p-3 text-xs">Step 1: BioProject を登録してください。</div>
+              <button type="button" className="bg-secondary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">外部サイトで開く ↗</button>
+              <p className="text-sm text-gray-700"><a href="#" className="text-secondary-600 decoration-secondary-300 font-medium underline underline-offset-2">ddbj.nig.ac.jp の旧ページ</a>（外部遷移）</p>
+              <div className="border-secondary-400 bg-secondary-50 text-secondary-900 rounded border-l-4 p-3 text-xs">この操作は取り消せません。</div>
             </div>
           </div>
         </div>
@@ -244,23 +244,23 @@ const DesignSystem = () => {
         </div>
 
         <SH3>Markdown Headings</SH3>
-        <p className="mt-1 text-sm text-gray-500">サイズ + 装飾で階層を区別する。</p>
+        <p className="mt-1 text-sm text-gray-500">サイズ + ウェイト + 装飾で階層を区別する。大きいほど軽く、小さいほど重くすることで緊張感を出す。</p>
         <div className="mt-3 max-w-3xl space-y-5 rounded-lg border border-gray-200 bg-white p-6">
           <div>
-            <div className="text-xs text-gray-300">h1</div>
-            <h1 className="mt-1 text-2xl font-bold text-gray-900">ゲノム登録 QuickStart</h1>
+            <div className="text-xs text-gray-300">h1 — 大きさで存在感（font-medium）</div>
+            <h1 className="mt-1 text-2xl font-medium text-gray-900">ゲノム登録 QuickStart</h1>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h2 — 下線で区切り</div>
-            <h2 className="mt-1 border-b border-gray-200 pb-2 text-lg font-bold text-gray-900">1. BioProject の登録</h2>
+            <div className="text-xs text-gray-300">h2 — 下線で区切り（font-semibold）</div>
+            <h2 className="mt-1 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-900">1. BioProject の登録</h2>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h3 — 左線アクセント</div>
+            <div className="text-xs text-gray-300">h3 — 左線アクセント（font-semibold）</div>
             <h3 className="border-primary-400 mt-1 border-l-3 pl-3 text-base font-semibold text-gray-800">プロジェクト情報の入力</h3>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h4 — 色で区別</div>
-            <h4 className="text-primary-700 mt-1 text-sm font-semibold">必須フィールドについて</h4>
+            <div className="text-xs text-gray-300">h4 — 色 + 最大ウェイト（font-bold）</div>
+            <h4 className="text-primary-700 mt-1 text-sm font-bold">必須フィールドについて</h4>
           </div>
         </div>
 
@@ -381,7 +381,7 @@ const DesignSystem = () => {
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <LinkCard to="#" title="DDBJ Search" description="塩基配列・メタデータの統合検索" linkText="詳細を見る" />
           <LinkCard to="#" title="BioProject" description="研究プロジェクトの登録・管理" linkText="詳細を見る" />
-          <LinkCard to="#" title="BioSample" description="生物学的サンプル情報の登録" linkText="詳細を見る" color="secondary" />
+          <LinkCard external href="https://ddbj.nig.ac.jp" title="ddbj.nig.ac.jp" description="旧 DDBJ サイト（外部）" linkText="外部サイトへ" color="secondary" />
         </div>
 
         <SH3>Callout</SH3>
@@ -446,7 +446,7 @@ const DesignSystem = () => {
         <SH3>Badge</SH3>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge variant="primary">BioProject</Badge>
-          <Badge variant="secondary">登録済み</Badge>
+          <Badge variant="secondary">外部</Badge>
           <Badge variant="gray">Draft</Badge>
           <Badge variant="success">Complete</Badge>
           <Badge variant="warning">Pending</Badge>
