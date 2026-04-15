@@ -338,14 +338,58 @@ proxy 層で次の手順で正規化する:
 
 #### Advanced Search からの入力
 
-Advanced Search（GUI クエリビルダ）が生成した構造化クエリ（フィールド + 演算子 + 値の配列）を受け取る。proxy 層で各バックエンド向けに変換する:
+Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 形式](./search.md#advanced-search-の-url-形式) で受け取り、proxy 層でパースして以下の **ツリー型構造化 JSON** に展開する。
 
-- **ES**: `bool` クエリ + フィールド指定 `match` / `term` / `range` / `wildcard` を組み立てる
-- **Solr**: edismax を継続利用し、`q` にフィールド指定クエリを直接書く（`Organism:human AND (Date:[20200101 TO 20241231])` 形式）。`uf` パラメータで許可フィールドを allowlist 制御する
+```json
+{
+  "db": "bioproject",
+  "query": {
+    "op": "AND",
+    "rules": [
+      { "field": "organism", "op": "eq", "value": "Homo sapiens" },
+      { "field": "date", "op": "between", "from": "2020-01-01", "to": "2024-12-31" },
+      {
+        "op": "OR",
+        "rules": [
+          { "field": "title", "op": "contains", "value": "cancer" },
+          { "field": "title", "op": "contains", "value": "tumor" }
+        ]
+      }
+    ]
+  }
+}
+```
 
-シンプル検索とバックエンドパーサを揃える（どちらも edismax）ほうがテスト・運用コストが低い。edismax は `q` 内でフィールド指定 (`field:value`)・Boolean・範囲検索・ワイルドカードを解釈できるため、標準 Lucene パーサに切り替える必要はない。
+##### スキーマ仕様
 
-Advanced Search の API 契約（クエリ構造のスキーマ、入れ子、演算子の組み合わせ制約）は search API の拡張時に定義する（未調査事項）。
+**ノード（`op` が `AND` / `OR` / `NOT`）**:
+
+- `op`: `AND` / `OR` / `NOT`
+- `rules`: 子ノード / leaf の配列。`NOT` は 1 件のみ
+- ネスト深さ上限 5（DoS 対策）
+
+**leaf（`op` が比較演算子）**:
+
+| `op` | 必須フィールド | 用途 |
+|---|---|---|
+| `eq` | `value` | 完全一致（`identifier` / Lucene `term`） |
+| `contains` | `value` | フレーズ含有（ES `match_phrase` / Solr フレーズクエリ） |
+| `starts_with` | `value` | 前方一致 |
+| `wildcard` | `value` | `*` `?` を含むワイルドカード |
+| `between` | `from`, `to` | 範囲（`date` 等） |
+| `gte` | `value` | 以上 |
+| `lte` | `value` | 以下 |
+
+**フィールド allowlist（ポータル共通語彙）**: `identifier` / `title` / `description` / `organism` / `date`
+
+バックエンド固有名（`PrimaryAccessionNumber` / `scientific_name` 等）は受け付けない。共通語彙からバックエンドフィールドへの 1:N マッピングは [共通のフィールド対応](#共通のフィールド対応) を参照。
+
+##### バックエンド変換
+
+- **ES**: ツリーをそのまま `bool` クエリに変換。leaf は `term`（`eq`） / `match_phrase`（`contains`） / `prefix`（`starts_with`） / `wildcard`（`wildcard`） / `range`（`between` / `gte` / `lte`）にマッピング
+- **Solr**: ツリーを edismax の `q` 文字列に再帰的に展開（`(Organism:"Homo sapiens" AND Date:[20200101 TO 20241231])` 形式）。`uf` パラメータでフィールド名を allowlist 制御する
+
+シンプル検索とバックエンドパーサを揃える（どちらも edismax）ほうがテスト・運用コストが低い。edismax は `q` 内でフィールド指定・Boolean・範囲検索・ワイルドカードを解釈できるため、標準 Lucene パーサに切り替える必要はない。
 
 #### 共通のフィールド対応
 
@@ -502,25 +546,48 @@ cold cache と warm cache のレイテンシ差は 100〜1000 倍。対策方針
 - TTL / maxsize は初期値として **TTL 1 時間 / maxsize 1000** で運用開始（インデックス更新が日次バッチなので TTL に余裕あり、maxsize は同時アクセスユーザ数の想定と FastAPI プロセスのメモリフットプリントから決めた仮置き）。リリース後にヒット率とメモリ使用量を見て調整
 - Redis は運用構成上不要（FastAPI 単一プロセス想定）
 
-### 既存 API パラメータとの接続
+### 既存 API との関係（ポータル用 endpoint の名前空間分離）
 
-既存 DDBJ Search API の検索パラメータ（`keywords`（カンマ区切り + 引用符）・`keywordFields`・`keywordOperator=AND|OR`）はポータル向けの正規化経路と構文が異なる。ポータル用エンドポイントは別契約として設計し、既存パラメータは下位互換として維持する方針:
+DDBJ Search API は元々 ddbj-search の front 向けに作られている。`/search` 等の既存 endpoint に ARSA / TXSearch 連携や本 docs の正規化処理を混ぜると ddbj-search front の挙動を壊すリスクがある。
 
-- ポータル用新エンドポイント（または新パラメータ）: 正規化済みクエリ文字列を受け、本 docs の手順で ES / Solr クエリを組み立てる
-- 既存パラメータ: 既存クライアント互換のため維持（カンマ区切りキーワード・フィールド指定・Operator パラメータ）
-- 両者を並立させるか、ポータル用に吸収して既存を deprecate するかは API 拡張時に決定する
+**ポータル用エンドポイントは `/db-portal/*` 名前空間に独立して新設し、既存 endpoint には一切手を加えない方針で確定。**
+
+#### endpoint 設計
+
+```
+GET /db-portal/search?q=<keyword>             # 横断検索（count のみ、3 並列 fan-out）
+GET /db-portal/search?q=<keyword>&db=<id>     # DB 指定検索（結果リスト）
+GET /db-portal/search?adv=<dsl>&db=<id>       # Advanced Search（結果リスト）
+```
+
+- `q`（シンプル検索）と `adv`（Advanced Search の DSL 文字列、[search.md の URL 形式](./search.md#advanced-search-の-url-形式) 参照）はどちらか必須。両方同時指定は 400
+- `db` 未指定 + `q` のみ = 横断検索 count、`db` 指定 = 結果リスト
+- ページネーション（`page` / `perPage` / `cursor` / `sort`）は両モード共通
+- ポータル UI の `/search` URL とこの endpoint が 1:1 対応するので見通しがいい
+
+#### 設計理由
+
+1. **既存クライアント保護**: ddbj-search front は既存 endpoint をそのまま使い続けられる。リグレッションリスクゼロ
+2. **設計の自由度**: 新規 endpoint なので後方互換に縛られず、本 docs 方針（自動フレーズ化・3 並列 fan-out・count 先行 2 段構成・部分失敗ポリシー）を素直に実装できる
+3. **責務が明確**: 既存 `/search` =「ES 単体への薄いラッパー」、新 `/db-portal/*` =「ARSA / TXSearch / ES を束ねる proxy」。性質が異なるものを endpoint 名前空間で区別
+4. **deprecate 判断を将来に分離可能**: ddbj-search front がポータルに完全統合された時点で旧 endpoint 単位で deprecate できる。今は触らない
+5. **コード分離が素直**: FastAPI router を `db_portal_router` で分離、`solr/` 依存は新 router のみ。共通ロジック（query 正規化・mapper）はライブラリ層で吸収
+
+#### 既存パラメータの扱い
+
+`keywords`（カンマ区切り + 引用符）・`keywordFields`・`keywordOperator=AND|OR` は既存 endpoint で維持。**触らない・deprecate しない**。将来 ddbj-search front がポータルに統合された時点で改めて判断する。
 
 ## 未調査事項
 
-実装進行に応じて必要になる確認項目:
-
-- **Advanced Search API の契約**: GUI クエリビルダが生成する構造化クエリのスキーマ定義（field / operator / value / 入れ子）は実装時に詰める（残件）
-- **Advanced Search の URL シリアライズ形式**: 構造化クエリを URL に載せる形式（base64 JSON / 個別パラメータ展開 等）（残件）
-- **既存 API パラメータの扱い**: ポータル用新エンドポイントと既存 `keywords`/`keywordFields`/`keywordOperator` パラメータの共存 or deprecate 判断（残件）
+実装進行に応じて必要になる確認項目（現時点で残っているものはなし）。
 
 ### 解決済み（2026/04/15）
 
 以下は本仕様書の作成時点で解決済み:
+
+- **Advanced Search API の契約**: GUI クエリビルダ生成クエリは [Lucene 風 DSL 文字列](./search.md#advanced-search-の-url-形式) で受け取り、proxy 層で[ツリー型構造化 JSON](#advanced-search-からの入力) に展開して各バックエンドへ。フィールドは ポータル共通語彙 5 種（`identifier` / `title` / `description` / `organism` / `date`）の allowlist、ネスト深さ上限 5
+- **Advanced Search の URL シリアライズ形式**: `adv` パラメータ 1 本に Lucene 風 DSL 文字列を載せる方式で確定。NCBI PubMed・EBI Search・ENA Portal API の業界 3 大サービス全てが「単一パラメータに DSL 文字列」方式で一致しており、base64 / 個別パラメータ展開の先行例なし。詳細は [search.md の Advanced Search の URL 形式](./search.md#advanced-search-の-url-形式)
+- **既存 API パラメータの扱い**: ポータル用は `/db-portal/*` 名前空間に独立 endpoint として新設、既存 endpoint には一切手を加えない方針で確定。詳細は [既存 API との関係](#既存-api-との関係ポータル用-endpoint-の名前空間分離)
 
 - **ES `entries` index の実体**: alias で確定（12 実 index に fan-out、Blue-Green swap 運用、全 standard analyzer、kuromoji 未導入）
 - **ARSA PatternTokenizer での記号保持の実挙動**: クォートなし `HIF-1` → 全件誤ヒット、クォート付き `"HIF-1"` → 15,050 件で正常動作を実測で確認。自動フレーズ化の方針が正当化された

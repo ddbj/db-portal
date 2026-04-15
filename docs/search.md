@@ -145,7 +145,7 @@ proxy 層でユーザ入力を次のように正規化する:
 
 **Solr 側の補足**: ARSA の `text_all` (PatternTokenizer `[a-zA-Z0-9]+|[^a-zA-Z0-9\s]`) は `-` `/` 等もトークン化するため、フレーズクエリで `HIF` `-` `1` の連続位置を要求でき、誤ヒットが減る可能性がある（実測は未調査事項）。TXSearch は standard tokenizer なので ES と同じ挙動。
 
-完全一致での identifier 検索や、ES analyzer を `word_delimiter_graph` + `preserve_original` に変更する再インデックスは将来課題とする。Lucene メタ文字の具体的なエスケープ契約は [search-backends.md のクエリ変換](./search-backends.md#クエリ変換) に記述する。
+完全一致 identifier 検索が必要なケースは Advanced Search の `identifier` フィールド完全一致で救う方針で確定。ES analyzer の再設計（`word_delimiter_graph` + `preserve_original` 等への入れ替え + 再インデックス）は対応しない: 自動フレーズ化 + Advanced Search で実用上の精度は確保できており、analyzer を全 DB で揃え直すコスト（再インデックス・既存 API への影響・ユースケースごとの最適解の分散）に見合うリターンがない。Lucene メタ文字の具体的なエスケープ契約は [search-backends.md のクエリ変換](./search-backends.md#クエリ変換) に記述する。
 
 ### Advanced Search
 
@@ -240,7 +240,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 - その他（`bioproject` / `biosample` / `taxonomy`）: 元々 INSDC 共通名称なので DDBJ/NCBI/EBI 間で衝突なし
 - `jga` / `gea` / `metabobank`: DDBJ 固有 DB なのでそのまま
 
-UI 表示ラベルは上記テーブルの値をそのまま使う（`Trad (Annotated Sequences)` / `SRA` / `BioProject` / `BioSample` / `JGA` / `GEA` / `MetaboBank` / `Taxonomy`）。Trad だけ補足を添える理由は、単独の「Trad」が何のデータか直感的に伝わらないため（Traditional Annotation の略で、DDBJ 固有の概念）。SRA と対比して「アノテーション付き配列（Trad）」vs「生リード（SRA）」の違いが一目で分かるようにする。SRA と DRA の関係（INSDC 全体 vs DDBJ 固有）はツールチップ・サブテキスト等で補足するか UI 実装時に詰める。
+UI 表示ラベルは上記テーブルの値をそのまま使う（`Trad (Annotated Sequences)` / `SRA` / `BioProject` / `BioSample` / `JGA` / `GEA` / `MetaboBank` / `Taxonomy`）。Trad だけ補足を添える理由は、単独の「Trad」が何のデータか直感的に伝わらないため（Traditional Annotation の略で、DDBJ 固有の概念）。SRA と対比して「アノテーション付き配列（Trad）」vs「生リード（SRA）」の違いが一目で分かるようにする。SRA は INSDC 共通名称として世界的に通用するため追加補足は付けない（UI に `DRA` 選択肢が出ない以上、SRA / DRA 関係をツールチップで説明すると逆に「DRA というのもあるのか？」と余計な混乱を招くため）。
 
 ### canonical / noindex
 
@@ -265,7 +265,54 @@ UI 表示ラベルは上記テーブルの値をそのまま使う（`Trad (Anno
 
 ### Advanced Search の URL 形式
 
-`adv` パラメータで Advanced Search が生成したクエリをシリアライズする。構造化クエリ JSON を base64 で載せるか、`f1=...&op1=AND&v1=...` のように展開するかは実装時に詰める（未調査事項）。
+`adv` パラメータに **Lucene 風軽量 DSL の文字列**を 1 本で載せる。base64(JSON) や個別パラメータ展開（`f1=...&op1=AND&v1=...`）は採らない。
+
+例:
+
+```
+/search?db=bioproject&adv=organism%3A%22Homo+sapiens%22+AND+date%3A%5B2020-01-01+TO+2024-12-31%5D+AND+(title%3Acancer+OR+title%3Atumor)
+```
+
+URL デコード後:
+
+```
+organism:"Homo sapiens" AND date:[2020-01-01 TO 2024-12-31] AND (title:cancer OR title:tumor)
+```
+
+#### 採用構文
+
+| 構文 | 例 | 意味 |
+|---|---|---|
+| `field:value` | `organism:human` | フィールド指定（単語） |
+| `field:"phrase"` | `organism:"Homo sapiens"` | フィールド指定（フレーズ） |
+| `field:[a TO b]` | `date:[2020-01-01 TO 2024-12-31]` | 範囲（包含） |
+| `field:value*` | `title:cancer*` | ワイルドカード（前方一致） |
+| `AND` / `OR` / `NOT` | `a AND b` | Boolean（大文字必須） |
+| `(...)` | `(a OR b) AND c` | グルーピング |
+
+- フィールド名はポータル共通語彙のみ allowlist（`identifier` / `title` / `description` / `organism` / `date`）。バックエンド固有名（`PrimaryAccessionNumber` 等）は受け付けない
+- パース: server 側で DSL → 構造化 JSON（[search-backends.md の Advanced Search API 契約](./search-backends.md#advanced-search-からの入力)）→ ES / Solr へ
+- GUI 入力 → DSL 文字列生成（単方向）。URL を直接編集したユーザーのために GUI 復元用の逆パーサも提供
+
+#### 採用根拠（業界デファクト）
+
+NCBI PubMed・EBI Search・ENA Portal API の 3 大サービス全てが「単一 query パラメータに DSL 文字列を載せる」方式で一致している。base64 や個別パラメータ展開を採用している先行例は見つからない。Lucene 風構文（EBI Search はそのまま採用、PubMed もブラケットフィールド以外は Lucene）が最も普及している。
+
+| サービス | パラメータ | 構文 |
+|---|---|---|
+| NCBI PubMed | `?term=...` | Lucene 風 + `term[fieldtag]` ブラケット |
+| EBI Search | `?query=...` | Apache Lucene query syntax |
+| ENA Portal API | `?query=...` | SQL 風 `field="value"` + 関数記法 |
+
+DDBJ ポータルは EBI Search 流（フィールド区切り `:`、範囲 `[a TO b]`）を採用する。ドメイン固有関数（ENA `tax_eq` 等）は将来拡張余地として予約し、初期実装には含めない。boost 記法 `^` も GUI クエリビルダから生成しないため初期は非対応。
+
+**参考文献（2026/04/15 調査）**:
+
+- [PubMed Advanced Search Help](https://pubmed.ncbi.nlm.nih.gov/help/) — `term` パラメータ・`[fieldtag]` 記法
+- [EBI Search REST API](https://www.ebi.ac.uk/ebisearch/documentation/rest-api) — `query` パラメータに Apache Lucene query syntax
+- [ENA Advanced Search Documentation](https://ena-docs.readthedocs.io/en/latest/retrieval/programmatic-access/advanced-search.html) — `query` パラメータに `field="value"` + 関数記法
+- [ENA Portal API Swagger](https://www.ebi.ac.uk/ena/portal/api/swagger-ui/index.html)
+- [The EBI search engine: EBI search as a service (PMC)](https://pmc.ncbi.nlm.nih.gov/articles/PMC5570174/)
 
 ## 参考: NCBI Entrez / EBI Search の UX パターン
 
