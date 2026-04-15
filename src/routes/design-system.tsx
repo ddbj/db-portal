@@ -1,4 +1,4 @@
-import { Badge, Breadcrumb, Button, Callout, CodeBlock, InlineCode, LinkCard, Prose, Skeleton, SkeletonCard, SkeletonText, TextLink } from "@/components/ui"
+import { Badge, Breadcrumb, Button, Callout, CodeBlock, Heading, InlineCode, LinkCard, Prose, Skeleton, SkeletonCard, SkeletonText, Table, TextLink } from "@/components/ui"
 
 import type { Route } from "./+types/design-system"
 
@@ -112,7 +112,7 @@ const DesignSystem = () => {
                   <span className="font-medium text-gray-900">検索</span>
                   <span className="text-gray-500">登録</span>
                   <span className="text-gray-500">About</span>
-                  <span className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">ログイン</span>
+                  <button type="button" className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">ログイン</button>
                 </nav>
               </div>
             </div>
@@ -125,7 +125,7 @@ const DesignSystem = () => {
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {["すべて", "DDBJ Search", "ARSA", "TXSearch", "Metabobank"].map((db, i) => (
-                  <span key={db} className={`rounded-full px-3 py-1 text-xs font-medium ${i === 0 ? "bg-primary-600 text-white" : "border border-gray-200 bg-white text-gray-600"}`}>{db}</span>
+                  <button key={db} type="button" className={`rounded-full px-3 py-1 text-xs font-medium ${i === 0 ? "bg-primary-600 text-white" : "border border-gray-200 bg-white text-gray-600"}`}>{db}</button>
                 ))}
               </div>
             </div>
@@ -165,7 +165,7 @@ const DesignSystem = () => {
                   <span className="text-gray-500">検索</span>
                   <span className="font-medium text-gray-900">登録</span>
                   <span className="text-gray-500">About</span>
-                  <span className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">ログイン</span>
+                  <button type="button" className="bg-primary-600 rounded-md px-3 py-1.5 text-xs font-medium text-white">ログイン</button>
                 </nav>
               </div>
             </div>
@@ -243,25 +243,71 @@ const DesignSystem = () => {
           </div>
         </div>
 
-        <SH3>Markdown Headings</SH3>
+        <SH3>Heading</SH3>
         <p className="mt-1 text-sm text-gray-500">サイズ + ウェイト + 装飾で階層を区別する。大きいほど軽く、小さいほど重くすることで緊張感を出す。</p>
         <div className="mt-3 max-w-3xl space-y-5 rounded-lg border border-gray-200 bg-white p-6">
           <div>
-            <div className="text-xs text-gray-300">h1 — 大きさで存在感（font-medium）</div>
-            <h1 className="mt-1 text-2xl font-medium text-gray-900">ゲノム登録 QuickStart</h1>
+            <div className="text-xs text-gray-300">Heading level=1 — 大きさで存在感（font-medium）</div>
+            <Heading level={1} className="mt-1">ゲノム登録 QuickStart</Heading>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h2 — 下線で区切り（font-semibold）</div>
-            <h2 className="mt-1 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-900">1. BioProject の登録</h2>
+            <div className="text-xs text-gray-300">Heading level=2 — 下線で区切り（font-semibold）</div>
+            <Heading level={2} className="mt-1">1. BioProject の登録</Heading>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h3 — 左線アクセント（font-semibold）</div>
-            <h3 className="border-primary-400 mt-1 border-l-3 pl-3 text-base font-semibold text-gray-800">プロジェクト情報の入力</h3>
+            <div className="text-xs text-gray-300">Heading level=3 — 左線アクセント（font-semibold）</div>
+            <Heading level={3} className="mt-1">プロジェクト情報の入力</Heading>
           </div>
           <div>
-            <div className="text-xs text-gray-300">h4 — 色 + 最大ウェイト（font-bold）</div>
-            <h4 className="text-primary-700 mt-1 text-sm font-bold">必須フィールドについて</h4>
+            <div className="text-xs text-gray-300">Heading level=4 — 色 + 最大ウェイト（font-bold）</div>
+            <Heading level={4} className="mt-1">必須フィールドについて</Heading>
           </div>
+        </div>
+
+        <SH3>Table</SH3>
+        <p className="mt-1 text-sm text-gray-500">Prose 外でも使える共通スタイルの表。hover で行ハイライト、最終行の border なし。外枠は呼び出し側で `overflow-hidden rounded-lg border` ラップする。</p>
+        <div className="mt-3 max-w-3xl overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <Table>
+            <thead>
+              <tr>
+                <th>Accession</th>
+                <th>Type</th>
+                <th>Organism</th>
+                <th>Status</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><InlineCode>PRJDB12345</InlineCode></td>
+                <td>BioProject</td>
+                <td>Homo sapiens</td>
+                <td><Badge variant="success" size="sm">Public</Badge></td>
+                <td>2025-04-12</td>
+              </tr>
+              <tr>
+                <td><InlineCode>SAMD00000001</InlineCode></td>
+                <td>BioSample</td>
+                <td>Mus musculus</td>
+                <td><Badge variant="success" size="sm">Public</Badge></td>
+                <td>2025-04-10</td>
+              </tr>
+              <tr>
+                <td><InlineCode>DRR000001</InlineCode></td>
+                <td>SRA Run</td>
+                <td>Oryza sativa</td>
+                <td><Badge variant="warning" size="sm">Pending</Badge></td>
+                <td>2025-04-09</td>
+              </tr>
+              <tr>
+                <td><InlineCode>DRR000002</InlineCode></td>
+                <td>SRA Run</td>
+                <td>Drosophila melanogaster</td>
+                <td><Badge variant="gray" size="sm">Draft</Badge></td>
+                <td>2025-04-08</td>
+              </tr>
+            </tbody>
+          </Table>
         </div>
 
         <SH3>コードブロック</SH3>
@@ -328,6 +374,12 @@ const DesignSystem = () => {
           <Button size="sm">Small</Button>
           <Button size="md">Default</Button>
           <Button size="lg">Large</Button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button variant="primary">検索する</Button>
+          <Button variant="secondary">外部サイトで開く</Button>
+          <Button variant="tertiary">キャンセル</Button>
+          <Button variant="accent">登録を始める</Button>
         </div>
 
         <SH3>Form Controls</SH3>
@@ -436,6 +488,32 @@ const DesignSystem = () => {
             <p>
               BioSample は生物学的サンプルの情報を管理します。Accession は <code>SAMD00000001</code> のような形式です。
             </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>フィールド</th>
+                  <th>必須</th>
+                  <th>説明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>sample_name</td>
+                  <td>必須</td>
+                  <td>サンプル名（一意）</td>
+                </tr>
+                <tr>
+                  <td>organism</td>
+                  <td>必須</td>
+                  <td>生物種</td>
+                </tr>
+                <tr>
+                  <td>collection_date</td>
+                  <td>任意</td>
+                  <td>採集日</td>
+                </tr>
+              </tbody>
+            </table>
             <pre><code>{"COMMON    SUBMITTER\n            contact     Taro Yamada"}</code></pre>
           </Prose>
         </div>

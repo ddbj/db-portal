@@ -33,7 +33,7 @@ const Button = ({
     <button
       type={type}
       className={cn(
-        "rounded-md font-medium focus:ring-2 focus:ring-offset-2 focus:outline-none",
+        "inline-flex items-center justify-center rounded-md font-medium leading-none focus:ring-2 focus:ring-offset-2 focus:outline-none",
         sizeStyles[size],
         disabled
           ? "cursor-not-allowed bg-gray-200 text-gray-400"
