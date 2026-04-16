@@ -110,33 +110,11 @@ Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/acc
 
 ## 検索
 
-横断検索は DDBJ Search API を拡張して、各検索サービスを束ねるプロキシとして機能する（Search API は別リポジトリで開発）。
+横断検索は DDBJ Search API を拡張して、各検索サービスを束ねる proxy として機能する（Search API は別リポジトリ [ddbj/ddbj-search-api](https://github.com/ddbj/ddbj-search-api) で開発）。
 
-対象サービス:
+バックエンドは 3 系統: DDBJ Search（ES: SRA / BioProject / BioSample / JGA / GEA / MetaboBank）、ARSA（Solr: Trad）、TXSearch（Solr: Taxonomy）。ユーザーにはバックエンドの違いを見せない。
 
-| サービス | 説明 |
-|---|---|
-| DDBJ Search | DDBJ の統合検索 |
-| ARSA | 塩基配列・アミノ酸配列の検索 |
-| TXSearch | Taxonomy 検索 |
-| Metabobank | メタボローム検索 |
-
-検索フロー:
-
-```
-[top] keyword input + DB selector
-  |
-  v
-[/search?q=xxx] hit count summary per DB
-  |  (click DB)
-  v
-[/search?q=xxx&db=yyy] per-DB result list (simple)
-  |  (click record)
-  v
-[external] DB detail page
-```
-
-Accession（例: `PRJDB12345`）入力時は、横断検索結果を表示しつつ該当レコードへの直接リンクを目立たせる。検索 UX の詳細は [NCBI Entrez](https://www.ncbi.nlm.nih.gov/) に準じる。
+検索フロー: キーワード入力 → 横断検索（DB ごとのヒット数サマリー）→ DB 指定検索（結果リスト）→ 外部詳細ページ。検索 UX の詳細は [search.md](./search.md) を参照。
 
 ## 登録ナビゲーション
 

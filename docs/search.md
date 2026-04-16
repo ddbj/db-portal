@@ -28,6 +28,8 @@ DB 個別のファセット検索は設けない。
 | MetaboBank | `metabobank` | MetaboBank | メタボロミクスデータ | - |
 | Taxonomy | `taxonomy` | INSDC Taxonomy | 生物分類 | INSDC 共有 |
 
+※ Trad の検索は ARSA（Solr）を backend とする。ARSA の検索インデックスは WGS・TSA の一部・MGA・DRA（生リード）を含まない（[search-backends.md の ARSA](./search-backends.md#arsa) 参照）。MSS / NSSS 経由で登録された全データが検索可能なわけではない点に注意。
+
 ### スコープ外とした DB
 
 | DB | 理由 |
@@ -118,7 +120,7 @@ Accession（例: `PRJDB12345`）も通常のキーワードとして全文検索
 |---|---|
 | スペース区切り | 暗黙 AND |
 | フレーズ検索 | `"Homo sapiens"`（ダブルクォートで完全一致） |
-| 記号を含む識別子 | `HIF-1`・`BRCA1/2`・`CD4+`・`E. coli` 等、記号（`-` `/` `.` `+` `:`）を含むトークンは自動でフレーズクエリ化する（主に Solr edismax の演算子誤解釈回避が目的。詳細は下記） |
+| 記号を含む識別子 | `HIF-1`・`BRCA1/2`・`CD4+`・`E. coli` 等、Lucene メタ文字等の記号を含むトークンは自動でフレーズクエリ化する（主に Solr edismax の演算子誤解釈回避が目的。記号判定文字集合の詳細は [search-backends.md のクエリ変換](./search-backends.md#クエリ変換) を参照） |
 | 大文字小文字 | 区別なし |
 | Boolean 演算子 `AND`/`OR`/`NOT` | 非対応（リテラル扱い）。Advanced Search に誘導 |
 | 括弧 `()` グループ化 | 非対応（リテラル扱い）。Advanced Search に誘導 |
@@ -138,7 +140,7 @@ proxy 層でユーザ入力を次のように正規化する:
 
 1. 入力から `"..."` で囲まれたフレーズトークンを先に切り出す
 2. 残りをスペース区切りでトークン化
-3. 記号（`-` `/` `.` `+` `:`）を含むトークンは、内部的にフレーズクエリとして扱う（Solr ではクォート済み文字列として `q` に渡す、ES では `match_phrase` に渡す）
+3. Lucene メタ文字等の記号を含むトークンは、内部的にフレーズクエリとして扱う（Solr ではクォート済み文字列として `q` に渡す、ES では `match_phrase` に渡す）。記号判定文字集合の定義は [search-backends.md のクエリ変換](./search-backends.md#クエリ変換) を参照
 4. 全トークンを AND 結合して各バックエンドへ
 
 **ES 側の補足**: standard analyzer 前提では `HIF-1` は `hif` + `1` に分解されるため、フレーズ化しても `HIF 1` と `HIF-1` はスコア上区別できない（両方同等ヒット）。`HIF-1` と完全一致したい場合は Advanced Search の `identifier` フィールド完全一致を使う。
@@ -198,7 +200,7 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### loading / error 状態
 
-横断検索は部分失敗許容（search-backends.md 参照）のため、UI も DB カード単位で 3 状態を扱う:
+横断検索は部分失敗許容（[search-backends.md の部分失敗ポリシー](./search-backends.md#部分失敗ポリシー) 参照）のため、UI も DB カード単位で 3 状態を扱う:
 
 | 状態 | 表示 |
 |---|---|
@@ -265,16 +267,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 ### `db` パラメータの値
 
-| 値 | UI 表示ラベル | バックエンド実態 |
-|---|---|---|
-| `trad` | Trad (Annotated Sequences) | ARSA（Datasource = `DDBJ`, `Patent_AA`。DDBJ が MSS / NSSS 経由で受領した Traditional Annotation 形式の塩基配列 + Patent 由来のアミノ酸配列。GenBank / ENA のミラーは含まない） |
-| `sra` | SRA | ES `sra-*`（INSDC 共通 read archive: DDBJ DRA + NCBI SRA + EBI ENA を全て含む） |
-| `bioproject` | BioProject | ES（INSDC BioProject 全体） |
-| `biosample` | BioSample | ES（INSDC BioSample 全体） |
-| `jga` | JGA | ES（DDBJ 固有） |
-| `gea` | GEA | ES（DDBJ 固有、インデックス追加要） |
-| `metabobank` | MetaboBank | ES（DDBJ 固有、インデックス追加要） |
-| `taxonomy` | Taxonomy | TXSearch（INSDC 共通 NCBI Taxonomy） |
+`db` パラメータの値・UI 表示ラベルは [DB 一覧](#db-一覧) を参照。バックエンドの対応は [検索エンジンと DB の対応](#検索エンジンと-db-の対応) を参照。
 
 命名方針:
 
@@ -283,7 +276,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 - その他（`bioproject` / `biosample` / `taxonomy`）: 元々 INSDC 共通名称なので DDBJ/NCBI/EBI 間で衝突なし
 - `jga` / `gea` / `metabobank`: DDBJ 固有 DB なのでそのまま
 
-UI 表示ラベルは上記テーブルの値をそのまま使う（`Trad (Annotated Sequences)` / `SRA` / `BioProject` / `BioSample` / `JGA` / `GEA` / `MetaboBank` / `Taxonomy`）。Trad だけ補足を添える理由は、単独の「Trad」が何のデータか直感的に伝わらないため（Traditional Annotation の略で、DDBJ 固有の概念）。SRA と対比して「アノテーション付き配列（Trad）」vs「生リード（SRA）」の違いが一目で分かるようにする。SRA は INSDC 共通名称として世界的に通用するため追加補足は付けない（UI に `DRA` 選択肢が出ない以上、SRA / DRA 関係をツールチップで説明すると逆に「DRA というのもあるのか？」と余計な混乱を招くため）。
+UI 表示ラベルは [DB 一覧](#db-一覧) のテーブルの値をそのまま使う（`Trad (Annotated Sequences)` / `SRA` / `BioProject` / `BioSample` / `JGA` / `GEA` / `MetaboBank` / `Taxonomy`）。Trad だけ補足を添える理由は、単独の「Trad」が何のデータか直感的に伝わらないため（Traditional Annotation の略で、DDBJ 固有の概念）。SRA と対比して「アノテーション付き配列（Trad）」vs「生リード（SRA）」の違いが一目で分かるようにする。SRA は INSDC 共通名称として世界的に通用するため追加補足は付けない（UI に `DRA` 選択肢が出ない以上、SRA / DRA 関係をツールチップで説明すると逆に「DRA というのもあるのか？」と余計な混乱を招くため）。
 
 ### canonical / noindex
 
@@ -333,7 +326,7 @@ organism:"Homo sapiens" AND date:[2020-01-01 TO 2024-12-31] AND (title:cancer OR
 | `AND` / `OR` / `NOT` | `a AND b` | Boolean（大文字必須） |
 | `(...)` | `(a OR b) AND c` | グルーピング |
 
-- フィールド名はポータル共通語彙のみ allowlist（`identifier` / `title` / `description` / `organism` / `date`）。バックエンド固有名（`PrimaryAccessionNumber` 等）は受け付けない
+- フィールド名はポータル共通語彙のみ allowlist（`identifier` / `title` / `description` / `organism` / `date`）。バックエンド固有名（`PrimaryAccessionNumber` 等）は受け付けない。※ `organism` の型（学名受けか NCBI Taxonomy ID 受けか）は未決。上記の DSL 例では学名を仮置きしている
 - パース: server 側で DSL → 構造化 JSON（[search-backends.md の Advanced Search API 契約](./search-backends.md#advanced-search-からの入力)）→ ES / Solr へ
 - GUI 入力 → DSL 文字列生成（単方向）。URL を直接編集したユーザーのために GUI 復元用の逆パーサも提供
 

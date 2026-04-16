@@ -4,7 +4,7 @@ DDBJ Search API が束ねる 3 つのバックエンド（DDBJ Search の ES / A
 
 | バックエンド | 検索エンジン | 担当 DB |
 |---|---|---|
-| DDBJ Search | Elasticsearch | DRA, BioProject, BioSample, JGA, GEA, MetaboBank |
+| DDBJ Search | Elasticsearch | SRA, BioProject, BioSample, JGA, GEA, MetaboBank |
 | ARSA | Apache Solr 4.4.0 | DDBJ (Trad) |
 | TXSearch | Apache Solr 4.4.0 | Taxonomy |
 
@@ -380,7 +380,7 @@ Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 
 | `gte` | `value` | 以上 |
 | `lte` | `value` | 以下 |
 
-**フィールド allowlist（ポータル共通語彙）**: `identifier` / `title` / `description` / `organism` / `date`
+**フィールド allowlist（ポータル共通語彙）**: `identifier` / `title` / `description` / `organism` / `date`。※ `organism` の型（学名受けか NCBI Taxonomy ID 受けか）は未決
 
 バックエンド固有名（`PrimaryAccessionNumber` / `scientific_name` 等）は受け付けない。共通語彙からバックエンドフィールドへの 1:N マッピングは [共通のフィールド対応](#共通のフィールド対応) を参照。
 
@@ -510,7 +510,7 @@ cold cache と warm cache のレイテンシ差は 100〜1000 倍。対策方針
 
 #### 部分失敗ポリシー
 
-横断検索は各バックエンド独立で、部分成功を許容する。レスポンスは DB 単位の構造で返す:
+横断検索は各バックエンド独立で、部分成功を許容する。UI 側の 3 状態表示（loading / success / error）は [search.md の loading / error 状態](./search.md#loading--error-状態) を参照。レスポンスは DB 単位の構造で返す:
 
 ```json
 {
