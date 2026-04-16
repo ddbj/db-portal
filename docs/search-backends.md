@@ -386,13 +386,133 @@ Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 
 - **Tier 2**: `submitter` / `publication`
 - **Tier 3**: 単一 DB 指定時のみ有効。DB ごとの詳細は [共通のフィールド対応](#共通のフィールド対応) 参照
 
-横断モード（`db` 未指定）では Tier 3 フィールドを含む DSL は **400 エラー**（`{ "error": "field X is not available in cross-database search" }`）。
+横断モード（`db` 未指定）では Tier 3 フィールドを含む DSL は **400 エラー**（`code: FIELD_NOT_AVAILABLE_IN_CROSS_DB`。詳細は [エラーレスポンス](#エラーレスポンス) 参照）。
 
 `organism` は学名・Taxonomy ID 両対応（ES の `organism.name` / `organism.identifier` 両方に OR で query を投げる）。
 
 `date` は展開エイリアス: `date:[A TO B]` は `date_published:[A TO B] OR date_modified:[A TO B] OR date_created:[A TO B]` に展開。
 
 バックエンド固有名（`PrimaryAccessionNumber` / `scientific_name` 等）は受け付けない。共通語彙からバックエンドフィールドへの 1:N マッピングは [共通のフィールド対応](#共通のフィールド対応) を参照。
+
+##### 値のバリデーション
+
+proxy 層でパース直後・allowlist 検証と同じタイミングで値を検証する。違反は 400 + `application/problem+json`（詳細は [エラーレスポンス](#エラーレスポンス) 参照）。
+
+| 項目 | ルール | 違反時の `code` |
+|---|---|---|
+| 日付 | ISO 8601 `YYYY-MM-DD` 厳密一致。正規表現 `^\d{4}-\d{2}-\d{2}$` + `datetime.fromisoformat` で妥当性検証 | `INVALID_DATE_FORMAT` |
+| 空文字列 | `field:""` および `field:`（値欠落）は拒否。`NOT` の単独使用も拒否 | `MISSING_VALUE` |
+| フィールドと演算子の組み合わせ | [search.md の演算子マトリクス](./search.md#演算子とフィールドの組み合わせ) に違反するものを拒否（例: `date:cancer*`、`identifier:[a TO b]`） | `INVALID_OPERATOR_FOR_FIELD` |
+| ネスト深さ | AND / OR / NOT のノード深さ 5 まで | `NEST_DEPTH_EXCEEDED` |
+| 未知フィールド | allowlist 外（例: `PrimaryAccessionNumber`、`foo`） | `UNKNOWN_FIELD` |
+| 横断モードで Tier 3 | `db` 未指定時に Tier 3 フィールドを使用 | `FIELD_NOT_AVAILABLE_IN_CROSS_DB` |
+
+**エスケープ規則（Lucene 標準）:**
+
+- クォート内（`"..."`）でエスケープが必要なのは `\"` と `\\` のみ。他の Lucene メタ文字（`+` `-` `(` `)` `[` `]` `{` `}` `^` `~` `*` `?` `:` `/` `&&` `||` `!`）はクォート内では無害
+- クォート外の値（`field:word` のような非フレーズトークン）にはメタ文字を**含めない**。含まれていた場合は構文エラー（`UNEXPECTED_TOKEN`）。GUI は常に記号含みの値をクォート付きで出力するため、この制約は URL 直編集ユーザ向け
+- ワイルドカード `*` / `?` は `wildcard` 演算子のみで使用可。クォート内ではリテラル扱い
+
+##### パーサ実装
+
+**採用: [Lark](https://github.com/lark-parser/lark) の LALR(1) モードで Lucene サブセット文法を自前で定義する。**
+
+proxy 層は以下の 3 段階で DSL を処理する:
+
+1. **パース**: Lark が DSL 文字列 → AST に変換。`UnexpectedToken` / `UnexpectedCharacters` で `line` / `column` / `token` を取得可能
+2. **allowlist 検証（visitor）**: AST を走査し、フィールド名 allowlist と Tier 制約（横断モード / 単一 DB）、演算子適合、値のバリデーション、ネスト深さをチェック
+3. **JSON 構築**: 検証済み AST を [スキーマ仕様](#スキーマ仕様) のツリー型 JSON にシリアライズ
+
+**文法スケッチ（`advanced_search.lark`）:**
+
+```lark
+start: or_expr
+
+or_expr: and_expr (OR and_expr)*
+and_expr: not_expr (AND not_expr)*
+not_expr: NOT? atom
+atom: field_clause | "(" or_expr ")"
+field_clause: FIELD ":" value
+
+value: PHRASE | RANGE | WILDCARD | DATE | WORD
+
+PHRASE: /"(?:[^"\\]|\\.)*"/
+RANGE: "[" /[^\s\]]+/ " TO " /[^\s\]]+/ "]"
+WILDCARD: /[A-Za-z0-9_][A-Za-z0-9_]*[*?][A-Za-z0-9_*?]*/
+DATE: /\d{4}-\d{2}-\d{2}/
+FIELD: /[a-z_]+/
+WORD: /[^\s:()\[\]"{}^~*?]+/
+AND: "AND"
+OR: "OR"
+NOT: "NOT"
+
+%ignore /\s+/
+```
+
+上記はスケッチ。実装時は `date` の RANGE 内検証、Lucene 標準のエスケープ処理（`PHRASE` の `\\.`）、単語トークンの重複定義回避などを詰める。
+
+**他の選択肢を採用しなかった理由:**
+
+| 候補 | 評価 | 不採用理由 |
+|---|---|---|
+| [Luqum](https://github.com/jurismarches/luqum)（Lucene 専用、PLY ベース、ES 変換付き） | 成熟・活発（1.0.0 / 2025-02、Python 3.10+） | (1) Lucene 全機能を parse してしまい、boost `^` / fuzzy `~` / 正規表現なども AST に入る → ポータル採用構文に絞るための後段 validator が必要で二段構えになる。(2) Solr edismax 向け変換は標準機能になく visitor を自前で書く。(3) ES 変換もポータル共通語彙→バックエンド固有名のマッピングで visitor を書き換える必要がある。(4) PLY の `LRParser` はスレッドセーフでない（FastAPI の同期 endpoint で `asyncio.to_thread` 経由使用時に罠になり得る） |
+| pyparsing（パーサコンビネータ、Lucene grammar の例あり） | エラー位置情報は良質 | パフォーマンスが Lark LALR に劣る。文法宣言が Python コード内に埋まり、仕様書と文法ファイルの二重管理になる |
+| 自作 recursive descent | 採用構文なら 200 行程度で書ける | エラー位置の取得・テストのカバレッジを自前で担保する必要がありメンテコストが高い |
+
+**Lark 採用の利点:**
+
+- 文法を `.lark` ファイルに宣言的に書ける（仕様書の生きたドキュメントとして機能）
+- Lucene 全機能に引きずられない（boost / fuzzy / 正規表現は文法に含めず、含まれていれば `UNEXPECTED_TOKEN`）
+- AST → ES / Solr 両方への visitor を同じ出発点から書ける
+- エラー位置（`line` / `column` / `token`）を `UnexpectedToken` から直接取得できる
+- hypothesis での PBT（Property-Based Testing）がしやすい（文法からサンプル生成する補助も書ける）
+- 依存が軽い（Lark 単体、PLY 不要）
+
+##### エラーレスポンス
+
+ddbj-search-api の既存エラー形式（[RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) / RFC 9457 Problem Details、`application/problem+json`、`ddbj_search_api/main.py` の `_problem_json()`）をそのまま踏襲する。db-portal 特有の情報は RFC の拡張メンバー機構で追加する。
+
+**ベース（既存 ddbj-search-api 踏襲）:**
+
+```json
+{
+  "type": "https://ddbj.nig.ac.jp/problems/invalid-dsl",
+  "title": "Invalid Advanced Search DSL",
+  "status": 400,
+  "detail": "unknown field 'foo' at column 15. allowed: identifier, title, description, organism, ...",
+  "instance": "/db-portal/search",
+  "timestamp": "2026-04-16T12:34:56Z",
+  "requestId": "8f4e2d1a-...",
+  "code": "UNKNOWN_FIELD",
+  "position": { "line": 1, "column": 15, "length": 3 }
+}
+```
+
+**拡張メンバー（db-portal 固有）:**
+
+- `code`: machine-readable なエラーコード（下表）
+- `position`: DSL 文字列中のエラー位置（`line` は常に 1 で固定、`column` は 1 始まり、`length` はトークン長）
+
+**`type` の URI 規約**: `https://ddbj.nig.ac.jp/problems/<slug>` 形式。`slug` は `code` を kebab-case 化したもの（`UNKNOWN_FIELD` → `unknown-field`）。将来 `type` URL でエラー種別のドキュメントページを配信する余地を残す。
+
+**エラーコード一覧:**
+
+| `code` | HTTP | 発生条件 |
+|---|---|---|
+| `UNEXPECTED_TOKEN` | 400 | DSL 構文エラー（Lark `UnexpectedToken` / `UnexpectedCharacters`）。非対応構文（boost `^` / fuzzy `~` / 正規表現 `/.../`）もここに該当 |
+| `UNKNOWN_FIELD` | 400 | allowlist 外のフィールド名 |
+| `FIELD_NOT_AVAILABLE_IN_CROSS_DB` | 400 | 横断モード（`db` 未指定）で Tier 3 フィールドを使用 |
+| `INVALID_DATE_FORMAT` | 400 | 日付値が `YYYY-MM-DD` 形式でない |
+| `INVALID_OPERATOR_FOR_FIELD` | 400 | フィールドに対して不正な演算子（例: `date:cancer*`、`identifier:[a TO b]`） |
+| `NEST_DEPTH_EXCEEDED` | 400 | AND / OR / NOT のネスト深さが 5 を超過 |
+| `MISSING_VALUE` | 400 | `field:""`、`field:` のように値が空・欠落 |
+| `INVALID_QUERY_COMBINATION` | 400 | `q` と `adv` を同時指定（`/db-portal/*` 全体で共通） |
+
+**UI の扱い:**
+
+- シンプル検索結果ページ / Advanced Search 結果ページは `detail` をそのまま `Callout type="error"` に出す
+- `position` があれば Advanced Search ページの DSL プレビューに下線を引いて誘導する（実装は将来拡張、`code`-based のハンドリングでの分岐余地を残すため仕様として定義だけしておく）
+- 将来 `code` ベースで i18n（日本語メッセージ差し替え）を行う余地を残す
 
 ##### バックエンド変換
 
