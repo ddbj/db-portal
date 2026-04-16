@@ -59,9 +59,9 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 └── link to external DB detail page
 
 /submit (registration navigation, single page)
-├── [Section A] use case cards (8 cards in grid)
-├── [Section B] flowchart (guided questions -> registration target)
-└── [Section C] detail panel (dynamic, updated by card click or flowchart goal)
+├── [Use Case Cards] 8 cards in grid
+├── [Decision Flowchart] guided questions -> registration target
+└── [Detail Panel] dynamic, updated by card click or flowchart goal
 ```
 
 ## URL 設計
@@ -135,7 +135,7 @@ Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/acc
 - コンテンツの原典: [ddbj/www](https://github.com/ddbj/www) リポジトリの登録関連コンテンツ
 - 既存コンテンツの文言はそのまま書き換えないが、情報の整理・取捨選択・新規書き下ろしは行う
 - 既存のファイル分割単位は流用しない。ユースケース起点で再構成する
-- 重要なコンテンツからポータルに移行する
+- ddbj/www からのコンテンツ移行は段階的に進める。インターナルリリースでは登録ナビ（`/submit`）に必要なコンテンツのみ書き下ろす。ファーストリリースで試験的に一部コンテンツを移行し、その後の長期計画で ddbj/www 廃止を検討する
 - コンテンツのフォーマットは TSX コンポーネント（Markdown は使用しない）
 
 ## 認証

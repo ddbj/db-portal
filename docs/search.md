@@ -151,15 +151,152 @@ proxy 層でユーザ入力を次のように正規化する:
 
 ### Advanced Search
 
-別ページに配置する GUI クエリビルダ（PubMed Advanced / ENA Advanced 型）。
+別ページ（`/advanced-search`）に配置する GUI クエリビルダ（PubMed Advanced / ENA Advanced 型）。
 
-- DB（Data type）選択を最初に置く
-- フィールドプルダウン + 演算子（AND/OR/NOT）+ 入力欄の 1 行単位で条件を追加
-- フィールドプルダウンには**ポータル共通語彙のみ**を出し、バックエンド固有のフィールド名（`PrimaryAccessionNumber`・`scientific_name` 等）はユーザに見せない（共通語彙と DB 別フィールドのマッピングは [search-backends.md の共通のフィールド対応](./search-backends.md#共通のフィールド対応) に記載）
-- 生成クエリは検索ボックス文字列として可視化し、URL パラメータにも載せてブックマーク可能にする
-- 対応機能: `AND`/`OR`/`NOT`・括弧グルーピング・ワイルドカード・フィールド指定・範囲検索・`identifier` 完全一致
-- 履歴（Search History）・Saved Search は DDBJ Account 連携で永続化（将来拡張）
-- 将来的には「Copy as API Request」（ENA の curl 出力機能相当）を検討
+DB ポータルの存在意義は「横断検索」なので、**Advanced Search も横断検索を許可する**。以下 2 モードを切り替え:
+
+- **全データベース（横断）**: 全 DB に共通のフィールドのみ利用可（Tier 1 / 一部 Tier 2）
+- **単一 DB**: その DB で使える全フィールド（Tier 3 の DB 特化フィールドも含む）
+
+生成クエリは DSL 文字列としてプレビュー表示し、URL（`adv=` パラメータ）にも載せてブックマーク可能にする。バックエンド固有名（`PrimaryAccessionNumber`・`scientific_name` 等）はユーザに見せない。
+
+#### フィールド構成（3 層）
+
+共通語彙を 3 層に整理する。各層のバックエンドマッピングは [search-backends.md の共通のフィールド対応](./search-backends.md#共通のフィールド対応) を参照。
+
+**Tier 1: 全 DB 横断で使える（即実装可能）**
+
+| 共通語彙 | 用途 | 対応 DB |
+|---|---|---|
+| `identifier` | アクセッション完全一致・前方一致・ワイルドカード | 全 DB |
+| `title` | タイトル / 名称 | 全 DB |
+| `description` | 記述 | 全 DB |
+| `organism` | 生物種（学名・Taxonomy ID 両対応） | Taxonomy 除く全 DB |
+| `date_published` | 公開日 | Taxonomy 除く全 DB |
+| `date_modified` | 更新日 | 同上 |
+| `date_created` | 作成日 | 同上 |
+| `date` | 「いずれかの日付」（上 3 種の OR 範囲検索） | 同上 |
+
+**Tier 2: 横断で使えると嬉しい（一部 DB は API 拡張必要）**
+
+| 共通語彙 | 即使える DB | 要拡張 DB |
+|---|---|---|
+| `submitter` | BioProject（`organization.name`） | SRA / JGA / BioSample / GEA / MetaboBank（center_name 等の正規化が必要） |
+| `publication` | BioProject（`publication.id`）、Trad（`ReferencePubmedID`） | JGA / SRA（properties parse が必要） |
+
+**Tier 3: 単一 DB 選択時のみ利用可（DB 特化）**
+
+| DB | フィールド例 | 備考 |
+|---|---|---|
+| SRA / GEA | `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model` | SRA は properties parse 必要（詳細は [search-backends.md](./search-backends.md#共通のフィールド対応)） |
+| BioSample | `geo_loc_name`, `collection_date`, `host`, `disease`, `tissue`, `env_biome` 等 | `attributes.harmonized_name` ベース。代表属性の top-level 昇格は将来検討 |
+| BioProject | `project_type`, `grant_agency`, `child_biosamples` | `childBioProjects` / BioSampleSet の parse 必要 |
+| Trad | `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal` | ARSA の既存スキーマで検索可 |
+| Taxonomy | `rank`, `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name`, `japanese_name` | TXSearch の既存スキーマで検索可 |
+| JGA | `study_type`, `grant_agency`, `principal_investigator`, `submitting_organization` | 全て properties parse 必要 |
+
+#### 日付フィールド
+
+`date` は DDBJ Search API の ES mapping にある `dateCreated` / `dateModified` / `datePublished` に対応する 3 フィールド + 「いずれか」の 4 形態で扱う:
+
+- **DSL**: `date_published:[2020-01-01 TO 2024-12-31]` / `date_modified:[...]` / `date_created:[...]` / `date:[...]`（3 種の OR）
+- **UI**: date フィールド行にサブセレクタ「公開日 / 更新日 / 作成日 / いずれか」を出す
+- **入力**: ISO 8601（`YYYY-MM-DD`）の DatePicker。演算子は `between` / `gte` / `lte` / `eq`
+
+##### バックエンド別の制約と UI 挙動
+
+ARSA（Trad）は `Date` フィールドが 1 種類のみ（公開日相当）、TXSearch（Taxonomy）は日付概念そのものがない（詳細は [search-backends.md の共通のフィールド対応](./search-backends.md#共通のフィールド対応) 参照）。
+
+| 状況 | date サブセレクタの UI 挙動 | 内部処理 |
+|---|---|---|
+| 単一 DB = Trad | 「公開日」のみ選択可。他のサブ選択肢（更新日 / 作成日 / いずれか）は**非活性化** + tooltip「Trad では公開日のみ利用可」 | `date_published` を ARSA の `Date` にマップ |
+| 単一 DB = Taxonomy | date フィールド自体を**非活性化** + tooltip「Taxonomy は日付検索に非対応」 | N/A |
+| 単一 DB = その他（ES 管轄） | 全選択肢（公開日 / 更新日 / 作成日 / いずれか）活性 | 対応する ES date フィールドに `range` クエリ |
+| 横断モード（全データベース） | 全選択肢を活性のまま表示 | ES 管轄 DB は正常動作。Trad は `date_modified` / `date_created` / `date`（OR） 指定時に `date_published` で代替評価（ベストエフォート）。Taxonomy は date 条件含みの結果を常に 0 件扱い |
+
+**設計判断の根拠:**
+
+- 単一 DB 時は「できないものは見せない」: ユーザーが明示的にその DB を選んでいるので、使えない選択肢を隠す方が誤解を避けられる
+- 横断時は「最大公約数を許す」: 他 DB で使える条件を封じると横断検索の価値が落ちる。Trad だけベストエフォートで代替評価し、UI に警告は出さない（他 DB では正常動作するため）
+
+#### 演算子とフィールドの組み合わせ
+
+GUI セレクタはフィールドの型に応じて選べる演算子を動的にフィルタする:
+
+| フィールド型 | 利用可能な演算子 |
+|---|---|
+| 識別子（`identifier`） | `equals` / `starts_with` / `wildcard` |
+| テキスト（`title` / `description` / `submitter` / `publication` 等） | `contains` / `equals` / `starts_with` / `wildcard` |
+| 生物種（`organism`） | `equals` / `contains`（学名・Taxonomy ID どちらでも） |
+| 日付（`date_*`） | `between` / `gte` / `lte` / `equals` |
+| 数値（`sequence_length` 等） | `between` / `gte` / `lte` / `equals` |
+| 列挙値（`library_strategy` / `platform` / `rank` 等） | `equals` / `not_equals`（プルダウン選択） |
+
+#### レイアウト
+
+```
+┌─ /advanced-search ─────────────────────────────────────┐
+│  詳細検索                                                │
+│                                                        │
+│  Database                                              │
+│  ○ 全データベース（横断）                                  │
+│  ○ [ BioProject ▼ ]                                    │
+│                                                        │
+│  検索条件                                                │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │        [Title     ▼][contains ▼][__________]   │   │
+│  │ [AND▼] [Organism  ▼][equals   ▼][__________] [✕]│   │
+│  │ [OR ▼] [Date ▼ 公開日▼][between ▼][__ 〜 __] [✕]│   │
+│  │                                                  │   │
+│  │ [+ 条件を追加]                                    │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                        │
+│  クエリプレビュー                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ title:"cancer" AND organism:"Homo sapiens"      │   │
+│  │   AND date_published:[2020-01-01 TO 2024-12-31] │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                        │
+│  Examples                                              │
+│  [ヒトの最新 BioProject] [BRCA1 関連の SRA]              │
+│                                                        │
+│                                            [ 検索 ]    │
+└────────────────────────────────────────────────────────┘
+```
+
+- 1 行目には演算子ドロップダウンを置かない（最初の条件に AND/OR は不要）
+- 2 行目以降の先頭に `AND` / `OR` / `NOT`
+- 各行に削除ボタン（✕）
+- 「+ 条件を追加」で行追加（ネスト深さ上限 5、[search-backends.md のスキーマ仕様](./search-backends.md#スキーマ仕様) 参照）
+- クエリプレビューはリアルタイム更新
+- フィールド型に応じて入力 UI が切り替わる（テキスト / DatePicker / 列挙値プルダウン）
+
+#### ユーザー動線
+
+```
+トップ/ヘッダー「詳細検索」リンク
+  → /advanced-search（DB 未選択 = 全データベースが初期選択）
+
+横断検索結果ページの DB カード
+  → 「この DB で詳細検索」ボタン
+  → /advanced-search?db=xxx（DB 選択済み）
+
+DB 指定検索結果ページ
+  → 「詳細検索で絞り込む」リンク
+  → /advanced-search?db=xxx&...（将来拡張: 現在のクエリも引き継ぐ）
+```
+
+#### DB 切り替え時の条件引き継ぎ
+
+全データベース → 単一 DB に切り替えた場合、Tier 1 の条件は保持し Tier 3 の条件は新規追加可能。単一 DB → 全データベース に切り替えた場合、Tier 3 の条件は disabled + 警告表示（削除確認）。
+
+#### 将来拡張
+
+- 履歴（Search History）・Saved Search の DDBJ Account 連携による永続化
+- 「Copy as API Request」（ENA の curl 出力機能相当）
+- フィールドのオートコンプリート（organism の学名、library_strategy の候補等）
+- GUI → DSL 単方向から、URL 直編集向けの DSL → GUI 逆パーサ
+- BioSample の attributes 代表属性の top-level 昇格
 
 ### シンプル検索ボックスの UI 補助
 
@@ -174,9 +311,16 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### 段階的な積み上げ
 
-- **インターナルリリース**: シンプル検索ボックス本番稼働。Trad / Taxonomy は ARSA / TXSearch proxy で本番データを返す。GEA / MetaboBank は ES インデックス接続済み。Advanced Search は UI のみ先行
-- **ファーストリリース**: Advanced Search 動作（フィールド選択・AND/OR/NOT・URL 共有）
-- **将来拡張**: 履歴・Saved Search・API Export・オートサジェスト・ES analyzer 再設計など
+- **インターナルリリース**:
+  - シンプル検索ボックス本番稼働。Trad / Taxonomy は ARSA / TXSearch proxy で本番データを返す。GEA / MetaboBank は ES インデックス接続済み
+  - Advanced Search は **Tier 1 フィールド（共通語彙 8 種: `identifier` / `title` / `description` / `organism` / `date_published` / `date_modified` / `date_created` / `date`）のみ動作**。横断 / 単一 DB いずれも Tier 1 の範囲で実検索可能。ES 既存フィールドにそのまま対応するため新規 parse 不要
+- **ファーストリリース**:
+  - Advanced Search の **Tier 2 フィールド**（`submitter` / `publication`）対応。BioProject は ES の既存 nested フィールドを利用、SRA / JGA は properties parse が前提
+  - **Tier 3 フィールド** の段階追加。SRA の `library_strategy` / `platform` / `instrument_model`（properties parse）、Taxonomy の `rank` / `lineage`（TXSearch 既存）、Trad の `division` / `sequence_length`（ARSA 既存）など
+- **将来拡張**:
+  - 履歴・Saved Search・API Export・オートサジェスト
+  - BioSample の attributes 代表属性を top-level フィールドに昇格（`geo_loc_name` / `host` / `disease` 等）
+  - ES analyzer 再設計（kuromoji / word_delimiter_graph 等）
 
 ## 検索結果 UI
 
@@ -196,7 +340,14 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 | ES（`sra`/`bioproject`/`biosample`/`jga`/`gea`/`metabobank`） | 正確な件数 | 10,000 件までは `page` ベース、超過時は cursor-based |
 | Solr（Trad / Taxonomy） | 10,000 件以上の場合「10,000 件以上」と表記 | 10,000 件まで。500 ページ目（`perPage=20` 換算）でページャは無効化 |
 
-10,000 件目で止まるバックエンドでは、ページャの下に「10,000 件を超える結果は表示できません。キーワードを絞り込むか、Advanced Search をご利用ください」の案内を Callout で出す。
+Solr バックエンド（Trad / Taxonomy）で件数が 10,000 以上のとき、ページャの直下に `Callout type="info"` を出す:
+
+- **文言**: 「表示できる検索結果は 10,000 件までです。キーワードを追加するか、詳細検索で絞り込んでください。」
+- **CTA**: 「詳細検索を開く」（`TextLink` で `/advanced-search` へ遷移。DB が選択済みなら `?db=xxx` 引き継ぎ）
+- **タイプ**: `info`（システム上の制約であり error ではないため）
+- **表示条件**: `db` が `trad` または `taxonomy` かつ件数が 10,000 以上
+
+ES バックエンドは cursor-based で全件走査できるため、10,000 件超でも Callout は出さない。件数表示は正確な値（例「全 45,678 件」）のまま。ただし非常に大量のヒット時（例 100 万件超）は絞り込みを促す別の案内を将来検討。
 
 ### loading / error 状態
 
@@ -204,13 +355,40 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 | 状態 | 表示 |
 |---|---|
-| loading | Skeleton（`role="status"` 付き）で件数欄をプレースホルダ化 |
+| loading | DB 名は即表示、件数欄のみ `Skeleton`（`role="status"` 付き、幅 `w-24` / 高さ `h-8` 程度）でプレースホルダ化 |
 | success（`count != null`） | 件数 + DB 詳細へのリンク |
-| error（`count = null` + `error != null`） | 「取得に失敗しました」バッジ + 再試行ボタン。エラー種別（`timeout` / `upstream_5xx` 等）は tooltip や detail 領域で補足 |
+| error（`count = null` + `error != null`） | 「取得できませんでした」テキスト + **再試行ボタン**（`Button variant="secondary" size="sm"`）+ エラー種別を small text で補足 |
 
-段階表示（progressive rendering）: 3 並列 fan-out のうち先に返ってきた DB から順に表示する（全バックエンドの完了を待たない）。TanStack Query の `useQueries` で 3 本独立に fetch し、各 DB カードがそれぞれの状態を持つ。
+#### Skeleton 形状の根拠
 
-全 DB が error の場合は上部に「検索が一時的に利用できません」ロールアラートを出し、再試行 CTA を置く。
+DB 名は静的情報なので先に描画し、件数欄だけ Skeleton にする。カード全体を Skeleton にすると「何が読み込まれているか」が伝わらず、8 DB に問い合わせている文脈が失われる。DB 名を先に出すことで「各 DB に並列で問い合わせている」進行状況が視覚化される。
+
+#### エラー種別の補足テキスト
+
+各 DB カードのエラー表示に以下の短文を添える:
+
+| `error` 値 | 表示テキスト |
+|---|---|
+| `timeout` | タイムアウト |
+| `upstream_5xx` | サーバーエラー |
+| `connection_refused` | 接続エラー |
+| `unknown` | 不明なエラー |
+
+#### 段階表示（progressive rendering）
+
+3 並列 fan-out のうち先に返ってきた DB から順に表示する（全バックエンドの完了を待たない）。TanStack Query の `useQueries` で 3 本独立に fetch し、各 DB カードがそれぞれの状態を持つ。
+
+#### 全体バナーの出し分け
+
+個別 DB カードのエラー表示に加えて、マクロ障害を検知するための全体バナーを以下の閾値で出す:
+
+| 条件 | 表示 |
+|---|---|
+| 全 DB error（8/8） | `Callout type="error"` + `role="alert"`: **「検索サービスに接続できません。しばらくしてからもう一度お試しください。」** + 再試行ボタン |
+| 半数以上 error（4〜7/8） | `Callout type="warning"`: **「一部の検索サービスが不安定です。」** + 個別カードにもエラー表示 |
+| 半数未満 error（1〜3/8） | 全体バナーなし。個別カードのみにエラー表示 |
+
+閾値を 4/8（半数）にする根拠: ES 障害時は 6 DB 同時 `null` になるパターンが最大のリスク。半数以上なら「システム的な問題」として全体バナーで伝える価値がある。1〜2 DB の個別障害（例: ARSA だけダウン）はカード単位で十分で、全体バナーを出すと過剰。
 
 ## ページネーション仕様
 
@@ -231,10 +409,11 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 | ページ | URL | レンダリング |
 |---|---|---|
-| 横断検索結果 | `/search?q=xxx` | CSR |
-| DB 指定検索結果 | `/search?q=xxx&db=yyy` | CSR |
+| 横断検索結果（シンプル） | `/search?q=xxx` | CSR |
+| DB 指定検索結果（シンプル） | `/search?q=xxx&db=yyy` | CSR |
 | Advanced Search UI | `/advanced-search` | プリレンダ |
-| Advanced Search 結果 | `/search?adv=<encoded-query>&db=yyy`（検討中） | CSR |
+| 横断 Advanced Search 結果 | `/search?adv=<encoded-dsl>` | CSR |
+| DB 指定 Advanced Search 結果 | `/search?adv=<encoded-dsl>&db=yyy` | CSR |
 
 `/search` を CSR にする根拠: (1) 検索クエリはユーザー固有で SEO 対象ではない（`noindex`）。(2) proxy バックエンド（ARSA / TXSearch）のレイテンシが読めず SSR TTFB が悪化するリスク。(3) TanStack Query のキャッシュ戦略と相性が良い。
 
@@ -242,13 +421,15 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 | パラメータ | 値 | デフォルト（省略時） |
 |---|---|---|
-| `q` | 検索文字列（URL エンコード） | 必須。空なら `/` にリダイレクト |
+| `q` | 検索文字列（URL エンコード） | `adv` とどちらか 1 つは必須。両方未指定なら `/` にリダイレクト |
+| `adv` | Advanced Search の DSL 文字列（[Advanced Search の URL 形式](#advanced-search-の-url-形式) 参照） | `q` とどちらか 1 つは必須 |
 | `db` | 下記の DB 識別子 | 未指定 = 横断検索 |
 | `page` | 1 以上の整数 | `1` |
 | `perPage` | `20` / `50` / `100` | `20` |
 | `sort` | `relevance` / `date_desc` / `date_asc` | `relevance` |
 | `cursor` | opaque 文字列（ES deep paging、10,000 件超） | なし |
-| `adv` | Advanced Search の構造化クエリ（形式は別途詰める） | なし |
+
+**`q` と `adv` の排他**: 同一 URL に両方指定された場合は 400 エラー（API）/ 優先警告（UI）。混ぜると DSL セマンティクスが曖昧になるため。
 
 #### 正規化ルール
 
@@ -326,9 +507,29 @@ organism:"Homo sapiens" AND date:[2020-01-01 TO 2024-12-31] AND (title:cancer OR
 | `AND` / `OR` / `NOT` | `a AND b` | Boolean（大文字必須） |
 | `(...)` | `(a OR b) AND c` | グルーピング |
 
-- フィールド名はポータル共通語彙のみ allowlist（`identifier` / `title` / `description` / `organism` / `date`）。バックエンド固有名（`PrimaryAccessionNumber` 等）は受け付けない。※ `organism` の型（学名受けか NCBI Taxonomy ID 受けか）は未決。上記の DSL 例では学名を仮置きしている
+- フィールド名はポータル共通語彙のみ allowlist。バックエンド固有名（`PrimaryAccessionNumber` 等）は受け付けない
+  - **Tier 1**: `identifier` / `title` / `description` / `organism` / `date_published` / `date_modified` / `date_created` / `date`
+  - **Tier 2**: `submitter` / `publication`
+  - **Tier 3**: 単一 DB 指定時のみ有効。DB ごとのフィールド一覧は [Advanced Search のフィールド構成](#フィールド構成3-層) を参照
+  - `organism` は学名・Taxonomy ID 両対応（ES の `organism.name` / `organism.identifier` 両方に query を投げる）
+  - `date` はエイリアス: `date_published` / `date_modified` / `date_created` の OR 範囲検索に展開
+- **横断モード**（`db` 未指定）では Tier 1 / Tier 2 のみ使用可。Tier 3 フィールドを含む DSL は 400 エラー
 - パース: server 側で DSL → 構造化 JSON（[search-backends.md の Advanced Search API 契約](./search-backends.md#advanced-search-からの入力)）→ ES / Solr へ
 - GUI 入力 → DSL 文字列生成（単方向）。URL を直接編集したユーザーのために GUI 復元用の逆パーサも提供
+
+**横断 Advanced Search の URL 例:**
+
+```
+/search?adv=title%3Acancer+AND+organism%3A%22Homo+sapiens%22+AND+date_published%3A%5B2020-01-01+TO+2024-12-31%5D
+```
+
+デコード後:
+
+```
+title:cancer AND organism:"Homo sapiens" AND date_published:[2020-01-01 TO 2024-12-31]
+```
+
+`db` が未指定なので横断検索結果（DB カード一覧）にヒット数を表示する。
 
 #### 採用根拠（業界デファクト）
 
