@@ -185,7 +185,7 @@ db-portal              Keycloak
 
 UI テキスト（ボタンラベル、見出し等の短い文字列）とコンテンツページ（長い文章）で管理方式を分ける:
 
-- **UI テキスト**: react-i18next の JSON 翻訳ファイル（`locales/ja.json`, `locales/en.json`）
+- **UI テキスト**: react-i18next の JSON 翻訳ファイル（パスは実装時に確定）
 - **コンテンツページ**: 言語別 TSX コンポーネント（例: `GenomeQuickStart.ja.tsx`, `GenomeQuickStart.en.tsx`）
 
 ## 技術スタック

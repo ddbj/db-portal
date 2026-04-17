@@ -77,4 +77,4 @@ podman-compose exec app npm install
 | `APP_INTERNAL_PORT` | `3000` | コンテナ内ポート（`PORT` として渡される） |
 | `KEYCLOAK_REALM_URL` | - | Keycloak の realm URL |
 | `KEYCLOAK_CLIENT_ID` | - | OIDC クライアント ID |
-| `DB_PORTAL_SEARCH_API_URL` | `https://ddbj-staging.nig.ac.jp/search/api` | DDBJ Search API のエンドポイント。全環境でしばらく staging を向ける。本番 Search API（`https://ddbj.nig.ac.jp/search/api`）への切り替えは Search API 側の改修完了後に判断 |
+| `DB_PORTAL_SEARCH_API_URL` | - | DDBJ Search API のエンドポイント。dev / staging は `https://ddbj-staging.nig.ac.jp/search/api`、production は `https://ddbj.nig.ac.jp/search/api` |
