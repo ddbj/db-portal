@@ -437,7 +437,7 @@ field_clause: FIELD ":" value
 value: PHRASE | RANGE | WILDCARD | DATE | WORD
 
 PHRASE: /"(?:[^"\\]|\\.)*"/
-RANGE: "[" /[^\s\]]+/ " TO " /[^\s\]]+/ "]"
+RANGE: "[" /[^\s\]]+/ /\s+TO\s+/ /[^\s\]]+/ "]"
 WILDCARD: /[A-Za-z0-9_][A-Za-z0-9_]*[*?][A-Za-z0-9_*?]*/
 DATE: /\d{4}-\d{2}-\d{2}/
 FIELD: /[a-z_]+/
@@ -539,17 +539,19 @@ ddbj-search-api の既存エラー形式（[RFC 7807](https://datatracker.ietf.o
 | `date`（OR） | `datePublished` OR `dateModified` OR `dateCreated` | `Date`（単一） | N/A |
 
 **バックエンドごとの制約:**
-- ARSA: `Date` フィールドは登録日相当の 1 種類のみ。`date_published` のみマッピング可能、`date_modified` / `date_created` / `date`（OR）指定時はユーザーに「このフィールドは Trad では使用できません」の警告を出し、その条件を無視（or エラー）
+- ARSA: `Date` フィールドは 1 種類のみ。DDBJ/GenBank flatfile の LOCUS 行に出る日付に相当し、仕様上は「最終更新日」（most recent update date）。未更新レコードでは公開日と一致するため、ポータルでは **公開日相当**（`date_published`）にマッピングする。`date_modified` / `date_created` / `date`（OR）指定時はユーザーに「このフィールドは Trad では使用できません」の警告を出し、その条件を無視（or エラー）。実測では ARSA `Date=20050411` が `getentry` が返す LOCUS 行 `11-APR-2005` と一致することを確認済み
 - TXSearch: Taxonomy は日付概念がないため、`date_*` 系は全て N/A。日付条件が含まれる Advanced Search は Taxonomy で常に 0 件（or エラー）
 
 ##### Tier 2: 横断で使えると嬉しい（converter 側で正規化が必要）
 
 **方針（大枠）**: 各 DB の該当箇所から converter 側で値を抽出し、統一的な **top-level keyword フィールド**（`submitter` / `publicationId`）として ES に投入する。検索時は単一フィールドへのクエリで全 DB 横断可能にする。詳細・converter 側の残課題は [Tier 2 正規化](#tier-2-正規化submitter--publicationid) 参照。
 
-| ポータル概念 | 抽出元（DB 別） |
-|---|---|
-| `submitter` | BioProject: `organization.name`（既存 nested）/ SRA: `properties.SUBMISSION.center_name` / JGA: `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` / BioSample: `properties.BioSample.center_name` / Trad: N/A（ARSA） |
-| `publicationId` | BioProject: 既存 `publication.id` / SRA: `properties.STUDY_LINKS` の PMID / JGA: `properties.PUBLICATIONS[].id` / Trad: ARSA `ReferencePubmedID` / BioSample: N/A |
+DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィールド名は一致しない項目がある。DSL → ES の変換は proxy 側で行う。
+
+| ポータル共通語彙（DSL） | ES フィールド名 | 抽出元（DB 別） |
+|---|---|---|
+| `submitter` | `submitter` | BioProject: `organization.name`（既存 nested）/ SRA: `properties.SUBMISSION.center_name` / JGA: `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` / BioSample: `properties.BioSample.center_name` / Trad: N/A（ARSA） |
+| `publication` | `publicationId` | BioProject: 既存 `publication.id` / SRA: `properties.STUDY_LINKS` の PMID / JGA: `properties.PUBLICATIONS[].id` / Trad: ARSA `ReferencePubmedID` / BioSample: N/A |
 
 ##### Tier 3: 単一 DB 選択時のみ（DB 特化）
 
@@ -572,6 +574,8 @@ ddbj-search-api の既存エラー形式（[RFC 7807](https://datatracker.ietf.o
 | JGA | `grant_agency` | `properties.GRANTS[].AGENCY` | **要 parse** |
 | JGA | `principal_investigator` | `properties.STUDY_ATTRIBUTES[TAG="Principal Investigator"].VALUE` | **要 parse** |
 | JGA | `submitting_organization` | `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` | **要 parse** |
+
+**BioSample attributes の型扱い（脚注）**: `attributes[harmonized_name=X].content` は ES に **string** として格納される。日付型の harmonized_name（代表: `collection_date`）に対して Advanced Search の範囲演算子（`between` / `gte` / `lte`）を使うには、converter 側で日付正規化（ISO 8601）と ES mapping の `date` 型化が必要。インターナルリリース / ファーストリリースでは **全 harmonized_name を文字列扱い**（`contains` / `equals` / `starts_with` / `wildcard`）とし、範囲検索対応は top-level 昇格（将来拡張）とあわせて検討する。
 
 ##### シンプル検索用 qf 設定
 
@@ -769,10 +773,10 @@ Advanced Search の Tier 2 共通語彙（`submitter` / `publication`）を全 D
 
 **大枠方針**（converter 側で最終詳細を検討中）:
 
-| 追加フィールド（ES） | 型 | 用途 |
-|---|---|---|
-| `submitter` | keyword（配列可） | 投稿者 / 投稿機関名。`submitter:"東大"` / `submitter:"National Cancer Center"` 等のクエリで横断検索可能 |
-| `publicationId` | keyword（配列可） | 関連論文の PubMed ID。`publication:"12345"` で完全一致検索 |
+| ポータル共通語彙（DSL） | 追加フィールド（ES） | 型 | 用途 |
+|---|---|---|---|
+| `submitter` | `submitter` | keyword（配列可） | 投稿者 / 投稿機関名。`submitter:"東大"` / `submitter:"National Cancer Center"` 等のクエリで横断検索可能 |
+| `publication` | `publicationId` | keyword（配列可） | 関連論文の PubMed ID。`publication:"12345"` で完全一致検索 |
 
 **各 DB での抽出ルール:**
 
