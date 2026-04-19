@@ -44,6 +44,8 @@ http://localhost:3000 でアクセスできる。
 
 ## テスト
 
+テスト方針は [tests/README.md](../tests/README.md) を参照。機能ごとのシナリオは [tests/scenarios.md](../tests/scenarios.md)、integration テストの運用注意は [tests/integration-note.md](../tests/integration-note.md)。
+
 ### ディレクトリ構成
 
 ```
