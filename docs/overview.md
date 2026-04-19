@@ -23,7 +23,7 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 
 ### 含まれるもの
 
-- **トップページ**: 横断検索ボックス + DB セレクタ、DB/リソース一覧、登録への動線
+- **トップページ**: 横断検索ボックス + DB セレクタ、詳細検索への動線、登録ナビへの動線（DB 一覧や Use Case プレビューは Top に出さない。主役は検索ボックスと 2 本の動線）
 - **横断検索結果ページ**: DB ごとのヒット数サマリー、各 DB の検索ページへのリンク
 - **DB 個別結果リストページ**: カードリスト形式（NCBI Entrez 風）+ 各 DB 詳細ページへの動線
 - **登録ナビゲーションページ**: ユースケースカード + フローチャート形式ナビゲーション + 詳細パネルを 1 ページに集約（独立した QuickStart ページは作らない）
@@ -47,7 +47,7 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 ```
 / (top)
 ├── search box (cross-db search) + DB selector
-├── DB / resource list
+├── link to /advanced-search
 └── link to /submit
 
 /search?q=xxx (cross-db search results)
