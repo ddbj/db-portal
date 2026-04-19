@@ -1,5 +1,6 @@
 import "./app.css"
 
+import { useEffect } from "react"
 import {
   isRouteErrorResponse,
   Links,
@@ -48,9 +49,15 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   const { lang } = useLoaderData<typeof loader>()
 
-  if (i18n.language !== lang) {
+  if (typeof document === "undefined" && i18n.language !== lang) {
     void i18n.changeLanguage(lang)
   }
+
+  useEffect(() => {
+    if (i18n.language !== lang) {
+      void i18n.changeLanguage(lang)
+    }
+  }, [lang])
 
   return <AppShell />
 }

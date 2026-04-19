@@ -21,7 +21,36 @@
     "underConstruction": "Under construction"
   },
   "routes": {
-    "home": { "title": "DDBJ DB Portal" },
+    "home": {
+      "title": "DDBJ Portal",
+      "meta": {
+        "title": "DDBJ Portal",
+        "description": "Unified portal for cross-database search across DDBJ databases"
+      },
+      "hero": {
+        "title": "DDBJ Portal",
+        "subtitle": "Search DDBJ's core databases from a single gateway."
+      },
+      "search": {
+        "placeholder": "Search by keyword, accession, or taxonomic name",
+        "examplesLabel": "Examples",
+        "submit": "Search",
+        "dbAll": "All databases",
+        "dbSelectorAria": "Search target database"
+      },
+      "cta": {
+        "advancedSearch": {
+          "title": "Advanced Search",
+          "description": "Refine by field, combined conditions, and date range",
+          "link": "Go to Advanced Search"
+        },
+        "submit": {
+          "title": "Data Submission",
+          "description": "Find the right submission flow for your data",
+          "link": "Go to Submission Guide"
+        }
+      }
+    },
     "search": { "title": "Search" },
     "advancedSearch": { "title": "Advanced Search" },
     "submit": { "title": "Submit" },

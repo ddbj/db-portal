@@ -1,5 +1,6 @@
 export { DATABASES, DB_ORDER } from "./databases"
 export { DETAIL_LEAVES, DETAIL_OVERVIEWS } from "./detail-panel"
+export { EXAMPLE_CHIPS, type ExampleChip } from "./examples"
 export {
   ALL_ERROR_HIT_COUNTS,
   ALL_SUCCESS_HIT_COUNTS,

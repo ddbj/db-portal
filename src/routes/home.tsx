@@ -1,26 +1,93 @@
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router"
+
+import { Heading, LinkCard, SearchBox, type SelectOption } from "@/components/ui"
+import en from "@/content/locales/en.json"
+import ja from "@/content/locales/ja.json"
+import { pickLang } from "@/i18n"
+import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
+import { ALL_DB_VALUE, buildSearchUrl, type DbSelectValue } from "@/lib/search-url"
+
 import type { Route } from "./+types/home"
 
-export const meta = (_args: Route.MetaArgs) => {
+export const loader = ({ request }: Route.LoaderArgs) => {
+  const lang = pickLang(
+    request.headers.get("Cookie"),
+    request.headers.get("Accept-Language"),
+  )
+  const resource = lang === "ja" ? ja : en
 
-  return [
-    { title: "DDBJ DB Portal" },
-    { name: "description", content: "DDBJ DB Portal" },
-  ]
+  return {
+    lang,
+    metaTitle: resource.routes.home.meta.title,
+    metaDescription: resource.routes.home.meta.description,
+  }
 }
 
+export const meta = ({ data }: Route.MetaArgs) => [
+  { title: data?.metaTitle ?? "DDBJ Portal" },
+  { name: "description", content: data?.metaDescription ?? "DDBJ Portal" },
+  { name: "robots", content: "index, follow" },
+  { tagName: "link", rel: "canonical", href: "https://portal.ddbj.nig.ac.jp/" },
+]
+
 const Home = () => {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [db, setDb] = useState<DbSelectValue>(ALL_DB_VALUE)
+
+  const dbOptions: readonly SelectOption[] = [
+    { value: ALL_DB_VALUE, label: t("routes.home.search.dbAll") },
+    ...DATABASES.map((d) => ({ value: d.id, label: d.displayName })),
+  ]
+
+  const handleSubmit = (q: string) => {
+    void navigate(buildSearchUrl({ q, db }))
+  }
 
   return (
-    <div className="flex flex-1 items-center justify-center">
+    <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pt-20 pb-24">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          DDBJ DB Portal
-        </h1>
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-          Under construction
+        <Heading level={1} className="text-4xl font-semibold tracking-wide text-gray-900">
+          {t("routes.home.hero.title")}
+        </Heading>
+        <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
+          {t("routes.home.hero.subtitle")}
         </p>
       </div>
-    </div>
+      <SearchBox
+        size="large"
+        className="mt-12"
+        placeholder={t("routes.home.search.placeholder")}
+        helperText={t("routes.home.search.examplesLabel")}
+        buttonLabel={t("routes.home.search.submit")}
+        examples={EXAMPLE_CHIPS}
+        dbOptions={dbOptions}
+        selectedDb={db}
+        onDbChange={(v) => setDb(v as DbSelectValue)}
+        dbAriaLabel={t("routes.home.search.dbSelectorAria")}
+        onSubmit={handleSubmit}
+      />
+      <div className="mt-20 grid grid-cols-1 gap-5 md:grid-cols-2">
+        <LinkCard
+          to="/advanced-search"
+          color="primary"
+          className="p-7"
+          title={t("routes.home.cta.advancedSearch.title")}
+          description={t("routes.home.cta.advancedSearch.description")}
+          linkText={t("routes.home.cta.advancedSearch.link")}
+        />
+        <LinkCard
+          to="/submit"
+          color="primary"
+          className="p-7"
+          title={t("routes.home.cta.submit.title")}
+          description={t("routes.home.cta.submit.description")}
+          linkText={t("routes.home.cta.submit.link")}
+        />
+      </div>
+    </section>
   )
 }
 

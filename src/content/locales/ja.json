@@ -21,7 +21,36 @@
     "underConstruction": "Under construction"
   },
   "routes": {
-    "home": { "title": "DDBJ DB Portal" },
+    "home": {
+      "title": "DDBJ Portal",
+      "meta": {
+        "title": "DDBJ Portal",
+        "description": "DDBJ の各データベースを横断検索できる統合ポータル"
+      },
+      "hero": {
+        "title": "DDBJ Portal",
+        "subtitle": "DDBJ の主要データベースを、一つの入口から横断検索"
+      },
+      "search": {
+        "placeholder": "キーワード、accession、学名で検索",
+        "examplesLabel": "検索例",
+        "submit": "検索",
+        "dbAll": "すべての DB",
+        "dbSelectorAria": "検索対象 DB"
+      },
+      "cta": {
+        "advancedSearch": {
+          "title": "詳細検索",
+          "description": "フィールド指定・複数条件・期間指定で絞り込み検索",
+          "link": "詳細検索へ"
+        },
+        "submit": {
+          "title": "データ登録",
+          "description": "登録するデータに応じた最適なフローを確認",
+          "link": "登録ナビへ"
+        }
+      }
+    },
     "search": { "title": "検索" },
     "advancedSearch": { "title": "詳細検索" },
     "submit": { "title": "登録" },
