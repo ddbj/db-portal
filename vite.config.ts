@@ -1,12 +1,25 @@
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
 import { reactRouter } from "@react-router/dev/vite"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "vitest/config"
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const isTest = process.env.VITEST === "true"
+
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter()],
+  plugins: [
+    tailwindcss(),
+    ...(isTest ? [] : [reactRouter()]),
+  ],
   publicDir: "src/public",
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
   server: {
     host: process.env.HOST || "0.0.0.0",

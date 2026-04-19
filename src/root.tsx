@@ -4,10 +4,11 @@ import {
   isRouteErrorResponse,
   Links,
   Meta,
-  Outlet,
   Scripts,
   ScrollRestoration,
 } from "react-router"
+
+import { AppShell } from "@/components/layout"
 
 import type { Route } from "./+types/root"
 
@@ -32,7 +33,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => {
 
-  return <Outlet />
+  return <AppShell />
 }
 
 export default App
