@@ -1,10 +1,14 @@
 import { Globe, User } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Link, NavLink } from "react-router"
 
 import cn from "@/components/ui/cn"
+import { useLanguage } from "@/i18n"
 import { NAV_ITEMS } from "@/lib/nav"
 
 const Header = () => {
+  const { t } = useTranslation()
+  const { lang, setLang } = useLanguage()
 
   return (
     <header className="border-b border-gray-200 bg-white">
@@ -17,7 +21,7 @@ const Header = () => {
         </Link>
         <nav
           className="flex items-center gap-6"
-          aria-label="メインナビゲーション"
+          aria-label={t("aria.mainNavigation")}
         >
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -30,27 +34,46 @@ const Header = () => {
                 )
               }
             >
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
           <div className="ml-2 flex items-center gap-4 border-l border-gray-200 pl-5">
-            <button
-              type="button"
+            <div
               className="flex items-center gap-1.5 text-sm"
-              aria-label="言語切替（未実装）"
+              role="group"
+              aria-label={t("header.language.label")}
             >
               <Globe className="h-5 w-5 text-gray-500" aria-hidden="true" />
-              <span className="text-gray-900">JA</span>
-              <span className="text-gray-300">/</span>
-              <span className="text-gray-400 hover:text-gray-700">EN</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setLang("ja")}
+                aria-pressed={lang === "ja"}
+                className={cn(
+                  "hover:text-gray-700",
+                  lang === "ja" ? "text-gray-900" : "text-gray-400",
+                )}
+              >
+                {t("header.language.ja")}
+              </button>
+              <span className="text-gray-300" aria-hidden="true">/</span>
+              <button
+                type="button"
+                onClick={() => setLang("en")}
+                aria-pressed={lang === "en"}
+                className={cn(
+                  "hover:text-gray-700",
+                  lang === "en" ? "text-gray-900" : "text-gray-400",
+                )}
+              >
+                {t("header.language.en")}
+              </button>
+            </div>
             <button
               type="button"
               className="hover:text-primary-700 flex items-center gap-1.5 rounded-md border border-transparent px-2 py-1.5 text-sm text-gray-700 hover:border-gray-300"
-              aria-label="ログイン（未実装）"
             >
               <User className="h-5 w-5" aria-hidden="true" />
-              ログイン
+              {t("header.login")}
             </button>
           </div>
         </nav>

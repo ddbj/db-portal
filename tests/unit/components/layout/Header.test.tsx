@@ -1,15 +1,24 @@
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
 import { describe, expect, it } from "vitest"
 
 import Header from "@/components/layout/Header"
-import { NAV_ITEMS } from "@/lib/nav"
+import { NAV_ITEMS, type NavItem } from "@/lib/nav"
 
-const renderHeader = (initialPath = "/") => render(
-  <MemoryRouter initialEntries={[initialPath]}>
-    <Header />
-  </MemoryRouter>,
-)
+import { renderWithI18n } from "../../../helpers/i18n"
+
+const NAV_LABELS_JA = {
+  "header.nav.search": "検索",
+  "header.nav.advancedSearch": "詳細検索",
+  "header.nav.submit": "登録",
+} as const satisfies Record<NavItem["labelKey"], string>
+
+const renderHeader = (initialPath = "/") =>
+  renderWithI18n(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Header />
+    </MemoryRouter>,
+  )
 
 describe("Header", () => {
 
@@ -19,12 +28,13 @@ describe("Header", () => {
     expect(logo).toHaveAttribute("href", "/")
   })
 
-  it("renders nav with all NAV_ITEMS labels and hrefs", () => {
+  it("renders nav with all NAV_ITEMS labels (ja) and hrefs", () => {
     renderHeader()
     const nav = screen.getByRole("navigation", { name: "メインナビゲーション" })
 
     for (const item of NAV_ITEMS) {
-      const link = within(nav).getByRole("link", { name: item.label })
+      const expectedLabel = NAV_LABELS_JA[item.labelKey]
+      const link = within(nav).getByRole("link", { name: expectedLabel })
       expect(link).toHaveAttribute("href", item.to)
     }
   })
@@ -35,18 +45,21 @@ describe("Header", () => {
     expect(within(nav).queryByRole("link", { name: "デザインシステム" })).toBeNull()
   })
 
-  it("login button is <button type='button'> (prevents form submit)", () => {
+  it("login button shows 'ログイン' label and is type='button'", () => {
     renderHeader()
-    const button = screen.getByRole("button", { name: "ログイン（未実装）" })
+    const button = screen.getByRole("button", { name: "ログイン" })
     expect(button).toHaveAttribute("type", "button")
   })
 
-  it("language switch button shows 'JA / EN' with JA as current locale", () => {
+  it("language toggle exposes JA and EN buttons with JA aria-pressed initially", () => {
     renderHeader()
-    const langButton = screen.getByRole("button", { name: "言語切替（未実装）" })
-    expect(langButton).toHaveTextContent(/JA/)
-    expect(langButton).toHaveTextContent(/EN/)
-    expect(langButton).toHaveAttribute("type", "button")
+    const group = screen.getByRole("group", { name: "言語切替" })
+    const jaBtn = within(group).getByRole("button", { name: "JA" })
+    const enBtn = within(group).getByRole("button", { name: "EN" })
+    expect(jaBtn).toHaveAttribute("type", "button")
+    expect(enBtn).toHaveAttribute("type", "button")
+    expect(jaBtn).toHaveAttribute("aria-pressed", "true")
+    expect(enBtn).toHaveAttribute("aria-pressed", "false")
   })
 
   it("marks current route as active via NavLink isActive (aria-current='page')", () => {

@@ -1,11 +1,7 @@
-export interface NavItem {
-  key: "search" | "advanced-search" | "submit"
-  label: string
-  to: string
-}
-
-export const NAV_ITEMS: readonly NavItem[] = [
-  { key: "search", label: "検索", to: "/search" },
-  { key: "advanced-search", label: "詳細検索", to: "/advanced-search" },
-  { key: "submit", label: "登録", to: "/submit" },
+export const NAV_ITEMS = [
+  { key: "search", labelKey: "header.nav.search", to: "/search" },
+  { key: "advanced-search", labelKey: "header.nav.advancedSearch", to: "/advanced-search" },
+  { key: "submit", labelKey: "header.nav.submit", to: "/submit" },
 ] as const
+
+export type NavItem = (typeof NAV_ITEMS)[number]

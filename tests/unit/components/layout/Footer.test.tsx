@@ -1,19 +1,22 @@
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 import Footer from "@/components/layout/Footer"
 
+import { renderWithI18n } from "../../../helpers/i18n"
+
 describe("Footer", () => {
 
-  it("renders copyright text", () => {
-    render(<Footer />)
+  it("renders copyright text with the current year (interpolated)", () => {
+    renderWithI18n(<Footer />)
+    const year = new Date().getFullYear()
     expect(
-      screen.getByText("© 2026 DDBJ (Bioinformatics and DDBJ Center)"),
+      screen.getByText(`© ${year} DDBJ (Bioinformatics and DDBJ Center)`),
     ).toBeInTheDocument()
   })
 
   it("renders as <footer> landmark (contentinfo role)", () => {
-    render(<Footer />)
+    renderWithI18n(<Footer />)
     expect(screen.getByRole("contentinfo")).toBeInTheDocument()
   })
 })

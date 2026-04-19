@@ -6,16 +6,30 @@ import {
   Meta,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
+  useRouteLoaderData,
 } from "react-router"
 
 import { AppShell } from "@/components/layout"
+import i18n, { pickLang } from "@/i18n"
 
 import type { Route } from "./+types/root"
 
+export const loader = ({ request }: Route.LoaderArgs) => {
+  const lang = pickLang(
+    request.headers.get("Cookie"),
+    request.headers.get("Accept-Language"),
+  )
+
+  return { lang }
+}
+
 export const Layout = ({ children }: { children: React.ReactNode }) => {
+  const data = useRouteLoaderData<typeof loader>("root")
+  const lang = data?.lang ?? "ja"
 
   return (
-    <html lang="ja">
+    <html lang={lang}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -32,6 +46,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 }
 
 const App = () => {
+  const { lang } = useLoaderData<typeof loader>()
+
+  if (i18n.language !== lang) {
+    void i18n.changeLanguage(lang)
+  }
 
   return <AppShell />
 }

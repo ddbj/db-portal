@@ -1,0 +1,29 @@
+import type { ComponentProps, ReactNode } from "react"
+
+import cn from "./cn"
+
+type RadioProps = Omit<ComponentProps<"input">, "type"> & {
+  label?: ReactNode
+  invalid?: boolean
+}
+
+const Radio = ({ label, invalid, className, ...props }: RadioProps) => {
+
+  return (
+    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+      <input
+        type="radio"
+        className={cn(
+          "border-gray-300 text-primary-600 focus:ring-primary-200",
+          invalid && "border-red-300 focus:border-red-500 focus:ring-red-200",
+          className,
+        )}
+        aria-invalid={invalid || undefined}
+        {...props}
+      />
+      {label && <span>{label}</span>}
+    </label>
+  )
+}
+
+export default Radio

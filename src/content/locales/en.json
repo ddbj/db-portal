@@ -1,0 +1,33 @@
+{
+  "header": {
+    "nav": {
+      "search": "Search",
+      "advancedSearch": "Advanced Search",
+      "submit": "Submit"
+    },
+    "language": {
+      "label": "Language toggle",
+      "ja": "JA",
+      "en": "EN"
+    },
+    "login": "Login"
+  },
+  "footer": {
+    "copyright": "© {{year}} DDBJ (Bioinformatics and DDBJ Center)"
+  },
+  "common": {
+    "loading": "Loading",
+    "error": "An error occurred",
+    "underConstruction": "Under construction"
+  },
+  "routes": {
+    "home": { "title": "DDBJ DB Portal" },
+    "search": { "title": "Search" },
+    "advancedSearch": { "title": "Advanced Search" },
+    "submit": { "title": "Submit" },
+    "designSystem": { "title": "Design System" }
+  },
+  "aria": {
+    "mainNavigation": "Main navigation"
+  }
+}

@@ -1,6 +1,58 @@
-import { Badge, Breadcrumb, Button, Callout, CodeBlock, Heading, InlineCode, LinkCard, Prose, Skeleton, SkeletonCard, SkeletonText, Table, TextLink } from "@/components/ui"
+import { BarChart3, Bug, FileText, FlaskConical, GitBranch, Inbox, Lock, Microscope, TestTube, Trees } from "lucide-react"
+import { useState } from "react"
+
+import {
+  Badge,
+  Breadcrumb,
+  Button,
+  Callout,
+  Checkbox,
+  Chip,
+  CodeBlock,
+  Combobox,
+  DatePicker,
+  EmptyState,
+  Heading,
+  InlineCode,
+  Input,
+  LinkCard,
+  Prose,
+  Radio,
+  SearchBox,
+  Select,
+  Skeleton,
+  SkeletonCard,
+  SkeletonText,
+  Tab,
+  Table,
+  TabList,
+  TabPanel,
+  Tabs,
+  Textarea,
+  TextLink,
+  Tooltip,
+} from "@/components/ui"
+import {
+  ALL_ERROR_HIT_COUNTS,
+  ALL_SUCCESS_HIT_COUNTS,
+  DATABASES,
+  PARTIAL_FAILURE_HIT_COUNTS,
+  USE_CASE_CARDS,
+} from "@/lib/mock-data"
 
 import type { Route } from "./+types/design-system"
+
+const ICON_MAP = {
+  Bug,
+  Trees,
+  Microscope,
+  BarChart3,
+  GitBranch,
+  FlaskConical,
+  TestTube,
+  FileText,
+  Lock,
+} as const
 
 export const meta = (_args: Route.MetaArgs) => {
 
@@ -74,6 +126,54 @@ const GradientBar = ({ prefix, scale }: {
     </div>
   </div>
 )
+
+const TabsDemo = () => {
+  const [active, setActive] = useState("overview")
+
+  return (
+    <Tabs value={active} onChange={setActive}>
+      <TabList ariaLabel="DDBJ 登録の段階">
+        <Tab value="overview">概要</Tab>
+        <Tab value="details">具体</Tab>
+        <Tab value="api">API</Tab>
+      </TabList>
+      <TabPanel value="overview" className="mt-3 text-sm text-gray-700">
+        概要レベル: ユースケースの概要と 3 層構造、登録先分岐テーブル。
+      </TabPanel>
+      <TabPanel value="details" className="mt-3 text-sm text-gray-700">
+        具体レベル: ゴール、登録順序、具体的な準備物、leaf 固有補足、外部ツール。
+      </TabPanel>
+      <TabPanel value="api" className="mt-3 text-sm text-gray-700">
+        API レベル: Repository API への POST 形式（将来拡張）。
+      </TabPanel>
+    </Tabs>
+  )
+}
+
+const ComboboxDemo = () => {
+  const [value, setValue] = useState("")
+
+  return (
+    <Combobox
+      options={[
+        { value: "human", label: "Homo sapiens (human)" },
+        { value: "mouse", label: "Mus musculus (mouse)" },
+        { value: "ecoli", label: "Escherichia coli" },
+        { value: "yeast", label: "Saccharomyces cerevisiae" },
+      ]}
+      value={value}
+      onChange={setValue}
+      placeholder="生物名を入力..."
+      className="mt-1 max-w-sm"
+    />
+  )
+}
+
+const DatePickerDemo = () => {
+  const [date, setDate] = useState<Date | undefined>(undefined)
+
+  return <DatePicker value={date} onChange={setDate} className="mt-1 max-w-xs" />
+}
 
 const DesignSystem = () => {
 
@@ -556,6 +656,213 @@ const DesignSystem = () => {
           <div className="mt-3">
             <SkeletonText lines={4} />
           </div>
+        </div>
+
+        {/* ===== FORM PRIMITIVES ===== */}
+        <SH2>Form Primitives</SH2>
+
+        <SH3>Input</SH3>
+        <div className="mt-3 grid max-w-3xl grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-6 lg:grid-cols-2">
+          <div>
+            <label htmlFor="ds-input-default" className="block text-sm font-medium text-gray-700">default</label>
+            <Input id="ds-input-default" placeholder="キーワードを入力" className="mt-1" />
+          </div>
+          <div>
+            <label htmlFor="ds-input-search" className="block text-sm font-medium text-gray-700">variant=search</label>
+            <Input id="ds-input-search" variant="search" placeholder="検索" className="mt-1" />
+          </div>
+          <div>
+            <label htmlFor="ds-input-invalid" className="block text-sm font-medium text-gray-700">invalid</label>
+            <Input id="ds-input-invalid" defaultValue="不正な値" invalid className="mt-1" />
+          </div>
+          <div>
+            <span className="block text-sm font-medium text-gray-700">size variants</span>
+            <div className="mt-1 space-y-2">
+              <Input inputSize="sm" placeholder="sm" />
+              <Input inputSize="md" placeholder="md (default)" />
+              <Input inputSize="lg" placeholder="lg" />
+            </div>
+          </div>
+        </div>
+
+        <SH3>Select</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <label htmlFor="ds-select-db" className="block text-sm font-medium text-gray-700">DB セレクタ（mock-data から）</label>
+          <Select
+            id="ds-select-db"
+            options={[
+              { value: "", label: "全データベース（横断）" },
+              ...DATABASES.map((db) => ({ value: db.id, label: db.displayName })),
+            ]}
+            defaultValue=""
+            className="mt-1 max-w-md"
+          />
+        </div>
+
+        <SH3>Combobox</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <span className="block text-sm font-medium text-gray-700">Combobox（簡易 autocomplete、Phase 2 では最小実装）</span>
+          <ComboboxDemo />
+        </div>
+
+        <SH3>DatePicker</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <span className="block text-sm font-medium text-gray-700">DatePicker（react-day-picker v9）</span>
+          <DatePickerDemo />
+        </div>
+
+        <SH3>Checkbox / Radio / Textarea</SH3>
+        <div className="mt-3 grid max-w-3xl grid-cols-1 gap-6 rounded-lg border border-gray-200 bg-white p-6 lg:grid-cols-3">
+          <div>
+            <span className="block text-sm font-medium text-gray-700">Checkbox</span>
+            <div className="mt-2 space-y-2">
+              <Checkbox label="BioProject" defaultChecked />
+              <Checkbox label="BioSample" />
+              <Checkbox label="SRA" />
+            </div>
+          </div>
+          <div>
+            <span className="block text-sm font-medium text-gray-700">Radio</span>
+            <div className="mt-2 space-y-2">
+              <Radio name="ds-radio-demo" label="ゲノム登録" defaultChecked />
+              <Radio name="ds-radio-demo" label="RNA-seq" />
+              <Radio name="ds-radio-demo" label="メタゲノム" />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="ds-textarea-demo" className="block text-sm font-medium text-gray-700">Textarea</label>
+            <Textarea id="ds-textarea-demo" rows={4} placeholder="塩基配列を入力..." className="mt-1" />
+          </div>
+        </div>
+
+        {/* ===== NAVIGATION & CONTROL ===== */}
+        <SH2>Navigation & Control</SH2>
+
+        <SH3>Tabs</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <TabsDemo />
+        </div>
+
+        <SH3>Tooltip</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <p className="text-sm text-gray-700">
+            マウスを乗せると tooltip が表示されます:{" "}
+            <Tooltip content="Trad では公開日のみ利用可">
+              <span className="cursor-help underline decoration-dotted">公開日</span>
+            </Tooltip>
+          </p>
+        </div>
+
+        <SH3>SearchBox</SH3>
+        <div className="mt-3 max-w-3xl space-y-6 rounded-lg border border-gray-200 bg-white p-6">
+          <div>
+            <span className="block text-xs font-medium text-gray-400">size=large（トップ用）</span>
+            <SearchBox
+              size="large"
+              placeholder='例: "Homo sapiens" BRCA1'
+              helperText="スペース区切りで AND 検索。Examples をクリックで入力。"
+              examples={[
+                { label: "ヒト BioProject", query: "organism:human" },
+                { label: "BRCA1 SRA", query: "BRCA1" },
+                { label: "PRJDB12345", query: "PRJDB12345" },
+              ]}
+              onSubmit={(q) => alert(q)}
+              className="mt-2"
+            />
+          </div>
+          <div>
+            <span className="block text-xs font-medium text-gray-400">size=small（ヘッダー用）</span>
+            <SearchBox
+              size="small"
+              placeholder="検索"
+              onSubmit={(q) => alert(q)}
+              className="mt-2"
+            />
+          </div>
+        </div>
+
+        {/* ===== FEEDBACK & DISPLAY ===== */}
+        <SH2>Feedback & Display</SH2>
+
+        <SH3>EmptyState</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white">
+          <EmptyState
+            icon={<Inbox className="h-10 w-10" aria-hidden="true" />}
+            title="該当する結果がありません"
+            description="別のキーワードでお試しください。記号を含む場合は二重引用符で囲むと精度が上がります。"
+            action={<Button variant="secondary" size="sm">詳細検索を開く</Button>}
+          />
+        </div>
+
+        <SH3>Chip（Badge との使い分け）</SH3>
+        <div className="mt-3 max-w-3xl rounded-lg border border-gray-200 bg-white p-6">
+          <p className="text-xs text-gray-500">
+            Chip は<strong>ユーザ操作可能</strong>（クリック・削除可能）な要素。Badge は静的ラベル。
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Chip variant="default" onClick={() => alert("clicked")}>default (clickable)</Chip>
+            <Chip variant="selected">selected</Chip>
+            <Chip variant="removable" onRemove={() => alert("removed")}>removable</Chip>
+          </div>
+        </div>
+
+        {/* ===== MOCK DATA SHOWCASE ===== */}
+        <SH2>Mock Data Showcase</SH2>
+
+        <SH3>DATABASES（8 DB）</SH3>
+        <div className="mt-3 grid max-w-4xl grid-cols-1 gap-3 lg:grid-cols-2">
+          {DATABASES.map((db) => (
+            <div key={db.id} className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-900">{db.displayName}</span>
+                {db.insdcMember && <Badge variant="gray" size="sm">INSDC</Badge>}
+              </div>
+              <p className="mt-1 text-xs text-gray-600">{db.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <SH3>USE_CASE_CARDS（9 枚 / Phase 4 の登録ナビ）</SH3>
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {USE_CASE_CARDS.map((card) => {
+            const Icon = ICON_MAP[card.iconName as keyof typeof ICON_MAP] ?? Bug
+
+            return (
+              <div key={card.id} className="rounded-lg border border-gray-200 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <Icon className="text-primary-600 h-6 w-6 shrink-0" aria-hidden="true" />
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{card.title}</div>
+                    <div className="mt-1 text-xs text-gray-600">{card.description}</div>
+                    <div className="mt-2 text-xs text-gray-400">leaf {card.leafCount} 件</div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <SH3>横断検索 hit count の 3 状態（mock）</SH3>
+        <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {[
+            { label: "all-success", data: ALL_SUCCESS_HIT_COUNTS },
+            { label: "partial-failure", data: PARTIAL_FAILURE_HIT_COUNTS },
+            { label: "all-error", data: ALL_ERROR_HIT_COUNTS },
+          ].map(({ label, data }) => (
+            <div key={label} className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-xs font-medium text-gray-400">{label}</div>
+              <ul className="mt-2 space-y-1 text-xs">
+                {data.map((c) => (
+                  <li key={c.dbId} className="flex justify-between">
+                    <span className="text-gray-700">{c.dbId}</span>
+                    <span className={c.state === "error" ? "text-red-600" : "text-gray-900"}>
+                      {c.state === "error" ? `error: ${c.error ?? ""}` : c.count?.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <div className="h-16" />
