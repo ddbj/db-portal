@@ -51,7 +51,66 @@
         }
       }
     },
-    "search": { "title": "検索" },
+    "search": {
+      "title": "検索",
+      "meta": {
+        "titleCross": "検索結果: {{q}}",
+        "titleDb": "{{db}} の検索結果: {{q}}",
+        "titleAdv": "詳細検索結果",
+        "description": "DDBJ データベースを横断検索"
+      },
+      "summary": {
+        "filteredByAll": "全データベースで絞り込み中: ",
+        "filteredByDb": "{{db}} で絞り込み中: ",
+        "otherConditions": " 他 {{count}} 条件",
+        "edit": "編集",
+        "clear": "クリア",
+        "clearAria": "検索条件をクリア"
+      },
+      "crossMode": {
+        "heading": "DB 別ヒット数",
+        "partialFailure": {
+          "allError": "検索サービスに接続できません。しばらくしてからもう一度お試しください。",
+          "partial": "一部の検索サービスが不安定です。"
+        },
+        "retry": "再試行",
+        "retryAll": "再試行",
+        "errorKind": {
+          "timeout": "タイムアウト",
+          "upstream_5xx": "サーバーエラー",
+          "connection_refused": "接続エラー",
+          "unknown": "不明なエラー"
+        },
+        "loadingAria": "件数を取得中",
+        "errorLabel": "取得できませんでした",
+        "bothQAdvWarning": "シンプル検索と詳細検索の両方が指定されています。詳細検索を優先しました。"
+      },
+      "dbMode": {
+        "resultsCount": "全 {{total}} 件中 {{from}}-{{to}} 件を表示",
+        "resultsCountOver10k": "10,000 件以上 {{from}}-{{to}} 件を表示",
+        "noResults": "検索結果が見つかりませんでした",
+        "sort": {
+          "label": "ソート",
+          "relevance": "関連度",
+          "date_desc": "新しい順",
+          "date_asc": "古い順"
+        },
+        "perPage": {
+          "label": "表示",
+          "option": "{{count}} 件"
+        },
+        "pagination": {
+          "prev": "前へ",
+          "next": "次へ",
+          "pageInfo": "{{current}} / {{total}} ページ"
+        },
+        "over10k": {
+          "message": "表示できる検索結果は 10,000 件までです。キーワードを追加するか、詳細検索で絞り込んでください。",
+          "cta": "詳細検索を開く"
+        },
+        "publishedAtAria": "公開日"
+      }
+    },
     "advancedSearch": { "title": "詳細検索" },
     "submit": {
       "title": "登録",

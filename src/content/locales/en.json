@@ -51,7 +51,66 @@
         }
       }
     },
-    "search": { "title": "Search" },
+    "search": {
+      "title": "Search",
+      "meta": {
+        "titleCross": "Search results: {{q}}",
+        "titleDb": "{{db}} search results: {{q}}",
+        "titleAdv": "Advanced search results",
+        "description": "Cross-database search over DDBJ databases"
+      },
+      "summary": {
+        "filteredByAll": "Filtering across all databases: ",
+        "filteredByDb": "Filtering {{db}}: ",
+        "otherConditions": " + {{count}} more",
+        "edit": "Edit",
+        "clear": "Clear",
+        "clearAria": "Clear search conditions"
+      },
+      "crossMode": {
+        "heading": "Hit counts by database",
+        "partialFailure": {
+          "allError": "Cannot connect to the search service. Please try again later.",
+          "partial": "Some search services are unstable."
+        },
+        "retry": "Retry",
+        "retryAll": "Retry",
+        "errorKind": {
+          "timeout": "Timeout",
+          "upstream_5xx": "Server error",
+          "connection_refused": "Connection error",
+          "unknown": "Unknown error"
+        },
+        "loadingAria": "Loading hit count",
+        "errorLabel": "Failed to fetch",
+        "bothQAdvWarning": "Both simple and advanced queries are specified. Advanced search takes priority."
+      },
+      "dbMode": {
+        "resultsCount": "{{from}}-{{to}} of {{total}} results",
+        "resultsCountOver10k": "{{from}}-{{to}} of 10,000+ results",
+        "noResults": "No results found",
+        "sort": {
+          "label": "Sort",
+          "relevance": "Relevance",
+          "date_desc": "Newest first",
+          "date_asc": "Oldest first"
+        },
+        "perPage": {
+          "label": "Show",
+          "option": "{{count}} items"
+        },
+        "pagination": {
+          "prev": "Prev",
+          "next": "Next",
+          "pageInfo": "Page {{current}} of {{total}}"
+        },
+        "over10k": {
+          "message": "Only up to 10,000 results can be displayed. Please add keywords or refine with advanced search.",
+          "cta": "Open advanced search"
+        },
+        "publishedAtAria": "Published at"
+      }
+    },
     "advancedSearch": { "title": "Advanced Search" },
     "submit": {
       "title": "Submit",

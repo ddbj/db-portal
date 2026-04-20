@@ -1,11 +1,8 @@
-import type { DbHitCount } from "@/types/db"
+import type { DbHitCount, DbId } from "@/types/db"
 import { DB_ORDER } from "@/types/db"
 import type { SearchResult } from "@/types/search"
 
-// Phase 2 では DB 別の最小サンプル（合計 12 件）を準備する。
-// L1-L6 構造の表示確認 + 横断検索結果の状態 mock 用。
-// Phase 5 で各 DB 5-20 件まで拡充予定。
-export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
+const BIOPROJECT: readonly SearchResult[] = [
   {
     dbId: "bioproject",
     identifier: "PRJDB12345",
@@ -26,11 +23,95 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     identifier: "PRJDB67890",
     publishedAt: "2023-11-02",
     title: "Cancer Genome Atlas Project Japan",
+    description: "Whole genome sequencing of solid tumors from 3,000 Japanese cancer patients.",
     organism: { name: "Homo sapiens", taxonomyId: 9606 },
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB67890",
     projectType: "Genome sequencing",
     organization: "RIKEN",
   },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB11223",
+    publishedAt: "2025-01-08",
+    title: "Rice Pan-genome Project",
+    organism: { name: "Oryza sativa", taxonomyId: 4530 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB11223",
+    projectType: "Genome sequencing",
+    organization: "NARO",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB22334",
+    publishedAt: "2024-08-19",
+    title: "Wild-type Drosophila transcriptome under heat stress",
+    organism: { name: "Drosophila melanogaster", taxonomyId: 7227 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB22334",
+    projectType: "Transcriptome",
+    organization: "The University of Tokyo",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB33445",
+    publishedAt: "2022-06-05",
+    title: "Deep-sea hydrothermal vent microbial community",
+    organism: { name: "marine metagenome", taxonomyId: 408172 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB33445",
+    projectType: "Metagenome",
+    organization: "JAMSTEC",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB44556",
+    publishedAt: "2024-11-30",
+    title: "Mouse knockout screen for developmental genes",
+    organism: { name: "Mus musculus", taxonomyId: 10090 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB44556",
+    projectType: "Targeted Locus",
+    organization: "RIKEN BDR",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB55667",
+    publishedAt: "2023-04-12",
+    title: "SARS-CoV-2 Omicron sub-variant surveillance in Japan",
+    organism: { name: "Severe acute respiratory syndrome coronavirus 2", taxonomyId: 2697049 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB55667",
+    projectType: "Epidemiological",
+    organization: "NIID",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB66778",
+    publishedAt: "2021-09-21",
+    title: "Arabidopsis root microbiome under drought stress",
+    organism: { name: "Arabidopsis thaliana", taxonomyId: 3702 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB66778",
+    projectType: "Metagenome",
+    organization: "NIBB",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB77889",
+    publishedAt: "2025-02-28",
+    title: "Single-cell RNA-seq of zebrafish embryonic development",
+    organism: { name: "Danio rerio", taxonomyId: 7955 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB77889",
+    projectType: "Transcriptome",
+    organization: "Osaka University",
+  },
+  {
+    dbId: "bioproject",
+    identifier: "PRJDB88990",
+    publishedAt: "2020-07-14",
+    title: "Industrial yeast strain improvement",
+    organism: { name: "Saccharomyces cerevisiae", taxonomyId: 4932 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/bioproject/PRJDB88990",
+    projectType: "Genome sequencing",
+    organization: "Kirin Holdings",
+  },
+]
+
+const BIOSAMPLE: readonly SearchResult[] = [
   {
     dbId: "biosample",
     identifier: "SAMD00012345",
@@ -39,6 +120,81 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     organism: { name: "human gut metagenome", taxonomyId: 408170 },
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00012345",
   },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00067890",
+    publishedAt: "2024-03-12",
+    title: "HeLa cells, 0.5% O2, 24h",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00067890",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00111213",
+    publishedAt: "2023-07-20",
+    title: "Liver tissue, C57BL/6 mouse, 8-week old",
+    organism: { name: "Mus musculus", taxonomyId: 10090 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00111213",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00141516",
+    publishedAt: "2025-01-18",
+    title: "Leaf tissue, rice variety Nipponbare",
+    organism: { name: "Oryza sativa Japonica Group", taxonomyId: 39947 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00141516",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00171819",
+    publishedAt: "2024-10-05",
+    title: "Sediment sample, hydrothermal vent, Okinawa Trough",
+    organism: { name: "marine sediment metagenome", taxonomyId: 412755 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00171819",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00202122",
+    publishedAt: "2022-12-11",
+    title: "Blood sample, cancer patient, cohort JP-01",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00202122",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00232425",
+    publishedAt: "2024-05-22",
+    title: "Arabidopsis root, drought-treated, day 14",
+    organism: { name: "Arabidopsis thaliana", taxonomyId: 3702 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00232425",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00262728",
+    publishedAt: "2023-02-03",
+    title: "Bacillus subtilis 168 culture, late-log phase",
+    organism: { name: "Bacillus subtilis", taxonomyId: 1423 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00262728",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00293031",
+    publishedAt: "2025-03-09",
+    title: "Zebrafish embryo, 24 hpf, wild-type",
+    organism: { name: "Danio rerio", taxonomyId: 7955 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00293031",
+  },
+  {
+    dbId: "biosample",
+    identifier: "SAMD00323334",
+    publishedAt: "2021-08-28",
+    title: "Yeast culture, industrial strain, 30C",
+    organism: { name: "Saccharomyces cerevisiae", taxonomyId: 4932 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00323334",
+  },
+]
+
+const SRA: readonly SearchResult[] = [
   {
     dbId: "sra",
     identifier: "DRR123456",
@@ -52,6 +208,88 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
       { dbId: "biosample", identifier: "SAMD00067890" },
     ],
   },
+  {
+    dbId: "sra",
+    identifier: "DRR234567",
+    publishedAt: "2024-08-22",
+    title: "Whole genome sequencing of Japanese cancer cohort",
+    description: "Illumina NovaSeq 6000, 150 bp paired-end, 30x coverage",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR234567",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR345678",
+    publishedAt: "2023-11-14",
+    title: "ChIP-seq of H3K27me3 in mouse embryonic stem cells",
+    description: "Illumina HiSeq 2500, 50 bp single-end",
+    organism: { name: "Mus musculus", taxonomyId: 10090 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR345678",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR456789",
+    publishedAt: "2025-02-10",
+    title: "Single-cell RNA-seq of rice root tips",
+    description: "10X Genomics Chromium, Illumina NovaSeq",
+    organism: { name: "Oryza sativa", taxonomyId: 4530 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR456789",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR567890",
+    publishedAt: "2022-05-30",
+    title: "Metagenomic shotgun of deep-sea sediment",
+    description: "Illumina NovaSeq 6000, paired-end 150 bp",
+    organism: { name: "marine sediment metagenome", taxonomyId: 412755 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR567890",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR678901",
+    publishedAt: "2024-12-03",
+    title: "ATAC-seq of Drosophila larval brain",
+    organism: { name: "Drosophila melanogaster", taxonomyId: 7227 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR678901",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR789012",
+    publishedAt: "2023-03-17",
+    title: "Nanopore long-read sequencing of Bacillus subtilis",
+    description: "Oxford Nanopore PromethION",
+    organism: { name: "Bacillus subtilis", taxonomyId: 1423 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR789012",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR890123",
+    publishedAt: "2024-06-28",
+    title: "SARS-CoV-2 whole genome amplicon sequencing",
+    organism: { name: "Severe acute respiratory syndrome coronavirus 2", taxonomyId: 2697049 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR890123",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR901234",
+    publishedAt: "2021-10-09",
+    title: "PacBio HiFi sequencing of zebrafish genome",
+    description: "PacBio Sequel II, CCS mode",
+    organism: { name: "Danio rerio", taxonomyId: 7955 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR901234",
+  },
+  {
+    dbId: "sra",
+    identifier: "DRR012345",
+    publishedAt: "2025-04-03",
+    title: "Dual RNA-seq of host-pathogen interaction",
+    description: "Illumina NovaSeq X Plus, paired-end 150 bp",
+    organism: { name: "Arabidopsis thaliana", taxonomyId: 3702 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/sra-run/DRR012345",
+  },
+]
+
+const TRAD: readonly SearchResult[] = [
   {
     dbId: "trad",
     identifier: "AB123456",
@@ -70,6 +308,81 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/LC987654",
     division: "PLN",
   },
+  {
+    dbId: "trad",
+    identifier: "AB234567",
+    publishedAt: "2022-04-18",
+    title: "Homo sapiens BRCA1 gene, partial cds",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/AB234567",
+    division: "PRI",
+  },
+  {
+    dbId: "trad",
+    identifier: "LC345678",
+    publishedAt: "2024-11-07",
+    title: "Bacillus subtilis strain NIG-B1 16S ribosomal RNA gene",
+    organism: { name: "Bacillus subtilis", taxonomyId: 1423 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/LC345678",
+    division: "BCT",
+  },
+  {
+    dbId: "trad",
+    identifier: "AB456789",
+    publishedAt: "2021-12-29",
+    title: "Arabidopsis thaliana AT3G52770 mRNA for hypothetical protein",
+    organism: { name: "Arabidopsis thaliana", taxonomyId: 3702 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/AB456789",
+    division: "PLN",
+  },
+  {
+    dbId: "trad",
+    identifier: "LC567890",
+    publishedAt: "2025-02-05",
+    title: "Drosophila melanogaster clk gene, complete cds",
+    organism: { name: "Drosophila melanogaster", taxonomyId: 7227 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/LC567890",
+    division: "INV",
+  },
+  {
+    dbId: "trad",
+    identifier: "AB678901",
+    publishedAt: "2020-05-14",
+    title: "Saccharomyces cerevisiae gene for alcohol dehydrogenase",
+    organism: { name: "Saccharomyces cerevisiae", taxonomyId: 4932 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/AB678901",
+    division: "PLN",
+  },
+  {
+    dbId: "trad",
+    identifier: "LC789012",
+    publishedAt: "2023-09-30",
+    title: "Danio rerio sox2 gene, genomic DNA",
+    organism: { name: "Danio rerio", taxonomyId: 7955 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/LC789012",
+    division: "VRT",
+  },
+  {
+    dbId: "trad",
+    identifier: "AB890123",
+    publishedAt: "2024-07-11",
+    title: "SARS-CoV-2 isolate JPN/2024/Omicron-XBB spike gene",
+    organism: { name: "Severe acute respiratory syndrome coronavirus 2", taxonomyId: 2697049 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/AB890123",
+    division: "VRL",
+  },
+  {
+    dbId: "trad",
+    identifier: "LC901234",
+    publishedAt: "2022-02-26",
+    title: "Escherichia coli plasmid pKD46 recombination genes",
+    organism: { name: "Escherichia coli", taxonomyId: 562 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/trad/LC901234",
+    division: "BCT",
+  },
+]
+
+const TAXONOMY: readonly SearchResult[] = [
   {
     dbId: "taxonomy",
     identifier: "9606",
@@ -90,6 +403,86 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     commonName: "E. coli",
   },
   {
+    dbId: "taxonomy",
+    identifier: "10090",
+    publishedAt: null,
+    title: "Mus musculus",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/10090",
+    rank: "species",
+    commonName: "house mouse",
+    japaneseName: "ハツカネズミ",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "4530",
+    publishedAt: null,
+    title: "Oryza sativa",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/4530",
+    rank: "species",
+    commonName: "rice",
+    japaneseName: "イネ",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "7227",
+    publishedAt: null,
+    title: "Drosophila melanogaster",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/7227",
+    rank: "species",
+    commonName: "fruit fly",
+    japaneseName: "キイロショウジョウバエ",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "3702",
+    publishedAt: null,
+    title: "Arabidopsis thaliana",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/3702",
+    rank: "species",
+    commonName: "thale cress",
+    japaneseName: "シロイヌナズナ",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "1423",
+    publishedAt: null,
+    title: "Bacillus subtilis",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/1423",
+    rank: "species",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "4932",
+    publishedAt: null,
+    title: "Saccharomyces cerevisiae",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/4932",
+    rank: "species",
+    commonName: "baker's yeast",
+    japaneseName: "パン酵母",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "7955",
+    publishedAt: null,
+    title: "Danio rerio",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/7955",
+    rank: "species",
+    commonName: "zebrafish",
+    japaneseName: "ゼブラフィッシュ",
+  },
+  {
+    dbId: "taxonomy",
+    identifier: "2697049",
+    publishedAt: null,
+    title: "Severe acute respiratory syndrome coronavirus 2",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/taxonomy/2697049",
+    rank: "species",
+    commonName: "SARS-CoV-2",
+  },
+]
+
+const JGA: readonly SearchResult[] = [
+  {
     dbId: "jga",
     identifier: "JGAS000123",
     publishedAt: "2024-02-05",
@@ -99,6 +492,45 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/jga/JGAS000123",
   },
   {
+    dbId: "jga",
+    identifier: "JGAS000234",
+    publishedAt: "2023-06-11",
+    title: "Genotype-phenotype study in Japanese diabetes patients",
+    description: "Controlled access.",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/jga/JGAS000234",
+  },
+  {
+    dbId: "jga",
+    identifier: "JGAS000345",
+    publishedAt: "2025-01-27",
+    title: "Schizophrenia GWAS in Japanese population",
+    description: "Controlled access.",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/jga/JGAS000345",
+  },
+  {
+    dbId: "jga",
+    identifier: "JGAS000456",
+    publishedAt: "2022-10-19",
+    title: "Colorectal cancer exome sequencing, N=500",
+    description: "Controlled access.",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/jga/JGAS000456",
+  },
+  {
+    dbId: "jga",
+    identifier: "JGAS000567",
+    publishedAt: "2024-09-04",
+    title: "RNA-seq of peripheral blood, autoimmune cohort",
+    description: "Controlled access.",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/jga/JGAS000567",
+  },
+]
+
+const GEA: readonly SearchResult[] = [
+  {
     dbId: "gea",
     identifier: "E-GEAD-456",
     publishedAt: "2023-12-18",
@@ -106,6 +538,41 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     organism: { name: "Mus musculus", taxonomyId: 10090 },
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/gea/E-GEAD-456",
   },
+  {
+    dbId: "gea",
+    identifier: "E-GEAD-567",
+    publishedAt: "2024-07-23",
+    title: "RNA-seq of Arabidopsis leaf under light-dark transition",
+    organism: { name: "Arabidopsis thaliana", taxonomyId: 3702 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/gea/E-GEAD-567",
+  },
+  {
+    dbId: "gea",
+    identifier: "E-GEAD-678",
+    publishedAt: "2022-03-09",
+    title: "ChIP-seq of H3K4me3 in human iPSC-derived neurons",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/gea/E-GEAD-678",
+  },
+  {
+    dbId: "gea",
+    identifier: "E-GEAD-789",
+    publishedAt: "2025-03-14",
+    title: "Single-cell RNA-seq of zebrafish heart regeneration",
+    organism: { name: "Danio rerio", taxonomyId: 7955 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/gea/E-GEAD-789",
+  },
+  {
+    dbId: "gea",
+    identifier: "E-GEAD-890",
+    publishedAt: "2021-08-30",
+    title: "Transcriptome of rice panicle development stages",
+    organism: { name: "Oryza sativa", taxonomyId: 4530 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/gea/E-GEAD-890",
+  },
+]
+
+const METABOBANK: readonly SearchResult[] = [
   {
     dbId: "metabobank",
     identifier: "MTBKS123",
@@ -115,14 +582,63 @@ export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
     externalUrl: "https://www.ddbj.nig.ac.jp/resource/metabobank/MTBKS123",
   },
   {
-    dbId: "biosample",
-    identifier: "SAMD00067890",
-    publishedAt: "2024-03-12",
-    title: "HeLa cells, 0.5% O2, 24h",
+    dbId: "metabobank",
+    identifier: "MTBKS234",
+    publishedAt: "2023-11-25",
+    title: "Urinary metabolomics of Japanese kidney disease cohort",
     organism: { name: "Homo sapiens", taxonomyId: 9606 },
-    externalUrl: "https://www.ddbj.nig.ac.jp/resource/biosample/SAMD00067890",
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/metabobank/MTBKS234",
   },
+  {
+    dbId: "metabobank",
+    identifier: "MTBKS345",
+    publishedAt: "2025-02-17",
+    title: "Gut microbiota-derived metabolites in IBD patients",
+    organism: { name: "Homo sapiens", taxonomyId: 9606 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/metabobank/MTBKS345",
+  },
+  {
+    dbId: "metabobank",
+    identifier: "MTBKS456",
+    publishedAt: "2022-06-08",
+    title: "Rice leaf metabolome under salt stress",
+    organism: { name: "Oryza sativa", taxonomyId: 4530 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/metabobank/MTBKS456",
+  },
+  {
+    dbId: "metabobank",
+    identifier: "MTBKS567",
+    publishedAt: "2024-10-12",
+    title: "Metabolic profiling of aging mouse brain",
+    organism: { name: "Mus musculus", taxonomyId: 10090 },
+    externalUrl: "https://www.ddbj.nig.ac.jp/resource/metabobank/MTBKS567",
+  },
+]
+
+export const MOCK_SEARCH_RESULTS: readonly SearchResult[] = [
+  ...BIOPROJECT,
+  ...BIOSAMPLE,
+  ...SRA,
+  ...TRAD,
+  ...TAXONOMY,
+  ...JGA,
+  ...GEA,
+  ...METABOBANK,
 ] as const satisfies readonly SearchResult[]
+
+const RESULTS_BY_DB: Readonly<Record<DbId, readonly SearchResult[]>> = {
+  bioproject: BIOPROJECT,
+  biosample: BIOSAMPLE,
+  sra: SRA,
+  trad: TRAD,
+  taxonomy: TAXONOMY,
+  jga: JGA,
+  gea: GEA,
+  metabobank: METABOBANK,
+} as const
+
+export const getResultsByDb = (dbId: DbId): readonly SearchResult[] =>
+  RESULTS_BY_DB[dbId]
 
 export const ALL_SUCCESS_HIT_COUNTS: readonly DbHitCount[] = DB_ORDER.map((dbId, idx) => ({
   dbId,
@@ -134,7 +650,7 @@ export const PARTIAL_FAILURE_HIT_COUNTS: readonly DbHitCount[] = DB_ORDER.map((d
   if (idx === 1 || idx === 4) {
     return { dbId, state: "error", count: null, error: "timeout" }
   }
-  if (idx === 6) {
+  if (idx === 3 || idx === 6) {
     return { dbId, state: "error", count: null, error: "upstream_5xx" }
   }
 

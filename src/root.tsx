@@ -1,5 +1,6 @@
 import "./app.css"
 
+import { QueryClientProvider } from "@tanstack/react-query"
 import { useEffect } from "react"
 import {
   isRouteErrorResponse,
@@ -13,6 +14,7 @@ import {
 
 import { AppShell } from "@/components/layout"
 import i18n, { pickLang } from "@/i18n"
+import { queryClient } from "@/lib/query-client"
 
 import type { Route } from "./+types/root"
 
@@ -59,7 +61,11 @@ const App = () => {
     }
   }, [lang])
 
-  return <AppShell />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppShell />
+    </QueryClientProvider>
+  )
 }
 
 export default App
