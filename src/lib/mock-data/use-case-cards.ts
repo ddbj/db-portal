@@ -1,11 +1,11 @@
 import type { UseCaseCard } from "@/types/submit"
 
-// docs/submit.md L307-321 の表に整合
+// docs/submit.md L307-321 の表に整合。i18n キーは locales/{ja,en}.json で解決。
 export const USE_CASE_CARDS = [
   {
     id: "microbial",
-    title: "微生物ゲノム",
-    description: "原核生物・ウイルス・オルガネラ・プラスミドのゲノム登録",
+    titleKey: "routes.submit.cards.microbial.title",
+    descriptionKey: "routes.submit.cards.microbial.description",
     iconName: "Bug",
     treeNodeId: "microbial",
     order: 1,
@@ -13,8 +13,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "eukaryote",
-    title: "真核生物ゲノム",
-    description: "動物・植物・菌類のゲノム登録（Haplotype / TSA / EST / TPA 含む）",
+    titleKey: "routes.submit.cards.eukaryote.title",
+    descriptionKey: "routes.submit.cards.eukaryote.description",
     iconName: "Trees",
     treeNodeId: "eukaryote",
     order: 2,
@@ -22,8 +22,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "metagenome",
-    title: "メタゲノム / MAG / SAG",
-    description: "環境サンプル・メタゲノム由来データ",
+    titleKey: "routes.submit.cards.metagenome.title",
+    descriptionKey: "routes.submit.cards.metagenome.description",
     iconName: "Microscope",
     treeNodeId: "metagenome",
     order: 3,
@@ -31,8 +31,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "expression",
-    title: "遺伝子発現",
-    description: "RNA-seq・マイクロアレイ等の発現解析データ",
+    titleKey: "routes.submit.cards.expression.title",
+    descriptionKey: "routes.submit.cards.expression.description",
     iconName: "BarChart3",
     treeNodeId: "expression",
     order: 4,
@@ -40,8 +40,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "variation",
-    title: "変異データ",
-    description: "SNP / 構造変異等の変異コール結果",
+    titleKey: "routes.submit.cards.variation.title",
+    descriptionKey: "routes.submit.cards.variation.description",
     iconName: "GitBranch",
     treeNodeId: "variation",
     order: 5,
@@ -49,8 +49,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "proteomics",
-    title: "プロテオミクス",
-    description: "LC-MS/MS によるプロテオーム解析データ（jPOST 経由）",
+    titleKey: "routes.submit.cards.proteomics.title",
+    descriptionKey: "routes.submit.cards.proteomics.description",
     iconName: "FlaskConical",
     treeNodeId: "proteomics",
     order: 6,
@@ -58,8 +58,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "metabolomics",
-    title: "メタボロミクス",
-    description: "LC-MS / GC-MS 等のメタボロミクスデータ",
+    titleKey: "routes.submit.cards.metabolomics.title",
+    descriptionKey: "routes.submit.cards.metabolomics.description",
     iconName: "TestTube",
     treeNodeId: "metabolomics",
     order: 7,
@@ -67,8 +67,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "small-sequence",
-    title: "小規模塩基配列・PCR 産物",
-    description: "100 配列未満の塩基配列（NSSS 経由）",
+    titleKey: "routes.submit.cards.small-sequence.title",
+    descriptionKey: "routes.submit.cards.small-sequence.description",
     iconName: "FileText",
     treeNodeId: "small-sequence",
     order: 8,
@@ -76,8 +76,8 @@ export const USE_CASE_CARDS = [
   },
   {
     id: "human-restricted",
-    title: "ヒト制限アクセス",
-    description: "ヒトを対象とした個人特定リスクのあるデータ（NBDC 承認要）",
+    titleKey: "routes.submit.cards.human-restricted.title",
+    descriptionKey: "routes.submit.cards.human-restricted.description",
     iconName: "Lock",
     treeNodeId: "human-restricted",
     order: 9,

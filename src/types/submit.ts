@@ -77,14 +77,14 @@ export type GoalTemplateId =
   | "external"
 
 export interface QuestionOption {
-  label: string
+  labelKey: string
   childId: TreeNodeId
 }
 
 export interface QuestionNode {
   id: QuestionNodeId
   type: "question"
-  question: string
+  questionKey: string
   options: QuestionOption[]
   parentId: QuestionNodeId | null
 }
@@ -112,8 +112,8 @@ export type CardId =
 
 export interface UseCaseCard {
   id: CardId
-  title: string
-  description: string
+  titleKey: string
+  descriptionKey: string
   iconName: string
   treeNodeId: TreeNodeId
   order: number
@@ -121,32 +121,22 @@ export interface UseCaseCard {
 }
 
 export interface DetailLink {
-  label: string
+  labelKey: string
   url: string
   external: boolean
 }
 
 export interface DetailOverviewBranch {
-  dataLabel: string
+  dataLabelKey: string
   leafId: LeafNodeId
   goalLabel: string
 }
 
 export interface DetailOverview {
   cardId: CardId
-  summary: string
+  summaryKey: string
   hasThreeLayer: boolean
   branches: DetailOverviewBranch[]
-  commonRequirements: string
+  commonRequirementsKey: string
   primaryLinks: DetailLink[]
-}
-
-export interface DetailLeaf {
-  leafId: LeafNodeId
-  goal: RegistrationGoal
-  goalTemplate: GoalTemplateId
-  registrationOrder: string
-  preparation: string
-  leafSpecific: string
-  toolLinks: DetailLink[]
 }

@@ -40,11 +40,16 @@ describe("USE_CASE_CARDS (mock-data)", () => {
     expect(USE_CASE_CARDS.map((c) => c.id)).toEqual(sortedByOrder.map((c) => c.id))
   })
 
-  it("non-empty title, description, iconName for every card", () => {
+  it("non-empty iconName for every card", () => {
     for (const card of USE_CASE_CARDS) {
-      expect(card.title).not.toBe("")
-      expect(card.description).not.toBe("")
       expect(card.iconName).not.toBe("")
+    }
+  })
+
+  it("titleKey / descriptionKey follow the routes.submit.cards.<id>.<field> pattern", () => {
+    for (const card of USE_CASE_CARDS) {
+      expect(card.titleKey).toBe(`routes.submit.cards.${card.id}.title`)
+      expect(card.descriptionKey).toBe(`routes.submit.cards.${card.id}.description`)
     }
   })
 

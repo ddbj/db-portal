@@ -1,5 +1,6 @@
 import { BarChart3, Bug, FileText, FlaskConical, GitBranch, Inbox, Lock, Microscope, TestTube, Trees } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import {
   Badge,
@@ -176,6 +177,7 @@ const DatePickerDemo = () => {
 }
 
 const DesignSystem = () => {
+  const { t } = useTranslation()
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -832,8 +834,8 @@ const DesignSystem = () => {
                 <div className="flex items-start gap-3">
                   <Icon className="text-primary-600 h-6 w-6 shrink-0" aria-hidden="true" />
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">{card.title}</div>
-                    <div className="mt-1 text-xs text-gray-600">{card.description}</div>
+                    <div className="text-sm font-semibold text-gray-900">{t(card.titleKey)}</div>
+                    <div className="mt-1 text-xs text-gray-600">{t(card.descriptionKey)}</div>
                     <div className="mt-2 text-xs text-gray-400">leaf {card.leafCount} 件</div>
                   </div>
                 </div>

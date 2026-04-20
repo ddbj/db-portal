@@ -53,7 +53,302 @@
     },
     "search": { "title": "Search" },
     "advancedSearch": { "title": "Advanced Search" },
-    "submit": { "title": "Submit" },
+    "submit": {
+      "title": "Submit",
+      "meta": {
+        "title": "Submission Guide | DDBJ Portal",
+        "description": "Find the right DDBJ submission service (BioProject / BioSample / DRA / MSS / NSSS / GEA / JGA) based on the data you want to submit."
+      },
+      "hero": {
+        "title": "Submission Guide",
+        "subtitle": "Find the right DDBJ submission service based on the data you want to submit."
+      },
+      "sections": {
+        "cards": "Start from a use case",
+        "tree": "Follow the decision tree",
+        "detail": "Details"
+      },
+      "cards": {
+        "microbial": {
+          "title": "Microbial genome",
+          "description": "Genome submission for prokaryotes, viruses, organelles, and plasmids"
+        },
+        "eukaryote": {
+          "title": "Eukaryotic genome",
+          "description": "Genome submission for animals, plants, and fungi (incl. Haplotype / TSA / EST / TPA)"
+        },
+        "metagenome": {
+          "title": "Metagenome / MAG / SAG",
+          "description": "Environmental sample and metagenome-derived data"
+        },
+        "expression": {
+          "title": "Gene expression",
+          "description": "RNA-seq, microarray, and other expression profiling data"
+        },
+        "variation": {
+          "title": "Variation data",
+          "description": "SNP / structural variant calling results"
+        },
+        "proteomics": {
+          "title": "Proteomics",
+          "description": "LC-MS/MS proteome data (submitted via jPOST)"
+        },
+        "metabolomics": {
+          "title": "Metabolomics",
+          "description": "LC-MS / GC-MS metabolomics data"
+        },
+        "small-sequence": {
+          "title": "Small-scale sequence / PCR product",
+          "description": "Fewer than 100 sequences (via NSSS)"
+        },
+        "human-restricted": {
+          "title": "Human restricted access",
+          "description": "Human data with re-identification risk (requires NBDC approval)"
+        }
+      },
+      "tree": {
+        "goalBadge": "Goal",
+        "nodeAria": "Node",
+        "questions": {
+          "root": "Is this human data with re-identification risk?",
+          "modality": "What is the measurement modality?",
+          "variation": "Which organism × variant type?",
+          "expression": "Which measurement technology?",
+          "sequence-scale": "What is the scale?",
+          "sequence-source": "What is the source?",
+          "metagenome": "What kind of metagenome?",
+          "single-organism": "Which organism category?",
+          "microbial": "Which microbial subcategory?",
+          "prokaryote": "Prokaryotic genome data format?",
+          "virus": "Viral genome data format?",
+          "eukaryote": "Eukaryotic genome data specifics?",
+          "eukaryote-genome": "Eukaryotic genome data format?",
+          "eukaryote-haplotype": "Haplotype data format?",
+          "eukaryote-est": "EST scale?"
+        },
+        "options": {
+          "root": {
+            "human-restricted": "Yes (NBDC approval required)",
+            "modality": "No"
+          },
+          "modality": {
+            "proteomics": "Proteomics",
+            "metabolomics": "Metabolomics",
+            "variation": "Variant calls (SNP / SV)",
+            "expression": "Gene expression profiling",
+            "sequence-scale": "Sequence (DNA / RNA)"
+          },
+          "variation": {
+            "variation-human-snp": "Human × SNP / Indel (≤ 50 bp)",
+            "variation-human-sv": "Human × SV (> 50 bp)",
+            "variation-nonhuman-snp": "Non-human × SNP / Indel",
+            "variation-nonhuman-sv": "Non-human × SV"
+          },
+          "expression": {
+            "expression-ngs": "NGS RNA-seq",
+            "expression-array": "Microarray"
+          },
+          "sequence-scale": {
+            "small-sequence": "Small-scale (< 100 seqs, < 500 kb)",
+            "sequence-source": "Large-scale"
+          },
+          "sequence-source": {
+            "single-organism": "Single organism",
+            "metagenome": "Environmental sample / metagenome"
+          },
+          "metagenome": {
+            "metagenome-raw": "Raw reads only",
+            "metagenome-primary": "Primary contigs (pre-binning)",
+            "metagenome-genome-bin": "Genome bin (MAG / Binned / SAG)",
+            "metagenome-tls": "OTU profile (TLS)",
+            "metagenome-tsa": "Metatranscriptome (meta-TSA)"
+          },
+          "single-organism": {
+            "microbial": "Microbial (prokaryote / virus / organelle)",
+            "eukaryote": "Eukaryotic (animal / plant / fungi)"
+          },
+          "microbial": {
+            "prokaryote": "Prokaryote (bacteria / archaea)",
+            "virus": "Virus / phage",
+            "organelle-plasmid": "Organelle / plasmid"
+          },
+          "prokaryote": {
+            "prokaryote-raw": "Raw reads only",
+            "prokaryote-raw-assembly": "Raw reads + assembly",
+            "prokaryote-assembly-only": "Assembly only"
+          },
+          "virus": {
+            "virus-raw": "Raw reads only",
+            "virus-raw-assembly": "Raw reads + assembly",
+            "virus-assembly-only": "Assembly only"
+          },
+          "eukaryote": {
+            "eukaryote-genome": "Standard eukaryotic genome",
+            "eukaryote-haplotype": "With haplotype distinction (diploid)",
+            "eukaryote-tsa": "de novo transcriptome assembly (TSA)",
+            "eukaryote-est": "Single-pass cDNA (EST)",
+            "eukaryote-tpa": "Third-party annotation (TPA)"
+          },
+          "eukaryote-genome": {
+            "eukaryote-raw": "Raw reads only",
+            "eukaryote-raw-assembly": "Raw reads + assembly",
+            "eukaryote-assembly-only": "Assembly only"
+          },
+          "eukaryote-haplotype": {
+            "eukaryote-haplotype-raw-assembly": "Raw reads + assembly",
+            "eukaryote-haplotype-assembly-only": "Assembly only"
+          },
+          "eukaryote-est": {
+            "eukaryote-est-small": "Small (< 100 seqs)",
+            "eukaryote-est-large": "Large"
+          }
+        }
+      },
+      "detail": {
+        "overviewTitle": "Overview",
+        "threeLayerHeading": "Three-layer submission",
+        "threeLayerDescription": "Genome submission is a three-layer process: metadata (BioProject + BioSample) → raw reads (DRA) → assembly (MSS / NSSS). Each layer is submitted independently and linked by BioProject / BioSample accessions.",
+        "threeLayerLayer1": "Layer 1: Metadata — BioProject + BioSample (D-way)",
+        "threeLayerLayer2": "Layer 2: Raw reads — DRA (D-way)",
+        "threeLayerLayer3": "Layer 3: Assembly — DDBJ (Trad) via MSS / NSSS",
+        "branchesHeading": "Submission goal by data format",
+        "branchesColDataLabel": "Your data",
+        "branchesColLeaf": "Submission goal",
+        "branchesColAction": "See detail",
+        "branchLinkLabel": "Leaf detail",
+        "commonHeading": "Common prerequisites",
+        "linksHeading": "Key external links",
+        "backToOverview": "← Back to overview",
+        "placeholder": {
+          "title": "Detail page is in preparation",
+          "description": "The leaf-specific submission steps and prerequisites will be added in a later phase. For now, please refer to the parent card's overview.",
+          "action": "See card overview"
+        },
+        "overviews": {
+          "microbial": {
+            "summary": "Genome submission for microbes (prokaryotes, viruses, organelles, plasmids). Follows the three-layer structure (metadata → raw reads → assembly). Prokaryotic genomes can be annotated automatically with DFAST.",
+            "commonRequirements": "DDBJ Account, public key, pre-registered BioProject + BioSample",
+            "links": {
+              "dway": "D-way (BioProject / BioSample / DRA)",
+              "mss": "MSS (DDBJ Trad)"
+            }
+          },
+          "eukaryote": {
+            "summary": "Genome submission for eukaryotes (animals, plants, fungi). Includes special cases: Haplotype (diploid umbrella + Principal + Alternate), de novo transcriptome (TSA), single-pass cDNA (EST), and third-party annotation (TPA).",
+            "commonRequirements": "DDBJ Account, public key, pre-registered BioProject + BioSample, locus_tag prefix is mandatory",
+            "links": {
+              "dway": "D-way",
+              "mss": "MSS (DDBJ Trad)"
+            }
+          },
+          "metagenome": {
+            "summary": "Environmental sample and metagenome-derived data. Five branches: raw reads only, Primary (pre-binning contigs), genome bin (MAG / Binned / SAG), OTU profile (TLS), and metatranscriptome (meta-TSA).",
+            "commonRequirements": "DDBJ Account, public key, pre-registered BioProject + BioSample",
+            "links": {
+              "dway": "D-way",
+              "mss": "MSS (DDBJ Trad)"
+            }
+          },
+          "expression": {
+            "summary": "Gene expression data (RNA-seq, microarray). Submitted to GEA. NGS-derived data goes to DRA + GEA; microarray to GEA only.",
+            "commonRequirements": "DDBJ Account, BioProject + BioSample",
+            "links": {
+              "dway": "D-way",
+              "gea": "GEA (within D-way)"
+            }
+          },
+          "variation": {
+            "summary": "SNP / structural variant calling results. Submission destination depends on organism (human / non-human) and variant type (SNP / SV): DDBJ-run JVar, or EBI-run EVA / dgVa.",
+            "commonRequirements": "Account for each submission service (JVar / EVA / dgVa)",
+            "links": {
+              "jvar": "JVar (DDBJ)",
+              "eva": "EVA (EBI)",
+              "dgva": "dgVa (EBI)"
+            }
+          },
+          "proteomics": {
+            "summary": "LC-MS/MS proteome data. Submitted to jPOST (external).",
+            "commonRequirements": "jPOST account",
+            "links": {
+              "jpost": "jPOST"
+            }
+          },
+          "metabolomics": {
+            "summary": "Metabolomics data from LC-MS / GC-MS. Submitted to MetaboBank.",
+            "commonRequirements": "DDBJ Account, BioProject + BioSample",
+            "links": {
+              "metabobank": "MetaboBank"
+            }
+          },
+          "small-sequence": {
+            "summary": "Sequences fewer than 100 entries and shorter than 500 kb in total. Submitted directly via NSSS without BioProject or BioSample.",
+            "commonRequirements": "DDBJ Account",
+            "links": {
+              "nsss": "NSSS (DDBJ Trad)"
+            }
+          },
+          "human-restricted": {
+            "summary": "Human data with re-identification risk. Requires NBDC data-sharing approval and is submitted to JGA.",
+            "commonRequirements": "NBDC Human Database data-sharing approval, JGA submission account",
+            "links": {
+              "nbdc": "NBDC Human Database",
+              "jga": "JGA"
+            }
+          }
+        },
+        "branchLabels": {
+          "microbial": {
+            "organelle-plasmid": "Organelle / plasmid",
+            "prokaryote-raw": "Prokaryote (raw reads only)",
+            "prokaryote-raw-assembly": "Prokaryote (raw + assembly)",
+            "prokaryote-assembly-only": "Prokaryote (assembly only)",
+            "virus-raw": "Virus (raw reads only)",
+            "virus-raw-assembly": "Virus (raw + assembly)",
+            "virus-assembly-only": "Virus (assembly only)"
+          },
+          "eukaryote": {
+            "eukaryote-raw": "Standard (raw reads only)",
+            "eukaryote-raw-assembly": "Standard (raw + assembly)",
+            "eukaryote-assembly-only": "Standard (assembly only)",
+            "eukaryote-haplotype-raw-assembly": "Haplotype (raw + assembly)",
+            "eukaryote-haplotype-assembly-only": "Haplotype (assembly only)",
+            "eukaryote-tsa": "TSA (de novo transcriptome)",
+            "eukaryote-tpa": "TPA (peer-reviewed required)",
+            "eukaryote-est-small": "EST (small < 100)",
+            "eukaryote-est-large": "EST (large)"
+          },
+          "metagenome": {
+            "metagenome-raw": "Raw reads only",
+            "metagenome-primary": "Primary (DRA Analysis)",
+            "metagenome-genome-bin": "Genome bin (MAG / Binned / SAG)",
+            "metagenome-tls": "OTU profile (TLS)",
+            "metagenome-tsa": "Metatranscriptome (meta-TSA)"
+          },
+          "expression": {
+            "expression-ngs": "NGS RNA-seq",
+            "expression-array": "Microarray"
+          },
+          "variation": {
+            "variation-human-snp": "Human × SNP / Indel",
+            "variation-human-sv": "Human × SV",
+            "variation-nonhuman-snp": "Non-human × SNP / Indel",
+            "variation-nonhuman-sv": "Non-human × SV"
+          },
+          "proteomics": {
+            "proteomics": "Proteomics (all)"
+          },
+          "metabolomics": {
+            "metabolomics": "Metabolomics (all)"
+          },
+          "small-sequence": {
+            "small-sequence": "Sequences fewer than 100"
+          },
+          "human-restricted": {
+            "human-restricted": "Human data with re-identification risk"
+          }
+        }
+      }
+    },
     "designSystem": { "title": "Design System" }
   },
   "aria": {
