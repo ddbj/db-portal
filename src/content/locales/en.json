@@ -111,7 +111,246 @@
         "publishedAtAria": "Published at"
       }
     },
-    "advancedSearch": { "title": "Advanced Search" },
+    "advancedSearch": {
+      "title": "Advanced Search",
+      "meta": {
+        "title": "Advanced Search - DDBJ Portal",
+        "description": "Build field-scoped queries across DDBJ databases"
+      },
+      "hero": {
+        "title": "Advanced Search",
+        "subtitle": "Combine fields, operators, and values to query DDBJ databases across or within a single service"
+      },
+      "db": {
+        "heading": "Database",
+        "all": "All databases (cross)",
+        "single": "Single database"
+      },
+      "builder": {
+        "heading": "Search conditions",
+        "addCondition": "+ Add condition",
+        "addGroup": "+ Add group",
+        "removeAria": "Remove condition",
+        "depthBadge": "depth {{current}} / {{max}}",
+        "depthLimitTooltip": "Maximum nesting depth reached",
+        "emptyState": "No conditions yet. Start by adding your first condition.",
+        "notGroupLock": "NOT accepts only a single child"
+      },
+      "operators": {
+        "equals": "equals",
+        "not_equals": "not equals",
+        "contains": "contains",
+        "starts_with": "starts with",
+        "wildcard": "wildcard",
+        "between": "between",
+        "gte": "≥",
+        "lte": "≤"
+      },
+      "logic": {
+        "AND": "AND",
+        "OR": "OR",
+        "NOT": "NOT"
+      },
+      "fields": {
+        "identifier": {
+          "label": "Identifier",
+          "placeholder": "e.g., PRJDB*"
+        },
+        "title": { "label": "Title" },
+        "description": { "label": "Description" },
+        "organism": {
+          "label": "Organism",
+          "placeholder": "Scientific name or Taxonomy ID (e.g., Homo sapiens / 9606)"
+        },
+        "date_published": { "label": "Published date" },
+        "date_modified": { "label": "Modified date" },
+        "date_created": { "label": "Created date" },
+        "date": { "label": "Any date" },
+        "submitter": { "label": "Submitter" },
+        "publication": { "label": "Publication" },
+        "library_strategy": {
+          "label": "Library strategy",
+          "enumValues": {
+            "wgs": "WGS",
+            "rna_seq": "RNA-Seq",
+            "chip_seq": "ChIP-Seq",
+            "amplicon": "AMPLICON",
+            "bisulfite_seq": "Bisulfite-Seq",
+            "hi_c": "Hi-C",
+            "atac_seq": "ATAC-seq",
+            "other": "OTHER"
+          }
+        },
+        "library_source": {
+          "label": "Library source",
+          "enumValues": {
+            "genomic": "GENOMIC",
+            "transcriptomic": "TRANSCRIPTOMIC",
+            "metagenomic": "METAGENOMIC",
+            "metatranscriptomic": "METATRANSCRIPTOMIC",
+            "synthetic": "SYNTHETIC",
+            "viral_rna": "VIRAL RNA",
+            "other": "OTHER"
+          }
+        },
+        "library_layout": {
+          "label": "Library layout",
+          "enumValues": {
+            "single": "SINGLE",
+            "paired": "PAIRED"
+          }
+        },
+        "platform": {
+          "label": "Platform",
+          "enumValues": {
+            "illumina": "ILLUMINA",
+            "pacbio_smrt": "PACBIO_SMRT",
+            "oxford_nanopore": "OXFORD_NANOPORE",
+            "bgiseq": "BGISEQ",
+            "ion_torrent": "ION_TORRENT"
+          }
+        },
+        "instrument_model": { "label": "Instrument model" },
+        "geo_loc_name": { "label": "Geographic location" },
+        "collection_date": { "label": "Collection date" },
+        "host": { "label": "Host" },
+        "disease": { "label": "Disease" },
+        "tissue": { "label": "Tissue" },
+        "env_biome": { "label": "Environmental biome" },
+        "project_type": {
+          "label": "Project type",
+          "enumValues": {
+            "genome_sequencing": "Genome sequencing",
+            "transcriptome": "Transcriptome",
+            "metagenome": "Metagenome",
+            "epigenome": "Epigenome",
+            "variation": "Variation"
+          }
+        },
+        "bioproject_grant_agency": { "label": "Grant agency (BioProject)" },
+        "child_biosamples": { "label": "Child BioSamples" },
+        "division": {
+          "label": "Division",
+          "enumValues": {
+            "bct": "BCT (bacteria)",
+            "vrl": "VRL (viruses)",
+            "pln": "PLN (plants)",
+            "inv": "INV (invertebrates)",
+            "vrt": "VRT (vertebrates)",
+            "mam": "MAM (mammals)",
+            "pri": "PRI (primates)",
+            "rod": "ROD (rodents)",
+            "pat": "PAT (patents)",
+            "env": "ENV (environmental)"
+          }
+        },
+        "molecular_type": {
+          "label": "Molecular type",
+          "enumValues": {
+            "dna": "DNA",
+            "rna": "RNA",
+            "crna": "cRNA",
+            "mrna": "mRNA",
+            "ncrna": "ncRNA"
+          }
+        },
+        "sequence_length": { "label": "Sequence length (bp)" },
+        "feature_gene_name": { "label": "Feature gene name" },
+        "reference_journal": { "label": "Reference journal" },
+        "rank": {
+          "label": "Rank",
+          "enumValues": {
+            "kingdom": "Kingdom",
+            "phylum": "Phylum",
+            "class": "Class",
+            "order": "Order",
+            "family": "Family",
+            "genus": "Genus",
+            "species": "Species",
+            "strain": "Strain"
+          }
+        },
+        "lineage": { "label": "Lineage" },
+        "kingdom": { "label": "Kingdom" },
+        "phylum": { "label": "Phylum" },
+        "class": { "label": "Class" },
+        "order": { "label": "Order" },
+        "family": { "label": "Family" },
+        "genus": { "label": "Genus" },
+        "species": { "label": "Species" },
+        "common_name": { "label": "Common name" },
+        "japanese_name": { "label": "Japanese name" },
+        "study_type": {
+          "label": "Study type",
+          "enumValues": {
+            "case_control": "Case-Control",
+            "case_set": "Case Set",
+            "population_genomics": "Population Genomics",
+            "cohort": "Cohort"
+          }
+        },
+        "jga_grant_agency": { "label": "Grant agency (JGA)" },
+        "principal_investigator": { "label": "Principal investigator" },
+        "submitting_organization": { "label": "Submitting organization" }
+      },
+      "dateSubSelector": {
+        "label": "Date kind",
+        "published": "Published",
+        "modified": "Modified",
+        "created": "Created",
+        "any": "Any",
+        "tradOnlyTooltip": "Trad supports only the published date",
+        "taxonomyDisabledTooltip": "Taxonomy does not support date search"
+      },
+      "preview": {
+        "heading": "Query preview",
+        "copy": "Copy",
+        "copied": "Copied",
+        "empty": "Add conditions to see the query",
+        "urlOnly": "Displaying the DSL received from URL. Rebuild conditions to edit."
+      },
+      "actions": {
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "dbSwitchWarning": {
+        "heading": "Switching database will remove these {{currentDb}}-specific conditions:",
+        "confirm": "Switch",
+        "cancel": "Cancel"
+      },
+      "examples": {
+        "heading": "Examples",
+        "cross-tier1": {
+          "label": "Cancer-related studies in Homo sapiens"
+        },
+        "bioproject-tier3": {
+          "label": "BioProject genome sequencing studies"
+        },
+        "date-between": {
+          "label": "Data published between 2020 and 2024"
+        },
+        "or-compound": {
+          "label": "(cancer OR tumor) AND Homo sapiens"
+        },
+        "single-tier1": {
+          "label": "BioSample gut microbiome samples"
+        },
+        "identifier-wildcard": {
+          "label": "BioProject PRJDB-series accessions"
+        }
+      },
+      "validation": {
+        "NEST_DEPTH_EXCEEDED": "Nesting depth exceeds the maximum of 5",
+        "INVALID_DATE_FORMAT": "Dates must be in YYYY-MM-DD format",
+        "INVALID_NUMBER": "Value must be a number",
+        "MISSING_VALUE": "A value is required",
+        "INVALID_OPERATOR_FOR_FIELD": "This operator is not available for this field",
+        "FIELD_NOT_AVAILABLE_IN_CROSS_DB": "This field cannot be used in cross-database search",
+        "UNKNOWN_FIELD": "Unknown field",
+        "NOT_REQUIRES_SINGLE_CHILD": "NOT accepts only a single child",
+        "WILDCARD_VALUE_CONTAINS_QUOTE": "Wildcard values cannot contain quotes"
+      }
+    },
     "submit": {
       "title": "Submit",
       "meta": {

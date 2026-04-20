@@ -111,7 +111,246 @@
         "publishedAtAria": "公開日"
       }
     },
-    "advancedSearch": { "title": "詳細検索" },
+    "advancedSearch": {
+      "title": "詳細検索",
+      "meta": {
+        "title": "詳細検索 - DDBJ Portal",
+        "description": "DDBJ のデータベースを、フィールド・演算子・値を組み合わせて検索"
+      },
+      "hero": {
+        "title": "詳細検索",
+        "subtitle": "フィールド・演算子・値を組み合わせて条件を構築し、DDBJ の各データベースを横断または単一で検索"
+      },
+      "db": {
+        "heading": "データベース",
+        "all": "全データベース（横断）",
+        "single": "単一 DB"
+      },
+      "builder": {
+        "heading": "検索条件",
+        "addCondition": "+ 条件を追加",
+        "addGroup": "+ グループを追加",
+        "removeAria": "条件を削除",
+        "depthBadge": "深さ {{current}} / {{max}}",
+        "depthLimitTooltip": "ネスト深さの上限に達しました",
+        "emptyState": "条件が未設定です。まずは「+ 条件を追加」で最初の条件を作成してください。",
+        "notGroupLock": "NOT は 1 条件のみ指定可能"
+      },
+      "operators": {
+        "equals": "等しい",
+        "not_equals": "等しくない",
+        "contains": "含む",
+        "starts_with": "前方一致",
+        "wildcard": "ワイルドカード",
+        "between": "範囲指定",
+        "gte": "以上",
+        "lte": "以下"
+      },
+      "logic": {
+        "AND": "AND",
+        "OR": "OR",
+        "NOT": "NOT"
+      },
+      "fields": {
+        "identifier": {
+          "label": "アクセッション",
+          "placeholder": "例: PRJDB*"
+        },
+        "title": { "label": "タイトル" },
+        "description": { "label": "記述" },
+        "organism": {
+          "label": "生物種",
+          "placeholder": "学名 または Taxonomy ID（例: Homo sapiens / 9606）"
+        },
+        "date_published": { "label": "公開日" },
+        "date_modified": { "label": "更新日" },
+        "date_created": { "label": "作成日" },
+        "date": { "label": "いずれかの日付" },
+        "submitter": { "label": "登録者" },
+        "publication": { "label": "公表文献" },
+        "library_strategy": {
+          "label": "ライブラリ戦略",
+          "enumValues": {
+            "wgs": "WGS",
+            "rna_seq": "RNA-Seq",
+            "chip_seq": "ChIP-Seq",
+            "amplicon": "AMPLICON",
+            "bisulfite_seq": "Bisulfite-Seq",
+            "hi_c": "Hi-C",
+            "atac_seq": "ATAC-seq",
+            "other": "OTHER"
+          }
+        },
+        "library_source": {
+          "label": "ライブラリソース",
+          "enumValues": {
+            "genomic": "GENOMIC",
+            "transcriptomic": "TRANSCRIPTOMIC",
+            "metagenomic": "METAGENOMIC",
+            "metatranscriptomic": "METATRANSCRIPTOMIC",
+            "synthetic": "SYNTHETIC",
+            "viral_rna": "VIRAL RNA",
+            "other": "OTHER"
+          }
+        },
+        "library_layout": {
+          "label": "ライブラリレイアウト",
+          "enumValues": {
+            "single": "SINGLE",
+            "paired": "PAIRED"
+          }
+        },
+        "platform": {
+          "label": "プラットフォーム",
+          "enumValues": {
+            "illumina": "ILLUMINA",
+            "pacbio_smrt": "PACBIO_SMRT",
+            "oxford_nanopore": "OXFORD_NANOPORE",
+            "bgiseq": "BGISEQ",
+            "ion_torrent": "ION_TORRENT"
+          }
+        },
+        "instrument_model": { "label": "機種" },
+        "geo_loc_name": { "label": "採取地" },
+        "collection_date": { "label": "採取日" },
+        "host": { "label": "宿主" },
+        "disease": { "label": "疾患" },
+        "tissue": { "label": "組織" },
+        "env_biome": { "label": "生態系バイオーム" },
+        "project_type": {
+          "label": "プロジェクト種別",
+          "enumValues": {
+            "genome_sequencing": "Genome sequencing",
+            "transcriptome": "Transcriptome",
+            "metagenome": "Metagenome",
+            "epigenome": "Epigenome",
+            "variation": "Variation"
+          }
+        },
+        "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
+        "child_biosamples": { "label": "配下 BioSample" },
+        "division": {
+          "label": "Division",
+          "enumValues": {
+            "bct": "BCT（細菌）",
+            "vrl": "VRL（ウイルス）",
+            "pln": "PLN（植物）",
+            "inv": "INV（無脊椎動物）",
+            "vrt": "VRT（脊椎動物）",
+            "mam": "MAM（哺乳類）",
+            "pri": "PRI（霊長類）",
+            "rod": "ROD（齧歯類）",
+            "pat": "PAT（特許）",
+            "env": "ENV（環境）"
+          }
+        },
+        "molecular_type": {
+          "label": "分子種別",
+          "enumValues": {
+            "dna": "DNA",
+            "rna": "RNA",
+            "crna": "cRNA",
+            "mrna": "mRNA",
+            "ncrna": "ncRNA"
+          }
+        },
+        "sequence_length": { "label": "配列長 (bp)" },
+        "feature_gene_name": { "label": "遺伝子名（feature）" },
+        "reference_journal": { "label": "参考文献誌名" },
+        "rank": {
+          "label": "階層",
+          "enumValues": {
+            "kingdom": "Kingdom",
+            "phylum": "Phylum",
+            "class": "Class",
+            "order": "Order",
+            "family": "Family",
+            "genus": "Genus",
+            "species": "Species",
+            "strain": "Strain"
+          }
+        },
+        "lineage": { "label": "系統" },
+        "kingdom": { "label": "Kingdom" },
+        "phylum": { "label": "Phylum" },
+        "class": { "label": "Class" },
+        "order": { "label": "Order" },
+        "family": { "label": "Family" },
+        "genus": { "label": "Genus" },
+        "species": { "label": "Species" },
+        "common_name": { "label": "一般名" },
+        "japanese_name": { "label": "和名" },
+        "study_type": {
+          "label": "研究種別",
+          "enumValues": {
+            "case_control": "Case-Control",
+            "case_set": "Case Set",
+            "population_genomics": "Population Genomics",
+            "cohort": "Cohort"
+          }
+        },
+        "jga_grant_agency": { "label": "助成機関（JGA）" },
+        "principal_investigator": { "label": "主任研究者" },
+        "submitting_organization": { "label": "登録組織" }
+      },
+      "dateSubSelector": {
+        "label": "日付種別",
+        "published": "公開日",
+        "modified": "更新日",
+        "created": "作成日",
+        "any": "いずれか",
+        "tradOnlyTooltip": "Trad では公開日のみ利用可",
+        "taxonomyDisabledTooltip": "Taxonomy は日付検索に非対応"
+      },
+      "preview": {
+        "heading": "クエリプレビュー",
+        "copy": "コピー",
+        "copied": "コピーしました",
+        "empty": "条件を追加するとクエリが表示されます",
+        "urlOnly": "URL から受信した DSL を表示しています。編集するには条件を組み直してください。"
+      },
+      "actions": {
+        "search": "検索",
+        "reset": "リセット"
+      },
+      "dbSwitchWarning": {
+        "heading": "データベースを切り替えると、以下の {{currentDb}} 固有の条件が削除されます:",
+        "confirm": "切り替える",
+        "cancel": "キャンセル"
+      },
+      "examples": {
+        "heading": "Examples",
+        "cross-tier1": {
+          "label": "ヒトを対象にしたがん関連の横断検索"
+        },
+        "bioproject-tier3": {
+          "label": "BioProject でゲノム配列プロジェクト"
+        },
+        "date-between": {
+          "label": "2020〜2024 年に公開されたデータ"
+        },
+        "or-compound": {
+          "label": "(cancer OR tumor) AND Homo sapiens（OR 複合）"
+        },
+        "single-tier1": {
+          "label": "BioSample で腸内マイクロバイオーム"
+        },
+        "identifier-wildcard": {
+          "label": "BioProject の PRJDB 系アクセッション"
+        }
+      },
+      "validation": {
+        "NEST_DEPTH_EXCEEDED": "ネスト深さが上限 5 を超えています",
+        "INVALID_DATE_FORMAT": "日付は YYYY-MM-DD 形式で入力してください",
+        "INVALID_NUMBER": "数値を入力してください",
+        "MISSING_VALUE": "値を入力してください",
+        "INVALID_OPERATOR_FOR_FIELD": "このフィールドで利用できない演算子です",
+        "FIELD_NOT_AVAILABLE_IN_CROSS_DB": "横断検索では利用できないフィールドです",
+        "UNKNOWN_FIELD": "不明なフィールドです",
+        "NOT_REQUIRES_SINGLE_CHILD": "NOT には 1 つの条件のみ指定できます",
+        "WILDCARD_VALUE_CONTAINS_QUOTE": "ワイルドカード値にクォートは含められません"
+      }
+    },
     "submit": {
       "title": "登録",
       "meta": {

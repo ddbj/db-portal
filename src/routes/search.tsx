@@ -1,7 +1,12 @@
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { Navigate, useNavigate, useSearchParams } from "react-router"
+import {
+  redirect,
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+  useSearchParams,
+} from "react-router"
 
 import {
   DbHitCountList,
@@ -17,10 +22,12 @@ import en from "@/content/locales/en.json"
 import ja from "@/content/locales/ja.json"
 import { pickLang } from "@/i18n"
 import {
+  classifyMockQuery,
   DATABASES,
   dbHitCountQueryFn,
   isHardLimitReached,
   MockError,
+  type SearchResultsPayload,
   searchResultsQueryFn,
 } from "@/lib/mock-data"
 import {
@@ -58,14 +65,76 @@ const toErrorKind = (error: unknown): ErrorKind => {
 
 const PORTAL_ORIGIN = "https://portal.ddbj.nig.ac.jp"
 
-export const loader = ({ request }: Route.LoaderArgs) => {
+const DEMO_FALLBACK_URL = "/search?q=human"
+
+const resolveHitCounts = async (
+  q: string | null,
+  adv: string | null,
+): Promise<readonly DbHitCount[]> => {
+  const key = q ?? adv ?? ""
+  const modality = classifyMockQuery(key)
+  if (modality === "loading") {
+    return DB_ORDER.map((dbId) => ({ dbId, state: "loading", count: null }))
+  }
+  const results = await Promise.allSettled(
+    DB_ORDER.map((dbId) => dbHitCountQueryFn(dbId, q, adv)),
+  )
+
+  return results.map((r, idx) => {
+    const dbId = DB_ORDER[idx] as DbId
+    if (r.status === "fulfilled") {
+      return { dbId, state: "success", count: r.value.count }
+    }
+
+    return {
+      dbId,
+      state: "error",
+      count: null,
+      error: toErrorKind(r.reason),
+    }
+  })
+}
+
+type DbModeResult =
+  | { state: "loading" }
+  | { state: "success"; payload: SearchResultsPayload }
+  | { state: "error"; error: ErrorKind }
+
+const resolveDbModeResult = async (
+  params: SearchParams & { db: DbId },
+): Promise<DbModeResult> => {
+  const key = params.q ?? params.adv ?? ""
+  const modality = classifyMockQuery(key)
+  if (modality === "loading") return { state: "loading" }
+  try {
+    const payload = await searchResultsQueryFn({
+      q: params.q,
+      adv: params.adv,
+      db: params.db,
+      page: params.page,
+      perPage: params.perPage,
+      sort: params.sort,
+    })
+
+    return { state: "success", payload }
+  } catch (e) {
+    return { state: "error", error: toErrorKind(e) }
+  }
+}
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const url = new URL(request.url)
+  const parsed = parseSearchUrl(url.searchParams)
+
+  if (parsed.shouldRedirectToHome) {
+    throw redirect(DEMO_FALLBACK_URL)
+  }
+
   const lang = pickLang(
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
   )
   const resource = lang === "ja" ? ja : en
-  const url = new URL(request.url)
-  const parsed = parseSearchUrl(url.searchParams)
 
   let metaTitle: string = resource.routes.home.meta.title
   if (parsed.params.q === null && parsed.params.adv !== null) {
@@ -93,11 +162,21 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     sort: parsed.params.sort,
   })
 
+  const databases = parsed.params.db === ALL_DB_VALUE
+    ? await resolveHitCounts(parsed.params.q, parsed.params.adv)
+    : null
+
+  const dbModeResult = parsed.params.db !== ALL_DB_VALUE
+    ? await resolveDbModeResult({ ...parsed.params, db: parsed.params.db })
+    : null
+
   return {
     lang,
     metaTitle,
     metaDescription: resource.routes.search.meta.description,
     canonicalUrl: `${PORTAL_ORIGIN}${canonicalSearch}`,
+    databases,
+    dbModeResult,
   }
 }
 
@@ -128,10 +207,6 @@ const Search = () => {
     }
   }, [parsed.canonicalUrl, navigate])
 
-  if (parsed.shouldRedirectToHome) {
-    return <Navigate to="/" replace />
-  }
-
   if (parsed.params.db === ALL_DB_VALUE) {
     return <CrossModeView params={parsed.params} softErrors={parsed.softErrors} />
   }
@@ -155,36 +230,16 @@ interface ModeViewProps {
 const CrossModeView = ({ params, softErrors }: ModeViewProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const revalidator = useRevalidator()
+  const loaderData = useLoaderData<typeof loader>()
+  const databases: readonly DbHitCount[] = loaderData.databases ?? DB_ORDER.map((dbId) => ({
+    dbId,
+    state: "loading",
+    count: null,
+  }))
 
-  const hitCountQueries = useQueries({
-    queries: DB_ORDER.map((dbId) => ({
-      queryKey: ["search", "hitCount", dbId, params.q, params.adv] as const,
-      queryFn: () => dbHitCountQueryFn(dbId, params.q, params.adv),
-    })),
-  })
-
-  const databases: readonly DbHitCount[] = hitCountQueries.map((q, idx) => {
-    const dbId = DB_ORDER[idx] as DbId
-    if (q.isPending) {
-      return { dbId, state: "loading", count: null }
-    }
-    if (q.isError) {
-      return {
-        dbId,
-        state: "error",
-        count: null,
-        error: toErrorKind(q.error),
-      }
-    }
-
-    return { dbId, state: "success", count: q.data?.count ?? 0 }
-  })
-
-  const handleRetry = (dbId?: DbId) => {
-    void queryClient.invalidateQueries({
-      queryKey: dbId ? ["search", "hitCount", dbId] : ["search", "hitCount"],
-    })
+  const handleRetry = (_dbId?: DbId) => {
+    void revalidator.revalidate()
   }
 
   const handleClear = () => {
@@ -243,29 +298,9 @@ interface DbModeViewProps extends ModeViewProps {
 const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-
-  const resultsQuery = useQuery({
-    queryKey: [
-      "search",
-      "results",
-      db,
-      params.q,
-      params.adv,
-      params.page,
-      params.perPage,
-      params.sort,
-    ] as const,
-    queryFn: () =>
-      searchResultsQueryFn({
-        q: params.q,
-        adv: params.adv,
-        db,
-        page: params.page,
-        perPage: params.perPage,
-        sort: params.sort,
-      }),
-  })
+  const revalidator = useRevalidator()
+  const loaderData = useLoaderData<typeof loader>()
+  const dbModeResult: DbModeResult = loaderData.dbModeResult ?? { state: "loading" }
 
   const updateParams = (changes: Partial<SearchParams>) => {
     const merged = { ...params, ...changes }
@@ -291,7 +326,7 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
   }
 
   const handleRetry = () => {
-    void queryClient.invalidateQueries({ queryKey: ["search", "results", db] })
+    void revalidator.revalidate()
   }
 
   const editHref = params.adv !== null
@@ -328,7 +363,7 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
         {displayName}
       </Heading>
 
-      {resultsQuery.isPending && (
+      {dbModeResult.state === "loading" && (
         <div className="flex flex-col gap-3">
           <SkeletonCard />
           <SkeletonCard />
@@ -336,7 +371,7 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
         </div>
       )}
 
-      {resultsQuery.isError && (
+      {dbModeResult.state === "error" && (
         <Callout type="error">
           <div className="flex items-center justify-between gap-3">
             <p>{t("routes.search.crossMode.partialFailure.allError")}</p>
@@ -351,28 +386,28 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
         </Callout>
       )}
 
-      {resultsQuery.isSuccess && (
+      {dbModeResult.state === "success" && (
         <>
           <SearchToolbar
-            total={resultsQuery.data.total}
+            total={dbModeResult.payload.total}
             page={params.page}
             perPage={params.perPage}
             sort={params.sort}
             onSortChange={handleSortChange}
             onPerPageChange={handlePerPageChange}
-            isOver10kLimit={resultsQuery.data.hardLimitReached || hardLimit}
+            isOver10kLimit={dbModeResult.payload.hardLimitReached || hardLimit}
           />
-          <ResultCardList results={resultsQuery.data.hits} />
+          <ResultCardList results={dbModeResult.payload.hits} />
           <Pagination
             page={params.page}
             totalPages={Math.max(
               1,
-              Math.ceil(resultsQuery.data.total / params.perPage),
+              Math.ceil(dbModeResult.payload.total / params.perPage),
             )}
             onChange={handlePageChange}
-            hardLimitReached={resultsQuery.data.hardLimitReached}
+            hardLimitReached={dbModeResult.payload.hardLimitReached}
           />
-          {resultsQuery.data.hardLimitReached && <Over10kCallout db={db} />}
+          {dbModeResult.payload.hardLimitReached && <Over10kCallout db={db} />}
         </>
       )}
     </section>

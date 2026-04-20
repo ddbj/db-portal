@@ -1,3 +1,13 @@
+export { ADVANCED_EXAMPLES } from "./advanced-search-examples"
+export {
+  ADVANCED_FIELDS,
+  fieldLabelKey,
+  findField,
+  getFieldsForDb,
+  getFieldsForTier,
+  isFieldAvailableForDb,
+  isTier3,
+} from "./advanced-search-fields"
 export { DATABASES, DB_ORDER } from "./databases"
 export { DETAIL_OVERVIEWS } from "./detail-panel"
 export { EXAMPLE_CHIPS, type ExampleChip } from "./examples"

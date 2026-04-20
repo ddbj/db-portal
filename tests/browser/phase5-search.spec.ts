@@ -34,9 +34,10 @@ test.describe("Phase 5: /search cross mode", () => {
     ).toBeVisible()
   })
 
-  test("redirects to / when neither q nor adv are given", async ({ page }) => {
+  test("redirects /search (empty query) to the cross-mode demo", async ({ page }) => {
     await page.goto("/search")
-    await expect(page).toHaveURL("/")
+    await expect(page).toHaveURL(/\/search\?q=human$/)
+    await expect(page.getByText(/全データベースで絞り込み中/)).toBeVisible()
   })
 })
 
