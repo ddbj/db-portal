@@ -230,7 +230,6 @@
           }
         },
         "bioproject_grant_agency": { "label": "Grant agency (BioProject)" },
-        "child_biosamples": { "label": "Child BioSamples" },
         "division": {
           "label": "Division",
           "enumValues": {

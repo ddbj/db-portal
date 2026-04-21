@@ -230,7 +230,6 @@
           }
         },
         "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
-        "child_biosamples": { "label": "配下 BioSample" },
         "division": {
           "label": "Division",
           "enumValues": {

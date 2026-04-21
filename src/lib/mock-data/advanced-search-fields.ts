@@ -273,14 +273,6 @@ const TIER3_BIOPROJECT: readonly AdvancedFieldDef[] = [
     availableOps: TEXT_OPS,
     availableDbs: BIOPROJECT_DBS,
   },
-  {
-    id: "child_biosamples",
-    dslName: "child_biosamples",
-    tier: 3,
-    type: "identifier",
-    availableOps: IDENTIFIER_OPS,
-    availableDbs: BIOPROJECT_DBS,
-  },
 ]
 
 const TRAD_DBS: readonly DbId[] = ["trad"]

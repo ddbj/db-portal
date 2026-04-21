@@ -193,7 +193,7 @@ DSL 側の allowlist 名（共通語彙）と、converter が ES に投入する
 |---|---|---|
 | SRA / GEA | `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model` | SRA は properties parse 必要（詳細は [search-backends.md](./search-backends.md#共通のフィールド対応)） |
 | BioSample | `geo_loc_name`, `collection_date`, `host`, `disease`, `tissue`, `env_biome` 等 | `attributes.harmonized_name` ベース。代表属性の top-level 昇格は将来検討 |
-| BioProject | `project_type`, `grant_agency`, `child_biosamples` | `childBioProjects` / BioSampleSet の parse 必要 |
+| BioProject | `project_type`, `grant_agency` | — |
 | Trad | `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal` | ARSA の既存スキーマで検索可 |
 | Taxonomy | `rank`, `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name`, `japanese_name` | TXSearch の既存スキーマで検索可 |
 | JGA | `study_type`, `grant_agency`, `principal_investigator`, `submitting_organization` | 全て properties parse 必要 |
