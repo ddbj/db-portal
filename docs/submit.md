@@ -361,6 +361,15 @@ tree 中間 node へのショートカット。研究者の自己認識の呼び
 
 詳細パネルの leaf 単位の詳細内容は [submit-details.md](./submit-details.md) に定義する。
 
+### leaf 詳細の実装系統
+
+leaf 具体レベルの描画は 2 系統で提供する:
+
+1. **手書き TSX 版**: ゲノム系の代表 leaf（`prokaryote-raw-assembly`, `eukaryote-raw-assembly`）は `src/content/submit/*Detail.{ja,en}.tsx` で個別に書き下ろす。情報密度を最大化した詳述版
+2. **goal テンプレ版**: 上記以外の leaf は `src/lib/mock-data/submit-tree/goalTemplates.ts`（goal 別テンプレ）+ `leafDetails.ts`（leaf 差分データ）を `DetailLeafTemplate` コンポーネントが data-driven に描画。goal Badge / 1 段落 summary / 登録の流れ / leaf 固有 Badge 群（BioSample パッケージ、MSS data type 等）/ 外部リンクの 5 要素構成
+
+判定順は `DetailPanel` が担う: (1) 手書き TSX あり → 手書きを使用、(2) 無ければ `LEAF_DETAILS[leafId]` で goal テンプレ版を使用、(3) どちらも該当しない場合のみ `DetailPlaceholder`（全 31 leaf 分 `LEAF_DETAILS` を埋めるため実質到達しない）
+
 ### 詳細パネルの UI 形態
 
 **インライン展開**（Decision Tree の直下に常時描画、同一領域で中身を差し替え）を採用。決め手は SSR / プリレンダリング方針との相性、同一領域コンテンツ差替え方針との直結、focus trap / ESC / scroll lock 等を自前実装せずに済む a11y・モバイル両面での素直さ。初期状態は 1 枚目（微生物ゲノム）の概要レベルを表示しておく。切替時は Detail Panel 見出しに `scrollIntoView({ behavior: "smooth" })`。

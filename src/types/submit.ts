@@ -140,3 +140,26 @@ export interface DetailOverview {
   commonRequirementsKey: string
   primaryLinks: DetailLink[]
 }
+
+export interface GoalTemplate {
+  id: GoalTemplateId
+  commonRequirementsKey: string
+  primaryLinks: DetailLink[]
+}
+
+export interface LeafDetailBadge {
+  variant: "primary" | "gray"
+  labelKey: string
+}
+
+export interface LeafDetail {
+  leafId: LeafNodeId
+  goalTemplateId: GoalTemplateId
+  goalLabel: string
+  summaryKey: string
+  // stepKeys の各要素は i18n で `{key}.title` と `{key}.description` を持つ。
+  // 複数 leaf で同一パターンを使いまわせるよう、i18n 側は `routes.submit.detail.steps.<pattern>.<step>` の形で共有定数化。
+  stepKeys: readonly string[]
+  badges: LeafDetailBadge[]
+  extraLinks?: DetailLink[]
+}

@@ -38,6 +38,8 @@ export {
   PARTIAL_FAILURE_HIT_COUNTS,
 } from "./search-results"
 export {
+  GOAL_TEMPLATES,
+  LEAF_DETAILS,
   LEAF_GOALS,
   LEAF_NUMBER,
   LEAF_PARENTS,

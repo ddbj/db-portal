@@ -78,3 +78,4 @@ podman-compose exec app npm install
 | `KEYCLOAK_REALM_URL` | - | Keycloak の realm URL |
 | `KEYCLOAK_CLIENT_ID` | - | OIDC クライアント ID |
 | `DB_PORTAL_SEARCH_API_URL` | - | DDBJ Search API のエンドポイント。dev / staging は `https://ddbj-staging.nig.ac.jp/search/api`、production は `https://ddbj.nig.ac.jp/search/api` |
+| `VITE_PORTAL_ORIGIN` | - | canonical URL / OGP URL の origin。dev は `http://localhost:3000`、staging は `https://portal-staging.ddbj.nig.ac.jp`、production は `https://portal.ddbj.nig.ac.jp`。`import.meta.env` 経由で SSR / CSR 両方から参照。production ビルドで未設定の場合はビルド時に throw（`src/lib/portal-origin.ts`） |

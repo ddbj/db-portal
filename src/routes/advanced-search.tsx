@@ -10,9 +10,8 @@ import {
   QueryPreview,
 } from "@/components/advanced-search"
 import { Button, Heading } from "@/components/ui"
-import en from "@/content/locales/en.json"
-import ja from "@/content/locales/ja.json"
 import { pickLang } from "@/i18n"
+import { resolveMeta } from "@/i18n/server"
 import {
   advancedSearchReducer,
   buildInitialState,
@@ -20,6 +19,7 @@ import {
   validateNode,
 } from "@/lib/advanced-search"
 import type { ValidationMode } from "@/lib/advanced-search/types"
+import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
   ALL_DB_VALUE,
   buildSearchUrlFull,
@@ -28,8 +28,6 @@ import {
 import { DB_ORDER, type DbId } from "@/types/db"
 
 import type { Route } from "./+types/advanced-search"
-
-const PORTAL_ORIGIN = "https://portal.ddbj.nig.ac.jp"
 
 const VALID_DB_SET: ReadonlySet<string> = new Set<string>([
   ALL_DB_VALUE,
@@ -58,7 +56,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
   )
-  const resource = lang === "ja" ? ja : en
+  const resource = resolveMeta(lang)
 
   const metaTitle = resource.routes.advancedSearch.meta.title
   const metaDescription = resource.routes.advancedSearch.meta.description

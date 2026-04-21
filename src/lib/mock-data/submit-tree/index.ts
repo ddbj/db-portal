@@ -1,3 +1,5 @@
 export { TREE_EDGES, type TreeEdge } from "./edges"
+export { GOAL_TEMPLATES } from "./goalTemplates"
+export { LEAF_DETAILS } from "./leafDetails"
 export { LEAF_GOALS, LEAF_NUMBER, LEAF_PARENTS } from "./leafGoals"
 export { TREE_NODES } from "./nodes"

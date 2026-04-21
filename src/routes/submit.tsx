@@ -5,10 +5,10 @@ import DecisionTree from "@/components/submit/DecisionTree"
 import DetailPanel from "@/components/submit/DetailPanel"
 import UseCaseCardGrid from "@/components/submit/UseCaseCardGrid"
 import { Heading } from "@/components/ui"
-import en from "@/content/locales/en.json"
-import ja from "@/content/locales/ja.json"
 import { pickLang } from "@/i18n"
+import { resolveMeta } from "@/i18n/server"
 import { USE_CASE_CARDS } from "@/lib/mock-data"
+import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import { resolveActiveCard } from "@/lib/submit/node-selectors"
 import { DEFAULT_SUBMIT_NODE_ID, parseForParam } from "@/lib/submit/url"
 import type { CardId, TreeNodeId } from "@/types/submit"
@@ -22,7 +22,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
   )
-  const resource = lang === "ja" ? ja : en
+  const resource = resolveMeta(lang)
 
   return {
     initialNodeId: forParam ?? DEFAULT_SUBMIT_NODE_ID,
@@ -36,7 +36,7 @@ export const meta = ({ data }: Route.MetaArgs) => [
   { title: data?.metaTitle ?? "DDBJ Portal" },
   { name: "description", content: data?.metaDescription ?? "DDBJ Portal" },
   { name: "robots", content: "index, follow" },
-  { tagName: "link", rel: "canonical", href: "https://portal.ddbj.nig.ac.jp/submit" },
+  { tagName: "link", rel: "canonical", href: `${PORTAL_ORIGIN}/submit` },
 ]
 
 const Submit = () => {

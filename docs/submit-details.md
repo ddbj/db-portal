@@ -2,6 +2,15 @@
 
 登録ナビゲーション（`/submit`）の Detail Panel に表示する記述内容を定義する。ページ構成・Tree 分岐・URL 設計は [submit.md](./submit.md) を参照。
 
+## 位置づけ
+
+本書は leaf 具体レベルの **コンテンツ一次ソース（SSOT）** として機能する。実装側は以下 2 系統で描画する（詳細は [submit.md - leaf 詳細の実装系統](./submit.md#leaf-詳細の実装系統)）:
+
+- **goal テンプレ版**（29 leaf）: 本書の「goal テンプレート（6 パターン）」「leaf 差分のカテゴリ」を `src/lib/mock-data/submit-tree/{goalTemplates,leafDetails}.ts` に構造化し、`DetailLeafTemplate` が data-driven 描画
+- **手書き TSX 版**（2 leaf）: ゲノム系の代表 leaf（`prokaryote-raw-assembly`, `eukaryote-raw-assembly`）は本書より詳述した deluxe 版として `src/content/submit/*Detail.{ja,en}.tsx` に個別実装
+
+goal テンプレ版の UI 要素は 5 つに圧縮される（goal Badge / 1 段落 summary / 登録の流れ / leaf 固有 Badge 群 / 外部リンク）。本書の長文記述を全量 UI に載せるのではなく、leaf ごとに差分の要点を抽出する。
+
 ## テンプレート設計
 
 Detail Panel の情報は 3 層で管理する。

@@ -582,11 +582,11 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 |---|---|---|
 | 横断検索結果（シンプル） | `/search?q=xxx` | CSR |
 | DB 指定検索結果（シンプル） | `/search?q=xxx&db=yyy` | CSR |
-| Advanced Search UI | `/advanced-search` | プリレンダ |
+| Advanced Search UI | `/advanced-search` | SSR |
 | 横断 Advanced Search 結果 | `/search?adv=<encoded-dsl>` | CSR |
 | DB 指定 Advanced Search 結果 | `/search?adv=<encoded-dsl>&db=yyy` | CSR |
 
-`/search` を CSR にする根拠: (1) 検索クエリはユーザー固有で SEO 対象ではない（`noindex`）。(2) proxy バックエンド（ARSA / TXSearch）のレイテンシが読めず SSR TTFB が悪化するリスク。(3) TanStack Query のキャッシュ戦略と相性が良い。
+`/search` は SSR でシェル HTML（meta / canonical / ナビゲーション）のみを返し、検索結果データは CSR で TanStack Query 経由に取得する構成。根拠: (1) 検索クエリはユーザー固有で SEO 対象ではない（`noindex`）。(2) proxy バックエンド（ARSA / TXSearch）のレイテンシが読めないため loader で await すると TTFB が悪化する。SSR は URL から決まる部分（meta / 正規化リダイレクト）のみに限定。(3) DB ごとに独立した `useQuery` を発行することで progressive rendering（先に返った DB から順次表示）が自然に成立する。
 
 ### `/search` のクエリパラメータ
 

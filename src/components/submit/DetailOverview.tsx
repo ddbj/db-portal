@@ -1,7 +1,7 @@
 import { ExternalLink } from "lucide-react"
-import { useTranslation } from "react-i18next"
 
 import { Badge, Heading, Table } from "@/components/ui"
+import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import { DETAIL_OVERVIEWS } from "@/lib/mock-data"
 import type { CardId, LeafNodeId } from "@/types/submit"
 
@@ -13,10 +13,7 @@ interface DetailOverviewProps {
 // DETAIL_OVERVIEWS（9 枚完成データ）をデータ駆動で描画。
 // 概要レベルは中間 node 選択時 / leaf で詳細が準備中の場合の fallback 表示にも使われる。
 const DetailOverview = ({ cardId, onBranchClick }: DetailOverviewProps) => {
-  const { t: tStrict } = useTranslation()
-  // mock-data の *Key は実行時に組み立てたキー（例: `routes.submit.detail.overviews.${cardId}.summary`）を
-  // 格納しているため、i18next の strict key 推論と衝突する。キー検証を緩めた t を使う。
-  const t = tStrict as unknown as (key: string, options?: { defaultValue?: string }) => string
+  const { t } = useDynamicTranslation()
   const overview = DETAIL_OVERVIEWS[cardId]
 
   return (

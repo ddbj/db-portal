@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 
 import { Heading, LinkCard, SearchBox, type SelectOption } from "@/components/ui"
-import en from "@/content/locales/en.json"
-import ja from "@/content/locales/ja.json"
 import { pickLang } from "@/i18n"
+import { resolveMeta } from "@/i18n/server"
 import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
+import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import { ALL_DB_VALUE, buildSearchUrl, type DbSelectValue } from "@/lib/search-url"
 
 import type { Route } from "./+types/home"
@@ -16,7 +16,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
   )
-  const resource = lang === "ja" ? ja : en
+  const resource = resolveMeta(lang)
 
   return {
     lang,
@@ -29,7 +29,7 @@ export const meta = ({ data }: Route.MetaArgs) => [
   { title: data?.metaTitle ?? "DDBJ Portal" },
   { name: "description", content: data?.metaDescription ?? "DDBJ Portal" },
   { name: "robots", content: "index, follow" },
-  { tagName: "link", rel: "canonical", href: "https://portal.ddbj.nig.ac.jp/" },
+  { tagName: "link", rel: "canonical", href: `${PORTAL_ORIGIN}/` },
 ]
 
 const Home = () => {

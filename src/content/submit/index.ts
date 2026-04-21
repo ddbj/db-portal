@@ -23,5 +23,5 @@ export const DETAIL_LEAF_COMPONENTS: Partial<
   },
 }
 
-export const hasDetailComponent = (leafId: LeafNodeId): boolean =>
+export const hasHandwrittenDetail = (leafId: LeafNodeId): boolean =>
   DETAIL_LEAF_COMPONENTS[leafId] !== undefined

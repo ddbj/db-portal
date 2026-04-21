@@ -516,6 +516,7 @@
         "branchLinkLabel": "Leaf detail",
         "commonHeading": "Common prerequisites",
         "linksHeading": "Key external links",
+        "stepsHeading": "Submission flow",
         "backToOverview": "← Back to overview",
         "placeholder": {
           "title": "Detail page is in preparation",
@@ -643,6 +644,243 @@
           },
           "human-restricted": {
             "human-restricted": "Human data with re-identification risk"
+          }
+        },
+        "steps": {
+          "bp-bs-dra-mss": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way and obtain an accession (PRJDB*)" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way and link to the BioProject" },
+            "dra": { "title": "DRA", "description": "Upload raw sequence data (FASTQ / BAM) to DRA" },
+            "mss": { "title": "MSS", "description": "Submit assembled sequences and annotations through the MSS form" }
+          },
+          "bp-bs-mss": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "mss": { "title": "MSS", "description": "Submit assembled sequences and annotations through the MSS form" }
+          },
+          "bp-bs-dra": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "dra": { "title": "DRA", "description": "Upload raw sequence data (FASTQ / BAM) to DRA" }
+          },
+          "bp-bs-dra-analysis": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "draAnalysis": { "title": "DRA (Analysis)", "description": "Upload analysis output (pre-binning contigs etc.) to DRA Analysis" }
+          },
+          "bp-bs-dra-gea": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "dra": { "title": "DRA", "description": "Upload raw reads (FASTQ) to DRA" },
+            "gea": { "title": "GEA", "description": "Submit expression data (Series / Sample / Raw files) to GEA" }
+          },
+          "bp-bs-gea": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "gea": { "title": "GEA", "description": "Submit array raw data and processed data to GEA (DRA is not required)" }
+          },
+          "bp-bs-metabobank": {
+            "bioproject": { "title": "BioProject", "description": "Register the project on D-way" },
+            "biosample": { "title": "BioSample", "description": "Register sample info on D-way" },
+            "metabobank": { "title": "MetaboBank", "description": "Submit IDF + SDRF metadata, raw data, and MAF to MetaboBank" }
+          },
+          "bp-bs-dra-mss-haplotype": {
+            "umbrella": { "title": "Umbrella BioProject", "description": "Register the umbrella BioProject that groups the haplotypes" },
+            "principalAlternate": { "title": "Principal / Alternate BioProject", "description": "Register Principal and Alternate BioProjects linked to the umbrella" },
+            "biosample": { "title": "BioSample", "description": "Register a single BioSample shared across haplotypes" },
+            "dra": { "title": "DRA", "description": "Upload raw reads to DRA" },
+            "mss": { "title": "MSS", "description": "Set locus_tag prefix with haplotype suffix and submit via MSS" }
+          },
+          "bp-bs-mss-haplotype": {
+            "umbrella": { "title": "Umbrella BioProject", "description": "Register the umbrella BioProject that groups the haplotypes" },
+            "principalAlternate": { "title": "Principal / Alternate BioProject", "description": "Register Principal and Alternate BioProjects linked to the umbrella" },
+            "biosample": { "title": "BioSample", "description": "Register a single BioSample shared across haplotypes" },
+            "mss": { "title": "MSS", "description": "Set locus_tag prefix with haplotype suffix and submit via MSS" }
+          },
+          "nsss": {
+            "login": { "title": "NSSS login", "description": "Open NSSS with your DDBJ Account" },
+            "form": { "title": "Web form", "description": "Enter sequences and annotations via the NSSS web form" },
+            "review": { "title": "Curation", "description": "DDBJ staff review the submission and handle queries" }
+          },
+          "jga": {
+            "dbcls": { "title": "DBCLS approval", "description": "Submit a data-sharing plan to humandbs.dbcls.jp and obtain approval" },
+            "guidance": { "title": "JGA team guidance", "description": "After approval, contact the DDBJ JGA team to begin submission" },
+            "upload": { "title": "Metadata + data upload", "description": "Write XML metadata and upload real data (BAM / FASTQ / VCF etc.)" }
+          },
+          "external-jpost": {
+            "submit": { "title": "Submit to jPOST directly", "description": "Visit the jPOST site and follow their submission procedure" }
+          },
+          "external-jvar-snp": {
+            "submit": { "title": "Submit to JVar SNP", "description": "Register SNP / Indel data on the JVar SNP site" }
+          },
+          "external-jvar-sv": {
+            "submit": { "title": "Submit to JVar SV", "description": "Register structural variant data on the JVar SV site" }
+          },
+          "external-eva": {
+            "submit": { "title": "Submit to EVA", "description": "Register non-human SNP / Indel data on EBI's EVA" }
+          },
+          "external-dgva": {
+            "submit": { "title": "Submit to dgVa", "description": "Register non-human structural variants on EBI's dgVa" }
+          }
+        },
+        "goalTemplates": {
+          "genome": {
+            "commonRequirements": "DDBJ Account, SSH public key, sequence file (FASTA), annotation (tab-delimited), NGS raw data (FASTQ / BAM), MD5",
+            "links": { "dway": "D-way", "mss": "MSS form" }
+          },
+          "gea": {
+            "commonRequirements": "DDBJ Account, processed data, raw data, MD5",
+            "links": { "dway": "D-way", "gea": "GEA" }
+          },
+          "nsss": {
+            "commonRequirements": "DDBJ Account, sequence data, annotation info",
+            "links": { "nsss": "NSSS" }
+          },
+          "metabobank": {
+            "commonRequirements": "DDBJ Account, SSH public key, IDF + SDRF metadata, raw data, processed data, MAF, MD5",
+            "links": { "metabobank": "MetaboBank" }
+          },
+          "jga": {
+            "commonRequirements": "DDBJ Account, DBCLS human data approval, real data (BAM / FASTQ / VCF etc.), JGA XML metadata",
+            "links": { "nbdc": "NBDC Human Database", "jga": "JGA" }
+          },
+          "external": {
+            "commonRequirements": "Account for the destination service (issued by the external site)"
+          }
+        },
+        "leafDetails": {
+          "human-restricted": {
+            "summary": "Human data with re-identification risk that needs NBDC approval. BAM / FASTQ / VCF files are submitted to JGA.",
+            "badges": { "package": "BioSample: Human", "access": "Access controlled" }
+          },
+          "proteomics": {
+            "summary": "LC-MS/MS proteome data. DDBJ does not handle this type; submit it to jPOST via the external service.",
+            "badges": { "external": "External redirect" },
+            "links": { "jpost": "jPOST" }
+          },
+          "metabolomics": {
+            "summary": "LC-MS / GC-MS metabolomics data. Submitted to MetaboBank with IDF + SDRF metadata and MAF.",
+            "badges": { "idfSdrf": "IDF + SDRF required", "maf": "MAF" }
+          },
+          "variation-human-snp": {
+            "summary": "Human SNP / Indel (≤ 50 bp). Submitted to DDBJ-operated JVar SNP.",
+            "badges": { "external": "JVar (DDBJ-operated)" },
+            "links": { "jvar": "JVar" }
+          },
+          "variation-human-sv": {
+            "summary": "Human structural variants (> 50 bp, SV). Submitted to DDBJ-operated JVar SV.",
+            "badges": { "external": "JVar (DDBJ-operated)" },
+            "links": { "jvar": "JVar" }
+          },
+          "variation-nonhuman-snp": {
+            "summary": "Non-human SNP / Indel. Submitted to EBI's EVA.",
+            "badges": { "external": "EBI EVA" },
+            "links": { "eva": "EVA" }
+          },
+          "variation-nonhuman-sv": {
+            "summary": "Non-human structural variants. Submitted to EBI's dgVa.",
+            "badges": { "external": "EBI dgVa" },
+            "links": { "dgva": "dgVa" }
+          },
+          "expression-ngs": {
+            "summary": "NGS-based RNA-seq and related expression data. Raw reads go to DRA, processed data to GEA.",
+            "badges": { "rnaseq": "RNA-seq / ChIP-seq", "raw": "DRA (raw) + GEA" }
+          },
+          "expression-array": {
+            "summary": "Microarray experiment data. Submitted to GEA without using DRA.",
+            "badges": { "array": "Microarray" }
+          },
+          "small-sequence": {
+            "summary": "Small-scale sequences (fewer than 100 entries and under 500 kb). Submitted via NSSS without BioProject / BioSample.",
+            "badges": { "scale": "< 100 entries" }
+          },
+          "metagenome-raw": {
+            "summary": "Raw sequencing reads from environmental samples. FASTQ files are uploaded to DRA.",
+            "badges": { "package": "BioSample: MIxS (MIMS / MIGS env)" }
+          },
+          "metagenome-primary": {
+            "summary": "Pre-binning contigs (primary metagenome). MSS is not needed; submit to DRA Analysis.",
+            "badges": { "package": "BioSample: MIxS", "analysis": "DRA Analysis" }
+          },
+          "metagenome-genome-bin": {
+            "summary": "Per-organism genomes reconstructed from the environment (MAG / Binned / SAG). Assemblies are submitted via MSS.",
+            "badges": { "mimag": "MIMAG (MAG)", "misag": "MISAG (SAG)", "mssType": "MSS: MAG / SAG" }
+          },
+          "metagenome-tls": {
+            "summary": "Targeted locus study such as 16S rRNA. Submitted via MSS as TLS.",
+            "badges": { "package": "BioSample: MIxS", "mssType": "MSS: TLS" }
+          },
+          "metagenome-tsa": {
+            "summary": "Environment-derived gene expression (metatranscriptome). Submitted via MSS as TSA.",
+            "badges": { "package": "BioSample: MIxS", "mssType": "MSS: TSA" }
+          },
+          "organelle-plasmid": {
+            "summary": "Genomes of organelles (mitochondria, chloroplasts etc.) and plasmids. Submitted via MSS as GNM.",
+            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: GNM" }
+          },
+          "prokaryote-raw": {
+            "summary": "Prokaryote (bacteria / archaea) genome with raw reads only. Submitted to DRA.",
+            "badges": { "package": "BioSample: Microbe" }
+          },
+          "prokaryote-raw-assembly": {
+            "summary": "Prokaryote genome with raw reads plus assembly. Raw reads go to DRA, assembly to MSS. DFAST can auto-annotate.",
+            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: WGS / GNM" },
+            "links": { "dfast": "DFAST (auto-annotation)" }
+          },
+          "prokaryote-assembly-only": {
+            "summary": "Prokaryote genome with assembly only. Submit sequences + annotations via MSS.",
+            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: WGS / GNM" },
+            "links": { "dfast": "DFAST (auto-annotation)" }
+          },
+          "virus-raw": {
+            "summary": "Virus / phage raw reads only. Submitted to DRA.",
+            "badges": { "package": "BioSample: Virus" }
+          },
+          "virus-raw-assembly": {
+            "summary": "Virus genome with raw reads plus assembly. Submit to DRA and MSS. SARS-CoV-2 can use DFAST_VRL for auto-annotation.",
+            "badges": { "package": "BioSample: Virus", "mssType": "MSS: GNM / WGS" },
+            "links": { "dfastVrl": "DFAST_VRL (virus auto-annotation)" }
+          },
+          "virus-assembly-only": {
+            "summary": "Virus genome, assembly only. Submit via MSS. Segmented viruses (influenza etc.) need one entry per segment.",
+            "badges": { "package": "BioSample: Virus", "mssType": "MSS: GNM / WGS" },
+            "links": { "dfastVrl": "DFAST_VRL" }
+          },
+          "eukaryote-tsa": {
+            "summary": "Eukaryote de novo transcriptome assembly (TSA). Submit to DRA + MSS (TSA).",
+            "badges": { "package": "BioSample: Eukaryote", "mssType": "MSS: TSA" }
+          },
+          "eukaryote-tpa": {
+            "summary": "Third-party annotation (TPA assembly / specialist_db). A peer-reviewed publication is mandatory.",
+            "badges": { "package": "BioSample: Eukaryote", "mssType": "MSS: TPA", "peerReviewed": "Peer-reviewed required" }
+          },
+          "eukaryote-raw": {
+            "summary": "Eukaryote genome with raw reads only. Submitted to DRA.",
+            "badges": { "package": "BioSample: Eukaryote" }
+          },
+          "eukaryote-raw-assembly": {
+            "summary": "Eukaryote genome with raw reads plus assembly. Submit to DRA and MSS. BioSample package and qualifiers differ for animals / plants / fungi.",
+            "badges": { "package": "BioSample: Animal / Plant / Microbe", "mssType": "MSS: GNM / WGS / HTG" }
+          },
+          "eukaryote-assembly-only": {
+            "summary": "Eukaryote genome, assembly only. Submit via MSS.",
+            "badges": { "package": "BioSample: Animal / Plant / Microbe", "mssType": "MSS: GNM / WGS / HTG" }
+          },
+          "eukaryote-haplotype-raw-assembly": {
+            "summary": "Diploid haplotype distinction (Principal / Alternate) with raw reads plus assembly. Uses the umbrella + Principal + Alternate 3-BioProject structure.",
+            "badges": { "package": "BioSample: Eukaryote", "locusTag": "locus_tag prefix + haplotype suffix" }
+          },
+          "eukaryote-haplotype-assembly-only": {
+            "summary": "Haplotype distinction with assembly only. Submit via MSS using the umbrella + Principal + Alternate structure.",
+            "badges": { "package": "BioSample: Eukaryote", "locusTag": "locus_tag prefix + haplotype suffix" }
+          },
+          "eukaryote-est-small": {
+            "summary": "Sanger single-pass cDNA at small scale (< 100 entries). Submit directly via NSSS.",
+            "badges": { "scale": "< 100 entries", "est": "EST category" }
+          },
+          "eukaryote-est-large": {
+            "summary": "Sanger single-pass cDNA at large scale. Submit via BioProject + BioSample + MSS EST category.",
+            "badges": { "package": "BioSample: Eukaryote", "est": "MSS: EST" }
           }
         }
       }

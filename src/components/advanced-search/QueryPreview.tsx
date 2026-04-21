@@ -1,8 +1,8 @@
 import { Check, Copy } from "lucide-react"
 import { useState } from "react"
-import { useTranslation } from "react-i18next"
 
 import { Button, Callout, Heading } from "@/components/ui"
+import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import type { ValidationError } from "@/lib/advanced-search/types"
 
 interface QueryPreviewProps {
@@ -12,8 +12,7 @@ interface QueryPreviewProps {
 }
 
 const QueryPreview = ({ dsl, initialAdv, errors }: QueryPreviewProps) => {
-  const { t: tStrict } = useTranslation()
-  const t = tStrict as unknown as (key: string) => string
+  const { t } = useDynamicTranslation()
   const [copied, setCopied] = useState(false)
 
   const displayText = dsl !== "" ? dsl : (initialAdv ?? "")
