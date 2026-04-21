@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react"
+import { MousePointerClick } from "lucide-react"
+import type { Ref } from "react"
 import { useTranslation } from "react-i18next"
 
-import { Button, Heading } from "@/components/ui"
+import { Button, EmptyState, Heading } from "@/components/ui"
 import { hasHandwrittenDetail } from "@/content/submit"
 import type { Lang } from "@/i18n"
 import { LEAF_DETAILS } from "@/lib/mock-data"
@@ -14,28 +15,41 @@ import DetailOverview from "./DetailOverview"
 import DetailPlaceholder from "./DetailPlaceholder"
 
 interface DetailPanelProps {
-  selectedNodeId: TreeNodeId
+  selectedNodeId: TreeNodeId | null
   lang: Lang
   onNavigate: (nodeId: TreeNodeId) => void
+  headingRef?: Ref<HTMLHeadingElement>
 }
 
-// 選択中の node に応じて概要レベル / 具体レベル（手書き or goal テンプレ）/ 準備中 を切り替える。
-// node 変更時は見出し位置に smooth scroll する。
-const DetailPanel = ({ selectedNodeId, lang, onNavigate }: DetailPanelProps) => {
+// 選択中の node に応じて「空状態 / 概要レベル / 具体レベル（手書き or goal テンプレ）/ 準備中」を切り替える。
+// scroll は呼び出し側（routes/submit.tsx）がカードクリック時にだけ発火させる。
+const DetailPanel = ({
+  selectedNodeId,
+  lang,
+  onNavigate,
+  headingRef,
+}: DetailPanelProps) => {
   const { t } = useTranslation()
-  const headingRef = useRef<HTMLHeadingElement>(null)
-  const didMountRef = useRef(false)
 
-  useEffect(() => {
-    // 初回マウント時は scroll しない（URL 直打ち / リロードでページ先頭から見せる）。
-    // ユーザーが card / node を切り替えた時のみ Detail Panel 見出しに smooth scroll。
-    if (!didMountRef.current) {
-      didMountRef.current = true
-
-      return
-    }
-    headingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [selectedNodeId])
+  if (selectedNodeId === null) {
+    return (
+      <section className="space-y-6" aria-labelledby="detail-panel-heading">
+        <Heading
+          level={2}
+          id="detail-panel-heading"
+          ref={headingRef}
+          className="scroll-mt-24"
+        >
+          {t("routes.submit.sections.detail")}
+        </Heading>
+        <EmptyState
+          icon={<MousePointerClick className="h-12 w-12" aria-hidden="true" />}
+          title={t("routes.submit.detail.empty.title")}
+          description={t("routes.submit.detail.empty.description")}
+        />
+      </section>
+    )
+  }
 
   const parentCard = parentCardIdOf(selectedNodeId)
   if (parentCard === null) return null

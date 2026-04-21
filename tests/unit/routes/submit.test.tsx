@@ -18,30 +18,8 @@ const mkArgs = (url: string, cookie = "", accept = "ja"): LoaderArgs => ({
 } as unknown as LoaderArgs)
 
 describe("submit.tsx loader", () => {
-  it("defaults to 'microbial' when ?for is absent", async () => {
-    const result = await loader(mkArgs("http://x/submit"))
-    expect(result.initialNodeId).toBe("microbial")
-  })
-
-  it("passes through a valid leaf node id", async () => {
-    const result = await loader(mkArgs("http://x/submit?for=prokaryote-raw-assembly"))
-    expect(result.initialNodeId).toBe("prokaryote-raw-assembly")
-  })
-
-  it("passes through a valid intermediate node id", async () => {
-    const result = await loader(mkArgs("http://x/submit?for=eukaryote"))
-    expect(result.initialNodeId).toBe("eukaryote")
-  })
-
-  it("falls back to microbial for an unknown ?for value", async () => {
-    const result = await loader(mkArgs("http://x/submit?for=invalid-xyz"))
-    expect(result.initialNodeId).toBe("microbial")
-  })
-
-  it("falls back to microbial for leaf-number id (leaf-18)", async () => {
-    const result = await loader(mkArgs("http://x/submit?for=leaf-18"))
-    expect(result.initialNodeId).toBe("microbial")
-  })
+  // loader は lang / meta のみを返す（初期選択 node の決定はコンポーネント側で URL から行う）。
+  // `?for=` の解釈検証は tests/unit/lib/submit/url.test.ts (parseForParam) が担う。
 
   it("returns ja lang from cookie", async () => {
     const result = await loader(mkArgs("http://x/submit", "lang=ja"))

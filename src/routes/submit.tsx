@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useLoaderData, useSearchParams } from "react-router"
 
@@ -10,14 +11,12 @@ import { resolveMeta } from "@/i18n/server"
 import { USE_CASE_CARDS } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import { resolveActiveCard } from "@/lib/submit/node-selectors"
-import { DEFAULT_SUBMIT_NODE_ID, parseForParam } from "@/lib/submit/url"
+import { parseForParam } from "@/lib/submit/url"
 import type { CardId, TreeNodeId } from "@/types/submit"
 
 import type { Route } from "./+types/submit"
 
 export const loader = ({ request }: Route.LoaderArgs) => {
-  const url = new URL(request.url)
-  const forParam = parseForParam(url.searchParams)
   const lang = pickLang(
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
@@ -25,7 +24,6 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   const resource = resolveMeta(lang)
 
   return {
-    initialNodeId: forParam ?? DEFAULT_SUBMIT_NODE_ID,
     lang,
     metaTitle: resource.routes.submit.meta.title,
     metaDescription: resource.routes.submit.meta.description,
@@ -44,9 +42,22 @@ const Submit = () => {
   const data = useLoaderData<typeof loader>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const forParam = searchParams.get("for")
-  const selectedNodeId = (forParam ?? data.initialNodeId) as TreeNodeId
+  const selectedNodeId = parseForParam(searchParams)
   const activeCardId = resolveActiveCard(selectedNodeId)
+
+  const detailHeadingRef = useRef<HTMLHeadingElement>(null)
+  // カードクリック時だけ true を立て、次の selectedNodeId 変化 effect で Detail Panel まで scroll。
+  // tree node クリックでは立てないので、tree 操作中は視点が動かない。
+  const scrollAfterUpdateRef = useRef(false)
+
+  useEffect(() => {
+    if (!scrollAfterUpdateRef.current) return
+    scrollAfterUpdateRef.current = false
+    detailHeadingRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    })
+  }, [selectedNodeId])
 
   const handleSelect = (nodeId: TreeNodeId): void => {
     const next = new URLSearchParams(searchParams)
@@ -56,7 +67,9 @@ const Submit = () => {
 
   const handleCardSelect = (cardId: CardId): void => {
     const card = USE_CASE_CARDS.find((c) => c.id === cardId)
-    if (card !== undefined) handleSelect(card.treeNodeId)
+    if (card === undefined) return
+    scrollAfterUpdateRef.current = true
+    handleSelect(card.treeNodeId)
   }
 
   return (
@@ -94,6 +107,7 @@ const Submit = () => {
         selectedNodeId={selectedNodeId}
         lang={data.lang}
         onNavigate={handleSelect}
+        headingRef={detailHeadingRef}
       />
     </div>
   )

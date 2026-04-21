@@ -61,6 +61,10 @@ describe("resolveActiveCard", () => {
       expect(resolveActiveCard(card.treeNodeId)).toBe(card.id)
     }
   })
+
+  it("returns null when nodeId is null (unselected state)", () => {
+    expect(resolveActiveCard(null)).toBeNull()
+  })
 })
 
 describe("resolveDetailMode", () => {
@@ -83,6 +87,10 @@ describe("parentCardIdOf", () => {
       expect(parentCardIdOf(n.id)).toBe(resolveActiveCard(n.id))
     }
   })
+
+  it("returns null when nodeId is null", () => {
+    expect(parentCardIdOf(null)).toBeNull()
+  })
 })
 
 describe("highlightedPathSet", () => {
@@ -98,5 +106,10 @@ describe("highlightedPathSet", () => {
     const set = highlightedPathSet("root")
     expect(set.size).toBe(1)
     expect(set.has("root")).toBe(true)
+  })
+
+  it("returns an empty Set when nodeId is null (unselected state)", () => {
+    const set = highlightedPathSet(null)
+    expect(set.size).toBe(0)
   })
 })

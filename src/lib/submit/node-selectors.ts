@@ -31,7 +31,11 @@ export const pathFromRoot = (nodeId: TreeNodeId): readonly TreeNodeId[] => {
 
 // nodeId が属するユースケースカードを返す。
 // 自身がカード対応 node ならそれ、そうでなければ祖先を辿って最初に見つかるカード。
-export const resolveActiveCard = (nodeId: TreeNodeId): CardId | null => {
+// nodeId が null（未選択状態）なら null。
+export const resolveActiveCard = (
+  nodeId: TreeNodeId | null,
+): CardId | null => {
+  if (nodeId === null) return null
   const path = pathFromRoot(nodeId)
   for (let i = path.length - 1; i >= 0; i--) {
     const id = path[i]
@@ -53,13 +57,14 @@ export const resolveDetailMode = (nodeId: TreeNodeId): DetailMode => {
 }
 
 // 「準備中」placeholder の戻りリンク先カード。
-export const parentCardIdOf = (nodeId: TreeNodeId): CardId | null => {
+export const parentCardIdOf = (nodeId: TreeNodeId | null): CardId | null => {
   return resolveActiveCard(nodeId)
 }
 
-// 経路ハイライト用の Set。
+// 経路ハイライト用の Set。nodeId が null（未選択）なら空 Set。
 export const highlightedPathSet = (
-  nodeId: TreeNodeId,
-): ReadonlySet<TreeNodeId> => new Set(pathFromRoot(nodeId))
+  nodeId: TreeNodeId | null,
+): ReadonlySet<TreeNodeId> =>
+  nodeId === null ? new Set() : new Set(pathFromRoot(nodeId))
 
 export { CARD_BY_TREE_NODE_ID, NODE_BY_ID }

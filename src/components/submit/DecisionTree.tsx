@@ -31,7 +31,7 @@ const nodeTypes: NodeTypes = {
 }
 
 interface DecisionTreeProps {
-  selectedNodeId: TreeNodeId
+  selectedNodeId: TreeNodeId | null
   onNodeClick: (nodeId: TreeNodeId) => void
   className?: string
 }
@@ -61,7 +61,7 @@ const DecisionTreeInner = ({ selectedNodeId, onNodeClick }: DecisionTreeProps) =
   const decoratedNodes: Node[] = useMemo(
     () => layouted.nodes.map((n) => {
       const raw = n.data as unknown as TreeNode
-      const isSelected = n.id === selectedNodeId
+      const isSelected = selectedNodeId !== null && n.id === selectedNodeId
       const isOnPath = pathSet.has(n.id as TreeNodeId)
       if (raw.type === "leaf") {
         return {

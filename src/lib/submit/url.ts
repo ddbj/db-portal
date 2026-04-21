@@ -9,6 +9,7 @@ export const isValidNodeId = (v: string): v is TreeNodeId =>
   ALL_NODE_IDS.has(v as TreeNodeId)
 
 // URL `?for=<node-id>` の値を検証し、無効値は null にフォールバック。
+// null は「未選択」を意味し、Detail Panel は空状態プレースホルダを表示する。
 export const parseForParam = (
   searchParams: URLSearchParams,
 ): TreeNodeId | null => {
@@ -17,6 +18,3 @@ export const parseForParam = (
 
   return isValidNodeId(raw) ? raw : null
 }
-
-// URL なし / 無効値時の既定表示。docs/submit.md L366「初期状態は 1 枚目（微生物ゲノム）の概要レベル」。
-export const DEFAULT_SUBMIT_NODE_ID: TreeNodeId = "microbial"

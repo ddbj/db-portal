@@ -520,6 +520,10 @@
         "linksHeading": "Key external links",
         "stepsHeading": "Submission flow",
         "backToOverview": "← Back to overview",
+        "empty": {
+          "title": "Select a use case to see the details",
+          "description": "Choose a card above or follow the Decision Tree. The submission destination details will appear in this area."
+        },
         "placeholder": {
           "title": "Detail page is in preparation",
           "description": "The leaf-specific submission steps and prerequisites will be added in a later phase. For now, please refer to the parent card's overview.",

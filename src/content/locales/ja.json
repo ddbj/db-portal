@@ -520,6 +520,10 @@
         "linksHeading": "主要な外部リンク",
         "stepsHeading": "登録の流れ",
         "backToOverview": "← 概要に戻る",
+        "empty": {
+          "title": "ユースケースを選ぶと詳細が表示されます",
+          "description": "上のカードから選ぶか、Decision Tree を辿ると、登録先の詳細がこの領域に表示されます。"
+        },
         "placeholder": {
           "title": "詳細は準備中です",
           "description": "この leaf の具体的な登録手順・準備物は後続フェーズで書き下ろし予定。上位カードの概要レベルで共通情報を確認できます。",

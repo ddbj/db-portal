@@ -2,15 +2,15 @@ import { expect, test } from "@playwright/test"
 
 test.describe("Phase 4: Submit (/submit)", () => {
 
-  test("initial render shows hero, active microbial card, tree and Detail Panel overview", async ({ page }) => {
+  test("initial render shows hero, no active card, and empty-state Detail Panel", async ({ page }) => {
     const response = await page.goto("/submit")
     expect(response?.status()).toBe(200)
     await expect(page.getByRole("heading", { level: 1, name: "登録ナビゲーション" })).toBeVisible()
-    // 9 枚のカードが描画される（aria-pressed="true" で active を特定）
-    await expect(page.getByRole("button", { name: /微生物ゲノム/, pressed: true })).toBeVisible()
-    // Tree と Detail Panel（初期は microbial 概要レベル）
+    // 初期状態ではカードは未選択（aria-pressed="true" を持つカードが無い）
+    await expect(page.getByRole("button", { name: /微生物ゲノム/, pressed: true })).toHaveCount(0)
+    // Detail Panel は空状態プレースホルダを表示
     await expect(page.getByRole("heading", { level: 2, name: "詳細" })).toBeVisible()
-    await expect(page.getByText(/3 層構造で登録/)).toBeVisible()
+    await expect(page.getByText(/ユースケースを選ぶと詳細が表示されます/)).toBeVisible()
   })
 
   test("all 9 use case cards are rendered", async ({ page }) => {
@@ -56,9 +56,10 @@ test.describe("Phase 4: Submit (/submit)", () => {
     await expect(page).toHaveURL(/for=metagenome$/)
   })
 
-  test("invalid ?for value falls back to microbial overview", async ({ page }) => {
+  test("invalid ?for value falls back to unselected empty-state Detail Panel", async ({ page }) => {
     await page.goto("/submit?for=not-a-valid-node")
-    await expect(page.getByRole("button", { name: /微生物ゲノム/, pressed: true })).toBeVisible()
+    await expect(page.getByRole("button", { name: /微生物ゲノム/, pressed: true })).toHaveCount(0)
+    await expect(page.getByText(/ユースケースを選ぶと詳細が表示されます/)).toBeVisible()
   })
 
   test("clicking a use case card updates the URL ?for parameter", async ({ page }) => {
