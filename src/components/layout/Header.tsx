@@ -17,7 +17,7 @@ const Header = () => {
           to="/"
           className="text-lg font-semibold tracking-wider text-gray-900 hover:text-gray-700"
         >
-          DDBJ Portal
+          {t("header.serviceName")}
         </Link>
         <nav
           className="flex items-center gap-6"
@@ -37,6 +37,14 @@ const Header = () => {
               {t(item.labelKey)}
             </NavLink>
           ))}
+          <a
+            href="https://bsi.rois.ac.jp/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary-700 text-sm text-gray-700"
+          >
+            {t("header.nav.aboutUs")}
+          </a>
           <div className="ml-2 flex items-center gap-4 border-l border-gray-200 pl-5">
             <div
               className="flex items-center gap-1.5 text-sm"

@@ -1,9 +1,11 @@
 {
   "header": {
+    "serviceName": "DB Portal (仮)",
     "nav": {
       "search": "Search",
       "advancedSearch": "Advanced Search",
-      "submit": "Submit"
+      "submit": "Submit",
+      "aboutUs": "About us"
     },
     "language": {
       "label": "Language toggle",
@@ -22,13 +24,13 @@
   },
   "routes": {
     "home": {
-      "title": "DDBJ Portal",
+      "title": "DB Portal (仮)",
       "meta": {
-        "title": "DDBJ Portal",
+        "title": "DB Portal (仮)",
         "description": "Unified portal for cross-database search across DDBJ databases"
       },
       "hero": {
-        "title": "DDBJ Portal",
+        "title": "DB Portal (仮)",
         "subtitle": "Search DDBJ's core databases from a single gateway."
       },
       "search": {
@@ -114,7 +116,7 @@
     "advancedSearch": {
       "title": "Advanced Search",
       "meta": {
-        "title": "Advanced Search - DDBJ Portal",
+        "title": "Advanced Search - DB Portal (仮)",
         "description": "Build field-scoped queries across DDBJ databases"
       },
       "hero": {
@@ -354,7 +356,7 @@
     "submit": {
       "title": "Submit",
       "meta": {
-        "title": "Submission Guide | DDBJ Portal",
+        "title": "Submission Guide | DB Portal (仮)",
         "description": "Find the right DDBJ submission service (BioProject / BioSample / DRA / MSS / NSSS / GEA / JGA) based on the data you want to submit."
       },
       "hero": {
