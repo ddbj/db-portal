@@ -1,4 +1,4 @@
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -20,12 +20,12 @@ import { Callout, Heading, SkeletonCard } from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import {
-  DATABASES,
-  dbHitCountQueryFn,
-  isHardLimitReached,
-  MockError,
-  searchResultsQueryFn,
-} from "@/lib/mock-data"
+  ApiError,
+  apiCountsToHitCounts,
+  crossSearch,
+  dbSearch,
+} from "@/lib/api"
+import { DATABASES } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
   ALL_DB_VALUE,
@@ -44,21 +44,66 @@ import {
 
 import type { Route } from "./+types/search"
 
-const ERROR_KINDS: ReadonlySet<string> = new Set<ErrorKind>([
-  "timeout",
-  "upstream_5xx",
-  "connection_refused",
-  "unknown",
-])
-
 const toErrorKind = (error: unknown): ErrorKind => {
-  if (error instanceof MockError) return error.kind
-  if (error instanceof Error && ERROR_KINDS.has(error.message)) {
-    return error.message as ErrorKind
+  if (error instanceof ApiError) {
+    if (error.status === 502) return "upstream_5xx"
+    if (error.status === 504) return "timeout"
+    if (error.status >= 500) return "upstream_5xx"
+
+    return "unknown"
+  }
+  if (error instanceof TypeError) {
+    return "connection_refused"
   }
 
   return "unknown"
 }
+
+const KNOWN_ERROR_SLUGS: ReadonlySet<string> = new Set([
+  "invalid-query-combination",
+  "unexpected-parameter",
+  "missing-db",
+  "cursor-not-supported",
+  "unexpected-token",
+  "unknown-field",
+  "field-not-available-in-cross-db",
+  "invalid-date-format",
+  "invalid-operator-for-field",
+  "nest-depth-exceeded",
+  "missing-value",
+])
+
+const getErrorMessage = (
+  error: unknown,
+  t: (key: string) => string,
+): { headline: string; detail: string | null } => {
+  if (error instanceof ApiError) {
+    const slug = error.slug
+    if (slug !== null && KNOWN_ERROR_SLUGS.has(slug)) {
+      return {
+        headline: t(`routes.search.errors.${slug}`),
+        detail: error.problem?.detail ?? null,
+      }
+    }
+  }
+
+  return {
+    headline: t("routes.search.errors.default"),
+    detail: error instanceof ApiError ? error.problem?.detail ?? null : null,
+  }
+}
+
+const SORT_TO_API: Record<
+  SortValue,
+  "datePublished:asc" | "datePublished:desc" | undefined
+> = {
+  relevance: undefined,
+  date_desc: "datePublished:desc",
+  date_asc: "datePublished:asc",
+}
+
+const SOLR_BACKED_DBS: ReadonlySet<DbId> = new Set<DbId>(["trad", "taxonomy"])
+const isSolrBackedDb = (db: DbId): boolean => SOLR_BACKED_DBS.has(db)
 
 const DEMO_FALLBACK_URL = "/search?q=human"
 
@@ -160,36 +205,47 @@ interface ModeViewProps {
 const CrossModeView = ({ params, softErrors }: ModeViewProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
 
   const hasQuery = params.q !== null || params.adv !== null
 
-  const queries = useQueries({
-    queries: DB_ORDER.map((dbId) => ({
-      queryKey: ["hitCount", dbId, params.q, params.adv] as const,
-      queryFn: () => dbHitCountQueryFn(dbId, params.q, params.adv),
-      enabled: hasQuery,
-    })),
+  const query = useQuery({
+    queryKey: ["crossSearch", params.q, params.adv] as const,
+    queryFn: ({ signal }) =>
+      crossSearch(
+        {
+          ...(params.q !== null && { q: params.q }),
+          ...(params.adv !== null && { adv: params.adv }),
+          topHits: 5,
+        },
+        signal,
+      ),
+    enabled: hasQuery,
   })
 
-  const databases: readonly DbHitCount[] = queries.map((q, i) => {
-    const dbId = DB_ORDER[i] as DbId
-    if (q.isPending) return { dbId, state: "loading", count: null }
-    if (q.isError) {
-      return { dbId, state: "error", count: null, error: toErrorKind(q.error) }
+  const databases: readonly DbHitCount[] = useMemo(() => {
+    if (!hasQuery || query.isPending) {
+      return DB_ORDER.map((dbId) => ({
+        dbId,
+        state: "loading" as const,
+        count: null,
+      }))
+    }
+    if (query.isError) {
+      const errorKind = toErrorKind(query.error)
+
+      return DB_ORDER.map((dbId) => ({
+        dbId,
+        state: "error" as const,
+        count: null,
+        error: errorKind,
+      }))
     }
 
-    return { dbId, state: "success", count: q.data.count }
-  })
+    return apiCountsToHitCounts(query.data.databases)
+  }, [hasQuery, query.isPending, query.isError, query.error, query.data])
 
-  const handleRetry = (dbId?: DbId) => {
-    if (dbId === undefined) {
-      void queryClient.refetchQueries({ queryKey: ["hitCount"] })
-    } else {
-      void queryClient.refetchQueries({
-        queryKey: ["hitCount", dbId, params.q, params.adv],
-      })
-    }
+  const handleRetry = (_dbId?: DbId) => {
+    void query.refetch()
   }
 
   const handleClear = () => {
@@ -227,7 +283,32 @@ const CrossModeView = ({ params, softErrors }: ModeViewProps) => {
         <Heading level={2} className="mb-3">
           {t("routes.search.crossMode.heading")}
         </Heading>
-        <PartialFailureBanner databases={databases} onRetryAll={() => handleRetry()} />
+        {query.isError ? (() => {
+          const tDynamic = t as unknown as (key: string) => string
+          const { headline, detail } = getErrorMessage(query.error, tDynamic)
+
+          return (
+            <Callout type="error">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p>{headline}</p>
+                  {detail !== null && (
+                    <p className="mt-1 text-xs text-gray-600">{detail}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
+                  onClick={() => handleRetry()}
+                >
+                  {t("routes.search.crossMode.retryAll")}
+                </button>
+              </div>
+            </Callout>
+          )
+        })() : (
+          <PartialFailureBanner databases={databases} onRetryAll={() => handleRetry()} />
+        )}
         <div className="mt-3">
           <DbHitCountList
             databases={databases}
@@ -251,23 +332,40 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
 
   const query = useQuery({
     queryKey: [
-      "searchResults",
+      "dbSearch",
       db,
       params.q,
       params.adv,
       params.page,
       params.perPage,
       params.sort,
+      params.cursor,
     ] as const,
-    queryFn: () =>
-      searchResultsQueryFn({
-        q: params.q,
-        adv: params.adv,
-        db,
-        page: params.page,
-        perPage: params.perPage,
-        sort: params.sort,
-      }),
+    queryFn: ({ signal }) => {
+      const apiSort = SORT_TO_API[params.sort]
+      if (params.cursor !== null) {
+        return dbSearch(
+          {
+            db,
+            cursor: params.cursor,
+            perPage: params.perPage,
+          },
+          signal,
+        )
+      }
+
+      return dbSearch(
+        {
+          db,
+          ...(params.q !== null && { q: params.q }),
+          ...(params.adv !== null && { adv: params.adv }),
+          page: params.page,
+          perPage: params.perPage,
+          ...(apiSort !== undefined && { sort: apiSort }),
+        },
+        signal,
+      )
+    },
   })
 
   const updateParams = (changes: Partial<SearchParams>) => {
@@ -284,10 +382,26 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
     void navigate(url)
   }
 
-  const handleSortChange = (sort: SortValue) => updateParams({ sort, page: 1 })
+  const handleSortChange = (sort: SortValue) =>
+    updateParams({ sort, page: 1, cursor: null })
   const handlePerPageChange = (perPage: PerPageValue) =>
-    updateParams({ perPage, page: 1 })
-  const handlePageChange = (page: number) => updateParams({ page })
+    updateParams({ perPage, page: 1, cursor: null })
+  const handlePageChange = (page: number) => {
+    const nextOffset = page * params.perPage
+    const apiNextCursor = query.data?.nextCursor ?? null
+    if (
+      !isSolrBackedDb(db)
+      && nextOffset > 10_000
+      && apiNextCursor !== null
+      && apiNextCursor !== ""
+    ) {
+      updateParams({ cursor: apiNextCursor, page: 1 })
+
+      return
+    }
+    updateParams({ page, cursor: null })
+  }
+  const handleCursorNext = (cursor: string) => updateParams({ cursor, page: 1 })
 
   const handleClear = () => {
     void navigate("/", { replace: true })
@@ -317,7 +431,6 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
     }
 
   const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
-  const hardLimit = isHardLimitReached(db, params.page, params.perPage)
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
@@ -339,20 +452,30 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
         </div>
       )}
 
-      {query.isError && (
-        <Callout type="error">
-          <div className="flex items-center justify-between gap-3">
-            <p>{t("routes.search.crossMode.partialFailure.allError")}</p>
-            <button
-              type="button"
-              className="text-primary-700 hover:text-primary-800 text-sm font-medium underline"
-              onClick={handleRetry}
-            >
-              {t("routes.search.crossMode.retryAll")}
-            </button>
-          </div>
-        </Callout>
-      )}
+      {query.isError && (() => {
+        const tDynamic = t as unknown as (key: string) => string
+        const { headline, detail } = getErrorMessage(query.error, tDynamic)
+
+        return (
+          <Callout type="error">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p>{headline}</p>
+                {detail !== null && (
+                  <p className="mt-1 text-xs text-gray-600">{detail}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
+                onClick={handleRetry}
+              >
+                {t("routes.search.crossMode.retryAll")}
+              </button>
+            </div>
+          </Callout>
+        )
+      })()}
 
       {query.isSuccess && (
         <>
@@ -363,9 +486,9 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
             sort={params.sort}
             onSortChange={handleSortChange}
             onPerPageChange={handlePerPageChange}
-            isOver10kLimit={query.data.hardLimitReached || hardLimit}
+            isOver10kLimit={query.data.hardLimitReached}
           />
-          <ResultCardList results={query.data.hits} />
+          <ResultCardList hits={query.data.hits} />
           <Pagination
             page={params.page}
             totalPages={Math.max(
@@ -373,9 +496,14 @@ const DbModeView = ({ params, softErrors, db }: DbModeViewProps) => {
               Math.ceil(query.data.total / params.perPage),
             )}
             onChange={handlePageChange}
-            hardLimitReached={query.data.hardLimitReached}
+            hardLimitReached={query.data.hardLimitReached && isSolrBackedDb(db)}
+            cursorMode={params.cursor !== null && !isSolrBackedDb(db)}
+            nextCursor={query.data.nextCursor ?? null}
+            onCursorNext={handleCursorNext}
           />
-          {query.data.hardLimitReached && <Over10kCallout db={db} />}
+          {query.data.hardLimitReached && isSolrBackedDb(db) && (
+            <Over10kCallout db={db} />
+          )}
         </>
       )}
     </section>

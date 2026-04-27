@@ -6,6 +6,7 @@ export {
   needsPhrase,
   nodeToDsl,
 } from "./dsl"
+export { buildTreeFromAst } from "./from-ast"
 export {
   advancedSearchReducer,
   buildInitialState,

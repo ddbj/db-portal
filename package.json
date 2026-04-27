@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --config tests/playwright.config.ts",
-    "test:e2e:ui": "playwright test --config tests/playwright.config.ts --ui"
+    "test:e2e:ui": "playwright test --config tests/playwright.config.ts --ui",
+    "gen:api": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.gen.ts"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
@@ -56,6 +57,7 @@
     "fast-check": "^4.7.0",
     "globals": "^16",
     "jsdom": "^26",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8",

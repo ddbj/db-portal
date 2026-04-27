@@ -1,4 +1,5 @@
-import { useMemo, useReducer } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useEffect, useMemo, useReducer, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router"
 
@@ -15,10 +16,12 @@ import { resolveMeta } from "@/i18n/server"
 import {
   advancedSearchReducer,
   buildInitialState,
+  buildTreeFromAst,
   nodeToDsl,
   validateNode,
 } from "@/lib/advanced-search"
 import type { ValidationMode } from "@/lib/advanced-search/types"
+import { parseAdv } from "@/lib/api"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
   ALL_DB_VALUE,
@@ -105,6 +108,35 @@ const AdvancedSearch = () => {
       return buildInitialState(initialDb, initialAdv)
     },
   )
+
+  const initialAdv = state.initialAdv
+  const restoredRef = useRef(false)
+
+  const parseQuery = useQuery({
+    queryKey: ["parseAdv", initialAdv] as const,
+    queryFn: ({ signal }) => {
+      const dbForApi = state.db !== ALL_DB_VALUE ? (state.db as DbId) : null
+
+      return parseAdv(
+        {
+          adv: initialAdv ?? "",
+          ...(dbForApi !== null && { db: dbForApi }),
+        },
+        signal,
+      )
+    },
+    enabled: initialAdv !== null,
+    retry: false,
+    staleTime: Infinity,
+  })
+
+  useEffect(() => {
+    if (restoredRef.current) return
+    if (!parseQuery.isSuccess) return
+    restoredRef.current = true
+    const tree = buildTreeFromAst(parseQuery.data.ast, state.db)
+    dispatch({ type: "APPLY_PARSED_TREE", tree })
+  }, [parseQuery.isSuccess, parseQuery.data, state.db])
 
   const dsl = useMemo(() => nodeToDsl(state.tree), [state.tree])
   const errors = useMemo(() => {

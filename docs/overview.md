@@ -214,21 +214,23 @@ React Router v7 の framework mode を `ssr: true` で運用し、全ページ S
 ```
         Browser
            |
-       db-portal --------> DDBJ Search API
-       (React Router v7)   (/db-portal/*)
-           |                    |
-           |             +------+------------+----------------+
-           |             |                   |                |
-           |        ES (DDBJ Search)    Solr (ARSA)      Solr (TXSearch)
-           |        SRA, BioProject,    Trad             Taxonomy
-           |        BioSample, JGA,
-           |        GEA, MetaboBank
+       db-portal ---------------> DDBJ Search API
+       (React Router v7)          /db-portal/cross-search   ← 横断（count + topHits）
+           |                      /db-portal/search         ← DB 指定（hits envelope）
+           |                      /db-portal/parse          ← DSL → AST（GUI 復元）
+           |                              |
+           |                       +------+------------+----------------+
+           |                       |                   |                |
+           |                  ES (DDBJ Search)    Solr (ARSA)      Solr (TXSearch)
+           |                  SRA, BioProject,    Trad             Taxonomy
+           |                  BioSample, JGA,
+           |                  GEA, MetaboBank
            |
        Keycloak (OIDC)
 ```
 
 - db-portal: React Router v7 framework mode による Web アプリケーション（本リポジトリ、フロントエンドのみ）。Node.js サーバーとして動作する
-- DDBJ Search API: 別リポジトリ。db-portal は `/db-portal/*` 名前空間の endpoint のみを叩く。`/db-portal/*` は ARSA / TXSearch / ES を束ねる proxy として新設する（既存 `/search` 等の endpoint には手を加えない方針。詳細は [search-backends.md の既存 API との関係](./search-backends.md#既存-api-との関係ポータル用-endpoint-の名前空間分離) を参照）
+- DDBJ Search API: 別リポジトリ（[ddbj/ddbj-search-api](https://github.com/ddbj/ddbj-search-api)、0.3.0 staging 稼働中）。db-portal は `/db-portal/*` 名前空間の 3 endpoint（`cross-search` / `search` / `parse`）のみを叩く。`/db-portal/*` は ARSA / TXSearch / ES を束ねる proxy として新設、既存 `/search` 等の endpoint には手を加えない（詳細は [search-backends.md の既存 API との関係](./search-backends.md#既存-api-との関係ポータル用-endpoint-の名前空間分離) を参照）
 - Keycloak: OIDC provider（DDBJ Account）
 - 上流の Nginx は DDBJ インフラ側で管理する（本リポジトリのスコープ外）
 

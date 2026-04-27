@@ -271,6 +271,13 @@ export const advancedSearchReducer = (
         pendingDb: null,
       }
 
+    case "APPLY_PARSED_TREE":
+      return {
+        ...state,
+        tree: action.tree,
+        pendingDb: null,
+      }
+
     case "RESET":
       return {
         ...state,

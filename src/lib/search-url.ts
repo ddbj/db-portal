@@ -78,6 +78,7 @@ const parsePage = (raw: string | null): number => {
 
 const parsePerPage = (raw: string | null): PerPageValue => {
   if (raw === null || raw === "") return DEFAULT_PER_PAGE
+  if (!/^\d+$/.test(raw)) return DEFAULT_PER_PAGE
   const n = Number.parseInt(raw, 10)
   if (VALID_PER_PAGE_SET.has(n)) return n as PerPageValue
 

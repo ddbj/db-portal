@@ -1,26 +1,26 @@
 import { useTranslation } from "react-i18next"
 
 import { EmptyState } from "@/components/ui"
-import type { SearchResult } from "@/types/search"
+import type { DbPortalHit } from "@/lib/api"
 
 import ResultCard from "./ResultCard"
 
 export interface ResultCardListProps {
-  results: readonly SearchResult[]
+  hits: readonly DbPortalHit[]
 }
 
-const ResultCardList = ({ results }: ResultCardListProps) => {
+const ResultCardList = ({ hits }: ResultCardListProps) => {
   const { t } = useTranslation()
 
-  if (results.length === 0) {
+  if (hits.length === 0) {
     return <EmptyState title={t("routes.search.dbMode.noResults")} />
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {results.map((r) => (
-        <li key={`${r.dbId}-${r.identifier}`}>
-          <ResultCard result={r} />
+      {hits.map((h, idx) => (
+        <li key={`${h.type}-${h.identifier}-${idx}`}>
+          <ResultCard hit={h} />
         </li>
       ))}
     </ul>

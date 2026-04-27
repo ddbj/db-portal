@@ -87,6 +87,20 @@
         "errorLabel": "Failed to fetch",
         "bothQAdvWarning": "Both simple and advanced queries are specified. Advanced search takes priority."
       },
+      "errors": {
+        "default": "An error occurred during the search. Please try again later.",
+        "invalid-query-combination": "Simple and advanced search cannot be specified at the same time.",
+        "unexpected-parameter": "An unsupported parameter was specified.",
+        "missing-db": "Database is not specified.",
+        "cursor-not-supported": "The requested cursor pagination is not supported for this database.",
+        "unexpected-token": "Syntax error in the advanced search query.",
+        "unknown-field": "The field is not supported in advanced search.",
+        "field-not-available-in-cross-db": "This field is not available in cross-database search. Please specify a single database.",
+        "invalid-date-format": "Date must be in YYYY-MM-DD format.",
+        "invalid-operator-for-field": "Invalid operator for the specified field.",
+        "nest-depth-exceeded": "Condition nesting is too deep.",
+        "missing-value": "The value is empty."
+      },
       "dbMode": {
         "resultsCount": "{{from}}-{{to}} of {{total}} results",
         "resultsCountOver10k": "{{from}}-{{to}} of 10,000+ results",
@@ -104,13 +118,22 @@
         "pagination": {
           "prev": "Prev",
           "next": "Next",
-          "pageInfo": "Page {{current}} of {{total}}"
+          "pageInfo": "Page {{current}} of {{total}}",
+          "cursorMode": "Cursor mode (over 10,000 results)"
         },
         "over10k": {
           "message": "Only up to 10,000 results can be displayed. Please add keywords or refine with advanced search.",
           "cta": "Open advanced search"
         },
-        "publishedAtAria": "Published at"
+        "publishedAtAria": "Published at",
+        "status": {
+          "suppressed": "Suppressed",
+          "withdrawn": "Withdrawn",
+          "private": "Private"
+        },
+        "accessibility": {
+          "controlled-access": "Controlled access"
+        }
       }
     },
     "advancedSearch": {

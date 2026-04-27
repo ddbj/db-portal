@@ -22,9 +22,9 @@ const renderHeader = (initialPath = "/") =>
 
 describe("Header", () => {
 
-  it("logo link shows 'DDBJ Portal' and points to /", () => {
+  it("logo link shows the service name and points to /", () => {
     renderHeader()
-    const logo = screen.getByRole("link", { name: "DDBJ Portal" })
+    const logo = screen.getByRole("link", { name: "DB ポータル (仮)" })
     expect(logo).toHaveAttribute("href", "/")
   })
 

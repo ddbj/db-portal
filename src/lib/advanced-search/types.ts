@@ -90,4 +90,5 @@ export type AdvancedSearchAction =
   }
   | { type: "SET_GROUP_LOGIC"; path: readonly number[]; logic: LogicOperator }
   | { type: "APPLY_EXAMPLE"; example: AdvancedExample }
+  | { type: "APPLY_PARSED_TREE"; tree: AdvancedGroupNode }
   | { type: "RESET" }

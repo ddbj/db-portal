@@ -87,6 +87,20 @@
         "errorLabel": "取得できませんでした",
         "bothQAdvWarning": "シンプル検索と詳細検索の両方が指定されています。詳細検索を優先しました。"
       },
+      "errors": {
+        "default": "検索でエラーが発生しました。しばらくしてからもう一度お試しください。",
+        "invalid-query-combination": "シンプル検索と詳細検索を同時に指定することはできません。",
+        "unexpected-parameter": "サポート外のパラメータが指定されています。",
+        "missing-db": "DB が指定されていません。",
+        "cursor-not-supported": "この DB では指定されたページング方式は利用できません。",
+        "unexpected-token": "詳細検索の構文にエラーがあります。",
+        "unknown-field": "詳細検索でサポートされていないフィールドです。",
+        "field-not-available-in-cross-db": "このフィールドは横断検索では使えません。単一 DB を指定してください。",
+        "invalid-date-format": "日付は YYYY-MM-DD 形式で指定してください。",
+        "invalid-operator-for-field": "フィールドに対して不正な演算子が指定されています。",
+        "nest-depth-exceeded": "条件のネストが深すぎます。",
+        "missing-value": "値が空です。"
+      },
       "dbMode": {
         "resultsCount": "全 {{total}} 件中 {{from}}-{{to}} 件を表示",
         "resultsCountOver10k": "10,000 件以上 {{from}}-{{to}} 件を表示",
@@ -104,13 +118,22 @@
         "pagination": {
           "prev": "前へ",
           "next": "次へ",
-          "pageInfo": "{{current}} / {{total}} ページ"
+          "pageInfo": "{{current}} / {{total}} ページ",
+          "cursorMode": "カーソル送り（10,000 件超）"
         },
         "over10k": {
           "message": "表示できる検索結果は 10,000 件までです。キーワードを追加するか、詳細検索で絞り込んでください。",
           "cta": "詳細検索を開く"
         },
-        "publishedAtAria": "公開日"
+        "publishedAtAria": "公開日",
+        "status": {
+          "suppressed": "非推奨",
+          "withdrawn": "撤回済み",
+          "private": "private"
+        },
+        "accessibility": {
+          "controlled-access": "アクセス制限"
+        }
       }
     },
     "advancedSearch": {

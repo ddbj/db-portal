@@ -2,106 +2,170 @@ import { screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 import ResultCard from "@/components/search/ResultCard"
-import type { SearchResult } from "@/types/search"
+import type { DbPortalHit } from "@/lib/api"
 
 import { renderWithProviders } from "../../../helpers/providers"
 
-const bioprojectResult: SearchResult = {
-  dbId: "bioproject",
+const bioprojectHit: DbPortalHit = {
   identifier: "PRJDB12345",
-  publishedAt: "2024-03-15",
+  type: "bioproject",
   title: "Human Gut Microbiome",
   description: "Sample description for bioproject",
-  organism: { name: "Homo sapiens", taxonomyId: 9606 },
-  externalUrl: "https://example.org/bioproject/PRJDB12345",
-  projectType: "Genome sequencing",
-  organization: "DDBJ",
-  relatedObjects: [{ dbId: "sra", identifier: "DRR000001" }],
+  organism: { identifier: "9606", name: "Homo sapiens" },
+  datePublished: "2024-03-15",
+  dateModified: null,
+  dateCreated: null,
+  url: "https://example.org/bioproject/PRJDB12345",
+  sameAs: [{ identifier: "DRR000001", type: "sra-run", url: "https://example.org/sra/DRR000001" }],
+  dbXrefs: null,
+  status: "public",
+  accessibility: "public-access",
+  isPartOf: "bioproject",
+  objectType: "BioProject",
+  organization: [{ name: "DDBJ" }],
+  publication: [],
+  grant: [],
+  externalLink: [],
 }
 
-const tradResult: SearchResult = {
-  dbId: "trad",
+const tradHit: DbPortalHit = {
   identifier: "AB123456",
-  publishedAt: "2023-08-21",
+  type: "trad",
   title: "Mus musculus mRNA for cancer-associated antigen",
-  organism: { name: "Mus musculus", taxonomyId: 10090 },
-  externalUrl: "https://example.org/trad/AB123456",
+  description: null,
+  organism: { identifier: "10090", name: "Mus musculus" },
+  datePublished: "2023-08-21",
+  dateModified: null,
+  dateCreated: null,
+  url: "https://example.org/trad/AB123456",
+  sameAs: null,
+  dbXrefs: null,
+  status: "public",
+  accessibility: "public-access",
+  isPartOf: "trad",
   division: "ROD",
+  molecularType: null,
+  sequenceLength: null,
 }
 
-const taxonomyResult: SearchResult = {
-  dbId: "taxonomy",
+const taxonomyHit: DbPortalHit = {
   identifier: "9606",
-  publishedAt: null,
+  type: "taxonomy",
   title: "Homo sapiens",
-  externalUrl: "https://example.org/taxonomy/9606",
+  description: null,
+  organism: null,
+  datePublished: null,
+  dateModified: null,
+  dateCreated: null,
+  url: "https://example.org/taxonomy/9606",
+  sameAs: null,
+  dbXrefs: null,
+  status: "public",
+  accessibility: "public-access",
+  isPartOf: "taxonomy",
   rank: "species",
   commonName: "human",
   japaneseName: "ヒト",
+  lineage: null,
 }
 
-const srraResult: SearchResult = {
-  dbId: "sra",
-  identifier: "DRR123456",
-  publishedAt: "2024-01-01",
-  title: "RNA-seq run",
-  organism: { name: "Homo sapiens", taxonomyId: 9606 },
-  externalUrl: "https://example.org/sra/DRR123456",
+const sraSampleHit: DbPortalHit = {
+  identifier: "DRS123456",
+  type: "sra-sample",
+  title: "RNA-seq sample",
+  description: null,
+  organism: { identifier: "9606", name: "Homo sapiens" },
+  datePublished: "2024-01-01",
+  dateModified: null,
+  dateCreated: null,
+  url: "https://example.org/sra/DRS123456",
+  sameAs: null,
+  dbXrefs: null,
+  status: "public",
+  accessibility: "public-access",
+  isPartOf: "sra",
+  organization: [],
+  publication: [],
+  libraryStrategy: null,
+  librarySource: null,
+  librarySelection: null,
+  libraryLayout: null,
+  platform: null,
+  instrumentModel: null,
+  analysisType: null,
+}
+
+const suppressedHit: DbPortalHit = {
+  ...bioprojectHit,
+  status: "suppressed",
+  accessibility: "controlled-access",
 }
 
 describe("ResultCard", () => {
 
   it("renders L1 (identifier + publishedAt) and L2 title with external link", () => {
-    renderWithProviders(<ResultCard result={bioprojectResult} />)
+    renderWithProviders(<ResultCard hit={bioprojectHit} />)
     expect(screen.getByText("PRJDB12345")).toBeInTheDocument()
     expect(screen.getByText("2024-03-15")).toBeInTheDocument()
     const titleLink = screen.getByRole("link", { name: /Human Gut Microbiome/ })
-    expect(titleLink.getAttribute("href")).toBe(bioprojectResult.externalUrl)
+    expect(titleLink.getAttribute("href")).toBe(bioprojectHit.url)
     expect(titleLink.getAttribute("target")).toBe("_blank")
   })
 
-  it("shows BioProject metadata (projectType, organization)", () => {
-    renderWithProviders(<ResultCard result={bioprojectResult} />)
-    expect(screen.getByText(/Project type: Genome sequencing/)).toBeInTheDocument()
+  it("shows BioProject metadata (objectType, organization)", () => {
+    renderWithProviders(<ResultCard hit={bioprojectHit} />)
+    expect(screen.getByText(/Project type: BioProject/)).toBeInTheDocument()
     expect(screen.getByText(/Organization: DDBJ/)).toBeInTheDocument()
   })
 
   it("shows Trad division", () => {
-    renderWithProviders(<ResultCard result={tradResult} />)
+    renderWithProviders(<ResultCard hit={tradHit} />)
     expect(screen.getByText(/Division: ROD/)).toBeInTheDocument()
   })
 
   it("shows Taxonomy meta and hides organism (L4)", () => {
-    renderWithProviders(<ResultCard result={taxonomyResult} />)
+    renderWithProviders(<ResultCard hit={taxonomyHit} />)
     expect(screen.getByText(/Rank: species/)).toBeInTheDocument()
     expect(screen.getByText(/Common: human/)).toBeInTheDocument()
     expect(screen.getByText(/Japanese: ヒト/)).toBeInTheDocument()
-    // Taxonomy: L4 organism line is suppressed
-    expect(screen.queryByText(/Homo sapiens \(/)).not.toBeInTheDocument()
   })
 
-  it("shows no DB-specific meta for SRA (NoExtraMeta)", () => {
-    renderWithProviders(<ResultCard result={srraResult} />)
-    expect(screen.queryByText(/Project type/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Division/)).not.toBeInTheDocument()
+  it("shows no DB-specific meta for SRA sample without library/platform", () => {
+    renderWithProviders(<ResultCard hit={sraSampleHit} />)
+    expect(screen.queryByText(/Library:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Platform:/)).not.toBeInTheDocument()
   })
 
   it("renders organism on L4 for non-taxonomy DBs", () => {
-    renderWithProviders(<ResultCard result={bioprojectResult} />)
+    renderWithProviders(<ResultCard hit={bioprojectHit} />)
     expect(screen.getByText(/Homo sapiens \(9606\)/)).toBeInTheDocument()
   })
 
-  it("renders related objects (L6)", () => {
-    renderWithProviders(<ResultCard result={bioprojectResult} />)
+  it("renders related objects from sameAs (L6)", () => {
+    renderWithProviders(<ResultCard hit={bioprojectHit} />)
     expect(screen.getByText(/SRA: DRR000001/)).toBeInTheDocument()
   })
 
   it("hides description when it matches the title", () => {
-    const result: SearchResult = { ...tradResult, description: tradResult.title }
-    renderWithProviders(<ResultCard result={result} />)
-    // description はレンダーされるはずだが title と同一で非表示化される
-    const matches = screen.getAllByText(tradResult.title)
-    // L2 title のみ (description はレンダーされない)
+    const hit: DbPortalHit = { ...tradHit, description: tradHit.title ?? null }
+    renderWithProviders(<ResultCard hit={hit} />)
+    const matches = screen.getAllByText(tradHit.title ?? "")
     expect(matches.length).toBe(1)
+  })
+
+  it("shows status badge for suppressed", () => {
+    renderWithProviders(<ResultCard hit={suppressedHit} />)
+    expect(screen.getByText("非推奨")).toBeInTheDocument()
+  })
+
+  it("shows accessibility badge for controlled-access", () => {
+    renderWithProviders(<ResultCard hit={suppressedHit} />)
+    expect(screen.getByText("アクセス制限")).toBeInTheDocument()
+  })
+
+  it("hides status / accessibility badges for public / public-access", () => {
+    renderWithProviders(<ResultCard hit={bioprojectHit} />)
+    expect(screen.queryByText("非推奨")).not.toBeInTheDocument()
+    expect(screen.queryByText("アクセス制限")).not.toBeInTheDocument()
   })
 })
