@@ -762,7 +762,8 @@ const DesignSystem = () => {
             <SearchBox
               size="large"
               placeholder='例: "Homo sapiens" BRCA1'
-              helperText="スペース区切りで AND 検索。Examples をクリックで入力。"
+              hintText="スペース区切りは AND 検索。- や : を含む語句は厳密一致（例: COVID-19）。"
+              helperText="検索例"
               examples={[
                 { label: "ヒト BioProject", query: "organism:human" },
                 { label: "BRCA1 SRA", query: "BRCA1" },

@@ -22,6 +22,7 @@ interface SearchBoxProps {
   size: "large" | "small"
   defaultValue?: string
   placeholder?: string
+  hintText?: ReactNode
   helperText?: ReactNode
   examples?: readonly ExampleChip[]
   onSubmit: (query: string) => void
@@ -125,6 +126,7 @@ const SearchBox = ({
   size,
   defaultValue = "",
   placeholder,
+  hintText,
   helperText,
   examples,
   onSubmit,
@@ -200,6 +202,9 @@ const SearchBox = ({
             {buttonLabel}
           </Button>
         </form>
+        {hintText && (
+          <p className="mt-3 text-xs leading-relaxed text-gray-500">{hintText}</p>
+        )}
         {helperText && (
           <p className="mt-6 text-[11px] font-medium tracking-[0.2em] text-gray-400 uppercase">
             {helperText}
@@ -236,6 +241,9 @@ const SearchBox = ({
           {buttonLabel}
         </Button>
       </form>
+      {hintText && (
+        <p className="mt-2 text-xs leading-relaxed text-gray-500">{hintText}</p>
+      )}
       {helperText && (
         <p className="mt-2 text-xs text-gray-500">{helperText}</p>
       )}

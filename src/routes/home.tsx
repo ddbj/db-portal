@@ -60,6 +60,7 @@ const Home = () => {
         size="large"
         className="mt-12"
         placeholder={t("routes.home.search.placeholder")}
+        hintText={t("routes.home.search.hint")}
         helperText={t("routes.home.search.examplesLabel")}
         buttonLabel={t("routes.home.search.submit")}
         examples={EXAMPLE_CHIPS}

@@ -137,4 +137,49 @@ describe("SearchBox", () => {
     )
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument()
   })
+
+  it("renders hintText below the search box on size=large", () => {
+    render(
+      <SearchBox
+        size="large"
+        placeholder="q"
+        onSubmit={() => undefined}
+        hintText="スペース区切りは AND 検索"
+      />,
+    )
+    expect(screen.getByText("スペース区切りは AND 検索")).toBeInTheDocument()
+  })
+
+  it("renders hintText below the search box on size=small", () => {
+    render(
+      <SearchBox
+        size="small"
+        placeholder="q"
+        onSubmit={() => undefined}
+        hintText="hint here"
+      />,
+    )
+    expect(screen.getByText("hint here")).toBeInTheDocument()
+  })
+
+  it("does not render hintText when omitted", () => {
+    render(
+      <SearchBox size="large" placeholder="q" onSubmit={() => undefined} />,
+    )
+    expect(screen.queryByText(/スペース区切り/)).toBeNull()
+  })
+
+  it("renders both hintText and helperText when both are provided", () => {
+    render(
+      <SearchBox
+        size="large"
+        placeholder="q"
+        onSubmit={() => undefined}
+        hintText="使い方ヒント"
+        helperText="検索例"
+      />,
+    )
+    expect(screen.getByText("使い方ヒント")).toBeInTheDocument()
+    expect(screen.getByText("検索例")).toBeInTheDocument()
+  })
 })

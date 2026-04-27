@@ -35,6 +35,7 @@
       },
       "search": {
         "placeholder": "キーワード、accession、学名で検索",
+        "hint": "スペース区切りは AND 検索。\"...\" でフレーズ検索。- や : を含む語句は厳密一致（例: COVID-19）。AND/OR/NOT などは詳細検索へ。",
         "examplesLabel": "検索例",
         "submit": "検索",
         "dbAll": "すべての DB",

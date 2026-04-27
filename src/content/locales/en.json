@@ -35,6 +35,7 @@
       },
       "search": {
         "placeholder": "Search by keyword, accession, or taxonomic name",
+        "hint": "Space-separated terms are joined with AND. Use \"...\" for phrases. Terms containing - or : are matched as exact phrases (e.g. COVID-19). For AND/OR/NOT or field queries, see Advanced Search.",
         "examplesLabel": "Examples",
         "submit": "Search",
         "dbAll": "All databases",
