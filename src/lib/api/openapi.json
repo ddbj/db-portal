@@ -11,8 +11,14 @@
       "name": "Apache-2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0"
     },
-    "version": "0.2.1.dev27+g27e2285ec.d20260426"
+    "version": "0.3.1.dev4+gfd627389d"
   },
+  "servers": [
+    {
+      "url": "/search/api",
+      "description": "Current deployment"
+    }
+  ],
   "paths": {
     "/entries/": {
       "get": {
@@ -25851,12 +25857,6 @@
     {
       "name": "Service Info",
       "description": "Service metadata + Elasticsearch health probe."
-    }
-  ],
-  "servers": [
-    {
-      "url": "/search/api",
-      "description": "Current deployment"
     }
   ]
 }

@@ -63,8 +63,14 @@ describe("ADVANCED_FIELDS catalog", () => {
     for (const f of enums) {
       expect([...f.availableOps].sort()).toEqual(["equals", "not_equals"].sort())
       expect(f.enumValues).toBeDefined()
-      expect(f.enumValues!.length).toBeGreaterThan(0)
     }
+  })
+
+  it("enumValues は空配列のとき自由入力モード (relevance のみ)", () => {
+    const freeFormEnums = ADVANCED_FIELDS.filter(
+      (f) => f.type === "enum" && (f.enumValues ?? []).length === 0,
+    )
+    expect(freeFormEnums.map((f) => f.id)).toEqual(["relevance"])
   })
 
   it("date 型フィールドは between / gte / lte / equals", () => {
@@ -221,5 +227,52 @@ describe("isTier3 / findField", () => {
     expect(fieldLabelKey("library_strategy")).toBe(
       "routes.advancedSearch.fields.library_strategy.label",
     )
+  })
+})
+
+describe("Tier 3 拡張フィールド (BioSample 5 / SRA 3 / JGA 2 / BioProject 1)", () => {
+  const expansion = [
+    { id: "host", db: "biosample", type: "text" },
+    { id: "strain", db: "biosample", type: "text" },
+    { id: "isolate", db: "biosample", type: "text" },
+    { id: "geo_loc_name", db: "biosample", type: "text" },
+    { id: "collection_date", db: "biosample", type: "text" },
+    { id: "analysis_type", db: "sra", type: "text" },
+    { id: "library_name", db: "sra", type: "text" },
+    { id: "library_construction_protocol", db: "sra", type: "text" },
+    { id: "dataset_type", db: "jga", type: "text" },
+    { id: "vendor", db: "jga", type: "text" },
+    { id: "relevance", db: "bioproject", type: "enum" },
+  ] as const
+
+  it.each(expansion)("$id は Tier 3、type=$type、$db で利用可", ({ id, db, type }) => {
+    const f = findField(id)
+    expect(f).toBeDefined()
+    expect(f?.tier).toBe(3)
+    expect(f?.type).toBe(type)
+    expect(isFieldAvailableForDb(id, db)).toBe(true)
+    expect(isFieldAvailableForDb(id, ALL_DB_VALUE)).toBe(false)
+  })
+
+  it("geo_loc_name / collection_date は biosample と sra の両方で利用可", () => {
+    for (const id of ["geo_loc_name", "collection_date"]) {
+      const f = findField(id)
+      expect([...(f?.availableDbs ?? [])].sort()).toEqual(["biosample", "sra"])
+    }
+  })
+
+  it("relevance は enum 型かつ availableOps は equals / not_equals", () => {
+    const f = findField("relevance")
+    expect(f?.type).toBe("enum")
+    expect([...(f?.availableOps ?? [])].sort()).toEqual(
+      ["equals", "not_equals"].sort(),
+    )
+    expect(f?.enumValues).toEqual([])
+  })
+
+  it("disease / tissue / env_biome は API allowlist 未対応のため mock から削除済", () => {
+    expect(findField("disease")).toBeUndefined()
+    expect(findField("tissue")).toBeUndefined()
+    expect(findField("env_biome")).toBeUndefined()
   })
 })

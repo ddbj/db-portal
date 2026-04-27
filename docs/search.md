@@ -189,28 +189,20 @@ DSL 側の allowlist 名（共通語彙）と、converter が ES に投入する
 
 **Tier 3: 単一 DB 選択時のみ利用可（DB 特化）**
 
-API 側 `ddbj_search_api/search/dsl/allowlist.py` の `TIER3_FIELDS` が SSOT。インターナルリリース時点で **unique 25 / per-DB 集計 28** field。
+API 側 `ddbj_search_api/search/dsl/allowlist.py` の `TIER3_FIELDS` が SSOT。**unique 36 / per-DB 集計 41** field。
 
 | DB | フィールド | 備考 |
 |---|---|---|
-| BioProject | `project_type`, `grant_agency` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ |
-| SRA | `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model` | converter 0.3.0 で properties parse 済（top-level に投入） |
-| JGA | `study_type`, `grant_agency` | converter 0.3.0 で properties parse 済 |
+| BioProject | `project_type`, `grant_agency`, `relevance` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ。`relevance` は INSDC controlled vocab の自由文字列（API 側で固定列挙していないため UI も自由入力） |
+| BioSample | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date` | converter 0.3.0 で top-level 化された text 系 5 field。`geo_loc_name` / `collection_date` は SRA でも検索可（同名 ES path、SRA-sample 限定でヒット） |
+| SRA | `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date` | converter 0.3.0 で properties parse 済（top-level に投入）。`analysis_type` は sra-analysis、`library_name` / `library_construction_protocol` は sra-experiment、`geo_loc_name` / `collection_date` は sra-sample でのみヒット |
+| JGA | `study_type`, `grant_agency`, `dataset_type`, `vendor` | converter 0.3.0 で properties parse 済。`dataset_type` は jga-dataset、`vendor` は jga-study でのみヒット |
 | GEA | `experiment_type` | converter 0.3.0 の ES `experimentType` |
 | MetaboBank | `study_type`, `experiment_type`, `submission_type` | converter 0.3.0 の ES `studyType` / `experimentType` / `submissionType` |
 | Trad（ARSA） | `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal` | ARSA Solr の既存スキーマで検索可 |
 | Taxonomy（TXSearch） | `rank`, `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name` | TXSearch Solr の既存スキーマで検索可。`japanese_name` は staging schema 不在のため allowlist 外（将来追加候補） |
 
-**ファーストリリースで追加予定（converter 0.3.0 で投入済、API allowlist 化待ち）**:
-
-| DB | 追加フィールド | converter ES path |
-|---|---|---|
-| BioSample | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date` | top-level（`221f8c3` / `b0051e1`） |
-| SRA | `analysis_type`（sra-analysis）, `library_name` / `library_construction_protocol`（sra-experiment） | top-level |
-| JGA | `dataset_type`（jga-dataset）, `vendor`（jga-study） | top-level |
-| BioProject | `relevance` | top-level keyword |
-
-**未対応（将来課題）**: BioSample の `attributes.harmonized_name` 経由の検索（`disease` / `tissue` / `env_biome` 等）、JGA の `principal_investigator` / `submitting_organization`、Taxonomy `japanese_name`。
+**未対応（将来課題）**: BioSample の `attributes.harmonized_name` 経由の検索（`disease` / `tissue` / `env_biome` 等。ES 側に top-level 昇格していないため allowlist 化されていない）、JGA の `principal_investigator` / `submitting_organization`、Taxonomy `japanese_name`。
 
 #### 日付フィールド
 
@@ -387,20 +379,15 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 - **インターナルリリース（ddbj-search-api 0.3.0 + ddbj-search-converter 0.3.0、staging 稼働中）**:
   - シンプル検索ボックス本番稼働。Trad / Taxonomy は ARSA / TXSearch proxy で本番データ、GEA / MetaboBank は ES index 接続済み（converter 0.3.0 で `gea` / `metabobank` index 新設、Blue-Green alias swap 運用）
-  - Advanced Search は **Tier 1 / Tier 2 + Tier 3 unique 25 / per-DB 集計 28 field** で動作:
+  - Advanced Search は **Tier 1 / Tier 2 + Tier 3 unique 36 / per-DB 集計 41 field** で動作:
     - Tier 1（共通語彙 8 種）: `identifier` / `title` / `description` / `organism` / `date_published` / `date_modified` / `date_created` / `date`
     - Tier 2（converter 0.3.0 で正規化済の共通 field）: `submitter` / `publication`
-    - Tier 3（DB 特化、単一 DB モード必須）: BioProject (`project_type` / `grant_agency`) / SRA (`library_strategy` / `library_source` / `library_layout` / `platform` / `instrument_model`) / JGA (`study_type` / `grant_agency`) / GEA (`experiment_type`) / MetaboBank (`study_type` / `experiment_type` / `submission_type`) / Trad (`division` / `molecular_type` / `sequence_length` / `feature_gene_name` / `reference_journal`) / Taxonomy (`rank` / `lineage` / `kingdom` / `phylum` / `class` / `order` / `family` / `genus` / `species` / `common_name`)
+    - Tier 3（DB 特化、単一 DB モード必須）: BioProject (`project_type` / `grant_agency` / `relevance`) / BioSample (`host` / `strain` / `isolate` / `geo_loc_name` / `collection_date`) / SRA (`library_strategy` / `library_source` / `library_layout` / `platform` / `instrument_model` / `analysis_type` / `library_name` / `library_construction_protocol` / `geo_loc_name` / `collection_date`) / JGA (`study_type` / `grant_agency` / `dataset_type` / `vendor`) / GEA (`experiment_type`) / MetaboBank (`study_type` / `experiment_type` / `submission_type`) / Trad (`division` / `molecular_type` / `sequence_length` / `feature_gene_name` / `reference_journal`) / Taxonomy (`rank` / `lineage` / `kingdom` / `phylum` / `class` / `order` / `family` / `genus` / `species` / `common_name`)
+    - 結果カード L5 に DB 別メタを完全表示（API レスポンスの `DbPortalHit` 8 variant をそのまま使用）
   - **DSL 復元**: `GET /db-portal/parse` で `?adv=...` から AST 復元、Advanced Search GUI に流し込む経路が動作
-- **ファーストリリース**:
-  - Tier 3 allowlist 拡張（converter 0.3.0 で投入済の top-level field を allowlist 公開）:
-    - BioSample 5 field: `host` / `strain` / `isolate` / `geo_loc_name` / `collection_date`
-    - SRA 3 field: `analysis_type` / `library_name` / `library_construction_protocol`
-    - JGA 2 field: `dataset_type` / `vendor`
-    - BioProject 1 field: `relevance`
-  - 結果カード L5 に DB 別メタを完全表示（API レスポンスの `DbPortalHit` 8 variant をそのまま使用）
 - **将来拡張**:
   - 履歴・Saved Search・API Export・オートサジェスト
+  - BioSample の `attributes.harmonized_name` 経由の `disease` / `tissue` / `env_biome` 検索（top-level 昇格 or nested 経由）
   - JGA の `principal_investigator` / `submitting_organization`、Taxonomy の `japanese_name`（staging TXSearch schema 不在）等の追加 allowlist 拡張
   - ES analyzer 再設計（kuromoji / word_delimiter_graph 等）
 
@@ -569,6 +556,8 @@ API 側の status filter ロジック（accession 完全一致時のみ `suppres
 | MetaboBank | Organization, Study type, Experiment type, Submission type | `organization[0].name`, `studyType`, `experimentType`, `submissionType` |
 | Trad（ARSA） | Division, Molecular type, Sequence length | `division`, `molecularType`, `sequenceLength` |
 | Taxonomy（TXSearch） | Rank, Common name, Japanese name, Lineage | `rank`, `commonName`, `japaneseName`, `lineage`（Taxonomy DB では L4 organism 行は非表示） |
+
+Tier 3 の検索条件として使える BioSample (`host` / `strain` / `isolate` / `geo_loc_name` / `collection_date`) / SRA (`analysis_type` / `library_name` / `library_construction_protocol` / `geo_loc_name` / `collection_date`) / BioProject (`relevance`) / JGA (`dataset_type` / `vendor` 既出を除く) は API 側 `DbPortalHit` レスポンスに **未収録**。L5 への表示は API 側の response 拡張（converter top-level → DTO 露出）を待ってから別途追加する。
 
 #### 関連 DB リンク（L6）
 

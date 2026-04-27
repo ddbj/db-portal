@@ -241,9 +241,14 @@
           }
         },
         "instrument_model": { "label": "機種" },
+        "analysis_type": { "label": "解析種別 (SRA)" },
+        "library_name": { "label": "ライブラリ名" },
+        "library_construction_protocol": { "label": "ライブラリ作製プロトコル" },
         "geo_loc_name": { "label": "採取地" },
         "collection_date": { "label": "採取日" },
         "host": { "label": "宿主" },
+        "strain": { "label": "系統 (Strain)" },
+        "isolate": { "label": "分離株 (Isolate)" },
         "disease": { "label": "疾患" },
         "tissue": { "label": "組織" },
         "env_biome": { "label": "生態系バイオーム" },
@@ -258,6 +263,7 @@
           }
         },
         "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
+        "relevance": { "label": "関連性タグ (BioProject)" },
         "division": {
           "label": "Division",
           "enumValues": {
@@ -320,7 +326,9 @@
         },
         "jga_grant_agency": { "label": "助成機関（JGA）" },
         "principal_investigator": { "label": "主任研究者" },
-        "submitting_organization": { "label": "登録組織" }
+        "submitting_organization": { "label": "登録組織" },
+        "dataset_type": { "label": "データセット種別 (JGA)" },
+        "vendor": { "label": "ベンダー (JGA)" }
       },
       "dateSubSelector": {
         "label": "日付種別",

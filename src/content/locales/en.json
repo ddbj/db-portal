@@ -241,9 +241,14 @@
           }
         },
         "instrument_model": { "label": "Instrument model" },
+        "analysis_type": { "label": "Analysis type (SRA)" },
+        "library_name": { "label": "Library name" },
+        "library_construction_protocol": { "label": "Library construction protocol" },
         "geo_loc_name": { "label": "Geographic location" },
         "collection_date": { "label": "Collection date" },
         "host": { "label": "Host" },
+        "strain": { "label": "Strain" },
+        "isolate": { "label": "Isolate" },
         "disease": { "label": "Disease" },
         "tissue": { "label": "Tissue" },
         "env_biome": { "label": "Environmental biome" },
@@ -258,6 +263,7 @@
           }
         },
         "bioproject_grant_agency": { "label": "Grant agency (BioProject)" },
+        "relevance": { "label": "Relevance tag (BioProject)" },
         "division": {
           "label": "Division",
           "enumValues": {
@@ -320,7 +326,9 @@
         },
         "jga_grant_agency": { "label": "Grant agency (JGA)" },
         "principal_investigator": { "label": "Principal investigator" },
-        "submitting_organization": { "label": "Submitting organization" }
+        "submitting_organization": { "label": "Submitting organization" },
+        "dataset_type": { "label": "Dataset type (JGA)" },
+        "vendor": { "label": "Vendor (JGA)" }
       },
       "dateSubSelector": {
         "label": "Date kind",

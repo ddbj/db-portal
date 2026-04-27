@@ -142,8 +142,8 @@ const DbHitCountCard = ({
             {t("routes.search.crossMode.topHits.heading")}
           </h4>
           <ul className="mt-1">
-            {topHits.map((hit, idx) => (
-              <TopHitItem key={`${hit.identifier}-${idx}`} hit={hit} />
+            {topHits.map((hit) => (
+              <TopHitItem key={`${hit.identifier}-${hit.type}`} hit={hit} />
             ))}
           </ul>
         </div>

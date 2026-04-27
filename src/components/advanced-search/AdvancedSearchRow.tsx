@@ -154,7 +154,11 @@ const ValueInput = ({ condition, fieldDef, onChange }: ValueInputProps) => {
     )
   }
 
-  if (fieldDef.type === "enum" && fieldDef.enumValues) {
+  if (
+    fieldDef.type === "enum"
+    && fieldDef.enumValues
+    && fieldDef.enumValues.length > 0
+  ) {
     const options = fieldDef.enumValues.map((ev) => ({
       value: ev.value,
       label: t(ev.labelKey),

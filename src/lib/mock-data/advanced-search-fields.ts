@@ -105,6 +105,8 @@ const TIER2_FIELDS: readonly AdvancedFieldDef[] = [
 ]
 
 const SRA_GEA_DBS: readonly DbId[] = ["sra", "gea"]
+const SRA_DBS: readonly DbId[] = ["sra"]
+const BIOSAMPLE_SRA_DBS: readonly DbId[] = ["biosample", "sra"]
 
 const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
   {
@@ -183,22 +185,6 @@ const BIOSAMPLE_DBS: readonly DbId[] = ["biosample"]
 
 const TIER3_BIOSAMPLE: readonly AdvancedFieldDef[] = [
   {
-    id: "geo_loc_name",
-    dslName: "geo_loc_name",
-    tier: 3,
-    type: "text",
-    availableOps: TEXT_OPS,
-    availableDbs: BIOSAMPLE_DBS,
-  },
-  {
-    id: "collection_date",
-    dslName: "collection_date",
-    tier: 3,
-    type: "date",
-    availableOps: DATE_OPS,
-    availableDbs: BIOSAMPLE_DBS,
-  },
-  {
     id: "host",
     dslName: "host",
     tier: 3,
@@ -207,28 +193,63 @@ const TIER3_BIOSAMPLE: readonly AdvancedFieldDef[] = [
     availableDbs: BIOSAMPLE_DBS,
   },
   {
-    id: "disease",
-    dslName: "disease",
+    id: "strain",
+    dslName: "strain",
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,
     availableDbs: BIOSAMPLE_DBS,
   },
   {
-    id: "tissue",
-    dslName: "tissue",
+    id: "isolate",
+    dslName: "isolate",
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,
     availableDbs: BIOSAMPLE_DBS,
   },
   {
-    id: "env_biome",
-    dslName: "env_biome",
+    id: "geo_loc_name",
+    dslName: "geo_loc_name",
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,
-    availableDbs: BIOSAMPLE_DBS,
+    availableDbs: BIOSAMPLE_SRA_DBS,
+  },
+  {
+    id: "collection_date",
+    dslName: "collection_date",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: BIOSAMPLE_SRA_DBS,
+  },
+]
+
+const TIER3_SRA_ONLY: readonly AdvancedFieldDef[] = [
+  {
+    id: "analysis_type",
+    dslName: "analysis_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: SRA_DBS,
+  },
+  {
+    id: "library_name",
+    dslName: "library_name",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: SRA_DBS,
+  },
+  {
+    id: "library_construction_protocol",
+    dslName: "library_construction_protocol",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: SRA_DBS,
   },
 ]
 
@@ -272,6 +293,15 @@ const TIER3_BIOPROJECT: readonly AdvancedFieldDef[] = [
     type: "text",
     availableOps: TEXT_OPS,
     availableDbs: BIOPROJECT_DBS,
+  },
+  {
+    id: "relevance",
+    dslName: "relevance",
+    tier: 3,
+    type: "enum",
+    availableOps: ENUM_OPS,
+    availableDbs: BIOPROJECT_DBS,
+    enumValues: [],
   },
 ]
 
@@ -413,12 +443,29 @@ const TIER3_JGA: readonly AdvancedFieldDef[] = [
     availableOps: TEXT_OPS,
     availableDbs: JGA_DBS,
   },
+  {
+    id: "dataset_type",
+    dslName: "dataset_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: JGA_DBS,
+  },
+  {
+    id: "vendor",
+    dslName: "vendor",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: JGA_DBS,
+  },
 ]
 
 export const ADVANCED_FIELDS: readonly AdvancedFieldDef[] = [
   ...TIER1_FIELDS,
   ...TIER2_FIELDS,
   ...TIER3_SRA_GEA,
+  ...TIER3_SRA_ONLY,
   ...TIER3_BIOSAMPLE,
   ...TIER3_BIOPROJECT,
   ...TIER3_TRAD,

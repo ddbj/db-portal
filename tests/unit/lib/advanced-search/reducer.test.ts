@@ -250,6 +250,47 @@ describe("CHANGE_DB_REQUEST / CONFIRM / CANCEL", () => {
     const next = advancedSearchReducer(state, { type: "CHANGE_DB_REQUEST", next: "sra" })
     expect(next).toBe(state)
   })
+
+  it("biosample → sra 切替で共通 Tier 3 (geo_loc_name / collection_date) のみなら即切替", () => {
+    let state = buildInitialState("biosample", null)
+    state = advancedSearchReducer(state, {
+      type: "ADD_CONDITION",
+      path: [],
+      fieldId: "geo_loc_name",
+    })
+    state = advancedSearchReducer(state, {
+      type: "ADD_CONDITION",
+      path: [],
+      fieldId: "collection_date",
+    })
+    const next = advancedSearchReducer(state, {
+      type: "CHANGE_DB_REQUEST",
+      next: "sra",
+    })
+    expect(next.pendingDb).toBeNull()
+    expect(next.db).toBe("sra")
+    expect(next.tree.children).toHaveLength(2)
+  })
+
+  it("biosample → sra 切替で host (biosample 限定) は削除予告に入る", () => {
+    let state = buildInitialState("biosample", null)
+    state = advancedSearchReducer(state, {
+      type: "ADD_CONDITION",
+      path: [],
+      fieldId: "host",
+    })
+    state = advancedSearchReducer(state, {
+      type: "ADD_CONDITION",
+      path: [],
+      fieldId: "geo_loc_name",
+    })
+    const next = advancedSearchReducer(state, {
+      type: "CHANGE_DB_REQUEST",
+      next: "sra",
+    })
+    expect(next.pendingDb).not.toBeNull()
+    expect(next.pendingDb?.toRemoveIds).toHaveLength(1)
+  })
 })
 
 describe("APPLY_EXAMPLE / RESET / SET_GROUP_LOGIC", () => {
