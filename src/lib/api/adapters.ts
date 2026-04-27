@@ -33,5 +33,12 @@ export const apiCountsToHitCounts = (
       }
     }
 
-    return { dbId, state: "success" as const, count: entry.count ?? 0 }
+    const topHits = entry.hits ?? undefined
+
+    return {
+      dbId,
+      state: "success" as const,
+      count: entry.count ?? 0,
+      ...(topHits !== undefined && { topHits }),
+    }
   })

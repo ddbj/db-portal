@@ -36,7 +36,7 @@ const DbHitCountList = ({ databases, query, adv, onRetry }: DbHitCountListProps)
   const sorted = sortDatabases(databases)
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {sorted.map((db) => (
         <DbHitCountCard
           key={db.dbId}
@@ -47,6 +47,7 @@ const DbHitCountList = ({ databases, query, adv, onRetry }: DbHitCountListProps)
           query={query}
           adv={adv}
           onRetry={onRetry}
+          {...(db.topHits !== undefined && { topHits: db.topHits })}
         />
       ))}
     </div>

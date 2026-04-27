@@ -1,3 +1,5 @@
+import type { DbPortalLightweightHit } from "@/lib/api/client"
+
 export type DbId =
   | "bioproject"
   | "biosample"
@@ -41,4 +43,5 @@ export interface DbHitCount {
   state: FetchState
   count: number | null
   error?: ErrorKind
+  topHits?: readonly DbPortalLightweightHit[]
 }

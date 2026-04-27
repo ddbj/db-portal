@@ -1,6 +1,5 @@
-import type { components, operations } from "./schema.gen"
-
 import { SEARCH_API_URL } from "./api-url"
+import type { components, operations } from "./schema.gen"
 
 export type CrossSearchQuery = NonNullable<operations["crossSearchDbPortal"]["parameters"]["query"]>
 export type CrossSearchResponse = components["schemas"]["DbPortalCrossSearchResponse"]

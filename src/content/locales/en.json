@@ -85,7 +85,11 @@
         },
         "loadingAria": "Loading hit count",
         "errorLabel": "Failed to fetch",
-        "bothQAdvWarning": "Both simple and advanced queries are specified. Advanced search takes priority."
+        "bothQAdvWarning": "Both simple and advanced queries are specified. Advanced search takes priority.",
+        "topHits": {
+          "heading": "Top hits",
+          "openExternalAria": "Open {{identifier}} in new tab"
+        }
       },
       "errors": {
         "default": "An error occurred during the search. Please try again later.",

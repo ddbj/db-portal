@@ -85,7 +85,11 @@
         },
         "loadingAria": "件数を取得中",
         "errorLabel": "取得できませんでした",
-        "bothQAdvWarning": "シンプル検索と詳細検索の両方が指定されています。詳細検索を優先しました。"
+        "bothQAdvWarning": "シンプル検索と詳細検索の両方が指定されています。詳細検索を優先しました。",
+        "topHits": {
+          "heading": "上位ヒット",
+          "openExternalAria": "{{identifier}} を別タブで開く"
+        }
       },
       "errors": {
         "default": "検索でエラーが発生しました。しばらくしてからもう一度お試しください。",
