@@ -23,7 +23,7 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 
 ### 含まれるもの
 
-- **トップページ**: 横断検索ボックス + DB セレクタ、詳細検索への動線、登録ナビへの動線（DB 一覧や Use Case プレビューは Top に出さない。主役は検索ボックスと 2 本の動線）
+- **トップページ**: 横断検索ボックス + DB セレクタ、DDBJ センター動線カード（詳細検索 / 登録ナビ / サービス / スパコン / 統計 / 活動の 6 枚を 1 グリッドに混在）、ニュース・お知らせ（mock 表示、将来実データ化）。将来 ddbj.nig.ac.jp を置き換えるための入口を兼ねるため、ポータル機能（検索・登録）と DDBJ サイト全体の動線を同居させる
 - **横断検索結果ページ**: DB ごとのヒット数サマリー、各 DB の検索ページへのリンク
 - **DB 個別結果リストページ**: カードリスト形式（NCBI Entrez 風）+ 各 DB 詳細ページへの動線
 - **登録ナビゲーションページ**: ユースケースカード + フローチャート形式ナビゲーション + 詳細パネルを 1 ページに集約（独立した QuickStart ページは作らない）
@@ -38,7 +38,7 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 - レコード詳細表示（各 DB の既存ページに遷移する）
 - 実際の登録フォーム / Repository API 連携
 - アナリティクス
-- ホームページ的なコンテンツ（ニュース、お知らせ等）
+- ニュース・お知らせの実データ化（現状はトップに mock 表示。将来 CMS 連携・記事一覧ページを整備）
 - DBCLS（ライフサイエンス統合データベースセンター）サービスの統合
 - DB 個別結果リストのファセット検索
 
@@ -47,8 +47,14 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 ```
 / (top)
 ├── search box (cross-db search) + DB selector
-├── link to /advanced-search
-└── link to /submit
+├── service grid (6 cards mixed in one grid):
+│   ├── /advanced-search (internal)
+│   ├── /submit          (internal)
+│   ├── DDBJ services      (external: ddbj.nig.ac.jp/services)
+│   ├── Supercomputer      (external: sc.ddbj.nig.ac.jp)
+│   ├── DDBJ statistics    (external: ddbj.nig.ac.jp/statistics)
+│   └── DDBJ activities    (external: ddbj.nig.ac.jp/activities)
+└── notifications / news (mock, tab-switched: お知らせ / News, "もっと見る →" /news 予約)
 
 /search?q=xxx (cross-db search results)
 ├── hit count summary per DB
@@ -76,6 +82,7 @@ DB ポータル全体の URL 設計方針。検索系の詳細は [search.md#url
 | `/search` | 横断 / DB 指定検索結果 | SSR シェル + CSR データ取得 | `noindex, follow` |
 | `/advanced-search` | GUI クエリビルダ | SSR | `index, follow` |
 | `/submit` | 登録ナビゲーション | SSR | `index, follow` |
+| `/news` | ニュース・お知らせ一覧（仕様未定、ルート予約） | SSR | `index, follow` |
 | `/design-system` | デザインシステム | SSR | `noindex, nofollow` |
 | `/auth/callback` | OIDC 認可コード受け取り | CSR | `noindex, nofollow` |
 | `/auth/silent-callback` | OIDC サイレント更新 | CSR | `noindex, nofollow` |
@@ -107,6 +114,24 @@ Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/acc
 ### 認証コールバック
 
 `/auth/**` 名前空間にまとめる（`/auth/callback`, `/auth/silent-callback`, `/auth/logout-callback`）。将来の `/auth/profile`, `/auth/settings` への拡張余地を残す。Keycloak クライアントの redirect URI は各環境の実ドメインに固定する。
+
+## トップページ
+
+`/` は (a) ポータル機能（横断検索 / 詳細検索 / 登録ナビ）への動線、(b) DDBJ センター主要ページ（サービス・スパコン・統計・活動）への動線、(c) ニュース・お知らせの 3 機能を同居させる。将来 ddbj.nig.ac.jp 廃止に向けて、現 DDBJ サイトのホーム機能を段階的に吸収する位置づけ。
+
+### 構成
+
+1. **横断検索ボックス + DB セレクタ**: 既存どおりトップ最上段（hero タイトルは廃止、検索ボックスを実質的なヒーローとして使う）
+2. **サービスグリッド（6 枚）**: 内部リンク 2 枚（`/advanced-search`, `/submit`）+ 外部リンク 4 枚（DDBJ サービス / スパコン / 統計 / 活動）を 1 グリッドに混在させる。カード単位で内外を区別せず、視覚的に均一に並べる。外部リンクは新規タブで開き、`ExternalLink` アイコンで区別
+3. **ニュース・お知らせ（mock）**: 1 カラム タブ切替（お知らせ / News）。現状は `src/lib/mock-data/home-news.ts` の静的 mock を表示する。各タブ末尾に「もっと見る →」リンクを置き、`/news`（ルート予約のみ、実装は将来）に遷移
+
+### 外部リンク URL の i18n
+
+外部 4 リンクの URL は当面 ja 固定（`ddbj.nig.ac.jp/...`、トレーリング `index.html` 省略）。en の同等 URL 体系を確認後、必要に応じて i18n リソース化する。
+
+### ニュース・お知らせの将来計画
+
+mock 段階で対象とする型 / レイアウト / 件数は実データ化時の参考実装として残す。実データ化時の方向性候補は (1) CMS から JSON を取り込む、(2) ddbj/www の現行ニュースから移行する、(3) 別管理画面で運用する、の 3 つ。`/news` ルート（一覧 / 詳細）は仕様未確定のため、現状は未実装の予約として扱う。
 
 ## 検索
 

@@ -24,14 +24,9 @@
   },
   "routes": {
     "home": {
-      "title": "DB Portal (仮)",
       "meta": {
         "title": "DB Portal (仮)",
         "description": "Unified portal for cross-database search across DDBJ databases"
-      },
-      "hero": {
-        "title": "DB Portal (仮)",
-        "subtitle": "Search DDBJ's core databases from a single gateway."
       },
       "search": {
         "placeholder": "Search by keyword, accession, or taxonomic name",
@@ -41,17 +36,49 @@
         "dbAll": "All databases",
         "dbSelectorAria": "Search target database"
       },
-      "cta": {
-        "advancedSearch": {
-          "title": "Advanced Search",
-          "description": "Refine by field, combined conditions, and date range",
-          "link": "Go to Advanced Search"
-        },
-        "submit": {
-          "title": "Data Submission",
-          "description": "Find the right submission flow for your data",
-          "link": "Go to Submission Guide"
+      "services": {
+        "heading": "Services & Resources",
+        "cards": {
+          "advancedSearch": {
+            "title": "Advanced Search",
+            "description": "Refine by field, combined conditions, and date range",
+            "link": "Go to Advanced Search"
+          },
+          "submit": {
+            "title": "Data Submission",
+            "description": "Find the right submission flow for your data",
+            "link": "Go to Submission Guide"
+          },
+          "services": {
+            "title": "Services",
+            "description": "All services available at DDBJ Center",
+            "link": "View services"
+          },
+          "supercomputer": {
+            "title": "Supercomputer",
+            "description": "NIG Supercomputer system",
+            "link": "Use the supercomputer"
+          },
+          "statistics": {
+            "title": "Statistics",
+            "description": "Usage statistics of DDBJ Center services",
+            "link": "View statistics"
+          },
+          "activities": {
+            "title": "Activities",
+            "description": "DDBJ Center workshops, publications, and community",
+            "link": "View activities"
+          }
         }
+      },
+      "news": {
+        "heading": "Announcements & News",
+        "tabs": {
+          "announcements": "Announcements",
+          "news": "News"
+        },
+        "viewMore": "View more",
+        "mockNotice": "(mock data)"
       }
     },
     "search": {

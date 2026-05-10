@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test"
 
 test.describe("Phase 3: Top (/)", () => {
 
-  test("hero and search controls are visible", async ({ page }) => {
+  test("search controls are visible (no hero h1)", async ({ page }) => {
     const response = await page.goto("/")
     expect(response?.status()).toBe(200)
-    await expect(page.getByRole("heading", { level: 1, name: "DDBJ DB Portal" })).toBeVisible()
+    await expect(page.locator("h1")).toHaveCount(0)
     await expect(page.getByPlaceholder(/キーワード/)).toBeVisible()
     await expect(page.getByRole("combobox", { name: "検索対象 DB" })).toBeVisible()
     await expect(page.getByRole("button", { name: "検索" })).toBeVisible()
@@ -39,6 +39,28 @@ test.describe("Phase 3: Top (/)", () => {
     await expect(page).toHaveURL(/\/search\?q=Escherichia\+coli$/)
   })
 
+  test("renders 6 service cards (2 internal + 4 external) with expected hrefs", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByRole("link", { name: /詳細検索へ/ })).toHaveAttribute("href", "/advanced-search")
+    await expect(page.getByRole("link", { name: /登録ナビへ/ })).toHaveAttribute("href", "/submit")
+    await expect(page.getByRole("link", { name: /サービス一覧/ })).toHaveAttribute(
+      "href",
+      "https://www.ddbj.nig.ac.jp/services/",
+    )
+    await expect(page.getByRole("link", { name: /スパコンの利用へ/ })).toHaveAttribute(
+      "href",
+      "https://sc.ddbj.nig.ac.jp/",
+    )
+    await expect(page.getByRole("link", { name: /統計を見る/ })).toHaveAttribute(
+      "href",
+      "https://www.ddbj.nig.ac.jp/statistics/",
+    )
+    await expect(page.getByRole("link", { name: /活動を見る/ })).toHaveAttribute(
+      "href",
+      "https://www.ddbj.nig.ac.jp/activities/",
+    )
+  })
+
   test("CTA 詳細検索へ navigates to /advanced-search", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("link", { name: /詳細検索へ/ }).click()
@@ -49,5 +71,21 @@ test.describe("Phase 3: Top (/)", () => {
     await page.goto("/")
     await page.getByRole("link", { name: /登録ナビへ/ }).click()
     await expect(page).toHaveURL(/\/submit$/)
+  })
+
+  test("お知らせ / News tabs switch on click", async ({ page }) => {
+    await page.goto("/")
+    const announcementTab = page.getByRole("tab", { name: "お知らせ" })
+    const newsTab = page.getByRole("tab", { name: "News" })
+    await expect(announcementTab).toHaveAttribute("aria-selected", "true")
+    await expect(newsTab).toHaveAttribute("aria-selected", "false")
+    await newsTab.click()
+    await expect(announcementTab).toHaveAttribute("aria-selected", "false")
+    await expect(newsTab).toHaveAttribute("aria-selected", "true")
+  })
+
+  test("renders もっと見る link to /news", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByRole("link", { name: /もっと見る/ })).toHaveAttribute("href", "/news")
   })
 })

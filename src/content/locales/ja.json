@@ -24,14 +24,9 @@
   },
   "routes": {
     "home": {
-      "title": "DB ポータル (仮)",
       "meta": {
         "title": "DB ポータル (仮)",
         "description": "DDBJ の各データベースを横断検索できる統合ポータル"
-      },
-      "hero": {
-        "title": "DB ポータル (仮)",
-        "subtitle": "DDBJ の主要データベースを、一つの入口から横断検索"
       },
       "search": {
         "placeholder": "キーワード、accession、学名で検索",
@@ -41,17 +36,49 @@
         "dbAll": "すべての DB",
         "dbSelectorAria": "検索対象 DB"
       },
-      "cta": {
-        "advancedSearch": {
-          "title": "詳細検索",
-          "description": "フィールド指定・複数条件・期間指定で絞り込み検索",
-          "link": "詳細検索へ"
-        },
-        "submit": {
-          "title": "データ登録",
-          "description": "登録するデータに応じた最適なフローを確認",
-          "link": "登録ナビへ"
+      "services": {
+        "heading": "サービス・リソース",
+        "cards": {
+          "advancedSearch": {
+            "title": "詳細検索",
+            "description": "フィールド指定・複数条件・期間指定で絞り込み検索",
+            "link": "詳細検索へ"
+          },
+          "submit": {
+            "title": "データ登録",
+            "description": "登録するデータに応じた最適なフローを確認",
+            "link": "登録ナビへ"
+          },
+          "services": {
+            "title": "サービス",
+            "description": "DDBJ センターで利用可能な全サービスの一覧",
+            "link": "サービス一覧"
+          },
+          "supercomputer": {
+            "title": "スパコン",
+            "description": "遺伝研スーパーコンピューターシステム",
+            "link": "スパコンの利用へ"
+          },
+          "statistics": {
+            "title": "統計",
+            "description": "DDBJ センターのサービス利用統計",
+            "link": "統計を見る"
+          },
+          "activities": {
+            "title": "活動",
+            "description": "DDBJ センターの講習会・業績・コミュニティ活動",
+            "link": "活動を見る"
+          }
         }
+      },
+      "news": {
+        "heading": "お知らせ・ニュース",
+        "tabs": {
+          "announcements": "お知らせ",
+          "news": "News"
+        },
+        "viewMore": "もっと見る",
+        "mockNotice": "（モックデータです）"
       }
     },
     "search": {

@@ -30,11 +30,9 @@ describe("Home (/)", () => {
     mockNavigate.mockClear()
   })
 
-  it("renders the hero heading and subtitle", () => {
+  it("does not render an h1 hero block (search box is the entry point)", () => {
     renderHome()
-    const h1 = screen.getByRole("heading", { level: 1 })
-    expect(h1).toHaveTextContent("DB ポータル (仮)")
-    expect(screen.getByText(/主要データベース/)).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument()
   })
 
   it("renders DB selector, search input, search button and 4 example chips", () => {
@@ -48,12 +46,50 @@ describe("Home (/)", () => {
     expect(screen.getByRole("button", { name: "DRR000001" })).toBeInTheDocument()
   })
 
-  it("renders two CTA LinkCards pointing to /advanced-search and /submit", () => {
+  it("renders 6 service cards (2 internal + 4 external) with expected hrefs", () => {
     renderHome()
-    const advLink = screen.getByRole("link", { name: /詳細検索/ })
-    expect(advLink).toHaveAttribute("href", "/advanced-search")
-    const subLink = screen.getByRole("link", { name: /登録ナビへ/ })
-    expect(subLink).toHaveAttribute("href", "/submit")
+
+    const adv = screen.getByRole("link", { name: /詳細検索/ })
+    expect(adv).toHaveAttribute("href", "/advanced-search")
+
+    const sub = screen.getByRole("link", { name: /登録ナビへ/ })
+    expect(sub).toHaveAttribute("href", "/submit")
+
+    const services = screen.getByRole("link", { name: /サービス一覧/ })
+    expect(services).toHaveAttribute("href", "https://www.ddbj.nig.ac.jp/services/")
+    expect(services).toHaveAttribute("target", "_blank")
+    expect(services).toHaveAttribute("rel", "noopener noreferrer")
+
+    const sc = screen.getByRole("link", { name: /スパコンの利用へ/ })
+    expect(sc).toHaveAttribute("href", "https://sc.ddbj.nig.ac.jp/")
+    expect(sc).toHaveAttribute("target", "_blank")
+
+    const stats = screen.getByRole("link", { name: /統計を見る/ })
+    expect(stats).toHaveAttribute("href", "https://www.ddbj.nig.ac.jp/statistics/")
+    expect(stats).toHaveAttribute("target", "_blank")
+
+    const activities = screen.getByRole("link", { name: /活動を見る/ })
+    expect(activities).toHaveAttribute("href", "https://www.ddbj.nig.ac.jp/activities/")
+    expect(activities).toHaveAttribute("target", "_blank")
+  })
+
+  it("renders お知らせ / News tabs with お知らせ selected by default and switches on click", () => {
+    renderHome()
+
+    const announcementTab = screen.getByRole("tab", { name: "お知らせ" })
+    const newsTab = screen.getByRole("tab", { name: "News" })
+    expect(announcementTab).toHaveAttribute("aria-selected", "true")
+    expect(newsTab).toHaveAttribute("aria-selected", "false")
+
+    fireEvent.click(newsTab)
+    expect(announcementTab).toHaveAttribute("aria-selected", "false")
+    expect(newsTab).toHaveAttribute("aria-selected", "true")
+  })
+
+  it("renders the もっと見る link pointing to /news", () => {
+    renderHome()
+    const more = screen.getByRole("link", { name: /もっと見る/ })
+    expect(more).toHaveAttribute("href", "/news")
   })
 
   it("navigates to /search?q=<q> when submitting with db=all", () => {
