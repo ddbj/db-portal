@@ -926,6 +926,435 @@
         }
       }
     },
+    "submitAlt": {
+      "title": "Submit v2",
+      "meta": {
+        "title": "Submission Navigation v2 | DB Portal (tentative)",
+        "description": "Submission navigation v2 that maps the data types you have to the required combination of registration services."
+      },
+      "hero": {
+        "title": "Submission Navigation v2",
+        "subtitle": "Check off the data types you have and we'll narrow down the registration targets and prerequisites."
+      },
+      "sections": {
+        "dataTypes": "Data types you have",
+        "cards": "Pick from use cases",
+        "tree": "Follow the decision tree",
+        "detail": "Details"
+      },
+      "placeholder": {
+        "section1": "Section 1: Data type Y/N multi-select (built in Phase 1)",
+        "section2": "Section 2: Use Case Cards (built in Phase 2)",
+        "section3": "Section 3: Decision Tree (built in Phase 3)",
+        "section4": "Section 4: Detail Panel (built in Phase 4)"
+      },
+      "dataTypes": {
+        "human-restricted": {
+          "label": "Human restricted access",
+          "description": "Human data subject to NBDC approval (JGA)"
+        },
+        "sequence-read": {
+          "label": "Sequence reads",
+          "description": "NGS / long-read raw sequence data (DRA)"
+        },
+        "genome": {
+          "label": "Genome",
+          "description": "Assembled genomes (MSS / Haplotype / TSA / TPA / MAG / SAG)"
+        },
+        "variation": {
+          "label": "Variation",
+          "description": "SNP / SV / structural variant analysis results"
+        },
+        "proteomics": {
+          "label": "Proteomics",
+          "description": "Proteome analysis by LC-MS/MS (jPOST)"
+        },
+        "est": {
+          "label": "EST",
+          "description": "Sanger single-pass cDNA"
+        },
+        "microarray": {
+          "label": "Microarray",
+          "description": "Microarray expression data (GEA)"
+        },
+        "spatial-transcriptomics": {
+          "label": "Spatial transcriptomics",
+          "description": "Spatial gene expression data such as 10x Genomics Xenium"
+        },
+        "metabolomics": {
+          "label": "Metabolomics",
+          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
+        },
+        "small-sequence": {
+          "label": "Small-scale sequence",
+          "description": "Sequences below 100 entries / 500 kb (NSSS)"
+        }
+      },
+      "horizontalAttributes": {
+        "heading": "Cross-cutting attribute",
+        "human": {
+          "label": "Human-derived data",
+          "description": "Branches the workflow depending on whether the source is human"
+        }
+      },
+      "dataTypes": {
+        "groupAriaLabel": "Data type selection",
+        "human-restricted": {
+          "label": "Human restricted access",
+          "description": "Human data subject to NBDC approval (JGA)"
+        },
+        "sequence-read": {
+          "label": "Sequence reads",
+          "description": "NGS / long-read raw sequence data (DRA)"
+        },
+        "genome": {
+          "label": "Genome",
+          "description": "Assembled genomes (MSS / Haplotype / TSA / TPA / MAG / SAG)"
+        },
+        "variation": {
+          "label": "Variation",
+          "description": "SNP / SV / structural variant analysis results"
+        },
+        "proteomics": {
+          "label": "Proteomics",
+          "description": "Proteome analysis by LC-MS/MS (jPOST)"
+        },
+        "est": {
+          "label": "EST",
+          "description": "Sanger single-pass cDNA"
+        },
+        "microarray": {
+          "label": "Microarray",
+          "description": "Microarray expression data (GEA)"
+        },
+        "spatial-transcriptomics": {
+          "label": "Spatial transcriptomics",
+          "description": "Spatial gene expression data such as 10x Genomics Xenium"
+        },
+        "metabolomics": {
+          "label": "Metabolomics",
+          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
+        },
+        "small-sequence": {
+          "label": "Small-scale sequence",
+          "description": "Sequences below 100 entries / 500 kb (NSSS)"
+        }
+      },
+      "cards": {
+        "microbial-genome": {
+          "title": "Microbial genomes",
+          "description": "Genome submissions for prokaryotes / viruses / organelles / plasmids"
+        },
+        "eukaryote-genome": {
+          "title": "Eukaryotic genomes",
+          "description": "Animal / plant / fungi genome submissions (Haplotype / TSA / EST / TPA)"
+        },
+        "metagenome": {
+          "title": "Metagenome / MAG / SAG",
+          "description": "Environmental / metagenomic data (including restricted human microbiome)"
+        },
+        "expression": {
+          "title": "Gene expression",
+          "description": "Expression analysis data via RNA-seq / microarray / 10x Xenium"
+        },
+        "spatial-tx": {
+          "title": "Spatial transcriptomics",
+          "description": "Spatial gene expression data such as 10x Genomics Xenium"
+        },
+        "variation": {
+          "title": "Variation",
+          "description": "SNP / SV / structural variants (per-sample / aggregate / restricted)"
+        },
+        "proteomics": {
+          "title": "Proteomics",
+          "description": "Proteome analysis by LC-MS/MS (via jPOST)"
+        },
+        "metabolomics": {
+          "title": "Metabolomics",
+          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
+        },
+        "small-sequence": {
+          "title": "Small-scale sequence / PCR products",
+          "description": "Sequences below 100 entries (via NSSS)"
+        },
+        "human-restricted": {
+          "title": "Human restricted access",
+          "description": "Human data subject to NBDC approval"
+        }
+      },
+      "multiSelect": {
+        "patterns": {
+          "single": {
+            "title": "Single selection",
+            "description": "Pick the matching registration flow from the Decision Tree."
+          },
+          "merged-submission": {
+            "title": "Can be merged into one submission",
+            "description": "The selected items can be merged into a single registration (BioProject + BioSample + related DBs)."
+          },
+          "shared-bp-bs": {
+            "title": "Separate submissions sharing BioProject / BioSample",
+            "description": "Submissions are separate, but BioProject / BioSample can be shared."
+          },
+          "fully-independent": {
+            "title": "External submission required",
+            "description": "The selected items must be submitted via external systems (jPOST / EVA / dgVa). BioProject / BioSample cannot be shared."
+          },
+          "jga-unified": {
+            "title": "Consolidated under JGA",
+            "description": "Because human-restricted access is included, the selected items are consolidated under JGA."
+          }
+        }
+      },
+      "tree": {
+        "questions": {
+          "genome": "Genome category?",
+          "genome-eukaryote": "Eukaryote genome format?",
+          "genome-prokaryote": "Prokaryote genome format?",
+          "genome-virus": "Virus genome format?",
+          "genome-metagenome": "Metagenome category?",
+          "sequence-read": "Source of sequence reads?",
+          "sequence-read-metagenome": "Metagenome read type?",
+          "variation": "Variation category?",
+          "spatial-transcriptomics": "Spatial transcriptomics category?",
+          "est": "EST analysis scale?"
+        },
+        "options": {
+          "genome": {
+            "eukaryote": "Eukaryote",
+            "prokaryote": "Prokaryote",
+            "virus": "Virus",
+            "organelle-plasmid": "Organelle / Plasmid",
+            "metagenome": "Metagenome"
+          },
+          "genome-eukaryote": {
+            "raw-assembly": "Raw + Assembly",
+            "assembly-only": "Assembly only",
+            "haplotype-raw-assembly": "Haplotype Raw + Assembly",
+            "haplotype-assembly-only": "Haplotype Assembly only",
+            "tsa": "TSA (transcriptome assembly)",
+            "tpa": "TPA (third-party annotation)"
+          },
+          "genome-prokaryote": {
+            "raw-assembly": "Raw + Assembly",
+            "assembly-only": "Assembly only"
+          },
+          "genome-virus": {
+            "raw-assembly": "Raw + Assembly",
+            "assembly-only": "Assembly only"
+          },
+          "genome-metagenome": {
+            "genome-bin": "MAG / Binned / SAG",
+            "tls": "TLS (OTU profile)",
+            "tsa": "Metatranscriptome TSA",
+            "human-restricted": "Restricted human microbiome"
+          },
+          "sequence-read": {
+            "eukaryote-raw": "Eukaryote reads",
+            "prokaryote-raw": "Prokaryote reads",
+            "virus-raw": "Virus reads",
+            "expression-ngs": "Expression analysis by NGS (RNA-Seq)",
+            "metagenome": "Metagenome"
+          },
+          "sequence-read-metagenome": {
+            "raw": "Raw reads",
+            "primary": "Primary metagenome (DRA Analysis)"
+          },
+          "variation": {
+            "nonhuman": "Non-human",
+            "human-open": "Human (open)",
+            "human-restricted": "Human (restricted)"
+          },
+          "spatial-transcriptomics": {
+            "nonhuman": "Non-human",
+            "restricted": "Human (restricted)"
+          },
+          "est": {
+            "small": "Small (< 100 entries)",
+            "large": "Large"
+          }
+        }
+      },
+      "breadcrumb": {
+        "aria": "Breadcrumb showing active filters and tree path"
+      },
+      "detail": {
+        "empty": {
+          "title": "Select a leaf to see details",
+          "description": "Pick from the data type filter, Use Case Cards, or the Decision Tree."
+        },
+        "overviewPlaceholder": "You stopped at an intermediate node. Drill down to a leaf to see registration details.",
+        "placeholderSummary": "Detailed copy is being expanded.",
+        "venue": {
+          "internal": "DDBJ internal",
+          "external": "External"
+        },
+        "headings": {
+          "steps": "Registration steps",
+          "common": "Common requirements",
+          "links": "External links",
+          "masters": "Registration metadata"
+        },
+        "masters": {
+          "bpDataTypes": "BioProject Project Data Type",
+          "bsPackages": "BioSample Package",
+          "draLibrarySources": "DRA Library Source",
+          "draLibraryStrategies": "DRA Library Strategy",
+          "draInstruments": "DRA Instrument Model",
+          "geaSubmissionTypes": "GEA Submission Type",
+          "metabobankSubmissionTypes": "MetaboBank Submission Type",
+          "jgaObjectTypes": "JGA registration object",
+          "mssDataTypes": "MSS Data Type"
+        },
+        "goalTemplates": {
+          "jga": {
+            "common": "Requires DDBJ Account, public key, and NBDC HumanDBs approval.",
+            "links": { "nbdc": "NBDC HumanDBs", "jga": "JGA submission guide" }
+          },
+          "jga-analysis": {
+            "common": "Register an Analysis under an existing JGA Study (with Policy / Dataset).",
+            "links": { "jga": "JGA Analysis guide" }
+          },
+          "external-jpost": {
+            "common": "Submit directly via jPOST. No DDBJ-side account is required.",
+            "links": { "jpost": "jPOST" }
+          },
+          "external-eva": {
+            "common": "Submit directly via EBI European Variation Archive (EVA).",
+            "links": { "eva": "EVA" }
+          },
+          "external-dgva": {
+            "common": "Submit directly via EBI Database of Genomic Variants archive (dgVa).",
+            "links": { "dgva": "dgVa" }
+          },
+          "external-humandbs": {
+            "common": "Submit to NBDC HumanDBs (restricted-access data).",
+            "links": { "humandbs": "HumanDBs" }
+          },
+          "jvar": {
+            "common": "Submit SNP/Indel or SV to JVar (operated by DDBJ).",
+            "links": { "jvar": "JVar" }
+          },
+          "sra-analysis": {
+            "common": "Register a DRA Analysis tied to BioProject + BioSample.",
+            "links": { "dway": "D-way" }
+          },
+          "metabobank": {
+            "common": "Register IDF / SDRF / MAF to MetaboBank along with BioProject + BioSample.",
+            "links": { "metabobank": "MetaboBank" }
+          },
+          "gea": {
+            "common": "Register BioProject + BioSample + (DRA) + GEA Submission.",
+            "links": { "dway": "D-way", "gea": "GEA" }
+          },
+          "gea-xenium": {
+            "common": "Register a 10x Genomics Xenium submission to GEA with BioProject + BioSample.",
+            "links": { "dway": "D-way", "gea": "GEA" }
+          },
+          "nsss": {
+            "common": "Sign in with a DDBJ Account and submit via the NSSS web form.",
+            "links": { "nsss": "NSSS" }
+          },
+          "genome": {
+            "common": "Register BioProject → BioSample → (DRA) → MSS in order.",
+            "links": { "dway": "D-way", "mss": "MSS" }
+          }
+        },
+        "steps": {
+          "jga": {
+            "dbcls": { "title": "Apply to NBDC", "description": "Obtain HumanDBs / DBCLS approval." },
+            "guidance": { "title": "JGA submission guidance", "description": "Discuss the submission plan with the JGA team." },
+            "upload": { "title": "JGA upload", "description": "Submit Study / Sample / Experiment / Data / Analysis sequentially." }
+          },
+          "jga-analysis": {
+            "guidance": { "title": "JGA Analysis guidance", "description": "Share the Analysis plan against an existing JGA Study." },
+            "upload": { "title": "Submit Analysis", "description": "Upload Analysis objects such as VCF / BAM." }
+          },
+          "external-jpost": {
+            "submit": { "title": "Submit to jPOST", "description": "Visit the jPOST site and follow the instructions." }
+          },
+          "external-eva": {
+            "submit": { "title": "Submit to EVA", "description": "Submit non-human SNP / Indel via EBI EVA." }
+          },
+          "external-dgva": {
+            "submit": { "title": "Submit to dgVa", "description": "Submit non-human structural variants via EBI dgVa." }
+          },
+          "external-humandbs": {
+            "submit": { "title": "Submit to HumanDBs", "description": "Submit shared data to NBDC HumanDBs." }
+          },
+          "jvar": {
+            "submit": { "title": "Submit to JVar", "description": "Submit via JVar SNP or JVar SV." }
+          },
+          "sra-analysis": {
+            "bioproject": { "title": "Register BioProject", "description": "Register a parent Project via D-way." },
+            "biosample": { "title": "Register BioSample", "description": "Register sample attributes." },
+            "draAnalysis": { "title": "Register DRA Analysis", "description": "Submit an Analysis object via D-way." }
+          },
+          "metabobank": {
+            "bioproject": { "title": "Register BioProject", "description": "Register project information." },
+            "biosample": { "title": "Register BioSample", "description": "Register sample information." },
+            "metabobank": { "title": "Submit to MetaboBank", "description": "Submit IDF / SDRF / MAF to MetaboBank." }
+          },
+          "gea": {
+            "bioproject": { "title": "Register BioProject", "description": "Register project information." },
+            "biosample": { "title": "Register BioSample", "description": "Register sample information." },
+            "dra": { "title": "Submit DRA (RNA-Seq raw)", "description": "Submit sequencing reads to DRA." },
+            "gea": { "title": "GEA Submission", "description": "Submit expression profile to GEA." }
+          },
+          "gea-xenium": {
+            "bioproject": { "title": "Register BioProject", "description": "Register project information." },
+            "biosample": { "title": "Register BioSample", "description": "Register sample information." },
+            "gea": { "title": "Submit GEA (Xenium)", "description": "Submit 10x Genomics Xenium spatial expression data." }
+          },
+          "nsss": {
+            "login": { "title": "Sign in to NSSS", "description": "Sign in with a DDBJ Account." },
+            "form": { "title": "Fill the web form", "description": "Enter sequence, references, and annotation." },
+            "review": { "title": "Review & submit", "description": "DDBJ staff review and issue accession numbers." }
+          },
+          "genome": {
+            "bioproject": { "title": "Register BioProject", "description": "Register project information via D-way." },
+            "biosample": { "title": "Register BioSample", "description": "Register sample attributes via D-way." },
+            "dra": { "title": "Submit DRA (Raw)", "description": "Submit sequencing reads to DRA (skip if not applicable)." },
+            "mss": { "title": "Submit MSS (Annotation)", "description": "Submit assembly + annotation to MSS." }
+          }
+        },
+        "leaves": {
+          "human-restricted": { "summary": "Personally identifiable human data. Register with JGA after NBDC approval." },
+          "proteomics": { "summary": "Proteome analysis data via LC-MS/MS. Submit directly via jPOST." },
+          "metabolomics": { "summary": "Metabolomics data such as LC-MS / GC-MS / NMR. Register via BioProject + BioSample + MetaboBank." },
+          "expression-ngs": { "summary": "Submit RNA-Seq raw data to DRA and an expression profile to GEA Submission." },
+          "expression-array": { "summary": "Submit microarray expression data via GEA Microarray Submission." },
+          "small-sequence": { "summary": "Submit < 100 sequences (< 500 kb) directly via the NSSS web form." },
+          "metagenome-raw": { "summary": "Submit environmental metagenome raw reads via BioProject + BioSample + DRA." },
+          "metagenome-primary": { "summary": "Submit unbinned contigs (Primary metagenome) as DRA Analysis." },
+          "metagenome-genome-bin": { "summary": "Submit MAG / Binned / SAG assemblies via MSS (MIMAG / MISAG packages)." },
+          "metagenome-tls": { "summary": "Submit 16S rRNA OTU profiles (TLS) via MSS as the TLS data type." },
+          "metagenome-tsa": { "summary": "Submit metatranscriptome (TSA from metagenome) via MSS." },
+          "human-microbiome-restricted": { "summary": "Restricted human microbiome data. Register via JGA-analysis or HumanDBs." },
+          "organelle-plasmid": { "summary": "Submit organelle / plasmid assemblies via BioProject + BioSample + MSS." },
+          "prokaryote-raw": { "summary": "Submit prokaryote sequencing reads via BioProject + BioSample + DRA." },
+          "prokaryote-raw-assembly": { "summary": "Submit prokaryote genome (raw + assembly) via BioProject + BioSample + DRA + MSS." },
+          "prokaryote-assembly-only": { "summary": "Submit prokaryote genome (assembly only) via BioProject + BioSample + MSS." },
+          "virus-raw": { "summary": "Submit virus genome reads via BioProject + BioSample + DRA." },
+          "virus-raw-assembly": { "summary": "Submit virus genome (raw + assembly) via BioProject + BioSample + DRA + MSS." },
+          "virus-assembly-only": { "summary": "Submit virus genome (assembly only) via BioProject + BioSample + MSS." },
+          "eukaryote-tsa": { "summary": "Submit eukaryotic de novo transcriptome assembly (TSA) via BioProject + BioSample + DRA + MSS." },
+          "eukaryote-tpa": { "summary": "Submit eukaryotic third-party annotation (TPA) via BioProject + BioSample + MSS. Peer-reviewed publication required." },
+          "eukaryote-raw": { "summary": "Submit eukaryotic sequencing reads via BioProject + BioSample + DRA." },
+          "eukaryote-raw-assembly": { "summary": "Submit eukaryotic genome (raw + assembly) via BioProject + BioSample + DRA + MSS." },
+          "eukaryote-assembly-only": { "summary": "Submit eukaryotic genome (assembly only) via BioProject + BioSample + MSS." },
+          "eukaryote-haplotype-raw-assembly": { "summary": "Diploid haplotype distinction (Principal / Alternate) with raw + assembly. Uses umbrella + Principal + Alternate (3 BioProjects)." },
+          "eukaryote-haplotype-assembly-only": { "summary": "Haplotype distinction with assembly only (MSS). Uses umbrella + Principal + Alternate." },
+          "eukaryote-est-small": { "summary": "Submit Sanger single-pass cDNA via NSSS (EST category, < 100 entries)." },
+          "eukaryote-est-large": { "summary": "Submit Sanger single-pass cDNA at scale via BioProject + BioSample + MSS (EST)." },
+          "spatial-tx-nonhuman": { "summary": "Submit spatial gene expression data such as 10x Genomics Xenium via BioProject + BioSample + GEA (Xenium)." },
+          "spatial-tx-restricted": { "summary": "Restricted human spatial transcriptomics. Register via JGA-analysis (final placement TBD with DB-2021)." },
+          "variation-nonhuman": { "summary": "Non-human SNP / SV. Submit to EBI EVA / dgVa." },
+          "variation-human-open": { "summary": "Open human SNP / SV. Submit to JVar (operated by DDBJ) or DRA Analysis." },
+          "variation-human-restricted": { "summary": "Restricted human variation. Submit to JGA-analysis or HumanDBs." }
+        }
+      }
+    },
     "designSystem": { "title": "Design System" }
   },
   "aria": {

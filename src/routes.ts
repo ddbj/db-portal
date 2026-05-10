@@ -5,5 +5,6 @@ export default [
   route("search", "routes/search.tsx"),
   route("advanced-search", "routes/advanced-search.tsx"),
   route("submit", "routes/submit.tsx"),
+  route("submit-alt", "routes/submit-alt.tsx"),
   route("design-system", "routes/design-system.tsx"),
 ] satisfies RouteConfig
