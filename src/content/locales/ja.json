@@ -1499,7 +1499,35 @@
         }
       }
     },
-    "designSystem": { "title": "Design System" }
+    "designSystem": { "title": "Design System" },
+    "news": {
+      "meta": {
+        "title": "お知らせ・ニュース",
+        "description": "DDBJ センターからのお知らせとニュースの全件アーカイブ"
+      },
+      "heading": "お知らせ・ニュース",
+      "subheading": "DDBJ センターからのお知らせ・更新情報",
+      "loading": "読み込み中…",
+      "empty": "条件に一致するニュースはありません。",
+      "openExternal": "ddbj.nig.ac.jp で開く",
+      "facets": {
+        "heading": "絞り込み",
+        "year": "年",
+        "type": "種別",
+        "db": "サービス",
+        "tag": "タグ",
+        "clearAll": "すべてクリア",
+        "typeNotification": "重要なお知らせ",
+        "typeNews": "ニュース",
+        "showMore": "もっと見る",
+        "showLess": "閉じる"
+      },
+      "count": "{{count}} 件"
+    }
+  },
+  "notifications": {
+    "regionLabel": "重要なお知らせ",
+    "dismiss": "閉じる"
   },
   "aria": {
     "mainNavigation": "メインナビゲーション"

@@ -1499,7 +1499,35 @@
         }
       }
     },
-    "designSystem": { "title": "Design System" }
+    "designSystem": { "title": "Design System" },
+    "news": {
+      "meta": {
+        "title": "News and announcements",
+        "description": "Full archive of DDBJ Center news and announcements"
+      },
+      "heading": "News and announcements",
+      "subheading": "Updates and notices from the DDBJ Center",
+      "loading": "Loading…",
+      "empty": "No news matches the current filters.",
+      "openExternal": "Open on ddbj.nig.ac.jp",
+      "facets": {
+        "heading": "Filter",
+        "year": "Year",
+        "type": "Type",
+        "db": "Service",
+        "tag": "Tag",
+        "clearAll": "Clear all",
+        "typeNotification": "Important notice",
+        "typeNews": "News",
+        "showMore": "Show more",
+        "showLess": "Show less"
+      },
+      "count": "{{count}} item(s)"
+    }
+  },
+  "notifications": {
+    "regionLabel": "Important notices",
+    "dismiss": "Dismiss"
   },
   "aria": {
     "mainNavigation": "Main navigation"

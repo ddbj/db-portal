@@ -9,33 +9,26 @@ import {
 } from "lucide-react"
 import { type ComponentType, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate } from "react-router"
+import { useNavigate } from "react-router"
 
+import NewsList from "@/components/news/NewsList"
 import {
   Heading,
   LinkCard,
   SearchBox,
   type SelectOption,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
   TextLink,
 } from "@/components/ui"
 import { pickLang } from "@/i18n"
-import { useLanguage } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
-import {
-  DATABASES,
-  EXAMPLE_CHIPS,
-  HOME_NEWS_MOCK,
-  type HomeNewsItem,
-  type HomeNewsType,
-} from "@/lib/mock-data"
+import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import { ALL_DB_VALUE, buildSearchUrl, type DbSelectValue } from "@/lib/search-url"
+import { searchNews } from "@/server/news-mirror"
 
 import type { Route } from "./+types/home"
+
+const HOME_NEWS_LIMIT = 8
 
 export const loader = ({ request }: Route.LoaderArgs) => {
   const lang = pickLang(
@@ -44,10 +37,13 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   )
   const resource = resolveMeta(lang)
 
+  const news = searchNews({ lang, type: "news", retired: "all", limit: HOME_NEWS_LIMIT }).hits
+
   return {
     lang,
     metaTitle: resource.routes.home.meta.title,
     metaDescription: resource.routes.home.meta.description,
+    news,
   }
 }
 
@@ -130,75 +126,11 @@ const SERVICE_CARDS: readonly ServiceCard[] = [
   },
 ]
 
-const formatDate = (isoDate: string, lang: "ja" | "en") => {
-  const [y, m, d] = isoDate.split("-")
-  if (!y || !m || !d) return isoDate
-
-  return lang === "ja" ? `${y}/${m}/${d}` : `${y}-${m}-${d}`
-}
-
-interface NewsListProps {
-  items: readonly HomeNewsItem[]
-  lang: "ja" | "en"
-}
-
-const NewsList = ({ items, lang }: NewsListProps) => {
-  if (items.length === 0) {
-    return <p className="px-1 py-6 text-sm text-gray-500">—</p>
-  }
-
-  return (
-    <ul className="divide-y divide-gray-100">
-      {items.map((item) => {
-        const title = lang === "ja" ? item.titleJa : item.titleEn
-        const isExternal = item.href.startsWith("http")
-        const sharedClasses
-          = "group flex flex-col gap-1 px-1 py-3 sm:flex-row sm:items-baseline sm:gap-4"
-        const dateEl = (
-          <time
-            dateTime={item.date}
-            className="shrink-0 font-mono text-xs text-gray-500 tabular-nums"
-          >
-            {formatDate(item.date, lang)}
-          </time>
-        )
-        const titleEl = (
-          <span className="group-hover:text-primary-700 text-sm text-gray-800 group-hover:underline">
-            {title}
-          </span>
-        )
-
-        return (
-          <li key={item.id}>
-            {isExternal ? (
-              <a
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={sharedClasses}
-              >
-                {dateEl}
-                {titleEl}
-              </a>
-            ) : (
-              <Link to={item.href} className={sharedClasses}>
-                {dateEl}
-                {titleEl}
-              </Link>
-            )}
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-const Home = () => {
+const Home = ({ loaderData }: Route.ComponentProps) => {
   const { t } = useTranslation()
-  const { lang } = useLanguage()
   const navigate = useNavigate()
   const [db, setDb] = useState<DbSelectValue>(ALL_DB_VALUE)
-  const [newsTab, setNewsTab] = useState<HomeNewsType>("announcement")
+  const { news } = loaderData
 
   const dbOptions: readonly SelectOption[] = [
     { value: ALL_DB_VALUE, label: t("routes.home.search.dbAll") },
@@ -209,11 +141,8 @@ const Home = () => {
     void navigate(buildSearchUrl({ q, db }))
   }
 
-  const announcements = HOME_NEWS_MOCK.filter((n) => n.type === "announcement").slice(0, 5)
-  const newsItems = HOME_NEWS_MOCK.filter((n) => n.type === "news").slice(0, 5)
-
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-6 pt-16 pb-24">
+    <div className="mx-auto w-full max-w-6xl flex-1 px-6 pt-16 pb-24">
       <div className="mx-auto max-w-3xl">
         <SearchBox
           size="large"
@@ -230,86 +159,72 @@ const Home = () => {
         />
       </div>
 
-      <section className="mt-16">
-        <Heading
-          level={2}
-          className="text-xl font-semibold tracking-wide text-gray-900"
-        >
-          {t("routes.home.services.heading")}
-        </Heading>
-        <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {SERVICE_CARDS.map((card) => {
-            const Icon = card.icon
-            const title = t(card.titleKey)
-            const description = t(card.descriptionKey)
-            const linkText = t(card.linkKey)
-            const icon = <Icon className="h-5 w-5" aria-hidden={true} />
-
-            return card.external
-              ? (
-                <LinkCard
-                  key={card.key}
-                  external
-                  href={card.href}
-                  color="primary"
-                  icon={icon}
-                  title={title}
-                  description={description}
-                  linkText={linkText}
-                />
-              )
-              : (
-                <LinkCard
-                  key={card.key}
-                  to={card.to}
-                  color="primary"
-                  icon={icon}
-                  title={title}
-                  description={description}
-                  linkText={linkText}
-                />
-              )
-          })}
-        </div>
-      </section>
-
-      <section className="mt-16">
-        <div className="flex items-baseline justify-between gap-4">
+      <div className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+        <section className="min-w-0">
           <Heading
             level={2}
             className="text-xl font-semibold tracking-wide text-gray-900"
           >
-            {t("routes.home.news.heading")}
+            {t("routes.home.services.heading")}
           </Heading>
-          <span className="text-xs text-gray-400">
-            {t("routes.home.news.mockNotice")}
-          </span>
-        </div>
-        <Tabs
-          value={newsTab}
-          onChange={(v) => setNewsTab(v as HomeNewsType)}
-          className="mt-4"
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            {SERVICE_CARDS.map((card) => {
+              const Icon = card.icon
+              const title = t(card.titleKey)
+              const description = t(card.descriptionKey)
+              const linkText = t(card.linkKey)
+              const icon = <Icon className="h-5 w-5" aria-hidden={true} />
+
+              return card.external
+                ? (
+                  <LinkCard
+                    key={card.key}
+                    external
+                    href={card.href}
+                    color="primary"
+                    icon={icon}
+                    title={title}
+                    description={description}
+                    linkText={linkText}
+                  />
+                )
+                : (
+                  <LinkCard
+                    key={card.key}
+                    to={card.to}
+                    color="primary"
+                    icon={icon}
+                    title={title}
+                    description={description}
+                    linkText={linkText}
+                  />
+                )
+            })}
+          </div>
+        </section>
+
+        <aside
+          aria-labelledby="home-news-heading"
+          className="lg:sticky lg:top-6 lg:self-start"
         >
-          <TabList ariaLabel={t("routes.home.news.heading")}>
-            <Tab value="announcement">
-              {t("routes.home.news.tabs.announcements")}
-            </Tab>
-            <Tab value="news">{t("routes.home.news.tabs.news")}</Tab>
-          </TabList>
-          <TabPanel value="announcement" className="mt-2">
-            <NewsList items={announcements} lang={lang} />
-          </TabPanel>
-          <TabPanel value="news" className="mt-2">
-            <NewsList items={newsItems} lang={lang} />
-          </TabPanel>
-        </Tabs>
-        <div className="mt-4 text-right">
-          <TextLink to="/news" className="text-sm">
-            {t("routes.home.news.viewMore")}
-            <span aria-hidden={true}> →</span>
-          </TextLink>
-        </div>
-      </section>
+          <div className="flex items-baseline justify-between gap-4">
+            <Heading
+              level={2}
+              id="home-news-heading"
+              className="text-base font-semibold tracking-wide text-gray-900"
+            >
+              {t("routes.home.news.tabs.news")}
+            </Heading>
+            <TextLink to="/news" className="text-xs">
+              {t("routes.home.news.viewMore")}
+              <span aria-hidden={true}> →</span>
+            </TextLink>
+          </div>
+          <div className="mt-3">
+            <NewsList items={news} variant="compact" />
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }

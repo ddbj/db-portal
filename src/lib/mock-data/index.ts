@@ -11,7 +11,6 @@ export {
 export { DATABASES, DB_ORDER } from "./databases"
 export { DETAIL_OVERVIEWS } from "./detail-panel"
 export { EXAMPLE_CHIPS, type ExampleChip } from "./examples"
-export { HOME_NEWS_MOCK, type HomeNewsItem, type HomeNewsType } from "./home-news"
 export {
   ALL_ERROR_HIT_COUNTS,
   ALL_SUCCESS_HIT_COUNTS,

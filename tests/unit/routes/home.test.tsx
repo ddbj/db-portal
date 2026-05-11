@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/routes/home"
+import type { MirroredNewsItem } from "@/server/news-mirror"
 
 import { renderWithI18n } from "../../helpers/i18n"
 
@@ -17,10 +18,42 @@ vi.mock("react-router", async (importOriginal) => {
   }
 })
 
+const sampleNews: MirroredNewsItem[] = [
+  {
+    id: "ja-2026-04-08",
+    slug: "2026-04-08",
+    lang: "ja",
+    date: "2026-04-08",
+    dateTime: "2026-04-08T00:00:00.000Z",
+    retireTime: null,
+    db: ["ddbj"],
+    tags: ["データ公開"],
+    title: "DDBJ リリース 141.0",
+    bodyHtml: "",
+    sourceUrl: "https://www.ddbj.nig.ac.jp/news/ja/2026-04-08.html",
+    sourceMdUrl: "",
+    type: "news",
+    pairId: null,
+  },
+]
+
+const fakeLoaderData = {
+  lang: "ja" as const,
+  metaTitle: "DDBJ 刷新 (仮)",
+  metaDescription: "desc",
+  news: sampleNews,
+}
+
+type HomeProps = Parameters<typeof Home>[0]
+
 const renderHome = () =>
   renderWithI18n(
     <MemoryRouter initialEntries={["/"]}>
-      <Home />
+      <Home
+        loaderData={fakeLoaderData}
+        params={{}}
+        matches={[] as unknown as HomeProps["matches"]}
+      />
     </MemoryRouter>,
   )
 
@@ -73,17 +106,10 @@ describe("Home (/)", () => {
     expect(activities).toHaveAttribute("target", "_blank")
   })
 
-  it("renders お知らせ / News tabs with お知らせ selected by default and switches on click", () => {
+  it("renders the news aside with items from loader data", () => {
     renderHome()
-
-    const announcementTab = screen.getByRole("tab", { name: "お知らせ" })
-    const newsTab = screen.getByRole("tab", { name: "News" })
-    expect(announcementTab).toHaveAttribute("aria-selected", "true")
-    expect(newsTab).toHaveAttribute("aria-selected", "false")
-
-    fireEvent.click(newsTab)
-    expect(announcementTab).toHaveAttribute("aria-selected", "false")
-    expect(newsTab).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("DDBJ リリース 141.0")).toBeInTheDocument()
+    expect(screen.getByText("2026/04/08")).toBeInTheDocument()
   })
 
   it("renders the もっと見る link pointing to /news", () => {

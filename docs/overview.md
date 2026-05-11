@@ -23,10 +23,11 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 
 ### 含まれるもの
 
-- **トップページ**: 横断検索ボックス + DB セレクタ、DDBJ センター動線カード（詳細検索 / 登録ナビ / サービス / スパコン / 統計 / 活動の 6 枚を 1 グリッドに混在）、ニュース・お知らせ（mock 表示、将来実データ化）。将来 ddbj.nig.ac.jp を置き換えるための入口を兼ねるため、ポータル機能（検索・登録）と DDBJ サイト全体の動線を同居させる
+- **トップページ**: 横断検索ボックス + DB セレクタ、DDBJ センター動線カード（詳細検索 / 登録ナビ / サービス / スパコン / 統計 / 活動の 6 枚を 1 グリッドに混在）、ニュース（ddbj/www からミラー、右ペイン表示）。将来 ddbj.nig.ac.jp を置き換えるための入口を兼ねるため、ポータル機能（検索・登録）と DDBJ サイト全体の動線を同居させる
 - **横断検索結果ページ**: DB ごとのヒット数サマリー、各 DB の検索ページへのリンク
 - **DB 個別結果リストページ**: カードリスト形式（NCBI Entrez 風）+ 各 DB 詳細ページへの動線
 - **登録ナビゲーションページ**: ユースケースカード + フローチャート形式ナビゲーション + 詳細パネルを 1 ページに集約（独立した QuickStart ページは作らない）
+- **ニュースアーカイブ**: ddbj/www をミラーした全件一覧 + 年 / 種別 / DB / タグのファセット絞り込み（`/news`）。重要告知は上部 NotificationBar として全ページで表示
 - **認証**: DDBJ Account（Keycloak）連携
 - **問い合わせ**: 既存の Google Form へのリンク
 - **i18n**: 日本語（メイン） + 英語
@@ -38,23 +39,22 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 - レコード詳細表示（各 DB の既存ページに遷移する）
 - 実際の登録フォーム / Repository API 連携
 - アナリティクス
-- ニュース・お知らせの実データ化（現状はトップに mock 表示。将来 CMS 連携・記事一覧ページを整備）
+- portal 内ニュース記事詳細ページ（現状は外部 ddbj.nig.ac.jp へ遷移）
 - DBCLS（ライフサイエンス統合データベースセンター）サービスの統合
-- DB 個別結果リストのファセット検索
 
 ## ページ構成
 
 ```
+(all pages)
+└── NotificationBar (Header 直下、tags に Announcement を含む現役告知)
+
 / (top)
 ├── search box (cross-db search) + DB selector
-├── service grid (6 cards mixed in one grid):
-│   ├── /advanced-search (internal)
-│   ├── /submit          (internal)
-│   ├── DDBJ services      (external: ddbj.nig.ac.jp/services)
-│   ├── Supercomputer      (external: sc.ddbj.nig.ac.jp)
-│   ├── DDBJ statistics    (external: ddbj.nig.ac.jp/statistics)
-│   └── DDBJ activities    (external: ddbj.nig.ac.jp/activities)
-└── notifications / news (mock, tab-switched: お知らせ / News, "もっと見る →" /news 予約)
+└── 2-col grid (lg:grid-cols-[1fr_320px]):
+    ├── left main: service grid (lg:2-col)
+    │     /advanced-search, /submit (internal)
+    │     DDBJ services, supercomputer, statistics, activities (external)
+    └── right aside (sticky): News (compact list, 8 件) + "もっと見る →" /news
 
 /search?q=xxx (cross-db search results)
 ├── hit count summary per DB
@@ -68,6 +68,10 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 ├── [Use Case Cards] 9 cards (shortcuts to tree nodes or leaves)
 ├── [Decision Tree] 31 leaves, depth 2-7 (comprehensive coverage)
 └── [Detail Panel] 2-stage drill-down (overview on card, detail on leaf)
+
+/news (news archive)
+├── facets: type / year / db / tag
+└── hits: 外部 ddbj.nig.ac.jp/news/{lang}/{slug}.html へリンク
 ```
 
 ## URL 設計
@@ -82,7 +86,8 @@ DB ポータル全体の URL 設計方針。検索系の詳細は [search.md#url
 | `/search` | 横断 / DB 指定検索結果 | SSR シェル + CSR データ取得 | `noindex, follow` |
 | `/advanced-search` | GUI クエリビルダ | SSR | `index, follow` |
 | `/submit` | 登録ナビゲーション | SSR | `index, follow` |
-| `/news` | ニュース・お知らせ一覧（仕様未定、ルート予約） | SSR | `index, follow` |
+| `/news` | ニュース全件アーカイブ（ファセット絞り込み、ddbj/www ミラー） | SSR | `index, follow` |
+| `/api/news` | ニュース取得 API（resource route） | - | `noindex, nofollow` |
 | `/design-system` | デザインシステム | SSR | `noindex, nofollow` |
 | `/auth/callback` | OIDC 認可コード受け取り | CSR | `noindex, nofollow` |
 | `/auth/silent-callback` | OIDC サイレント更新 | CSR | `noindex, nofollow` |
@@ -117,21 +122,24 @@ Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/acc
 
 ## トップページ
 
-`/` は (a) ポータル機能（横断検索 / 詳細検索 / 登録ナビ）への動線、(b) DDBJ センター主要ページ（サービス・スパコン・統計・活動）への動線、(c) ニュース・お知らせの 3 機能を同居させる。将来 ddbj.nig.ac.jp 廃止に向けて、現 DDBJ サイトのホーム機能を段階的に吸収する位置づけ。
+`/` は (a) ポータル機能（横断検索 / 詳細検索 / 登録ナビ）への動線、(b) DDBJ センター主要ページ（サービス・スパコン・統計・活動）への動線、(c) ニュースの 3 機能を同居させる。将来 ddbj.nig.ac.jp 廃止に向けて、現 DDBJ サイトのホーム機能を段階的に吸収する位置づけ。
 
 ### 構成
 
 1. **横断検索ボックス + DB セレクタ**: 既存どおりトップ最上段（hero タイトルは廃止、検索ボックスを実質的なヒーローとして使う）
-2. **サービスグリッド（6 枚）**: 内部リンク 2 枚（`/advanced-search`, `/submit`）+ 外部リンク 4 枚（DDBJ サービス / スパコン / 統計 / 活動）を 1 グリッドに混在させる。カード単位で内外を区別せず、視覚的に均一に並べる。外部リンクは新規タブで開き、`ExternalLink` アイコンで区別
-3. **ニュース・お知らせ（mock）**: 1 カラム タブ切替（お知らせ / News）。現状は `src/lib/mock-data/home-news.ts` の静的 mock を表示する。各タブ末尾に「もっと見る →」リンクを置き、`/news`（ルート予約のみ、実装は将来）に遷移
+2. **2-col グリッド (lg+)**:
+   - 左 main: サービスグリッド（内部リンク 2 枚 + 外部リンク 4 枚を 2-col に並べる、外部は新規タブ）
+   - 右 aside: ニュース一覧（compact、8 件、sticky）と「もっと見る →」/news リンク
+   - mobile / tablet では right aside が main の下にスタック
+3. **重要告知**: ホームでも全ページ共通の上部 NotificationBar に集約（`/` ページ固有の枠は持たない）
 
 ### 外部リンク URL の i18n
 
 外部 4 リンクの URL は当面 ja 固定（`ddbj.nig.ac.jp/...`、トレーリング `index.html` 省略）。en の同等 URL 体系を確認後、必要に応じて i18n リソース化する。
 
-### ニュース・お知らせの将来計画
+### ニュース・お知らせ
 
-mock 段階で対象とする型 / レイアウト / 件数は実データ化時の参考実装として残す。実データ化時の方向性候補は (1) CMS から JSON を取り込む、(2) ddbj/www の現行ニュースから移行する、(3) 別管理画面で運用する、の 3 つ。`/news` ルート（一覧 / 詳細）は仕様未確定のため、現状は未実装の予約として扱う。
+詳細は [news.md](./news.md) を参照。ddbj/www の `_news/{ja,en}/*.md` を 10 分間隔で Node サーバが GitHub API 経由でミラーし、front matter の `tags` に `Announcement` を含むものを「notification（上部バー）」、それ以外を「news（右ペイン）」として分配する。`/news` で全件アーカイブ + 年 / 種別 / db / tag のファセット絞り込みを提供する。
 
 ## 検索
 
@@ -143,9 +151,11 @@ mock 段階で対象とする型 / レイアウト / 件数は実データ化時
 
 ## 登録ナビゲーション
 
-登録システム単位ではなく、登録ユースケース単位で情報を整理する。詳細は [submit.md](./submit.md) を参照。
+登録システム単位ではなく、登録ユースケース単位で情報を整理する。詳細は v1 が [submit.md](./submit.md)、v2 が [submit-alt.md](./submit-alt.md)。
 
-### ナビゲーション構成
+現在 `/submit` (v1, Decision Tree 起点) と `/submit-alt` (v2, 質問ウィザード起点) を並走評価中で、トップページ導線および最終的な本流選択は未確定。両仕様とも独立して保守する。
+
+### ナビゲーション構成（v1: `/submit`）
 
 `/submit` 1 ページに 3 セクション構成でまとめる（独立した QuickStart ページは作らない）:
 
@@ -265,9 +275,8 @@ React Router v7 の framework mode を `ssr: true` で運用し、全ページ S
 
 - ddbj.nig.ac.jp の置き換え
 - 実際の登録フォーム / Repository API 連携: [DDBJ Record](https://github.com/ddbj/ddbj-record-specifications)（全登録形式を単一 JSON record として統一的に扱う仕様。v3 で全 DB 横断の submission set 表現を目指して設計中）を生成する UI をポータル内で提供し、Repository API へ POST することで登録を完結させる計画。複数 DB（BioProject / BioSample / DRA / DDBJ (Trad) / JGA 等）にまたがる submission set を単一 Record として扱うことで、複数ユースケース該当時の登録統合案内の SSOT となる
-- ホームページ的なコンテンツ（ニュース、お知らせ等）
+- portal 内ニュース記事詳細ページ（`/news/:slug`、現状は外部 ddbj.nig.ac.jp へ遷移）
 - DBCLS サービスの統合
 - private accession の検索（DDBJ Account 連携）
 - 更新申請機能
 - 問い合わせシステムの整備
-- DB 個別結果リストのファセット検索

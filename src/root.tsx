@@ -15,16 +15,23 @@ import {
 import { AppShell } from "@/components/layout"
 import i18n, { pickLang } from "@/i18n"
 import { queryClient } from "@/lib/query-client"
+import { ensureWorkerStarted, searchNews } from "@/server/news-mirror"
 
 import type { Route } from "./+types/root"
 
 export const loader = ({ request }: Route.LoaderArgs) => {
+  ensureWorkerStarted()
+
   const lang = pickLang(
     request.headers.get("Cookie"),
     request.headers.get("Accept-Language"),
   )
 
-  return { lang }
+  // top_news は ddbj/www 側で手動キュレーションされているため、retire_time に関わらず表示する
+  // （本家 ddbj.nig.ac.jp の top-news-view と同じ挙動）。
+  const notifications = searchNews({ lang, type: "notification", retired: "all", limit: 10 }).hits
+
+  return { lang, notifications }
 }
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {

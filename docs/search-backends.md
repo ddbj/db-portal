@@ -290,11 +290,18 @@ ddbj_search_api/
 
 ### クエリ変換
 
-ポータル UI で受けるキーワードは [search.md のキーワード仕様](./search.md#キーワード検索仕様) に従って正規化する。シンプル検索ボックスと Advanced Search で別経路を持つ。
+ポータル UI で受けるすべての入力は proxy 層で **単一の AST に正規化**された後、各バックエンドの compiler に渡される（[search.md の検索の内部モデル](./search.md#検索の内部モデル) 参照）。AST には大きく 2 種類のノードがある:
 
-#### シンプル検索ボックスからの入力
+- `FreeText(value)`: シンプル検索ボックス（`q` パラメータ）から生成
+- `FieldClause` / `BoolOp`: Advanced Search の DSL（`adv` パラメータ）を Lark パーサで AST に変換、または Sidebar Filter UI が直接構築して URL `?adv=` 経由で投入
 
-proxy 層で次の手順で正規化する:
+シンプル検索と Advanced Search が併用された場合（`q` と `adv` 両方指定）、サーバ側で `BoolOp(AND, [freetext_ast, adv_ast])` に統合される。compiler は AST 上のすべてのノードを解釈し、`q` 専用のショートカット経路は持たない。
+
+ノード別の正規化ルールは以下:
+
+#### `FreeText` ノードの正規化（`q` から）
+
+シンプル検索ボックスの入力（`q` パラメータ）は proxy 層で次の手順で `FreeText` AST ノードに正規化する:
 
 1. 入力から `"..."` で囲まれたフレーズトークンを先に切り出す（未閉じのクォートは、末尾まで閉じられなかった場合は無視してリテラル扱いする）
 2. 残りをスペース区切りでトークン化
@@ -336,9 +343,9 @@ proxy 層で次の手順で正規化する:
 
 シンプル検索ボックスでは `AND`/`OR`/`NOT`・括弧・ワイルドカード・フィールド指定は解釈しない（入力されても記号判定経由でフレーズ化 → リテラル扱い）。意図した Boolean 演算・ワイルドカード・フィールド指定は Advanced Search で提供する。
 
-#### Advanced Search からの入力
+#### `FieldClause` / `BoolOp` の構築（`adv` から）
 
-Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 形式](./search.md#advanced-search-の-url-形式) で受け取り、proxy 層でパースして以下の **ツリー型構造化 JSON** に展開する。
+Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 形式](./search.md#advanced-search-の-url-形式) で受け取り、proxy 層で Lark パーサが `FieldClause` / `BoolOp` ノードからなる AST に変換する。AST は以下の **ツリー型構造化 JSON** にシリアライズされる（`/db-portal/parse` のレスポンス形式）。
 
 ```json
 {
@@ -510,7 +517,7 @@ DSL 関連 7 slug（`/db-portal/cross-search` / `/db-portal/search` / `/db-porta
 | `missing-db` | 400 | `/db-portal/search` で `db` 未指定 |
 | `cursor-not-supported` | 400 | `db=trad` / `db=taxonomy` または `adv` との `cursor` 同時指定（Solr proxy / adv は cursor 非対応） |
 
-※ `q` と `adv` は併用可能（API 側で AND 結合される）。両方未指定の場合のみ portal 側で `/` リダイレクトする。
+※ `q` と `adv` は併用可能（サーバ側で `q` を `FreeText` AST ノードに変換し、`adv` の AST と `BoolOp(AND, ...)` で結合）。両方未指定の場合のみ portal 側で `/` リダイレクトする。
 
 `about:blank` 系（HTTP layer / FastAPI 標準）:
 
@@ -524,12 +531,16 @@ DSL 関連 7 slug（`/db-portal/cross-search` / `/db-portal/search` / `/db-porta
 - `detail` 文字列はそのまま Callout の補足として表示（slug 由来メッセージの下に小字で）
 - `position` のような構造化フィールドは API 側で持たない方針（slug + detail 自然言語で十分。将来下線表示が必要なら別 endpoint 追加）
 
-##### バックエンド変換
+##### バックエンド変換（compiler）
 
-- **ES**: ツリーをそのまま `bool` クエリに変換。leaf は `term`（`eq`） / `match_phrase`（`contains`） / `prefix`（`starts_with`） / `wildcard`（`wildcard`） / `range`（`between` / `gte` / `lte`）にマッピング
-- **Solr**: ツリーを edismax の `q` 文字列に再帰的に展開（`(Organism:"Homo sapiens" AND Date:[20200101 TO 20241231])` 形式）。`uf` パラメータでフィールド名を allowlist 制御する
+AST → 各バックエンド query の変換は ES / Solr 用に独立した compiler が担う。両 compiler は AST 上の全ノード（`FreeText` / `FieldClause` / `BoolOp`）を解釈する。
 
-シンプル検索とバックエンドパーサを揃える（どちらも edismax）ほうがテスト・運用コストが低い。edismax は `q` 内でフィールド指定・Boolean・範囲検索・ワイルドカードを解釈できるため、標準 Lucene パーサに切り替える必要はない。
+| バックエンド | compiler | `BoolOp` | `FieldClause` | `FreeText` |
+|---|---|---|---|---|
+| ES | `compile_to_es(ast)` → ES bool query (dict) | `must` / `should` / `must_not` | `term`（`eq`）/ `match_phrase`（`contains`）/ `prefix`（`starts_with`）/ `wildcard`（`wildcard`）/ `range`（`between` / `gte` / `lte`） | `multi_match(type: phrase, fields: [...])` を AND 結合（[シンプル検索用 qf 設定](#シンプル検索用-qf-設定) の ES 重み付け） |
+| Solr (ARSA / TXSearch) | `compile_to_solr(ast, dialect)` → edismax q string | `(... AND ...)` / `(... OR ...)` / `(NOT ...)` | フィールド指定 + 演算子（`Organism:"Homo sapiens" AND Date:[20200101 TO 20241231]` 形式） | quoted token + edismax `qf`（[シンプル検索用 qf 設定](#シンプル検索用-qf-設定) の ARSA / TXSearch 重み付け） |
+
+Solr 側は `uf` パラメータでフィールド名を allowlist 制御する。シンプル検索とバックエンドパーサを揃える（どちらも edismax）ほうがテスト・運用コストが低い。edismax は `q` 内でフィールド指定・Boolean・範囲検索・ワイルドカードを解釈できるため、標準 Lucene パーサに切り替える必要はない。
 
 #### 共通のフィールド対応
 
@@ -601,7 +612,7 @@ DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィール�
 
 ##### Facet endpoint 利用方針
 
-ポータルの sidebar filter UI（[search.md の Sidebar filter UI](./search.md#sidebar-filter-ui)）は API 側の `/facets` 系 endpoint を使って facet bucket（controlled value の count）を取得する。バックエンド別の対応状況:
+ポータルの Sidebar Filter UI（[search.md の Sidebar Filter UI](./search.md#sidebar-filter-ui)）は API 側の `/facets` 系 endpoint を使って facet bucket（controlled value の count）を取得する。バックエンド別の対応状況:
 
 | DB | Facet endpoint 対応 | sidebar 取得形態 |
 |---|---|---|
@@ -622,7 +633,7 @@ DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィール�
 
 ##### シンプル検索用 qf 設定
 
-シンプル検索ボックスからの入力はフィールド指定がないため、各バックエンドで以下の qf を全文検索として使う:
+`FreeText` ノードはフィールド指定を持たないため、各バックエンドの compiler は以下の qf / multi_match fields を全文検索として使う:
 
 **ARSA 向け qf:**
 

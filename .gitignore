@@ -31,3 +31,6 @@ playwright-report/
 test-results/
 tests/e2e/.auth/
 .playwright-cli/
+
+# News mirror cache (runtime data, regenerated from ddbj/www)
+data/

@@ -11,7 +11,42 @@ DB ポータルは DDBJ の各データベースに対する統合的な検索�
 1. **横断検索**: 全 DB に対してキーワード検索し、DB ごとのヒット数サマリーを表示
 2. **DB 指定検索**: 特定の DB に絞った検索結果リストを表示
 
-DB 個別のファセット検索は設けない。
+DB 個別の絞り込みは Sidebar Filter UI（facet checkbox / keyword input / date range）で提供する（[Sidebar filter UI](#sidebar-filter-ui) 参照）。
+
+## 検索の内部モデル
+
+検索リクエストはサーバ内部で**単一の AST に正規化される**。UI / URL の入力経路は 3 つあるが、API 内部では同一の AST 表現に集約され、compiler が ES / Solr query に変換する。
+
+### 入力経路と AST への変換
+
+| 入力 | URL | AST 化 |
+|---|---|---|
+| シンプル検索ボックス | `?q=...` | `FreeText(value)` ノード |
+| Advanced Search GUI | `?adv=DSL` | Lark パーサで `BoolOp` / `FieldClause` の tree |
+| Sidebar facet / keyword / date range | `?adv=DSL`（書き込み） | clause 単位で AST に追加 |
+
+複数経路が併用された場合、全体は `BoolOp(AND, [freetext_ast, adv_ast])` で結合された 1 本の AST として compiler に渡される。`q` 専用の ES `multi_match` / Solr `q` ショートカット経路は持たない。
+
+### compiler
+
+| バックエンド | compiler | 出力 |
+|---|---|---|
+| ES (DDBJ Search) | `compile_to_es(ast)` | ES bool query (dict) |
+| Solr (ARSA / TXSearch) | `compile_to_solr(ast, dialect)` | edismax q string |
+
+各 compiler は AST 上のすべてのノード（`FreeText` / `FieldClause` / `BoolOp`）を解釈する。`FreeText` の解釈はバックエンドごとに以下:
+
+- ES: Tier 1 フィールド群への `multi_match`（自動フレーズ化された tokens を AND 結合）
+- Solr (ARSA / TXSearch): quoted token + edismax `qf` boost
+
+`FreeText` の正規化ルール（記号を含むトークンの自動フレーズ化、`"..."` フレーズ切り出し等）は [search-backends.md のクエリ変換](./search-backends.md#クエリ変換) に集約する。
+
+### 設計上の含意
+
+- **新しい入力経路を追加**: AST に変換するアダプタを 1 つ書けば ES / Solr 両方の検索に乗る
+- **新しいバックエンドを追加**: AST → 新バックエンド query の compiler を 1 つ書けば、すべての入力経路から検索できる
+- **Sidebar Filter UI の "residual"**: 「AST clause のうち Sidebar Filter UI が表現できないもの」と素直に定義される（[Sidebar Filter UI](#sidebar-filter-ui) 参照）
+- **DSL 文字列の位置づけ**: `?adv=...` URL に載せるためのシリアライズ形式に過ぎない。SSOT は AST。Advanced Search の GUI クエリビルダと Sidebar Filter UI は AST を直接構築し、URL 書き込み時のみ DSL 文字列にシリアライズする
 
 ## DB 一覧
 
@@ -132,6 +167,8 @@ Accession（例: `PRJDB12345`）も通常のキーワードとして全文検索
 | 自動用語展開 (ATM) | 対応しない（DDBJ には MeSH 等の統制語彙がない） |
 
 「非対応」はユーザ入力にこれらの文字が含まれていても**エラーにはせず、通常の検索語として扱う**（Lucene 演算子として解釈しない）という意味。意図的に使いたい場合は Advanced Search を使う。
+
+シンプル検索ボックスの入力（`q` パラメータ）はサーバ側で `FreeText` AST ノードに変換され、Advanced Search の AST と同一の compiler で ES `multi_match` / Solr edismax `q` に変換される。詳細は [検索の内部モデル](#検索の内部モデル) 参照。
 
 #### 記号を含むトークンの自動フレーズ化
 
@@ -364,7 +401,9 @@ DB 切り替え時、Tier ごとに条件の扱いが異なる:
 - **GUI → DSL**: GUI クエリビルダの状態 (ツリー型) からクライアント側で DSL 文字列を生成し、URL `?adv=...` に載せる。検索ボタンで `/search?adv=...` へ遷移する。
 - **DSL → GUI**: `/advanced-search?adv=...` 着地時、`GET /db-portal/parse?adv=...&db=...` を呼んで AST の構造化 JSON を取得し、初期 GUI 状態に流し込む。
 
-**Single Source of Truth はサーバ側の Lark パーサに一本化する。** クライアント側に独自パーサは実装しない。`GET /db-portal/parse` は cross-search / search の DSL 分岐と同じパイプライン（`parse` → `validate` → `ast_to_json`）で AST tree を返す。詳細は [search-backends.md の Advanced Search パーサ](./search-backends.md#パーサ実装) と API 仕様 (ddbj-search-api `docs/db-portal-api-spec.md`) を参照。
+**SSOT は AST**（[検索の内部モデル](#検索の内部モデル) 参照）。DSL 文字列は AST のシリアライズ形式（URL `?adv=...` 載せ替え用）に過ぎない。Advanced Search の GUI クエリビルダと Sidebar Filter UI は AST を直接構築し、URL 書き込み時のみ DSL 文字列にシリアライズする。Lark パーサは「URL から GUI を復元する」経路（DSL → AST）の SSOT を担う。
+
+クライアント側には独自パーサを実装しない。`GET /db-portal/parse` は cross-search / search の DSL 分岐と同じパイプライン（`parse` → `validate` → `ast_to_json`）で AST tree を返す。詳細は [search-backends.md の Advanced Search パーサ](./search-backends.md#パーサ実装) と API 仕様 (ddbj-search-api `docs/db-portal-api-spec.md`) を参照。
 
 **復元できないケース:** API が `unexpected-token` / `unknown-field` 等を返した場合、portal 側は GUI を空のまま開き、`QueryPreview` に元 DSL を raw 表示する。ユーザは GUI でクリアして再構築する。
 
@@ -554,7 +593,7 @@ DB 指定検索結果（`/search?q=xxx&db=yyy`）は **テーブルではなく�
 | `private` | `status="private"`（同上） | `warning` |
 | `アクセス制限` / `Controlled access` | `accessibility="controlled-access"`（JGA 等） | `secondary` |
 
-API 側の status filter ロジック（accession 完全一致時のみ `suppressed` 解禁、`withdrawn` / `private` は常に除外）の詳細は [search-backends.md の status 制御](./search-backends.md#データ可視性-status-制御) を参照。
+API 側の status filter ロジックは accession 完全一致時のみ `suppressed` 解禁、`withdrawn` / `private` は常に除外。
 
 #### DB 別メタデータ（L5）
 
@@ -623,15 +662,15 @@ null / 空配列の field は skip して、表示すべき field がない場�
 ```
 
 - **ツールバー**（結果リスト上部）: 件数表示 + ソートセレクト + 表示件数セレクト
-- **Sidebar filter**（左サイドバー、`/search?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar filter UI](#sidebar-filter-ui)
+- **Sidebar Filter UI**（左サイドバー、`/search?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar Filter UI](#sidebar-filter-ui)
 
 #### カードクリック時の遷移
 
 タイトル（L2）のリンクは **外部の既存詳細ページ** へ `target="_blank"` で遷移する。db-portal 内に詳細ページは設けない（各 DB の既存 UI を活用する）。
 
-#### Sidebar filter UI
+#### Sidebar Filter UI
 
-DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search?db=all`）では sidebar は表示しない（DB 別 facet endpoint の結果が混在しないため）。
+DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search?db=all`）では Sidebar Filter UI は表示しない（DB 別 facet endpoint の結果が混在しないため）。
 
 ##### 構成（DB 別）
 
@@ -685,7 +724,7 @@ DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞
 
 URL `?adv=...` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse` 経由で行う。
 
-- **URL → sidebar**: portal 側で `parseAdv({adv, db})` を呼び AST を取得 → portal 側 `astToSidebarState(ast, db)` で AST を「sidebar 対応 clause」と「residual（sidebar 非対応 clause）」に分解 → sidebar 対応分を sidebar UI 状態に反映
+- **URL → sidebar**: portal 側で `parseAdv({adv, db})` を呼び AST を取得 → portal 側 `astToSidebarState(ast, db)` で AST を「sidebar 対応 clause」と「residual（sidebar 非対応 clause）」に分解 → sidebar 対応分を sidebar UI 状態に反映。residual とは「AST clause のうち sidebar UI が表現できないもの」（複雑な OR 結合、wildcard、NOT、未対応 field 等）の総称
 - **sidebar → URL**: sidebar 変更時に新 sidebar state から DSL を再構築 → residual と AND 結合 → URL `?adv=...` を更新（navigate）
 - residual がある場合、sidebar 上部に notice（「詳細検索 GUI 編集中の条件があります」）と詳細検索 GUI への編集リンクを表示
 
@@ -745,7 +784,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 | `sort` | `relevance` / `date_desc` / `date_asc` | `relevance` |
 | `cursor` | opaque 文字列（ES deep paging、10,000 件超） | なし |
 
-**`q` と `adv` の併用**: 両方が指定された場合、Search API 側で AND 結合して評価する。シンプル検索でフリーテキスト絞り込みをしつつ、サイドバーや Advanced Search から DSL 条件を重ねる動線（ファセット検索 UX の基本動線）をサポートするため。UI ではヘッダのサマリチップに `"q の値" + DSL 短縮` を統合表示する（[サマリチップ](#サマリチップ-現在の検索条件) 参照）。
+**`q` と `adv` の併用**: 両方が指定された場合、サーバ側で `q` を `FreeText` AST ノードに変換した上で、`adv` の AST と `BoolOp(AND, ...)` で結合し、単一の compiler に渡す（[検索の内部モデル](#検索の内部モデル) 参照）。シンプル検索でフリーテキスト絞り込みをしつつ、サイドバーや Advanced Search から DSL 条件を重ねる動線（ファセット検索 UX の基本動線）をサポートするため。UI ではヘッダのサマリチップに `"q の値" + DSL 短縮` を統合表示する（[Advanced Search の条件サマリ表示](#advanced-search-の条件サマリ表示) 参照）。
 
 #### 正規化ルール
 
@@ -830,7 +869,7 @@ organism:"Homo sapiens" AND date:[2020-01-01 TO 2024-12-31] AND (title:cancer OR
   - `organism` は学名・Taxonomy ID 両対応（ES の `organism.name` / `organism.identifier` 両方に query を投げる）
   - `date` はエイリアス: `date_published` / `date_modified` / `date_created` の OR 範囲検索に展開
 - **横断モード**（`db` 未指定）では Tier 1 / Tier 2 のみ使用可。Tier 3 フィールドを含む DSL は 400 エラー
-- パース: server 側で DSL → 構造化 JSON（[search-backends.md の Advanced Search API 契約](./search-backends.md#advanced-search-からの入力)）→ ES / Solr へ
+- パース: server 側で DSL → AST（構造化 JSON、[search-backends.md のスキーマ仕様](./search-backends.md#スキーマ仕様)）→ ES / Solr へ
 - GUI ↔ DSL 双方向対応: GUI → DSL はクライアント側で生成、DSL → GUI は `GET /db-portal/parse?adv=...` でサーバ AST を取得して GUI に流し込む（[GUI ↔ DSL の方向性](#gui--dsl-の方向性) 参照）
 
 #### 値のバリデーション
@@ -900,7 +939,7 @@ DDBJ ポータルは「単一パラメータに DSL 文字列を載せる」点�
 
 - NCBI の「DB 名 + ヒット数」方式を採用（DB 数が 8 と少ないため、EBI のようなカテゴリ階層は不要）
 - Featured result（Accession マッチ時の強調表示）は採用しない。通常の relevance score 上位で救う
-- ファセット検索は設けない（NCBI の DB 個別ファセットに相当する機能はスコープ外）
+- DB 個別ファセットは Sidebar Filter UI で提供（NCBI の左サイドバーに相当）。ES backed 6 DB は facet bucket + keyword + date range、Solr proxy DB（Trad / Taxonomy）は keyword input のみ（[Sidebar filter UI](#sidebar-filter-ui) 参照）
 
 ## NCBI / EBI との DB 対応表
 
