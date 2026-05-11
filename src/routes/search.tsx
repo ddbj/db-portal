@@ -169,7 +169,7 @@ export const meta = ({ data }: Route.MetaArgs) => {
   const fallbackCanonical = `${PORTAL_ORIGIN}/search`
 
   return [
-    { title: data?.metaTitle ?? "DB ポータル (仮)" },
+    { title: data?.metaTitle ?? "DDBJ 刷新 (仮)" },
     { name: "description", content: data?.metaDescription ?? "DDBJ 検索" },
     { name: "robots", content: "noindex, follow" },
     {

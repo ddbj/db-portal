@@ -31,8 +31,8 @@ export const loader = ({ request }: Route.LoaderArgs) => {
 }
 
 export const meta = ({ data }: Route.MetaArgs) => [
-  { title: data?.metaTitle ?? "DB ポータル (仮)" },
-  { name: "description", content: data?.metaDescription ?? "DB ポータル (仮)" },
+  { title: data?.metaTitle ?? "DDBJ 刷新 (仮)" },
+  { name: "description", content: data?.metaDescription ?? "DDBJ 刷新 (仮)" },
   { name: "robots", content: "index, follow" },
   { tagName: "link", rel: "canonical", href: `${PORTAL_ORIGIN}/submit` },
 ]

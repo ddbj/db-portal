@@ -24,7 +24,7 @@ describe("Header", () => {
 
   it("logo link shows the service name and points to /", () => {
     renderHeader()
-    const logo = screen.getByRole("link", { name: "DB ポータル (仮)" })
+    const logo = screen.getByRole("link", { name: "DDBJ 刷新 (仮)" })
     expect(logo).toHaveAttribute("href", "/")
   })
 

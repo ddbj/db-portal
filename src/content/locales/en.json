@@ -1,6 +1,6 @@
 {
   "header": {
-    "serviceName": "DB Portal (仮)",
+    "serviceName": "DDBJ 刷新 (仮)",
     "nav": {
       "advancedSearch": "Advanced Search",
       "submit": "Submit",
@@ -25,7 +25,7 @@
   "routes": {
     "home": {
       "meta": {
-        "title": "DB Portal (仮)",
+        "title": "DDBJ 刷新 (仮)",
         "description": "Unified portal for cross-database search across DDBJ databases"
       },
       "search": {
@@ -200,7 +200,7 @@
     "advancedSearch": {
       "title": "Advanced Search",
       "meta": {
-        "title": "Advanced Search - DB Portal (仮)",
+        "title": "Advanced Search - DDBJ 刷新 (仮)",
         "description": "Build field-scoped queries across DDBJ databases"
       },
       "hero": {
@@ -473,7 +473,7 @@
     "submit": {
       "title": "Submit",
       "meta": {
-        "title": "Submission Guide | DB Portal (仮)",
+        "title": "Submission Guide | DDBJ 刷新 (仮)",
         "description": "Find the right DDBJ submission service (BioProject / BioSample / DRA / MSS / NSSS / GEA / JGA) based on the data you want to submit."
       },
       "hero": {
@@ -1011,7 +1011,7 @@
     "submitAlt": {
       "title": "Submit v2",
       "meta": {
-        "title": "Submission Navigation v2 | DB Portal (tentative)",
+        "title": "Submission Navigation v2 | DDBJ 刷新 (仮)",
         "description": "Submission navigation v2 that maps the data types you have to the required combination of registration services."
       },
       "hero": {

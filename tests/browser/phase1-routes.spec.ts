@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test"
 
 const ROUTES = [
-  { path: "/", title: /DDBJ DB Portal/ },
-  { path: "/search", title: /検索.*DDBJ DB Portal/ },
-  { path: "/advanced-search", title: /詳細検索.*DDBJ DB Portal/ },
-  { path: "/submit", title: /登録.*DDBJ DB Portal/ },
+  { path: "/", title: /DDBJ 刷新/ },
+  { path: "/search", title: /DDBJ 刷新/ },
+  { path: "/advanced-search", title: /詳細検索.*DDBJ 刷新/ },
+  { path: "/submit", title: /登録.*DDBJ 刷新/ },
   { path: "/design-system", title: /Design System.*DDBJ DB Portal/ },
 ] as const
 
@@ -42,7 +42,7 @@ test.describe("Phase 1 routes", () => {
 
   test("Logo link in header navigates to /", async ({ page }) => {
     await page.goto("/search")
-    await page.getByRole("banner").getByRole("link", { name: "DDBJ Portal" }).click()
+    await page.getByRole("banner").getByRole("link", { name: "DDBJ 刷新 (仮)" }).click()
     await expect(page).toHaveURL(/\/$/)
   })
 

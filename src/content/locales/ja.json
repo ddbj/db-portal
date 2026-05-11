@@ -1,6 +1,6 @@
 {
   "header": {
-    "serviceName": "DB ポータル (仮)",
+    "serviceName": "DDBJ 刷新 (仮)",
     "nav": {
       "advancedSearch": "詳細検索",
       "submit": "登録",
@@ -25,7 +25,7 @@
   "routes": {
     "home": {
       "meta": {
-        "title": "DB ポータル (仮)",
+        "title": "DDBJ 刷新 (仮)",
         "description": "DDBJ の各データベースを横断検索できる統合ポータル"
       },
       "search": {
@@ -200,7 +200,7 @@
     "advancedSearch": {
       "title": "詳細検索",
       "meta": {
-        "title": "詳細検索 - DB ポータル (仮)",
+        "title": "詳細検索 - DDBJ 刷新 (仮)",
         "description": "DDBJ のデータベースを、フィールド・演算子・値を組み合わせて検索"
       },
       "hero": {
@@ -473,7 +473,7 @@
     "submit": {
       "title": "登録",
       "meta": {
-        "title": "登録ナビゲーション | DB ポータル (仮)",
+        "title": "登録ナビゲーション | DDBJ 刷新 (仮)",
         "description": "登録したいデータから、DDBJ のどの登録サービス（BioProject / BioSample / DRA / MSS / NSSS / GEA / JGA 等）を使うかを見つける統合ナビ"
       },
       "hero": {
@@ -1011,7 +1011,7 @@
     "submitAlt": {
       "title": "登録 v2",
       "meta": {
-        "title": "登録ナビゲーション v2 | DB ポータル (仮)",
+        "title": "登録ナビゲーション v2 | DDBJ 刷新 (仮)",
         "description": "持っているデータの種別から登録サービスの組み合わせを動的に案内する登録ナビゲーション v2"
       },
       "hero": {

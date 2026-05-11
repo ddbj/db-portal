@@ -49,7 +49,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
 }
 
 export const meta = ({ data }: Route.MetaArgs) => [
-  { title: data?.metaTitle ?? "登録ナビゲーション v2 | DB ポータル (仮)" },
+  { title: data?.metaTitle ?? "登録ナビゲーション v2 | DDBJ 刷新 (仮)" },
   { name: "description", content: data?.metaDescription ?? "" },
   { name: "robots", content: "index, follow" },
   { tagName: "link", rel: "canonical", href: `${PORTAL_ORIGIN}/submit-alt` },
