@@ -1,0 +1,30 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:${VLLM_IMAGE_TAG}
+    container_name: db-portal-llm
+    restart: unless-stopped
+    ports:
+      - "${VLLM_HOST_PORT:-3200}:8000"
+    devices:
+      - nvidia.com/gpu=${VLLM_GPU_DEVICE:-0}
+    ipc: host
+    volumes:
+      - ${HF_HOME}:/root/.cache/huggingface
+      - ./entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      MODEL: ${MODEL}
+      VLLM_API_KEY: ${VLLM_API_KEY}
+      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-}
+      QUANTIZATION: ${QUANTIZATION:-}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-8192}
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.92}
+      TOKENIZER_MODE: ${TOKENIZER_MODE:-}
+      CONFIG_FORMAT: ${CONFIG_FORMAT:-}
+      LOAD_FORMAT: ${LOAD_FORMAT:-}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 600s

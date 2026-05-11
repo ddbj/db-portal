@@ -9,6 +9,7 @@ staging / production 環境へのデプロイ手順、podman 運用の注意事�
 | dev | localhost:3000 | 開発サーバー | docker compose | 3000 | idp-staging.ddbj.nig.ac.jp |
 | staging | portal-staging.ddbj.nig.ac.jp | 遺伝研スパコン (a012) | podman-compose | 3100 | idp-staging.ddbj.nig.ac.jp |
 | production | portal.ddbj.nig.ac.jp | 遺伝研スパコン (a011) | podman-compose | 3100 | idp.ddbj.nig.ac.jp |
+| LLM (shared) | (内部 LAN のみ) | 遺伝研 GPU node (nig-gpu-2 / l40s-03) | podman-compose | 3200 | - |
 
 ### 接続情報
 
@@ -16,6 +17,7 @@ staging / production 環境へのデプロイ手順、podman 運用の注意事�
 |---|---|---|
 | staging | `ssh nig-a012-search` | `~/db-portal-staging` |
 | production | `ssh nig-a011-search` | `~/db-portal-prod` |
+| LLM (GPU node) | `ssh nig-gpu-2` | `~/db-portal-llm` |
 
 上流の Nginx（リバースプロキシ）は DDBJ インフラ側で管理する（[ddbj/service-gateway-conf](https://github.com/ddbj/service-gateway-conf)）。本リポジトリには含めない。
 
@@ -79,3 +81,11 @@ podman-compose exec app npm install
 | `KEYCLOAK_CLIENT_ID` | - | OIDC クライアント ID |
 | `DB_PORTAL_SEARCH_API_URL` | - | DDBJ Search API のエンドポイント。dev / staging は `https://ddbj-staging.nig.ac.jp/search/api`、production は `https://ddbj.nig.ac.jp/search/api` |
 | `VITE_PORTAL_ORIGIN` | - | canonical URL / OGP URL の origin。dev は `http://localhost:3000`、staging は `https://portal-staging.ddbj.nig.ac.jp`、production は `https://portal.ddbj.nig.ac.jp`。`import.meta.env` 経由で SSR / CSR 両方から参照。production ビルドで未設定の場合はビルド時に throw（`src/lib/portal-origin.ts`） |
+
+## LLM サービングサーバー (GPU node)
+
+検索・登録補助用の vLLM を GPU node (nig-gpu-2 / l40s-03) で常時起動し、staging / production の portal app から内部 LAN 経由で共有する構成。
+
+- 起動手順・環境変数・運用は [`docs/llm.md`](./llm.md) を SSOT として参照
+- GPU node のオペレータ向け最小手順は [`llm/README.md`](../llm/README.md)
+- 設計議論の記録は `.claude/docs/llm-integration-plan.md`
