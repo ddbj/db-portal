@@ -66,11 +66,11 @@ describe("ADVANCED_FIELDS catalog", () => {
     }
   })
 
-  it("enumValues は空配列のとき自由入力モード (relevance のみ)", () => {
+  it("enum 型フィールドは全て非空の enumValues を持つ", () => {
     const freeFormEnums = ADVANCED_FIELDS.filter(
       (f) => f.type === "enum" && (f.enumValues ?? []).length === 0,
     )
-    expect(freeFormEnums.map((f) => f.id)).toEqual(["relevance"])
+    expect(freeFormEnums.map((f) => f.id)).toEqual([])
   })
 
   it("date 型フィールドは between / gte / lte / equals", () => {
@@ -115,14 +115,14 @@ describe("ADVANCED_FIELDS catalog", () => {
     expect(jga?.availableDbs).toEqual(["jga"])
   })
 
-  it("Tier 3 は全 6 DB（SRA/GEA 共通、BioSample、BioProject、Trad、Taxonomy、JGA）をカバー", () => {
+  it("Tier 3 は全 8 DB（SRA、BioSample、BioProject、Trad、Taxonomy、JGA、GEA、MetaboBank）をカバー", () => {
     const tier3 = getFieldsForTier(3)
     const dbCoverage = new Set<string>()
     for (const f of tier3) {
       for (const db of f.availableDbs) dbCoverage.add(db)
     }
     expect(dbCoverage).toEqual(
-      new Set(["sra", "gea", "biosample", "bioproject", "trad", "taxonomy", "jga"]),
+      new Set(["sra", "biosample", "bioproject", "trad", "taxonomy", "jga", "gea", "metabobank"]),
     )
   })
 
@@ -150,13 +150,14 @@ describe("getFieldsForDb", () => {
     expect(fields.length).toBe(8 + 2)
   })
 
-  it("sra 指定で Tier 1 + Tier 2 + SRA/GEA Tier 3 が含まれる", () => {
+  it("sra 指定で Tier 1 + Tier 2 + SRA Tier 3 が含まれる (GEA 専用 field は除外)", () => {
     const fields = getFieldsForDb("sra")
     const ids = fields.map((f) => f.id)
     expect(ids).toContain("library_strategy")
     expect(ids).toContain("platform")
     expect(ids).not.toContain("project_type")
     expect(ids).not.toContain("rank")
+    expect(ids).not.toContain("gea_experiment_type")
   })
 
   it("bioproject 指定で project_type が利用可", () => {
@@ -174,9 +175,11 @@ describe("getFieldsForDb", () => {
     expect(ids).not.toContain("organism")
   })
 
-  it("metabobank は Tier 3 フィールドを持たない", () => {
-    const fields = getFieldsForDb("metabobank")
-    expect(fields.every((f) => f.tier !== 3)).toBe(true)
+  it("metabobank は Tier 3 フィールド (study_type / experiment_type / submission_type) を持つ", () => {
+    const ids = getFieldsForDb("metabobank").map((f) => f.id)
+    expect(ids).toContain("metabobank_study_type")
+    expect(ids).toContain("metabobank_experiment_type")
+    expect(ids).toContain("submission_type")
   })
 })
 
@@ -261,18 +264,93 @@ describe("Tier 3 拡張フィールド (BioSample 5 / SRA 3 / JGA 2 / BioProject
     }
   })
 
-  it("relevance は enum 型かつ availableOps は equals / not_equals", () => {
+  it("relevance は enum 型、equals / not_equals、INSDC 7 値の enumValues を持つ", () => {
     const f = findField("relevance")
     expect(f?.type).toBe("enum")
     expect([...(f?.availableOps ?? [])].sort()).toEqual(
       ["equals", "not_equals"].sort(),
     )
-    expect(f?.enumValues).toEqual([])
+    expect(f?.enumValues?.map((e) => e.value)).toEqual([
+      "Agricultural",
+      "Medical",
+      "Industrial",
+      "Environmental",
+      "Evolution",
+      "ModelOrganism",
+      "Other",
+    ])
   })
 
-  it("disease / tissue / env_biome は API allowlist 未対応のため mock から削除済", () => {
+  it("project_type は enum 型、enumValues は ES objectType 値域 (BioProject / UmbrellaBioProject)", () => {
+    const f = findField("project_type")
+    expect(f?.type).toBe("enum")
+    expect(f?.enumValues?.map((e) => e.value)).toEqual([
+      "BioProject",
+      "UmbrellaBioProject",
+    ])
+  })
+
+  it("API allowlist 未対応 / 別 field 代替の field は mock から削除済", () => {
     expect(findField("disease")).toBeUndefined()
     expect(findField("tissue")).toBeUndefined()
     expect(findField("env_biome")).toBeUndefined()
+    expect(findField("japanese_name")).toBeUndefined()
+    expect(findField("principal_investigator")).toBeUndefined()
+    expect(findField("submitting_organization")).toBeUndefined()
+  })
+})
+
+describe("Tier 3 機能欠落補完 (GEA 1 / MetaboBank 3 / JGA rename / SRA 専用化)", () => {
+  it("gea_experiment_type は GEA 専用、dslName は experiment_type", () => {
+    const f = findField("gea_experiment_type")
+    expect(f).toBeDefined()
+    expect(f?.tier).toBe(3)
+    expect(f?.type).toBe("text")
+    expect(f?.dslName).toBe("experiment_type")
+    expect(f?.availableDbs).toEqual(["gea"])
+    expect(isFieldAvailableForDb("gea_experiment_type", "gea")).toBe(true)
+    expect(isFieldAvailableForDb("gea_experiment_type", "sra")).toBe(false)
+  })
+
+  it("MetaboBank の metabobank_study_type / metabobank_experiment_type / submission_type は metabobank 専用", () => {
+    const ids = ["metabobank_study_type", "metabobank_experiment_type", "submission_type"]
+    for (const id of ids) {
+      const f = findField(id)
+      expect(f).toBeDefined()
+      expect(f?.tier).toBe(3)
+      expect(f?.type).toBe("text")
+      expect(f?.availableDbs).toEqual(["metabobank"])
+      expect(isFieldAvailableForDb(id, "metabobank")).toBe(true)
+    }
+    expect(findField("metabobank_study_type")?.dslName).toBe("study_type")
+    expect(findField("metabobank_experiment_type")?.dslName).toBe("experiment_type")
+    expect(findField("submission_type")?.dslName).toBe("submission_type")
+  })
+
+  it("jga_study_type は JGA 専用 (旧 id 'study_type' は削除済)、dslName は study_type、enumValues 4 値", () => {
+    const f = findField("jga_study_type")
+    expect(f).toBeDefined()
+    expect(f?.tier).toBe(3)
+    expect(f?.type).toBe("enum")
+    expect(f?.dslName).toBe("study_type")
+    expect(f?.availableDbs).toEqual(["jga"])
+    expect(f?.enumValues?.length).toBe(4)
+    expect(findField("study_type")).toBeUndefined()
+  })
+
+  it("library_strategy / library_source / library_layout / platform / instrument_model は SRA 専用 (GEA から除外済)", () => {
+    const sraExperimentFields = [
+      "library_strategy",
+      "library_source",
+      "library_layout",
+      "platform",
+      "instrument_model",
+    ]
+    for (const id of sraExperimentFields) {
+      const f = findField(id)
+      expect(f?.availableDbs).toEqual(["sra"])
+      expect(isFieldAvailableForDb(id, "sra")).toBe(true)
+      expect(isFieldAvailableForDb(id, "gea")).toBe(false)
+    }
   })
 })

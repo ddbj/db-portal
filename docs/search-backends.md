@@ -502,14 +502,15 @@ DSL 関連 7 slug（`/db-portal/cross-search` / `/db-portal/search` / `/db-porta
 | `nest-depth-exceeded` | 400 | AND / OR / NOT ネスト深さ > 5、または AST ノード総数 > 512 |
 | `missing-value` | 400 | `field:""`、`field:` のように値が空・欠落 |
 
-一般 4 slug:
+一般 3 slug:
 
 | slug | HTTP | 発生条件 |
 |---|---|---|
-| `invalid-query-combination` | 400 | `q` と `adv` の同時指定（`/db-portal/*` 全体で共通） |
 | `unexpected-parameter` | 400 | `/db-portal/cross-search` に `db` / `cursor` / `page` / `perPage` / `sort` を指定 |
 | `missing-db` | 400 | `/db-portal/search` で `db` 未指定 |
 | `cursor-not-supported` | 400 | `db=trad` / `db=taxonomy` または `adv` との `cursor` 同時指定（Solr proxy / adv は cursor 非対応） |
+
+※ `q` と `adv` は併用可能（API 側で AND 結合される）。両方未指定の場合のみ portal 側で `/` リダイレクトする。
 
 `about:blank` 系（HTTP layer / FastAPI 標準）:
 
@@ -542,6 +543,7 @@ DSL 関連 7 slug（`/db-portal/cross-search` / `/db-portal/search` / `/db-porta
 | `title` | `title`, `name` | `Definition` | `scientific_name` / `scientific_name_ex` / `common_name` / `japanese_name` |
 | `description` | `description` | `AllText` / `ReferenceTitle` / `Comment` | `text` / `synonym` |
 | `organism` | `organism.name`（学名）/ `organism.identifier`（Taxonomy ID） | `Organism` / `Lineage` | （Taxonomy 自体のため N/A） |
+| `accessibility` | `accessibility`（keyword、`public-access` / `controlled-access`） | N/A | N/A |
 | `date_published` | `datePublished` | `Date` | N/A |
 | `date_modified` | `dateModified` | N/A（ARSA にはない） | N/A |
 | `date_created` | `dateCreated` | N/A | N/A |
@@ -566,11 +568,12 @@ DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィール�
 
 | DB | ポータル概念 | バックエンドフィールド | 実装状況 |
 |---|---|---|---|
-| SRA / GEA | `library_strategy` | `libraryStrategy`（converter 0.3.0 で properties parse → top-level 化） | converter parse 済 / API allowlist |
-| SRA / GEA | `library_source` | `librarySource` | converter parse 済 / API allowlist |
-| SRA / GEA | `library_layout` | `libraryLayout` | converter parse 済 / API allowlist |
-| SRA / GEA | `platform` | `platform` | converter parse 済 / API allowlist |
-| SRA / GEA | `instrument_model` | `instrumentModel` | converter parse 済 / API allowlist |
+| SRA | `library_strategy` | `libraryStrategy`（converter 0.3.0 で properties parse → top-level 化） | converter parse 済 / API allowlist |
+| SRA | `library_source` | `librarySource` | converter parse 済 / API allowlist |
+| SRA | `library_selection` | `librarySelection`（sra-experiment、INSDC controlled vocab） | converter parse 済 / API allowlist |
+| SRA | `library_layout` | `libraryLayout` | converter parse 済 / API allowlist |
+| SRA | `platform` | `platform` | converter parse 済 / API allowlist |
+| SRA | `instrument_model` | `instrumentModel` | converter parse 済 / API allowlist |
 | SRA | `analysis_type` | `analysisType`（sra-analysis、converter 0.3.0 top-level） | converter parse 済 / API allowlist |
 | SRA | `library_name` | `libraryName`（sra-experiment、converter 0.3.0 top-level） | converter parse 済 / API allowlist |
 | SRA | `library_construction_protocol` | `libraryConstructionProtocol`（sra-experiment、converter 0.3.0 top-level） | converter parse 済 / API allowlist |
@@ -590,11 +593,32 @@ DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィール�
 | JGA | `grant_agency` | `grantAgencyName`（converter 0.3.0 top-level） | converter parse 済 / API allowlist |
 | JGA | `dataset_type` | `datasetType`（jga-dataset、converter 0.3.0 top-level） | converter parse 済 / API allowlist |
 | JGA | `vendor` | `vendor`（jga-study、converter 0.3.0 top-level） | converter parse 済 / API allowlist |
-| JGA | `principal_investigator` | `properties.STUDY_ATTRIBUTES[TAG="Principal Investigator"].VALUE` | **未対応（将来拡張）** |
-| JGA | `submitting_organization` | `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` | **未対応（将来拡張）** |
+| JGA | `principal_investigator` | `properties.STUDY_ATTRIBUTES[TAG="Principal Investigator"].VALUE` | **未対応（portal Advanced Search GUI から削除済）** — Tier 2 `submitter` で代替可能 |
+| JGA | `submitting_organization` | `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` | 同上 |
 | BioSample | `disease` / `tissue` / `env_biome` 等 | `attributes[harmonized_name=X].content`（nested） | **未対応**: ES top-level 化されておらず attributes nested 経由が必要、portal の Advanced Search からも除外 |
 
 **BioSample attributes の型扱い（脚注）**: `attributes[harmonized_name=X].content` は ES に **string** として格納される。日付型の harmonized_name（代表: `collection_date`）に対して Advanced Search の範囲演算子（`between` / `gte` / `lte`）を使うには、converter 側で日付正規化（ISO 8601）と ES mapping の `date` 型化が必要。インターナルリリース / ファーストリリースでは **全 harmonized_name を文字列扱い**（`contains` / `equals` / `starts_with` / `wildcard`）とし、範囲検索対応は top-level 昇格（将来拡張）とあわせて検討する。
+
+##### Facet endpoint 利用方針
+
+ポータルの sidebar filter UI（[search.md の Sidebar filter UI](./search.md#sidebar-filter-ui)）は API 側の `/facets` 系 endpoint を使って facet bucket（controlled value の count）を取得する。バックエンド別の対応状況:
+
+| DB | Facet endpoint 対応 | sidebar 取得形態 |
+|---|---|---|
+| BioProject | `/facets/bioproject`（type-specific） | facet bucket（organism / accessibility / objectType / relevance） + keyword input + date range |
+| BioSample | `/facets/biosample`（type-specific） | facet bucket（organism / accessibility / package / model） + keyword input + date range |
+| SRA（subtype 別） | `/facets/sra-{subtype}`（6 endpoint） | facet bucket（subtype 別、`sra-experiment` で libraryStrategy 等） + subtype radio（6 並列 fetch） + keyword + date range |
+| JGA（subtype 別） | `/facets/jga-{subtype}`（4 endpoint） | facet bucket（subtype 別、`jga-study` で studyType、`jga-dataset` で datasetType） + subtype radio（4 並列 fetch） + keyword + date range |
+| GEA | `/facets/gea`（type-specific） | facet bucket（organism / accessibility / experimentType） + date range |
+| MetaboBank | `/facets/metabobank`（type-specific） | facet bucket（organism / accessibility / studyType / experimentType / submissionType） + date range |
+| Trad（ARSA） | （非対応：Solr proxy で facet 集計 API なし） | keyword input のみ（feature_gene_name / reference_journal） + date range |
+| Taxonomy（TXSearch） | （非対応：Solr proxy で facet 集計 API なし） | keyword input のみ（lineage / kingdom 等 9 field） |
+
+**Facet パラメータの命名規則**: `/facets/*` の `facets=` query parameter は **camelCase**（`libraryStrategy`, `objectType`, `experimentType` 等）。一方 Advanced Search DSL の field 名は **snake_case**（`library_strategy`, `object_type`, `experiment_type` 等）。portal 側 `src/lib/sidebar-fields.ts` で 1 対 1 mapping を定義し、checkbox click 時に snake_case DSL を生成する。
+
+**Default facets**: `facets=` を省略すると `organism` / `accessibility` / `type`（cross-type endpoint のみ）が default で集計される。明示指定（`facets=organism,accessibility,objectType`）は default を **完全置換**（auto-merge なし）。portal 側は DB 別 facet 一覧を明示的に列挙して送る。
+
+**Subtype 別 hits.total**: `/facets/*` レスポンスは `{facets}` のみで `hits.total` を返さない。SRA / JGA の subtype radio に表示する hit count は **`/db-portal/search?db={db}&adv=type:{subtype}&perPage=20`** を 6（SRA）/ 4（JGA）並列で呼んで `total` を集計する（[useQueries](https://tanstack.com/query/latest/docs/framework/react/reference/useQueries) で並列実行）。
 
 ##### シンプル検索用 qf 設定
 
@@ -767,7 +791,7 @@ GET /db-portal/parse?adv=<dsl>&db=<id>                 # DSL → AST 構造化 J
 
 **`/db-portal/cross-search` の特性:**
 
-- `q` と `adv` の排他、両方同時指定は 400 `invalid-query-combination`
+- `q` と `adv` は併用可能（API 側で AND 結合される）。両方未指定はクライアント側で `/` リダイレクト
 - `db` / `cursor` / `page` / `perPage` / `sort` は受け取らない（指定で 400 `unexpected-parameter`）
 - `topHits` パラメータ（0-50、デフォルト 10）で各 DB の上位ヒット件数を指定。`topHits=0` で count のみ
 - Tier 3 フィールドを含む `adv` は 400 `field-not-available-in-cross-db`
@@ -778,7 +802,7 @@ GET /db-portal/parse?adv=<dsl>&db=<id>                 # DSL → AST 構造化 J
 **`/db-portal/search` の特性:**
 
 - `db` 必須（未指定で 400 `missing-db`）
-- `q` と `adv` の排他、`cursor` 指定時は `q` / `adv` / `sort` / `page` と排他（cursor 専用）
+- `q` と `adv` は併用可能（API 側で AND 結合される）。`cursor` 指定時は `q` / `adv` / `sort` / `page` と排他（cursor 専用）
 - `db=trad` / `db=taxonomy` で `cursor` 指定は 400 `cursor-not-supported`（Solr 4.4.0 は cursor 非対応）
 - ページネーション: offset (`page` + `perPage`) / cursor (HMAC 署名付き、PIT 5 分)
 - レスポンスは `DbPortalHit` 8 variant の discriminated union（`type` field で判別、DB 別追加 field を含む）

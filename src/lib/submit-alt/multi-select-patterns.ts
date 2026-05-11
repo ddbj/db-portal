@@ -1,22 +1,25 @@
-import type { DataTypeId, MultiSelectPattern } from "@/types/submit-alt"
+import type { MultiSelectPattern, QAAnswers } from "@/types/submit-alt"
 
-// docs/submit-alt.md L83-94 参照。types= の組み合わせから登録フローのパターンを判定する。
+// docs/submit-alt.md「マルチ選択時の登録フロー案内」参照。Q&A 回答から登録フローのパターンを判定する。
 // 優先順位:
-//   1. 単一項目 (size 0/1) → single
-//   2. ヒト制限あり → jga-unified（JGA で一本化）
-//   3. プロテオミクス含む → fully-independent（jPOST が外部のため BP/BS も共有不可）
-//   4. バリアント解析 + 非ヒト → fully-independent（EVA / dgVa が外部）
-//   5. メタボロミクス含む → shared-bp-bs（BP/BS 共有 + MetaboBank）
+//   1. Q1 が 0 or 1 個 → single (まだ単一登録ルートに見える)
+//   2. Q2=human + Q3=restricted → jga-unified（JGA で一本化）
+//   3. mass-spec + Q7=proteomics → fully-independent（jPOST が外部）
+//   4. variation 含む → fully-independent (EVA / dgVa / JVar など別フロー)
+//   5. mass-spec + Q7=metabolomics → shared-bp-bs (BP/BS 共有 + MetaboBank)
 //   6. それ以外 → merged-submission
 export const resolveMultiSelectPattern = (
-  types: ReadonlySet<DataTypeId>,
-  humanOnly: boolean,
+  answers: QAAnswers,
 ): MultiSelectPattern => {
-  if (types.size <= 1) return "single"
-  if (types.has("human-restricted")) return "jga-unified"
-  if (types.has("proteomics")) return "fully-independent"
-  if (types.has("variation") && !humanOnly) return "fully-independent"
-  if (types.has("metabolomics")) return "shared-bp-bs"
+  if (answers.q1.size <= 1) return "single"
+  if (answers.q2 === "human" && answers.q3 === "restricted") return "jga-unified"
+  if (answers.q1.has("mass-spec") && answers.q7 === "proteomics") {
+    return "fully-independent"
+  }
+  if (answers.q1.has("variation")) return "fully-independent"
+  if (answers.q1.has("mass-spec") && answers.q7 === "metabolomics") {
+    return "shared-bp-bs"
+  }
 
   return "merged-submission"
 }

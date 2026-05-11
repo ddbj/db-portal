@@ -7,7 +7,25 @@ export type SearchQuery = NonNullable<operations["searchDbPortal"]["parameters"]
 export type SearchResponse = components["schemas"]["DbPortalHitsResponse"]
 export type ParseQuery = operations["parseDbPortal"]["parameters"]["query"]
 export type ParseResponse = components["schemas"]["DbPortalParseResponse"]
+export type FacetsQuery = NonNullable<operations["getFacets"]["parameters"]["query"]>
+export type FacetsResponse = components["schemas"]["FacetsResponse"]
 export type ProblemDetails = components["schemas"]["ProblemDetails"]
+
+export type FacetsDbType =
+  | "bioproject"
+  | "biosample"
+  | "sra-submission"
+  | "sra-study"
+  | "sra-experiment"
+  | "sra-run"
+  | "sra-sample"
+  | "sra-analysis"
+  | "jga-study"
+  | "jga-dataset"
+  | "jga-dac"
+  | "jga-policy"
+  | "gea"
+  | "metabobank"
 
 export type DbPortalLightweightHit = components["schemas"]["DbPortalLightweightHit"]
 export type DbPortalHit = SearchResponse["hits"][number]
@@ -91,3 +109,13 @@ export const parseAdv = (
   signal?: AbortSignal,
 ): Promise<ParseResponse> =>
   apiFetch<ParseResponse>("/db-portal/parse", query, signal)
+
+export const fetchFacets = (
+  dbType: FacetsDbType | null,
+  query: FacetsQuery,
+  signal?: AbortSignal,
+): Promise<FacetsResponse> => {
+  const path = dbType === null ? "/facets" : `/facets/${dbType}`
+
+  return apiFetch<FacetsResponse>(path, query, signal)
+}

@@ -10,22 +10,62 @@ import type {
   MSSDataType,
 } from "@/lib/mock-data/submit-alt-tree/masters"
 
-// 新トップ階層 10 項目 + 横断属性 1 個。docs/submit-alt.md L61-80 参照。
-export type DataTypeId =
-  | "human-restricted"
+// Q&A 質問ウィザード軸。docs/submit-alt.md「Section 1: 質問ウィザード」参照。
+
+// Q1: 持っているファイル / データ (8 種、複数選択、必須)
+export type Q1Id =
   | "sequence-read"
-  | "genome"
+  | "assembled"
+  | "annotation"
   | "variation"
-  | "proteomics"
-  | "est"
-  | "microarray"
-  | "spatial-transcriptomics"
-  | "metabolomics"
-  | "small-sequence"
+  | "expression-array"
+  | "expression-matrix"
+  | "mass-spec"
+  | "spatial-tx"
 
-export type HorizontalAttributeId = "human"
+// Q2: 対象生物 (6 種、単一選択、必須)
+export type Q2Id =
+  | "human"
+  | "eukaryote"
+  | "prokaryote"
+  | "virus"
+  | "metagenome"
+  | "organelle-plasmid"
 
-// 33 leaf。docs/submit-alt.md L203-274 参照。
+// Q3: アクセス制限 (Q2=human の時のみ)
+export type Q3Id = "open" | "restricted"
+
+// Q4: アセンブリの由来 (Q1 に assembled を含む時のみ)
+export type Q4Id = "primary" | "tpa"
+
+// Q5: 規模 (Q1=sequence-read/assembled のみ で Q2=prokaryote/eukaryote/virus/organelle-plasmid の時)
+export type Q5Id = "small" | "normal"
+
+// Q6: 特殊形式 (Q1 に assembled 含み Q2∈{human,eukaryote,metagenome} の時、複数選択)
+export type Q6Id = "haplotype" | "tsa" | "tls" | "mag-sag" | "est" | "none"
+
+// Q7: 質量分析サブ種別 (Q1 に mass-spec 含む時)
+export type Q7Id = "proteomics" | "metabolomics"
+
+// Q8: メタゲノムデータ種別 (Q1=sequence-read のみ で Q2=metagenome の時)
+export type Q8Id = "raw" | "primary"
+
+// Q9: ヒト試料のメタゲノム由来判定 (Q2=human + Q3=restricted の時)
+export type Q9Id = "yes" | "no"
+
+export interface QAAnswers {
+  q1: ReadonlySet<Q1Id>
+  q2: Q2Id | null
+  q3: Q3Id | null
+  q4: Q4Id | null
+  q5: Q5Id | null
+  q6: ReadonlySet<Q6Id>
+  q7: Q7Id | null
+  q8: Q8Id | null
+  q9: Q9Id | null
+}
+
+// 36 leaf。docs/submit-alt.md 参照。
 export type LeafNodeIdAlt =
   | "human-restricted"
   | "proteomics"
@@ -60,6 +100,9 @@ export type LeafNodeIdAlt =
   | "eukaryote-est-large"
   | "spatial-tx-nonhuman"
   | "spatial-tx-restricted"
+  | "human-raw-open"
+  | "human-raw-assembly-open"
+  | "human-assembly-only-open"
 
 // tree の中間 question node。簡略化方針に従い depth 2-3 に収める。
 // docs/submit-alt.md L142-188 の構造を反映。
@@ -132,9 +175,6 @@ export type MultiSelectPattern =
   | "fully-independent"
   | "jga-unified"
 
-// leaf がヒト由来データ Y/N 軸とどう関係するか。
-export type HumanAffinity = "always-human" | "always-nonhuman" | "either"
-
 export interface QuestionOptionAlt {
   labelKey: string
   childId: TreeNodeIdAlt
@@ -153,14 +193,11 @@ export interface QuestionNodeAlt {
 export interface LeafNodeAlt {
   id: LeafNodeIdAlt
   type: "leaf"
-  // 仕様書の番号（leaf-NN / v01-v03 / m06 / s01-s02）。表示・テスト用。
+  // 仕様書の番号（leaf-NN / v01-v03 / m06 / s01-s02 / leaf-32-34）。表示・テスト用。
   legacyId: string
   goal: RegistrationGoalAlt
   venue: RegistrationVenue
   parentId: QuestionNodeIdAlt | null
-  // types= 連動ハイライト計算用。leaf 1 つが複数 data type に該当することがある。
-  dataTypes: readonly DataTypeId[]
-  humanAffinity: HumanAffinity
 }
 
 export type TreeNodeAlt = QuestionNodeAlt | LeafNodeAlt
@@ -184,23 +221,9 @@ export interface UseCaseCardAlt {
   iconName: string
   // クリック時の遷移先 (?for=...)
   treeNodeId: TreeNodeIdAlt
-  // ハイライト判定: types= の集合と交差する場合に active 表示
-  relatedDataTypes: readonly DataTypeId[]
-  // ハイライト判定: leaf 単位での絞り込みにも使う
+  // ハイライト判定: Q&A 候補 leaf の集合と交差する場合に active 表示
   relatedLeafIds: readonly LeafNodeIdAlt[]
   order: number
-}
-
-export interface DataTypeDef {
-  id: DataTypeId
-  labelKey: string
-  descriptionKey: string
-}
-
-export interface HorizontalAttributeDef {
-  id: HorizontalAttributeId
-  labelKey: string
-  descriptionKey: string
 }
 
 export interface DetailLinkAlt {

@@ -31,6 +31,9 @@ const validateCondition = (
 ): ValidationError[] => {
   const errors: ValidationError[] = []
   const { field: fieldId, operator, value } = node.condition
+  if (fieldId === "") {
+    return errors
+  }
   const field = findField(fieldId)
   if (field === undefined) {
     errors.push({ code: "UNKNOWN_FIELD", path, field: fieldId })

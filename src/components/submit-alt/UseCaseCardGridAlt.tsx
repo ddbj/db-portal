@@ -11,17 +11,15 @@ import {
   TestTube,
   Trees,
 } from "lucide-react"
+import { useMemo } from "react"
 
 import { UseCaseCard } from "@/components/ui"
 import cn from "@/components/ui/cn"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
-import {
-  isCardRelevant,
-  USE_CASE_CARDS_ALT,
-} from "@/lib/mock-data/submit-alt-tree"
+import { USE_CASE_CARDS_ALT } from "@/lib/mock-data/submit-alt-tree"
 import type {
   CardIdAlt,
-  DataTypeId,
+  LeafNodeIdAlt,
   UseCaseCardAlt,
 } from "@/types/submit-alt"
 
@@ -39,22 +37,34 @@ const ICON_MAP: Record<string, LucideIcon> = {
 }
 
 interface UseCaseCardGridAltProps {
-  selectedTypes: ReadonlySet<DataTypeId>
+  // Q&A の答えにマッチする leaf 候補一覧。relatedLeafIds と交差する Card を active 表示する。
+  candidateLeaves: readonly LeafNodeIdAlt[]
   activeCardId: CardIdAlt | null
   onSelect: (card: UseCaseCardAlt) => void
   className?: string
 }
 
-// types= に該当するカードを relatedDataTypes 経由で active 表示する。
-// activeCardId は ?for= から解決された card ID で、明示的に「選択された」状態を示す。
+const isCardRelevantToCandidates = (
+  card: UseCaseCardAlt,
+  candidateSet: ReadonlySet<LeafNodeIdAlt>,
+): boolean => {
+  if (candidateSet.size === 0) return false
+
+  return card.relatedLeafIds.some((leafId) => candidateSet.has(leafId))
+}
+
 const UseCaseCardGridAlt = ({
-  selectedTypes,
+  candidateLeaves,
   activeCardId,
   onSelect,
   className,
 }: UseCaseCardGridAltProps) => {
   const { t } = useDynamicTranslation()
   const sorted = [...USE_CASE_CARDS_ALT].sort((a, b) => a.order - b.order)
+  const candidateSet = useMemo(
+    () => new Set(candidateLeaves),
+    [candidateLeaves],
+  )
 
   return (
     <div
@@ -65,7 +75,7 @@ const UseCaseCardGridAlt = ({
     >
       {sorted.map((card) => {
         const Icon = ICON_MAP[card.iconName] ?? Bug
-        const relevant = isCardRelevant(card, selectedTypes)
+        const relevant = isCardRelevantToCandidates(card, candidateSet)
         const explicit = activeCardId === card.id
 
         return (

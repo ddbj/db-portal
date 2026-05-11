@@ -1754,6 +1754,14 @@ export interface components {
              *     ]
              */
             externalLink?: components["schemas"]["ExternalLink"][] | null;
+            /**
+             * Relevance
+             * @description BioProject relevance (INSDC controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other).
+             * @example [
+             *       "Medical"
+             *     ]
+             */
+            relevance?: string[] | null;
         };
         /**
          * DbPortalHitBioSample
@@ -1882,6 +1890,31 @@ export interface components {
              *     ]
              */
             model?: string[] | null;
+            /**
+             * Host
+             * @example Homo sapiens
+             */
+            host?: string | null;
+            /**
+             * Strain
+             * @example K12
+             */
+            strain?: string | null;
+            /**
+             * Isolate
+             * @example patient-1
+             */
+            isolate?: string | null;
+            /**
+             * Geolocname
+             * @example Japan: Tokyo
+             */
+            geoLocName?: string | null;
+            /**
+             * Collectiondate
+             * @example 2020-04
+             */
+            collectionDate?: string | null;
         };
         /**
          * DbPortalHitGea
@@ -2342,11 +2375,17 @@ export interface components {
          * @description SRA hit (6 subtypes share one variant; subtype-specific fields are optional).
          *
          *     ``type`` values: ``sra-submission`` / ``sra-study`` / ``sra-experiment`` /
-         *     ``sra-run`` / ``sra-sample`` / ``sra-analysis``.  ``library_*`` /
-         *     ``platform`` / ``instrumentModel`` are populated only on
-         *     ``sra-experiment`` hits, and ``analysisType`` only on
-         *     ``sra-analysis`` hits; the remaining subtypes leave them as
-         *     ``null``.
+         *     ``sra-run`` / ``sra-sample`` / ``sra-analysis``.
+         *
+         *     Subtype-specific populate rules:
+         *     - ``library_strategy`` / ``library_source`` / ``library_layout`` / ``platform`` /
+         *       ``instrument_model`` / ``library_name`` / ``library_construction_protocol`` are
+         *       populated only on ``sra-experiment`` hits.
+         *     - ``analysis_type`` is populated only on ``sra-analysis`` hits.
+         *     - ``geo_loc_name`` / ``collection_date`` are populated only on ``sra-sample`` hits
+         *       (shared schema with BioSample).
+         *
+         *     Remaining subtypes leave the unrelated fields as ``null``.
          */
         DbPortalHitSra: {
             /**
@@ -2511,6 +2550,26 @@ export interface components {
              * @example ALIGNMENT
              */
             analysisType?: string | null;
+            /**
+             * Libraryname
+             * @example lib-001
+             */
+            libraryName?: string | null;
+            /**
+             * Libraryconstructionprotocol
+             * @example PCR-free
+             */
+            libraryConstructionProtocol?: string | null;
+            /**
+             * Geolocname
+             * @example Japan: Tokyo
+             */
+            geoLocName?: string | null;
+            /**
+             * Collectiondate
+             * @example 2020-04
+             */
+            collectionDate?: string | null;
         };
         /**
          * DbPortalHitTaxonomy
@@ -3183,8 +3242,8 @@ export interface components {
         FacetBucket: {
             /**
              * Value
-             * @description Facet value (e.g. organism name, status).
-             * @example Homo sapiens
+             * @description Facet value (re-injectable into the matching search filter).
+             * @example WGS
              */
             value: string;
             /**
@@ -3235,15 +3294,16 @@ export interface components {
             type?: components["schemas"]["FacetBucket"][] | null;
             /**
              * Organism
-             * @description Entry count per organism. Null when not aggregated (e.g. excluded from an explicit ``facets`` selection).
+             * @description Entry count per organism. ``value`` is the NCBI Taxonomy ID (string), ``label`` is the scientific name; ``value`` can be re-injected into ``?organism=`` directly. Null when not aggregated (e.g. excluded from an explicit ``facets`` selection).
              * @example [
              *       {
              *         "count": 1000,
-             *         "value": "Homo sapiens"
+             *         "label": "Homo sapiens",
+             *         "value": "9606"
              *       }
              *     ]
              */
-            organism?: components["schemas"]["FacetBucket"][] | null;
+            organism?: components["schemas"]["OrganismFacetBucket"][] | null;
             /**
              * Accessibility
              * @description Entry count per accessibility level. Null when not aggregated.
@@ -3362,6 +3422,80 @@ export interface components {
              *     ]
              */
             submissionType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Relevance
+             * @description BioProject relevance count (bioproject only, opt-in). INSDC controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.
+             * @example [
+             *       {
+             *         "count": 1500,
+             *         "value": "Medical"
+             *       },
+             *       {
+             *         "count": 800,
+             *         "value": "ModelOrganism"
+             *       }
+             *     ]
+             */
+            relevance?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Package
+             * @description BioSample package count (biosample only, opt-in). bucket value is the package name (``package.name`` keyword).
+             * @example [
+             *       {
+             *         "count": 4000,
+             *         "value": "MIGS.ba"
+             *       }
+             *     ]
+             */
+            package?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Model
+             * @description BioSample model count (biosample only, opt-in).
+             * @example [
+             *       {
+             *         "count": 5000,
+             *         "value": "Generic.1.0"
+             *       }
+             *     ]
+             */
+            model?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Librarylayout
+             * @description Library layout count (sra-experiment only, opt-in). Cardinality 2.
+             * @example [
+             *       {
+             *         "count": 800,
+             *         "value": "PAIRED"
+             *       },
+             *       {
+             *         "count": 200,
+             *         "value": "SINGLE"
+             *       }
+             *     ]
+             */
+            libraryLayout?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Analysistype
+             * @description Analysis type count (sra-analysis only, opt-in).
+             * @example [
+             *       {
+             *         "count": 300,
+             *         "value": "REFERENCE_ALIGNMENT"
+             *       }
+             *     ]
+             */
+            analysisType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Datasettype
+             * @description JGA dataset type count (jga-dataset only, opt-in).
+             * @example [
+             *       {
+             *         "count": 250,
+             *         "value": "Whole genome sequencing"
+             *       }
+             *     ]
+             */
+            datasetType?: components["schemas"]["FacetBucket"][] | null;
         };
         /**
          * FacetsResponse
@@ -3956,6 +4090,38 @@ export interface components {
             identifier?: string | null;
             /** Name */
             name?: string | null;
+        };
+        /**
+         * OrganismFacetBucket
+         * @description A facet bucket for the ``organism`` aggregation.
+         *
+         *     ``organism`` is the only facet that exposes a separate display
+         *     label.  ``value`` carries the NCBI Taxonomy ID (string, matches the
+         *     ``^\d+$`` pattern enforced by the ``organism`` search filter), and
+         *     ``label`` carries the scientific name (e.g. ``"Homo sapiens"``)
+         *     chosen as the doc_count-most-frequent ``organism.name.keyword`` value
+         *     inside the bucket.  Callers can re-inject ``value`` into
+         *     ``?organism=`` directly; ``label`` is for human display.
+         */
+        OrganismFacetBucket: {
+            /**
+             * Value
+             * @description NCBI Taxonomy ID (string). Re-injectable into ``?organism=``.
+             * @example 9606
+             */
+            value: string;
+            /**
+             * Count
+             * @description Number of entries matching this value.
+             * @example 100
+             */
+            count: number;
+            /**
+             * Label
+             * @description Scientific name (NCBI Taxonomy name) for this TaxID.
+             * @example Homo sapiens
+             */
+            label: string;
         };
         /** Organization */
         Organization: {
@@ -7750,7 +7916,7 @@ export interface operations {
                     "application/json": components["schemas"]["DbPortalCrossSearchResponse"];
                 };
             };
-            /** @description Bad Request (q/adv exclusivity, unexpected parameter, DSL parse/validate error). */
+            /** @description Bad Request (unexpected parameter, DSL parse/validate error). */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -7821,7 +7987,7 @@ export interface operations {
                     "application/json": components["schemas"]["DbPortalHitsResponse"];
                 };
             };
-            /** @description Bad Request (missing-db, q/adv exclusivity, cursor exclusivity, DSL parse/validate error, deep paging limit). */
+            /** @description Bad Request (missing-db, cursor exclusivity, DSL parse/validate error, deep paging limit). */
             400: {
                 headers: {
                     [name: string]: unknown;

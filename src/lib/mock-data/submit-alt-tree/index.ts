@@ -1,21 +1,14 @@
-export {
-  DATA_TYPE_IDS,
-  DATA_TYPE_TO_ROOT_NODE,
-  DATA_TYPES,
-  HORIZONTAL_ATTRIBUTES,
-} from "./dataTypes"
 export { TREE_EDGES_ALT, type TreeEdgeAlt } from "./edges"
 export { GOAL_TEMPLATES_ALT, STEP_PATTERNS_ALT } from "./goalTemplates"
 export { LEAF_DETAILS_ALT } from "./leafDetails"
 export {
-  LEAF_DATA_TYPES_ALT,
   LEAF_GOALS_ALT,
-  LEAF_HUMAN_AFFINITY_ALT,
   LEAF_LABEL_KEY_ALT,
   LEAF_LEGACY_ID,
   LEAF_PARENTS_ALT,
   LEAF_VENUE_ALT,
 } from "./leafGoals"
+export { LEAF_QA_CONDITIONS, type LeafCondition } from "./leafQAMapping"
 export {
   BP_DATA_TYPES,
   type BPDataType,
@@ -42,4 +35,4 @@ export {
   type MSSDataType,
 } from "./masters"
 export { TREE_NODES_ALT } from "./nodes"
-export { isCardRelevant, USE_CASE_CARDS_ALT } from "./useCaseCards"
+export { USE_CASE_CARDS_ALT } from "./useCaseCards"

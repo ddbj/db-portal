@@ -2,9 +2,9 @@
   "header": {
     "serviceName": "DB ポータル (仮)",
     "nav": {
-      "search": "検索",
       "advancedSearch": "詳細検索",
       "submit": "登録",
+      "submitAlt": "登録-alt",
       "aboutUs": "About us"
     },
     "language": {
@@ -92,7 +92,7 @@
       "summary": {
         "filteredByAll": "全データベースで絞り込み中: ",
         "filteredByDb": "{{db}} で絞り込み中: ",
-        "otherConditions": " 他 {{count}} 条件",
+        "combinedSummary": "\"{{q}}\" + {{adv}}",
         "edit": "編集",
         "clear": "クリア",
         "clearAria": "検索条件をクリア"
@@ -113,7 +113,6 @@
         },
         "loadingAria": "件数を取得中",
         "errorLabel": "取得できませんでした",
-        "bothQAdvWarning": "シンプル検索と詳細検索の両方が指定されています。詳細検索を優先しました。",
         "topHits": {
           "heading": "上位ヒット",
           "openExternalAria": "{{identifier}} を別タブで開く"
@@ -121,7 +120,6 @@
       },
       "errors": {
         "default": "検索でエラーが発生しました。しばらくしてからもう一度お試しください。",
-        "invalid-query-combination": "シンプル検索と詳細検索を同時に指定することはできません。",
         "unexpected-parameter": "サポート外のパラメータが指定されています。",
         "missing-db": "DB が指定されていません。",
         "cursor-not-supported": "この DB では指定されたページング方式は利用できません。",
@@ -132,6 +130,37 @@
         "invalid-operator-for-field": "フィールドに対して不正な演算子が指定されています。",
         "nest-depth-exceeded": "条件のネストが深すぎます。",
         "missing-value": "値が空です。"
+      },
+      "sidebar": {
+        "label": "絞り込みサイドバー",
+        "title": "絞り込み",
+        "entryType": "種別",
+        "all": "すべて",
+        "residualNotice": "詳細検索 GUI 編集中の条件があります",
+        "editInAdvanced": "詳細検索で編集",
+        "keywordPlaceholder": "キーワードで絞り込み...",
+        "fields": {
+          "accessibility": { "label": "公開状態" },
+          "package": { "label": "パッケージ" },
+          "model": { "label": "モデル" },
+          "library_selection": { "label": "ライブラリセレクション" }
+        },
+        "dateRange": {
+          "title": "日付範囲",
+          "axis": {
+            "date_published": "公開日",
+            "date_modified": "更新日",
+            "date_created": "作成日"
+          },
+          "quick": {
+            "all": "すべて",
+            "year1": "1年",
+            "year5": "5年",
+            "year10": "10年"
+          },
+          "from": "From",
+          "to": "To"
+        }
       },
       "dbMode": {
         "resultsCount": "全 {{total}} 件中 {{from}}-{{to}} 件を表示",
@@ -191,7 +220,9 @@
         "depthBadge": "深さ {{current}} / {{max}}",
         "depthLimitTooltip": "ネスト深さの上限に達しました",
         "emptyState": "条件が未設定です。まずは「+ 条件を追加」で最初の条件を作成してください。",
-        "notGroupLock": "NOT は 1 条件のみ指定可能"
+        "notGroupLock": "NOT は 1 条件のみ指定可能",
+        "selectField": "フィールドを選択",
+        "selectFieldFirst": "先にフィールドを選択してください"
       },
       "operators": {
         "equals": "等しい",
@@ -225,6 +256,21 @@
         "date": { "label": "いずれかの日付" },
         "submitter": { "label": "登録者" },
         "publication": { "label": "公表文献" },
+        "type": {
+          "label": "種別",
+          "enumValues": {
+            "sra_submission": "SRA Submission",
+            "sra_study": "SRA Study",
+            "sra_experiment": "SRA Experiment",
+            "sra_run": "SRA Run",
+            "sra_sample": "SRA Sample",
+            "sra_analysis": "SRA Analysis",
+            "jga_study": "JGA Study",
+            "jga_dataset": "JGA Dataset",
+            "jga_dac": "JGA DAC",
+            "jga_policy": "JGA Policy"
+          }
+        },
         "library_strategy": {
           "label": "ライブラリ戦略",
           "enumValues": {
@@ -280,17 +326,25 @@
         "tissue": { "label": "組織" },
         "env_biome": { "label": "生態系バイオーム" },
         "project_type": {
-          "label": "プロジェクト種別",
+          "label": "プロジェクト形式",
           "enumValues": {
-            "genome_sequencing": "Genome sequencing",
-            "transcriptome": "Transcriptome",
-            "metagenome": "Metagenome",
-            "epigenome": "Epigenome",
-            "variation": "Variation"
+            "bioproject": "BioProject",
+            "umbrella_bioproject": "UmbrellaBioProject"
           }
         },
         "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
-        "relevance": { "label": "関連性タグ (BioProject)" },
+        "relevance": {
+          "label": "関連性タグ (BioProject)",
+          "enumValues": {
+            "agricultural": "Agricultural",
+            "medical": "Medical",
+            "industrial": "Industrial",
+            "environmental": "Environmental",
+            "evolution": "Evolution",
+            "model_organism": "ModelOrganism",
+            "other": "Other"
+          }
+        },
         "division": {
           "label": "Division",
           "enumValues": {
@@ -341,9 +395,8 @@
         "genus": { "label": "Genus" },
         "species": { "label": "Species" },
         "common_name": { "label": "一般名" },
-        "japanese_name": { "label": "和名" },
-        "study_type": {
-          "label": "研究種別",
+        "jga_study_type": {
+          "label": "研究種別 (JGA)",
           "enumValues": {
             "case_control": "Case-Control",
             "case_set": "Case Set",
@@ -352,10 +405,12 @@
           }
         },
         "jga_grant_agency": { "label": "助成機関（JGA）" },
-        "principal_investigator": { "label": "主任研究者" },
-        "submitting_organization": { "label": "登録組織" },
         "dataset_type": { "label": "データセット種別 (JGA)" },
-        "vendor": { "label": "ベンダー (JGA)" }
+        "vendor": { "label": "ベンダー (JGA)" },
+        "gea_experiment_type": { "label": "実験種別 (GEA)" },
+        "metabobank_study_type": { "label": "研究種別 (MetaboBank)" },
+        "metabobank_experiment_type": { "label": "実験種別 (MetaboBank)" },
+        "submission_type": { "label": "登録種別 (MetaboBank)" }
       },
       "dateSubSelector": {
         "label": "日付種別",
@@ -965,9 +1020,77 @@
       },
       "sections": {
         "dataTypes": "持っているデータの種別",
+        "qa": "質問ウィザード",
         "cards": "ユースケースから選ぶ",
         "tree": "判断フローから辿る",
         "detail": "詳細"
+      },
+      "qa": {
+        "required": "必須",
+        "q1": {
+          "title": "何のファイル/データを持っていますか？（複数選択可、必須）",
+          "sequence-read": { "label": "配列リード（NGS / 長鎖シーケンサ）", "description": "FASTQ / BAM" },
+          "assembled": { "label": "組み立て済み配列（アセンブリ）", "description": "FASTA / アセンブリ" },
+          "annotation": { "label": "配列に対する遺伝子アノテーション", "description": "GFF / GenBank flat" },
+          "variation": { "label": "変異情報", "description": "VCF / TSV" },
+          "expression-array": { "label": "マイクロアレイ発現データ", "description": "CEL / iDAT" },
+          "expression-matrix": { "label": "RNA-seq 発現マトリクス", "description": "カウント表 / TPM / FPKM" },
+          "mass-spec": { "label": "質量分析データ", "description": "mzML / RAW（プロテオ or メタボ）" },
+          "spatial-tx": { "label": "空間トランスクリプトーム", "description": "10x Xenium / Visium" }
+        },
+        "q2": {
+          "title": "データの対象生物は？（1 つ選択、必須）",
+          "human": { "label": "ヒト", "description": "ヒトサンプル" },
+          "eukaryote": { "label": "ヒト以外の真核生物", "description": "動物 / 植物 / 菌類" },
+          "prokaryote": { "label": "原核生物", "description": "細菌 / 古細菌" },
+          "virus": { "label": "ウイルス", "description": "ファージ含む" },
+          "metagenome": { "label": "メタゲノム / 環境試料", "description": "種を特定しない混合" },
+          "organelle-plasmid": { "label": "オルガネラ / プラスミド", "description": "ミトコンドリア / 葉緑体 / プラスミド" }
+        },
+        "q3": {
+          "title": "アクセス制限はどちらですか？",
+          "open": { "label": "一般公開できる", "description": "誰でもアクセス可" },
+          "restricted": { "label": "制限公開が必要", "description": "NBDC 承認要" }
+        },
+        "q4": {
+          "title": "アセンブリの由来は？",
+          "primary": { "label": "自分で新規に決定したデータ", "description": "Primary" },
+          "tpa": { "label": "第三者の配列を利用", "description": "TPA" }
+        },
+        "q5": {
+          "title": "データの規模は？",
+          "small": { "label": "小規模", "description": "100 配列以下 / 100bp〜500kb" },
+          "normal": { "label": "通常規模", "description": "上記の範囲を超える" }
+        },
+        "q6": {
+          "title": "該当する特殊形式は？（複数選択可）",
+          "haplotype": { "label": "Haplotype phased アセンブリ" },
+          "tsa": { "label": "TSA（Transcriptome Shotgun Assembly）" },
+          "tls": { "label": "TLS（Targeted Locus Sequence）" },
+          "mag-sag": { "label": "MAG / SAG / Binned" },
+          "est": { "label": "EST" },
+          "none": { "label": "どれにも該当しない" }
+        },
+        "q7": {
+          "title": "質量分析の種別は？",
+          "proteomics": { "label": "プロテオミクス", "description": "LC-MS/MS 等のプロテオーム" },
+          "metabolomics": { "label": "メタボロミクス", "description": "LC-MS / GC-MS / NMR" }
+        },
+        "q8": {
+          "title": "メタゲノムデータの種別は？",
+          "raw": { "label": "Raw リード", "description": "FASTQ" },
+          "primary": { "label": "一次解析結果", "description": "taxonomy profile / アバンダンス表など" }
+        },
+        "q9": {
+          "title": "ヒト試料はメタゲノム由来ですか？",
+          "yes": { "label": "はい", "description": "口腔・腸内などのマイクロバイオーム" },
+          "no": { "label": "いいえ", "description": "ヒト本体のデータ" }
+        }
+      },
+      "leaves": {
+        "human-raw-open": { "label": "ヒト 配列リード（公開）" },
+        "human-raw-assembly-open": { "label": "ヒト Raw + アセンブリ（公開）" },
+        "human-assembly-only-open": { "label": "ヒト アセンブリのみ（公開）" }
       },
       "placeholder": {
         "section1": "Section 1: データ種別 Y/N 複数選択 (Phase 1 で実装)",
@@ -1015,13 +1138,6 @@
         "small-sequence": {
           "label": "小規模塩基配列",
           "description": "100 配列未満・500 kb 未満の塩基配列 (NSSS)"
-        }
-      },
-      "horizontalAttributes": {
-        "heading": "横断属性",
-        "human": {
-          "label": "ヒト由来データ",
-          "description": "ヒト由来か否かで登録先 (JGA / 公開) が分岐する"
         }
       },
       "dataTypes": {
@@ -1207,9 +1323,10 @@
       },
       "detail": {
         "empty": {
-          "title": "leaf を選択すると詳細が表示されます",
-          "description": "新トップ階層 / Use Case Cards / Decision Tree から登録先を絞り込んでください。"
+          "title": "Q&A に答えると詳細が表示されます",
+          "description": "Section 1 の質問ウィザードに答えるか、Use Case Cards / Decision Tree から登録先を絞り込んでください。"
         },
+        "candidatesPrompt": "現在 {{count}} 件の候補があります。残りの質問に答えるか、下記から直接選んでください。",
         "overviewPlaceholder": "中間ノードまで降りました。さらに leaf を選ぶと登録の詳細が表示されます。",
         "placeholderSummary": "詳細は順次拡充中です。",
         "venue": {

@@ -4,8 +4,8 @@ import {
 } from "@/lib/mock-data/submit-alt-tree"
 import type {
   CardIdAlt,
-  DataTypeId,
   LeafNodeAlt,
+  LeafNodeIdAlt,
   TreeNodeAlt,
   TreeNodeIdAlt,
 } from "@/types/submit-alt"
@@ -68,28 +68,21 @@ export const resolveDetailModeAlt = (nodeId: TreeNodeIdAlt): DetailModeAlt => {
   return node?.type === "leaf" ? "leaf" : "overview"
 }
 
-// types= 連動の絞り込み状態。
-//   neutral    : types= 空。leaf は選択以前の通常表示
-//   active     : types= に該当
-//   emphasized : 複数 type 該当（Raw + Asm 系の強調）
-//   folded     : 該当しない / human=1 で非ヒト leaf
-export type LeafHighlightState = "active" | "folded" | "neutral" | "emphasized"
+// Q&A 候補連動の Tree ハイライト状態。
+//   neutral    : Q&A 未回答 (Q1 または Q2 がまだ空)
+//   active     : 候補 leaf に含まれる
+//   folded     : 候補 leaf に含まれない (= Q&A 回答で除外されている)
+export type LeafHighlightState = "active" | "folded" | "neutral"
 
 export const resolveLeafHighlight = (
   leaf: LeafNodeAlt,
-  types: ReadonlySet<DataTypeId>,
-  human: boolean,
+  candidateSet: ReadonlySet<LeafNodeIdAlt>,
+  isQAStarted: boolean,
 ): LeafHighlightState => {
-  if (human && leaf.humanAffinity === "always-nonhuman") return "folded"
+  if (!isQAStarted) return "neutral"
+  if (candidateSet.has(leaf.id)) return "active"
 
-  if (types.size === 0) return "neutral"
-
-  const matched = leaf.dataTypes.filter((dt) => types.has(dt))
-  if (matched.length === 0) return "folded"
-
-  if (types.size >= 2 && matched.length >= 2) return "emphasized"
-
-  return "active"
+  return "folded"
 }
 
 const CHILDREN_OF_ALT: ReadonlyMap<TreeNodeIdAlt, readonly TreeNodeIdAlt[]> =
@@ -105,12 +98,10 @@ const CHILDREN_OF_ALT: ReadonlyMap<TreeNodeIdAlt, readonly TreeNodeIdAlt[]> =
     return map
   })()
 
-const collectDescendantLeafStates = (
+const collectDescendantLeafIds = (
   nodeId: TreeNodeIdAlt,
-  types: ReadonlySet<DataTypeId>,
-  human: boolean,
-): Set<LeafHighlightState> => {
-  const states = new Set<LeafHighlightState>()
+): readonly LeafNodeIdAlt[] => {
+  const leaves: LeafNodeIdAlt[] = []
   const stack: TreeNodeIdAlt[] = [nodeId]
   const visited = new Set<TreeNodeIdAlt>()
   while (stack.length > 0) {
@@ -120,33 +111,32 @@ const collectDescendantLeafStates = (
     const node = NODE_BY_ID_ALT.get(id)
     if (!node) continue
     if (node.type === "leaf") {
-      states.add(resolveLeafHighlight(node, types, human))
+      leaves.push(node.id)
     } else {
       const children = CHILDREN_OF_ALT.get(id) ?? []
       for (const c of children) stack.push(c)
     }
   }
 
-  return states
+  return leaves
 }
 
-// question node のハイライトは子孫 leaf の状態を集約する。
+// question node のハイライトは子孫 leaf に候補がいるかで決まる。
 export const resolveNodeHighlight = (
   nodeId: TreeNodeIdAlt,
-  types: ReadonlySet<DataTypeId>,
-  human: boolean,
+  candidateSet: ReadonlySet<LeafNodeIdAlt>,
+  isQAStarted: boolean,
 ): LeafHighlightState => {
+  if (!isQAStarted) return "neutral"
   const node = NODE_BY_ID_ALT.get(nodeId)
   if (!node) return "neutral"
-  if (node.type === "leaf") return resolveLeafHighlight(node, types, human)
+  if (node.type === "leaf") {
+    return resolveLeafHighlight(node, candidateSet, isQAStarted)
+  }
+  const descendants = collectDescendantLeafIds(nodeId)
+  const hasCandidate = descendants.some((id) => candidateSet.has(id))
 
-  const states = collectDescendantLeafStates(nodeId, types, human)
-  if (states.size === 0) return "neutral"
-  if (states.has("emphasized")) return "emphasized"
-  if (states.has("active")) return "active"
-  if (states.has("neutral")) return "neutral"
-
-  return "folded"
+  return hasCandidate ? "active" : "folded"
 }
 
 export const highlightedPathSetAlt = (

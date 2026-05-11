@@ -231,12 +231,12 @@ describe("PBT: 任意 tree でも throw しない", () => {
   it("任意の ISO 8601 文字列は valid date として判定", () => {
     fc.assert(
       fc.property(
-        fc.date({
-          min: new Date("1900-01-01"),
-          max: new Date("2100-12-31"),
+        fc.integer({
+          min: new Date("1900-01-01").getTime(),
+          max: new Date("2100-12-31").getTime(),
         }),
-        (d) => {
-          const iso = d.toISOString().slice(0, 10)
+        (ts) => {
+          const iso = new Date(ts).toISOString().slice(0, 10)
           const tree = group([
             cond({
               field: "date_published",

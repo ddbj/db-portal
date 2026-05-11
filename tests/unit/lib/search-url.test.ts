@@ -174,9 +174,8 @@ describe("parseSearchUrl", () => {
     expect(result.params.adv).toBeNull()
   })
 
-  it("marks both_q_and_adv when both q and adv are present", () => {
+  it("keeps both q and adv when both are present (AND combination)", () => {
     const result = parse("q=human&adv=title%3Acancer")
-    expect(result.softErrors).toContain("both_q_and_adv")
     expect(result.params.q).toBe("human")
     expect(result.params.adv).toBe("title:cancer")
     expect(result.shouldRedirectToHome).toBe(false)

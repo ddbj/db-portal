@@ -22,7 +22,7 @@ import type {
   AdvancedSearchState,
 } from "./types"
 
-const DEFAULT_FIELD_ID = "title"
+const DEFAULT_FIELD_ID = ""
 
 const TRAD_COERCIBLE_DATE_FIELDS: ReadonlySet<string> = new Set([
   "date_modified",
@@ -39,15 +39,14 @@ const resetValueForOperator = (
 }
 
 const buildDefaultCondition = (fieldId: string): AdvancedCondition => {
-  const field = findField(fieldId) ?? findField(DEFAULT_FIELD_ID)
-  const resolvedField = field ?? {
-    id: DEFAULT_FIELD_ID,
-    availableOps: ["equals"] as const,
+  const field = findField(fieldId)
+  if (field === undefined) {
+    return { field: "", operator: "equals", value: "" }
   }
-  const operator = (resolvedField.availableOps[0] ?? "equals") as FieldOperator
+  const operator = (field.availableOps[0] ?? "equals") as FieldOperator
 
   return {
-    field: resolvedField.id,
+    field: field.id,
     operator,
     value: resetValueForOperator(operator),
   }

@@ -173,6 +173,7 @@ DB ポータルの存在意義は「横断検索」なので、**Advanced Search
 | `title` | タイトル / 名称 | 全 DB |
 | `description` | 記述 | 全 DB |
 | `organism` | 生物種（学名・Taxonomy ID 両対応） | Taxonomy 除く全 DB |
+| `accessibility` | 公開状態（`public-access` / `controlled-access`） | ES backed 6 DB（Trad / Taxonomy は概念なし） |
 | `date_published` | 公開日 | Taxonomy 除く全 DB |
 | `date_modified` | 更新日 | 同上 |
 | `date_created` | 作成日 | 同上 |
@@ -193,16 +194,26 @@ API 側 `ddbj_search_api/search/dsl/allowlist.py` の `TIER3_FIELDS` が SSOT。
 
 | DB | フィールド | 備考 |
 |---|---|---|
-| BioProject | `project_type`, `grant_agency`, `relevance` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ。`relevance` は INSDC controlled vocab の自由文字列（API 側で固定列挙していないため UI も自由入力） |
+| BioProject | `project_type`, `grant_agency`, `relevance` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ。`relevance` は INSDC controlled vocab の 7 値 enum（`Agricultural` / `Medical` / `Industrial` / `Environmental` / `Evolution` / `ModelOrganism` / `Other`） |
 | BioSample | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date` | converter 0.3.0 で top-level 化された text 系 5 field。`geo_loc_name` / `collection_date` は SRA でも検索可（同名 ES path、SRA-sample 限定でヒット） |
-| SRA | `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date` | converter 0.3.0 で properties parse 済（top-level に投入）。`analysis_type` は sra-analysis、`library_name` / `library_construction_protocol` は sra-experiment、`geo_loc_name` / `collection_date` は sra-sample でのみヒット |
+| SRA | `library_strategy`, `library_source`, `library_selection`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date` | converter 0.3.0 で properties parse 済（top-level に投入）。`library_selection` / `library_strategy` / `library_source` / `library_layout` / `platform` / `instrument_model` / `library_name` / `library_construction_protocol` は sra-experiment、`analysis_type` は sra-analysis、`geo_loc_name` / `collection_date` は sra-sample でのみヒット |
 | JGA | `study_type`, `grant_agency`, `dataset_type`, `vendor` | converter 0.3.0 で properties parse 済。`dataset_type` は jga-dataset、`vendor` は jga-study でのみヒット |
 | GEA | `experiment_type` | converter 0.3.0 の ES `experimentType` |
 | MetaboBank | `study_type`, `experiment_type`, `submission_type` | converter 0.3.0 の ES `studyType` / `experimentType` / `submissionType` |
 | Trad（ARSA） | `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal` | ARSA Solr の既存スキーマで検索可 |
 | Taxonomy（TXSearch） | `rank`, `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name` | TXSearch Solr の既存スキーマで検索可。`japanese_name` は staging schema 不在のため allowlist 外（将来追加候補） |
 
-**未対応（将来課題）**: BioSample の `attributes.harmonized_name` 経由の検索（`disease` / `tissue` / `env_biome` 等。ES 側に top-level 昇格していないため allowlist 化されていない）、JGA の `principal_investigator` / `submitting_organization`、Taxonomy `japanese_name`。
+**未対応 field と代替手段**: 直後の [#未対応-field-と代替手段](#未対応-field-と代替手段) を参照。
+
+#### 未対応 field と代替手段
+
+API allowlist 未対応 / 共通語彙化していない field と、ユーザー側の代替検索手段をまとめる。GUI から消えている代わりに「同等の検索をどう組み立てるか」を示す。
+
+| 未対応 field | 理由 | 代替手段 |
+|---|---|---|
+| BioSample `disease` / `tissue` / `env_biome` | `attributes.harmonized_name` 経由の検索。ES 側に top-level 昇格していないため allowlist 外 | Tier 1 `description` / `title` で free text 検索（精度は低下） |
+| JGA `principal_investigator` / `submitting_organization` | converter / api 双方に対応 field なし | Tier 2 `submitter` フィールドで PI 名・登録機関名を検索 |
+| Taxonomy `japanese_name` | TXSearch staging に field 不在で API allowlist 外 | 検索は不可。結果カードには表示される（converter 側で取得しているため、DTO `taxonomy.japaneseName` は維持） |
 
 #### 日付フィールド
 
@@ -335,7 +346,7 @@ DB 切り替え時、Tier ごとに条件の扱いが異なる:
 ┌─ Callout type="warning" ──────────────────────────────────────┐
 │ ⚠ データベースを切り替えると、以下の {現在の DB 名} 固有の        │
 │ 条件が削除されます:                                              │
-│   • project_type = "Genome sequencing"                         │
+│   • project_type = "UmbrellaBioProject"                        │
 │   • grant_agency contains "JSPS"                               │
 │ [切り替える]  [キャンセル]                                       │
 └───────────────────────────────────────────────────────────────┘
@@ -425,12 +436,15 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 **シンプル検索との関係:**
 
-`adv` と `q` は排他（[/search のクエリパラメータ](#search-のクエリパラメータ) 参照）。サマリチップが出ている状態でユーザが新規にシンプル検索を行うには:
+`q` と `adv` は **AND 結合で併用可能**（[/search のクエリパラメータ](#search-のクエリパラメータ) 参照）。シンプル検索ボックスに `"human"` を入れたあと、サイドバーで organism や package を絞り込むと URL は `?q=human&adv=organism equals "Homo sapiens" AND package equals "..."` のようになり、両条件の AND で結果が絞り込まれる。
 
-1. **[✕ クリア]** を押して `adv` を解除し、シンプル検索ボックスに戻す
-2. 新しいキーワードを入力して検索
+ヘッダのサマリチップは状態に応じて 3 形態を取る:
 
-ヘッダには常時シンプル検索ボックスかサマリチップのどちらか一方のみが表示される（両方を同時に出さない）。
+- **シンプルのみ** (`q` あり / `adv` なし): ヘッダにシンプル検索ボックスを表示し、入力欄に `q` の値が入る
+- **詳細のみ** (`q` なし / `adv` あり): サマリチップに DSL を短縮表示
+- **併用** (`q` と `adv` 両方): サマリチップに `"q の値" + DSL 短縮` を統合表示。`[編集]` は `adv` 部分を Advanced Search GUI で開き、`[✕ クリア]` は `q` / `adv` 両方を解除する
+
+ユーザが「シンプル検索でやり直したい」場合は `[✕ クリア]` で両方を消してから新しいキーワードを入力する。
 
 ### ヒット件数表示
 
@@ -557,7 +571,16 @@ API 側の status filter ロジック（accession 完全一致時のみ `suppres
 | Trad（ARSA） | Division, Molecular type, Sequence length | `division`, `molecularType`, `sequenceLength` |
 | Taxonomy（TXSearch） | Rank, Common name, Japanese name, Lineage | `rank`, `commonName`, `japaneseName`, `lineage`（Taxonomy DB では L4 organism 行は非表示） |
 
-Tier 3 の検索条件として使える BioSample (`host` / `strain` / `isolate` / `geo_loc_name` / `collection_date`) / SRA (`analysis_type` / `library_name` / `library_construction_protocol` / `geo_loc_name` / `collection_date`) / BioProject (`relevance`) / JGA (`dataset_type` / `vendor` 既出を除く) は API 側 `DbPortalHit` レスポンスに **未収録**。L5 への表示は API 側の response 拡張（converter top-level → DTO 露出）を待ってから別途追加する。
+Tier 3 検索条件として使える追加 field（BioSample `host` / `strain` / `isolate` / `geo_loc_name` / `collection_date`、SRA `library_name` / `library_construction_protocol` / `geo_loc_name` / `collection_date`、BioProject `relevance`）は L5 とは別の **Secondary meta line（L5'）** として表示する。役割を「entry の素性」（L5、Organization / Library / Platform 等）と「Tier 3 検索でヒットした理由」（L5'、Host / Strain / Geo / Relevance 等）に分け、1 行が長くなりすぎないようにする。
+
+| DB | Secondary meta line（L5'）の field |
+|---|---|
+| BioProject | `relevance`（複数値は `, ` 区切り） |
+| BioSample | `host`, `strain`, `isolate`, `geoLocName`, `collectionDate` |
+| SRA（全 6 subtype 共通、null は skip） | `libraryName`, `libraryConstructionProtocol`, `geoLocName`, `collectionDate` |
+| GEA / MetaboBank / Trad / Taxonomy | （L5' なし） |
+
+null / 空配列の field は skip して、表示すべき field がない場合は L5' 行自体を非表示にする。`host` 等が API レスポンスで `string[]` で返る場合は `, ` で join する（converter 側 list[str] → DTO `string` 公称型のずれを runtime で吸収）。
 
 #### 関連 DB リンク（L6）
 
@@ -571,24 +594,117 @@ Tier 3 の検索条件として使える BioSample (`host` / `strain` / `isolate
 
 ```
 ┌─ ヘッダ ─────────────────────────────────────────────────────┐
-│ [🔍 human                                        ] [Search]   │
+│ [search human                                    ] [Search]   │
 └──────────────────────────────────────────────────────────────┘
 
-  全 189,923 件中 1〜20 件を表示    ソート: [関連度 ▾]  表示: [20件 ▾]
-
-  ┌─ 結果カード ×20 ──────────────────────────────────────────┐
-  │  ...                                                       │
-  └──────────────────────────────────────────────────────────┘
-
-  [< 前へ]  1 / 9,497 ページ  [次へ >]
+┌─ Sidebar(left) ─┐  全 189,923 件中 1-20 件を表示
+│ Filter          │   ソート: [Relevance v]  表示: [20 v]
+│  Entry type     │
+│   o All         │  ┌─ 結果カード x20 ────────────────────┐
+│   o sra-exp(N)  │  │  ...                                 │
+│   ...           │  └──────────────────────────────────────┘
+│  Organism       │
+│   [x] Homo s..  │  [< 前へ]  1 / 9,497 ページ  [次へ >]
+│   [ ] Mus m..   │
+│  Accessibility  │
+│   [ ] public..  │
+│  Package        │
+│   ...           │
+│  Host           │
+│   [____________]│
+│  Strain         │
+│   [____________]│
+│  Date range     │
+│   o Publication │
+│   [All][1y][5y] │
+│   From [____]   │
+│   To   [____]   │
+└─────────────────┘
 ```
 
 - **ツールバー**（結果リスト上部）: 件数表示 + ソートセレクト + 表示件数セレクト
-- **ファセットフィルタ**（サイドバー）: インターナルリリースでは実装しない。Advanced Search に分離済み。将来拡張の余地として左サイドバーの領域を確保しておく（現時点ではレイアウト上は 1 カラム）
+- **Sidebar filter**（左サイドバー、`/search?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar filter UI](#sidebar-filter-ui)
 
 #### カードクリック時の遷移
 
 タイトル（L2）のリンクは **外部の既存詳細ページ** へ `target="_blank"` で遷移する。db-portal 内に詳細ページは設けない（各 DB の既存 UI を活用する）。
+
+#### Sidebar filter UI
+
+DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search?db=all`）では sidebar は表示しない（DB 別 facet endpoint の結果が混在しないため）。
+
+##### 構成（DB 別）
+
+各 DB の sidebar 構成は portal 側 `src/lib/sidebar-fields.ts` が SSOT。
+
+| DB | facet（checkbox + count） | keyword（text input + 300ms debounce） | date range | subtype radio |
+|---|---|---|---|---|
+| BioProject | `organism`, `accessibility`, `project_type`（= ES `objectType`）, `relevance` | `grant_agency` | 公開日 / 更新日 / 作成日（3 軸切替） | （なし） |
+| BioSample | `organism`, `accessibility`, `package`, `model` | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date` | 同上 | （なし） |
+| SRA | `organism`, `accessibility` + subtype 連動（`sra-experiment` 時 `library_strategy` / `library_source` / `library_selection` / `library_layout` / `platform` / `instrument_model`、`sra-analysis` 時 `analysis_type`） | （subtype 連動: `sra-experiment` 時 `library_name` / `library_construction_protocol`、`sra-sample` 時 `geo_loc_name` / `collection_date`） | 同上 | sra-submission / sra-study / sra-experiment / sra-run / sra-sample / sra-analysis（6 値） |
+| JGA | `organism`, `accessibility` + subtype 連動（`jga-study` 時 `study_type`、`jga-dataset` 時 `dataset_type`） | `grant_agency` + subtype 連動（`jga-dataset` 時 `vendor`） | 同上 | jga-study / jga-dataset / jga-dac / jga-policy（4 値） |
+| GEA | `organism`, `accessibility`, `experiment_type` | （なし） | 同上 | （なし） |
+| MetaboBank | `organism`, `accessibility`, `study_type`, `experiment_type`, `submission_type` | （なし） | 同上 | （なし） |
+| Trad（ARSA） | （Solr proxy のため facet 見送り） | `feature_gene_name`, `reference_journal` | 公開日のみ（[日付フィールド](#日付フィールド) 参照） | （なし） |
+| Taxonomy（TXSearch） | （Solr proxy のため facet 見送り） | `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name` | （非表示、date 系持たない） | （なし） |
+
+`accessibility` / `library_selection` は API allowlist 拡張依頼（`from-db-portal-allowlist-expansion.md`）で追加された field。
+
+##### facet（controlled value）
+
+- ES backed 6 DB の controlled value field を facet checkbox として表示
+- 上位 20 個まで表示、各 bucket に count を併記（例: `Homo sapiens (10,070,261)`）
+- checkbox 選択で adv DSL に `field equals "value"` を追加（複数選択は `field equals "v1" OR field equals "v2"` の OR group）
+- API 側は cross-type / type-specific facets endpoint（`/facets/*`）
+- camelCase facet key（例: `libraryStrategy`）と snake_case DSL field name（例: `library_strategy`）は portal 側 `sidebar-fields.ts` で個別 mapping
+
+##### keyword（free text）
+
+- Free text または cardinality 過大な field を keyword text input として表示
+- 入力値は 300ms debounce で URL 反映（毎キーストロークで navigate しない）
+- DSL 合算: `field contains "value"` 形式
+
+##### subtype radio（SRA / JGA のみ）
+
+- SRA = `sra-submission` / `sra-study` / `sra-experiment` / `sra-run` / `sra-sample` / `sra-analysis`（6 値）
+- JGA = `jga-study` / `jga-dataset` / `jga-dac` / `jga-policy`（4 値）
+- 各 radio に hits.total を併記（現絞込み条件込み、portal 側で並列 fetch: SRA は 6 並列、JGA は 4 並列）
+- 選択で adv DSL に `type:{subtype}` を追加
+- 選択に応じて sidebar の他 section（`library_strategy` 等）を動的に追加表示
+
+##### date range filter（3 軸切替）
+
+- 軸 selector: 公開日（`date_published`）/ 更新日（`date_modified`）/ 作成日（`date_created`）の radio、デフォルトは公開日
+- クイック範囲ボタン: All / 1年 / 5年 / 10年（今日基準で from / to を自動入力、All で範囲解除）
+- from / to date input（ISO 8601 `YYYY-MM-DD`、ブラウザ標準 `<input type="date">`）
+- DSL 合算: `date_published:[from TO to]`（gte は `[from TO *]`、lte は `[* TO to]`、両方未入力で section 解除）
+- 軸変更時、from / to は維持（軸だけ切り替え）
+- Taxonomy では section 非表示（`dateAxes` 空）
+
+##### parseAdv 経由の双方向同期
+
+URL `?adv=...` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse` 経由で行う。
+
+- **URL → sidebar**: portal 側で `parseAdv({adv, db})` を呼び AST を取得 → portal 側 `astToSidebarState(ast, db)` で AST を「sidebar 対応 clause」と「residual（sidebar 非対応 clause）」に分解 → sidebar 対応分を sidebar UI 状態に反映
+- **sidebar → URL**: sidebar 変更時に新 sidebar state から DSL を再構築 → residual と AND 結合 → URL `?adv=...` を更新（navigate）
+- residual がある場合、sidebar 上部に notice（「詳細検索 GUI 編集中の条件があります」）と詳細検索 GUI への編集リンクを表示
+
+##### sidebar 対応 clause の判定ルール
+
+| AST clause | sidebar への取り込み |
+|---|---|
+| `LeafValue { op: "eq", field, value }` で field が DB 別 facet 一覧にある | facet `field` の選択値に追加 |
+| `LeafValue { op: "eq", field: "type", value }` で DB が SRA / JGA | subtype として復元 |
+| `LeafValue { op: "contains", field, value }` で field が DB 別 keyword 一覧にある | keyword `field` の入力値に復元 |
+| `LeafRange { op: "between", field, from, to }` で field が DB 別 date axis 一覧にある | dateRange の axis / from / to に復元 |
+| `BoolOp { op: "OR", rules: [eq(field, v1), eq(field, v2), ...] }` で同 field の eq leaves で field が facet 一覧にある | facet `field` の複数値に復元 |
+| 上記以外（複雑な OR 結合、未対応 field、wildcard、NOT 等） | residual に残す |
+
+##### Solr proxy DB（Trad / Taxonomy）の挙動
+
+- facet endpoint は ES backed 6 DB のみ対応（Solr proxy は facet 集計 API なし）
+- Trad / Taxonomy では sidebar に facet section は表示しない、keyword section のみ
+- Taxonomy はさらに date range section も非表示（TXSearch に date 系 field なし）
 
 ## ページネーション仕様
 
@@ -621,15 +737,15 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 | パラメータ | 値 | デフォルト（省略時） |
 |---|---|---|
-| `q` | 検索文字列（URL エンコード） | `adv` とどちらか 1 つは必須。両方未指定なら `/` に 301 リダイレクト |
-| `adv` | Advanced Search の DSL 文字列（[Advanced Search の URL 形式](#advanced-search-の-url-形式) 参照） | `q` とどちらか 1 つは必須 |
+| `q` | 検索文字列（URL エンコード） | `adv` とどちらか 1 つは必須（両方指定可）。両方未指定なら `/` に 301 リダイレクト |
+| `adv` | Advanced Search の DSL 文字列（[Advanced Search の URL 形式](#advanced-search-の-url-形式) 参照） | `q` とどちらか 1 つは必須（両方指定可） |
 | `db` | 下記の DB 識別子 | 未指定 = 横断検索 |
 | `page` | 1 以上の整数 | `1` |
 | `perPage` | `20` / `50` / `100` | `20` |
 | `sort` | `relevance` / `date_desc` / `date_asc` | `relevance` |
 | `cursor` | opaque 文字列（ES deep paging、10,000 件超） | なし |
 
-**`q` と `adv` の排他**: 同一 URL に両方指定された場合は 400 エラー（API）/ 優先警告（UI）。混ぜると DSL セマンティクスが曖昧になるため。
+**`q` と `adv` の併用**: 両方が指定された場合、Search API 側で AND 結合して評価する。シンプル検索でフリーテキスト絞り込みをしつつ、サイドバーや Advanced Search から DSL 条件を重ねる動線（ファセット検索 UX の基本動線）をサポートするため。UI ではヘッダのサマリチップに `"q の値" + DSL 短縮` を統合表示する（[サマリチップ](#サマリチップ-現在の検索条件) 参照）。
 
 #### 正規化ルール
 

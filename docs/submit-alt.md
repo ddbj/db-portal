@@ -6,11 +6,12 @@ DDBJ の複数 DB にまたがる登録フローを、研究者の **持って�
 
 研究者の動機（何を持っていて、何を登録したいか）から登録先の組み合わせ・必要な準備物・登録手順をガイドする。`/submit`（旧仕様、`docs/submit.md` 参照）との差分は以下:
 
-- **新トップ階層の追加**: 「データ種別 Y/N の複数選択」を最初の判断レイヤーとして追加。研究者が自己認識ベースで持っているデータをチェックすることで、該当 leaf 集合が絞り込まれる。
-- **Decision Tree の簡略化**: 中間ノード（生物種・規模など）の分岐を Detail Panel へ移行し、tree 全体を浅くする。ただし登録先システム・ワークフロー構造・必要準備物が違うものは引き続き分岐させる（leaf 統合判定基準は `/submit` と同じ）。
-- **leaf の再構成**: variant 系を 3 leaf に集約、ヒトマイクロバイオーム制限と空間トランスクリプトームを新規追加。合計 33 leaf。
+- **質問ウィザード (Q&A) をメイン導線にする**: Q1「持っているファイル」(複数選択) → Q2「対象生物」(単一選択) → 条件付き Q3-Q9 の多段質問で leaf を絞り込む。研究者の自己認識（手元のファイル形式 + 対象生物）から登録先に辿り着く。
+- **Decision Tree は結果表示として残す**: Q&A の答えに応じて Tree 上の該当 leaf がハイライトされる「俯瞰ビュー」として、デフォルト折りたたみで併設。Tree クリックで詳細パネルへも到達可能。
+- **Cards / Tree の折り畳み**: Section 2 (Cards) と Section 3 (Tree) はデフォルトで折りたたみ、ユーザー操作で展開する。Q&A ウィザードと詳細パネルに視線を集中させ、入口の重複による情報過多を抑える。
+- **leaf の再構成**: variant 系を 3 leaf に集約、ヒトマイクロバイオーム制限と空間トランスクリプトームを新規追加、ヒト × 非制限の Raw/アセンブリ leaf を 3 件新規追加（旧仕様の穴を埋める）。合計 36 leaf。
 - **詳細パネルの情報強化**: BioProject Project Data type / BioSample Package / DRA submission type / experiment type / GEA submission type / Annotation 制約 を leaf 単位で表示。
-- **パンくずリスト**: 新トップ選択 chip + tree 経路を併記。
+- **パンくずリスト**: Q&A の回答経路 (Q1 chip + Q2 + 条件付き Q) と tree 経路を併記。
 - **内部/外部の色区分**: BSI/DDBJ 登録先と外部登録先を色 + アイコンで明示。
 
 ## ページ構成
@@ -19,78 +20,223 @@ DDBJ の複数 DB にまたがる登録フローを、研究者の **持って�
 
 ```
 +--- /submit-alt -----------------------------------------+
-|  Section 1: 新トップ階層                                |
-|    データ種別 Y/N 複数選択 + 横断属性「ヒト由来データ」 |
+|  Section 1: 質問ウィザード (Q&A)                       |
+|    Q1 持物 (8 種、複数) + Q2 生物 (6 種、単一) +        |
+|    条件付き Q3-Q9                                       |
 +---------------------------------------------------------+
-|  Section 2: Use Case Cards (10 枚)                     |
+|  Section 2: Use Case Cards (10 枚) [▶ 折り畳み・閉]    |
 +---------------------------------------------------------+
-|  Section 3: Decision Tree (簡略化版)                   |
+|  Section 3: Decision Tree (簡略化版) [▶ 折り畳み・閉]  |
+|    Q&A の回答に応じて該当 leaf がハイライト              |
 +---------------------------------------------------------+
 |  Section 4: Detail Panel                               |
 |    パンくず + 概要/具体 2 段階ドリルダウン              |
 +---------------------------------------------------------+
 ```
 
-各セクションは常時表示し、選択に応じてハイライトで状態変化する（詳細パネル展開時に他セクションが消えない）。
+Section 1 と Section 4 は常時表示、Section 2 と Section 3 はデフォルトで折りたたまれている。ユーザーが見出しをクリックすることで展開される。Section 3 (Tree) は Q&A の回答進行に伴って内部ハイライトが動くため、開いた時に「Q&A の結果が tree のどこに該当するか」がすぐ見える。
 
 ## 設計原則
 
 ### 役割分担
 
-| セクション | 役割 |
-|---|---|
-| 新トップ階層 | 持っているデータの複数チェック（網羅的、絞り込み） |
-| Use Case Cards | 研究テーマで一発入る（ショートカット） |
-| Decision Tree | 網羅的な登録パターンの可視化（簡略化済み） |
-| Detail Panel | 2 段階ドリルダウンの情報開示装置 |
+| セクション | 役割 | 表示 |
+|---|---|---|
+| 質問ウィザード (Q&A) | データ起点で leaf を絞り込む多段質問 (デフォルト導線) | 常時表示 |
+| Use Case Cards | 研究テーマで一発入る（ショートカット） | デフォルト折りたたみ |
+| Decision Tree | Q&A 回答に応じた俯瞰結果ビュー / クリックで leaf に到達 | デフォルト折りたたみ |
+| Detail Panel | 2 段階ドリルダウンの情報開示装置 | 常時表示 |
 
 研究者は以下 3 経路で詳細パネルへ到達する:
 
-1. **新トップ階層 → 絞り込み**: データ種別を複数チェックして該当 leaf 集合を絞り込む
-2. **Cards → 直行**: 研究テーマカードをクリックして tree 中間 node または leaf へ直行
-3. **Tree → 順次降下**: tree を上から順に降りる（判断に迷う研究者向け）
+1. **Q&A → leaf 到達**: Q1〜Q6 に答えて leaf が一意に絞れた時点で詳細パネルに自動表示（デフォルト導線、データ起点）
+2. **Cards → 直行**: Cards セクションを展開し、研究テーマカードをクリックして tree 中間 node または leaf へ直行（テーマ起点のショートカット）
+3. **Tree → 順次降下**: Tree セクションを展開し、tree を上から順に降りる（俯瞰したい研究者向け）
 
-新トップ階層・Cards・Tree は補完関係で両立する。
+Q&A をメイン、Cards / Tree を補助的に折りたたみで残す構造とする。Q&A の回答進行で Section 3 (Tree) 内部の該当 leaf がハイライトされるため、tree は「答えの俯瞰確認」としても機能する。
 
 ### tree の深さ
 
 旧 `/submit` の深さ 2-7 から、生物種・規模など不要な中間ノード分岐を Detail Panel に移行することで簡略化する。tree を浅くしすぎると tree の意味がなくなるため、登録先システム・ワークフロー構造・必要準備物が違うものは引き続き分岐させる。
 
-## Section 1: 新トップ階層
+## Section 1: 質問ウィザード (Q&A)
 
-### データ種別（10 項目、Y/N 複数選択）
+研究者の自己認識（手元のファイル形式 + 対象生物）から leaf を絞り込む多段質問形式。**Q1 + Q2 が必須**、**Q3〜Q9 は前段の回答に応じて条件付きで出現**する。回答進行に応じて、Section 3 (Tree) の該当 leaf がリアルタイムにハイライトされる（折りたたみ閉じたままでも内部状態は更新）。leaf が一意に決まった時点で詳細パネル (Section 4) に内容が反映される。
 
-| 項目 | 主な対応 leaf |
-|---|---|
-| ヒト制限公開アクセス | leaf-01 |
-| シーケンスリード | DRA を含む leaf 群（leaf-08, 11, 17, 20, 25 ほか） |
-| ゲノム | 微生物 / 真核 / メタゲノムの assembly 系 leaf 群 |
-| バリアント解析 | v01, v02, v03 |
-| プロテオミクス | leaf-02 |
-| EST 解析 | leaf-30, leaf-31 |
-| Microarray | leaf-09 |
-| 空間トランスクリプトーム | s01, s02 |
-| メタボロミクス | leaf-03 |
-| 小規模塩基配列 | leaf-10 |
+### Q1. 何のファイル/データを持っていますか？（複数選択、必須）
 
-### 横断属性
+ファイル形式ベース。研究者の自己認識の起点。ラベルは研究者が「自分のはこれだ」と即答できる具体的な日本語表記にする。
 
-| 属性 | 用途 |
-|---|---|
-| ヒト由来データ Y/N | 他項目と組み合わせて使う（ゲノム × ヒト由来 + 制限 → JGA 系へ等） |
+| 値 | 表示ラベル（日本語） | ファイル例 | 主な leaf |
+|---|---|---|---|
+| `sequence-read` | 配列リード（NGS / 長鎖シーケンサ） | FASTQ / BAM | leaf-08, 11, 12, 17, 20, 25, 32 |
+| `assembled` | 組み立て済み配列（アセンブリ） | FASTA / アセンブリ | leaf-13-16, 18, 19, 21-29, 31, 33, 34 |
+| `annotation` | 配列に対する遺伝子アノテーション | GFF / GenBank flat | leaf 分岐に効かない（注 1） |
+| `variation` | 変異情報 | VCF / TSV | v01, v02, v03 |
+| `expression-array` | マイクロアレイ発現データ | CEL / iDAT | leaf-09 |
+| `expression-matrix` | RNA-seq 発現マトリクス（カウント表 / TPM / FPKM） | counts.tsv / TPM.tsv | leaf-08（`sequence-read` と併せて選択） |
+| `mass-spec` | 質量分析データ（プロテオ or メタボ） | mzML / RAW | leaf-02, leaf-03（Q7 で区別） |
+| `spatial-tx` | 空間トランスクリプトーム | 10x Xenium / Visium | s01, s02 |
 
-### マルチ選択時の UI 動作（4 パターン）
+注 1: `annotation` は研究者の自己認識として選択肢に残すが、leaf 分岐ロジックには影響しない。`assembled` 系 leaf に到達した時に詳細パネルで「アノテーションも一緒に MSS へ提出可能」と案内する。
 
-研究者が複数項目をチェックした場合、登録フローが 1 つにまとまるか別々になるかを動的に案内する。
+注 2: `expression-array`（マイクロアレイ）は単独で leaf-09 に到達する。`expression-matrix`（RNA-seq マトリクス）は通常 `sequence-read` と併用され、その場合に leaf-08 (BP+BS+DRA+GEA) に到達する。`expression-matrix` 単独選択は実態として稀（マトリクスだけ持っていてリードは未公開、というケース）で、その場合は leaf-09 に統合扱いで案内する。
 
-| パターン | 内容 | 例 |
+### Q2. データの対象生物は？（単一選択、必須）
+
+「ヒト」を独立軸として扱う（ヒト由来データの登録は他生物と分岐ルールが大きく異なるため）。
+
+| 値 | 内容 | 主な leaf |
 |---|---|---|
-| 1. 同 submission 統合 | 1 つの登録フローに統合可能 | シーケンスリード + ゲノム → BP+BS+DRA+MSS |
-| 2. BP/BS 共有 + 別 submission | 別フローだが BP/BS 共通 | ゲノム + メタボロミクス（D-way + MetaboBank） |
-| 3. 完全独立（外部窓口） | BP/BS も別、外部のため共有不可 | 任意 + プロテオミクス（jPOST） |
-| 4. JGA 一本化 | ヒト制限ありなら JGA に統合 | ヒト制限ゲノム + ヒト制限バリアント |
+| `human` | ヒトサンプル | leaf-01, v02, v03, m06, s02, ヒト配列リード/アセンブリ |
+| `eukaryote` | ヒト以外の真核生物（動物・植物・菌類） | leaf-23 〜 leaf-31, s01 |
+| `prokaryote` | 原核生物（細菌・古細菌） | leaf-17, 18, 19 |
+| `virus` | ウイルス（ファージ含む） | leaf-20, 21, 22 |
+| `metagenome` | メタゲノム / 環境試料（種を特定しない混合） | leaf-11 〜 15, m06 |
+| `organelle-plasmid` | オルガネラ・プラスミド | leaf-16 |
 
-UI は「これらは別登録になります、BP/BS は共有可能です」のような案内を出す。
+### Q3. アクセス制限（条件付き）
+
+**発火条件**: `Q2 = human`
+
+| 値 | 内容 | 行き先 |
+|---|---|---|
+| `open` | 一般公開できる | v02（ヒト公開バリアント）、ヒト Raw リード/アセンブリ系 leaf |
+| `restricted` | 同意範囲内のみ（NBDC 承認要） | leaf-01, v03, m06, s02 |
+
+### Q4. アセンブリの由来（条件付き）
+
+**発火条件**: `Q1 に assembled を含む`
+
+| 値 | 内容 | 行き先 |
+|---|---|---|
+| `primary` | 自分が新規に決定したデータ | 通常のアセンブリ系 leaf |
+| `tpa` | 第三者が公開した配列を利用 | leaf-24 (eukaryote-tpa) |
+
+### Q5. 規模（条件付き）
+
+**発火条件**: `Q1 = {sequence-read, assembled} のみ` かつ `Q2 ∈ {prokaryote, eukaryote, virus, organelle-plasmid}`
+
+| 値 | 内容 | 行き先 |
+|---|---|---|
+| `small` | 100 配列以下、各配列 100bp〜500kb | leaf-10 (NSSS small-sequence)、leaf-30 (EST 小規模) |
+| `normal` | 通常規模 | 通常の MSS / DRA 系 leaf |
+
+### Q6. 特殊形式（条件付き、複数選択）
+
+**発火条件**: `Q1 に assembled を含み Q2 ∈ {human, eukaryote, metagenome}`
+
+選択肢は Q2 に応じて動的に絞り込まれる。
+
+| 値 | 内容 | 表示条件 (Q2) | 行き先 |
+|---|---|---|---|
+| `haplotype` | Haplotype phased アセンブリ | human, eukaryote | leaf-28, leaf-29 |
+| `tsa` | Transcriptome Shotgun Assembly | eukaryote, metagenome | leaf-23 (真核), leaf-15 (メタ) |
+| `tls` | Targeted Locus Sequence | metagenome | leaf-14 |
+| `mag-sag` | MAG / SAG / Binned | metagenome | leaf-13 |
+| `est` | EST | eukaryote | leaf-30, leaf-31 (規模で分岐) |
+| `none` | どれにも該当しない | 全条件 | 通常の Raw+Asm / Asm-only 系 leaf |
+
+### Q7. 質量分析の種別（条件付き）
+
+**発火条件**: `Q1 に mass-spec を含む`
+
+| 値 | 行き先 |
+|---|---|
+| `proteomics` | leaf-02 (jPOST) |
+| `metabolomics` | leaf-03 (BP+BS+MetaboBank) |
+
+### Q8. メタゲノムデータの種別（条件付き）
+
+**発火条件**: `Q1 に sequence-read を含み Q2 = metagenome`（assembled も含む場合は Q6 で分岐するので Q8 は非表示）
+
+| 値 | 内容 | 行き先 |
+|---|---|---|
+| `raw` | Raw リード（FASTQ） | leaf-11 |
+| `primary` | 一次解析結果（taxonomy profile / アバンダンス表など） | leaf-12 |
+
+### Q9. ヒト試料がメタゲノム由来か？（条件付き）
+
+**発火条件**: `Q2 = human` かつ `Q3 = restricted` かつ `Q1 に sequence-read または assembled を含む`
+
+ヒトマイクロバイオーム制限のケース（m06）を leaf-01 と区別するための質問。
+
+| 値 | 内容 | 行き先 |
+|---|---|---|
+| `yes` | ヒト由来のマイクロバイオーム（口腔・腸内など） | m06 (human-microbiome-restricted) |
+| `no` | ヒト本体のデータ（ゲノム・トランスクリプトーム等） | leaf-01 (human-restricted) |
+
+### 質問の表示・進行
+
+- Q1 と Q2 は常時表示（必須）。Q3〜Q9 は発火条件を満たした時のみ表示される（未表示 = 該当 leaf に分岐がない、または前段未回答）
+- 回答途中でも Section 3 (Tree) の該当候補 leaf 群がハイライトされる
+- 必要な質問に全て答えると leaf が一意に決まり、Section 4 (Detail Panel) に詳細が表示される
+- 答えの組み合わせで leaf が一意化されないケース（例: assembled + eukaryote + primary + normal + Q6=none で leaf-26/leaf-27 のいずれか）は、追加で「配列リードもセットで持っているか」を Q1 のチェックで判定する（leaf-26 = リード+アセンブリ、leaf-27 = アセンブリのみ）
+
+### マルチ選択時の登録フロー案内（Q&A 完了前）
+
+Q1 + Q2 が回答済みで Q3-Q8 を埋めている途中の段階で、現時点の選択が複数登録先にまたがる場合に「これらは別登録になります」のような案内を Callout で表示する（旧 `MultiSelectGuidance` 相当）。
+
+| パターン | 判定条件 (Q1, Q2, Q3 ベース) | 内容 | 例 |
+|---|---|---|---|
+| 1. 同 submission 統合 | 単一 submission に収まる組み合わせ | 1 つの登録フローに統合可能 | sequence-read + assembled × prokaryote → BP+BS+DRA+MSS |
+| 2. BP/BS 共有 + 別 submission | mass-spec=metabolomics + 他 | BP/BS 共有しつつ別 submission | assembled + mass-spec(metabo) → D-way + MetaboBank |
+| 3. 完全独立（外部窓口） | mass-spec=proteomics or variation×非 human-restricted | BP/BS も別、外部のため共有不可 | mass-spec(proteo) → jPOST／variation×eukaryote → EVA/dgVa |
+| 4. JGA 一本化 | Q2=human ∧ Q3=restricted | JGA に統合 | restricted human の任意組み合わせ |
+
+判定優先順位: 4 → 3 → 2 → 1。
+
+### Q1〜Q8 → leaf マッピング表
+
+研究者の回答（Q1-Q9 の組み合わせ）が、36 leaf のどれに到達するかを定義する。「—」はその質問が発火しない / 該当 leaf 識別に使わない。
+
+| leaf (legacy ID) | Q1 持物 (含むべき値) | Q2 生物 | Q3 公開 | Q4 由来 | Q5 規模 | Q6 形式 | Q7 質量 | Q8 メタ | Q9 メタ由来 |
+|---|---|---|---|---|---|---|---|---|---|
+| leaf-01 | sequence-read OR assembled | human | restricted | — | — | — | — | — | no |
+| leaf-02 | mass-spec | 任意 | — | — | — | — | proteomics | — | — |
+| leaf-03 | mass-spec | 任意 | — | — | — | — | metabolomics | — | — |
+| v01 | variation | eukaryote / prokaryote / virus / metagenome | — | — | — | — | — | — | — |
+| v02 | variation | human | open | — | — | — | — | — | — |
+| v03 | variation | human | restricted | — | — | — | — | — | — |
+| leaf-08 | sequence-read + expression-matrix | 任意 | — | — | — | — | — | — | — |
+| leaf-09 | expression-array（sequence-read を含まない） | 任意 | — | — | — | — | — | — | — |
+| leaf-10 | assembled | prokaryote / eukaryote / virus / organelle-plasmid | — | primary | small | none | — | — | — |
+| leaf-11 | sequence-read | metagenome | — | — | — | — | — | raw | — |
+| leaf-12 | sequence-read | metagenome | — | — | — | — | — | primary | — |
+| leaf-13 | sequence-read + assembled | metagenome | — | primary | — | mag-sag | — | — | — |
+| leaf-14 | sequence-read + assembled | metagenome | — | primary | — | tls | — | — | — |
+| leaf-15 | sequence-read + assembled | metagenome | — | primary | — | tsa | — | — | — |
+| m06 | sequence-read OR assembled | human | restricted | — | — | — | — | — | yes |
+| leaf-16 | assembled | organelle-plasmid | — | primary | — | — | — | — | — |
+| leaf-17 | sequence-read（assembled を含まない） | prokaryote | — | — | — | — | — | — | — |
+| leaf-18 | sequence-read + assembled | prokaryote | — | primary | normal | none | — | — | — |
+| leaf-19 | assembled（sequence-read を含まない） | prokaryote | — | primary | normal | none | — | — | — |
+| leaf-20 | sequence-read（assembled を含まない） | virus | — | — | — | — | — | — | — |
+| leaf-21 | sequence-read + assembled | virus | — | primary | normal | none | — | — | — |
+| leaf-22 | assembled（sequence-read を含まない） | virus | — | primary | normal | none | — | — | — |
+| leaf-23 | sequence-read + assembled | eukaryote | — | primary | — | tsa | — | — | — |
+| leaf-24 | assembled | eukaryote | — | tpa | — | none | — | — | — |
+| leaf-25 | sequence-read（assembled を含まない） | eukaryote | — | — | — | — | — | — | — |
+| leaf-26 | sequence-read + assembled | eukaryote | — | primary | normal | none | — | — | — |
+| leaf-27 | assembled（sequence-read を含まない） | eukaryote | — | primary | normal | none | — | — | — |
+| leaf-28 | sequence-read + assembled | eukaryote | — | primary | — | haplotype | — | — | — |
+| leaf-29 | assembled（sequence-read を含まない） | eukaryote | — | primary | — | haplotype | — | — | — |
+| leaf-30 | assembled | eukaryote | — | — | small | est | — | — | — |
+| leaf-31 | assembled | eukaryote | — | — | normal | est | — | — | — |
+| leaf-32 (new: `human-raw-open`) | sequence-read（assembled を含まない） | human | open | — | — | — | — | — | no |
+| leaf-33 (new: `human-raw-assembly-open`) | sequence-read + assembled | human | open | primary | — | none | — | — | no |
+| leaf-34 (new: `human-assembly-only-open`) | assembled（sequence-read を含まない） | human | open | primary | — | none | — | — | no |
+| s01 | spatial-tx | eukaryote / prokaryote / virus / metagenome / organelle-plasmid | — | — | — | — | — | — | — |
+| s02 | spatial-tx | human | restricted | — | — | — | — | — | — |
+
+#### マッピング上の補足
+
+- **Q1 は複数選択**: 「sequence-read + assembled」のように 2 つチェックされた場合、Raw+Assembly 系 leaf に到達する。片方しかチェックされていない場合は Raw のみ / Asm のみの leaf に到達する
+- **leaf-08 vs leaf-09**: 別 Q1 値で明確に区別。`expression-array` = マイクロアレイ → leaf-09。`expression-matrix` + `sequence-read` = RNA-seq → leaf-08
+- **`expression-matrix` 単独**: 仕様上は leaf-09 に統合扱いで案内（マトリクスだけ単独提出のケースは GEA 側でマイクロアレイ扱いと同等の処理）
+- **`annotation` は leaf 分岐に効かない**: 研究者の自己認識として選択可能だが、leaf 到達には影響しない。詳細パネルで MSS への付随ファイルとして案内
+- **m06 と leaf-01 の判定 (Q9)**: Q2=human + Q3=restricted の段階では未確定。Q9（メタゲノム由来？）で明確に分岐する
+- **ヒト × 非制限の Raw/アセンブリ leaf を新設**: leaf-32 / leaf-33 / leaf-34 を新規追加（旧仕様の穴を埋める）。BS Package で Human を扱う、DRA / MSS の通常フローを使う。最終的に JGA 移行が必要かどうかは詳細パネルで案内
 
 ## Section 2: Use Case Cards (10 枚)
 
@@ -120,26 +266,26 @@ UI は「これらは別登録になります、BP/BS は共有可能です」�
 
 ## Section 3: Decision Tree（簡略化版）
 
-合計 33 leaf。新トップ階層が旧 tree の上層分岐を吸収することで、tree の深さと横の広がりを大幅に縮小する。
+合計 36 leaf。Q&A ウィザードが旧 tree の上層分岐を吸収することで、tree の深さと横の広がりを大幅に縮小する。Q&A メイン導線への切り替え後は、tree は「Q&A の回答結果の俯瞰ビュー」として機能する。
 
 ### 簡略化方針
 
-旧 `/submit` の tree（深さ 2-7、中間 node 約 13 個）に対し、新トップ階層が以下の旧分岐を吸収することで tree を浅くする。
+旧 `/submit` の tree（深さ 2-7、中間 node 約 13 個）に対し、Q&A ウィザード（Q1〜Q8）が以下の旧分岐を吸収することで tree を浅くする。
 
 | 旧 /submit の分岐 | 新 /submit-alt での扱い |
 |---|---|
-| L1 ヒト制限判定 | 新トップ「ヒト制限公開アクセス」Y/N に吸収 |
-| L2 計測モダリティ | 新トップ 10 項目 Y/N に吸収 |
-| L3-seq 規模分岐 | 新トップ「小規模塩基配列」Y/N に吸収 |
-| L4-seq 由来分岐 | 新トップ「メタゲノム関連」と「ゲノム」分岐で吸収 |
-| L5-L6 生物カテゴリ | tree に残す（新 L1 相当） |
-| L7 データ形式 | tree に残す（新 L2 相当） |
+| L1 ヒト制限判定 | Q2=human + Q3 (open/restricted) に吸収 |
+| L2 計測モダリティ | Q1 (持物 8 種) に吸収 |
+| L3-seq 規模分岐 | Q5 (規模 small/normal) に吸収 |
+| L4-seq 由来分岐 | Q1 (sequence-read / assembled の組み合わせ) + Q8 (raw/primary) に吸収 |
+| L5-L6 生物カテゴリ | Q2 (生物 6 種) で吸収 / tree にも残す |
+| L7 データ形式 | Q6 (特殊形式) と tree の組み合わせで扱う |
 
-結果として新 tree は **depth 2-3**、中間 node は **5-6 個程度** に減少する。leaf 数は 31 → 33 に微増するが、tree の縦の深さと横の広がりは大幅に縮小する。
+結果として新 tree は **depth 2-3**、中間 node は **5-6 個程度** に減少する。leaf 数は 31 → 36 に増加するが、tree の縦の深さと横の広がりは大幅に縮小する。
 
 ### 新 tree の構造
 
-新トップ階層の選択（Section 1）に応じて該当起点配下が active 表示される。
+Q&A の回答（Section 1）に応じて該当起点配下が active 表示される。tree クリックでも詳細パネルに到達できる（Cards 経由と同じ）。
 
 ```
 [ゲノム] 起点:
@@ -191,6 +337,8 @@ UI は「これらは別登録になります、BP/BS は共有可能です」�
 
 ### マルチ選択時の tree 動作
 
+Tree セクションを展開した時のハイライト規則:
+
 | 状態 | tree 表示 |
 |---|---|
 | 全項目未選択 | tree 全体を通常表示（俯瞰モード） |
@@ -200,7 +348,7 @@ UI は「これらは別登録になります、BP/BS は共有可能です」�
 
 非該当の枝は**非表示にせず灰色化（folded）**で残すことで、「全体俯瞰したい」要望と「絞り込みたい」要望を両立する。
 
-### 33 leaf 一覧
+### 36 leaf 一覧
 
 #### ヒト制限・外部リダイレクト系
 
@@ -272,6 +420,16 @@ per-sample / aggregate の解像度は v02 / v03 の詳細パネル内で分岐�
 | s01 | `spatial-tx-nonhuman` | BP+BS+GEA(Xenium) |
 | s02 | `spatial-tx-restricted` | JGA-analysis（DB-2021 詳細確認後に s01 と統合判断する余地を残す） |
 
+#### ヒト × 非制限の Raw / アセンブリ系（新規 3 leaf）
+
+旧仕様の穴（ヒト × Q3=open の Raw/Asm ケースに対応 leaf がない）を埋めるため新設。BS Package で Human を扱いつつ、DRA / MSS の通常公開フローを使う。詳細パネルで「最終的に JGA に移行する必要がないか」を案内する。
+
+| leaf ID | URL ID | ゴール |
+|---|---|---|
+| leaf-32 | `human-raw-open` | BP+BS+DRA |
+| leaf-33 | `human-raw-assembly-open` | BP+BS+DRA+MSS |
+| leaf-34 | `human-assembly-only-open` | BP+BS+MSS |
+
 ### ゴール一覧
 
 | ゴール | 登録先 | 該当 leaf |
@@ -289,11 +447,11 @@ per-sample / aggregate の解像度は v02 / v03 の詳細パネル内で分岐�
 | BP+BS+GEA | BioProject + BioSample + GEA | leaf-09 |
 | BP+BS+GEA(Xenium) | BioProject + BioSample + GEA（10x Genomics Xenium） | s01 |
 | NSSS | DDBJ NSSS 経由 | leaf-10, leaf-30 |
-| BP+BS+DRA | BioProject + BioSample + DRA | leaf-11, leaf-17, leaf-20, leaf-25 |
+| BP+BS+DRA | BioProject + BioSample + DRA | leaf-11, leaf-17, leaf-20, leaf-25, leaf-32 |
 | BP+BS+DRA(Analysis) | BioProject + BioSample + DRA（Analysis のみ） | leaf-12 |
-| BP+BS+DRA+MSS | BioProject + BioSample + DRA + MSS | leaf-13, leaf-18, leaf-21, leaf-26 |
+| BP+BS+DRA+MSS | BioProject + BioSample + DRA + MSS | leaf-13, leaf-18, leaf-21, leaf-26, leaf-33 |
 | BP+BS+DRA+MSS(TLS/TSA/Haplotype) | 同上、MSS data type 違い | leaf-14, leaf-15, leaf-23, leaf-28 |
-| BP+BS+MSS | BioProject + BioSample + MSS | leaf-16, leaf-19, leaf-22, leaf-24, leaf-27, leaf-31 |
+| BP+BS+MSS | BioProject + BioSample + MSS | leaf-16, leaf-19, leaf-22, leaf-24, leaf-27, leaf-31, leaf-34 |
 | BP+BS+MSS(Haplotype/TPA/EST) | 同上、MSS data type 違い | leaf-24, leaf-29, leaf-31 |
 
 略語は `/submit` と同じ（BP = BioProject、BS = BioSample、DRA = DDBJ Sequence Read Archive、GEA = Genomic Expression Archive、MSS = Mass Submission System、NSSS = Nucleotide Sequence Submission System、JGA = Japanese Genotype-phenotype Archive）。
@@ -302,14 +460,14 @@ per-sample / aggregate の解像度は v02 / v03 の詳細パネル内で分岐�
 
 ### パンくずリスト
 
-新トップ階層の選択（chip）と tree 経路を併記する:
+Q&A の回答経路（Q1〜Q8 の chip）と tree 経路を併記する:
 
 ```
-[シーケンスリード ☑] [ゲノム ☑]   >   真核   >   Raw + アセンブリ
-└─── 新トップ階層の選択（chip） ──┘   └────── tree 経路 ──────┘
+[FASTQ ☑] [アセンブリ ☑] [真核 ☑] [Primary ☑] [通常規模 ☑]   >   真核   >   Raw + アセンブリ
+└────────── Q&A 回答 chip ──────────────────────────────┘     └────── tree 経路 ──────┘
 ```
 
-新トップは複数選択なので chip で並べ、tree 経路を `>` 区切りで表示する。
+Q&A の回答は chip で並べ、tree 経路を `>` 区切りで表示する。Tree セクションが折りたたまれていてもパンくずは詳細パネル上に表示する。Q&A 未完了で leaf に到達していない場合、tree 経路部分は省略される。
 
 ### 2 段階ドリルダウン
 
@@ -354,9 +512,18 @@ NSSS で受付可能な範囲:
 
 カード / leaf カード / 詳細パネル内のリンク全てに一貫適用する。デザインシステムに「内部/外部バッジ」コンポーネントを追加する（`.claude/docs/design-system.md` 参照）。
 
-### 各セクションの常時表示
+### 各セクションの表示制御
 
-各セクション（新トップ階層 / Cards / Tree / Detail Panel）は常時表示し、選択 → ハイライトで状態変化させる。詳細パネル展開時に他のセクションが消えないことで、選択した条件の中間経路の可視性を維持する。
+| セクション | 表示 |
+|---|---|
+| 質問ウィザード (Q&A) | 常時表示 |
+| Use Case Cards | デフォルト折りたたみ（閉）、見出しクリックで展開 |
+| Decision Tree | デフォルト折りたたみ（閉）、見出しクリックで展開 |
+| パンくず + Detail Panel | 常時表示 |
+
+Cards / Tree が折りたたまれていても、Q&A の回答状態は内部で保持され、展開時に該当 leaf がハイライトされる。詳細パネル展開時に他セクションは消えない（折りたたみ状態のまま残る）ことで、選択条件の中間経路の可視性を維持する。
+
+折り畳み UI は HTML ネイティブの `<details>` / `<summary>` 要素で実装する（追加 JS なし、a11y はブラウザ既定に委ねる）。
 
 ## URL 設計
 
@@ -370,34 +537,30 @@ DB ポータル全体の URL 設計方針は `overview.md#url-設計` を参照�
 
 ### クエリパラメータ
 
+Q&A の各回答を独立したクエリパラメータで保持する（React Router の `useSearchParams` で扱いやすく、URL からの直接到達も可能）。
+
 | パラメータ | 値 | 用途 |
 |---|---|---|
-| `types` | カンマ区切りのデータ種別 ID | 新トップ階層 Y/N の選択 |
-| `human` | `1` または省略 | 横断属性「ヒト由来データ」のフラグ |
-| `for` | tree node ID（ケバブケース） | tree node を指定（旧 `/submit` と同じ） |
+| `q1` | カンマ区切り。`sequence-read,assembled,annotation,variation,expression,mass-spec,spatial-tx` から複数 | Q1 持物（複数選択） |
+| `q2` | `human` / `eukaryote` / `prokaryote` / `virus` / `metagenome` / `organelle-plasmid` | Q2 対象生物（単一） |
+| `q3` | `open` / `restricted` | Q3 公開可否（Q2=human の時のみ有効） |
+| `q4` | `primary` / `tpa` | Q4 由来（Q1 に assembled を含む時のみ有効） |
+| `q5` | `small` / `normal` | Q5 規模（条件付き） |
+| `q6` | カンマ区切り。`haplotype,tsa,tls,mag-sag,est,none` から複数 | Q6 特殊形式（条件付き） |
+| `q7` | `proteomics` / `metabolomics` | Q7 質量分析サブ種別（Q1 に mass-spec を含む時のみ有効） |
+| `q8` | `raw` / `primary` | Q8 メタゲノム種別（Q1=sequence-read、Q2=metagenome、assembled 非含有 の時のみ有効） |
+| `q9` | `yes` / `no` | Q9 ヒト試料のメタゲノム由来判定（Q2=human、Q3=restricted の時のみ有効） |
+| `for` | tree node ID（ケバブケース） | tree クリック・use case card クリックの遷移先（旧 `/submit` と同じ） |
 
-`types` の値は新トップ階層 10 項目に対応するケバブケース ID:
-
-| 項目 | ID |
-|---|---|
-| ヒト制限公開アクセス | `human-restricted` |
-| シーケンスリード | `sequence-read` |
-| ゲノム | `genome` |
-| バリアント解析 | `variation` |
-| プロテオミクス | `proteomics` |
-| EST 解析 | `est` |
-| Microarray | `microarray` |
-| 空間トランスクリプトーム | `spatial-transcriptomics` |
-| メタボロミクス | `metabolomics` |
-| 小規模塩基配列 | `small-sequence` |
+発火条件を満たさない q3-q8 パラメータが URL に含まれていても無視する（reachable な状態のみ反映）。
 
 ### URL の組み合わせ
 
-- `/submit-alt`: 初期状態（全セクション未選択）
-- `/submit-alt?types=genome,sequence-read`: 新トップ階層で 2 項目選択（該当 leaf 群がハイライト）
-- `/submit-alt?types=genome&for=eukaryote-raw-assembly`: 新トップ + 詳細 leaf 到達
-- `/submit-alt?for=eukaryote-raw-assembly`: tree 経由で leaf へ直接到達
-- `/submit-alt?types=genome&human=1`: ゲノム × ヒト由来
+- `/submit-alt`: 初期状態（Q&A 未回答）
+- `/submit-alt?q1=sequence-read,assembled&q2=eukaryote&q4=primary&q5=normal&q6=none`: 真核 Raw+アセンブリ → leaf-26 に到達
+- `/submit-alt?q1=mass-spec&q7=proteomics`: プロテオミクス → leaf-02
+- `/submit-alt?q1=sequence-read&q2=human&q3=restricted`: ヒト制限 Raw → leaf-01
+- `/submit-alt?for=eukaryote-raw-assembly`: Q&A をスキップし tree クリック相当で直接 leaf 到達（Use Case Card 経由と同じ）
 
 ### canonical
 
@@ -423,15 +586,19 @@ UI テキスト（質問文、選択肢、カードタイトル、ボタン等�
 
 ## 設計上の決定事項
 
-- **新トップ階層**: データ種別 10 項目 + 横断属性「ヒト由来」を Y/N 複数選択。研究者の自己認識ベース。マルチ選択時は登録フローを 4 パターン（同 submission 統合 / BP/BS 共有 + 別 submission / 完全独立 / JGA 一本化）で動的案内する
+- **質問ウィザード (Q&A) をメイン導線にする**: Q1 (持物 8 種、複数選択、必須) + Q2 (生物 6 種、単一選択、必須) + 条件付き Q3〜Q9 (公開可否 / 由来 / 規模 / 形式 / 質量分析サブ / メタゲノム種別 / ヒトメタゲノム由来) の多段。研究者が「自分の手元」から自己認識で leaf に辿り着く
+- **旧 DataTypeSelector (10 項目チェック) は廃止**: data type 10 種は Q1 (8 種) × Q2 (6 種) の組に再マップする。研究目的軸 (ゲノム / 発現 / 変異) ではなく **ファイル形式軸 + 生物軸** に切り替える
+- **横断属性「ヒト由来」は廃止**: ヒト関連の分岐は Q2 = human + Q3 (open/restricted) に一本化する
+- **Cards / Tree のデフォルト折り畳み**: Section 2 (Cards) と Section 3 (Tree) はデフォルトで `<details>` ネイティブ要素により折りたたみ表示。Tree は Q&A の回答進行に応じて該当 leaf がハイライトされる「俯瞰結果ビュー」として機能する
 - **Cards 数**: 9 → 10 枚（空間トランスクリプトームカード新設）
-- **leaf 数**: 31 → 33（variant 集約 -1、ヒトマイクロバイオーム制限 +1、空間 Tx +2）
+- **leaf 数**: 31 → 36（variant 集約 -1、ヒトマイクロバイオーム制限 +1、空間 Tx +2、ヒト × 非制限 Raw/Asm 系 +3）
 - **variant 集約の方針**: ヒト/非ヒト × 制限/非制限 の 3 区分で集約（v01-v03）。per-sample/aggregate と各登録先の選択は詳細パネル分岐に閉じる
 - **空間 Tx leaf 構成**: 非ヒト（s01）と ヒト制限（s02）の 2 leaf。DB-2021 の詳細仕様確認後に統合判断する余地を残す
 - **Decision Tree の深さ**: 簡略化するが浅くしすぎない方針。tree の俯瞰価値を残しつつ、不要な中間ノード分岐を Detail Panel に移行
 - **詳細パネルの 2 段階ドリルダウン**: 維持。leaf 単位で軸補強情報を表示
 - **内部/外部色区分**: 内部 = `emerald-500`、外部 = `amber-500` で一貫
-- **画面構成**: 4 セクション縦構成、各セクション常時表示
+- **画面構成**: 4 セクション縦構成。Section 1 (Q&A) と Section 4 (Detail Panel) は常時表示、Section 2 (Cards) と Section 3 (Tree) はデフォルト折り畳み
+- **leaf マッピングの SSOT**: Q1〜Q8 の組み合わせから leaf を一意に決めるルールを実装する。`src/lib/mock-data/submit-alt-tree/leafGoals.ts` の `LEAF_DATA_TYPES_ALT`（旧 10 軸）は廃止し、Q1〜Q8 軸ベースの leaf 属性 (新ファイル `leafQAMapping.ts` 等) に置き換える
 
 ## コンテンツ原典
 

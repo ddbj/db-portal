@@ -25,19 +25,15 @@ const LeafNodeAlt = ({ data }: NodeProps<LeafNodeAltType>) => {
 
   const stateClass = data.isSelected
     ? "border-primary-600 bg-primary-50 ring-2 ring-primary-600/40"
-    : data.highlight === "emphasized"
+    : data.highlight === "active"
       ? isInternal
-        ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-400/60 shadow-md"
-        : "border-amber-500 bg-amber-50 ring-1 ring-amber-400/60 shadow-md"
-      : data.highlight === "active"
-        ? isInternal
-          ? "border-emerald-400 bg-emerald-50/70"
-          : "border-amber-400 bg-amber-50/70"
-        : data.highlight === "folded"
-          ? "border-gray-200 bg-gray-50/40 opacity-50"
-          : isInternal
-            ? "border-emerald-200 bg-emerald-50/30"
-            : "border-amber-200 bg-amber-50/30"
+        ? "border-emerald-400 bg-emerald-50/70"
+        : "border-amber-400 bg-amber-50/70"
+      : data.highlight === "folded"
+        ? "border-gray-200 bg-gray-50/40 opacity-50"
+        : isInternal
+          ? "border-emerald-200 bg-emerald-50/30"
+          : "border-amber-200 bg-amber-50/30"
 
   return (
     <div

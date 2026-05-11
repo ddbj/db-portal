@@ -264,4 +264,22 @@ export const LEAF_DETAILS_ALT: Readonly<Record<LeafNodeIdAlt, LeafDetailAlt>> = 
     bsPackages: ["Human"],
     jgaObjectTypes: ["Analysis", "Dataset", "Policy"],
   }),
+  "human-raw-open": detail("human-raw-open", "genome", {
+    bpDataTypes: ["Genome Sequencing"],
+    bsPackages: ["Human"],
+    draLibrarySources: ["GENOMIC", "GENOMIC SINGLE CELL"],
+    draLibraryStrategies: ["WGS", "Other"],
+  }),
+  "human-raw-assembly-open": detail("human-raw-assembly-open", "genome", {
+    bpDataTypes: ["Genome Sequencing"],
+    bsPackages: ["Human"],
+    draLibrarySources: ["GENOMIC"],
+    draLibraryStrategies: ["WGS"],
+    mssDataTypes: ["GNM", "WGS"],
+  }),
+  "human-assembly-only-open": detail("human-assembly-only-open", "genome", {
+    bpDataTypes: ["Genome Sequencing"],
+    bsPackages: ["Human"],
+    mssDataTypes: ["GNM", "WGS"],
+  }),
 }

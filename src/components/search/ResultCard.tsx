@@ -135,6 +135,74 @@ const buildMetaLine = (hit: DbPortalHit): string | null => {
   return parts.length > 0 ? parts.join(" · ") : null
 }
 
+const stringifyField = (
+  v: string | readonly string[] | null | undefined,
+): string | null => {
+  if (v === null || v === undefined) return null
+  if (Array.isArray(v)) {
+    const filtered = v.filter(
+      (x): x is string => x !== null && x !== undefined && x !== "",
+    )
+
+    return filtered.length > 0 ? filtered.join(", ") : null
+  }
+  const str = v as string
+
+  return str === "" ? null : str
+}
+
+const buildSecondaryMetaLine = (hit: DbPortalHit): string | null => {
+  const parts: string[] = []
+  const push = (
+    label: string,
+    v: string | readonly string[] | null | undefined,
+  ) => {
+    const s = stringifyField(v)
+    if (s !== null) parts.push(`${label}: ${s}`)
+  }
+
+  switch (hit.type) {
+    case "bioproject": {
+      push("Relevance", hit.relevance as readonly string[] | null | undefined)
+      break
+    }
+    case "biosample": {
+      push("Host", hit.host as string | readonly string[] | null | undefined)
+      push("Strain", hit.strain as string | readonly string[] | null | undefined)
+      push("Isolate", hit.isolate as string | readonly string[] | null | undefined)
+      push("Geo", hit.geoLocName as string | readonly string[] | null | undefined)
+      push(
+        "Collection",
+        hit.collectionDate as string | readonly string[] | null | undefined,
+      )
+      break
+    }
+    case "sra-submission":
+    case "sra-study":
+    case "sra-experiment":
+    case "sra-run":
+    case "sra-sample":
+    case "sra-analysis": {
+      push(
+        "Library name",
+        hit.libraryName as string | readonly string[] | null | undefined,
+      )
+      push(
+        "Construction protocol",
+        hit.libraryConstructionProtocol as string | readonly string[] | null | undefined,
+      )
+      push("Geo", hit.geoLocName as string | readonly string[] | null | undefined)
+      push(
+        "Collection",
+        hit.collectionDate as string | readonly string[] | null | undefined,
+      )
+      break
+    }
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : null
+}
+
 interface RelatedRef {
   identifier: string
   dbId: DbId
@@ -166,6 +234,7 @@ const ResultCard = ({ hit, className }: ResultCardProps) => {
     && hit.organism.name !== null
     && hit.organism.name !== undefined
   const metaLine = buildMetaLine(hit)
+  const secondaryMetaLine = buildSecondaryMetaLine(hit)
   const related = buildRelated(hit)
   const externalUrl = hit.url ?? "#"
   const status = hit.status ?? null
@@ -224,6 +293,9 @@ const ResultCard = ({ hit, className }: ResultCardProps) => {
         </p>
       )}
       {metaLine !== null && <p className="mt-1 text-xs text-gray-500">{metaLine}</p>}
+      {secondaryMetaLine !== null && (
+        <p className="mt-1 text-xs text-gray-500">{secondaryMetaLine}</p>
+      )}
       {related.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {related.map((ro, idx) => {

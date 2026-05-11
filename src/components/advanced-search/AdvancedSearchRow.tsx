@@ -69,6 +69,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
         onChange={(v) => onChange({ field: v })}
         inputSize="sm"
         className="w-48"
+        placeholder={t("routes.advancedSearch.builder.selectField")}
       />
       <Select
         options={operatorOptions}
@@ -77,6 +78,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
           onChange({ operator: e.target.value as FieldOperator })}
         selectSize="sm"
         className="w-28"
+        disabled={fieldDef === undefined}
       />
       <div className="min-w-0 flex-1">
         <ValueInput
@@ -108,7 +110,13 @@ const ValueInput = ({ condition, fieldDef, onChange }: ValueInputProps) => {
   const t = tStrict as unknown as (key: string) => string
 
   if (!fieldDef) {
-    return <Input placeholder="(unknown field)" disabled inputSize="sm" />
+    return (
+      <Input
+        placeholder={t("routes.advancedSearch.builder.selectFieldFirst")}
+        disabled
+        inputSize="sm"
+      />
+    )
   }
 
   if (fieldDef.type === "date") {

@@ -9,7 +9,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.microbial-genome.description",
     iconName: "Bug",
     treeNodeId: "genome",
-    relatedDataTypes: ["genome", "sequence-read"],
     relatedLeafIds: [
       "organelle-plasmid",
       "prokaryote-raw",
@@ -27,7 +26,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.eukaryote-genome.description",
     iconName: "Trees",
     treeNodeId: "genome",
-    relatedDataTypes: ["genome", "sequence-read", "est"],
     relatedLeafIds: [
       "eukaryote-tsa",
       "eukaryote-tpa",
@@ -47,7 +45,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.metagenome.description",
     iconName: "Microscope",
     treeNodeId: "genome-metagenome",
-    relatedDataTypes: ["sequence-read", "genome", "human-restricted"],
     relatedLeafIds: [
       "metagenome-raw",
       "metagenome-primary",
@@ -64,7 +61,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.expression.description",
     iconName: "BarChart3",
     treeNodeId: "expression-ngs",
-    relatedDataTypes: ["sequence-read", "microarray"],
     relatedLeafIds: ["expression-ngs", "expression-array"],
     order: 4,
   },
@@ -74,7 +70,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.spatial-tx.description",
     iconName: "LayoutGrid",
     treeNodeId: "spatial-transcriptomics",
-    relatedDataTypes: ["spatial-transcriptomics", "human-restricted"],
     relatedLeafIds: ["spatial-tx-nonhuman", "spatial-tx-restricted"],
     order: 5,
   },
@@ -84,7 +79,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.variation.description",
     iconName: "GitBranch",
     treeNodeId: "variation",
-    relatedDataTypes: ["variation", "human-restricted"],
     relatedLeafIds: [
       "variation-nonhuman",
       "variation-human-open",
@@ -98,7 +92,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.proteomics.description",
     iconName: "FlaskConical",
     treeNodeId: "proteomics",
-    relatedDataTypes: ["proteomics"],
     relatedLeafIds: ["proteomics"],
     order: 7,
   },
@@ -108,7 +101,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.metabolomics.description",
     iconName: "TestTube",
     treeNodeId: "metabolomics",
-    relatedDataTypes: ["metabolomics"],
     relatedLeafIds: ["metabolomics"],
     order: 8,
   },
@@ -118,7 +110,6 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.small-sequence.description",
     iconName: "FileText",
     treeNodeId: "small-sequence",
-    relatedDataTypes: ["small-sequence"],
     relatedLeafIds: ["small-sequence"],
     order: 9,
   },
@@ -128,17 +119,7 @@ export const USE_CASE_CARDS_ALT = [
     descriptionKey: "routes.submitAlt.cards.human-restricted.description",
     iconName: "Lock",
     treeNodeId: "human-restricted",
-    relatedDataTypes: ["human-restricted"],
     relatedLeafIds: ["human-restricted"],
     order: 10,
   },
 ] as const satisfies readonly UseCaseCardAlt[]
-
-export const isCardRelevant = (
-  card: UseCaseCardAlt,
-  types: ReadonlySet<UseCaseCardAlt["relatedDataTypes"][number]>,
-): boolean => {
-  if (types.size === 0) return false
-
-  return card.relatedDataTypes.some((dt) => types.has(dt))
-}

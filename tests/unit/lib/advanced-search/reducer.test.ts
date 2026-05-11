@@ -44,13 +44,13 @@ describe("buildInitialState", () => {
 })
 
 describe("ADD_CONDITION", () => {
-  it("デフォルトで title field を追加", () => {
+  it("デフォルトで未選択 (空 field) で追加", () => {
     const state = initial()
     const next = advancedSearchReducer(state, { type: "ADD_CONDITION", path: [] })
     expect(next.tree.children).toHaveLength(1)
     const child = expectCondition(next.tree.children[0])
-    expect(child.condition.field).toBe("title")
-    expect(child.condition.operator).toBe("contains")
+    expect(child.condition.field).toBe("")
+    expect(child.condition.value).toBe("")
   })
 
   it("fieldId 指定で特定のフィールドを追加", () => {

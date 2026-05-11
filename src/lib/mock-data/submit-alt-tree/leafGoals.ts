@@ -1,13 +1,11 @@
 import type {
-  DataTypeId,
-  HumanAffinity,
   LeafNodeIdAlt,
   QuestionNodeIdAlt,
   RegistrationGoalAlt,
   RegistrationVenue,
 } from "@/types/submit-alt"
 
-// 33 leaf の各種マスタ。docs/submit-alt.md L203-274 + L277-298 参照。
+// 36 leaf の各種マスタ。docs/submit-alt.md 参照。
 
 // 仕様書の番号 ID（leaf-NN / v01-v03 / m06 / s01-s02）
 export const LEAF_LEGACY_ID: Readonly<Record<LeafNodeIdAlt, string>> = {
@@ -44,6 +42,9 @@ export const LEAF_LEGACY_ID: Readonly<Record<LeafNodeIdAlt, string>> = {
   "eukaryote-est-large": "leaf-31",
   "spatial-tx-nonhuman": "s01",
   "spatial-tx-restricted": "s02",
+  "human-raw-open": "leaf-32",
+  "human-raw-assembly-open": "leaf-33",
+  "human-assembly-only-open": "leaf-34",
 }
 
 export const LEAF_GOALS_ALT: Readonly<Record<LeafNodeIdAlt, RegistrationGoalAlt>> = {
@@ -80,6 +81,9 @@ export const LEAF_GOALS_ALT: Readonly<Record<LeafNodeIdAlt, RegistrationGoalAlt>
   "eukaryote-est-large": "BP+BS+MSS(EST)",
   "spatial-tx-nonhuman": "BP+BS+GEA(Xenium)",
   "spatial-tx-restricted": "JGA-analysis",
+  "human-raw-open": "BP+BS+DRA",
+  "human-raw-assembly-open": "BP+BS+DRA+MSS",
+  "human-assembly-only-open": "BP+BS+MSS",
 }
 
 // 内部 (BSI/DDBJ 内部) / 外部 (jPOST / EVA / dgVa / HumanDBs)
@@ -117,80 +121,9 @@ export const LEAF_VENUE_ALT: Readonly<Record<LeafNodeIdAlt, RegistrationVenue>> 
   "eukaryote-est-large": "internal",
   "spatial-tx-nonhuman": "internal",
   "spatial-tx-restricted": "internal",
-}
-
-// types= 連動ハイライト計算用
-export const LEAF_DATA_TYPES_ALT: Readonly<Record<LeafNodeIdAlt, readonly DataTypeId[]>> = {
-  "human-restricted": ["human-restricted"],
-  "proteomics": ["proteomics"],
-  "metabolomics": ["metabolomics"],
-  "variation-nonhuman": ["variation"],
-  "variation-human-open": ["variation"],
-  "variation-human-restricted": ["variation", "human-restricted"],
-  "expression-ngs": ["sequence-read"],
-  "expression-array": ["microarray"],
-  "small-sequence": ["small-sequence"],
-  "metagenome-raw": ["sequence-read"],
-  "metagenome-primary": ["sequence-read"],
-  "metagenome-genome-bin": ["sequence-read", "genome"],
-  "metagenome-tls": ["sequence-read", "genome"],
-  "metagenome-tsa": ["sequence-read", "genome"],
-  "human-microbiome-restricted": ["sequence-read", "genome", "human-restricted"],
-  "organelle-plasmid": ["genome"],
-  "prokaryote-raw": ["sequence-read"],
-  "prokaryote-raw-assembly": ["sequence-read", "genome"],
-  "prokaryote-assembly-only": ["genome"],
-  "virus-raw": ["sequence-read"],
-  "virus-raw-assembly": ["sequence-read", "genome"],
-  "virus-assembly-only": ["genome"],
-  "eukaryote-tsa": ["sequence-read", "genome"],
-  "eukaryote-tpa": ["genome"],
-  "eukaryote-raw": ["sequence-read"],
-  "eukaryote-raw-assembly": ["sequence-read", "genome"],
-  "eukaryote-assembly-only": ["genome"],
-  "eukaryote-haplotype-raw-assembly": ["sequence-read", "genome"],
-  "eukaryote-haplotype-assembly-only": ["genome"],
-  "eukaryote-est-small": ["est"],
-  "eukaryote-est-large": ["est"],
-  "spatial-tx-nonhuman": ["spatial-transcriptomics"],
-  "spatial-tx-restricted": ["spatial-transcriptomics", "human-restricted"],
-}
-
-// human=1 連動の絞り込み軸
-export const LEAF_HUMAN_AFFINITY_ALT: Readonly<Record<LeafNodeIdAlt, HumanAffinity>> = {
-  "human-restricted": "always-human",
-  "proteomics": "either",
-  "metabolomics": "either",
-  "variation-nonhuman": "always-nonhuman",
-  "variation-human-open": "always-human",
-  "variation-human-restricted": "always-human",
-  "expression-ngs": "either",
-  "expression-array": "either",
-  "small-sequence": "either",
-  "metagenome-raw": "either",
-  "metagenome-primary": "either",
-  "metagenome-genome-bin": "either",
-  "metagenome-tls": "either",
-  "metagenome-tsa": "either",
-  "human-microbiome-restricted": "always-human",
-  "organelle-plasmid": "either",
-  "prokaryote-raw": "either",
-  "prokaryote-raw-assembly": "either",
-  "prokaryote-assembly-only": "either",
-  "virus-raw": "either",
-  "virus-raw-assembly": "either",
-  "virus-assembly-only": "either",
-  "eukaryote-tsa": "either",
-  "eukaryote-tpa": "either",
-  "eukaryote-raw": "either",
-  "eukaryote-raw-assembly": "either",
-  "eukaryote-assembly-only": "either",
-  "eukaryote-haplotype-raw-assembly": "either",
-  "eukaryote-haplotype-assembly-only": "either",
-  "eukaryote-est-small": "either",
-  "eukaryote-est-large": "either",
-  "spatial-tx-nonhuman": "always-nonhuman",
-  "spatial-tx-restricted": "always-human",
+  "human-raw-open": "internal",
+  "human-raw-assembly-open": "internal",
+  "human-assembly-only-open": "internal",
 }
 
 // tree node 表示で使う leaf のラベルキー。i18n の routes.submitAlt.tree.options.* と整合。
@@ -229,6 +162,9 @@ export const LEAF_LABEL_KEY_ALT: Readonly<Record<LeafNodeIdAlt, string>> = {
   "eukaryote-assembly-only": "routes.submitAlt.tree.options.genome-eukaryote.assembly-only",
   "eukaryote-haplotype-raw-assembly": "routes.submitAlt.tree.options.genome-eukaryote.haplotype-raw-assembly",
   "eukaryote-haplotype-assembly-only": "routes.submitAlt.tree.options.genome-eukaryote.haplotype-assembly-only",
+  "human-raw-open": "routes.submitAlt.leaves.human-raw-open.label",
+  "human-raw-assembly-open": "routes.submitAlt.leaves.human-raw-assembly-open.label",
+  "human-assembly-only-open": "routes.submitAlt.leaves.human-assembly-only-open.label",
 }
 
 // tree 構造での親 question node。null は depth 0 の起点 leaf。
@@ -266,4 +202,7 @@ export const LEAF_PARENTS_ALT: Readonly<Record<LeafNodeIdAlt, QuestionNodeIdAlt 
   "eukaryote-assembly-only": "genome-eukaryote",
   "eukaryote-haplotype-raw-assembly": "genome-eukaryote",
   "eukaryote-haplotype-assembly-only": "genome-eukaryote",
+  "human-raw-open": null,
+  "human-raw-assembly-open": null,
+  "human-assembly-only-open": null,
 }

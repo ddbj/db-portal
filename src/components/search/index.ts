@@ -10,9 +10,6 @@ export {
 } from "./PartialFailureBanner"
 export { default as ResultCard, type ResultCardProps } from "./ResultCard"
 export { default as ResultCardList, type ResultCardListProps } from "./ResultCardList"
-export {
-  countAdvConditions,
-  default as SearchSummaryChip,
-  type SearchSummaryChipProps,
-} from "./SearchSummaryChip"
+export { default as SearchSummaryChip, type SearchSummaryChipProps } from "./SearchSummaryChip"
 export { default as SearchToolbar, type SearchToolbarProps } from "./SearchToolbar"
+export { default as SidebarFilter, type SidebarFilterProps } from "./SidebarFilter"

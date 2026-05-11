@@ -6,9 +6,7 @@ import type {
 } from "@/types/submit-alt"
 
 import {
-  LEAF_DATA_TYPES_ALT,
   LEAF_GOALS_ALT,
-  LEAF_HUMAN_AFFINITY_ALT,
   LEAF_LEGACY_ID,
   LEAF_PARENTS_ALT,
   LEAF_VENUE_ALT,
@@ -252,8 +250,6 @@ const LEAF_NODES_ALT: readonly LeafNodeAlt[] = (
   goal: LEAF_GOALS_ALT[leafId],
   venue: LEAF_VENUE_ALT[leafId],
   parentId: LEAF_PARENTS_ALT[leafId],
-  dataTypes: LEAF_DATA_TYPES_ALT[leafId],
-  humanAffinity: LEAF_HUMAN_AFFINITY_ALT[leafId],
 }))
 
 export const TREE_NODES_ALT: readonly TreeNodeAlt[] = [

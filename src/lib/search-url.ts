@@ -43,12 +43,9 @@ export interface SearchParams {
   cursor: string | null
 }
 
-export type SearchParamsSoftError = "both_q_and_adv"
-
 export interface ParseSearchResult {
   params: SearchParams
   canonicalUrl: string | null
-  softErrors: readonly SearchParamsSoftError[]
   shouldRedirectToHome: boolean
 }
 
@@ -141,9 +138,6 @@ export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult
 
   const params: SearchParams = { q, adv, db, page, perPage, sort, cursor }
 
-  const softErrors: SearchParamsSoftError[] = []
-  if (q !== null && adv !== null) softErrors.push("both_q_and_adv")
-
   const shouldRedirectToHome = q === null && adv === null
 
   const canonical = buildSearchUrlFull({ q, adv, db, page, perPage, sort, cursor })
@@ -154,5 +148,5 @@ export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult
 
   const canonicalUrl = originalQueryString === canonicalQueryString ? null : canonical
 
-  return { params, canonicalUrl, softErrors, shouldRedirectToHome }
+  return { params, canonicalUrl, shouldRedirectToHome }
 }

@@ -104,18 +104,41 @@ const TIER2_FIELDS: readonly AdvancedFieldDef[] = [
   },
 ]
 
-const SRA_GEA_DBS: readonly DbId[] = ["sra", "gea"]
 const SRA_DBS: readonly DbId[] = ["sra"]
 const BIOSAMPLE_SRA_DBS: readonly DbId[] = ["biosample", "sra"]
+const SRA_JGA_DBS: readonly DbId[] = ["sra", "jga"]
 
-const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
+const TIER3_SUBTYPE: readonly AdvancedFieldDef[] = [
+  {
+    id: "type",
+    dslName: "type",
+    tier: 3,
+    type: "enum",
+    availableOps: ENUM_OPS,
+    availableDbs: SRA_JGA_DBS,
+    enumValues: [
+      { value: "sra-submission", labelKey: enumKey("type", "sra_submission") },
+      { value: "sra-study", labelKey: enumKey("type", "sra_study") },
+      { value: "sra-experiment", labelKey: enumKey("type", "sra_experiment") },
+      { value: "sra-run", labelKey: enumKey("type", "sra_run") },
+      { value: "sra-sample", labelKey: enumKey("type", "sra_sample") },
+      { value: "sra-analysis", labelKey: enumKey("type", "sra_analysis") },
+      { value: "jga-study", labelKey: enumKey("type", "jga_study") },
+      { value: "jga-dataset", labelKey: enumKey("type", "jga_dataset") },
+      { value: "jga-dac", labelKey: enumKey("type", "jga_dac") },
+      { value: "jga-policy", labelKey: enumKey("type", "jga_policy") },
+    ],
+  },
+]
+
+const TIER3_SRA_EXPERIMENT: readonly AdvancedFieldDef[] = [
   {
     id: "library_strategy",
     dslName: "library_strategy",
     tier: 3,
     type: "enum",
     availableOps: ENUM_OPS,
-    availableDbs: SRA_GEA_DBS,
+    availableDbs: SRA_DBS,
     enumValues: [
       { value: "WGS", labelKey: enumKey("library_strategy", "wgs") },
       { value: "RNA-Seq", labelKey: enumKey("library_strategy", "rna_seq") },
@@ -133,7 +156,7 @@ const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
     tier: 3,
     type: "enum",
     availableOps: ENUM_OPS,
-    availableDbs: SRA_GEA_DBS,
+    availableDbs: SRA_DBS,
     enumValues: [
       { value: "GENOMIC", labelKey: enumKey("library_source", "genomic") },
       { value: "TRANSCRIPTOMIC", labelKey: enumKey("library_source", "transcriptomic") },
@@ -150,7 +173,7 @@ const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
     tier: 3,
     type: "enum",
     availableOps: ENUM_OPS,
-    availableDbs: SRA_GEA_DBS,
+    availableDbs: SRA_DBS,
     enumValues: [
       { value: "SINGLE", labelKey: enumKey("library_layout", "single") },
       { value: "PAIRED", labelKey: enumKey("library_layout", "paired") },
@@ -162,7 +185,7 @@ const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
     tier: 3,
     type: "enum",
     availableOps: ENUM_OPS,
-    availableDbs: SRA_GEA_DBS,
+    availableDbs: SRA_DBS,
     enumValues: [
       { value: "ILLUMINA", labelKey: enumKey("platform", "illumina") },
       { value: "PACBIO_SMRT", labelKey: enumKey("platform", "pacbio_smrt") },
@@ -177,11 +200,13 @@ const TIER3_SRA_GEA: readonly AdvancedFieldDef[] = [
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,
-    availableDbs: SRA_GEA_DBS,
+    availableDbs: SRA_DBS,
   },
 ]
 
 const BIOSAMPLE_DBS: readonly DbId[] = ["biosample"]
+const GEA_DBS: readonly DbId[] = ["gea"]
+const METABOBANK_DBS: readonly DbId[] = ["metabobank"]
 
 const TIER3_BIOSAMPLE: readonly AdvancedFieldDef[] = [
   {
@@ -265,24 +290,12 @@ const TIER3_BIOPROJECT: readonly AdvancedFieldDef[] = [
     availableDbs: BIOPROJECT_DBS,
     enumValues: [
       {
-        value: "Genome sequencing",
-        labelKey: enumKey("project_type", "genome_sequencing"),
+        value: "BioProject",
+        labelKey: enumKey("project_type", "bioproject"),
       },
       {
-        value: "Transcriptome",
-        labelKey: enumKey("project_type", "transcriptome"),
-      },
-      {
-        value: "Metagenome",
-        labelKey: enumKey("project_type", "metagenome"),
-      },
-      {
-        value: "Epigenome",
-        labelKey: enumKey("project_type", "epigenome"),
-      },
-      {
-        value: "Variation",
-        labelKey: enumKey("project_type", "variation"),
+        value: "UmbrellaBioProject",
+        labelKey: enumKey("project_type", "umbrella_bioproject"),
       },
     ],
   },
@@ -301,7 +314,15 @@ const TIER3_BIOPROJECT: readonly AdvancedFieldDef[] = [
     type: "enum",
     availableOps: ENUM_OPS,
     availableDbs: BIOPROJECT_DBS,
-    enumValues: [],
+    enumValues: [
+      { value: "Agricultural", labelKey: enumKey("relevance", "agricultural") },
+      { value: "Medical", labelKey: enumKey("relevance", "medical") },
+      { value: "Industrial", labelKey: enumKey("relevance", "industrial") },
+      { value: "Environmental", labelKey: enumKey("relevance", "environmental") },
+      { value: "Evolution", labelKey: enumKey("relevance", "evolution") },
+      { value: "ModelOrganism", labelKey: enumKey("relevance", "model_organism") },
+      { value: "Other", labelKey: enumKey("relevance", "other") },
+    ],
   },
 ]
 
@@ -399,45 +420,28 @@ const TIER3_TAXONOMY: readonly AdvancedFieldDef[] = [
   { id: "genus", dslName: "genus", tier: 3, type: "text", availableOps: TEXT_OPS, availableDbs: TAXONOMY_DBS },
   { id: "species", dslName: "species", tier: 3, type: "text", availableOps: TEXT_OPS, availableDbs: TAXONOMY_DBS },
   { id: "common_name", dslName: "common_name", tier: 3, type: "text", availableOps: TEXT_OPS, availableDbs: TAXONOMY_DBS },
-  { id: "japanese_name", dslName: "japanese_name", tier: 3, type: "text", availableOps: TEXT_OPS, availableDbs: TAXONOMY_DBS },
 ]
 
 const JGA_DBS: readonly DbId[] = ["jga"]
 
 const TIER3_JGA: readonly AdvancedFieldDef[] = [
   {
-    id: "study_type",
+    id: "jga_study_type",
     dslName: "study_type",
     tier: 3,
     type: "enum",
     availableOps: ENUM_OPS,
     availableDbs: JGA_DBS,
     enumValues: [
-      { value: "Case-Control", labelKey: enumKey("study_type", "case_control") },
-      { value: "Case Set", labelKey: enumKey("study_type", "case_set") },
-      { value: "Population Genomics", labelKey: enumKey("study_type", "population_genomics") },
-      { value: "Cohort", labelKey: enumKey("study_type", "cohort") },
+      { value: "Case-Control", labelKey: enumKey("jga_study_type", "case_control") },
+      { value: "Case Set", labelKey: enumKey("jga_study_type", "case_set") },
+      { value: "Population Genomics", labelKey: enumKey("jga_study_type", "population_genomics") },
+      { value: "Cohort", labelKey: enumKey("jga_study_type", "cohort") },
     ],
   },
   {
     id: "jga_grant_agency",
     dslName: "grant_agency",
-    tier: 3,
-    type: "text",
-    availableOps: TEXT_OPS,
-    availableDbs: JGA_DBS,
-  },
-  {
-    id: "principal_investigator",
-    dslName: "principal_investigator",
-    tier: 3,
-    type: "text",
-    availableOps: TEXT_OPS,
-    availableDbs: JGA_DBS,
-  },
-  {
-    id: "submitting_organization",
-    dslName: "submitting_organization",
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,
@@ -461,16 +465,57 @@ const TIER3_JGA: readonly AdvancedFieldDef[] = [
   },
 ]
 
+const TIER3_GEA: readonly AdvancedFieldDef[] = [
+  {
+    id: "gea_experiment_type",
+    dslName: "experiment_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: GEA_DBS,
+  },
+]
+
+const TIER3_METABOBANK: readonly AdvancedFieldDef[] = [
+  {
+    id: "metabobank_study_type",
+    dslName: "study_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: METABOBANK_DBS,
+  },
+  {
+    id: "metabobank_experiment_type",
+    dslName: "experiment_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: METABOBANK_DBS,
+  },
+  {
+    id: "submission_type",
+    dslName: "submission_type",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: METABOBANK_DBS,
+  },
+]
+
 export const ADVANCED_FIELDS: readonly AdvancedFieldDef[] = [
   ...TIER1_FIELDS,
   ...TIER2_FIELDS,
-  ...TIER3_SRA_GEA,
+  ...TIER3_SUBTYPE,
+  ...TIER3_SRA_EXPERIMENT,
   ...TIER3_SRA_ONLY,
   ...TIER3_BIOSAMPLE,
   ...TIER3_BIOPROJECT,
   ...TIER3_TRAD,
   ...TIER3_TAXONOMY,
   ...TIER3_JGA,
+  ...TIER3_GEA,
+  ...TIER3_METABOBANK,
 ]
 
 const FIELD_BY_ID = new Map<string, AdvancedFieldDef>(

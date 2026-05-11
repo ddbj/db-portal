@@ -2,9 +2,9 @@
   "header": {
     "serviceName": "DB Portal (仮)",
     "nav": {
-      "search": "Search",
       "advancedSearch": "Advanced Search",
       "submit": "Submit",
+      "submitAlt": "Submit-alt",
       "aboutUs": "About us"
     },
     "language": {
@@ -92,7 +92,7 @@
       "summary": {
         "filteredByAll": "Filtering across all databases: ",
         "filteredByDb": "Filtering {{db}}: ",
-        "otherConditions": " + {{count}} more",
+        "combinedSummary": "\"{{q}}\" + {{adv}}",
         "edit": "Edit",
         "clear": "Clear",
         "clearAria": "Clear search conditions"
@@ -113,7 +113,6 @@
         },
         "loadingAria": "Loading hit count",
         "errorLabel": "Failed to fetch",
-        "bothQAdvWarning": "Both simple and advanced queries are specified. Advanced search takes priority.",
         "topHits": {
           "heading": "Top hits",
           "openExternalAria": "Open {{identifier}} in new tab"
@@ -121,7 +120,6 @@
       },
       "errors": {
         "default": "An error occurred during the search. Please try again later.",
-        "invalid-query-combination": "Simple and advanced search cannot be specified at the same time.",
         "unexpected-parameter": "An unsupported parameter was specified.",
         "missing-db": "Database is not specified.",
         "cursor-not-supported": "The requested cursor pagination is not supported for this database.",
@@ -132,6 +130,37 @@
         "invalid-operator-for-field": "Invalid operator for the specified field.",
         "nest-depth-exceeded": "Condition nesting is too deep.",
         "missing-value": "The value is empty."
+      },
+      "sidebar": {
+        "label": "Filter sidebar",
+        "title": "Filter",
+        "entryType": "Entry type",
+        "all": "All",
+        "residualNotice": "Other conditions are being edited in advanced search",
+        "editInAdvanced": "Edit in advanced search",
+        "keywordPlaceholder": "Filter by keyword...",
+        "fields": {
+          "accessibility": { "label": "Accessibility" },
+          "package": { "label": "Package" },
+          "model": { "label": "Model" },
+          "library_selection": { "label": "Library selection" }
+        },
+        "dateRange": {
+          "title": "Date range",
+          "axis": {
+            "date_published": "Publication date",
+            "date_modified": "Modified date",
+            "date_created": "Created date"
+          },
+          "quick": {
+            "all": "All",
+            "year1": "1 year",
+            "year5": "5 years",
+            "year10": "10 years"
+          },
+          "from": "From",
+          "to": "To"
+        }
       },
       "dbMode": {
         "resultsCount": "{{from}}-{{to}} of {{total}} results",
@@ -191,7 +220,9 @@
         "depthBadge": "depth {{current}} / {{max}}",
         "depthLimitTooltip": "Maximum nesting depth reached",
         "emptyState": "No conditions yet. Start by adding your first condition.",
-        "notGroupLock": "NOT accepts only a single child"
+        "notGroupLock": "NOT accepts only a single child",
+        "selectField": "Select a field",
+        "selectFieldFirst": "Select a field first"
       },
       "operators": {
         "equals": "equals",
@@ -225,6 +256,21 @@
         "date": { "label": "Any date" },
         "submitter": { "label": "Submitter" },
         "publication": { "label": "Publication" },
+        "type": {
+          "label": "Entry type",
+          "enumValues": {
+            "sra_submission": "SRA Submission",
+            "sra_study": "SRA Study",
+            "sra_experiment": "SRA Experiment",
+            "sra_run": "SRA Run",
+            "sra_sample": "SRA Sample",
+            "sra_analysis": "SRA Analysis",
+            "jga_study": "JGA Study",
+            "jga_dataset": "JGA Dataset",
+            "jga_dac": "JGA DAC",
+            "jga_policy": "JGA Policy"
+          }
+        },
         "library_strategy": {
           "label": "Library strategy",
           "enumValues": {
@@ -282,15 +328,23 @@
         "project_type": {
           "label": "Project type",
           "enumValues": {
-            "genome_sequencing": "Genome sequencing",
-            "transcriptome": "Transcriptome",
-            "metagenome": "Metagenome",
-            "epigenome": "Epigenome",
-            "variation": "Variation"
+            "bioproject": "BioProject",
+            "umbrella_bioproject": "UmbrellaBioProject"
           }
         },
         "bioproject_grant_agency": { "label": "Grant agency (BioProject)" },
-        "relevance": { "label": "Relevance tag (BioProject)" },
+        "relevance": {
+          "label": "Relevance tag (BioProject)",
+          "enumValues": {
+            "agricultural": "Agricultural",
+            "medical": "Medical",
+            "industrial": "Industrial",
+            "environmental": "Environmental",
+            "evolution": "Evolution",
+            "model_organism": "ModelOrganism",
+            "other": "Other"
+          }
+        },
         "division": {
           "label": "Division",
           "enumValues": {
@@ -341,9 +395,8 @@
         "genus": { "label": "Genus" },
         "species": { "label": "Species" },
         "common_name": { "label": "Common name" },
-        "japanese_name": { "label": "Japanese name" },
-        "study_type": {
-          "label": "Study type",
+        "jga_study_type": {
+          "label": "Study type (JGA)",
           "enumValues": {
             "case_control": "Case-Control",
             "case_set": "Case Set",
@@ -352,10 +405,12 @@
           }
         },
         "jga_grant_agency": { "label": "Grant agency (JGA)" },
-        "principal_investigator": { "label": "Principal investigator" },
-        "submitting_organization": { "label": "Submitting organization" },
         "dataset_type": { "label": "Dataset type (JGA)" },
-        "vendor": { "label": "Vendor (JGA)" }
+        "vendor": { "label": "Vendor (JGA)" },
+        "gea_experiment_type": { "label": "Experiment type (GEA)" },
+        "metabobank_study_type": { "label": "Study type (MetaboBank)" },
+        "metabobank_experiment_type": { "label": "Experiment type (MetaboBank)" },
+        "submission_type": { "label": "Submission type (MetaboBank)" }
       },
       "dateSubSelector": {
         "label": "Date kind",
@@ -965,9 +1020,77 @@
       },
       "sections": {
         "dataTypes": "Data types you have",
+        "qa": "Question wizard",
         "cards": "Pick from use cases",
         "tree": "Follow the decision tree",
         "detail": "Details"
+      },
+      "qa": {
+        "required": "Required",
+        "q1": {
+          "title": "What files / data do you have? (multi-select, required)",
+          "sequence-read": { "label": "Sequence reads (NGS / long-read)", "description": "FASTQ / BAM" },
+          "assembled": { "label": "Assembled sequence", "description": "FASTA / assembly" },
+          "annotation": { "label": "Gene annotation for sequences", "description": "GFF / GenBank flat" },
+          "variation": { "label": "Variation data", "description": "VCF / TSV" },
+          "expression-array": { "label": "Microarray expression data", "description": "CEL / iDAT" },
+          "expression-matrix": { "label": "RNA-seq expression matrix", "description": "counts / TPM / FPKM" },
+          "mass-spec": { "label": "Mass spectrometry data", "description": "mzML / RAW (proteomics or metabolomics)" },
+          "spatial-tx": { "label": "Spatial transcriptomics", "description": "10x Xenium / Visium" }
+        },
+        "q2": {
+          "title": "What is the target organism? (single select, required)",
+          "human": { "label": "Human", "description": "Human samples" },
+          "eukaryote": { "label": "Eukaryote (non-human)", "description": "Animal / plant / fungi" },
+          "prokaryote": { "label": "Prokaryote", "description": "Bacteria / archaea" },
+          "virus": { "label": "Virus", "description": "Including phages" },
+          "metagenome": { "label": "Metagenome / environmental", "description": "Mixed, species not specified" },
+          "organelle-plasmid": { "label": "Organelle / plasmid", "description": "Mitochondria / chloroplast / plasmid" }
+        },
+        "q3": {
+          "title": "What is the access restriction?",
+          "open": { "label": "Open access", "description": "Publicly accessible" },
+          "restricted": { "label": "Restricted access", "description": "NBDC approval required" }
+        },
+        "q4": {
+          "title": "What is the origin of the assembly?",
+          "primary": { "label": "Newly determined by yourself", "description": "Primary" },
+          "tpa": { "label": "Re-using third-party sequence", "description": "TPA" }
+        },
+        "q5": {
+          "title": "What is the scale of the data?",
+          "small": { "label": "Small scale", "description": "<= 100 sequences / 100bp - 500kb" },
+          "normal": { "label": "Normal scale", "description": "Beyond the above range" }
+        },
+        "q6": {
+          "title": "Which special formats apply? (multi-select)",
+          "haplotype": { "label": "Haplotype phased assembly" },
+          "tsa": { "label": "TSA (Transcriptome Shotgun Assembly)" },
+          "tls": { "label": "TLS (Targeted Locus Sequence)" },
+          "mag-sag": { "label": "MAG / SAG / Binned" },
+          "est": { "label": "EST" },
+          "none": { "label": "None of the above" }
+        },
+        "q7": {
+          "title": "What is the mass spectrometry subtype?",
+          "proteomics": { "label": "Proteomics", "description": "LC-MS/MS proteomics" },
+          "metabolomics": { "label": "Metabolomics", "description": "LC-MS / GC-MS / NMR" }
+        },
+        "q8": {
+          "title": "What is the metagenome data type?",
+          "raw": { "label": "Raw reads", "description": "FASTQ" },
+          "primary": { "label": "Primary analysis", "description": "Taxonomy profile / abundance table" }
+        },
+        "q9": {
+          "title": "Are the human samples metagenome-derived?",
+          "yes": { "label": "Yes", "description": "Oral / gut microbiome etc." },
+          "no": { "label": "No", "description": "Human body data" }
+        }
+      },
+      "leaves": {
+        "human-raw-open": { "label": "Human sequence reads (open)" },
+        "human-raw-assembly-open": { "label": "Human raw + assembly (open)" },
+        "human-assembly-only-open": { "label": "Human assembly only (open)" }
       },
       "placeholder": {
         "section1": "Section 1: Data type Y/N multi-select (built in Phase 1)",
@@ -1015,13 +1138,6 @@
         "small-sequence": {
           "label": "Small-scale sequence",
           "description": "Sequences below 100 entries / 500 kb (NSSS)"
-        }
-      },
-      "horizontalAttributes": {
-        "heading": "Cross-cutting attribute",
-        "human": {
-          "label": "Human-derived data",
-          "description": "Branches the workflow depending on whether the source is human"
         }
       },
       "dataTypes": {
@@ -1207,9 +1323,10 @@
       },
       "detail": {
         "empty": {
-          "title": "Select a leaf to see details",
-          "description": "Pick from the data type filter, Use Case Cards, or the Decision Tree."
+          "title": "Answer the Q&A to see details",
+          "description": "Answer the question wizard in Section 1, or pick from Use Case Cards / Decision Tree."
         },
+        "candidatesPrompt": "{{count}} candidate(s) match so far. Answer the remaining questions or pick one directly below.",
         "overviewPlaceholder": "You stopped at an intermediate node. Drill down to a leaf to see registration details.",
         "placeholderSummary": "Detailed copy is being expanded.",
         "venue": {

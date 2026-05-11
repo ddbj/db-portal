@@ -16,7 +16,7 @@ export type QuestionNodeAltType = Node<QuestionNodeAltData, "question">
 const QuestionNodeAlt = ({ data }: NodeProps<QuestionNodeAltType>) => {
   const stateClass = data.isSelected
     ? "border-primary-600 bg-primary-50/60 ring-2 ring-primary-600/30"
-    : data.highlight === "emphasized" || data.highlight === "active"
+    : data.highlight === "active"
       ? "border-primary-400 bg-white"
       : data.highlight === "folded"
         ? "border-gray-200 bg-gray-50/40 opacity-50"

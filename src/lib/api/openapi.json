@@ -11,14 +11,8 @@
       "name": "Apache-2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0"
     },
-    "version": "0.3.1.dev4+gfd627389d"
+    "version": "0.2.1.dev27+g27e2285ec.d20260426"
   },
-  "servers": [
-    {
-      "url": "/search/api",
-      "description": "Current deployment"
-    }
-  ],
   "paths": {
     "/entries/": {
       "get": {
@@ -16353,7 +16347,7 @@
             }
           },
           "400": {
-            "description": "Bad Request (q/adv exclusivity, unexpected parameter, DSL parse/validate error).",
+            "description": "Bad Request (unexpected parameter, DSL parse/validate error).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16556,7 +16550,7 @@
             }
           },
           "400": {
-            "description": "Bad Request (missing-db, q/adv exclusivity, cursor exclusivity, DSL parse/validate error, deep paging limit).",
+            "description": "Bad Request (missing-db, cursor exclusivity, DSL parse/validate error, deep paging limit).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18987,6 +18981,26 @@
                 }
               ]
             ]
+          },
+          "relevance": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance",
+            "description": "BioProject relevance (INSDC controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other).",
+            "examples": [
+              [
+                "Medical"
+              ]
+            ]
           }
         },
         "type": "object",
@@ -19282,6 +19296,76 @@
               [
                 "model-a"
               ]
+            ]
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host",
+            "examples": [
+              "Homo sapiens"
+            ]
+          },
+          "strain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strain",
+            "examples": [
+              "K12"
+            ]
+          },
+          "isolate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isolate",
+            "examples": [
+              "patient-1"
+            ]
+          },
+          "geoLocName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geolocname",
+            "examples": [
+              "Japan: Tokyo"
+            ]
+          },
+          "collectionDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collectiondate",
+            "examples": [
+              "2020-04"
             ]
           }
         },
@@ -20731,6 +20815,62 @@
             "examples": [
               "ALIGNMENT"
             ]
+          },
+          "libraryName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Libraryname",
+            "examples": [
+              "lib-001"
+            ]
+          },
+          "libraryConstructionProtocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Libraryconstructionprotocol",
+            "examples": [
+              "PCR-free"
+            ]
+          },
+          "geoLocName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geolocname",
+            "examples": [
+              "Japan: Tokyo"
+            ]
+          },
+          "collectionDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collectiondate",
+            "examples": [
+              "2020-04"
+            ]
           }
         },
         "type": "object",
@@ -20739,7 +20879,7 @@
           "type"
         ],
         "title": "DbPortalHitSra",
-        "description": "SRA hit (6 subtypes share one variant; subtype-specific fields are optional).\n\n``type`` values: ``sra-submission`` / ``sra-study`` / ``sra-experiment`` /\n``sra-run`` / ``sra-sample`` / ``sra-analysis``.  ``library_*`` /\n``platform`` / ``instrumentModel`` are populated only on\n``sra-experiment`` hits, and ``analysisType`` only on\n``sra-analysis`` hits; the remaining subtypes leave them as\n``null``."
+        "description": "SRA hit (6 subtypes share one variant; subtype-specific fields are optional).\n\n``type`` values: ``sra-submission`` / ``sra-study`` / ``sra-experiment`` /\n``sra-run`` / ``sra-sample`` / ``sra-analysis``.\n\nSubtype-specific populate rules:\n- ``library_strategy`` / ``library_source`` / ``library_layout`` / ``platform`` /\n  ``instrument_model`` / ``library_name`` / ``library_construction_protocol`` are\n  populated only on ``sra-experiment`` hits.\n- ``analysis_type`` is populated only on ``sra-analysis`` hits.\n- ``geo_loc_name`` / ``collection_date`` are populated only on ``sra-sample`` hits\n  (shared schema with BioSample).\n\nRemaining subtypes leave the unrelated fields as ``null``."
       },
       "DbPortalHitTaxonomy": {
         "properties": {
@@ -22234,9 +22374,9 @@
           "value": {
             "type": "string",
             "title": "Value",
-            "description": "Facet value (e.g. organism name, status).",
+            "description": "Facet value (re-injectable into the matching search filter).",
             "examples": [
-              "Homo sapiens"
+              "WGS"
             ]
           },
           "count": {
@@ -22289,7 +22429,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/FacetBucket"
+                  "$ref": "#/components/schemas/OrganismFacetBucket"
                 },
                 "type": "array"
               },
@@ -22298,12 +22438,13 @@
               }
             ],
             "title": "Organism",
-            "description": "Entry count per organism. Null when not aggregated (e.g. excluded from an explicit ``facets`` selection).",
+            "description": "Entry count per organism. ``value`` is the NCBI Taxonomy ID (string), ``label`` is the scientific name; ``value`` can be re-injected into ``?organism=`` directly. Null when not aggregated (e.g. excluded from an explicit ``facets`` selection).",
             "examples": [
               [
                 {
                   "count": 1000,
-                  "value": "Homo sapiens"
+                  "label": "Homo sapiens",
+                  "value": "9606"
                 }
               ]
             ]
@@ -22542,6 +22683,152 @@
                 {
                   "count": 20,
                   "value": "open"
+                }
+              ]
+            ]
+          },
+          "relevance": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance",
+            "description": "BioProject relevance count (bioproject only, opt-in). INSDC controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.",
+            "examples": [
+              [
+                {
+                  "count": 1500,
+                  "value": "Medical"
+                },
+                {
+                  "count": 800,
+                  "value": "ModelOrganism"
+                }
+              ]
+            ]
+          },
+          "package": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package",
+            "description": "BioSample package count (biosample only, opt-in). bucket value is the package name (``package.name`` keyword).",
+            "examples": [
+              [
+                {
+                  "count": 4000,
+                  "value": "MIGS.ba"
+                }
+              ]
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "BioSample model count (biosample only, opt-in).",
+            "examples": [
+              [
+                {
+                  "count": 5000,
+                  "value": "Generic.1.0"
+                }
+              ]
+            ]
+          },
+          "libraryLayout": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Librarylayout",
+            "description": "Library layout count (sra-experiment only, opt-in). Cardinality 2.",
+            "examples": [
+              [
+                {
+                  "count": 800,
+                  "value": "PAIRED"
+                },
+                {
+                  "count": 200,
+                  "value": "SINGLE"
+                }
+              ]
+            ]
+          },
+          "analysisType": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysistype",
+            "description": "Analysis type count (sra-analysis only, opt-in).",
+            "examples": [
+              [
+                {
+                  "count": 300,
+                  "value": "REFERENCE_ALIGNMENT"
+                }
+              ]
+            ]
+          },
+          "datasetType": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetBucket"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datasettype",
+            "description": "JGA dataset type count (jga-dataset only, opt-in).",
+            "examples": [
+              [
+                {
+                  "count": 250,
+                  "value": "Whole genome sequencing"
                 }
               ]
             ]
@@ -24389,6 +24676,42 @@
         "type": "object",
         "title": "Organism"
       },
+      "OrganismFacetBucket": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "NCBI Taxonomy ID (string). Re-injectable into ``?organism=``.",
+            "examples": [
+              "9606"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of entries matching this value.",
+            "examples": [
+              100
+            ]
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Scientific name (NCBI Taxonomy name) for this TaxID.",
+            "examples": [
+              "Homo sapiens"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "count",
+          "label"
+        ],
+        "title": "OrganismFacetBucket",
+        "description": "A facet bucket for the ``organism`` aggregation.\n\n``organism`` is the only facet that exposes a separate display\nlabel.  ``value`` carries the NCBI Taxonomy ID (string, matches the\n``^\\d+$`` pattern enforced by the ``organism`` search filter), and\n``label`` carries the scientific name (e.g. ``\"Homo sapiens\"``)\nchosen as the doc_count-most-frequent ``organism.name.keyword`` value\ninside the bucket.  Callers can re-inject ``value`` into\n``?organism=`` directly; ``label`` is for human display."
+      },
       "Organization": {
         "properties": {
           "name": {
@@ -25857,6 +26180,12 @@
     {
       "name": "Service Info",
       "description": "Service metadata + Elasticsearch health probe."
+    }
+  ],
+  "servers": [
+    {
+      "url": "/search/api",
+      "description": "Current deployment"
     }
   ]
 }

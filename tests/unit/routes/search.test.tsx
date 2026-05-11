@@ -152,21 +152,21 @@ describe("/search route — cross mode", () => {
 
   it("shows slug-specific message when ApiError carries a known type URI", async () => {
     mockCrossSearch.mockRejectedValue(new ApiError(400, {
-      type: "https://ddbj.nig.ac.jp/problems/invalid-query-combination",
+      type: "https://ddbj.nig.ac.jp/problems/unknown-field",
       title: "Invalid",
       status: 400,
-      detail: "q and adv specified together",
+      detail: "field 'foo' is not supported",
     }))
     await setupRoute("/search?q=human")
     renderWithProviders(<Search />, { route: "/search?q=human" })
     await waitFor(() => {
       expect(
-        screen.getByText(/シンプル検索と詳細検索を同時に指定/),
+        screen.getByText(/詳細検索でサポートされていないフィールドです/),
       ).toBeInTheDocument()
     })
   })
 
-  it("renders both_q_and_adv warning when both are present", async () => {
+  it("renders combined summary chip when both q and adv are present", async () => {
     mockCrossSearch.mockResolvedValue(buildSuccessCross())
     await setupRoute("/search?q=human&adv=title%3Acancer")
     renderWithProviders(<Search />, {
@@ -174,7 +174,7 @@ describe("/search route — cross mode", () => {
     })
     await waitFor(() => {
       expect(
-        screen.getByText(/シンプル検索と詳細検索の両方が指定されています/),
+        screen.getByText(/"human" \+ title:cancer/),
       ).toBeInTheDocument()
     })
   })

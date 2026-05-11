@@ -1,33 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
-import SearchSummaryChip, {
-  countAdvConditions,
-} from "@/components/search/SearchSummaryChip"
+import SearchSummaryChip from "@/components/search/SearchSummaryChip"
 
 import { renderWithProviders } from "../../../helpers/providers"
-
-describe("countAdvConditions", () => {
-
-  it("returns 0 for empty string", () => {
-    expect(countAdvConditions("")).toBe(0)
-    expect(countAdvConditions("   ")).toBe(0)
-  })
-
-  it("returns 1 for a single condition", () => {
-    expect(countAdvConditions("title:cancer")).toBe(1)
-  })
-
-  it("counts AND/OR separators", () => {
-    expect(countAdvConditions("title:cancer AND organism:human")).toBe(2)
-    expect(countAdvConditions("a AND b OR c")).toBe(3)
-    expect(countAdvConditions("a AND b AND c AND d")).toBe(4)
-  })
-
-  it("is case-insensitive for operators", () => {
-    expect(countAdvConditions("a and b")).toBe(2)
-  })
-})
 
 describe("SearchSummaryChip", () => {
 
@@ -46,13 +22,12 @@ describe("SearchSummaryChip", () => {
     expect(screen.getByText(/BioProject で絞り込み中/)).toBeInTheDocument()
   })
 
-  it("truncates long simple query", () => {
+  it("does not truncate long simple query (CSS で折り返し)", () => {
     const long = "a".repeat(80)
     renderWithProviders(
       <SearchSummaryChip mode="simple" q={long} db="all" onClear={vi.fn()} />,
     )
-    const node = screen.getByText(/a+…/)
-    expect(node.textContent!.length).toBeLessThanOrEqual(50)
+    expect(screen.getByText(long)).toBeInTheDocument()
   })
 
   it("renders advanced mode with 1-2 conditions as raw DSL", () => {
@@ -67,7 +42,7 @@ describe("SearchSummaryChip", () => {
     expect(screen.getByText(/title:cancer AND organism:human/)).toBeInTheDocument()
   })
 
-  it("renders advanced mode with 3+ conditions as first-plus-count", () => {
+  it("renders advanced mode with 3+ conditions as full DSL (省略なし)", () => {
     renderWithProviders(
       <SearchSummaryChip
         mode="advanced"
@@ -76,7 +51,9 @@ describe("SearchSummaryChip", () => {
         onClear={vi.fn()}
       />,
     )
-    expect(screen.getByText(/title:cancer 他 2 条件/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/title:cancer AND organism:human AND date:2024/),
+    ).toBeInTheDocument()
   })
 
   it("calls onClear when clear button clicked", () => {
@@ -102,5 +79,22 @@ describe("SearchSummaryChip", () => {
     expect(editLink.getAttribute("href")).toBe(
       "/advanced-search?db=bioproject&adv=title%3Acancer",
     )
+  })
+
+  it("renders combined mode with both q and adv", () => {
+    const adv = 'organism equals "Homo sapiens"'
+    renderWithProviders(
+      <SearchSummaryChip
+        mode="combined"
+        q="human"
+        adv={adv}
+        db="biosample"
+        onClear={vi.fn()}
+      />,
+    )
+    expect(screen.getByText(/BioSample で絞り込み中/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/"human" \+ organism equals "Homo sapiens"/),
+    ).toBeInTheDocument()
   })
 })

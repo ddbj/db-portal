@@ -25,7 +25,6 @@ import {
 } from "@/lib/submit-alt/node-selectors"
 import { getLayoutedTreeAlt } from "@/lib/submit-alt/tree-layout"
 import type {
-  DataTypeId,
   LeafNodeIdAlt,
   TreeNodeAlt,
   TreeNodeIdAlt,
@@ -41,16 +40,16 @@ const nodeTypes: NodeTypes = {
 
 interface DecisionTreeAltProps {
   selectedNodeId: TreeNodeIdAlt | null
-  selectedTypes: ReadonlySet<DataTypeId>
-  human: boolean
+  candidateLeaves: readonly LeafNodeIdAlt[]
+  isQAStarted: boolean
   onNodeClick: (nodeId: TreeNodeIdAlt) => void
   className?: string
 }
 
 const DecisionTreeAltInner = ({
   selectedNodeId,
-  selectedTypes,
-  human,
+  candidateLeaves,
+  isQAStarted,
   onNodeClick,
 }: DecisionTreeAltProps) => {
   const { t } = useDynamicTranslation()
@@ -65,14 +64,19 @@ const DecisionTreeAltInner = ({
     [selectedNodeId],
   )
 
+  const candidateSet = useMemo(
+    () => new Set(candidateLeaves),
+    [candidateLeaves],
+  )
+
   const decoratedNodes: Node[] = useMemo(
     () => layouted.nodes.map((n) => {
       const raw = n.data as unknown as TreeNodeAlt
       const isSelected = selectedNodeId !== null && n.id === selectedNodeId
       const highlight = resolveNodeHighlight(
         n.id as TreeNodeIdAlt,
-        selectedTypes,
-        human,
+        candidateSet,
+        isQAStarted,
       )
 
       if (raw.type === "leaf") {
@@ -101,7 +105,7 @@ const DecisionTreeAltInner = ({
         },
       }
     }),
-    [layouted.nodes, selectedNodeId, selectedTypes, human, t],
+    [layouted.nodes, selectedNodeId, candidateSet, isQAStarted, t],
   )
 
   const decoratedEdges: Edge[] = useMemo(

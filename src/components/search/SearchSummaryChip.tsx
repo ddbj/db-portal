@@ -8,26 +8,13 @@ import { DATABASES } from "@/lib/mock-data"
 import { ALL_DB_VALUE, type DbSelectValue } from "@/lib/search-url"
 
 export interface SearchSummaryChipProps {
-  mode: "simple" | "advanced"
+  mode: "simple" | "advanced" | "combined"
   q?: string
   adv?: string
   db: DbSelectValue
   onClear: () => void
   editHref?: string
   className?: string
-}
-
-const MAX_LENGTH = 50
-
-const truncate = (s: string, n: number): string =>
-  s.length > n ? `${s.slice(0, n - 1)}…` : s
-
-export const countAdvConditions = (dsl: string): number => {
-  const trimmed = dsl.trim()
-  if (trimmed === "") return 0
-  const parts = trimmed.split(/\s+(?:AND|OR|NOT)\s+/i)
-
-  return parts.length
 }
 
 const SearchSummaryChip = ({
@@ -48,21 +35,11 @@ const SearchSummaryChip = ({
     ? t("routes.search.summary.filteredByAll")
     : t("routes.search.summary.filteredByDb", { db: dbName })
 
-  let summary: string
-  if (mode === "simple") {
-    summary = truncate(q ?? "", MAX_LENGTH)
-  } else {
-    const dsl = adv ?? ""
-    const count = countAdvConditions(dsl)
-    if (count <= 2) {
-      summary = truncate(dsl, MAX_LENGTH)
-    } else {
-      const firstPart = dsl.trim().split(/\s+(?:AND|OR|NOT)\s+/i)[0] ?? ""
-      summary =
-        truncate(firstPart, MAX_LENGTH) +
-        t("routes.search.summary.otherConditions", { count: count - 1 })
-    }
-  }
+  const summary = mode === "combined"
+    ? t("routes.search.summary.combinedSummary", { q: q ?? "", adv: adv ?? "" })
+    : mode === "simple"
+      ? (q ?? "")
+      : (adv ?? "")
 
   return (
     <div
@@ -71,7 +48,7 @@ const SearchSummaryChip = ({
         className,
       )}
     >
-      <span className="text-sm text-gray-700">
+      <span className="min-w-0 flex-1 text-sm break-all text-gray-700">
         {prefix}
         <span className="font-medium">{summary}</span>
       </span>

@@ -1,70 +1,125 @@
 import * as fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
+import { TREE_NODES_ALT } from "@/lib/mock-data/submit-alt-tree"
 import {
-  DATA_TYPE_IDS,
-  TREE_NODES_ALT,
-} from "@/lib/mock-data/submit-alt-tree"
-import {
-  isValidDataTypeId,
+  applyQAAnswersToParams,
+  isValidQ1Id,
+  isValidQ2Id,
   parseForParam,
-  parseHumanParam,
-  parseTypesParam,
-  serializeTypes,
+  parseQAAnswers,
 } from "@/lib/submit-alt/url"
+import type { QAAnswers } from "@/types/submit-alt"
 
 const ALL_NODE_IDS = TREE_NODES_ALT.map((n) => n.id)
 
-describe("isValidDataTypeId", () => {
-  it("is true for every DATA_TYPE_ID", () => {
-    for (const id of DATA_TYPE_IDS) {
-      expect(isValidDataTypeId(id)).toBe(true)
-    }
+const emptyAnswers = (): QAAnswers => ({
+  q1: new Set(),
+  q2: null,
+  q3: null,
+  q4: null,
+  q5: null,
+  q6: new Set(),
+  q7: null,
+  q8: null,
+  q9: null,
+})
+
+describe("isValidQ1Id", () => {
+  it("accepts valid Q1 ids", () => {
+    expect(isValidQ1Id("sequence-read")).toBe(true)
+    expect(isValidQ1Id("assembled")).toBe(true)
+    expect(isValidQ1Id("mass-spec")).toBe(true)
   })
 
-  it("is false for unknown values", () => {
-    expect(isValidDataTypeId("not-a-type")).toBe(false)
-    expect(isValidDataTypeId("")).toBe(false)
-    expect(isValidDataTypeId("GENOME")).toBe(false)
+  it("rejects unknown values", () => {
+    expect(isValidQ1Id("genome")).toBe(false)
+    expect(isValidQ1Id("")).toBe(false)
   })
 })
 
-describe("parseTypesParam", () => {
-  it("returns empty Set when types is absent", () => {
-    expect(parseTypesParam(new URLSearchParams("")).size).toBe(0)
+describe("isValidQ2Id", () => {
+  it("accepts valid Q2 ids", () => {
+    expect(isValidQ2Id("human")).toBe(true)
+    expect(isValidQ2Id("eukaryote")).toBe(true)
   })
 
-  it("returns empty Set when value is empty string", () => {
-    expect(parseTypesParam(new URLSearchParams("types=")).size).toBe(0)
+  it("rejects unknown values", () => {
+    expect(isValidQ2Id("alien")).toBe(false)
+  })
+})
+
+describe("parseQAAnswers", () => {
+  it("returns empty answers when no params", () => {
+    expect(parseQAAnswers(new URLSearchParams(""))).toEqual(emptyAnswers())
   })
 
-  it("parses a single id", () => {
-    const sp = new URLSearchParams("types=genome")
-    expect(parseTypesParam(sp)).toEqual(new Set(["genome"]))
-  })
-
-  it("parses multiple ids", () => {
-    const sp = new URLSearchParams("types=genome,sequence-read,human-restricted")
-    expect(parseTypesParam(sp)).toEqual(
-      new Set(["genome", "sequence-read", "human-restricted"]),
+  it("parses q1 CSV", () => {
+    const result = parseQAAnswers(
+      new URLSearchParams("q1=sequence-read,assembled"),
     )
+    expect(result.q1).toEqual(new Set(["sequence-read", "assembled"]))
   })
 
-  it("drops invalid ids silently", () => {
-    const sp = new URLSearchParams("types=genome,bogus,sequence-read")
-    expect(parseTypesParam(sp)).toEqual(new Set(["genome", "sequence-read"]))
+  it("ignores invalid q1 values silently", () => {
+    const result = parseQAAnswers(
+      new URLSearchParams("q1=sequence-read,unknown,assembled"),
+    )
+    expect(result.q1).toEqual(new Set(["sequence-read", "assembled"]))
+  })
+
+  it("parses single-value q2-q9", () => {
+    const result = parseQAAnswers(
+      new URLSearchParams(
+        "q2=eukaryote&q3=open&q4=primary&q5=normal&q7=proteomics&q8=raw&q9=no",
+      ),
+    )
+    expect(result.q2).toBe("eukaryote")
+    expect(result.q3).toBe("open")
+    expect(result.q4).toBe("primary")
+    expect(result.q5).toBe("normal")
+    expect(result.q7).toBe("proteomics")
+    expect(result.q8).toBe("raw")
+    expect(result.q9).toBe("no")
+  })
+
+  it("parses q6 CSV (multi)", () => {
+    const result = parseQAAnswers(new URLSearchParams("q6=haplotype,tsa"))
+    expect(result.q6).toEqual(new Set(["haplotype", "tsa"]))
   })
 })
 
-describe("parseHumanParam", () => {
-  it("returns true only for human=1", () => {
-    expect(parseHumanParam(new URLSearchParams("human=1"))).toBe(true)
+describe("applyQAAnswersToParams", () => {
+  it("writes all answers to params", () => {
+    const params = new URLSearchParams()
+    applyQAAnswersToParams(params, {
+      q1: new Set(["sequence-read", "assembled"]),
+      q2: "eukaryote",
+      q3: "open",
+      q4: "primary",
+      q5: "normal",
+      q6: new Set(["none"]),
+      q7: null,
+      q8: null,
+      q9: null,
+    })
+    expect(params.get("q1")).toBe("sequence-read,assembled")
+    expect(params.get("q2")).toBe("eukaryote")
+    expect(params.get("q3")).toBe("open")
+    expect(params.get("q4")).toBe("primary")
+    expect(params.get("q5")).toBe("normal")
+    expect(params.get("q6")).toBe("none")
+    expect(params.get("q7")).toBeNull()
   })
 
-  it("returns false for any other value or absence", () => {
-    expect(parseHumanParam(new URLSearchParams("human=0"))).toBe(false)
-    expect(parseHumanParam(new URLSearchParams("human=true"))).toBe(false)
-    expect(parseHumanParam(new URLSearchParams(""))).toBe(false)
+  it("removes keys when value is null / empty set", () => {
+    const params = new URLSearchParams(
+      "q1=sequence-read&q2=eukaryote&q3=open",
+    )
+    applyQAAnswersToParams(params, emptyAnswers())
+    expect(params.get("q1")).toBeNull()
+    expect(params.get("q2")).toBeNull()
+    expect(params.get("q3")).toBeNull()
   })
 })
 
@@ -92,48 +147,6 @@ describe("parseForParam", () => {
   })
 })
 
-describe("serializeTypes", () => {
-  it("returns null for empty Set", () => {
-    expect(serializeTypes(new Set())).toBeNull()
-  })
-
-  it("orders by DATA_TYPE_IDS canonical order regardless of input order", () => {
-    expect(serializeTypes(new Set(["genome", "human-restricted"]))).toBe(
-      "human-restricted,genome",
-    )
-    expect(serializeTypes(new Set(["small-sequence", "human-restricted"]))).toBe(
-      "human-restricted,small-sequence",
-    )
-  })
-})
-
-describe("PBT: serializeTypes ↔ parseTypesParam round-trip", () => {
-  it("preserves the input set", () => {
-    expect(() =>
-      fc.assert(
-        fc.property(
-          fc.subarray(DATA_TYPE_IDS.slice(), {
-            minLength: 0,
-            maxLength: DATA_TYPE_IDS.length,
-          }),
-          (subset) => {
-            const set = new Set(subset)
-            const serialized = serializeTypes(set)
-            const sp = new URLSearchParams()
-            if (serialized !== null) sp.set("types", serialized)
-            const parsed = parseTypesParam(sp)
-
-            return (
-              parsed.size === set.size
-              && [...parsed].every((x) => set.has(x))
-            )
-          },
-        ),
-        { numRuns: 100 },
-      )).not.toThrow()
-  })
-})
-
 describe("PBT: parseForParam round-trip for known ids", () => {
   it("returns the input id back for any tree node", () => {
     expect(() =>
@@ -144,6 +157,34 @@ describe("PBT: parseForParam round-trip for known ids", () => {
           return parseForParam(sp) === id
         }),
         { numRuns: 100 },
+      )).not.toThrow()
+  })
+})
+
+describe("PBT: parseQAAnswers ↔ applyQAAnswersToParams round-trip for q2", () => {
+  it("preserves single-value answers", () => {
+    expect(() =>
+      fc.assert(
+        fc.property(
+          fc.constantFrom(
+            "human",
+            "eukaryote",
+            "prokaryote",
+            "virus",
+            "metagenome",
+            "organelle-plasmid",
+          ),
+          (q2Value) => {
+            const params = new URLSearchParams()
+            applyQAAnswersToParams(params, {
+              ...emptyAnswers(),
+              q2: q2Value as QAAnswers["q2"],
+            })
+
+            return parseQAAnswers(params).q2 === q2Value
+          },
+        ),
+        { numRuns: 50 },
       )).not.toThrow()
   })
 })
