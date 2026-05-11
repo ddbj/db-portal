@@ -7,16 +7,16 @@ import type { ValidationError } from "@/lib/advanced-search/types"
 
 interface QueryPreviewProps {
   dsl: string
-  initialAdv: string | null
+  initialQ: string | null
   errors: readonly ValidationError[]
 }
 
-const QueryPreview = ({ dsl, initialAdv, errors }: QueryPreviewProps) => {
+const QueryPreview = ({ dsl, initialQ, errors }: QueryPreviewProps) => {
   const { t } = useDynamicTranslation()
   const [copied, setCopied] = useState(false)
 
-  const displayText = dsl !== "" ? dsl : (initialAdv ?? "")
-  const showUrlOnly = dsl === "" && initialAdv !== null && initialAdv !== ""
+  const displayText = dsl !== "" ? dsl : (initialQ ?? "")
+  const showUrlOnly = dsl === "" && initialQ !== null && initialQ !== ""
 
   const handleCopy = () => {
     if (typeof navigator === "undefined" || !navigator.clipboard) return

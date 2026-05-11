@@ -5,7 +5,7 @@ import {
 import { ALL_DB_VALUE } from "@/lib/search-url"
 import type { AdvancedCondition } from "@/types/search"
 
-import { countDepth, MAX_NEST_DEPTH } from "./dsl"
+import { countTreeDepth } from "./tree"
 import type {
   AdvancedConditionNode,
   AdvancedGroupNode,
@@ -13,6 +13,7 @@ import type {
   ValidationError,
   ValidationMode,
 } from "./types"
+import { MAX_NEST_DEPTH } from "./types"
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const NUMBER_PATTERN = /^-?\d+(?:\.\d+)?$/
@@ -153,7 +154,7 @@ export const validateNode = (
   }
 
   const errors = validateGroup(node, path, mode)
-  if (path.length === 0 && countDepth(node) > MAX_NEST_DEPTH) {
+  if (path.length === 0 && countTreeDepth(node) > MAX_NEST_DEPTH) {
     errors.unshift({ code: "NEST_DEPTH_EXCEEDED", path })
   }
 

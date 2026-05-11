@@ -290,12 +290,13 @@ ddbj_search_api/
 
 ### クエリ変換
 
-ポータル UI で受けるすべての入力は proxy 層で **単一の AST に正規化**された後、各バックエンドの compiler に渡される（[search.md の検索の内部モデル](./search.md#検索の内部モデル) 参照）。AST には大きく 2 種類のノードがある:
+ポータル UI で受けるすべての入力は portal 内部で `SearchAstNode` に正規化されたうえで `?q=<DSL>` 1 本にシリアライズされて API に送られる。API 側はそれを Lark パーサで再パースし、内部 AST に戻したうえで各バックエンドの compiler に渡す（[search.md の検索の内部モデル](./search.md#検索の内部モデル) 参照）。AST のノード種は 3 種:
 
-- `FreeText(value)`: シンプル検索ボックス（`q` パラメータ）から生成
-- `FieldClause` / `BoolOp`: Advanced Search の DSL（`adv` パラメータ）を Lark パーサで AST に変換、または Sidebar Filter UI が直接構築して URL `?adv=` 経由で投入
+- `FreeText(value)`: シンプル検索ボックス由来（portal は常に double quote した phrase として DSL に出す）
+- `FieldClause`: Advanced Search GUI / Sidebar facet・keyword・date range 由来
+- `BoolOp`: GUI のグループ化、Sidebar 内の OR / merge による AND 結合等
 
-シンプル検索と Advanced Search が併用された場合（`q` と `adv` 両方指定）、サーバ側で `BoolOp(AND, [freetext_ast, adv_ast])` に統合される。compiler は AST 上のすべてのノードを解釈し、`q` 専用のショートカット経路は持たない。
+portal → API は単一 grammar / 単一 endpoint contract (`?q=<DSL>`) を維持する。複数入力経路の統合は portal 内部の `mergeAstAnd` が AST レベルで行ってから DSL シリアライズするため、文字列の `(A) AND (B)` ラップは発生しない。
 
 ノード別の正規化ルールは以下:
 
@@ -343,9 +344,9 @@ ddbj_search_api/
 
 シンプル検索ボックスでは `AND`/`OR`/`NOT`・括弧・ワイルドカード・フィールド指定は解釈しない（入力されても記号判定経由でフレーズ化 → リテラル扱い）。意図した Boolean 演算・ワイルドカード・フィールド指定は Advanced Search で提供する。
 
-#### `FieldClause` / `BoolOp` の構築（`adv` から）
+#### `FieldClause` / `BoolOp` / `FreeText` の構築（`q` から）
 
-Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 形式](./search.md#advanced-search-の-url-形式) で受け取り、proxy 層で Lark パーサが `FieldClause` / `BoolOp` ノードからなる AST に変換する。AST は以下の **ツリー型構造化 JSON** にシリアライズされる（`/db-portal/parse` のレスポンス形式）。
+ユーザの入力（シンプル検索 / Advanced Search GUI / Sidebar 絞り込み）は portal 側で AST 化されたうえで DSL 文字列に書き出され、API は受け取った `q` パラメータを Lark パーサで `FreeText` / `FieldClause` / `BoolOp` ノードからなる AST に変換する。AST は以下の **ツリー型構造化 JSON** にシリアライズされる（`/db-portal/parse` のレスポンス形式）。
 
 ```json
 {
@@ -379,13 +380,13 @@ Advanced Search（GUI クエリビルダ）が生成したクエリは [URL DSL 
 
 | `op` | 必須フィールド | 用途 |
 |---|---|---|
-| `eq` | `value` | 完全一致（`identifier` / Lucene `term`） |
-| `contains` | `value` | フレーズ含有（ES `match_phrase` / Solr フレーズクエリ） |
-| `starts_with` | `value` | 前方一致 |
-| `wildcard` | `value` | `*` `?` を含むワイルドカード |
-| `between` | `from`, `to` | 範囲（`date` 等） |
-| `gte` | `value` | 以上 |
-| `lte` | `value` | 以下 |
+| `free_text` | `value` | フィールド指定なし全文検索（bare word / phrase） |
+| `eq` | `field`, `value` | 完全一致（`identifier` / Lucene `term`） |
+| `contains` | `field`, `value` | フレーズ含有（ES `match_phrase` / Solr フレーズクエリ） |
+| `wildcard` | `field`, `value` | `*` `?` を含むワイルドカード |
+| `between` | `field`, `from`, `to` | 範囲（`date` 等） |
+
+portal の Advanced Search UI では `starts_with` / `gte` / `lte` / `not_equals` の擬似演算子を持つが、`from-advanced.ts` で AST 化する時点で API grammar の 4 つの leaf op に正規化される（`starts_with` → `wildcard` (value + "*")、`gte` → `between` (to="*")、`lte` → `between` (from="*")、`not_equals` → `BoolOp(NOT, [FieldClause(eq)])`）。逆方向の復元は `to-advanced.ts` がヒューリスティックに UI 演算子へ戻す。
 
 **フィールド allowlist（ポータル共通語彙）**:
 

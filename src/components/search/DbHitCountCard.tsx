@@ -13,7 +13,6 @@ export interface DbHitCountCardProps {
   count: number | null
   error: ErrorKind | null
   query: string | null
-  adv: string | null
   onRetry: (dbId: DbId) => void
   topHits?: readonly DbPortalLightweightHit[]
   className?: string
@@ -65,7 +64,6 @@ const DbHitCountCard = ({
   count,
   error,
   query,
-  adv,
   onRetry,
   topHits,
   className,
@@ -75,7 +73,7 @@ const DbHitCountCard = ({
   const displayName = db?.displayName ?? dbId
   const description = db?.description ?? ""
 
-  const detailUrl = buildSearchUrlFull({ adv, db: dbId, q: query })
+  const detailUrl = buildSearchUrlFull({ db: dbId, q: query })
   const showTopHits = state === "success"
     && topHits !== undefined
     && topHits.length > 0

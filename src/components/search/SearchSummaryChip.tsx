@@ -1,6 +1,5 @@
 import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router"
 
 import { Button } from "@/components/ui"
 import cn from "@/components/ui/cn"
@@ -8,22 +7,17 @@ import { DATABASES } from "@/lib/mock-data"
 import { ALL_DB_VALUE, type DbSelectValue } from "@/lib/search-url"
 
 export interface SearchSummaryChipProps {
-  mode: "simple" | "advanced" | "combined"
-  q?: string
-  adv?: string
+  mode: "simple"
+  q: string
   db: DbSelectValue
   onClear: () => void
-  editHref?: string
   className?: string
 }
 
 const SearchSummaryChip = ({
-  mode,
   q,
-  adv,
   db,
   onClear,
-  editHref,
   className,
 }: SearchSummaryChipProps) => {
   const { t } = useTranslation()
@@ -35,12 +29,6 @@ const SearchSummaryChip = ({
     ? t("routes.search.summary.filteredByAll")
     : t("routes.search.summary.filteredByDb", { db: dbName })
 
-  const summary = mode === "combined"
-    ? t("routes.search.summary.combinedSummary", { q: q ?? "", adv: adv ?? "" })
-    : mode === "simple"
-      ? (q ?? "")
-      : (adv ?? "")
-
   return (
     <div
       className={cn(
@@ -50,16 +38,8 @@ const SearchSummaryChip = ({
     >
       <span className="min-w-0 flex-1 text-sm break-all text-gray-700">
         {prefix}
-        <span className="font-medium">{summary}</span>
+        <span className="font-medium">{q}</span>
       </span>
-      {editHref !== undefined && (
-        <Link
-          to={editHref}
-          className="text-primary-700 hover:text-primary-800 text-xs underline"
-        >
-          {t("routes.search.summary.edit")}
-        </Link>
-      )}
       <Button
         variant="tertiary"
         size="sm"

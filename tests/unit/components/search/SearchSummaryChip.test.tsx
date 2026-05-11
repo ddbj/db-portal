@@ -30,29 +30,17 @@ describe("SearchSummaryChip", () => {
     expect(screen.getByText(long)).toBeInTheDocument()
   })
 
-  it("renders advanced mode with 1-2 conditions as raw DSL", () => {
+  it("renders DSL-style q as-is in the chip", () => {
     renderWithProviders(
       <SearchSummaryChip
-        mode="advanced"
-        adv="title:cancer AND organism:human"
-        db="all"
-        onClear={vi.fn()}
-      />,
-    )
-    expect(screen.getByText(/title:cancer AND organism:human/)).toBeInTheDocument()
-  })
-
-  it("renders advanced mode with 3+ conditions as full DSL (省略なし)", () => {
-    renderWithProviders(
-      <SearchSummaryChip
-        mode="advanced"
-        adv="title:cancer AND organism:human AND date:2024"
+        mode="simple"
+        q={'title:cancer AND organism:"Homo sapiens"'}
         db="all"
         onClear={vi.fn()}
       />,
     )
     expect(
-      screen.getByText(/title:cancer AND organism:human AND date:2024/),
+      screen.getByText(/title:cancer AND organism:"Homo sapiens"/),
     ).toBeInTheDocument()
   })
 
@@ -63,38 +51,5 @@ describe("SearchSummaryChip", () => {
     )
     fireEvent.click(screen.getByRole("button", { name: "検索条件をクリア" }))
     expect(onClear).toHaveBeenCalled()
-  })
-
-  it("renders edit link when editHref is provided", () => {
-    renderWithProviders(
-      <SearchSummaryChip
-        mode="advanced"
-        adv="title:cancer"
-        db="bioproject"
-        onClear={vi.fn()}
-        editHref="/advanced-search?db=bioproject&adv=title%3Acancer"
-      />,
-    )
-    const editLink = screen.getByRole("link", { name: "編集" })
-    expect(editLink.getAttribute("href")).toBe(
-      "/advanced-search?db=bioproject&adv=title%3Acancer",
-    )
-  })
-
-  it("renders combined mode with both q and adv", () => {
-    const adv = 'organism equals "Homo sapiens"'
-    renderWithProviders(
-      <SearchSummaryChip
-        mode="combined"
-        q="human"
-        adv={adv}
-        db="biosample"
-        onClear={vi.fn()}
-      />,
-    )
-    expect(screen.getByText(/BioSample で絞り込み中/)).toBeInTheDocument()
-    expect(
-      screen.getByText(/"human" \+ organism equals "Homo sapiens"/),
-    ).toBeInTheDocument()
   })
 })

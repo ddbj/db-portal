@@ -16,13 +16,17 @@ import { resolveMeta } from "@/i18n/server"
 import {
   advancedSearchReducer,
   buildInitialState,
-  buildTreeFromAst,
-  nodeToDsl,
   validateNode,
 } from "@/lib/advanced-search"
 import type { ValidationMode } from "@/lib/advanced-search/types"
-import { parseAdv } from "@/lib/api"
+import { parseQ } from "@/lib/api"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
+import {
+  advancedTreeToAst,
+  astToDsl,
+  parseAstToSearchAst,
+  searchAstToAdvancedTree,
+} from "@/lib/search-ast"
 import {
   ALL_DB_VALUE,
   buildSearchUrlFull,
@@ -44,7 +48,7 @@ const parseInitialDb = (raw: string | null): DbSelectValue => {
   return ALL_DB_VALUE
 }
 
-const parseInitialAdv = (raw: string | null): string | null => {
+const parseInitialQ = (raw: string | null): string | null => {
   const trimmed = raw?.trim() ?? ""
 
   return trimmed === "" ? null : trimmed
@@ -53,7 +57,7 @@ const parseInitialAdv = (raw: string | null): string | null => {
 export const loader = ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url)
   const initialDb = parseInitialDb(url.searchParams.get("db"))
-  const initialAdv = parseInitialAdv(url.searchParams.get("adv"))
+  const initialQ = parseInitialQ(url.searchParams.get("q"))
 
   const lang = pickLang(
     request.headers.get("Cookie"),
@@ -74,7 +78,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     metaDescription,
     canonicalUrl: `${PORTAL_ORIGIN}${canonicalPath}`,
     initialDb,
-    initialAdv,
+    initialQ,
   }
 }
 
@@ -103,29 +107,29 @@ const AdvancedSearch = () => {
     searchParams,
     (sp) => {
       const initialDb = parseInitialDb(sp.get("db"))
-      const initialAdv = parseInitialAdv(sp.get("adv"))
+      const initialQ = parseInitialQ(sp.get("q"))
 
-      return buildInitialState(initialDb, initialAdv)
+      return buildInitialState(initialDb, initialQ)
     },
   )
 
-  const initialAdv = state.initialAdv
+  const initialQ = state.initialQ
   const restoredRef = useRef(false)
 
   const parseQuery = useQuery({
-    queryKey: ["parseAdv", initialAdv] as const,
+    queryKey: ["parseQ", initialQ] as const,
     queryFn: ({ signal }) => {
       const dbForApi = state.db !== ALL_DB_VALUE ? (state.db as DbId) : null
 
-      return parseAdv(
+      return parseQ(
         {
-          adv: initialAdv ?? "",
+          q: initialQ ?? "",
           ...(dbForApi !== null && { db: dbForApi }),
         },
         signal,
       )
     },
-    enabled: initialAdv !== null,
+    enabled: initialQ !== null,
     retry: false,
     staleTime: Infinity,
   })
@@ -134,11 +138,15 @@ const AdvancedSearch = () => {
     if (restoredRef.current) return
     if (!parseQuery.isSuccess) return
     restoredRef.current = true
-    const tree = buildTreeFromAst(parseQuery.data.ast, state.db)
+    const ast = parseAstToSearchAst(parseQuery.data.ast)
+    const tree = searchAstToAdvancedTree(ast, state.db)
     dispatch({ type: "APPLY_PARSED_TREE", tree })
   }, [parseQuery.isSuccess, parseQuery.data, state.db])
 
-  const dsl = useMemo(() => nodeToDsl(state.tree), [state.tree])
+  const dsl = useMemo(
+    () => astToDsl(advancedTreeToAst(state.tree)),
+    [state.tree],
+  )
   const errors = useMemo(() => {
     const mode: ValidationMode = state.mode === "cross"
       ? "cross"
@@ -151,7 +159,7 @@ const AdvancedSearch = () => {
 
   const handleSearch = () => {
     if (!canSearch) return
-    void navigate(buildSearchUrlFull({ adv: dsl, db: state.db }))
+    void navigate(buildSearchUrlFull({ q: dsl, db: state.db }))
   }
 
   const handleDbChange = (next: DbSelectValue) => {
@@ -195,7 +203,7 @@ const AdvancedSearch = () => {
 
       <QueryPreview
         dsl={dsl}
-        initialAdv={state.initialAdv}
+        initialQ={state.initialQ}
         errors={errors}
       />
 

@@ -17,7 +17,7 @@ const makeState = (overrides: Partial<AdvancedSearchState>): AdvancedSearchState
     children: [],
   },
   pendingDb: null,
-  initialAdv: null,
+  initialQ: null,
   ...overrides,
 })
 

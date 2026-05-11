@@ -13,16 +13,16 @@ import {
 } from "@/components/ui"
 import cn from "@/components/ui/cn"
 import type { FacetsResponse } from "@/lib/api"
-import type {
-  DateAxis,
-  SidebarDateRange,
-  SidebarState,
-} from "@/lib/search-dsl-builder"
 import {
   type FacetFieldMapping,
   type KeywordFieldMapping,
   sidebarFieldsForDb,
 } from "@/lib/sidebar-fields"
+import type {
+  DateAxis,
+  SidebarDateRange,
+  SidebarState,
+} from "@/lib/sidebar-state-types"
 import type { DbId } from "@/types/db"
 
 const SRA_SUBTYPES = [
@@ -102,14 +102,18 @@ const FacetSection = ({
     <section>
       <SectionHeading>{tDynamic(mapping.labelKey)}</SectionHeading>
       <div className="space-y-1">
-        {buckets.slice(0, FACET_BUCKET_LIMIT).map((bucket) => (
-          <Checkbox
-            key={bucket.value}
-            label={`${bucket.label ?? bucket.value} (${bucket.count.toLocaleString()})`}
-            checked={selected.includes(bucket.value)}
-            onChange={() => onToggle(bucket.value)}
-          />
-        ))}
+        {buckets.slice(0, FACET_BUCKET_LIMIT).map((bucket) => {
+          const facetValue = bucket.label ?? bucket.value
+
+          return (
+            <Checkbox
+              key={bucket.value}
+              label={`${bucket.label ?? bucket.value} (${bucket.count.toLocaleString()})`}
+              checked={selected.includes(facetValue)}
+              onChange={() => onToggle(facetValue)}
+            />
+          )
+        })}
       </div>
     </section>
   )

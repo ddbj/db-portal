@@ -104,7 +104,7 @@ export const dbSearch = (
 ): Promise<SearchResponse> =>
   apiFetch<SearchResponse>("/db-portal/search", query, signal)
 
-export const parseAdv = (
+export const parseQ = (
   query: ParseQuery,
   signal?: AbortSignal,
 ): Promise<ParseResponse> =>

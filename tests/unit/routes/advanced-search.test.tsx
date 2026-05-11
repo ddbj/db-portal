@@ -27,9 +27,9 @@ describe("/advanced-search route", () => {
     expect(screen.getByText(/SRA/)).toBeInTheDocument()
   })
 
-  it("?adv=title:cancer で preview に title:cancer が表示される", () => {
+  it("?q=title:cancer で preview に title:cancer が表示される", () => {
     renderWithProviders(<AdvancedSearch />, {
-      route: "/advanced-search?adv=title%3Acancer",
+      route: "/advanced-search?q=title%3Acancer",
     })
     expect(screen.getByText("title:cancer")).toBeInTheDocument()
     expect(screen.getByText(/URL から受信した DSL/)).toBeInTheDocument()

@@ -35,7 +35,6 @@ export const buildSearchUrl = ({ q, db }: BuildSearchUrlParams): string => {
 
 export interface SearchParams {
   q: string | null
-  adv: string | null
   db: DbSelectValue
   page: number
   perPage: PerPageValue
@@ -97,7 +96,6 @@ const parseCursor = (raw: string | null): string | null => {
 
 export interface BuildSearchUrlFullParams {
   q?: string | null
-  adv?: string | null
   db?: DbSelectValue
   page?: number
   perPage?: PerPageValue
@@ -120,8 +118,6 @@ export const buildSearchUrlFull = (p: BuildSearchUrlFullParams): string => {
   if (p.cursor !== undefined && p.cursor !== null && p.cursor !== "") {
     params.set("cursor", p.cursor)
   }
-  const adv = p.adv?.trim()
-  if (adv !== undefined && adv !== null && adv !== "") params.set("adv", adv)
   const query = params.toString()
 
   return query === "" ? "/search" : `/search?${query}`
@@ -129,18 +125,17 @@ export const buildSearchUrlFull = (p: BuildSearchUrlFullParams): string => {
 
 export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult => {
   const q = parseQueryString(searchParams.get("q"))
-  const adv = parseQueryString(searchParams.get("adv"))
   const db = parseDb(searchParams.get("db"))
   const page = parsePage(searchParams.get("page"))
   const perPage = parsePerPage(searchParams.get("perPage"))
   const sort = parseSort(searchParams.get("sort"))
   const cursor = parseCursor(searchParams.get("cursor"))
 
-  const params: SearchParams = { q, adv, db, page, perPage, sort, cursor }
+  const params: SearchParams = { q, db, page, perPage, sort, cursor }
 
-  const shouldRedirectToHome = q === null && adv === null
+  const shouldRedirectToHome = q === null
 
-  const canonical = buildSearchUrlFull({ q, adv, db, page, perPage, sort, cursor })
+  const canonical = buildSearchUrlFull({ q, db, page, perPage, sort, cursor })
   const originalQueryString = searchParams.toString()
   const canonicalQueryString = canonical.startsWith("/search?")
     ? canonical.slice("/search?".length)

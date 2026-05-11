@@ -1,16 +1,30 @@
 import { useTranslation } from "react-i18next"
 
 import { Button, Callout } from "@/components/ui"
-import { nodeToDsl } from "@/lib/advanced-search"
 import { walkTree } from "@/lib/advanced-search/tree"
-import type { AdvancedSearchState } from "@/lib/advanced-search/types"
+import type {
+  AdvancedConditionNode,
+  AdvancedSearchState,
+} from "@/lib/advanced-search/types"
 import { DATABASES } from "@/lib/mock-data"
+import { advancedTreeToAst, astToDsl } from "@/lib/search-ast"
 import { ALL_DB_VALUE } from "@/lib/search-url"
 
 interface DbSwitchWarningProps {
   state: AdvancedSearchState
   onConfirm: () => void
   onCancel: () => void
+}
+
+const conditionDsl = (node: AdvancedConditionNode): string => {
+  const wrappedAst = advancedTreeToAst({
+    id: "tmp",
+    kind: "group",
+    logic: "AND",
+    children: [node],
+  })
+
+  return astToDsl(wrappedAst)
 }
 
 const DbSwitchWarning = ({ state, onConfirm, onCancel }: DbSwitchWarningProps) => {
@@ -26,7 +40,7 @@ const DbSwitchWarning = ({ state, onConfirm, onCancel }: DbSwitchWarningProps) =
   for (const entry of walkTree(state.tree)) {
     if (entry.node.kind !== "condition") continue
     if (!idSet.has(entry.node.id)) continue
-    const dsl = nodeToDsl(entry.node)
+    const dsl = conditionDsl(entry.node)
     rows.push({
       key: entry.node.id,
       dsl: dsl === "" ? entry.node.condition.field : dsl,

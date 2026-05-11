@@ -169,13 +169,13 @@ const applyPatchSmart = (
 
 export const buildInitialState = (
   initialDb: DbSelectValue,
-  initialAdv: string | null,
+  initialQ: string | null,
 ): AdvancedSearchState => ({
   mode: initialDb === ALL_DB_VALUE ? "cross" : "single",
   db: initialDb,
   tree: createEmptyRoot(),
   pendingDb: null,
-  initialAdv,
+  initialQ,
 })
 
 export const advancedSearchReducer = (

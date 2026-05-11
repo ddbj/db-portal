@@ -1,13 +1,4 @@
 export {
-  conditionToDsl,
-  countDepth,
-  escapePhrase,
-  MAX_NEST_DEPTH,
-  needsPhrase,
-  nodeToDsl,
-} from "./dsl"
-export { buildTreeFromAst } from "./from-ast"
-export {
   advancedSearchReducer,
   buildInitialState,
 } from "./reducer"
@@ -15,6 +6,7 @@ export {
   addConditionAt,
   addGroupAt,
   collectConditionFieldIds,
+  countTreeDepth,
   createConditionNode,
   createEmptyRoot,
   createGroupNode,
@@ -37,4 +29,5 @@ export type {
   ValidationError,
   ValidationMode,
 } from "./types"
+export { MAX_NEST_DEPTH } from "./types"
 export { validateNode } from "./validate"

@@ -166,15 +166,15 @@ describe("/search route — cross mode", () => {
     })
   })
 
-  it("renders combined summary chip when both q and adv are present", async () => {
+  it("renders DSL-style q in summary chip as-is", async () => {
     mockCrossSearch.mockResolvedValue(buildSuccessCross())
-    await setupRoute("/search?q=human&adv=title%3Acancer")
+    await setupRoute("/search?q=human+AND+title%3Acancer")
     renderWithProviders(<Search />, {
-      route: "/search?q=human&adv=title%3Acancer",
+      route: "/search?q=human+AND+title%3Acancer",
     })
     await waitFor(() => {
       expect(
-        screen.getByText(/"human" \+ title:cancer/),
+        screen.getByText(/human AND title:cancer/),
       ).toBeInTheDocument()
     })
   })
@@ -226,7 +226,7 @@ describe("/search route — DB-specified mode", () => {
 
 describe("/search route — empty-query fallback", () => {
 
-  it("loader throws a redirect to /search?q=human when neither q nor adv are given", async () => {
+  it("loader throws a redirect to /search?q=human when q is missing", async () => {
     const thrown = await runLoader("/search").then(
       () => null,
       (e: unknown) => e,

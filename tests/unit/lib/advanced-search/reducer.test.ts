@@ -37,9 +37,9 @@ describe("buildInitialState", () => {
     expect(s.db).toBe("bioproject")
   })
 
-  it("initialAdv を保持", () => {
+  it("initialQ を保持", () => {
     const s = buildInitialState(ALL_DB_VALUE, "title:cancer")
-    expect(s.initialAdv).toBe("title:cancer")
+    expect(s.initialQ).toBe("title:cancer")
   })
 })
 

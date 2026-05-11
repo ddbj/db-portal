@@ -172,3 +172,10 @@ export const collectConditionFieldIds = (
 
       return { id: n.id, fieldId: n.condition.field, path: e.path }
     })
+
+export const countTreeDepth = (node: AdvancedNodeWithId): number => {
+  if (node.kind === "condition") return 0
+  if (node.children.length === 0) return 1
+
+  return 1 + Math.max(...node.children.map(countTreeDepth))
+}

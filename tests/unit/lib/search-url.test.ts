@@ -128,9 +128,8 @@ describe("buildSearchUrlFull", () => {
     expect(buildSearchUrlFull({})).toBe("/search")
   })
 
-  it("preserves order q → db → page → perPage → sort → cursor → adv", () => {
+  it("preserves order q → db → page → perPage → sort → cursor", () => {
     const url = buildSearchUrlFull({
-      adv: "title:cancer",
       cursor: "abc",
       db: "sra",
       page: 2,
@@ -140,7 +139,7 @@ describe("buildSearchUrlFull", () => {
     })
     const qp = url.slice("/search?".length)
     const keys = [...new URLSearchParams(qp).keys()]
-    expect(keys).toEqual(["q", "db", "page", "perPage", "sort", "cursor", "adv"])
+    expect(keys).toEqual(["q", "db", "page", "perPage", "sort", "cursor"])
   })
 
   it("omits default values (page=1, perPage=20, sort=relevance, db=all)", () => {
@@ -167,17 +166,21 @@ describe("parseSearchUrl", () => {
 
   const parse = (qs: string) => parseSearchUrl(new URLSearchParams(qs))
 
-  it("redirects to home when neither q nor adv are given", () => {
+  it("redirects to home when q is missing", () => {
     const result = parse("")
     expect(result.shouldRedirectToHome).toBe(true)
     expect(result.params.q).toBeNull()
-    expect(result.params.adv).toBeNull()
   })
 
-  it("keeps both q and adv when both are present (AND combination)", () => {
-    const result = parse("q=human&adv=title%3Acancer")
-    expect(result.params.q).toBe("human")
-    expect(result.params.adv).toBe("title:cancer")
+  it("silently drops legacy adv parameter (no redirect when only adv is present)", () => {
+    const result = parse("adv=title%3Acancer")
+    expect(result.params.q).toBeNull()
+    expect(result.shouldRedirectToHome).toBe(true)
+  })
+
+  it("parses DSL-style q as-is", () => {
+    const result = parse("q=title%3Acancer+AND+organism%3A%22Homo+sapiens%22")
+    expect(result.params.q).toBe('title:cancer AND organism:"Homo sapiens"')
     expect(result.shouldRedirectToHome).toBe(false)
   })
 
@@ -197,9 +200,8 @@ describe("parseSearchUrl", () => {
   })
 
   it("trims whitespace-only q to null", () => {
-    const result = parse("q=%20%20&adv=title%3Acancer")
+    const result = parse("q=%20%20")
     expect(result.params.q).toBeNull()
-    expect(result.params.adv).toBe("title:cancer")
   })
 
   it("silently falls back invalid page to DEFAULT_PAGE", () => {
@@ -245,14 +247,7 @@ describe("parseSearchUrl", () => {
     expect(() => fc.assert(
       fc.property(
         fc.record({
-          q: fc.oneof(
-            fc.constant<string | null>(null),
-            fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
-          ),
-          adv: fc.oneof(
-            fc.constant<string | null>(null),
-            fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
-          ),
+          q: fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
           db: fc.constantFrom<DbSelectValue>(...DB_VALUES),
           page: fc.integer({ max: 9999, min: 1 }),
           perPage: fc.constantFrom<PerPageValue>(...PER_PAGE_VALUES),
@@ -260,13 +255,10 @@ describe("parseSearchUrl", () => {
           cursor: fc.oneof(fc.constant<string | null>(null), fc.string({ minLength: 1 })),
         }),
         (p) => {
-          // skip invalid input: neither q nor adv
-          if (p.q === null && p.adv === null) return true
           const url = buildSearchUrlFull(p)
           const qs = url.slice("/search?".length)
           const parsed = parseSearchUrl(new URLSearchParams(qs))
-          expect(parsed.params.q).toBe(p.q === null ? null : p.q.trim())
-          expect(parsed.params.adv).toBe(p.adv === null ? null : p.adv.trim())
+          expect(parsed.params.q).toBe(p.q.trim())
           expect(parsed.params.db).toBe(p.db)
           expect(parsed.params.page).toBe(p.page)
           expect(parsed.params.perPage).toBe(p.perPage)
@@ -327,15 +319,13 @@ describe("parseSearchUrl", () => {
     expect(() => fc.assert(
       fc.property(
         fc.record({
-          q: fc.option(fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0), { nil: null as never }),
-          adv: fc.option(fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0), { nil: null as never }),
+          q: fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
           db: fc.constantFrom<DbSelectValue>(...DB_VALUES),
           page: fc.integer({ max: 9999, min: 1 }),
           perPage: fc.constantFrom<PerPageValue>(...PER_PAGE_VALUES),
           sort: fc.constantFrom<SortValue>(...SORT_VALUES),
         }),
         (p) => {
-          if (p.q === null && p.adv === null) return true
           const canonical = buildSearchUrlFull(p)
           const reparse = parseSearchUrl(new URLSearchParams(canonical.slice("/search?".length)))
 

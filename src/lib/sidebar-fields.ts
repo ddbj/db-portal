@@ -1,4 +1,4 @@
-import type { DateAxis } from "@/lib/search-dsl-builder"
+import type { DateAxis } from "@/lib/sidebar-state-types"
 import type { DbId } from "@/types/db"
 
 export interface FacetFieldMapping {

@@ -10,23 +10,23 @@ describe("QueryPreview", () => {
     renderWithProviders(
       <QueryPreview
         dsl={"title:cancer AND organism:\"Homo sapiens\""}
-        initialAdv={null}
+        initialQ={null}
         errors={[]}
       />,
     )
     expect(screen.getByText(/title:cancer/)).toBeInTheDocument()
   })
 
-  it("dsl 空 / initialAdv null → empty メッセージ表示", () => {
-    renderWithProviders(<QueryPreview dsl="" initialAdv={null} errors={[]} />)
+  it("dsl 空 / initialQ null → empty メッセージ表示", () => {
+    renderWithProviders(<QueryPreview dsl="" initialQ={null} errors={[]} />)
     expect(
       screen.getByText(/条件を追加するとクエリが表示されます/),
     ).toBeInTheDocument()
   })
 
-  it("dsl 空 / initialAdv あり → initialAdv 表示 + urlOnly ヒント", () => {
+  it("dsl 空 / initialQ あり → initialQ 表示 + urlOnly ヒント", () => {
     renderWithProviders(
-      <QueryPreview dsl="" initialAdv="title:cancer" errors={[]} />,
+      <QueryPreview dsl="" initialQ="title:cancer" errors={[]} />,
     )
     expect(screen.getByText("title:cancer")).toBeInTheDocument()
     expect(screen.getByText(/URL から受信した DSL/)).toBeInTheDocument()
@@ -36,7 +36,7 @@ describe("QueryPreview", () => {
     renderWithProviders(
       <QueryPreview
         dsl=""
-        initialAdv={null}
+        initialQ={null}
         errors={[
           { code: "MISSING_VALUE", path: [0] },
           { code: "NEST_DEPTH_EXCEEDED", path: [] },
@@ -50,7 +50,7 @@ describe("QueryPreview", () => {
   })
 
   it("コピーボタンは dsl が空の時は disabled", () => {
-    renderWithProviders(<QueryPreview dsl="" initialAdv={null} errors={[]} />)
+    renderWithProviders(<QueryPreview dsl="" initialQ={null} errors={[]} />)
     const copyBtn = screen.getByRole("button", { name: /コピー/ })
     expect(copyBtn).toBeDisabled()
   })

@@ -5,7 +5,6 @@ import DbHitCountCard from "./DbHitCountCard"
 export interface DbHitCountListProps {
   databases: readonly DbHitCount[]
   query: string | null
-  adv: string | null
   onRetry: (dbId: DbId) => void
 }
 
@@ -32,7 +31,7 @@ const sortDatabases = (dbs: readonly DbHitCount[]): readonly DbHitCount[] => {
   return sorted
 }
 
-const DbHitCountList = ({ databases, query, adv, onRetry }: DbHitCountListProps) => {
+const DbHitCountList = ({ databases, query, onRetry }: DbHitCountListProps) => {
   const sorted = sortDatabases(databases)
 
   return (
@@ -45,7 +44,6 @@ const DbHitCountList = ({ databases, query, adv, onRetry }: DbHitCountListProps)
           count={db.count}
           error={db.error ?? null}
           query={query}
-          adv={adv}
           onRetry={onRetry}
           {...(db.topHits !== undefined && { topHits: db.topHits })}
         />

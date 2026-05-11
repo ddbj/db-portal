@@ -45,14 +45,14 @@ const NotificationBar = ({ notifications }: NotificationBarProps) => {
               "text-sm",
             )}
           >
-            <span className="shrink-0 text-xs font-medium text-primary-700 tabular-nums">
+            <span className="text-primary-700 shrink-0 text-xs font-medium tabular-nums">
               {formatDate(item.date, i18n.language)}
             </span>
             <a
               href={item.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 truncate text-primary-900 hover:underline"
+              className="text-primary-900 flex-1 truncate hover:underline"
             >
               {item.title}
             </a>
@@ -60,7 +60,7 @@ const NotificationBar = ({ notifications }: NotificationBarProps) => {
               type="button"
               onClick={() => dismiss(item.id)}
               aria-label={t("notifications.dismiss")}
-              className="shrink-0 rounded p-1 text-primary-700 hover:bg-primary-100"
+              className="text-primary-700 hover:bg-primary-100 shrink-0 rounded p-1"
             >
               <X className="h-3.5 w-3.5" aria-hidden={true} />
             </button>

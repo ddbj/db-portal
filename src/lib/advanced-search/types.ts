@@ -73,7 +73,7 @@ export interface AdvancedSearchState {
   db: DbSelectValue
   tree: AdvancedGroupNode
   pendingDb: { next: DbSelectValue; toRemoveIds: readonly string[] } | null
-  initialAdv: string | null
+  initialQ: string | null
 }
 
 export type AdvancedSearchAction =

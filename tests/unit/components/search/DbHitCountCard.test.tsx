@@ -35,7 +35,6 @@ describe("DbHitCountCard", () => {
         count={null}
         error={null}
         query="human"
-        adv={null}
         onRetry={vi.fn()}
       />,
     )
@@ -51,7 +50,6 @@ describe("DbHitCountCard", () => {
         count={189923}
         error={null}
         query="human"
-        adv={null}
         onRetry={vi.fn()}
       />,
     )
@@ -70,7 +68,6 @@ describe("DbHitCountCard", () => {
         count={null}
         error="timeout"
         query="human"
-        adv={null}
         onRetry={onRetry}
       />,
     )
@@ -81,21 +78,22 @@ describe("DbHitCountCard", () => {
     expect(onRetry).toHaveBeenCalledWith("trad")
   })
 
-  it("includes adv in the detail url when provided", () => {
+  it("preserves DSL q in the detail url", () => {
     renderWithProviders(
       <DbHitCountCard
         dbId="bioproject"
         state="success"
         count={100}
         error={null}
-        query={null}
-        adv="title:cancer"
+        query={'title:cancer AND organism:"Homo sapiens"'}
         onRetry={vi.fn()}
       />,
     )
     const link = screen.getByRole("link")
-    expect(link.getAttribute("href")).toContain("adv=")
-    expect(link.getAttribute("href")).toContain("db=bioproject")
+    const href = link.getAttribute("href") ?? ""
+    expect(href).toContain("db=bioproject")
+    expect(href).toContain("q=")
+    expect(decodeURIComponent(href)).toContain("title:cancer")
   })
 
   describe("topHits", () => {
@@ -108,7 +106,6 @@ describe("DbHitCountCard", () => {
           count={1234}
           error={null}
           query="human"
-          adv={null}
           onRetry={vi.fn()}
           topHits={[hit("PRJDB1"), hit("PRJDB2"), hit("PRJDB3")]}
         />,
@@ -136,7 +133,6 @@ describe("DbHitCountCard", () => {
           count={50}
           error={null}
           query="human"
-          adv={null}
           onRetry={vi.fn()}
         />,
       )
@@ -152,7 +148,6 @@ describe("DbHitCountCard", () => {
           count={0}
           error={null}
           query="human"
-          adv={null}
           onRetry={vi.fn()}
           topHits={[]}
         />,
@@ -168,7 +163,6 @@ describe("DbHitCountCard", () => {
           count={1}
           error={null}
           query="human"
-          adv={null}
           onRetry={vi.fn()}
           topHits={[hit("PRJDB42", { title: null })]}
         />,
@@ -186,7 +180,6 @@ describe("DbHitCountCard", () => {
           count={1}
           error={null}
           query="human"
-          adv={null}
           onRetry={vi.fn()}
           topHits={[hit("PRJDB42", { url: null })]}
         />,
@@ -204,7 +197,6 @@ describe("DbHitCountCard", () => {
           count={null}
           error="timeout"
           query="human"
-          adv={null}
           onRetry={vi.fn()}
           topHits={[hit("PRJDB1")]}
         />,

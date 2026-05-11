@@ -27,15 +27,20 @@ import {
   dbSearch,
   type FacetsDbType,
   fetchFacets,
-  parseAdv,
+  parseQ,
 } from "@/lib/api"
 import { DATABASES } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
-  mergeAdvWithSidebar,
-  type SidebarState,
-  sidebarStateToDsl,
-} from "@/lib/search-dsl-builder"
+  astToDsl,
+  extractFreeText,
+  fieldEq,
+  mergeAstAnd,
+  parseAstToSearchAst,
+  type SearchAstNode,
+  sidebarStateToAst,
+  splitAstForSidebar,
+} from "@/lib/search-ast"
 import {
   ALL_DB_VALUE,
   buildSearchUrlFull,
@@ -45,7 +50,7 @@ import {
   type SortValue,
 } from "@/lib/search-url"
 import { sidebarFieldsForDb } from "@/lib/sidebar-fields"
-import { astToDsl, astToSidebarState } from "@/lib/sidebar-from-ast"
+import type { SidebarState } from "@/lib/sidebar-state-types"
 import {
   DB_ORDER,
   type DbHitCount,
@@ -81,6 +86,8 @@ const KNOWN_ERROR_SLUGS: ReadonlySet<string> = new Set([
   "invalid-operator-for-field",
   "nest-depth-exceeded",
   "missing-value",
+  "invalid-freetext-position",
+  "duplicate-freetext",
 ])
 
 const getErrorMessage = (
@@ -132,9 +139,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   const resource = resolveMeta(lang)
 
   let metaTitle: string = resource.routes.home.meta.title
-  if (parsed.params.q === null && parsed.params.adv !== null) {
-    metaTitle = resource.routes.search.meta.titleAdv
-  } else if (parsed.params.q !== null) {
+  if (parsed.params.q !== null) {
     const q = parsed.params.q
     if (parsed.params.db !== ALL_DB_VALUE) {
       const displayName = DATABASES.find((d) => d.id === parsed.params.db)?.displayName
@@ -148,7 +153,6 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   }
 
   const canonicalSearch = buildSearchUrlFull({
-    adv: parsed.params.adv,
     cursor: parsed.params.cursor,
     db: parsed.params.db,
     page: parsed.params.page,
@@ -214,15 +218,14 @@ const CrossModeView = ({ params }: ModeViewProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const hasQuery = params.q !== null || params.adv !== null
+  const hasQuery = params.q !== null
 
   const query = useQuery({
-    queryKey: ["crossSearch", params.q, params.adv] as const,
+    queryKey: ["crossSearch", params.q] as const,
     queryFn: ({ signal }) =>
       crossSearch(
         {
           ...(params.q !== null && { q: params.q }),
-          ...(params.adv !== null && { adv: params.adv }),
           topHits: 5,
         },
         signal,
@@ -260,33 +263,12 @@ const CrossModeView = ({ params }: ModeViewProps) => {
     void navigate("/", { replace: true })
   }
 
-  const editHref = params.adv !== null
-    ? `/advanced-search?adv=${encodeURIComponent(params.adv)}`
-    : undefined
-
-  const summaryProps = params.q !== null && params.adv !== null
-    ? {
-      mode: "combined" as const,
-      q: params.q,
-      adv: params.adv,
-      db: params.db,
-      onClear: handleClear,
-      ...(editHref !== undefined && { editHref }),
-    }
-    : params.adv !== null
-      ? {
-        mode: "advanced" as const,
-        adv: params.adv,
-        db: params.db,
-        onClear: handleClear,
-        ...(editHref !== undefined && { editHref }),
-      }
-      : {
-        mode: "simple" as const,
-        q: params.q ?? "",
-        db: params.db,
-        onClear: handleClear,
-      }
+  const summaryProps = {
+    mode: "simple" as const,
+    q: params.q ?? "",
+    db: params.db,
+    onClear: handleClear,
+  }
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
@@ -325,7 +307,6 @@ const CrossModeView = ({ params }: ModeViewProps) => {
           <DbHitCountList
             databases={databases}
             query={params.q}
-            adv={params.adv}
             onRetry={handleRetry}
           />
         </div>
@@ -355,21 +336,32 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   const navigate = useNavigate()
 
   const parseQuery = useQuery({
-    queryKey: ["parseAdv", db, params.adv] as const,
+    queryKey: ["parseQ", db, params.q] as const,
     queryFn: ({ signal }) =>
-      parseAdv({ adv: params.adv ?? "", db }, signal),
-    enabled: params.adv !== null,
+      parseQ({ q: params.q ?? "", db }, signal),
+    enabled: params.q !== null && params.q !== "",
+    staleTime: Infinity,
   })
 
-  const { sidebar: derivedSidebar, residual } = useMemo(() => {
-    const ast = parseQuery.data?.ast ?? null
+  const parsedAst: SearchAstNode | null = useMemo(() => {
+    if (parseQuery.data === undefined) return null
 
-    return astToSidebarState(ast, db)
-  }, [parseQuery.data, db])
+    return parseAstToSearchAst(parseQuery.data.ast)
+  }, [parseQuery.data])
+
+  const { sidebar: derivedSidebar, residual } = useMemo(
+    () => splitAstForSidebar(parsedAst, db),
+    [parsedAst, db],
+  )
 
   const residualDsl = useMemo(
     () => (residual !== null ? astToDsl(residual) : null),
     [residual],
+  )
+
+  const freeTextForFacets = useMemo(
+    () => extractFreeText(parsedAst),
+    [parsedAst],
   )
 
   const facetsDbType = useMemo(
@@ -393,7 +385,7 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     return sidebarFields.facets.map((f) => f.facetKey).join(",")
   }, [facetsDbType, sidebarFields])
 
-  const hasQuery = params.q !== null || params.adv !== null
+  const hasQuery = params.q !== null
 
   const subtypeList: readonly string[] = useMemo(
     () =>
@@ -405,12 +397,12 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     [db],
   )
 
-  const baseAdvForSubtypeCount = useMemo(() => {
-    const baseSidebarState = { ...derivedSidebar, subtype: null }
-    const baseSidebarDsl = sidebarStateToDsl(baseSidebarState)
+  const baseAstForSubtypeCount = useMemo(() => {
+    const baseSidebarState: SidebarState = { ...derivedSidebar, subtype: null }
+    const baseSidebarAst = sidebarStateToAst(baseSidebarState)
 
-    return mergeAdvWithSidebar(residualDsl, baseSidebarDsl)
-  }, [derivedSidebar, residualDsl])
+    return mergeAstAnd([residual, baseSidebarAst])
+  }, [derivedSidebar, residual])
 
   const subtypeCountQueries = useQueries({
     queries: subtypeList.map((subtype) => ({
@@ -419,18 +411,18 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
         db,
         subtype,
         params.q,
-        baseAdvForSubtypeCount,
       ] as const,
       queryFn: ({ signal }: { signal: AbortSignal }) => {
-        const subtypeAdv = baseAdvForSubtypeCount === null
-          ? `type:${subtype}`
-          : `(${baseAdvForSubtypeCount}) AND type:${subtype}`
+        const merged = mergeAstAnd([
+          baseAstForSubtypeCount,
+          fieldEq("type", subtype),
+        ])
+        const subtypeQ = astToDsl(merged)
 
         return dbSearch(
           {
             db,
-            ...(params.q !== null && { q: params.q }),
-            adv: subtypeAdv,
+            ...(subtypeQ !== "" && { q: subtypeQ }),
             page: 1,
             perPage: 20,
           },
@@ -456,7 +448,6 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
       "dbSearch",
       db,
       params.q,
-      params.adv,
       params.page,
       params.perPage,
       params.sort,
@@ -479,7 +470,6 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
         {
           db,
           ...(params.q !== null && { q: params.q }),
-          ...(params.adv !== null && { adv: params.adv }),
           page: params.page,
           perPage: params.perPage,
           ...(apiSort !== undefined && { sort: apiSort }),
@@ -490,12 +480,12 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   })
 
   const facetsQuery = useQuery({
-    queryKey: ["facets", facetsDbType, params.q, params.adv, facetsParam] as const,
+    queryKey: ["facets", facetsDbType, freeTextForFacets, facetsParam] as const,
     queryFn: ({ signal }) =>
       fetchFacets(
         facetsDbType,
         {
-          ...(params.q !== null && { keywords: params.q }),
+          ...(freeTextForFacets !== null && { keywords: freeTextForFacets }),
           ...(facetsParam !== "" && { facets: facetsParam }),
         },
         signal,
@@ -506,7 +496,6 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   const updateParams = (changes: Partial<SearchParams>) => {
     const merged = { ...params, ...changes }
     const url = buildSearchUrlFull({
-      adv: merged.adv,
       cursor: merged.cursor,
       db: merged.db,
       page: merged.page,
@@ -518,9 +507,14 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   }
 
   const handleSidebarChange = (next: SidebarState) => {
-    const sidebarDsl = sidebarStateToDsl(next)
-    const newAdv = mergeAdvWithSidebar(residualDsl, sidebarDsl)
-    updateParams({ adv: newAdv, page: 1, cursor: null })
+    const sidebarAst = sidebarStateToAst(next)
+    const mergedAst = mergeAstAnd([residual, sidebarAst])
+    const newQ = mergedAst === null ? null : astToDsl(mergedAst)
+    updateParams({
+      q: newQ === "" ? null : newQ,
+      page: 1,
+      cursor: null,
+    })
   }
 
   const handleSortChange = (sort: SortValue) =>
@@ -553,36 +547,15 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   }
 
   const advancedSearchHref = `/advanced-search?db=${db}${
-    params.adv !== null ? `&adv=${encodeURIComponent(params.adv)}` : ""
+    params.q !== null ? `&q=${encodeURIComponent(params.q)}` : ""
   }`
 
-  const editHref = params.adv !== null
-    ? `/advanced-search?db=${db}&adv=${encodeURIComponent(params.adv)}`
-    : undefined
-
-  const summaryProps = params.q !== null && params.adv !== null
-    ? {
-      mode: "combined" as const,
-      q: params.q,
-      adv: params.adv,
-      db: params.db,
-      onClear: handleClear,
-      ...(editHref !== undefined && { editHref }),
-    }
-    : params.adv !== null
-      ? {
-        mode: "advanced" as const,
-        adv: params.adv,
-        db: params.db,
-        onClear: handleClear,
-        ...(editHref !== undefined && { editHref }),
-      }
-      : {
-        mode: "simple" as const,
-        q: params.q ?? "",
-        db: params.db,
-        onClear: handleClear,
-      }
+  const summaryProps = {
+    mode: "simple" as const,
+    q: params.q ?? "",
+    db: params.db,
+    onClear: handleClear,
+  }
 
   const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
 
