@@ -1,26 +1,26 @@
 services:
   vllm:
-    image: docker.io/vllm/vllm-openai:${VLLM_IMAGE_TAG}
+    image: docker.io/vllm/vllm-openai:${LLM_IMAGE_TAG}
     container_name: db-portal-llm
     restart: unless-stopped
     ports:
-      - "${VLLM_HOST_PORT:-3200}:8000"
+      - "${LLM_HOST_PORT:-3200}:8000"
     devices:
-      - nvidia.com/gpu=${VLLM_GPU_DEVICE:-0}
+      - nvidia.com/gpu=${LLM_GPU_DEVICE:-0}
     ipc: host
     volumes:
-      - ${HF_HOME}:/root/.cache/huggingface
+      - ${LLM_HF_HOME}:/root/.cache/huggingface
       - ./entrypoint.sh:/entrypoint.sh:ro
     environment:
-      MODEL: ${MODEL}
-      VLLM_API_KEY: ${VLLM_API_KEY}
-      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-}
-      QUANTIZATION: ${QUANTIZATION:-}
-      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-8192}
-      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.92}
-      TOKENIZER_MODE: ${TOKENIZER_MODE:-}
-      CONFIG_FORMAT: ${CONFIG_FORMAT:-}
-      LOAD_FORMAT: ${LOAD_FORMAT:-}
+      LLM_MODEL: ${LLM_MODEL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MAX_MODEL_LEN: ${LLM_MAX_MODEL_LEN:-8192}
+      LLM_GPU_MEMORY_UTILIZATION: ${LLM_GPU_MEMORY_UTILIZATION:-0.92}
+      LLM_QUANTIZATION: ${LLM_QUANTIZATION:-}
+      LLM_SERVED_MODEL_NAME: ${LLM_SERVED_MODEL_NAME:-}
+      LLM_TOKENIZER_MODE: ${LLM_TOKENIZER_MODE:-}
+      LLM_CONFIG_FORMAT: ${LLM_CONFIG_FORMAT:-}
+      LLM_LOAD_FORMAT: ${LLM_LOAD_FORMAT:-}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

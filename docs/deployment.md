@@ -17,7 +17,7 @@ staging / production 環境へのデプロイ手順、podman 運用の注意事�
 |---|---|---|
 | staging | `ssh nig-a012-search` | `~/db-portal-staging` |
 | production | `ssh nig-a011-search` | `~/db-portal-prod` |
-| LLM (GPU node) | `ssh nig-gpu-2` | `~/db-portal-llm` |
+| LLM (GPU node) | `ssh nig-gpu-2` | `~/db-portal-staging` (a012 と Lustre 共有、`llm/` で podman-compose) |
 
 上流の Nginx（リバースプロキシ）は DDBJ インフラ側で管理する（[ddbj/service-gateway-conf](https://github.com/ddbj/service-gateway-conf)）。本リポジトリには含めない。
 
@@ -85,6 +85,8 @@ podman-compose exec app npm install
 ## LLM サービングサーバー (GPU node)
 
 検索・登録補助用の vLLM を GPU node (nig-gpu-2 / l40s-03) で常時起動し、staging / production の portal app から内部 LAN 経由で共有する構成。
+
+vLLM は **staging clone (`~/db-portal-staging`) と同居** させ、Lustre 経由で a012 (portal app) と nig-gpu-2 (vLLM) が同一 `<repo_root>/.env` を共有する。`LLM_*` 変数は `env.staging` に集約。production (`~/db-portal-prod`) には BFF 用の `LLM_*` 一部を別途同期。
 
 - 起動手順・環境変数・運用は [`docs/llm.md`](./llm.md) を SSOT として参照
 - GPU node のオペレータ向け最小手順は [`llm/README.md`](../llm/README.md)
