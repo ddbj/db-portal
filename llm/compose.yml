@@ -1,6 +1,6 @@
 services:
   vllm:
-    image: vllm/vllm-openai:${VLLM_IMAGE_TAG}
+    image: docker.io/vllm/vllm-openai:${VLLM_IMAGE_TAG}
     container_name: db-portal-llm
     restart: unless-stopped
     ports:
