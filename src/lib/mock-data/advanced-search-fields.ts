@@ -98,8 +98,8 @@ const TIER2_FIELDS: readonly AdvancedFieldDef[] = [
     id: "publication",
     dslName: "publication",
     tier: 2,
-    type: "identifier",
-    availableOps: IDENTIFIER_OPS,
+    type: "text",
+    availableOps: TEXT_OPS,
     availableDbs: DB_ORDER,
   },
 ]
@@ -249,6 +249,14 @@ const TIER3_BIOSAMPLE: readonly AdvancedFieldDef[] = [
     availableOps: TEXT_OPS,
     availableDbs: BIOSAMPLE_SRA_DBS,
   },
+  {
+    id: "derived_from_id",
+    dslName: "derived_from_id",
+    tier: 3,
+    type: "identifier",
+    availableOps: IDENTIFIER_OPS,
+    availableDbs: BIOSAMPLE_SRA_DBS,
+  },
 ]
 
 const TIER3_SRA_ONLY: readonly AdvancedFieldDef[] = [
@@ -323,6 +331,14 @@ const TIER3_BIOPROJECT: readonly AdvancedFieldDef[] = [
       { value: "ModelOrganism", labelKey: enumKey("relevance", "model_organism") },
       { value: "Other", labelKey: enumKey("relevance", "other") },
     ],
+  },
+  {
+    id: "bioproject_external_link_label",
+    dslName: "external_link_label",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: BIOPROJECT_DBS,
   },
 ]
 
@@ -458,6 +474,14 @@ const TIER3_JGA: readonly AdvancedFieldDef[] = [
   {
     id: "vendor",
     dslName: "vendor",
+    tier: 3,
+    type: "text",
+    availableOps: TEXT_OPS,
+    availableDbs: JGA_DBS,
+  },
+  {
+    id: "jga_external_link_label",
+    dslName: "external_link_label",
     tier: 3,
     type: "text",
     availableOps: TEXT_OPS,

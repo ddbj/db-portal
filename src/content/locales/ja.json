@@ -345,6 +345,7 @@
         "library_construction_protocol": { "label": "ライブラリ作製プロトコル" },
         "geo_loc_name": { "label": "採取地" },
         "collection_date": { "label": "採取日" },
+        "derived_from_id": { "label": "由来サンプル ID" },
         "host": { "label": "宿主" },
         "strain": { "label": "系統 (Strain)" },
         "isolate": { "label": "分離株 (Isolate)" },
@@ -359,6 +360,7 @@
           }
         },
         "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
+        "bioproject_external_link_label": { "label": "外部リンクラベル（BioProject）" },
         "relevance": {
           "label": "関連性タグ (BioProject)",
           "enumValues": {
@@ -431,6 +433,7 @@
           }
         },
         "jga_grant_agency": { "label": "助成機関（JGA）" },
+        "jga_external_link_label": { "label": "外部リンクラベル（JGA）" },
         "dataset_type": { "label": "データセット種別 (JGA)" },
         "vendor": { "label": "ベンダー (JGA)" },
         "gea_experiment_type": { "label": "実験種別 (GEA)" },

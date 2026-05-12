@@ -813,11 +813,7 @@ export interface paths {
         };
         /**
          * DB Portal cross-database fan-out (count + top hits)
-         * @description ``GET /db-portal/cross-search``: cross-database count + top hits search.
-         *
-         *     ``q`` を Lark でパース → validator → ES/Solr compiler の単一 pipeline を通して
-         *     ``_cross_search_dispatch`` に渡す。``q`` 省略時は ``ast=None`` で全件 match_all
-         *     fan-out を行う。
+         * @description Fan-out search across 8 databases (6 Elasticsearch + 2 Solr). Per-backend timeouts and a global timeout enforce partial-failure tolerance: individual DB errors surface in `databases[i].error` while the response stays 200. All-DB failure returns 502. Pagination concepts (db / cursor / page / perPage / sort) are rejected with 400 `unexpected-parameter`; use /db-portal/search for paginated single-DB queries.
          */
         get: operations["crossSearchDbPortal"];
         put?: never;
@@ -837,11 +833,7 @@ export interface paths {
         };
         /**
          * DB Portal db-specific hits search
-         * @description ``GET /db-portal/search``: db-specific hits search.
-         *
-         *     cursor 経路 (``_db_specific_search_cursor``) は cursor token に焼き込んだ
-         *     ES query を decode して継続する設計のため、本 dispatch には流さない。
-         *     cursor + q は ``_validate_cursor_exclusivity`` (cursor 経路前段) で弾く。
+         * @description Single-database hits search with pagination. `db` is required (400 `missing-db` if omitted). Elasticsearch-backed DBs support cursor-based pagination; Solr-backed DBs (db=trad / db=taxonomy) are offset-only (400 `cursor-not-supported` if cursor is supplied). On ES DBs, `cursor` cannot be combined with `q` / `sort` / `page>1` (400 `about:blank`, cursor exclusivity). Cross-database counts go through /db-portal/cross-search instead.
          */
         get: operations["searchDbPortal"];
         put?: never;
@@ -881,7 +873,7 @@ export interface paths {
         };
         /**
          * Get service information
-         * @description Returns service metadata including name, version, and Elasticsearch connectivity status.
+         * @description Service metadata (name / version / description) plus Elasticsearch reachability. Returns 200 regardless of Elasticsearch health; the `elasticsearch` field reports the actual state. Intended for liveness probes and deploy verification.
          */
         get: operations["getServiceInfo"];
         put?: never;
@@ -897,77 +889,153 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * Accessibility
+         * @description INSDC accessibility levels carried by every entry.
+         * @enum {string}
+         */
+        Accessibility: "public-access" | "controlled-access";
+        /**
          * AccessionType
          * @enum {string}
          */
         AccessionType: "bioproject" | "biosample" | "gea" | "geo" | "humandbs" | "insdc" | "insdc-assembly" | "insdc-master" | "jga-dac" | "jga-dataset" | "jga-policy" | "jga-study" | "metabobank" | "pubmed" | "sra-analysis" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-study" | "sra-submission" | "taxonomy";
-        /** BioProject */
+        /**
+         * BioProject
+         * @description A BioProject entry — one document of the Elasticsearch `bioproject` index.
+         */
         BioProject: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "PRJDB1234", "PRJNA12345").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access. This field exists to round-trip the source representation.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "bioproject" for BioProject entries.
              * @constant
              */
             isPartOf: "bioproject";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "bioproject" for this index (use `objectType` to distinguish umbrella entries). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "bioproject";
             /**
              * Objecttype
+             * @description BioProject object kind. "UmbrellaBioProject" = upper-level entry that has child BioProjects; "BioProject" = regular leaf entry.
              * @enum {string}
              */
             objectType: "UmbrellaBioProject" | "BioProject";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title (sourced from the `Title` element of the source XML).
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Project description text.
+             */
             description?: string | null;
-            /** Projecttype */
+            /**
+             * Projecttype
+             * @description BioProject project-type values (vocabulary is source-dependent).
+             */
             projectType: string[];
-            /** Relevance */
+            /**
+             * Relevance
+             * @description Names of relevance tags whose value was "yes" in the source XML. Possible names: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.
+             */
             relevance: string[];
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Parentbioprojects */
+            /**
+             * Parentbioprojects
+             * @description Parent BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             parentBioProjects: components["schemas"]["Xref"][];
-            /** Childbioprojects */
+            /**
+             * Childbioprojects
+             * @description Child BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             childBioProjects: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry (e.g. GEO cross-references). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date. None if absent in the source.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date. None if absent in the source.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date. None if absent in the source.
+             */
             datePublished?: string | null;
         };
         /**
@@ -975,73 +1043,147 @@ export interface components {
          * @description BioProject entry detail with truncated dbXrefs and dbXrefsCount.
          */
         BioProjectDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "PRJDB1234", "PRJNA12345").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access. This field exists to round-trip the source representation.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "bioproject" for BioProject entries.
              * @constant
              */
             isPartOf: "bioproject";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "bioproject" for this index (use `objectType` to distinguish umbrella entries). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "bioproject";
             /**
              * Objecttype
+             * @description BioProject object kind. "UmbrellaBioProject" = upper-level entry that has child BioProjects; "BioProject" = regular leaf entry.
              * @enum {string}
              */
             objectType: "UmbrellaBioProject" | "BioProject";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title (sourced from the `Title` element of the source XML).
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Project description text.
+             */
             description?: string | null;
-            /** Projecttype */
+            /**
+             * Projecttype
+             * @description BioProject project-type values (vocabulary is source-dependent).
+             */
             projectType: string[];
-            /** Relevance */
+            /**
+             * Relevance
+             * @description Names of relevance tags whose value was "yes" in the source XML. Possible names: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.
+             */
             relevance: string[];
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Parentbioprojects */
+            /**
+             * Parentbioprojects
+             * @description Parent BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             parentBioProjects: components["schemas"]["Xref"][];
-            /** Childbioprojects */
+            /**
+             * Childbioprojects
+             * @description Child BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             childBioProjects: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry (e.g. GEO cross-references). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date. None if absent in the source.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date. None if absent in the source.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date. None if absent in the source.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -1051,140 +1193,277 @@ export interface components {
          * @description BioProject entry in JSON-LD format.
          */
         BioProjectEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "PRJDB1234", "PRJNA12345").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access. This field exists to round-trip the source representation.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "bioproject" for BioProject entries.
              * @constant
              */
             isPartOf: "bioproject";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "bioproject" for this index (use `objectType` to distinguish umbrella entries). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "bioproject";
             /**
              * Objecttype
+             * @description BioProject object kind. "UmbrellaBioProject" = upper-level entry that has child BioProjects; "BioProject" = regular leaf entry.
              * @enum {string}
              */
             objectType: "UmbrellaBioProject" | "BioProject";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title (sourced from the `Title` element of the source XML).
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Project description text.
+             */
             description?: string | null;
-            /** Projecttype */
+            /**
+             * Projecttype
+             * @description BioProject project-type values (vocabulary is source-dependent).
+             */
             projectType: string[];
-            /** Relevance */
+            /**
+             * Relevance
+             * @description Names of relevance tags whose value was "yes" in the source XML. Possible names: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.
+             */
             relevance: string[];
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Parentbioprojects */
+            /**
+             * Parentbioprojects
+             * @description Parent BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             parentBioProjects: components["schemas"]["Xref"][];
-            /** Childbioprojects */
+            /**
+             * Childbioprojects
+             * @description Child BioProjects in the umbrella DAG. Key is always emitted, even when empty.
+             */
             childBioProjects: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry (e.g. GEO cross-references). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date. None if absent in the source.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date. None if absent in the source.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date. None if absent in the source.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
             /** @Id */
             "@id": string;
         };
-        /** BioSample */
+        /**
+         * BioSample
+         * @description A BioSample entry — one document of the Elasticsearch `biosample` index.
+         */
         BioSample: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "SAMD00000001", "SAMN12345678").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "biosample" for BioSample entries.
              * @constant
              */
             isPartOf: "biosample";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "biosample" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "biosample";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Sample description text.
+             */
             description?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. parent BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location (from sample attributes).
+             */
             geoLocName?: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Host */
+            /**
+             * Host
+             * @description Host organism (from sample attributes).
+             */
             host?: string | null;
-            /** Strain */
+            /**
+             * Strain
+             * @description Strain identifier (from sample attributes). Distinct from "isolate".
+             */
             strain?: string | null;
-            /** Isolate */
+            /**
+             * Isolate
+             * @description Isolate identifier (from sample attributes). Distinct from "strain".
+             */
             isolate?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Model */
+            /**
+             * Model
+             * @description BioSample model values. Key is always emitted, even when empty.
+             */
             model: string[];
+            /** @description INSDC package metadata. Required field — None is allowed, but the builder must always set this key explicitly. */
             package: components["schemas"]["BioSamplePackage"] | null;
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
         };
         /**
@@ -1192,69 +1471,143 @@ export interface components {
          * @description BioSample entry detail with truncated dbXrefs and dbXrefsCount.
          */
         BioSampleDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "SAMD00000001", "SAMN12345678").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "biosample" for BioSample entries.
              * @constant
              */
             isPartOf: "biosample";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "biosample" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "biosample";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Sample description text.
+             */
             description?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. parent BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location (from sample attributes).
+             */
             geoLocName?: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Host */
+            /**
+             * Host
+             * @description Host organism (from sample attributes).
+             */
             host?: string | null;
-            /** Strain */
+            /**
+             * Strain
+             * @description Strain identifier (from sample attributes). Distinct from "isolate".
+             */
             strain?: string | null;
-            /** Isolate */
+            /**
+             * Isolate
+             * @description Isolate identifier (from sample attributes). Distinct from "strain".
+             */
             isolate?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Model */
+            /**
+             * Model
+             * @description BioSample model values. Key is always emitted, even when empty.
+             */
             model: string[];
+            /** @description INSDC package metadata. Required field — None is allowed, but the builder must always set this key explicitly. */
             package: components["schemas"]["BioSamplePackage"] | null;
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -1264,78 +1617,154 @@ export interface components {
          * @description BioSample entry in JSON-LD format.
          */
         BioSampleEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession used as the ES `_id` (e.g. "SAMD00000001", "SAMN12345678").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (Schema.org DataDownload). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "biosample" for BioSample entries.
              * @constant
              */
             isPartOf: "biosample";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "biosample" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "biosample";
-            /** Name */
+            /**
+             * Name
+             * @description Short name (sourced from the `Name` element of the source XML).
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Sample description text.
+             */
             description?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. parent BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location (from sample attributes).
+             */
             geoLocName?: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Host */
+            /**
+             * Host
+             * @description Host organism (from sample attributes).
+             */
             host?: string | null;
-            /** Strain */
+            /**
+             * Strain
+             * @description Strain identifier (from sample attributes). Distinct from "isolate".
+             */
             strain?: string | null;
-            /** Isolate */
+            /**
+             * Isolate
+             * @description Isolate identifier (from sample attributes). Distinct from "strain".
+             */
             isolate?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Model */
+            /**
+             * Model
+             * @description BioSample model values. Key is always emitted, even when empty.
+             */
             model: string[];
+            /** @description INSDC package metadata. Required field — None is allowed, but the builder must always set this key explicitly. */
             package: components["schemas"]["BioSamplePackage"] | null;
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
             /** @Id */
             "@id": string;
         };
-        /** BioSamplePackage */
+        /**
+         * BioSamplePackage
+         * @description BioSample package metadata (INSDC controlled-vocabulary package name).
+         */
         BioSamplePackage: {
-            /** Name */
+            /**
+             * Name
+             * @description INSDC controlled-vocabulary package name (e.g. "MIGS.ba.soil").
+             */
             name: string;
-            /** Displayname */
+            /**
+             * Displayname
+             * @description Human-readable package name for UI display.
+             */
             displayName?: string | null;
         };
         /**
@@ -1351,7 +1780,7 @@ export interface components {
         BulkRequest: {
             /**
              * Ids
-             * @description List of entry identifiers to retrieve (1-1000).
+             * @description List of entry identifiers to retrieve (1-1000). Duplicates are deduplicated server-side; each id is returned at most once either in 'entries' or 'notFound'.
              * @example [
              *       "PRJDB1",
              *       "PRJDB2"
@@ -1369,7 +1798,7 @@ export interface components {
         BulkResponse: {
             /**
              * Entries
-             * @description Found entries (raw ES documents).
+             * @description Found entries (raw ES documents). 'public' and 'suppressed' entries are returned here; 'withdrawn', 'private', and missing ids are listed under notFound.
              * @example [
              *       {
              *         "identifier": "PRJDB1",
@@ -1378,10 +1807,10 @@ export interface components {
              *       }
              *     ]
              */
-            entries: (components["schemas"]["BioProject"] | components["schemas"]["BioSample"] | components["schemas"]["SRA"] | components["schemas"]["JGA"])[];
+            entries: (components["schemas"]["BioProject"] | components["schemas"]["BioSample"] | components["schemas"]["SRA"] | components["schemas"]["JGA"] | components["schemas"]["GEA"] | components["schemas"]["MetaboBank"])[];
             /**
              * Notfound
-             * @description IDs that were not found.
+             * @description IDs that were not found (missing or hidden by visibility filter: 'withdrawn' / 'private'). Always satisfies len(entries) + len(notFound) == len(set(ids)).
              * @example [
              *       "PRJDB_INVALID"
              *     ]
@@ -1461,7 +1890,7 @@ export interface components {
             type: components["schemas"]["AccessionType"];
             /**
              * Counts
-             * @description Per-type linked accession counts.
+             * @description Per-type linked accession counts. Keys are AccessionType values; absent type means zero links. Returns empty dict for accessions with no links (not 404).
              * @example {
              *       "bioproject": 1,
              *       "sra-experiment": 3
@@ -1505,7 +1934,7 @@ export interface components {
             type: components["schemas"]["AccessionType"];
             /**
              * Dbxrefs
-             * @description Related entries (sorted by type, then identifier).
+             * @description Related entries (sorted deterministically by type ascending, then identifier ascending). Empty list when no related entries exist (still returns 200).
              * @example [
              *       {
              *         "identifier": "JGAS000101",
@@ -3110,7 +3539,7 @@ export interface components {
         DbXrefsFullResponse: {
             /**
              * Dbxrefs
-             * @description All cross-references for the entry.
+             * @description All cross-references for the entry (no truncation). Returned via streaming from DuckDB; may contain references to non-public entries (withdrawn / private accessions) since the underlying edge table is not status-filtered.
              * @example [
              *       {
              *         "identifier": "SAMD00012345",
@@ -3121,16 +3550,26 @@ export interface components {
              */
             dbXrefs: components["schemas"]["Xref"][];
         };
-        /** Distribution */
+        /**
+         * Distribution
+         * @description Schema.org-compatible DataDownload entry describing a single distribution of a record.
+         */
         Distribution: {
-            /** Type */
+            /**
+             * Type
+             * @description Schema.org "@type" value (effectively the constant "DataDownload").
+             */
             type: string;
             /**
              * Encodingformat
+             * @description Representation format of a Schema.org Distribution. "JSON" / "JSON-LD" / "XML" describe textual metadata payloads; "FASTQ" / "SRA" describe binary sequencing data downloads.
              * @enum {string}
              */
             encodingFormat: "JSON" | "JSON-LD" | "XML" | "FASTQ" | "SRA";
-            /** Contenturl */
+            /**
+             * Contenturl
+             * @description Download URL where the distribution can be retrieved.
+             */
             contentUrl: string;
         };
         /**
@@ -3266,11 +3705,20 @@ export interface components {
             /** @description Facet aggregation (present when includeFacets=true). */
             facets?: components["schemas"]["Facets"] | null;
         };
-        /** ExternalLink */
+        /**
+         * ExternalLink
+         * @description External link attached to a BioProject or JGA entry for UI display.
+         */
         ExternalLink: {
-            /** Url */
+            /**
+             * Url
+             * @description External URL.
+             */
             url: string;
-            /** Label */
+            /**
+             * Label
+             * @description Human-readable label for UI display.
+             */
             label: string;
         };
         /**
@@ -3543,58 +3991,112 @@ export interface components {
             /** @description Facet aggregation data. */
             facets: components["schemas"]["Facets"];
         };
-        /** GEA */
+        /**
+         * GEA
+         * @description A GEA entry — one document of the Elasticsearch `gea` index (IDF/SDRF-derived).
+         */
         GEA: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "E-GEAD-1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for GEA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "gea" for GEA entries.
              * @constant
              */
             isPartOf: "gea";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "gea" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "gea";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source; e.g. Microarray vs. Sequencing). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description GEA is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description GEA is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
         };
         /**
@@ -3602,58 +4104,116 @@ export interface components {
          * @description GEA entry detail with truncated dbXrefs and dbXrefsCount.
          */
         GeaDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "E-GEAD-1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for GEA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "gea" for GEA entries.
              * @constant
              */
             isPartOf: "gea";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "gea" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "gea";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source; e.g. Microarray vs. Sequencing). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description GEA is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description GEA is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -3663,131 +4223,260 @@ export interface components {
          * @description GEA entry in JSON-LD format.
          */
         GeaEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "E-GEAD-1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for GEA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "gea" for GEA entries.
              * @constant
              */
             isPartOf: "gea";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "gea" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "gea";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source; e.g. Microarray vs. Sequencing). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description GEA is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description GEA is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
             /** @Id */
             "@id": string;
         };
-        /** Grant */
+        /**
+         * Grant
+         * @description A single grant associated with an entry.
+         */
         Grant: {
-            /** Id */
+            /**
+             * Id
+             * @description Grant identifier.
+             */
             id?: string | null;
-            /** Title */
+            /**
+             * Title
+             * @description Grant title.
+             */
             title?: string | null;
-            /** Agency */
+            /**
+             * Agency
+             * @description Funding organizations (at least one).
+             */
             agency: components["schemas"]["Organization"][];
         };
-        /** JGA */
+        /**
+         * JGA
+         * @description A JGA entry — one document of any of the four `jga-*` indexes (controlled-access).
+         */
         JGA: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "JGAS000001"). The specific subtype is in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML / CSV (dict-converted). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for JGA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "jga" for JGA entries.
              * @constant
              */
             isPartOf: "jga";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained JGA entry type (study / dataset / dac / policy). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description JGA study-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Datasettype */
+            /**
+             * Datasettype
+             * @description JGA dataset-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             datasetType: string[];
-            /** Vendor */
+            /**
+             * Vendor
+             * @description Vendor values. Key is always emitted, even when empty.
+             */
             vendor: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions (e.g. JGA Secondary IDs). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description JGA is always "public" — meaningful access control is handled by `accessibility` (controlled-access).
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description JGA is always "controlled-access".
              * @constant
              */
             accessibility: "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
         };
         /**
@@ -3795,66 +4484,136 @@ export interface components {
          * @description JGA entry detail with truncated dbXrefs and dbXrefsCount.
          */
         JgaDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "JGAS000001"). The specific subtype is in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML / CSV (dict-converted). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for JGA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "jga" for JGA entries.
              * @constant
              */
             isPartOf: "jga";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained JGA entry type (study / dataset / dac / policy). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description JGA study-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Datasettype */
+            /**
+             * Datasettype
+             * @description JGA dataset-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             datasetType: string[];
-            /** Vendor */
+            /**
+             * Vendor
+             * @description Vendor values. Key is always emitted, even when empty.
+             */
             vendor: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions (e.g. JGA Secondary IDs). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description JGA is always "public" — meaningful access control is handled by `accessibility` (controlled-access).
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description JGA is always "controlled-access".
              * @constant
              */
             accessibility: "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -3864,64 +4623,127 @@ export interface components {
          * @description JGA entry in JSON-LD format.
          */
         JgaEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "JGAS000001"). The specific subtype is in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML / CSV (dict-converted). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for JGA). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "jga" for JGA entries.
              * @constant
              */
             isPartOf: "jga";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained JGA entry type (study / dataset / dac / policy). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Grant */
+            /**
+             * Grant
+             * @description Associated grants. Key is always emitted, even when empty.
+             */
             grant: components["schemas"]["Grant"][];
-            /** Externallink */
+            /**
+             * Externallink
+             * @description External UI links. Key is always emitted, even when empty.
+             */
             externalLink: components["schemas"]["ExternalLink"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description JGA study-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Datasettype */
+            /**
+             * Datasettype
+             * @description JGA dataset-type values (vocabulary is source-dependent). Key is always emitted, even when empty.
+             */
             datasetType: string[];
-            /** Vendor */
+            /**
+             * Vendor
+             * @description Vendor values. Key is always emitted, even when empty.
+             */
             vendor: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions (e.g. JGA Secondary IDs). Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description JGA is always "public" — meaningful access control is handled by `accessibility` (controlled-access).
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description JGA is always "controlled-access".
              * @constant
              */
             accessibility: "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
@@ -3934,62 +4756,122 @@ export interface components {
          * @enum {string}
          */
         KeywordOperator: "AND" | "OR";
-        /** MetaboBank */
+        /**
+         * MetaboBank
+         * @description A MetaboBank entry — one document of the Elasticsearch `metabobank` index (IDF/SDRF-derived).
+         */
         MetaboBank: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "MTBKS1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for MetaboBank). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "metabobank" for MetaboBank entries.
              * @constant
              */
             isPartOf: "metabobank";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "metabobank" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "metabobank";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description Study-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Submissiontype */
+            /**
+             * Submissiontype
+             * @description Submission-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             submissionType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description MetaboBank is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description MetaboBank is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
         };
         /**
@@ -3997,62 +4879,126 @@ export interface components {
          * @description MetaboBank entry detail with truncated dbXrefs and dbXrefsCount.
          */
         MetaboBankDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "MTBKS1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for MetaboBank). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "metabobank" for MetaboBank entries.
              * @constant
              */
             isPartOf: "metabobank";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "metabobank" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "metabobank";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description Study-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Submissiontype */
+            /**
+             * Submissiontype
+             * @description Submission-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             submissionType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description MetaboBank is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description MetaboBank is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -4062,71 +5008,137 @@ export interface components {
          * @description MetaboBank entry in JSON-LD format.
          */
         MetaboBankEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "MTBKS1").
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source IDF. Schema-free; top-level values are list[str].
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (JSON / JSON-LD only for MetaboBank). Key is always emitted, even when empty.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "metabobank" for MetaboBank entries.
              * @constant
              */
             isPartOf: "metabobank";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained entry type. Always "metabobank" for this index. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "metabobank";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Studytype */
+            /**
+             * Studytype
+             * @description Study-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             studyType: string[];
-            /** Experimenttype */
+            /**
+             * Experimenttype
+             * @description Experiment-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             experimentType: string[];
-            /** Submissiontype */
+            /**
+             * Submissiontype
+             * @description Submission-type values (free-form text per source). Key is always emitted, even when empty.
+             */
             submissionType: string[];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description MetaboBank is always "public".
              * @constant
              */
             status: "public";
             /**
              * Accessibility
+             * @description MetaboBank is always "public-access".
              * @constant
              */
             accessibility: "public-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
             /** @Id */
             "@id": string;
         };
-        /** Organism */
+        /**
+         * Organism
+         * @description Organism information sourced from INSDC / NCBI Taxonomy.
+         */
         Organism: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description NCBI Taxonomy ID as a numeric string (e.g. "9606"). None when unknown.
+             */
             identifier?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Scientific name (e.g. "Homo sapiens"). None when unknown.
+             */
             name?: string | null;
         };
         /**
@@ -4161,24 +5173,51 @@ export interface components {
              */
             label: string;
         };
-        /** Organization */
+        /**
+         * Organization
+         * @description Organization linked to an entry (e.g. submitter, participating institution).
+         */
         Organization: {
-            /** Name */
+            /**
+             * Name
+             * @description Official organization name.
+             */
             name?: string | null;
-            /** Abbreviation */
+            /**
+             * Abbreviation
+             * @description Abbreviated organization name.
+             */
             abbreviation?: string | null;
-            /** Role */
+            /**
+             * Role
+             * @description Role in the project.
+             */
             role?: ("owner" | "participant" | "submitter" | "broker") | null;
-            /** Organizationtype */
+            /**
+             * Organizationtype
+             * @description Organization category.
+             */
             organizationType?: ("institute" | "center" | "consortium" | "lab") | null;
-            /** Department */
+            /**
+             * Department
+             * @description Department or laboratory name (e.g. SRA `lab_name`).
+             */
             department?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Organization website URL.
+             */
             url?: string | null;
         };
         /**
          * Pagination
          * @description Pagination metadata (supports both offset and cursor modes).
+         *
+         *     Two schema-level examples are attached: the first represents offset
+         *     mode (``page=1``, ``nextCursor`` populated, ``hasNext=true``), the
+         *     second represents cursor mode on the last page (``page=null``,
+         *     ``nextCursor=null``, ``hasNext=false``). OpenAPI 3.1 schema-level
+         *     examples cannot carry labels, so the order is the contract.
          * @example {
          *       "page": 1,
          *       "perPage": 10,
@@ -4209,7 +5248,7 @@ export interface components {
             perPage: number;
             /**
              * Total
-             * @description Total number of matching items.
+             * @description Total number of matching items (exact count via track_total_hits=true on Elasticsearch).
              * @example 1234
              */
             total: number;
@@ -4242,7 +5281,7 @@ export interface components {
         ProblemDetails: {
             /**
              * Type
-             * @description Problem type URI.
+             * @description Problem type URI (RFC 7807). Generic errors use 'about:blank'; endpoint-specific failures use 'https://ddbj.nig.ac.jp/problems/<slug>' (e.g. 'cursor-not-supported', 'unknown-field'). URI need not be dereferenceable; it functions as an identifier.
              * @default about:blank
              * @example about:blank
              */
@@ -4285,95 +5324,203 @@ export interface components {
              */
             requestId?: string | null;
         };
-        /** Publication */
+        /**
+         * Publication
+         * @description A single publication or reference associated with an entry.
+         */
         Publication: {
-            /** Id */
+            /**
+             * Id
+             * @description Identifier string of the publication (its kind is given by `dbType`).
+             */
             id?: string | null;
-            /** Title */
+            /**
+             * Title
+             * @description Publication title.
+             */
             title?: string | null;
-            /** Date */
+            /**
+             * Date
+             * @description Publication date as a free-form string (format varies by source).
+             */
             date?: string | null;
-            /** Reference */
+            /**
+             * Reference
+             * @description Full bibliographic reference text.
+             */
             reference?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description URL of the publication. Generated from `id` according to `dbType` (PubMed / DOI / PMC templates) when possible.
+             */
             url?: string | null;
-            /** Dbtype */
+            /**
+             * Dbtype
+             * @description Kind of `id`. None when the source value cannot be classified.
+             */
             dbType?: ("pubmed" | "doi" | "pmc" | "other") | null;
         };
-        /** SRA */
+        /**
+         * SRA
+         * @description An SRA / DRA entry — one document of any of the six Elasticsearch `sra-*` indexes.
+         */
         SRA: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "DRR000001", "SRP000001"). The specific subtype is encoded in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (XML / FASTQ / SRA). Key is always emitted, even when empty. DRA-origin runs may include FASTQ / SRA; for NCBI/EBI-origin runs the SRA mirror URL is generated mechanically.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "sra" for SRA entries — the fine subtype is in `type`.
              * @constant
              */
             isPartOf: "sra";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained SRA entry type (submission / study / experiment / run / sample / analysis). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "sra-submission" | "sra-study" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-analysis";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Librarystrategy */
+            /**
+             * Librarystrategy
+             * @description INSDC SRA library-strategy values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             libraryStrategy: string[];
-            /** Librarysource */
+            /**
+             * Librarysource
+             * @description INSDC SRA library-source values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySource: string[];
-            /** Libraryselection */
+            /**
+             * Libraryselection
+             * @description INSDC SRA library-selection values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySelection: string[];
-            /** Librarylayout */
+            /**
+             * Librarylayout
+             * @description INSDC SRA library layout (e.g. PAIRED / SINGLE). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             libraryLayout: string | null;
-            /** Platform */
+            /**
+             * Platform
+             * @description INSDC SRA sequencing platform (e.g. ILLUMINA). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             platform: string | null;
-            /** Instrumentmodel */
+            /**
+             * Instrumentmodel
+             * @description INSDC SRA instrument-model values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             instrumentModel: string[];
-            /** Libraryname */
+            /**
+             * Libraryname
+             * @description Library name (free-form string).
+             */
             libraryName?: string | null;
-            /** Libraryconstructionprotocol */
+            /**
+             * Libraryconstructionprotocol
+             * @description Library construction protocol (free-form text).
+             */
             libraryConstructionProtocol?: string | null;
-            /** Analysistype */
+            /**
+             * Analysistype
+             * @description Analysis type for `sra-analysis` entries. Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             analysisType: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location.
+             */
             geoLocName?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. an sra-sample referencing its BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
         };
         /**
@@ -4407,7 +5554,7 @@ export interface components {
             description: string;
             /**
              * Elasticsearch
-             * @description Elasticsearch status: 'ok' or 'unavailable'.
+             * @description Elasticsearch reachability: 'ok' when the cluster responds to a ping, 'unavailable' otherwise.  The endpoint itself always returns 200; this field communicates ES health.
              * @example ok
              * @enum {string}
              */
@@ -4418,80 +5565,171 @@ export interface components {
          * @description SRA entry detail with truncated dbXrefs and dbXrefsCount.
          */
         SraDetailResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "DRR000001", "SRP000001"). The specific subtype is encoded in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (XML / FASTQ / SRA). Key is always emitted, even when empty. DRA-origin runs may include FASTQ / SRA; for NCBI/EBI-origin runs the SRA mirror URL is generated mechanically.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "sra" for SRA entries — the fine subtype is in `type`.
              * @constant
              */
             isPartOf: "sra";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained SRA entry type (submission / study / experiment / run / sample / analysis). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "sra-submission" | "sra-study" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-analysis";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Librarystrategy */
+            /**
+             * Librarystrategy
+             * @description INSDC SRA library-strategy values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             libraryStrategy: string[];
-            /** Librarysource */
+            /**
+             * Librarysource
+             * @description INSDC SRA library-source values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySource: string[];
-            /** Libraryselection */
+            /**
+             * Libraryselection
+             * @description INSDC SRA library-selection values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySelection: string[];
-            /** Librarylayout */
+            /**
+             * Librarylayout
+             * @description INSDC SRA library layout (e.g. PAIRED / SINGLE). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             libraryLayout: string | null;
-            /** Platform */
+            /**
+             * Platform
+             * @description INSDC SRA sequencing platform (e.g. ILLUMINA). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             platform: string | null;
-            /** Instrumentmodel */
+            /**
+             * Instrumentmodel
+             * @description INSDC SRA instrument-model values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             instrumentModel: string[];
-            /** Libraryname */
+            /**
+             * Libraryname
+             * @description Library name (free-form string).
+             */
             libraryName?: string | null;
-            /** Libraryconstructionprotocol */
+            /**
+             * Libraryconstructionprotocol
+             * @description Library construction protocol (free-form text).
+             */
             libraryConstructionProtocol?: string | null;
-            /** Analysistype */
+            /**
+             * Analysistype
+             * @description Analysis type for `sra-analysis` entries. Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             analysisType: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location.
+             */
             geoLocName?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. an sra-sample referencing its BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
-            /** Dbxrefscount */
+            /**
+             * Dbxrefscount
+             * @description Cross-reference counts per related type. The values are the totals before dbXrefsLimit truncation, so callers can detect when the returned 'dbXrefs' list has been clipped and need the dedicated dbxrefs endpoint.
+             * @example {
+             *       "biosample": 5,
+             *       "sra-experiment": 12
+             *     }
+             */
             dbXrefsCount: {
                 [key: string]: number;
             };
@@ -4501,78 +5739,162 @@ export interface components {
          * @description SRA entry in JSON-LD format.
          */
         SraEntryJsonLdResponse: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Primary accession (e.g. "DRR000001", "SRP000001"). The specific subtype is encoded in `type`.
+             */
             identifier: string;
-            /** Properties */
-            properties: unknown;
-            /** Distribution */
+            /**
+             * Properties
+             * @description Raw element tree carried over from the source XML (converted via xmltodict). Schema-free nested structure; prefer the typed sibling fields for structured access.
+             */
+            properties: {
+                [key: string]: unknown;
+            };
+            /**
+             * Distribution
+             * @description Distributions (XML / FASTQ / SRA). Key is always emitted, even when empty. DRA-origin runs may include FASTQ / SRA; for NCBI/EBI-origin runs the SRA mirror URL is generated mechanically.
+             */
             distribution: components["schemas"]["Distribution"][];
             /**
              * Ispartof
+             * @description Coarse-grained index category (used by the front-end DB facet). Always "sra" for SRA entries — the fine subtype is in `type`.
              * @constant
              */
             isPartOf: "sra";
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Fine-grained SRA entry type (submission / study / experiment / run / sample / analysis). (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "sra-submission" | "sra-study" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-analysis";
-            /** Name */
+            /**
+             * Name
+             * @description Short name.
+             */
             name?: string | null;
-            /** Url */
+            /**
+             * Url
+             * @description Canonical DDBJ Search entry URL.
+             */
             url: string;
+            /** @description Associated organism. */
             organism?: components["schemas"]["Organism"] | null;
-            /** Title */
+            /**
+             * Title
+             * @description Long human-readable title.
+             */
             title?: string | null;
-            /** Description */
+            /**
+             * Description
+             * @description Entry description text.
+             */
             description?: string | null;
-            /** Organization */
+            /**
+             * Organization
+             * @description Participating organizations. Key is always emitted, even when empty.
+             */
             organization: components["schemas"]["Organization"][];
-            /** Publication */
+            /**
+             * Publication
+             * @description Associated publications. Key is always emitted, even when empty.
+             */
             publication: components["schemas"]["Publication"][];
-            /** Librarystrategy */
+            /**
+             * Librarystrategy
+             * @description INSDC SRA library-strategy values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             libraryStrategy: string[];
-            /** Librarysource */
+            /**
+             * Librarysource
+             * @description INSDC SRA library-source values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySource: string[];
-            /** Libraryselection */
+            /**
+             * Libraryselection
+             * @description INSDC SRA library-selection values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             librarySelection: string[];
-            /** Librarylayout */
+            /**
+             * Librarylayout
+             * @description INSDC SRA library layout (e.g. PAIRED / SINGLE). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             libraryLayout: string | null;
-            /** Platform */
+            /**
+             * Platform
+             * @description INSDC SRA sequencing platform (e.g. ILLUMINA). Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             platform: string | null;
-            /** Instrumentmodel */
+            /**
+             * Instrumentmodel
+             * @description INSDC SRA instrument-model values (controlled vocabulary). Key is always emitted, even when empty.
+             */
             instrumentModel: string[];
-            /** Libraryname */
+            /**
+             * Libraryname
+             * @description Library name (free-form string).
+             */
             libraryName?: string | null;
-            /** Libraryconstructionprotocol */
+            /**
+             * Libraryconstructionprotocol
+             * @description Library construction protocol (free-form text).
+             */
             libraryConstructionProtocol?: string | null;
-            /** Analysistype */
+            /**
+             * Analysistype
+             * @description Analysis type for `sra-analysis` entries. Required field — None is allowed, but the builder must always set this key explicitly.
+             */
             analysisType: string | null;
-            /** Collectiondate */
+            /**
+             * Collectiondate
+             * @description Sample collection date as a free-form string (format varies by source).
+             */
             collectionDate?: string | null;
-            /** Geolocname */
+            /**
+             * Geolocname
+             * @description Geographic collection location.
+             */
             geoLocName?: string | null;
-            /** Derivedfrom */
+            /**
+             * Derivedfrom
+             * @description Parent entities (e.g. an sra-sample referencing its BioSample) as Xref edges. Key is always emitted, even when empty.
+             */
             derivedFrom: components["schemas"]["Xref"][];
-            /** Dbxrefs */
+            /**
+             * Dbxrefs
+             * @description Edges in the dblink graph. Key is always emitted, even when empty. Populated only when the JSONL was generated with `--include-dbxrefs`.
+             */
             dbXrefs: components["schemas"]["Xref"][];
-            /** Sameas */
+            /**
+             * Sameas
+             * @description Alias accessions of this entry. Key is always emitted, even when empty.
+             */
             sameAs: components["schemas"]["Xref"][];
             /**
              * Status
+             * @description Public release state of the INSDC record. "public" = released; "private" = not released (hidden by the API as 404); "suppressed" = retrievable only via exact ID match; "withdrawn" = retracted (hidden by the API as 404).
              * @enum {string}
              */
             status: "public" | "private" | "suppressed" | "withdrawn";
             /**
              * Accessibility
+             * @description Access-control category in DDBJ Search. "public-access" entries are freely retrievable; "controlled-access" entries (e.g. JGA) require explicit authorization.
              * @enum {string}
              */
             accessibility: "public-access" | "controlled-access";
-            /** Datecreated */
+            /**
+             * Datecreated
+             * @description ISO 8601 (YYYY-MM-DD) creation date.
+             */
             dateCreated?: string | null;
-            /** Datemodified */
+            /**
+             * Datemodified
+             * @description ISO 8601 (YYYY-MM-DD) last-modified date.
+             */
             dateModified?: string | null;
-            /** Datepublished */
+            /**
+             * Datepublished
+             * @description ISO 8601 (YYYY-MM-DD) publication date.
+             */
             datePublished?: string | null;
             /** @Context */
             "@context": string;
@@ -4606,13 +5928,13 @@ export interface components {
         UmbrellaTreeResponse: {
             /**
              * Query
-             * @description Resolved primary identifier of the requested BioProject.
+             * @description Resolved primary identifier of the requested BioProject. Always the primary accession even if the request used a sameAs secondary id.
              * @example PRJDB1234
              */
             query: string;
             /**
              * Roots
-             * @description Root BioProject accessions (parentBioProjects is empty).
+             * @description Root BioProject accessions (entries whose parentBioProjects list is empty). Deterministically sorted. Orphan input returns a single-element list containing the query itself.
              * @example [
              *       "PRJDB0001"
              *     ]
@@ -4620,7 +5942,7 @@ export interface components {
             roots: string[];
             /**
              * Edges
-             * @description Unique (parent, child) pairs covering the reachable subgraph.
+             * @description Unique (parent, child) pairs covering the reachable subgraph. Deterministically sorted (parent ascending, then child ascending). Duplicates from DAG multi-path traversals are deduplicated. Dangling edges (parent or child missing from the bioproject index) are dropped.
              * @example [
              *       {
              *         "child": "PRJDB1234",
@@ -4630,16 +5952,26 @@ export interface components {
              */
             edges: components["schemas"]["UmbrellaTreeEdge"][];
         };
-        /** Xref */
+        /**
+         * Xref
+         * @description A single reference edge in the dblink graph (pointer to a peer accession).
+         */
         Xref: {
-            /** Identifier */
+            /**
+             * Identifier
+             * @description Accession ID of the referenced peer record.
+             */
             identifier: string;
             /**
              * Type
+             * @description Accession type of an entry in the dblink graph (21 values). The DB family of the referenced peer record.
              * @enum {string}
              */
             type: "biosample" | "bioproject" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-study" | "sra-submission" | "sra-analysis" | "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy" | "gea" | "geo" | "humandbs" | "insdc" | "insdc-assembly" | "insdc-master" | "metabobank" | "pubmed" | "taxonomy";
-            /** Url */
+            /**
+             * Url
+             * @description Canonical URL of the referenced peer record.
+             */
             url: string;
         };
     };
@@ -4654,13 +5986,13 @@ export interface operations {
     listEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -4668,6 +6000,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -4694,9 +6028,9 @@ export interface operations {
                 types?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -4711,6 +6045,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -4732,7 +6153,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4746,13 +6167,13 @@ export interface operations {
     listBioProjectEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -4760,6 +6181,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -4782,7 +6205,7 @@ export interface operations {
                 includeProperties?: boolean;
                 /** @description Include facet aggregation alongside search results. */
                 includeFacets?: boolean;
-                /** @description Filter by BioProject objectType (comma-separated). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
+                /** @description Term filter on objectType.keyword (comma-separated values are OR'd). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
                 objectTypes?: string | null;
                 /** @description Nested filter on externalLink.label (text match within nested objects). */
                 externalLinkLabel?: string | null;
@@ -4790,9 +6213,9 @@ export interface operations {
                 projectType?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -4807,6 +6230,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -4828,7 +6338,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4842,13 +6352,13 @@ export interface operations {
     listBioSampleEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -4856,6 +6366,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -4892,9 +6404,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -4909,6 +6421,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -4930,7 +6529,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -4944,13 +6543,13 @@ export interface operations {
     listSraSubmissionEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -4958,6 +6557,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5006,9 +6607,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5023,6 +6624,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5044,7 +6732,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5058,13 +6746,13 @@ export interface operations {
     listSraStudyEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5072,6 +6760,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5120,9 +6810,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5137,6 +6827,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5158,7 +6935,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5172,13 +6949,13 @@ export interface operations {
     listSraExperimentEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5186,6 +6963,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5234,9 +7013,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5251,6 +7030,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5272,7 +7138,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5286,13 +7152,13 @@ export interface operations {
     listSraRunEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5300,6 +7166,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5348,9 +7216,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5365,6 +7233,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5386,7 +7341,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5400,13 +7355,13 @@ export interface operations {
     listSraSampleEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5414,6 +7369,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5462,9 +7419,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5479,6 +7436,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5500,7 +7544,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5514,13 +7558,13 @@ export interface operations {
     listSraAnalysisEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5528,6 +7572,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5576,9 +7622,9 @@ export interface operations {
                 collectionDate?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5593,6 +7639,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5614,7 +7747,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5628,13 +7761,13 @@ export interface operations {
     listJgaStudyEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5642,6 +7775,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5674,9 +7809,9 @@ export interface operations {
                 vendor?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5691,6 +7826,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5712,7 +7934,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5726,13 +7948,13 @@ export interface operations {
     listJgaDatasetEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5740,6 +7962,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5772,9 +7996,9 @@ export interface operations {
                 vendor?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5789,6 +8013,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5810,7 +8121,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5824,13 +8135,13 @@ export interface operations {
     listJgaDacEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5838,6 +8149,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5870,9 +8183,9 @@ export interface operations {
                 vendor?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5887,6 +8200,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -5908,7 +8308,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -5922,13 +8322,13 @@ export interface operations {
     listJgaPolicyEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -5936,6 +8336,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -5968,9 +8370,9 @@ export interface operations {
                 vendor?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -5985,6 +8387,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -6006,7 +8495,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6020,13 +8509,13 @@ export interface operations {
     listGeaEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6034,6 +8523,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6060,9 +8551,9 @@ export interface operations {
                 experimentType?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -6077,6 +8568,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -6098,7 +8676,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6112,13 +8690,13 @@ export interface operations {
     listMetaboBankEntries: {
         parameters: {
             query?: {
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based). Combined with perPage, must satisfy page * perPage <= 10000 (deep paging limit; exceeding it returns 400). For deeper paging, use cursor instead. */
                 page?: number;
-                /** @description Items per page (1-100). */
+                /** @description Items per page (1-100). Combined with page, must satisfy page * perPage <= 10000. */
                 perPage?: number;
-                /** @description Cursor token for cursor-based pagination. */
+                /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6126,6 +8704,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6156,9 +8736,9 @@ export interface operations {
                 submissionType?: string | null;
                 /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
                 facets?: string | null;
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally; an entry with 200 biosample + 50 sra-study and dbXrefsLimit=100 returns 100 + 50 = 150 dbXrefs total. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -6173,6 +8753,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "pagination": {
+                     *         "page": 1,
+                     *         "perPage": 10,
+                     *         "total": 1234,
+                     *         "hasNext": true
+                     *       },
+                     *       "items": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "dbXrefs": [
+                     *             {
+                     *               "identifier": "SAMD00012345",
+                     *               "type": "biosample",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *             }
+                     *           ],
+                     *           "dbXrefsCount": {
+                     *             "biosample": 5,
+                     *             "sra-experiment": 12
+                     *           }
+                     *         },
+                     *         {
+                     *           "identifier": "PRJDB1235",
+                     *           "type": "bioproject",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1235",
+                     *           "title": "Transcriptome analysis of Mus musculus liver",
+                     *           "description": "RNA-seq across 10 tissue samples.",
+                     *           "organism": {
+                     *             "identifier": "10090",
+                     *             "name": "Mus musculus"
+                     *           },
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "datePublished": "2024-02-20",
+                     *           "dateModified": "2024-02-20",
+                     *           "dateCreated": "2024-02-20",
+                     *           "dbXrefs": [],
+                     *           "dbXrefsCount": {}
+                     *         }
+                     *       ],
+                     *       "facets": {
+                     *         "type": [
+                     *           {
+                     *             "value": "bioproject",
+                     *             "count": 1234
+                     *           },
+                     *           {
+                     *             "value": "biosample",
+                     *             "count": 567
+                     *           }
+                     *         ],
+                     *         "organism": [
+                     *           {
+                     *             "value": "9606",
+                     *             "count": 1000,
+                     *             "label": "Homo sapiens"
+                     *           },
+                     *           {
+                     *             "value": "10090",
+                     *             "count": 234,
+                     *             "label": "Mus musculus"
+                     *           }
+                     *         ],
+                     *         "accessibility": [
+                     *           {
+                     *             "value": "public-access",
+                     *             "count": 1234
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["EntryListResponse"];
                 };
             };
@@ -6194,7 +8861,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6254,7 +8921,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6286,7 +8953,7 @@ export interface operations {
                     "application/json": components["schemas"]["UmbrellaTreeResponse"];
                 };
             };
-            /** @description Not Found (entry does not exist, or is withdrawn / private). */
+            /** @description Not Found (entry does not exist, or is withdrawn / private). The detail message is a fixed string identical to the missing-entry case. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6304,7 +8971,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable, or traversal depth exceeded). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6338,7 +9005,7 @@ export interface operations {
                     "application/json": components["schemas"]["BioProject"] | components["schemas"]["BioSample"] | components["schemas"]["SRA"] | components["schemas"]["JGA"] | components["schemas"]["GEA"] | components["schemas"]["MetaboBank"];
                 };
             };
-            /** @description Not Found (entry does not exist, or is withdrawn / private). */
+            /** @description Not Found (entry does not exist, or is withdrawn / private). The detail message is a fixed string identical to the missing-entry case, so hidden status cannot be inferred from the response. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6356,7 +9023,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6390,7 +9057,7 @@ export interface operations {
                     "application/ld+json": components["schemas"]["BioProjectEntryJsonLdResponse"] | components["schemas"]["BioSampleEntryJsonLdResponse"] | components["schemas"]["SraEntryJsonLdResponse"] | components["schemas"]["JgaEntryJsonLdResponse"] | components["schemas"]["GeaEntryJsonLdResponse"] | components["schemas"]["MetaboBankEntryJsonLdResponse"];
                 };
             };
-            /** @description Not Found (entry does not exist, or is withdrawn / private). */
+            /** @description Not Found (entry does not exist, or is withdrawn / private). The detail message is a fixed string identical to the missing-entry case, so hidden status cannot be inferred from the response. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6408,7 +9075,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6442,7 +9109,7 @@ export interface operations {
                     "application/json": components["schemas"]["DbXrefsFullResponse"];
                 };
             };
-            /** @description Not Found (entry does not exist, or is withdrawn / private). */
+            /** @description Not Found (entry does not exist, or is withdrawn / private). The detail message is a fixed string identical to the missing-entry case, so hidden status cannot be inferred from the response. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6460,7 +9127,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6474,9 +9141,9 @@ export interface operations {
     getEntryDetail: {
         parameters: {
             query?: {
-                /** @description Maximum number of dbXrefs to return per type (0-1000). Use 0 to omit dbXrefs but still get dbXrefsCount. */
+                /** @description Maximum number of dbXrefs to return per related type (0-1000). The limit applies per type, not globally. Use 0 to omit dbXrefs but still get dbXrefsCount (per-type aggregation). */
                 dbXrefsLimit?: number;
-                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. */
+                /** @description Include dbXrefs and dbXrefsCount from DuckDB. When false, both are omitted and DuckDB is not queried. When combined with dbXrefsLimit, includeDbXrefs=false takes precedence. */
                 includeDbXrefs?: boolean;
             };
             header?: never;
@@ -6496,10 +9163,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "identifier": "PRJDB1234",
+                     *       "properties": {},
+                     *       "distribution": [
+                     *         {
+                     *           "type": "DataDownload",
+                     *           "encodingFormat": "JSON",
+                     *           "contentUrl": "https://ddbj.nig.ac.jp/search/api/entries/bioproject/PRJDB1234.json"
+                     *         }
+                     *       ],
+                     *       "isPartOf": "bioproject",
+                     *       "type": "bioproject",
+                     *       "objectType": "BioProject",
+                     *       "name": "PRJDB1234",
+                     *       "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *       "organism": {
+                     *         "identifier": "9606",
+                     *         "name": "Homo sapiens"
+                     *       },
+                     *       "title": "Whole-genome sequencing of Homo sapiens",
+                     *       "description": "Reference genome assembly with deep coverage.",
+                     *       "projectType": [
+                     *         "genome sequencing"
+                     *       ],
+                     *       "relevance": [
+                     *         "Medical"
+                     *       ],
+                     *       "organization": [
+                     *         {
+                     *           "name": "DDBJ",
+                     *           "abbreviation": "DDBJ",
+                     *           "role": "submitter",
+                     *           "organizationType": "institute"
+                     *         }
+                     *       ],
+                     *       "publication": [],
+                     *       "grant": [],
+                     *       "externalLink": [],
+                     *       "dbXrefs": [
+                     *         {
+                     *           "identifier": "SAMD00012345",
+                     *           "type": "biosample",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/biosample/SAMD00012345"
+                     *         }
+                     *       ],
+                     *       "parentBioProjects": [],
+                     *       "childBioProjects": [],
+                     *       "sameAs": [],
+                     *       "status": "public",
+                     *       "accessibility": "public-access",
+                     *       "dateCreated": "2024-01-01",
+                     *       "dateModified": "2024-06-01",
+                     *       "datePublished": "2024-01-15",
+                     *       "dbXrefsCount": {
+                     *         "biosample": 5,
+                     *         "sra-experiment": 12
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["BioProjectDetailResponse"] | components["schemas"]["BioSampleDetailResponse"] | components["schemas"]["SraDetailResponse"] | components["schemas"]["JgaDetailResponse"] | components["schemas"]["GeaDetailResponse"] | components["schemas"]["MetaboBankDetailResponse"];
                 };
             };
-            /** @description Not Found (entry does not exist, or is withdrawn / private). */
+            /** @description Not Found (entry does not exist, or is withdrawn / private). The detail message is a fixed string identical to the missing-entry case, so hidden status cannot be inferred from the response. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6517,7 +9244,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable or DuckDB missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6531,7 +9258,7 @@ export interface operations {
     getFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6539,6 +9266,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6591,7 +9320,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6605,7 +9334,7 @@ export interface operations {
     getBioProjectFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6613,6 +9342,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6627,7 +9358,7 @@ export interface operations {
                 dateModifiedFrom?: string | null;
                 /** @description Modification date range end (YYYY-MM-DD). */
                 dateModifiedTo?: string | null;
-                /** @description Filter by BioProject objectType (comma-separated). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
+                /** @description Term filter on objectType.keyword (comma-separated values are OR'd). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
                 objectTypes?: string | null;
                 /** @description Nested filter on externalLink.label (text match within nested objects). */
                 externalLinkLabel?: string | null;
@@ -6669,7 +9400,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6683,7 +9414,7 @@ export interface operations {
     getBioSampleFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6691,6 +9422,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6753,7 +9486,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6767,7 +9500,7 @@ export interface operations {
     getSraSubmissionFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6775,6 +9508,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6849,7 +9584,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6863,7 +9598,7 @@ export interface operations {
     getSraStudyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6871,6 +9606,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -6945,7 +9682,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6959,7 +9696,7 @@ export interface operations {
     getSraExperimentFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -6967,6 +9704,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7041,7 +9780,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7055,7 +9794,7 @@ export interface operations {
     getSraRunFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7063,6 +9802,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7137,7 +9878,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7151,7 +9892,7 @@ export interface operations {
     getSraSampleFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7159,6 +9900,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7233,7 +9976,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7247,7 +9990,7 @@ export interface operations {
     getSraAnalysisFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7255,6 +9998,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7329,7 +10074,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7343,7 +10088,7 @@ export interface operations {
     getJgaStudyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7351,6 +10096,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7409,7 +10156,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7423,7 +10170,7 @@ export interface operations {
     getJgaDatasetFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7431,6 +10178,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7489,7 +10238,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7503,7 +10252,7 @@ export interface operations {
     getJgaDacFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7511,6 +10260,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7569,7 +10320,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7583,7 +10334,7 @@ export interface operations {
     getJgaPolicyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7591,6 +10342,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7649,7 +10402,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7663,7 +10416,7 @@ export interface operations {
     getGeaFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7671,6 +10424,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7723,7 +10478,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7737,7 +10492,7 @@ export interface operations {
     getMetaboBankFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). */
+                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description. */
                 keywordFields?: string | null;
@@ -7745,6 +10500,8 @@ export interface operations {
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
+                /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
+                accessibility?: components["schemas"]["Accessibility"] | null;
                 /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
                 /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
@@ -7801,7 +10558,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (Elasticsearch unreachable). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7844,7 +10601,7 @@ export interface operations {
     getDbLinks: {
         parameters: {
             query?: {
-                /** @description Filter by target accession type(s), comma-separated. */
+                /** @description Filter by target accession type(s), comma-separated. Values must be AccessionType (same allowlist as GET /dblink/). Unknown types return 422; non-existent target with valid type returns 200 + empty dbXrefs. */
                 target?: string | null;
             };
             header?: never;
@@ -7876,7 +10633,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (DuckDB file missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7918,7 +10675,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
-            /** @description Internal Server Error. */
+            /** @description Internal Server Error (DuckDB file missing). */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -7936,6 +10693,8 @@ export interface operations {
                 q?: string | null;
                 /** @description Per-DB top hits count.  ``0`` returns count-only (``databases[i].hits`` is ``null``); ``1``-``50`` returns up to N hits per DB.  Hits are ordered by relevance (``_score`` desc) with ``identifier`` ascending as the tiebreaker; when ``q`` is omitted (``match_all``) all scores tie, so ``identifier`` ascending becomes the effective order.  Out of range (>50 or negative) returns 422. */
                 topHits?: number;
+                /** @description Default boolean operator for bare word / phrase token connection inside FreeText (e.g. ``q=cancer tumor``).  ``AND`` (default) requires every token to match; ``OR`` requires at least one. The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  ``/db-portal/parse`` does not accept this parameter (the parsed AST does not carry operator state). */
+                keywordOperator?: components["schemas"]["KeywordOperator"];
             };
             header?: never;
             path?: never;
@@ -7949,6 +10708,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "databases": [
+                     *         {
+                     *           "db": "trad",
+                     *           "error": "timeout",
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "sra",
+                     *           "count": 1234,
+                     *           "hits": [
+                     *             {
+                     *               "identifier": "DRR123456",
+                     *               "type": "sra-run",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/sra-run/DRR123456",
+                     *               "title": "Whole-genome sequencing of Homo sapiens",
+                     *               "organism": {
+                     *                 "identifier": "9606",
+                     *                 "name": "Homo sapiens"
+                     *               },
+                     *               "status": "public",
+                     *               "accessibility": "public-access",
+                     *               "dateCreated": "2024-01-01",
+                     *               "dateModified": "2024-06-01",
+                     *               "datePublished": "2024-01-15",
+                     *               "isPartOf": "sra"
+                     *             }
+                     *           ]
+                     *         },
+                     *         {
+                     *           "db": "bioproject",
+                     *           "count": 567,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "biosample",
+                     *           "count": 890,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "jga",
+                     *           "count": 12,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "gea",
+                     *           "count": 34,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "metabobank",
+                     *           "count": 5,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "taxonomy",
+                     *           "count": 12,
+                     *           "hits": []
+                     *         }
+                     *       ]
+                     *     }
+                     */
                     "application/json": components["schemas"]["DbPortalCrossSearchResponse"];
                 };
             };
@@ -7997,14 +10819,16 @@ export interface operations {
                 q?: string | null;
                 /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``/db-portal/cross-search``. */
                 db?: components["schemas"]["DbPortalDb"] | null;
-                /** @description Page number (1-based). */
+                /** @description Page number (1-based).  Combined with perPage, page * perPage must be <= 10000 (deep paging limit; exceeding returns 400). */
                 page?: number;
                 /** @description Items per page.  Allowed: 20, 50, 100. */
                 perPage?: 20 | 50 | 100;
-                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). */
+                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, q / sort / page must use their defaults (db and perPage may be combined). Combining cursor with q / sort / page>1 on ES DBs returns 400 'about:blank' (cursor exclusivity). Solr-backed DBs (db=trad / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported' if cursor is supplied. */
                 cursor?: string | null;
                 /** @description Sort order.  Allowed: null (relevance, default), ``datePublished:desc``, ``datePublished:asc``. */
                 sort?: ("datePublished:asc" | "datePublished:desc") | null;
+                /** @description Default boolean operator for bare word / phrase token connection inside FreeText (e.g. ``q=cancer tumor``).  ``AND`` (default) requires every token to match; ``OR`` requires at least one. The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  Exclusive with cursor when not at default (AND). */
+                keywordOperator?: components["schemas"]["KeywordOperator"];
             };
             header?: never;
             path?: never;

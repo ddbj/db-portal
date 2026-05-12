@@ -567,14 +567,14 @@ Solr 側は `uf` パラメータでフィールド名を allowlist 制御する�
 
 ##### Tier 2: 横断で使えると嬉しい（converter 側で正規化が必要）
 
-**方針（大枠）**: 各 DB の該当箇所から converter 側で値を抽出し、統一的な **top-level keyword フィールド**（`submitter` / `publicationId`）として ES に投入する。検索時は単一フィールドへのクエリで全 DB 横断可能にする。詳細・converter 側の残課題は [Tier 2 正規化](#tier-2-正規化submitter--publicationid) 参照。
+**方針（大枠）**: `submitter` は converter 側で各 DB の該当箇所から値を抽出し、統一的な **top-level keyword フィールド**として ES に投入する。`publication` は ES の nested `publication.title` への `match_phrase`（`/entries/*` 系 `publication=` パラメータと同一セマンティクス）として動作する。検索時は単一フィールドへのクエリで全 DB 横断可能にする。詳細・converter 側の残課題は [Tier 2 正規化](#tier-2-正規化submitter--publicationtitle) 参照。
 
 DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィールド名は一致しない項目がある。DSL → ES の変換は proxy 側で行う。
 
-| ポータル共通語彙（DSL） | ES フィールド名 | 抽出元（DB 別） |
+| ポータル共通語彙（DSL） | ES フィールド | 抽出元（DB 別） |
 |---|---|---|
-| `submitter` | `submitter` | BioProject: `organization.name`（既存 nested）/ SRA: `properties.SUBMISSION.center_name` / JGA: `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` / BioSample: `properties.BioSample.center_name` / Trad: N/A（ARSA） |
-| `publication` | `publicationId` | BioProject: 既存 `publication.id` / SRA: `properties.STUDY_LINKS` の PMID / JGA: `properties.PUBLICATIONS[].id` / Trad: ARSA `ReferencePubmedID` / BioSample: N/A |
+| `submitter` | `submitter`（top-level keyword） | BioProject: `organization.name`（既存 nested）/ SRA: `properties.SUBMISSION.center_name` / JGA: `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` / BioSample: `properties.BioSample.center_name` / Trad: N/A（ARSA） |
+| `publication` | `publication.title`（nested、`match_phrase`） | BioProject: 既存 `publication.title` / SRA / JGA / BioSample / GEA / MetaboBank: converter 側で properties / attributes から title を抽出し nested に投入（要拡張）/ Trad: ARSA の `ReferenceTitle` 系へ proxy 側マップ |
 
 ##### Tier 3: 単一 DB 選択時のみ（DB 特化）
 
@@ -597,6 +597,8 @@ DSL 側の allowlist 名（ポータル共通語彙）と ES 内部フィール�
 | BioProject | `project_type` | `objectType` | ES 既存 / API allowlist |
 | BioProject | `grant_agency` | `grant.agency.name` | ES 既存（nested）/ API allowlist |
 | BioProject | `relevance` | `relevance`（converter 0.3.0 top-level keyword、INSDC controlled vocab の自由文字列） | converter top-level 化済 / API allowlist |
+| BioProject / JGA-study | `external_link_label` | `externalLink.label`（nested、text） | ES 既存（nested）/ API allowlist |
+| BioSample / SRA-sample | `derived_from_id` | `derivedFrom.identifier`（nested、identifier） | ES 既存（nested）/ API allowlist |
 | Trad | `division` / `molecular_type` / `sequence_length` / `datatype` / `keyword` | `Division` / `MolecularType` / `SequenceLength` / `Datatype` / `Keyword` | ARSA 既存 |
 | Trad | `feature_gene_name` / `reference_author` / `reference_journal` | `FeatureQualifier` / `ReferenceAuthor` / `ReferenceJournal` | ARSA 既存 |
 | Taxonomy | `rank` / `lineage` / `kingdom` / `phylum` / `class` / `order` / `family` / `genus` / `species` | TXSearch 同名フィールド | TXSearch 既存 |
@@ -853,37 +855,39 @@ GET /db-portal/parse?adv=<dsl>&db=<id>                 # DSL → AST 構造化 J
 
 `{type: object, enabled: false}` のままにしている `properties` field（元データ XML / JSON）は将来も検索対象とせず、必要なメタは converter で top-level に昇格させる方針で確定。実装は ddbj-search-converter で XML/JSON parse 拡張 + Blue-Green alias swap で再インデックス。
 
-### Tier 2 正規化（submitter / publicationId）
+### Tier 2 正規化（submitter / publication.title）
 
-Advanced Search の Tier 2 共通語彙（`submitter` / `publication`）を全 DB 横断で使えるようにするため、**top-level keyword フィールド**として統一名を追加する（現状 BioProject 以外は ES に該当フィールドなし）。
+Advanced Search の Tier 2 共通語彙（`submitter` / `publication`）を全 DB 横断で使えるようにする。`submitter` は **top-level keyword フィールド**として converter 側で各 DB から抽出する。`publication` は ES の **nested `publication.title`** に対する `match_phrase`（`/entries/*` 系 `publication=` パラメータと同一）。
 
 **大枠方針**（converter 側で最終詳細を検討中）:
 
-| ポータル共通語彙（DSL） | 追加フィールド（ES） | 型 | 用途 |
+| ポータル共通語彙（DSL） | ES フィールド | 型・クエリ | 用途 |
 |---|---|---|---|
-| `submitter` | `submitter` | keyword（配列可） | 投稿者 / 投稿機関名。`submitter:"東大"` / `submitter:"National Cancer Center"` 等のクエリで横断検索可能 |
-| `publication` | `publicationId` | keyword（配列可） | 関連論文の PubMed ID。`publication:"12345"` で完全一致検索 |
+| `submitter` | `submitter`（top-level） | keyword（配列可）、`match` / `wildcard` | 投稿者 / 投稿機関名。`submitter:"東大"` / `submitter:"National Cancer Center"` 等で横断検索 |
+| `publication` | `publication.title`（nested） | text、`match_phrase` | 関連論文のタイトル。`publication:"CRISPR-Cas9"` 等のフレーズマッチで横断検索 |
 
 **各 DB での抽出ルール:**
 
-| DB | `submitter` の抽出元 | `publicationId` の抽出元 |
+| DB | `submitter` の抽出元 | `publication.title` の抽出元 |
 |---|---|---|
-| BioProject | 既存 `organization.name`（role フィルタ後）→ top-level に昇格 | 既存 `publication.id` → top-level に昇格 |
-| SRA | `properties.SUBMISSION.center_name` | `properties.STUDY_LINKS.XREF_LINK[DB="PubMed"].ID` 等 |
-| JGA | `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` | `properties.PUBLICATIONS[].id` |
-| BioSample | `properties.BioSample.center_name` | N/A（BioSample に該当情報なし） |
-| Trad | ARSA のため proxy 側で対応（top-level 不要） | ARSA の `ReferencePubmedID` を proxy 側でマップ |
+| BioProject | 既存 `organization.name`（role フィルタ後）→ top-level に昇格 | 既存 nested `publication.title`（converter 既対応） |
+| SRA | `properties.SUBMISSION.center_name` | properties から `STUDY_TITLE` / リンクされた publication title を nested `publication.title` に投入（要拡張） |
+| JGA | `properties.STUDY_ATTRIBUTES[TAG="Submitting organization"].VALUE` | `properties.PUBLICATIONS[].title`（既存なら）or 連動 PubMed ID → title 解決（要拡張） |
+| BioSample | `properties.BioSample.center_name` | properties / attributes から関連 publication title を抽出（要拡張、BioSample は publication 自体が稀） |
+| GEA / MetaboBank | 同様（properties / attributes 側） | properties / attributes から publication title を抽出（要拡張） |
+| Trad | ARSA のため proxy 側で対応（top-level 不要） | ARSA の `ReferenceTitle` を proxy 側でマップ |
 
 **検索挙動:**
 
 - `submitter:"..."` → 全 DB の top-level `submitter` に対して `match` / `wildcard` クエリ
-- `publication:"..."` → 全 DB の top-level `publicationId` に対して完全一致
+- `publication:"..."` → 全 DB の nested `publication.title` に対して `match_phrase`
 - Trad は proxy 側で ARSA のフィールドにマップ（top-level フィールドは不要）
+- 旧 `publication.id` への PubMed ID 完全一致は **当面未対応**（converter / API 側に専用フィールドが整備されるまで `identifier` で代替するか待つ）
 
 **converter 側の残課題（db-portal では未決、実装者判断）:**
 
 - BioProject の Organization をすべて拾うか、特定の role（`submitter` / `owner` 等）に絞るか
-- SRA の PubMed ID の抽出対象（`STUDY_LINKS` / `EXPERIMENT_LINKS` / `SAMPLE_LINKS` のどれを見るか、複数見るか）
+- BioProject 以外の DB で nested `publication.title` をどう populate するか（properties parse の拡張、PubMed ID からの title resolve 等）
 - 元構造（nested）と別に top-level に持つことで発生する index サイズ増加の許容範囲
 - `submitter` の正規化（表記ゆれ対策: 「東京大学」「東大」「Univ. of Tokyo」等）の有無
 
@@ -956,7 +960,7 @@ BioSample は既に `attributes`（nested）で key-value 形式のメタデー�
 
 | parse 対象 | タイミング | 根拠 |
 |---|---|---|
-| Tier 2 正規化（`submitter` / `publicationId`） | **ファーストリリース** | Advanced Search の Tier 2 共通語彙を横断検索で使うため必須。BioProject は既存フィールドの昇格のみ、SRA / JGA / BioSample は properties parse を伴う |
+| Tier 2 正規化（`submitter` / `publication.title`） | **ファーストリリース** | Advanced Search の Tier 2 共通語彙を横断検索で使うため必須。BioProject は既存 nested フィールドで対応済 / `submitter` は converter 0.3.0 で top-level 化済。残課題は BioProject 以外で nested `publication.title` を populate する converter 拡張 |
 | SRA の library / platform / instrument | **ファーストリリース** | UC4（技術起点）は研究者の頻出ユースケース。converter の XML parse 拡張で対応可能 |
 | JGA の全フィールド | **ファーストリリース** | parse なしでは JGA の Advanced Search が機能しない。データ量も小さく再インデックスコスト低 |
 | BioSample の top-level 昇格 | **将来拡張** | 10 億件規模の再インデックスコスト大。harmonized_name 指定で当面代替 |

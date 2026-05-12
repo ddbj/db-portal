@@ -71,19 +71,19 @@
 ## Tier 2 (横断で使える)
 
 - `submitter`: 投稿元
-- `publication`: 関連論文 (PubMed ID 等)
+- `publication`: 関連論文タイトル (フレーズマッチ、例: `publication:"CRISPR-Cas9 screen"`)。PubMed ID 完全一致には使わない (専用フィールドなし、`identifier` でも代用不可。論文タイトルや雑誌名を指定すること)
 
 ## Tier 3 (単一 DB 指定時のみ)
 
-- BioProject: `project_type`, `grant_agency`, `relevance`
-- BioSample: `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date`
-- SRA: `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date`
+- BioProject: `project_type`, `grant_agency`, `relevance`, `external_link_label`
+- BioSample: `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date`, `derived_from_id`
+- SRA: `library_strategy`, `library_source`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date`, `derived_from_id` (sra-sample のみヒット、BioSample と共通)
   - `library_strategy` の主要値 (INSDC controlled vocab): `WGS` / `WXS` / `RNA-Seq` / `miRNA-Seq` / `ChIP-Seq` / `ATAC-seq` / `Bisulfite-Seq` / `AMPLICON` / `Hi-C` / `OTHER`
   - `library_source` の値: `GENOMIC` / `TRANSCRIPTOMIC` / `METAGENOMIC` / `METATRANSCRIPTOMIC` / `VIRAL RNA` / `SYNTHETIC` / `OTHER`
   - `library_layout` の値: `SINGLE` / `PAIRED`
   - `platform` の主要値: `ILLUMINA` / `PACBIO_SMRT` / `OXFORD_NANOPORE` / `BGISEQ` / `ION_TORRENT` / `MGI`
   - 「メタゲノム」「16S」等は `library_source:METAGENOMIC` で表現する (`library_strategy` の値に `Metagenomic` は存在しない)
-- JGA: `study_type`, `grant_agency`, `dataset_type`, `vendor`
+- JGA: `study_type`, `grant_agency`, `dataset_type`, `vendor`, `external_link_label` (jga-study のみヒット、BioProject と共通)
 - GEA: `experiment_type`
 - MetaboBank: `study_type`, `experiment_type`, `submission_type`
 - Trad: `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal`

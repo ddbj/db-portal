@@ -345,6 +345,7 @@
         "library_construction_protocol": { "label": "Library construction protocol" },
         "geo_loc_name": { "label": "Geographic location" },
         "collection_date": { "label": "Collection date" },
+        "derived_from_id": { "label": "Derived-from sample ID" },
         "host": { "label": "Host" },
         "strain": { "label": "Strain" },
         "isolate": { "label": "Isolate" },
@@ -359,6 +360,7 @@
           }
         },
         "bioproject_grant_agency": { "label": "Grant agency (BioProject)" },
+        "bioproject_external_link_label": { "label": "External link label (BioProject)" },
         "relevance": {
           "label": "Relevance tag (BioProject)",
           "enumValues": {
@@ -431,6 +433,7 @@
           }
         },
         "jga_grant_agency": { "label": "Grant agency (JGA)" },
+        "jga_external_link_label": { "label": "External link label (JGA)" },
         "dataset_type": { "label": "Dataset type (JGA)" },
         "vendor": { "label": "Vendor (JGA)" },
         "gea_experiment_type": { "label": "Experiment type (GEA)" },

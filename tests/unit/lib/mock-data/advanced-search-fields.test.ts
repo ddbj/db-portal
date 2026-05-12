@@ -33,6 +33,15 @@ describe("ADVANCED_FIELDS catalog", () => {
     expect(tier2.map((f) => f.id)).toEqual(["submitter", "publication"])
   })
 
+  it("publication は text 型 (publication.title への match_phrase)", () => {
+    const f = findField("publication")
+    expect(f?.type).toBe("text")
+    expect([...(f?.availableOps ?? [])].sort()).toEqual(
+      ["contains", "equals", "starts_with", "wildcard"].sort(),
+    )
+    expect(f?.availableDbs).toEqual(DB_ORDER)
+  })
+
   it("identifier / title / description は全 8 DB で利用可", () => {
     for (const id of ["identifier", "title", "description"]) {
       const field = findField(id)
@@ -352,5 +361,31 @@ describe("Tier 3 機能欠落補完 (GEA 1 / MetaboBank 3 / JGA rename / SRA 専
       expect(isFieldAvailableForDb(id, "sra")).toBe(true)
       expect(isFieldAvailableForDb(id, "gea")).toBe(false)
     }
+  })
+})
+
+describe("Tier 3 nested fields (external_link_label / derived_from_id)", () => {
+  it("external_link_label は bioproject と jga の 2 フィールドで dslName 共有", () => {
+    const bioproject = findField("bioproject_external_link_label")
+    const jga = findField("jga_external_link_label")
+    expect(bioproject?.dslName).toBe("external_link_label")
+    expect(jga?.dslName).toBe("external_link_label")
+    expect(bioproject?.type).toBe("text")
+    expect(jga?.type).toBe("text")
+    expect(bioproject?.availableDbs).toEqual(["bioproject"])
+    expect(jga?.availableDbs).toEqual(["jga"])
+  })
+
+  it("derived_from_id は identifier 型、biosample と sra の両方で利用可", () => {
+    const f = findField("derived_from_id")
+    expect(f?.tier).toBe(3)
+    expect(f?.type).toBe("identifier")
+    expect([...(f?.availableOps ?? [])].sort()).toEqual(
+      ["equals", "starts_with", "wildcard"].sort(),
+    )
+    expect([...(f?.availableDbs ?? [])].sort()).toEqual(["biosample", "sra"])
+    expect(isFieldAvailableForDb("derived_from_id", "biosample")).toBe(true)
+    expect(isFieldAvailableForDb("derived_from_id", "sra")).toBe(true)
+    expect(isFieldAvailableForDb("derived_from_id", ALL_DB_VALUE)).toBe(false)
   })
 })

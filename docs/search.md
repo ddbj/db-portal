@@ -224,9 +224,9 @@ DB ポータルの存在意義は「横断検索」なので、**Advanced Search
 | 共通語彙 | 即使える DB | 要拡張 DB |
 |---|---|---|
 | `submitter` | BioProject（`organization.name`） | SRA / JGA / BioSample / GEA / MetaboBank（center_name 等の正規化が必要） |
-| `publication` | BioProject（`publication.id`）、Trad（`ReferencePubmedID`） | JGA / SRA（properties parse が必要） |
+| `publication` | BioProject（`publication.title`） | SRA / JGA / BioSample / GEA / MetaboBank（properties / attributes から title 抽出が必要）、Trad（ARSA の `ReferenceTitle` 系へ proxy 側マッピング） |
 
-DSL 側の allowlist 名（共通語彙）と、converter が ES に投入する top-level フィールド名は一致しない項目がある。`publication` は ES フィールド名 `publicationId` にマップされる。変換は proxy 側で行い、ユーザには DSL 語彙のみ露出する。詳細は [search-backends.md の Tier 2 共通のフィールド対応](./search-backends.md#tier-2-横断で使えると嬉しいconverter-側で正規化が必要) を参照。
+`publication` は論文タイトルに対する **フレーズマッチ**（ES `publication.title` への `match_phrase`）として動作する。`/entries/*` 系 endpoint の `publication=` クエリパラメータと同セマンティクス。PubMed ID 完全一致が必要な場合は当面 `identifier` を使う（converter / API 側で別フィールドとして整備されるまで未対応）。詳細は [search-backends.md の Tier 2 共通のフィールド対応](./search-backends.md#tier-2-横断で使えると嬉しいconverter-側で正規化が必要) を参照。
 
 **Tier 3: 単一 DB 選択時のみ利用可（DB 特化）**
 
@@ -234,10 +234,10 @@ API 側 `ddbj_search_api/search/dsl/allowlist.py` の `TIER3_FIELDS` が SSOT。
 
 | DB | フィールド | 備考 |
 |---|---|---|
-| BioProject | `project_type`, `grant_agency`, `relevance` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ。`relevance` は INSDC controlled vocab の 7 値 enum（`Agricultural` / `Medical` / `Industrial` / `Environmental` / `Evolution` / `ModelOrganism` / `Other`） |
-| BioSample | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date` | converter 0.3.0 で top-level 化された text 系 5 field。`geo_loc_name` / `collection_date` は SRA でも検索可（同名 ES path、SRA-sample 限定でヒット） |
-| SRA | `library_strategy`, `library_source`, `library_selection`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date` | converter 0.3.0 で properties parse 済（top-level に投入）。`library_selection` / `library_strategy` / `library_source` / `library_layout` / `platform` / `instrument_model` / `library_name` / `library_construction_protocol` は sra-experiment、`analysis_type` は sra-analysis、`geo_loc_name` / `collection_date` は sra-sample でのみヒット |
-| JGA | `study_type`, `grant_agency`, `dataset_type`, `vendor` | converter 0.3.0 で properties parse 済。`dataset_type` は jga-dataset、`vendor` は jga-study でのみヒット |
+| BioProject | `project_type`, `grant_agency`, `relevance`, `external_link_label` | `project_type` は ES `objectType`（BioProject / UmbrellaBioProject の enum）にマップ。`relevance` は INSDC controlled vocab の 7 値 enum（`Agricultural` / `Medical` / `Industrial` / `Environmental` / `Evolution` / `ModelOrganism` / `Other`）。`external_link_label` は nested `externalLink.label` への text 検索（JGA と共通 field 名） |
+| BioSample | `host`, `strain`, `isolate`, `geo_loc_name`, `collection_date`, `derived_from_id` | converter 0.3.0 で top-level 化された text 系 5 field + nested `derivedFrom.identifier` への identifier 検索。`geo_loc_name` / `collection_date` / `derived_from_id` は SRA でも検索可（同名 ES path、SRA-sample 限定でヒット） |
+| SRA | `library_strategy`, `library_source`, `library_selection`, `library_layout`, `platform`, `instrument_model`, `analysis_type`, `library_name`, `library_construction_protocol`, `geo_loc_name`, `collection_date`, `derived_from_id` | converter 0.3.0 で properties parse 済（top-level に投入）。`library_selection` / `library_strategy` / `library_source` / `library_layout` / `platform` / `instrument_model` / `library_name` / `library_construction_protocol` は sra-experiment、`analysis_type` は sra-analysis、`geo_loc_name` / `collection_date` / `derived_from_id` は sra-sample でのみヒット（BioSample と共通） |
+| JGA | `study_type`, `grant_agency`, `dataset_type`, `vendor`, `external_link_label` | converter 0.3.0 で properties parse 済。`dataset_type` は jga-dataset、`vendor` は jga-study でのみヒット。`external_link_label` は jga-study の nested `externalLink.label`（BioProject と共通） |
 | GEA | `experiment_type` | converter 0.3.0 の ES `experimentType` |
 | MetaboBank | `study_type`, `experiment_type`, `submission_type` | converter 0.3.0 の ES `studyType` / `experimentType` / `submissionType` |
 | Trad（ARSA） | `division`, `molecular_type`, `sequence_length`, `feature_gene_name`, `reference_journal` | ARSA Solr の既存スキーマで検索可 |
