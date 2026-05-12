@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import {
   parseLangCookie,
   pickLang,
   pickLangFromAcceptLanguage,
+  writeLangCookie,
 } from "@/i18n/cookie"
 
 describe("parseLangCookie", () => {
@@ -84,5 +85,22 @@ describe("pickLang", () => {
 
   it("falls back to Accept-Language when cookie value is unsupported", () => {
     expect(pickLang("lang=fr", "ja")).toBe("ja")
+  })
+})
+
+describe("writeLangCookie", () => {
+  afterEach(() => {
+    document.cookie = "lang=; Path=/; Max-Age=0"
+  })
+
+  it("writes the lang cookie so parseLangCookie can read it back", () => {
+    writeLangCookie("ja")
+    expect(parseLangCookie(document.cookie)).toBe("ja")
+  })
+
+  it("overwrites an existing value", () => {
+    writeLangCookie("ja")
+    writeLangCookie("en")
+    expect(parseLangCookie(document.cookie)).toBe("en")
   })
 })

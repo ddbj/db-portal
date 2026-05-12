@@ -38,3 +38,12 @@ export const pickLang = (
   cookieHeader: string | null,
   acceptLang: string | null,
 ): Lang => parseLangCookie(cookieHeader) ?? pickLangFromAcceptLanguage(acceptLang)
+
+const LANG_COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 365
+
+export const writeLangCookie = (lang: Lang): void => {
+  if (typeof document === "undefined") return
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie =
+    `lang=${lang}; Path=/; Max-Age=${LANG_COOKIE_MAX_AGE_SEC}; SameSite=Lax${secure}`
+}

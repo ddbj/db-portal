@@ -1,11 +1,11 @@
-import { screen, within } from "@testing-library/react"
-import { MemoryRouter } from "react-router"
+import { render, screen, within } from "@testing-library/react"
+import { I18nextProvider } from "react-i18next"
+import { createMemoryRouter, RouterProvider } from "react-router"
 import { describe, expect, it } from "vitest"
 
 import Header from "@/components/layout/Header"
+import i18n from "@/i18n"
 import { NAV_ITEMS, type NavItem } from "@/lib/nav"
-
-import { renderWithI18n } from "../../../helpers/i18n"
 
 const NAV_LABELS_JA = {
   "header.nav.advancedSearch": "詳細検索",
@@ -13,12 +13,19 @@ const NAV_LABELS_JA = {
   "header.nav.submitAlt": "登録-alt",
 } as const satisfies Record<NavItem["labelKey"], string>
 
-const renderHeader = (initialPath = "/") =>
-  renderWithI18n(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <Header />
-    </MemoryRouter>,
+const renderHeader = (initialPath = "/") => {
+  if (i18n.language !== "ja") void i18n.changeLanguage("ja")
+  const router = createMemoryRouter(
+    [{ path: "*", element: <Header /> }],
+    { initialEntries: [initialPath] },
   )
+
+  return render(
+    <I18nextProvider i18n={i18n}>
+      <RouterProvider router={router} />
+    </I18nextProvider>,
+  )
+}
 
 describe("Header", () => {
 

@@ -1,14 +1,21 @@
 import { Globe, User } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { Link, NavLink } from "react-router"
+import { Link, NavLink, useRevalidator } from "react-router"
 
 import cn from "@/components/ui/cn"
-import { useLanguage } from "@/i18n"
+import { type Lang, useLanguage } from "@/i18n"
 import { NAV_ITEMS } from "@/lib/nav"
 
 const Header = () => {
   const { t } = useTranslation()
   const { lang, setLang } = useLanguage()
+  const { revalidate } = useRevalidator()
+
+  const handleLangChange = (next: Lang) => {
+    if (next === lang) return
+    setLang(next)
+    void revalidate()
+  }
 
   return (
     <header className="border-b border-gray-200 bg-white">
@@ -54,7 +61,7 @@ const Header = () => {
               <Globe className="h-5 w-5 text-gray-500" aria-hidden="true" />
               <button
                 type="button"
-                onClick={() => setLang("ja")}
+                onClick={() => handleLangChange("ja")}
                 aria-pressed={lang === "ja"}
                 className={cn(
                   "hover:text-gray-700",
@@ -66,7 +73,7 @@ const Header = () => {
               <span className="text-gray-300" aria-hidden="true">/</span>
               <button
                 type="button"
-                onClick={() => setLang("en")}
+                onClick={() => handleLangChange("en")}
                 aria-pressed={lang === "en"}
                 className={cn(
                   "hover:text-gray-700",
