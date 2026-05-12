@@ -107,6 +107,7 @@
       "meta": {
         "titleCross": "検索結果: {{q}}",
         "titleDb": "{{db}} の検索結果: {{q}}",
+        "titleDbNoQuery": "{{db}} - DDBJ 刷新 (仮)",
         "titleAdv": "詳細検索結果",
         "description": "DDBJ データベースを横断検索"
       },

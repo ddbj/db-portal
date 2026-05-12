@@ -133,7 +133,7 @@ export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult
 
   const params: SearchParams = { q, db, page, perPage, sort, cursor }
 
-  const shouldRedirectToHome = q === null
+  const shouldRedirectToHome = q === null && db === ALL_DB_VALUE
 
   const canonical = buildSearchUrlFull({ q, db, page, perPage, sort, cursor })
   const originalQueryString = searchParams.toString()

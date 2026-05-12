@@ -226,7 +226,7 @@ describe("/search route — DB-specified mode", () => {
 
 describe("/search route — empty-query fallback", () => {
 
-  it("loader throws a redirect to /search?q=human when q is missing", async () => {
+  it("loader throws a redirect to / when both q and db are missing", async () => {
     const thrown = await runLoader("/search").then(
       () => null,
       (e: unknown) => e,
@@ -234,6 +234,13 @@ describe("/search route — empty-query fallback", () => {
     expect(thrown).toBeInstanceOf(Response)
     const response = thrown as Response
     expect(response.status).toBe(302)
-    expect(response.headers.get("Location")).toBe("/search?q=human")
+    expect(response.headers.get("Location")).toBe("/")
+  })
+
+  it("loader does not redirect when db is specified without q (db-only URL is valid)", async () => {
+    const result = await runLoader("/search?db=biosample")
+    expect(result).not.toBeInstanceOf(Response)
+    const data = result as { metaTitle: string }
+    expect(data.metaTitle).toContain("BioSample")
   })
 })

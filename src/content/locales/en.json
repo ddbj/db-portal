@@ -107,6 +107,7 @@
       "meta": {
         "titleCross": "Search results: {{q}}",
         "titleDb": "{{db}} search results: {{q}}",
+        "titleDbNoQuery": "{{db}} - DDBJ Renewal (tentative)",
         "titleAdv": "Advanced search results",
         "description": "Cross-database search over DDBJ databases"
       },

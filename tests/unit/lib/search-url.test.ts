@@ -166,10 +166,31 @@ describe("parseSearchUrl", () => {
 
   const parse = (qs: string) => parseSearchUrl(new URLSearchParams(qs))
 
-  it("redirects to home when q is missing", () => {
+  it("redirects to home when both q and db are missing", () => {
     const result = parse("")
     expect(result.shouldRedirectToHome).toBe(true)
     expect(result.params.q).toBeNull()
+    expect(result.params.db).toBe(ALL_DB_VALUE)
+  })
+
+  it("does not redirect when db is specified without q (db-only URL is valid)", () => {
+    const result = parse("db=biosample")
+    expect(result.shouldRedirectToHome).toBe(false)
+    expect(result.params.q).toBeNull()
+    expect(result.params.db).toBe("biosample")
+  })
+
+  it("does not redirect when q is specified without db", () => {
+    const result = parse("q=human")
+    expect(result.shouldRedirectToHome).toBe(false)
+    expect(result.params.q).toBe("human")
+    expect(result.params.db).toBe(ALL_DB_VALUE)
+  })
+
+  it("redirects to home when only invalid db value is given (falls back to ALL)", () => {
+    const result = parse("db=not_a_db")
+    expect(result.shouldRedirectToHome).toBe(true)
+    expect(result.params.db).toBe(ALL_DB_VALUE)
   })
 
   it("silently drops legacy adv parameter (no redirect when only adv is present)", () => {

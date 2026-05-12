@@ -123,14 +123,12 @@ const SORT_TO_API: Record<
 const SOLR_BACKED_DBS: ReadonlySet<DbId> = new Set<DbId>(["trad", "taxonomy"])
 const isSolrBackedDb = (db: DbId): boolean => SOLR_BACKED_DBS.has(db)
 
-const DEMO_FALLBACK_URL = "/search?q=human"
-
 export const loader = ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url)
   const parsed = parseSearchUrl(url.searchParams)
 
   if (parsed.shouldRedirectToHome) {
-    throw redirect(DEMO_FALLBACK_URL)
+    throw redirect("/")
   }
 
   const lang = pickLang(
@@ -140,17 +138,19 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   const resource = resolveMeta(lang)
 
   let metaTitle: string = resource.routes.home.meta.title
-  if (parsed.params.q !== null) {
-    const q = parsed.params.q
-    if (parsed.params.db !== ALL_DB_VALUE) {
-      const displayName = DATABASES.find((d) => d.id === parsed.params.db)?.displayName
-        ?? parsed.params.db
+  if (parsed.params.db !== ALL_DB_VALUE) {
+    const displayName = DATABASES.find((d) => d.id === parsed.params.db)?.displayName
+      ?? parsed.params.db
+    if (parsed.params.q !== null) {
       metaTitle = resource.routes.search.meta.titleDb
-        .replace("{{q}}", q)
+        .replace("{{q}}", parsed.params.q)
         .replace("{{db}}", displayName)
     } else {
-      metaTitle = resource.routes.search.meta.titleCross.replace("{{q}}", q)
+      metaTitle = resource.routes.search.meta.titleDbNoQuery
+        .replace("{{db}}", displayName)
     }
+  } else if (parsed.params.q !== null) {
+    metaTitle = resource.routes.search.meta.titleCross.replace("{{q}}", parsed.params.q)
   }
 
   const canonicalSearch = buildSearchUrlFull({
@@ -268,17 +268,17 @@ const CrossModeView = ({ params }: ModeViewProps) => {
     params.q !== null ? `?q=${encodeURIComponent(params.q)}` : ""
   }`
 
-  const summaryProps = {
-    mode: "simple" as const,
-    q: params.q ?? "",
-    db: params.db,
-    onClear: handleClear,
-    advancedSearchHref,
-  }
-
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      <SearchSummaryChip {...summaryProps} />
+      {params.q !== null && (
+        <SearchSummaryChip
+          mode="simple"
+          q={params.q}
+          db={params.db}
+          onClear={handleClear}
+          advancedSearchHref={advancedSearchHref}
+        />
+      )}
       <div>
         <Heading level={2} className="mb-3">
           {t("routes.search.crossMode.heading")}
@@ -386,8 +386,6 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     return sidebarFields.facets.map((f) => f.facetKey).join(",")
   }, [facetsDbType, sidebarFields])
 
-  const hasQuery = params.q !== null
-
   const subtypeList: readonly string[] = useMemo(
     () =>
       db === "sra"
@@ -430,7 +428,7 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
           signal,
         )
       },
-      enabled: subtypeList.length > 0 && hasQuery,
+      enabled: subtypeList.length > 0,
     })),
   })
 
@@ -491,7 +489,7 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
         },
         signal,
       ),
-    enabled: facetsDbType !== null && hasQuery,
+    enabled: facetsDbType !== null,
   })
 
   const updateParams = (changes: Partial<SearchParams>) => {
@@ -540,7 +538,7 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   const handleCursorNext = (cursor: string) => updateParams({ cursor, page: 1 })
 
   const handleClear = () => {
-    void navigate("/", { replace: true })
+    void navigate(buildSearchUrlFull({ db }), { replace: true })
   }
 
   const handleRetry = () => {
@@ -555,19 +553,19 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     params.q !== null ? `&q=${encodeURIComponent(params.q)}` : ""
   }`
 
-  const summaryProps = {
-    mode: "simple" as const,
-    q: params.q ?? "",
-    db: params.db,
-    onClear: handleClear,
-    advancedSearchHref,
-  }
-
   const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
 
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
-      <SearchSummaryChip {...summaryProps} />
+      {params.q !== null && (
+        <SearchSummaryChip
+          mode="simple"
+          q={params.q}
+          db={params.db}
+          onClear={handleClear}
+          advancedSearchHref={advancedSearchHref}
+        />
+      )}
       <Heading level={2} className="mb-0">
         {displayName}
       </Heading>

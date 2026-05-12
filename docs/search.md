@@ -476,7 +476,7 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### 検索条件サマリ表示
 
-`/search?q=<DSL>` で到達した検索結果ページは、ヘッダ位置に**検索条件サマリチップ**を表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま 1 つの chip に出す。
+`/search?q=<DSL>` で到達した検索結果ページは、ヘッダ位置に**検索条件サマリチップ**を表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま 1 つの chip に出す。`q` が未指定 (`/search?db=<id>` のみ) の場合はサマリチップを表示しない。
 
 **根拠:** portal の URL 表現を `?q=<DSL>` 1 本に統一しているため、シンプル検索由来 / Advanced Search 由来 / Sidebar 絞り込み由来を区別する必要がない。すべて単一の AST のシリアライズ形式である。
 
@@ -500,7 +500,9 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 **操作:**
 
 - **[詳細検索 GUI で編集] ボタン**: 現在のクエリを引き継いで `/advanced-search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
-- **[✕ クリア] ボタン**: `q` を解除してホーム (`/`) にリダイレクト（`db` も解除）。
+- **[✕ クリア] ボタン**: `q`・サイドバー由来絞り込み・ページング・ソート等の検索条件をすべて解除する。`db` は保持する。
+  - 単一 DB モード (`db` 指定あり) → `/search?db=<id>` に遷移する
+  - 横断モード (`db` 未指定) → トップページ `/` にリダイレクトする
 - サマリチップ自体にはクリックアクションは割り当てない。
 
 ### ヒット件数表示
@@ -803,12 +805,14 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 | パラメータ | 値 | デフォルト（省略時） |
 |---|---|---|
-| `q` | DSL 文字列（FreeText / FieldClause / BoolOp の Lucene 風表現、URL エンコード） | 必須。未指定なら `/search?q=human` に 301 リダイレクト |
+| `q` | DSL 文字列（FreeText / FieldClause / BoolOp の Lucene 風表現、URL エンコード） | オプション。`db` 指定がある場合は match_all で全件表示、`q` も `db` も未指定 (`/search`) はトップページ `/` に 302 リダイレクト |
 | `db` | 下記の DB 識別子 | 未指定 = 横断検索 |
 | `page` | 1 以上の整数 | `1` |
 | `perPage` | `20` / `50` / `100` | `20` |
 | `sort` | `relevance` / `date_desc` / `date_asc` | `relevance` |
 | `cursor` | opaque 文字列（ES deep paging、10,000 件超） | なし |
+
+`q` が未指定で `db` が指定されている `/search?db=<id>` は、そのデータベースに対する match_all クエリ（全件表示）として有効な URL とする。サイドバーフィルタは動作し、ユーザがフィルタを操作した時点で `q` が AST から生成されてサマリチップが現れる。`q` も `db` も未指定の `/search` は意味を持たないため、トップページ `/` にリダイレクトする。
 
 **`?q=<DSL>` 一本化**: シンプル検索 / Advanced Search / Sidebar 絞り込みのいずれもすべて単一の `q` パラメータに集約する。portal 内部で `SearchAstNode` に正規化したうえで `astToDsl()` でシリアライズ、portal → API は URL contract が完全一致 (`?q=<DSL>`) のままパススルーされる。
 
@@ -818,7 +822,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 パラメータの順序も固定する（canonical 化）: `q` → `db` → `page` → `perPage` → `sort` → `cursor`。
 
-旧 `?adv=` パラメータ: portal はリリース前のため互換性を取らない。`parseSearchUrl` は `?adv=` を silently drop し、`q` が無ければホームリダイレクトする。
+旧 `?adv=` パラメータ: portal はリリース前のため互換性を取らない。`parseSearchUrl` は `?adv=` を silently drop する。`q` も `db` も無ければトップページにリダイレクトする。
 
 #### CSR 上での正規化実装
 
@@ -847,8 +851,9 @@ UI 表示ラベルは [DB 一覧](#db-一覧) のテーブルの値をそのま�
 | ケース | canonical | robots |
 |---|---|---|
 | `/search?q=xxx&db=bs` | 自身（デフォルト値省略後） | `noindex, follow` |
+| `/search?db=bs`（`q` なし、`db` あり） | 自身 | `noindex, follow` |
 | `/search?q=xxx&page=2&sort=relevance` | `/search?q=xxx&page=2` | `noindex, follow` |
-| `/search`（`q` なし） | `/search?q=human` に 302 リダイレクト | - |
+| `/search`（`q` も `db` も無し） | トップページ `/` に 302 リダイレクト | - |
 | `/advanced-search` | `/advanced-search` | `index, follow` |
 
 `/search` を `noindex` にする理由: (1) 検索結果はユーザー固有で SEO インデックスに入れる価値が低い。(2) クローラによる不要な負荷（proxy バックエンドへの fan-out）を避ける。
