@@ -17,6 +17,9 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-}
       VITE_DB_PORTAL_SEARCH_API_URL: ${VITE_DB_PORTAL_SEARCH_API_URL:-}
       VITE_PORTAL_ORIGIN: ${VITE_PORTAL_ORIGIN:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
     working_dir: /app
     command: ${APP_COMMAND:-sleep infinity}
     ports:

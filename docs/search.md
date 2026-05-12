@@ -141,7 +141,7 @@ Accession（例: `PRJDB12345`）も通常のキーワードとして全文検索
 
 ## キーワード検索仕様
 
-シンプル検索ボックスと Advanced Search（クエリビルダ）の 2 層構成。複雑な構文はシンプル検索ボックスに詰め込まず、Advanced Search に分離する。
+シンプル検索ボックスと Advanced Search（クエリビルダ）の 2 層構成。複雑な構文はシンプル検索ボックスに詰め込まず、Advanced Search に分離する。さらに Phase 1 では LLM による「自然文 → DSL 提案」テキストボックスを `/advanced-search` と `/search?db=<id>` に常設し、Boolean 構文を書けないユーザの入口にする（[LLM 補助テキストボックス](#llm-補助テキストボックス) 参照）。
 
 方針の根拠:
 
@@ -292,6 +292,19 @@ GUI セレクタはフィールドの型に応じて選べる演算子を動的�
 | 数値（`sequence_length` 等） | `between` / `gte` / `lte` / `equals` |
 | 列挙値（`library_strategy` / `platform` / `rank` 等） | `equals` / `not_equals`（プルダウン選択） |
 
+#### フィールドなしフリーワード条件
+
+通常の条件行は「フィールド × 演算子 × 値」の三つ組だが、それに加えて **フィールドを指定しないフリーワード条件**を 1 つだけ条件ツリーに追加できる。`/advanced-search` のシンプル検索ボックス相当のテキスト入力を、AND/OR ツリーの中に「条件のひとつ」として組み込めるようにする位置付け。
+
+- **配置**: ツリー root 直下のみ。ネストグループ内には置けない（[検索の内部モデル](#検索の内部モデル)の `FreeText` 位置制約と整合）
+- **個数**: ツリー全体で最大 1 個
+- **論理結合**: root の logic が `AND` のときだけ追加可。`OR` / `NOT` root のときは `+ フリーワード` ボタンを非活性化（追加すると AND root と矛盾する）
+- **入力**: テキスト 1 本のみ（フィールド選択 / 演算子選択なし）。空欄なら DSL に出さない
+- **DSL 表現**: シンプル検索ボックスと同じく `freeText(value)` ノードに変換 → `astToDsl()` で `"value"`（自動フレーズ化を経た裸トークン or quote 文字列）として出力。他条件と AND 結合時は `"value" AND field:val` の形になる
+- **AST → ツリー復元**: AST root 単独 / root の AND 直下にある FreeText のみ拾い、フリーワード条件として復元する。深い場所（NOT 配下や OR 内）の FreeText は構築不能なため捨てる（既存挙動と同じ）
+
+UI 上は「+ 条件を追加」「+ グループを追加」と並んで「+ フリーワード」ボタンを root にのみ表示する（深いグループでは非表示）。
+
 #### レイアウト
 
 ```
@@ -304,11 +317,12 @@ GUI セレクタはフィールドの型に応じて選べる演算子を動的�
 │                                                        │
 │  検索条件                                                │
 │  ┌─────────────────────────────────────────────────┐   │
+│  │ フリーワード [Escherichia coli__________] [✕]   │   │
 │  │        [Title     ▼][contains ▼][__________]   │   │
 │  │ [AND▼] [Organism  ▼][equals   ▼][__________] [✕]│   │
 │  │ [OR ▼] [Date ▼ 公開日▼][between ▼][__ 〜 __] [✕]│   │
 │  │                                                  │   │
-│  │ [+ 条件を追加]                                    │   │
+│  │ [+ 条件を追加] [+ グループ] [+ フリーワード]       │   │
 │  └─────────────────────────────────────────────────┘   │
 │                                                        │
 │  クエリプレビュー                                         │
@@ -427,6 +441,20 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 - **オートサジェスト**（将来）: Taxonomy（学名/一般名/和名）・既知 accession・過去検索から候補を出す
 
 具体的なプレースホルダ文言と Examples の一覧は UI design で詰める。
+
+### LLM 補助テキストボックス
+
+「Boolean 構文を書けない」ユーザでも Advanced Search を使えるよう、`/advanced-search` と `/search?db=<id>` (DB 一覧) の上部に**自然文 → DSL 提案** テキストボックスを常設する。LLM サービング・BFF 設計・プロンプトの詳細は [`docs/llm.md`](./llm.md#phase-1-検索クエリ補助-poc) を SSOT として参照。
+
+| 項目 | 仕様 |
+|---|---|
+| 配置 | `/advanced-search` ではビルダの上、`/search?db=<id>` では `SearchToolbar` の上 (常設) |
+| 入力 | textarea + [提案を生成] ボタン (Enter 送信、Esc キャンセル) |
+| 出力 | 提案 DSL を `CodeBlock` でプレビュー、「🤖 AI 生成・要確認」ラベル併記 |
+| 適用 | [採用] ボタンで `?q=<提案 DSL>` に navigate (置換)。loader 経由で既存の `parseQ` → tree 復元 / SidebarFilter 状態導出のフローに乗せる |
+| 横断検索結果 (`/search` で `db` 未指定) | LLM ボックスは出さない (`/advanced-search?q=` への誘導 chip だけは継続) |
+| dev 環境 | `LLM_BASE_URL` 未設定なら BFF が `503`、UI は「LLM 機能は staging/production でのみ利用可能」を Callout 表示 |
+| 注意 | LLM は検索を直接実行しない (誤情報リスク抑止)。常にユーザーの明示採用を要求 |
 
 ### 段階的な積み上げ
 
@@ -666,6 +694,8 @@ DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞
 
 各 DB の sidebar 構成は portal 側 `src/lib/sidebar-fields.ts` が SSOT。
 
+全 DB のサイドバー最上部には、後述の **Free word section**（フィールドを問わないフリーワード入力）を共通で配置する。
+
 | DB | facet（checkbox + count） | keyword（text input + 300ms debounce） | date range | subtype radio |
 |---|---|---|---|---|
 | BioProject | `organism`, `accessibility`, `project_type`（= ES `objectType`）, `relevance` | `grant_agency` | 公開日 / 更新日 / 作成日（3 軸切替） | （なし） |
@@ -678,6 +708,13 @@ DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞
 | Taxonomy（TXSearch） | （Solr proxy のため facet 見送り） | `lineage`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `common_name` | （非表示、date 系持たない） | （なし） |
 
 `accessibility` / `library_selection` は API allowlist 拡張依頼（`from-db-portal-allowlist-expansion.md`）で追加された field。
+
+##### Free word section
+
+- サイドバー最上部に常設するフィールド非依存のフリーワード入力（テキスト 1 本）
+- 入力値は keyword section と同じ 300ms debounce で URL 反映
+- DSL 合算: `freeText(value)` ノード（シンプル検索ボックスや Advanced のフリーワード条件と同じ表現）
+- 1 サイドバーに 1 つのみ。AST の FreeText 位置制約に合わせて常に root の AND 直下に置かれる
 
 ##### facet（controlled value）
 
@@ -727,7 +764,8 @@ URL `?q=<DSL>` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse`
 | `FieldClause { op: "contains", field, value }` で field が DB 別 keyword 一覧にある | keyword `field` の入力値に復元 |
 | `FieldClause { op: "between", field, from, to }` で field が DB 別 date axis 一覧にある | dateRange の axis / from / to に復元 |
 | `BoolOp { op: "OR", children: [eq(field, v1), eq(field, v2), ...] }` で同 field の eq leaves で field が facet 一覧にある | facet `field` の複数値に復元 |
-| 上記以外（複雑な OR 結合、未対応 field、wildcard、NOT、FreeText 等） | residual に残す |
+| `FreeText { value }`（root 単独 or root の AND 直下） | Free word section の入力値に復元（最大 1 個。万一 2 個以上現れた場合 2 個目以降は residual に残す） |
+| 上記以外（複雑な OR 結合、未対応 field、wildcard、NOT 等） | residual に残す |
 
 ##### Solr proxy DB（Trad / Taxonomy）の挙動
 

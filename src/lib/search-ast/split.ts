@@ -11,6 +11,7 @@ import { boolAnd } from "./factory"
 import {
   isBoolOp,
   isFieldClause,
+  isFreeText,
   type SearchAstNode,
 } from "./types"
 
@@ -19,6 +20,7 @@ interface MutableSidebar {
   keywords: Record<string, string>
   dateRange: SidebarDateRange | null
   subtype: string | null
+  freeText: string
 }
 
 export interface AstSplitResult {
@@ -32,6 +34,13 @@ const tryConsume = (
   acc: MutableSidebar,
 ): boolean => {
   const fields = sidebarFieldsForDb(db, acc.subtype)
+
+  if (isFreeText(node)) {
+    if (acc.freeText !== "") return false
+    acc.freeText = node.value
+
+    return true
+  }
 
   if (isFieldClause(node) && node.op === "eq") {
     if (node.field === "type" && fields.subtype) {
@@ -119,6 +128,7 @@ export const splitAstForSidebar = (
     keywords: {},
     dateRange: null,
     subtype: null,
+    freeText: "",
   }
 
   const candidates: SearchAstNode[] = isBoolOp(ast) && ast.op === "AND"
@@ -159,6 +169,7 @@ export const splitAstForSidebar = (
       keywords: acc.keywords,
       dateRange: acc.dateRange,
       subtype: acc.subtype,
+      freeText: acc.freeText,
     },
     residual,
   }

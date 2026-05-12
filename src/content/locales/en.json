@@ -157,6 +157,10 @@
         "entryType": "Entry type",
         "all": "All",
         "keywordPlaceholder": "Filter by keyword...",
+        "freeWord": {
+          "title": "Free word",
+          "placeholder": "e.g. Escherichia coli"
+        },
         "fields": {
           "accessibility": { "label": "Accessibility" },
           "package": { "label": "Package" },
@@ -234,6 +238,9 @@
         "heading": "Search conditions",
         "addCondition": "+ Add condition",
         "addGroup": "+ Add group",
+        "addFreeText": "+ Free text",
+        "freeTextLabel": "Free text",
+        "freeTextPlaceholder": "e.g. Escherichia coli",
         "removeAria": "Remove condition",
         "depthBadge": "depth {{current}} / {{max}}",
         "depthLimitTooltip": "Maximum nesting depth reached",
@@ -1559,5 +1566,43 @@
   },
   "aria": {
     "mainNavigation": "Main navigation"
+  },
+  "components": {
+    "llm": {
+      "label": "AI search assistant",
+      "title": "AI search assistant",
+      "inputLabel": "Describe in natural language what you want to search",
+      "placeholder": {
+        "advancedSearch": "e.g. BioProject for human cancer studies published since 2020",
+        "dbList": "e.g. published since 2020, Illumina platform"
+      },
+      "helper": {
+        "advancedSearch": "Type a natural-language request and we will draft a search DSL. Review it before pressing [Apply].",
+        "dbList": "We will refine the current query with a draft. Review and press [Apply] to use it."
+      },
+      "shortcutHint": "Ctrl/Cmd + Enter to submit, Esc to cancel",
+      "examples": { "label": "Examples" },
+      "actions": {
+        "generate": "Draft suggestion",
+        "generating": "Generating…",
+        "apply": "Apply & search",
+        "reset": "Clear"
+      },
+      "suggestion": {
+        "label": "Suggested search DSL",
+        "disclaimer": "🤖 AI-generated. Please verify before applying."
+      },
+      "errors": {
+        "unknown": { "title": "An unexpected error occurred." },
+        "network_error": { "title": "Network error. Check your connection and try again." },
+        "not_configured": { "title": "The LLM feature is not available in this environment (staging/production only)." },
+        "no_dsl": { "title": "Could not draft a DSL. Try rephrasing with a clearer search target (organism, title, etc.)." },
+        "natural_text_too_long": { "title": "Input is too long (max 1000 characters)." },
+        "upstream_timeout": { "title": "LLM server timed out. Please try again in a moment." },
+        "upstream_error": { "title": "LLM server returned an error. Please try again in a moment." },
+        "upstream_unreachable": { "title": "Could not reach the LLM server." },
+        "empty_response": { "title": "LLM returned an empty answer. Try rephrasing." }
+      }
+    }
   }
 }

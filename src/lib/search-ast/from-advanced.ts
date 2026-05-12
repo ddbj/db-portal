@@ -13,8 +13,9 @@ import {
   fieldContains,
   fieldEq,
   fieldWildcard,
+  freeText,
 } from "./factory"
-import type { SearchAstNode } from "./types"
+import { isFreeText, type SearchAstNode } from "./types"
 
 const isBetweenValue = (
   v: AdvancedCondition["value"],
@@ -72,6 +73,12 @@ const conditionToAst = (
 
 const nodeToAst = (node: AdvancedNodeWithId): SearchAstNode | null => {
   if (node.kind === "condition") return conditionToAst(node.condition)
+  if (node.kind === "free_text") {
+    const trimmed = node.value.trim()
+    if (trimmed === "") return null
+
+    return freeText(trimmed)
+  }
 
   return groupToAst(node)
 }
@@ -91,7 +98,12 @@ const groupToAst = (group: AdvancedGroupNode): SearchAstNode | null => {
     const [only] = childAsts
     if (only !== undefined) return only
   }
-  if (group.logic === "AND") return boolAnd(childAsts)
+  if (group.logic === "AND") {
+    const ft = childAsts.filter(isFreeText)
+    const others = childAsts.filter((c) => !isFreeText(c))
+
+    return boolAnd([...ft, ...others])
+  }
 
   return boolOr(childAsts)
 }

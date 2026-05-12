@@ -1,5 +1,6 @@
 import type {
   AdvancedConditionNode,
+  AdvancedFreeTextNode,
   AdvancedGroupNode,
   AdvancedNodeWithId,
 } from "@/lib/advanced-search/types"
@@ -148,16 +149,46 @@ const astToAdvancedNode = (
   return null
 }
 
+const freeTextToAdvancedNode = (value: string): AdvancedFreeTextNode => ({
+  id: nextParsedId(),
+  kind: "free_text",
+  value,
+})
+
 export const searchAstToAdvancedTree = (
   ast: SearchAstNode,
   db: DbSelectValue,
 ): AdvancedGroupNode => {
   counter = 0
+
+  if (isFreeText(ast)) {
+    return {
+      id: "root",
+      kind: "group",
+      logic: "AND",
+      children: [freeTextToAdvancedNode(ast.value)],
+    }
+  }
+
+  if (isBoolOp(ast) && ast.op === "AND") {
+    const children: AdvancedNodeWithId[] = []
+    for (const child of ast.children) {
+      if (isFreeText(child)) {
+        children.push(freeTextToAdvancedNode(child.value))
+      } else {
+        const converted = astToAdvancedNode(child, db)
+        if (converted !== null) children.push(converted)
+      }
+    }
+
+    return { id: "root", kind: "group", logic: "AND", children }
+  }
+
   const root = astToAdvancedNode(ast, db)
   if (root === null) {
     return { id: "root", kind: "group", logic: "AND", children: [] }
   }
-  if (root.kind === "condition") {
+  if (root.kind === "condition" || root.kind === "free_text") {
     return { id: "root", kind: "group", logic: "AND", children: [root] }
   }
 

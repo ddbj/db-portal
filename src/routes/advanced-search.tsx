@@ -10,6 +10,7 @@ import {
   ExamplesChipList,
   QueryPreview,
 } from "@/components/advanced-search"
+import { LlmAssistBox } from "@/components/llm"
 import { Button, Heading } from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
@@ -166,6 +167,17 @@ const AdvancedSearch = () => {
     dispatch({ type: "CHANGE_DB_REQUEST", next })
   }
 
+  const handleLlmApply = async (newDsl: string): Promise<void> => {
+    const dbForApi = state.db !== ALL_DB_VALUE ? (state.db as DbId) : null
+    const result = await parseQ({
+      q: newDsl,
+      ...(dbForApi !== null && { db: dbForApi }),
+    })
+    const ast = parseAstToSearchAst(result.ast)
+    const tree = searchAstToAdvancedTree(ast, state.db)
+    dispatch({ type: "APPLY_PARSED_TREE", tree })
+  }
+
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-col gap-2">
@@ -179,6 +191,13 @@ const AdvancedSearch = () => {
           {t("routes.advancedSearch.hero.subtitle")}
         </p>
       </header>
+
+      <LlmAssistBox
+        mode="advanced-search"
+        db={state.db === ALL_DB_VALUE ? null : (state.db as DbId)}
+        currentQ={dsl !== "" ? dsl : state.initialQ}
+        onApply={handleLlmApply}
+      />
 
       <DbSelector value={state.db} onChange={handleDbChange} />
 

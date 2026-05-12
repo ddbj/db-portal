@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from "react-router"
 
+import { LlmAssistBox } from "@/components/llm"
 import {
   DbHitCountList,
   Over10kCallout,
@@ -546,6 +547,10 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     void query.refetch()
   }
 
+  const handleLlmApply = (newDsl: string): void => {
+    updateParams({ q: newDsl, page: 1, cursor: null })
+  }
+
   const advancedSearchHref = `/advanced-search?db=${db}${
     params.q !== null ? `&q=${encodeURIComponent(params.q)}` : ""
   }`
@@ -566,6 +571,13 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
       <Heading level={2} className="mb-0">
         {displayName}
       </Heading>
+
+      <LlmAssistBox
+        mode="db-list"
+        db={db}
+        currentQ={params.q}
+        onApply={handleLlmApply}
+      />
 
       <div className="flex gap-6">
         {showSidebar && (

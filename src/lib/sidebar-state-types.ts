@@ -16,6 +16,7 @@ export interface SidebarState {
   readonly keywords: SidebarKeywordsState
   readonly dateRange: SidebarDateRange | null
   readonly subtype: string | null
+  readonly freeText: string
 }
 
 export const EMPTY_SIDEBAR_STATE: SidebarState = {
@@ -23,4 +24,5 @@ export const EMPTY_SIDEBAR_STATE: SidebarState = {
   keywords: {},
   dateRange: null,
   subtype: null,
+  freeText: "",
 }

@@ -1,3 +1,4 @@
+export { default as AdvancedSearchFreeText } from "./AdvancedSearchFreeText"
 export { default as AdvancedSearchGroup } from "./AdvancedSearchGroup"
 export { default as AdvancedSearchRow } from "./AdvancedSearchRow"
 export { default as DateFieldInput } from "./DateFieldInput"

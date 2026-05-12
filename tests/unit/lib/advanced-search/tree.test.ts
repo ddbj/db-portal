@@ -2,17 +2,21 @@ import { describe, expect, it } from "vitest"
 
 import {
   addConditionAt,
+  addFreeTextAtRoot,
   addGroupAt,
   collectConditionFieldIds,
   createConditionNode,
   createEmptyRoot,
   createGroupNode,
   createNodeId,
+  findRootFreeTextIndex,
   getNodeAt,
   removeAt,
+  removeFreeTextAtRoot,
   ROOT_ID,
   setGroupLogicAt,
   updateConditionAt,
+  updateFreeTextAtRoot,
   walkTree,
 } from "@/lib/advanced-search/tree"
 import type {
@@ -215,5 +219,47 @@ describe("createConditionNode", () => {
     expect(n.kind).toBe("condition")
     expect(n.condition.field).toBe("title")
     expect(n.id.length).toBeGreaterThan(0)
+  })
+})
+
+describe("free_text helpers", () => {
+  it("addFreeTextAtRoot は children の先頭に挿入する", () => {
+    let root = createEmptyRoot()
+    root = addConditionAt(root, [], { field: "title", operator: "equals", value: "a" })
+    root = addFreeTextAtRoot(root, "cancer")
+    expect(root.children).toHaveLength(2)
+    expect(root.children[0]?.kind).toBe("free_text")
+  })
+
+  it("addFreeTextAtRoot は 2 個目を追加しない (no-op)", () => {
+    let root = createEmptyRoot()
+    root = addFreeTextAtRoot(root, "cancer")
+    root = addFreeTextAtRoot(root, "tumor")
+    const ftCount = root.children.filter((c) => c.kind === "free_text").length
+    expect(ftCount).toBe(1)
+  })
+
+  it("updateFreeTextAtRoot は value を差し替える", () => {
+    let root = createEmptyRoot()
+    root = addFreeTextAtRoot(root, "cancer")
+    root = updateFreeTextAtRoot(root, "tumor")
+    const target = root.children[0]
+    if (target === undefined || target.kind !== "free_text") {
+      throw new Error("expected free_text node")
+    }
+    expect(target.value).toBe("tumor")
+  })
+
+  it("removeFreeTextAtRoot は free_text を削除する", () => {
+    let root = createEmptyRoot()
+    root = addFreeTextAtRoot(root, "cancer")
+    root = addConditionAt(root, [], { field: "title", operator: "equals", value: "a" })
+    root = removeFreeTextAtRoot(root)
+    expect(root.children).toHaveLength(1)
+    expect(root.children[0]?.kind).toBe("condition")
+  })
+
+  it("findRootFreeTextIndex は free_text なしで -1", () => {
+    expect(findRootFreeTextIndex(createEmptyRoot())).toBe(-1)
   })
 })

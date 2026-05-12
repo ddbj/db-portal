@@ -2,6 +2,7 @@ import type { AdvancedCondition, LogicOperator } from "@/types/search"
 
 import type {
   AdvancedConditionNode,
+  AdvancedFreeTextNode,
   AdvancedGroupNode,
   AdvancedNodeWithId,
 } from "./types"
@@ -39,6 +40,55 @@ export const createGroupNode = (
   logic,
   children: [],
 })
+
+export const createFreeTextNode = (
+  value = "",
+): AdvancedFreeTextNode => ({
+  id: createNodeId(),
+  kind: "free_text",
+  value,
+})
+
+export const findRootFreeTextIndex = (root: AdvancedGroupNode): number =>
+  root.children.findIndex((c) => c.kind === "free_text")
+
+export const addFreeTextAtRoot = (
+  root: AdvancedGroupNode,
+  value = "",
+): AdvancedGroupNode => {
+  if (findRootFreeTextIndex(root) !== -1) return root
+
+  return {
+    ...root,
+    children: [createFreeTextNode(value), ...root.children],
+  }
+}
+
+export const updateFreeTextAtRoot = (
+  root: AdvancedGroupNode,
+  value: string,
+): AdvancedGroupNode => {
+  const idx = findRootFreeTextIndex(root)
+  if (idx === -1) return root
+  const target = root.children[idx]
+  if (target === undefined || target.kind !== "free_text") return root
+  const nextChildren = root.children.slice()
+  nextChildren[idx] = { ...target, value }
+
+  return { ...root, children: nextChildren }
+}
+
+export const removeFreeTextAtRoot = (
+  root: AdvancedGroupNode,
+): AdvancedGroupNode => {
+  const idx = findRootFreeTextIndex(root)
+  if (idx === -1) return root
+
+  return {
+    ...root,
+    children: root.children.filter((_, i) => i !== idx),
+  }
+}
 
 export const getNodeAt = (
   root: AdvancedGroupNode,
@@ -174,7 +224,7 @@ export const collectConditionFieldIds = (
     })
 
 export const countTreeDepth = (node: AdvancedNodeWithId): number => {
-  if (node.kind === "condition") return 0
+  if (node.kind === "condition" || node.kind === "free_text") return 0
   if (node.children.length === 0) return 1
 
   return 1 + Math.max(...node.children.map(countTreeDepth))

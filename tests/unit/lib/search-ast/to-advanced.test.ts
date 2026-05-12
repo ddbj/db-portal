@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import type {
   AdvancedConditionNode,
+  AdvancedFreeTextNode,
   AdvancedGroupNode,
 } from "@/lib/advanced-search/types"
 import {
@@ -20,6 +21,16 @@ const expectCondition = (
 ): AdvancedConditionNode => {
   if (node === undefined || node.kind !== "condition") {
     throw new Error("expected condition node")
+  }
+
+  return node
+}
+
+const expectFreeText = (
+  node: AdvancedGroupNode["children"][number] | undefined,
+): AdvancedFreeTextNode => {
+  if (node === undefined || node.kind !== "free_text") {
+    throw new Error("expected free_text node")
   }
 
   return node
@@ -132,7 +143,7 @@ describe("searchAstToAdvancedTree - tree shape", () => {
     expect(second.children).toHaveLength(2)
   })
 
-  it("FreeText is dropped (Advanced GUI cannot represent FreeText)", () => {
+  it("FreeText at root of AND → restored as AdvancedFreeTextNode", () => {
     const tree = searchAstToAdvancedTree(
       boolAnd([
         freeText("cancer"),
@@ -140,9 +151,33 @@ describe("searchAstToAdvancedTree - tree shape", () => {
       ]),
       "bioproject",
     )
+    expect(tree.children).toHaveLength(2)
+    const ft = expectFreeText(tree.children[0])
+    expect(ft.value).toBe("cancer")
+    const cond = expectCondition(tree.children[1])
+    expect(cond.condition.field).toBe("organism")
+  })
+
+  it("FreeText alone at root → wrapped in AND group with single free_text child", () => {
+    const tree = searchAstToAdvancedTree(freeText("cancer"), "bioproject")
+    expect(tree.logic).toBe("AND")
     expect(tree.children).toHaveLength(1)
-    const child = expectCondition(tree.children[0])
-    expect(child.condition.field).toBe("organism")
+    const ft = expectFreeText(tree.children[0])
+    expect(ft.value).toBe("cancer")
+  })
+
+  it("FreeText nested deeper than root AND is dropped", () => {
+    const tree = searchAstToAdvancedTree(
+      boolAnd([
+        boolOr([freeText("cancer"), fieldEq("title", "tumor")]),
+      ]),
+      "bioproject",
+    )
+    const orGroup = tree.children[0]
+    if (orGroup === undefined || orGroup.kind !== "group") {
+      throw new Error("expected OR group child")
+    }
+    expect(orGroup.children.every((c) => c.kind !== "free_text")).toBe(true)
   })
 
   it("unknown field → dropped (resolveFieldId returns null)", () => {

@@ -8,11 +8,15 @@ import type { AdvancedCondition, FieldOperator } from "@/types/search"
 
 import {
   addConditionAt,
+  addFreeTextAtRoot,
   addGroupAt,
   createEmptyRoot,
+  findRootFreeTextIndex,
   removeAt,
+  removeFreeTextAtRoot,
   setGroupLogicAt,
   updateConditionAt,
+  updateFreeTextAtRoot,
   walkTree,
 } from "./tree"
 import type {
@@ -73,7 +77,7 @@ const pruneInNode = (
   node: AdvancedNodeWithId,
   idSet: ReadonlySet<string>,
 ): AdvancedNodeWithId => {
-  if (node.kind === "condition") return node
+  if (node.kind === "condition" || node.kind === "free_text") return node
 
   return {
     ...node,
@@ -104,6 +108,7 @@ const coerceDateInNode = (node: AdvancedNodeWithId): AdvancedNodeWithId => {
 
     return node
   }
+  if (node.kind === "free_text") return node
 
   return { ...node, children: node.children.map(coerceDateInNode) }
 }
@@ -243,6 +248,24 @@ export const advancedSearchReducer = (
         tree: addGroupAt(state.tree, action.path, "AND"),
       }
 
+    case "ADD_FREE_TEXT":
+      return {
+        ...state,
+        tree: addFreeTextAtRoot(state.tree, ""),
+      }
+
+    case "UPDATE_FREE_TEXT":
+      return {
+        ...state,
+        tree: updateFreeTextAtRoot(state.tree, action.value),
+      }
+
+    case "REMOVE_FREE_TEXT":
+      return {
+        ...state,
+        tree: removeFreeTextAtRoot(state.tree),
+      }
+
     case "REMOVE_NODE":
       return {
         ...state,
@@ -255,11 +278,18 @@ export const advancedSearchReducer = (
         tree: applyPatchSmart(state.tree, action.path, action.patch),
       }
 
-    case "SET_GROUP_LOGIC":
+    case "SET_GROUP_LOGIC": {
+      const targetsRoot = action.path.length === 0
+      const rootHasFreeText = findRootFreeTextIndex(state.tree) !== -1
+      if (targetsRoot && rootHasFreeText && action.logic !== "AND") {
+        return state
+      }
+
       return {
         ...state,
         tree: setGroupLogicAt(state.tree, action.path, action.logic),
       }
+    }
 
     case "APPLY_EXAMPLE":
       return {

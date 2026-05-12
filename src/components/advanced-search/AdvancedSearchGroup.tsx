@@ -12,6 +12,7 @@ import { getFieldsForDb } from "@/lib/mock-data"
 import type { DbSelectValue } from "@/lib/search-url"
 import type { LogicOperator } from "@/types/search"
 
+import AdvancedSearchFreeText from "./AdvancedSearchFreeText"
 import AdvancedSearchRow from "./AdvancedSearchRow"
 
 interface AdvancedSearchGroupProps {
@@ -34,6 +35,9 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
   const canAddGroup = depth + 1 < MAX_NEST_DEPTH
   const isNotGroup = group.logic === "NOT"
   const notLimitHit = isNotGroup && group.children.length >= 1
+  const isRoot = depth === 0
+  const hasFreeText = group.children.some((c) => c.kind === "free_text")
+  const canAddFreeText = isRoot && !hasFreeText && group.logic === "AND"
 
   const logicOptions = (["AND", "OR", "NOT"] as LogicOperator[]).map((l) => ({
     value: l,
@@ -90,8 +94,22 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
         />
       )}
       {group.children.map((child, idx) => {
+        if (child.kind === "free_text") {
+          return (
+            <AdvancedSearchFreeText
+              key={child.id}
+              value={child.value}
+              onChange={(value) =>
+                dispatch({ type: "UPDATE_FREE_TEXT", value })}
+              onRemove={() => dispatch({ type: "REMOVE_FREE_TEXT" })}
+            />
+          )
+        }
         if (child.kind === "condition") {
-          const showLogicPrefix = depth === 0 && idx > 0
+          const hasNonFreeTextBefore = group.children
+            .slice(0, idx)
+            .some((c) => c.kind !== "free_text")
+          const showLogicPrefix = depth === 0 && hasNonFreeTextBefore
 
           return (
             <AdvancedSearchRow
@@ -114,6 +132,7 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
                 logic: group.logic,
                 onLogicChange: (logic) =>
                   dispatch({ type: "SET_GROUP_LOGIC", path, logic }),
+                logicLocked: hasFreeText,
               })}
             />
           )
@@ -159,6 +178,17 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
               {t("routes.advancedSearch.builder.addGroup")}
             </Button>
           </Tooltip>
+        )}
+        {isRoot && (
+          <Button
+            variant="tertiary"
+            size="sm"
+            onClick={() => dispatch({ type: "ADD_FREE_TEXT" })}
+            disabled={!canAddFreeText}
+          >
+            <Plus className="mr-1 h-3 w-3" />
+            {t("routes.advancedSearch.builder.addFreeText")}
+          </Button>
         )}
       </div>
     </div>

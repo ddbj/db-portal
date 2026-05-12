@@ -9,6 +9,7 @@ const empty = (): SidebarState => ({
   keywords: {},
   dateRange: null,
   subtype: null,
+  freeText: "",
 })
 
 describe("sidebarStateToAst", () => {
@@ -96,6 +97,7 @@ describe("sidebarStateToAst", () => {
         to: "2024-12-31",
       },
       subtype: "sra-experiment",
+      freeText: "",
     })
     expect(astToDsl(ast)).toBe(
       'organism:"Homo sapiens" AND host:mouse '

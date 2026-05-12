@@ -8,5 +8,6 @@ export default [
   route("submit-alt", "routes/submit-alt.tsx"),
   route("news", "routes/news.tsx"),
   route("api/news", "routes/api.news.ts"),
+  route("api/llm/suggest", "routes/api.llm.suggest.ts"),
   route("design-system", "routes/design-system.tsx"),
 ] satisfies RouteConfig

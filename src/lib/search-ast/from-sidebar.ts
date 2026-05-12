@@ -10,6 +10,7 @@ import {
   fieldBetween,
   fieldContains,
   fieldEq,
+  freeText,
 } from "./factory"
 import type { SearchAstNode } from "./types"
 
@@ -54,6 +55,11 @@ export const sidebarStateToAst = (
   state: SidebarState,
 ): SearchAstNode | null => {
   const clauses: SearchAstNode[] = []
+
+  const freeTextTrimmed = state.freeText.trim()
+  if (freeTextTrimmed !== "") {
+    clauses.push(freeText(freeTextTrimmed))
+  }
 
   for (const [field, values] of Object.entries(state.facets)) {
     const c = buildFacetClause(field, values)

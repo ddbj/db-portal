@@ -26,6 +26,12 @@ export interface AdvancedConditionNode {
   condition: AdvancedCondition
 }
 
+export interface AdvancedFreeTextNode {
+  id: string
+  kind: "free_text"
+  value: string
+}
+
 export interface AdvancedGroupNode {
   id: string
   kind: "group"
@@ -33,7 +39,10 @@ export interface AdvancedGroupNode {
   children: AdvancedNodeWithId[]
 }
 
-export type AdvancedNodeWithId = AdvancedConditionNode | AdvancedGroupNode
+export type AdvancedNodeWithId =
+  | AdvancedConditionNode
+  | AdvancedFreeTextNode
+  | AdvancedGroupNode
 
 export type ValidationError =
   | { code: "NEST_DEPTH_EXCEEDED"; path: readonly number[] }
@@ -82,6 +91,9 @@ export type AdvancedSearchAction =
   | { type: "CANCEL_DB_CHANGE" }
   | { type: "ADD_CONDITION"; path: readonly number[]; fieldId?: string }
   | { type: "ADD_GROUP"; path: readonly number[] }
+  | { type: "ADD_FREE_TEXT" }
+  | { type: "UPDATE_FREE_TEXT"; value: string }
+  | { type: "REMOVE_FREE_TEXT" }
   | { type: "REMOVE_NODE"; path: readonly number[] }
   | {
     type: "UPDATE_CONDITION"

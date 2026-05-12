@@ -152,6 +152,7 @@ export const validateNode = (
   if (node.kind === "condition") {
     return validateCondition(node, path, mode)
   }
+  if (node.kind === "free_text") return []
 
   const errors = validateGroup(node, path, mode)
   if (path.length === 0 && countTreeDepth(node) > MAX_NEST_DEPTH) {

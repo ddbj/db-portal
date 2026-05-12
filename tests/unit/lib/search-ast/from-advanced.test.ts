@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { createConditionNode, createGroupNode } from "@/lib/advanced-search/tree"
+import {
+  createConditionNode,
+  createFreeTextNode,
+  createGroupNode,
+} from "@/lib/advanced-search/tree"
 import type { AdvancedGroupNode } from "@/lib/advanced-search/types"
 import { advancedTreeToAst } from "@/lib/search-ast/from-advanced"
 import { astToDsl } from "@/lib/search-ast/to-dsl"
-import { isBoolOp, isFieldClause } from "@/lib/search-ast/types"
+import { isBoolOp, isFieldClause, isFreeText } from "@/lib/search-ast/types"
 
 const root = (children: AdvancedGroupNode["children"]): AdvancedGroupNode => ({
   id: "root",
@@ -147,5 +151,30 @@ describe("advancedTreeToAst - tree shape", () => {
     expect(astToDsl(ast)).toBe(
       'organism:"Homo sapiens" AND (title:cancer OR title:tumor)',
     )
+  })
+})
+
+describe("advancedTreeToAst - free_text", () => {
+  it("free_text 単独 → FreeText ノード", () => {
+    const ast = advancedTreeToAst(root([createFreeTextNode("cancer")]))
+    expect(ast).not.toBeNull()
+    expect(isFreeText(ast!)).toBe(true)
+    expect(astToDsl(ast)).toBe('"cancer"')
+  })
+
+  it("空 value の free_text は無視される", () => {
+    const ast = advancedTreeToAst(root([
+      createFreeTextNode("   "),
+      createConditionNode({ field: "title", operator: "equals", value: "cancer" }),
+    ]))
+    expect(astToDsl(ast)).toBe("title:cancer")
+  })
+
+  it("free_text + condition → AND with free_text first", () => {
+    const ast = advancedTreeToAst(root([
+      createConditionNode({ field: "organism", operator: "equals", value: "Homo sapiens" }),
+      createFreeTextNode("cancer"),
+    ]))
+    expect(astToDsl(ast)).toBe('"cancer" AND organism:"Homo sapiens"')
   })
 })

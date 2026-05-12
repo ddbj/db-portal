@@ -267,6 +267,39 @@ const KeywordSection = ({ mapping, value, onChange }: KeywordSectionProps) => {
   )
 }
 
+interface FreeTextSectionProps {
+  value: string
+  onChange: (next: string) => void
+}
+
+const FreeTextSection = ({ value, onChange }: FreeTextSectionProps) => {
+  const { t } = useTranslation()
+  const [local, setLocal] = useState(value)
+
+  useEffect(() => {
+    setLocal(value)
+  }, [value])
+
+  useEffect(() => {
+    if (local === value) return
+    const timer = setTimeout(() => onChange(local), KEYWORD_DEBOUNCE_MS)
+
+    return () => clearTimeout(timer)
+  }, [local, value, onChange])
+
+  return (
+    <section>
+      <SectionHeading>{t("routes.search.sidebar.freeWord.title")}</SectionHeading>
+      <Input
+        type="text"
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        placeholder={t("routes.search.sidebar.freeWord.placeholder")}
+      />
+    </section>
+  )
+}
+
 const formatSubtypeLabel = (
   subtype: string,
   counts?: Readonly<Record<string, number | null>>,
@@ -338,6 +371,11 @@ const SidebarFilter = ({
           <Skeleton className="h-4 w-2/3" />
         </div>
       )}
+
+      <FreeTextSection
+        value={state.freeText}
+        onChange={(value) => onChange({ ...state, freeText: value })}
+      />
 
       {subtypes.length > 0 && (
         <section>

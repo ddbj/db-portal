@@ -166,15 +166,91 @@ BFF (portal app) 側で以下を保存:
 - GPU node 側: `podman-compose down`
 - BFF 側: `LLM_FEATURE_DISABLED=true` で即 503 を返す (未実装、BFF 実装時に組み込む)
 
-## 未実装スコープ
+## Phase 1: 検索クエリ補助 (POC)
 
-以下は別フェーズで実装する。設計議論の記録は `.claude/docs/llm-integration-plan.md` を参照。
+`/advanced-search` と `/search?db=<id>` (DB 一覧) に「自然文 → DSL 提案」テキストボックスを常設する。LLM は検索を直接実行せず、DSL を**提案**するだけ。ユーザーが [採用] で初めて URL 反映 (`?q=<DSL>`) される。
 
-- **BFF**: `app/routes/api.llm.chat.ts` (SSE pass-through、認証連携)
-- **プロンプト**: `app/server/llm/prompts/{search-query,search-query.en,submit-help,submit-help.en}.md` (prefix caching を意識した 2 層構造)
-- **rate limit / PII redaction / logging** ミドルウェア
-- **`LLM_FEATURE_DISABLED` kill switch**
-- **UX / UI**: 検索バー横配置 / 提案採用フロー / コマンドパレット 等の統合パターン (保留中、既存 UI と合わせて再考)
+### 配置・統合方式 (合意済み)
+
+| 項目 | 値 |
+|---|---|
+| 配置 | 常設パネル (検索条件ビルダ / 結果リストの**上**) |
+| トリガ | テキスト入力 + [提案を生成] ボタン (Enter 送信、Esc キャンセル) |
+| 統合 | 提案 DSL をプレビュー表示 → ユーザーが [採用] ボタンで `?q=` を置換 |
+| LLM の権限 | 検索を直接実行しない。DSL を提案するのみ |
+| ラベル | 「🤖 AI 生成・要確認」を提案 DSL に併記 |
+
+`/advanced-search` での [採用] は `navigate("?db=<db>&q=<dsl>")` で loader 再走行 → `parseQ` → tree 再構築という既存ルートを使う (DSL 生成→tree 化のロジックは LLM 専用パスを作らず、URL を経由させる)。
+
+`/search?db=<id>` (DB 一覧) での [採用] は `navigate("/search?db=<id>&q=<dsl>")` で q を置換。SidebarFilter 状態も loader 経由で `splitAstForSidebar` で再導出されるため、特別なマージロジックは不要。
+
+### BFF API contract
+
+POC スコープ。rate limit / PII redaction / SSE / logging / kill switch は Phase 2。
+
+- **エンドポイント**: `POST /api/llm/suggest`
+- **リクエスト**:
+  ```json
+  {
+    "task": "search-dsl",
+    "naturalText": "ヒトの 2020 年以降のがん研究",
+    "db": "bioproject" | null,
+    "currentQ": "title:cancer" | null,
+    "lang": "ja" | "en"
+  }
+  ```
+- **レスポンス (成功)**:
+  ```json
+  {
+    "dsl": "organism:\"Homo sapiens\" AND date_published:[2020-01-01 TO *] AND title:cancer",
+    "model": "Qwen/Qwen2.5-32B-Instruct-AWQ",
+    "totalMs": 1700,
+    "promptTokens": 1820,
+    "completionTokens": 36
+  }
+  ```
+- **レスポンス (失敗)**: RFC 7807 ProblemDetails 互換 (`type` / `title` / `status` / `detail`)。`503` で `LLM_BASE_URL` 未設定 (dev 想定) や upstream ダウンを通知。
+
+### プロンプト構造 (prefix caching 意識)
+
+固定 system prompt + 動的 user prompt の 2 層。
+
+- **system**: `src/server/llm/prompts/search-query.{md,en.md}` (DDBJ 知識 + DSL シンタックス + 出力ルール、リリースで freeze)
+- **user**: BFF が以下のテンプレで構築する
+  ```
+  コンテキスト:
+  - 選択中の DB: <db_id | "横断">
+  - 現在のクエリ (DSL): <currentQ | "(なし)">
+
+  ユーザーの自然文入力:
+  <naturalText>
+
+  要件: DSL 文字列のみを 1 行で出力。説明・前置き・補足は一切不要。
+  ```
+
+固定 prefix を変更すると vLLM の prefix cache hit 率が落ちるので、system prompt 改訂は意識的に行う。
+
+### LLM パラメータ (Phase 1 既定)
+
+| パラメータ | 値 | 根拠 |
+|---|---|---|
+| `model` | `LLM_MODEL` (Qwen2.5-32B-AWQ) | `.claude/docs/llm-experiment.md` で 19/25 |
+| `temperature` | `0.1` | DSL は決定的に出すべき |
+| `max_tokens` | `256` | DSL 1 行は 100 token 未満。安全マージン |
+| `top_p` | `1.0` | (default) |
+
+## 未実装スコープ (Phase 2 以降)
+
+設計議論の記録は `.claude/docs/llm-integration-plan.md` を参照。
+
+- **rate limit / PII redaction / logging** ミドルウェア (cookie session 単位、docs/llm.md `Rate limit` 節)
+- **`LLM_FEATURE_DISABLED` kill switch** env (BFF で 503 を即返却)
+- **SSE pass-through** (現状は一括レスポンスで十分、UX フィードバック後に検討)
+- **登録補助タスク** (submit-help): `/submit` / `/submit-alt` への統合
+- **多言語**: 入力言語自動判定 (ASCII 比率)、英語 system prompt 切替
+- **few-shot examples**: 採用時は prefix の一部 (動的選択しない)
+- **structured output (xgrammar)**: DSL grammar を vLLM に渡して構文保証
+- **誤情報フィードバック**: 👎 ボタンと明示同意での prompt + completion 保存
 
 ## 関連ファイル
 

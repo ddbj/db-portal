@@ -336,3 +336,52 @@ describe("APPLY_EXAMPLE / RESET / SET_GROUP_LOGIC", () => {
     expect(next.tree.logic).toBe("OR")
   })
 })
+
+describe("ADD_FREE_TEXT / UPDATE_FREE_TEXT / REMOVE_FREE_TEXT", () => {
+  it("ADD_FREE_TEXT で root に free_text 行が増える", () => {
+    const state = initial()
+    const next = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    expect(next.tree.children).toHaveLength(1)
+    expect(next.tree.children[0]?.kind).toBe("free_text")
+  })
+
+  it("ADD_FREE_TEXT を 2 回呼んでも 1 個までしか追加されない", () => {
+    let state = initial()
+    state = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    state = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    const ftCount = state.tree.children.filter((c) => c.kind === "free_text").length
+    expect(ftCount).toBe(1)
+  })
+
+  it("UPDATE_FREE_TEXT で value を更新", () => {
+    let state = initial()
+    state = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    state = advancedSearchReducer(state, {
+      type: "UPDATE_FREE_TEXT",
+      value: "cancer",
+    })
+    const ft = state.tree.children[0]
+    if (ft === undefined || ft.kind !== "free_text") {
+      throw new Error("expected free_text")
+    }
+    expect(ft.value).toBe("cancer")
+  })
+
+  it("REMOVE_FREE_TEXT で free_text を削除", () => {
+    let state = initial()
+    state = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    state = advancedSearchReducer(state, { type: "REMOVE_FREE_TEXT" })
+    expect(state.tree.children).toEqual([])
+  })
+
+  it("free_text がある時に SET_GROUP_LOGIC で root logic を OR に変えても無視される", () => {
+    let state = initial()
+    state = advancedSearchReducer(state, { type: "ADD_FREE_TEXT" })
+    const next = advancedSearchReducer(state, {
+      type: "SET_GROUP_LOGIC",
+      path: [],
+      logic: "OR",
+    })
+    expect(next.tree.logic).toBe("AND")
+  })
+})

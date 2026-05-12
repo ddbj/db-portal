@@ -19,6 +19,7 @@ interface AdvancedSearchRowProps {
   hasLogicPrefix: boolean
   logic?: LogicOperator
   onLogicChange?: (logic: LogicOperator) => void
+  logicLocked?: boolean
 }
 
 const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
@@ -30,6 +31,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
     hasLogicPrefix,
     logic,
     onLogicChange,
+    logicLocked,
   } = props
   const { t: tStrict } = useTranslation()
   const t = tStrict as unknown as (key: string) => string
@@ -61,6 +63,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
           onChange={(e) => onLogicChange?.(e.target.value as LogicOperator)}
           selectSize="sm"
           className="w-20"
+          disabled={logicLocked === true}
         />
       )}
       <Combobox

@@ -20,6 +20,7 @@ describe("splitAstForSidebar", () => {
     expect(result.sidebar.keywords).toEqual({})
     expect(result.sidebar.dateRange).toBeNull()
     expect(result.sidebar.subtype).toBeNull()
+    expect(result.sidebar.freeText).toBe("")
     expect(result.residual).toBeNull()
   })
 
@@ -59,14 +60,22 @@ describe("splitAstForSidebar", () => {
       from: "2020-01-01",
       to: "2024-12-31",
     })
-    expect(result.residual).not.toBeNull()
+    expect(result.sidebar.freeText).toBe("cancer")
+    expect(result.residual).toBeNull()
   })
 
-  it("FreeText alone is residual (sidebar empty)", () => {
+  it("FreeText alone is absorbed into sidebar.freeText", () => {
     const ast = freeText("cancer")
     const result = splitAstForSidebar(ast, "bioproject")
-    expect(result.residual).toBe(ast)
-    expect(result.sidebar.facets).toEqual({})
+    expect(result.sidebar.freeText).toBe("cancer")
+    expect(result.residual).toBeNull()
+  })
+
+  it("multiple FreeText: first absorbed, rest goes to residual", () => {
+    const ast = boolAnd([freeText("cancer"), freeText("brca1")])
+    const result = splitAstForSidebar(ast, "bioproject")
+    expect(result.sidebar.freeText).toBe("cancer")
+    expect(result.residual).not.toBeNull()
   })
 
   it("unknown field clause → goes to residual", () => {
