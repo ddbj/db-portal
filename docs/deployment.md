@@ -81,12 +81,15 @@ podman-compose exec app npm install
 | `KEYCLOAK_CLIENT_ID` | - | OIDC クライアント ID |
 | `DB_PORTAL_SEARCH_API_URL` | - | DDBJ Search API のエンドポイント。dev / staging は `https://ddbj-staging.nig.ac.jp/search/api`、production は `https://ddbj.nig.ac.jp/search/api` |
 | `VITE_PORTAL_ORIGIN` | - | canonical URL / OGP URL の origin。dev は `http://localhost:3000`、staging は `https://portal-staging.ddbj.nig.ac.jp`、production は `https://portal.ddbj.nig.ac.jp`。`import.meta.env` 経由で SSR / CSR 両方から参照。production ビルドで未設定の場合はビルド時に throw（`src/lib/portal-origin.ts`） |
-| `GITHUB_TOKEN` | -（optional） | ddbj/www のニュースミラー機構が使う GitHub API 認証 PAT。未設定でも動作するが、未認証 60req/h の rate limit を緩和したい場合に推奨 |
-| `NEWS_SYNC_INTERVAL_MS` | `600000` | ニュースミラー同期間隔（ms）。デフォルトは ddbj/www の本番反映と同じ 10 分 |
+| `GITHUB_TOKEN` | -（optional） | ニュースミラー機構が使う GitHub API 認証 PAT。未設定でも動作するが、未認証 60req/h の rate limit を緩和したい場合に推奨（ddbj/www / dbcls/website 両 source 共通） |
+| `NEWS_SYNC_INTERVAL_MS` | `600000` | ニュースミラー同期間隔（ms）。デフォルトは ddbj/www の本番反映と同じ 10 分（全 source 共通） |
 | `NEWS_CACHE_DIR` | `./data` | ニュースキャッシュ JSON の保存先（`news-cache.json`）。書き込み可能であること |
 | `NEWS_DISABLE` | -（optional） | `1` を指定するとミラー worker 起動を抑止。test / CI / 緊急停止時に使う |
 | `NEWS_MIRROR_BRANCH` | `main` | ddbj/www の取得元ブランチ |
-| `NEWS_MIRROR_MAX_FILES_PER_LANG` | `400` | ja / en それぞれで最新何件までを portal でミラーするか |
+| `NEWS_MIRROR_MAX_FILES_PER_LANG` | `400` | 各 source の ja / en それぞれで最新何件までを portal でミラーするか |
+| `NEWS_MIRROR_DBCLS_ENABLED` | `1` | `0` を指定すると dbcls/website ソースを無効化（ddbj/www のみミラー） |
+| `NEWS_MIRROR_DBCLS_BRANCH` | `master` | dbcls/website の取得元ブランチ |
+| `NEWS_MIRROR_DBCLS_MAX_FILES_PER_LANG` | `NEWS_MIRROR_MAX_FILES_PER_LANG` の値 | dbcls 専用の上限。未設定なら `NEWS_MIRROR_MAX_FILES_PER_LANG` を流用 |
 
 ## LLM サービングサーバー (GPU node)
 

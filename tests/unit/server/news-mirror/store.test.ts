@@ -11,9 +11,9 @@ let dir: string
 
 const sampleSnapshot = (overrides: Partial<NewsSnapshot> = {}): NewsSnapshot => ({
   items: [],
-  fileShas: {},
+  fileShas: { ddbj: {}, dbcls: {} },
+  sourceShas: { ddbj: "abc", dbcls: "" },
   builtAt: "2026-05-11T00:00:00.000Z",
-  sourceSha: "abc",
   schemaVersion: NEWS_CACHE_SCHEMA_VERSION,
   ...overrides,
 })
@@ -30,10 +30,10 @@ afterEach(async () => {
 
 describe("persistToDisk / loadFromDisk", () => {
   it("writes then reads a snapshot", async () => {
-    const snap = sampleSnapshot({ sourceSha: "xyz", items: [] })
+    const snap = sampleSnapshot({ sourceShas: { ddbj: "xyz", dbcls: "" } })
     await persistToDisk(snap)
     const loaded = await loadFromDisk()
-    expect(loaded?.sourceSha).toBe("xyz")
+    expect(loaded?.sourceShas.ddbj).toBe("xyz")
   })
 
   it("returns null when the cache file is missing", async () => {
@@ -55,7 +55,7 @@ describe("persistToDisk / loadFromDisk", () => {
   })
 
   it("writes atomically via .tmp then rename", async () => {
-    const snap = sampleSnapshot({ sourceSha: "atomic" })
+    const snap = sampleSnapshot({ sourceShas: { ddbj: "atomic", dbcls: "" } })
     await persistToDisk(snap)
     const final = await readFile(path.join(dir, "news-cache.json"), "utf-8")
     expect(final).toContain("atomic")

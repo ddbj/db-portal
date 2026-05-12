@@ -7,18 +7,22 @@ import NewsList from "@/components/news/NewsList"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
-import { type NewsType, searchNews } from "@/server/news-mirror"
+import {
+  type CanonicalTag,
+  type NewsSource,
+  type NewsType,
+  searchNews,
+} from "@/server/news-mirror"
+import {
+  parseCanonicalTagList,
+  parseCsvList,
+  parseSourceList,
+} from "@/server/news-mirror/query-params"
 
 import type { Route } from "./+types/news"
 
 const ARCHIVE_LIMIT = 100
 const NEWS_TYPE_VALUES: readonly NewsType[] = ["notification", "news"] as const
-
-const parseList = (value: string | null): string[] => {
-  if (!value) return []
-
-  return value.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
-}
 
 const parseType = (value: string | null): NewsType | null => {
   if (!value) return null
@@ -35,12 +39,14 @@ export const loader = ({ request }: Route.LoaderArgs) => {
 
   const year = params.get("year") ?? null
   const type = parseType(params.get("type"))
-  const dbs = parseList(params.get("db"))
-  const tags = parseList(params.get("tag"))
+  const sources = parseSourceList(params.get("source"))
+  const dbs = parseCsvList(params.get("db"))
+  const tags = parseCanonicalTagList(params.get("tag"))
 
   const query: Parameters<typeof searchNews>[0] = { lang, retired: "all", limit: ARCHIVE_LIMIT }
   if (year) query.year = year
   if (type) query.type = type
+  if (sources.length > 0) query.source = sources
   if (dbs.length > 0) query.db = dbs
   if (tags.length > 0) query.tag = tags
 
@@ -62,7 +68,7 @@ export const meta = ({ data }: Route.MetaArgs) => [
 ]
 
 const updateMulti = (params: URLSearchParams, key: string, value: string): void => {
-  const current = parseList(params.get(key))
+  const current = parseCsvList(params.get(key))
   const idx = current.indexOf(value)
   const next = idx >= 0
     ? [...current.slice(0, idx), ...current.slice(idx + 1)]
@@ -78,8 +84,15 @@ const News = ({ loaderData }: Route.ComponentProps) => {
 
   const selectedYear = searchParams.get("year")
   const selectedType = parseType(searchParams.get("type"))
-  const selectedDbs = useMemo(() => new Set(parseList(searchParams.get("db"))), [searchParams])
-  const selectedTags = useMemo(() => new Set(parseList(searchParams.get("tag"))), [searchParams])
+  const selectedSources = useMemo<ReadonlySet<NewsSource>>(
+    () => new Set(parseSourceList(searchParams.get("source"))),
+    [searchParams],
+  )
+  const selectedDbs = useMemo(() => new Set(parseCsvList(searchParams.get("db"))), [searchParams])
+  const selectedTags = useMemo<ReadonlySet<CanonicalTag>>(
+    () => new Set(parseCanonicalTagList(searchParams.get("tag"))),
+    [searchParams],
+  )
 
   const handleSelectYear = (year: string | null): void => {
     setSearchParams((prev) => {
@@ -101,6 +114,15 @@ const News = ({ loaderData }: Route.ComponentProps) => {
     })
   }
 
+  const handleToggleSource = (source: NewsSource): void => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      updateMulti(next, "source", source)
+
+      return next
+    })
+  }
+
   const handleToggleDb = (db: string): void => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -110,7 +132,7 @@ const News = ({ loaderData }: Route.ComponentProps) => {
     })
   }
 
-  const handleToggleTag = (tag: string): void => {
+  const handleToggleTag = (tag: CanonicalTag): void => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       updateMulti(next, "tag", tag)
@@ -139,10 +161,12 @@ const News = ({ loaderData }: Route.ComponentProps) => {
           facets={initial.facets}
           selectedYear={selectedYear}
           selectedType={selectedType}
+          selectedSources={selectedSources}
           selectedDbs={selectedDbs}
           selectedTags={selectedTags}
           onSelectYear={handleSelectYear}
           onSelectType={handleSelectType}
+          onToggleSource={handleToggleSource}
           onToggleDb={handleToggleDb}
           onToggleTag={handleToggleTag}
           onClearAll={handleClearAll}

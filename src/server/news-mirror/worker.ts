@@ -1,41 +1,41 @@
-import type { Lang } from "@/i18n"
-
 import { fetchGlobalYaml, fetchNewsTree, fetchRawFile, type NewsFileEntry } from "./github-client"
 import { linkPairs, normalizeAll, sortItemsByDateDesc } from "./normalize"
 import { parseNewsFile } from "./parser"
+import { getNewsSourceConfigs, langForPath, type NewsSourceConfig } from "./sources"
 import { loadFromDisk, persistToDisk, setSnapshot } from "./store"
 import { EMPTY_TOP_NEWS, parseGlobalYaml, type TopNewsConfig } from "./top-news"
-import { type MirroredNewsItem, NEWS_CACHE_SCHEMA_VERSION, type NewsSnapshot } from "./types"
+import {
+  type MirroredNewsItem,
+  NEWS_CACHE_SCHEMA_VERSION,
+  type NewsSnapshot,
+  type NewsSource,
+  SUPPORTED_SOURCES,
+} from "./types"
 
 const DEFAULT_INTERVAL_MS = 10 * 60 * 1000
 const FAILURE_ALERT_THRESHOLD = 5
-const DEFAULT_MAX_FILES_PER_LANG = 400
-
-const langForPath = (filePath: string): Lang | null => {
-  if (filePath.startsWith("_news/ja/")) return "ja"
-  if (filePath.startsWith("_news/en/")) return "en"
-
-  return null
-}
-
-const pathOfItem = (item: MirroredNewsItem): string => {
-  const filename = item.lang === "en" ? `${item.slug}-e.md` : `${item.slug}.md`
-
-  return `_news/${item.lang}/${filename}`
-}
-
-interface SyncMetrics {
-  itemCount: number
-  durationMs: number
-  refSha: string
-  changed: boolean
-}
-
-const lastFileShaMap = new Map<string, string>()
-let lastSnapshotItems: MirroredNewsItem[] = []
-let failureStreak = 0
-
 const FETCH_CONCURRENCY = 16
+
+const lastFileShaMap = new Map<NewsSource, Map<string, string>>()
+const lastSnapshotItemsBySource = new Map<NewsSource, MirroredNewsItem[]>()
+const lastSourceSha = new Map<NewsSource, string>()
+const failureStreak = new Map<NewsSource, number>()
+
+const getShaMap = (source: NewsSource): Map<string, string> => {
+  const existing = lastFileShaMap.get(source)
+  if (existing) return existing
+  const next = new Map<string, string>()
+  lastFileShaMap.set(source, next)
+
+  return next
+}
+
+const emptyShasRecord = (): Record<NewsSource, Record<string, string>> => ({
+  ddbj: {},
+  dbcls: {},
+})
+
+const emptySourceShas = (): Record<NewsSource, string> => ({ ddbj: "", dbcls: "" })
 
 const fetchInBatches = async <T, R>(
   items: readonly T[],
@@ -58,131 +58,236 @@ const fetchInBatches = async <T, R>(
   return results
 }
 
-const fetchAndNormalize = async (files: NewsFileEntry[], topNews: TopNewsConfig): Promise<MirroredNewsItem[]> => {
+const fetchAndNormalize = async (
+  cfg: NewsSourceConfig,
+  files: NewsFileEntry[],
+  topNews: TopNewsConfig,
+): Promise<MirroredNewsItem[]> => {
   const parsed = await fetchInBatches(files, async (file) => {
-    const lang = langForPath(file.path)
+    const lang = langForPath(cfg, file.path)
     if (!lang) return null
-    const raw = await fetchRawFile(file.path)
+    const raw = await fetchRawFile(cfg, file.path)
 
-    return parseNewsFile(file.path, file.sha, raw, lang)
+    return parseNewsFile(cfg, file.path, file.sha, raw, lang)
   }, FETCH_CONCURRENCY)
   const valid = parsed.filter((p): p is NonNullable<typeof p> => p !== null)
-  const { items, warnings } = await normalizeAll(valid, topNews)
+  const { items, warnings, droppedTags } = await normalizeAll(cfg, valid, topNews)
   for (const w of warnings) {
     console.warn("[news-mirror] skipped", w.filePath, "—", w.reason)
+  }
+  for (const d of droppedTags) {
+    console.warn("[news-mirror] dropped unknown tags:", d.filePath, d.tags)
   }
 
   return items
 }
 
-const fetchTopNews = async (): Promise<TopNewsConfig> => {
+const fetchTopNewsFor = async (cfg: NewsSourceConfig): Promise<TopNewsConfig> => {
+  if (!cfg.needsTopNews) return EMPTY_TOP_NEWS
   try {
-    const raw = await fetchGlobalYaml()
+    const raw = await fetchGlobalYaml(cfg)
 
     return parseGlobalYaml(raw)
   } catch (e) {
-    console.warn("[news-mirror] failed to fetch _data/global.yml:", e instanceof Error ? e.message : e)
+    console.warn(
+      `[news-mirror] failed to fetch global.yml (${cfg.source}):`,
+      e instanceof Error ? e.message : e,
+    )
 
     return EMPTY_TOP_NEWS
   }
 }
 
-const reclassifyKeepItems = (items: MirroredNewsItem[], topNews: TopNewsConfig): void => {
+const reclassifyKeepItems = (
+  cfg: NewsSourceConfig,
+  items: MirroredNewsItem[],
+  topNews: TopNewsConfig,
+): void => {
+  if (cfg.source !== "ddbj") return
   for (const item of items) {
+    if (item.source !== "ddbj") continue
     item.type = topNews[item.lang].has(item.slug) ? "notification" : "news"
   }
 }
 
-const trimToMaxPerLang = (files: NewsFileEntry[], maxPerLang: number): NewsFileEntry[] => {
-  const grouped = { ja: [] as NewsFileEntry[], en: [] as NewsFileEntry[] }
+const trimToMaxPerLang = (cfg: NewsSourceConfig, files: NewsFileEntry[]): NewsFileEntry[] => {
+  const ja: NewsFileEntry[] = []
+  const en: NewsFileEntry[] = []
   for (const file of files) {
-    const lang = langForPath(file.path)
-    if (lang === "ja") grouped.ja.push(file)
-    else if (lang === "en") grouped.en.push(file)
+    const lang = langForPath(cfg, file.path)
+    if (lang === "ja") ja.push(file)
+    else if (lang === "en") en.push(file)
   }
-  grouped.ja.sort((a, b) => b.path.localeCompare(a.path))
-  grouped.en.sort((a, b) => b.path.localeCompare(a.path))
+  ja.sort((a, b) => b.path.localeCompare(a.path))
+  en.sort((a, b) => b.path.localeCompare(a.path))
 
-  return [...grouped.ja.slice(0, maxPerLang), ...grouped.en.slice(0, maxPerLang)]
+  return [...ja.slice(0, cfg.maxFilesPerLang), ...en.slice(0, cfg.maxFilesPerLang)]
 }
 
-const runSync = async (): Promise<SyncMetrics> => {
-  const start = Date.now()
-  const tree = await fetchNewsTree()
-  if (!tree.changed) {
-    return { itemCount: lastSnapshotItems.length, durationMs: Date.now() - start, refSha: tree.refSha, changed: false }
-  }
-  const maxPerLang = Number(process.env.NEWS_MIRROR_MAX_FILES_PER_LANG ?? DEFAULT_MAX_FILES_PER_LANG)
-  const safeMaxPerLang
-    = Number.isFinite(maxPerLang) && maxPerLang > 0 ? Math.floor(maxPerLang) : DEFAULT_MAX_FILES_PER_LANG
-  const trimmedFiles = trimToMaxPerLang(tree.files, safeMaxPerLang)
-  const treePaths = new Set(trimmedFiles.map((f) => f.path))
-  const changedFiles = trimmedFiles.filter((f) => lastFileShaMap.get(f.path) !== f.sha)
+const pathOfItem = (cfg: NewsSourceConfig, item: MirroredNewsItem): string | null => {
+  if (cfg.source === "ddbj") {
+    const filename = item.lang === "en" ? `${item.slug}-e.md` : `${item.slug}.md`
 
-  const keepItems = lastSnapshotItems.filter((item) => {
-    const filePath = pathOfItem(item)
+    return `_news/${item.lang}/${filename}`
+  }
+  if (cfg.source === "dbcls") {
+    return `_posts/${item.lang}/${item.slug}.md`
+  }
+
+  return null
+}
+
+interface SourceSyncResult {
+  source: NewsSource
+  items: MirroredNewsItem[]
+  refSha: string
+  changed: boolean
+}
+
+const syncSingleSource = async (cfg: NewsSourceConfig): Promise<SourceSyncResult> => {
+  const tree = await fetchNewsTree(cfg)
+  const shaMap = getShaMap(cfg.source)
+  const previousItems = lastSnapshotItemsBySource.get(cfg.source) ?? []
+
+  if (!tree.changed) {
+    return {
+      source: cfg.source,
+      items: previousItems,
+      refSha: tree.refSha,
+      changed: false,
+    }
+  }
+
+  const trimmedFiles = trimToMaxPerLang(cfg, tree.files)
+  const treePaths = new Set(trimmedFiles.map((f) => f.path))
+  const changedFiles = trimmedFiles.filter((f) => shaMap.get(f.path) !== f.sha)
+
+  const keepItems = previousItems.filter((item) => {
+    const filePath = pathOfItem(cfg, item)
+    if (filePath === null) return false
     if (!treePaths.has(filePath)) return false
     if (changedFiles.some((c) => c.path === filePath)) return false
 
     return true
   })
 
-  const topNews = await fetchTopNews()
-  const newItems = await fetchAndNormalize(changedFiles, topNews)
-  reclassifyKeepItems(keepItems, topNews)
+  const topNews = await fetchTopNewsFor(cfg)
+  const newItems = await fetchAndNormalize(cfg, changedFiles, topNews)
+  reclassifyKeepItems(cfg, keepItems, topNews)
   const merged = [...keepItems, ...newItems]
-  linkPairs(merged)
-  sortItemsByDateDesc(merged)
 
-  lastFileShaMap.clear()
-  for (const file of trimmedFiles) lastFileShaMap.set(file.path, file.sha)
-  lastSnapshotItems = merged
+  shaMap.clear()
+  for (const file of trimmedFiles) shaMap.set(file.path, file.sha)
 
-  const fileShas: Record<string, string> = {}
-  for (const [p, sha] of lastFileShaMap) fileShas[p] = sha
+  return {
+    source: cfg.source,
+    items: merged,
+    refSha: tree.refSha,
+    changed: true,
+  }
+}
+
+interface SyncMetrics {
+  itemCount: number
+  durationMs: number
+  perSource: { source: NewsSource; changed: boolean; refSha: string; count: number }[]
+}
+
+const runSync = async (): Promise<SyncMetrics> => {
+  const start = Date.now()
+  const configs = getNewsSourceConfigs()
+  const settled = await Promise.allSettled(configs.map((cfg) => syncSingleSource(cfg)))
+
+  const perSource: SyncMetrics["perSource"] = []
+
+  for (let i = 0; i < settled.length; i++) {
+    const cfg = configs[i]
+    const res = settled[i]
+    if (!cfg || !res) continue
+    if (res.status === "fulfilled") {
+      failureStreak.set(cfg.source, 0)
+      lastSnapshotItemsBySource.set(cfg.source, res.value.items)
+      lastSourceSha.set(cfg.source, res.value.refSha)
+      perSource.push({
+        source: cfg.source,
+        changed: res.value.changed,
+        refSha: res.value.refSha,
+        count: res.value.items.length,
+      })
+    } else {
+      const streak = (failureStreak.get(cfg.source) ?? 0) + 1
+      failureStreak.set(cfg.source, streak)
+      const msg = res.reason instanceof Error ? res.reason.message : String(res.reason)
+      if (streak >= FAILURE_ALERT_THRESHOLD) {
+        console.error(`[news-mirror] sync failed (${cfg.source}, streak=${streak}):`, msg)
+      } else {
+        console.warn(`[news-mirror] sync failed (${cfg.source}, streak=${streak}):`, msg)
+      }
+      const previousItems = lastSnapshotItemsBySource.get(cfg.source) ?? []
+      const previousRefSha = lastSourceSha.get(cfg.source) ?? ""
+      perSource.push({
+        source: cfg.source,
+        changed: false,
+        refSha: previousRefSha,
+        count: previousItems.length,
+      })
+    }
+  }
+
+  const allItems: MirroredNewsItem[] = []
+  const fileShasOut = emptyShasRecord()
+  const sourceShasOut = emptySourceShas()
+  for (const source of SUPPORTED_SOURCES) {
+    const items = lastSnapshotItemsBySource.get(source) ?? []
+    allItems.push(...items)
+    const shaMap = getShaMap(source)
+    const obj: Record<string, string> = {}
+    for (const [p, sha] of shaMap) obj[p] = sha
+    fileShasOut[source] = obj
+    sourceShasOut[source] = lastSourceSha.get(source) ?? ""
+  }
+
+  linkPairs(allItems)
+  sortItemsByDateDesc(allItems)
 
   const snapshot: NewsSnapshot = {
-    items: merged,
-    fileShas,
+    items: allItems,
+    fileShas: fileShasOut,
+    sourceShas: sourceShasOut,
     builtAt: new Date().toISOString(),
-    sourceSha: tree.refSha,
     schemaVersion: NEWS_CACHE_SCHEMA_VERSION,
   }
   setSnapshot(snapshot)
   await persistToDisk(snapshot)
 
-  return { itemCount: merged.length, durationMs: Date.now() - start, refSha: tree.refSha, changed: true }
+  const anyChanged = perSource.some((p) => p.changed)
+  if (anyChanged) {
+    console.info("[news-mirror] synced", { perSource, total: allItems.length })
+  }
+
+  return {
+    itemCount: allItems.length,
+    durationMs: Date.now() - start,
+    perSource,
+  }
 }
 
 export const initBoot = async (): Promise<void> => {
   const disk = await loadFromDisk()
-  if (disk) {
-    lastSnapshotItems = disk.items
-    for (const [path, sha] of Object.entries(disk.fileShas)) lastFileShaMap.set(path, sha)
-    console.info("[news-mirror] booted from disk", { items: disk.items.length, sourceSha: disk.sourceSha })
+  if (!disk) return
+
+  for (const source of SUPPORTED_SOURCES) {
+    const items = disk.items.filter((it) => it.source === source)
+    lastSnapshotItemsBySource.set(source, items)
+    const shaMap = getShaMap(source)
+    const sourceFileShas = disk.fileShas[source] ?? {}
+    for (const [p, sha] of Object.entries(sourceFileShas)) shaMap.set(p, sha)
+    lastSourceSha.set(source, disk.sourceShas[source] ?? "")
   }
+  console.info("[news-mirror] booted from disk", { items: disk.items.length })
 }
 
-export const runOnce = async (): Promise<SyncMetrics> => {
-  try {
-    const metrics = await runSync()
-    if (metrics.changed) {
-      console.info("[news-mirror] synced", metrics)
-    }
-    failureStreak = 0
-
-    return metrics
-  } catch (err) {
-    failureStreak += 1
-    const msg = err instanceof Error ? err.message : String(err)
-    if (failureStreak >= FAILURE_ALERT_THRESHOLD) {
-      console.error(`[news-mirror] sync failed (streak=${failureStreak}):`, msg)
-    } else {
-      console.warn(`[news-mirror] sync failed (streak=${failureStreak}):`, msg)
-    }
-    throw err
-  }
-}
+export const runOnce = async (): Promise<SyncMetrics> => runSync()
 
 interface WorkerHandle {
   timer: NodeJS.Timeout
@@ -227,6 +332,7 @@ export const __stopWorkerForTest = (): void => {
 
 export const __resetWorkerStateForTest = (): void => {
   lastFileShaMap.clear()
-  lastSnapshotItems = []
-  failureStreak = 0
+  lastSnapshotItemsBySource.clear()
+  lastSourceSha.clear()
+  failureStreak.clear()
 }

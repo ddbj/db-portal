@@ -79,6 +79,27 @@
         },
         "viewMore": "もっと見る",
         "mockNotice": "（モックデータです）"
+      },
+      "popularResources": {
+        "heading": "Popular Resources",
+        "groups": {
+          "ddbj": { "label": "DDBJ" },
+          "dbcls": { "label": "DBCLS" }
+        },
+        "items": {
+          "bioproject": { "label": "BioProject" },
+          "biosample": { "label": "BioSample" },
+          "dra": { "label": "DRA" },
+          "ddbj": { "label": "DDBJ Annotated" },
+          "gea": { "label": "GEA" },
+          "jga": { "label": "JGA" },
+          "metabobank": { "label": "MetaboBank" },
+          "togovar": { "label": "TogoVar" },
+          "togogenome": { "label": "TogoGenome" },
+          "gggenome": { "label": "GGGenome" },
+          "refex": { "label": "RefEx" },
+          "togotv": { "label": "統合TV" }
+        }
       }
     },
     "search": {
@@ -92,8 +113,7 @@
       "summary": {
         "filteredByAll": "全データベースで絞り込み中: ",
         "filteredByDb": "{{db}} で絞り込み中: ",
-        "combinedSummary": "\"{{q}}\" + {{adv}}",
-        "edit": "編集",
+        "editInAdvanced": "詳細検索 GUI で編集",
         "clear": "クリア",
         "clearAria": "検索条件をクリア"
       },
@@ -136,8 +156,6 @@
         "title": "絞り込み",
         "entryType": "種別",
         "all": "すべて",
-        "residualNotice": "詳細検索 GUI 編集中の条件があります",
-        "editInAdvanced": "詳細検索で編集",
         "keywordPlaceholder": "キーワードで絞り込み...",
         "fields": {
           "accessibility": { "label": "公開状態" },
@@ -442,8 +460,8 @@
         "cross-tier1": {
           "label": "ヒトを対象にしたがん関連の横断検索"
         },
-        "bioproject-tier3": {
-          "label": "BioProject でゲノム配列プロジェクト"
+        "sra-tier3": {
+          "label": "SRA で全ゲノムシーケンス (WGS × GENOMIC)"
         },
         "date-between": {
           "label": "2020〜2024 年に公開されたデータ"
@@ -1514,8 +1532,18 @@
         "heading": "絞り込み",
         "year": "年",
         "type": "種別",
+        "source": "ソース",
+        "source_ddbj": "DDBJ",
+        "source_dbcls": "DBCLS",
         "db": "サービス",
         "tag": "タグ",
+        "tag_announcement": "お知らせ",
+        "tag_data-release": "データ公開",
+        "tag_maintenance": "メンテナンス",
+        "tag_service": "サービス",
+        "tag_event": "イベント",
+        "tag_recruitment": "募集",
+        "tag_other": "その他",
         "clearAll": "すべてクリア",
         "typeNotification": "重要なお知らせ",
         "typeNews": "ニュース",

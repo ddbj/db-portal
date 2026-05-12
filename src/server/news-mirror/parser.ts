@@ -1,5 +1,6 @@
 import matter from "gray-matter"
 import type { Schema } from "hast-util-sanitize"
+import yaml from "js-yaml"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
 import rehypeStringify from "rehype-stringify"
 import remarkParse from "remark-parse"
@@ -8,7 +9,14 @@ import { unified } from "unified"
 
 import type { Lang } from "@/i18n"
 
+import type { NewsSourceConfig } from "./sources"
 import type { ParsedNewsItem } from "./types"
+
+const matterOptions = {
+  engines: {
+    yaml: (str: string) => yaml.load(str, { schema: yaml.JSON_SCHEMA }) as object,
+  },
+}
 
 const sanitizeSchema: Schema = {
   ...defaultSchema,
@@ -60,24 +68,20 @@ export const renderMarkdown = async (markdown: string): Promise<string> => {
   return String(file)
 }
 
-const stripSlugSuffix = (basename: string, lang: Lang): string => {
-  const noExt = basename.replace(/\.md$/i, "")
-  if (lang === "en" && noExt.endsWith("-e")) return noExt.slice(0, -2)
-
-  return noExt
-}
-
 export const parseNewsFile = (
+  cfg: NewsSourceConfig,
   filePath: string,
   fileSha: string,
   raw: string,
   lang: Lang,
-): ParsedNewsItem => {
-  const parsed = matter(raw)
+): ParsedNewsItem | null => {
   const basename = filePath.split("/").pop() ?? filePath
-  const slug = stripSlugSuffix(basename, lang)
+  const slug = cfg.slugFromFilename(basename, lang)
+  if (slug === null) return null
+  const parsed = matter(raw, matterOptions)
 
   return {
+    source: cfg.source,
     slug,
     lang,
     filePath,

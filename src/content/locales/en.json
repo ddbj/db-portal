@@ -79,6 +79,27 @@
         },
         "viewMore": "View more",
         "mockNotice": "(mock data)"
+      },
+      "popularResources": {
+        "heading": "Popular Resources",
+        "groups": {
+          "ddbj": { "label": "DDBJ" },
+          "dbcls": { "label": "DBCLS" }
+        },
+        "items": {
+          "bioproject": { "label": "BioProject" },
+          "biosample": { "label": "BioSample" },
+          "dra": { "label": "DRA" },
+          "ddbj": { "label": "DDBJ Annotated" },
+          "gea": { "label": "GEA" },
+          "jga": { "label": "JGA" },
+          "metabobank": { "label": "MetaboBank" },
+          "togovar": { "label": "TogoVar" },
+          "togogenome": { "label": "TogoGenome" },
+          "gggenome": { "label": "GGGenome" },
+          "refex": { "label": "RefEx" },
+          "togotv": { "label": "TogoTV" }
+        }
       }
     },
     "search": {
@@ -92,8 +113,7 @@
       "summary": {
         "filteredByAll": "Filtering across all databases: ",
         "filteredByDb": "Filtering {{db}}: ",
-        "combinedSummary": "\"{{q}}\" + {{adv}}",
-        "edit": "Edit",
+        "editInAdvanced": "Edit in advanced search GUI",
         "clear": "Clear",
         "clearAria": "Clear search conditions"
       },
@@ -136,8 +156,6 @@
         "title": "Filter",
         "entryType": "Entry type",
         "all": "All",
-        "residualNotice": "Other conditions are being edited in advanced search",
-        "editInAdvanced": "Edit in advanced search",
         "keywordPlaceholder": "Filter by keyword...",
         "fields": {
           "accessibility": { "label": "Accessibility" },
@@ -442,8 +460,8 @@
         "cross-tier1": {
           "label": "Cancer-related studies in Homo sapiens"
         },
-        "bioproject-tier3": {
-          "label": "BioProject genome sequencing studies"
+        "sra-tier3": {
+          "label": "Whole-genome sequencing in SRA (WGS × GENOMIC)"
         },
         "date-between": {
           "label": "Data published between 2020 and 2024"
@@ -1514,8 +1532,18 @@
         "heading": "Filter",
         "year": "Year",
         "type": "Type",
+        "source": "Source",
+        "source_ddbj": "DDBJ",
+        "source_dbcls": "DBCLS",
         "db": "Service",
         "tag": "Tag",
+        "tag_announcement": "Announcement",
+        "tag_data-release": "Data Release",
+        "tag_maintenance": "Maintenance",
+        "tag_service": "Service",
+        "tag_event": "Event",
+        "tag_recruitment": "Recruitment",
+        "tag_other": "Other",
         "clearAll": "Clear all",
         "typeNotification": "Important notice",
         "typeNews": "News",

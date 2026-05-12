@@ -23,8 +23,8 @@ export const loadFromDisk = async (): Promise<NewsSnapshot | null> => {
     if (candidate.schemaVersion !== NEWS_CACHE_SCHEMA_VERSION) return null
     if (!Array.isArray(candidate.items)) return null
     if (typeof candidate.builtAt !== "string") return null
-    if (typeof candidate.sourceSha !== "string") return null
     if (!candidate.fileShas || typeof candidate.fileShas !== "object") return null
+    if (!candidate.sourceShas || typeof candidate.sourceShas !== "object") return null
     snapshot = candidate as NewsSnapshot
 
     return snapshot

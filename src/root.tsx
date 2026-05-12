@@ -28,8 +28,15 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   )
 
   // top_news は ddbj/www 側で手動キュレーションされているため、retire_time に関わらず表示する
-  // （本家 ddbj.nig.ac.jp の top-news-view と同じ挙動）。
-  const notifications = searchNews({ lang, type: "notification", retired: "all", limit: 10 }).hits
+  // （本家 ddbj.nig.ac.jp の top-news-view と同じ挙動）。dbcls には top_news 相当が無く全件 news 型のため、
+  // source を ddbj に明示的に限定してヒットさせる。
+  const notifications = searchNews({
+    lang,
+    source: ["ddbj"],
+    type: "notification",
+    retired: "all",
+    limit: 10,
+  }).hits
 
   return { lang, notifications }
 }

@@ -263,11 +263,16 @@ const CrossModeView = ({ params }: ModeViewProps) => {
     void navigate("/", { replace: true })
   }
 
+  const advancedSearchHref = `/advanced-search${
+    params.q !== null ? `?q=${encodeURIComponent(params.q)}` : ""
+  }`
+
   const summaryProps = {
     mode: "simple" as const,
     q: params.q ?? "",
     db: params.db,
     onClear: handleClear,
+    advancedSearchHref,
   }
 
   return (
@@ -352,11 +357,6 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
   const { sidebar: derivedSidebar, residual } = useMemo(
     () => splitAstForSidebar(parsedAst, db),
     [parsedAst, db],
-  )
-
-  const residualDsl = useMemo(
-    () => (residual !== null ? astToDsl(residual) : null),
-    [residual],
   )
 
   const freeTextForFacets = useMemo(
@@ -555,6 +555,7 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
     q: params.q ?? "",
     db: params.db,
     onClear: handleClear,
+    advancedSearchHref,
   }
 
   const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
@@ -571,11 +572,9 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
           <SidebarFilter
             db={db}
             state={derivedSidebar}
-            residualDsl={residualDsl}
             facetsData={facetsQuery.data ?? null}
             loading={facetsDbType !== null && facetsQuery.isPending}
             onChange={handleSidebarChange}
-            advancedSearchHref={advancedSearchHref}
             subtypeCounts={subtypeCounts}
           />
         )}

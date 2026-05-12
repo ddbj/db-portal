@@ -20,14 +20,15 @@ vi.mock("react-router", async (importOriginal) => {
 
 const sampleNews: MirroredNewsItem[] = [
   {
-    id: "ja-2026-04-08",
+    id: "ddbj-ja-2026-04-08",
+    source: "ddbj",
     slug: "2026-04-08",
     lang: "ja",
     date: "2026-04-08",
     dateTime: "2026-04-08T00:00:00.000Z",
     retireTime: null,
     db: ["ddbj"],
-    tags: ["データ公開"],
+    tags: ["data-release"],
     title: "DDBJ リリース 141.0",
     bodyHtml: "",
     sourceUrl: "https://www.ddbj.nig.ac.jp/news/ja/2026-04-08.html",
@@ -118,29 +119,47 @@ describe("Home (/)", () => {
     expect(more).toHaveAttribute("href", "/news")
   })
 
-  it("navigates to /search?q=<q> when submitting with db=all", () => {
+  it("quotes the raw input as a FreeText DSL phrase when submitting with db=all", () => {
     renderHome()
     const input = screen.getByPlaceholderText(/キーワード/)
     fireEvent.change(input, { target: { value: "SARS-CoV-2" } })
     fireEvent.submit(input.closest("form")!)
     expect(mockNavigate).toHaveBeenCalledTimes(1)
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=SARS-CoV-2")
+    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22SARS-CoV-2%22")
   })
 
-  it("navigates to /search?q=<q>&db=<id> when a specific DB is selected", () => {
+  it("quotes space-separated input into a single phrase when a specific DB is selected", () => {
     renderHome()
     fireEvent.click(screen.getByRole("button", { name: "検索対象 DB" }))
     fireEvent.click(screen.getByRole("option", { name: "SRA" }))
     const input = screen.getByPlaceholderText(/キーワード/)
     fireEvent.change(input, { target: { value: "Homo sapiens" } })
     fireEvent.submit(input.closest("form")!)
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=Homo+sapiens&db=sra")
+    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22Homo+sapiens%22&db=sra")
   })
 
-  it("clicking an example chip navigates with that chip's query (db=all by default)", () => {
+  it("clicking an example chip navigates with that chip's query quoted as a phrase", () => {
     renderHome()
     fireEvent.click(screen.getByRole("button", { name: "Escherichia coli" }))
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=Escherichia+coli")
+    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22Escherichia+coli%22")
+  })
+
+  it("does not navigate when the input is whitespace only (no DSL emitted)", () => {
+    renderHome()
+    const input = screen.getByPlaceholderText(/キーワード/)
+    fireEvent.change(input, { target: { value: "   " } })
+    fireEvent.submit(input.closest("form")!)
+    expect(mockNavigate).toHaveBeenCalledWith("/search")
+  })
+
+  it("escapes embedded double quotes when wrapping input as a phrase", () => {
+    renderHome()
+    const input = screen.getByPlaceholderText(/キーワード/)
+    fireEvent.change(input, { target: { value: 'foo "bar" baz' } })
+    fireEvent.submit(input.closest("form")!)
+    const url = mockNavigate.mock.calls[0]?.[0] as string
+    const params = new URLSearchParams(url.split("?")[1])
+    expect(params.get("q")).toBe('"foo \\"bar\\" baz"')
   })
 
   it("DB selector includes an 'all' option plus the 8 DDBJ databases (9 total)", () => {
@@ -149,5 +168,51 @@ describe("Home (/)", () => {
     const options = screen.getAllByRole("option")
     expect(options).toHaveLength(9)
     expect(options[0]).toHaveTextContent("すべての DB")
+  })
+
+  describe("Popular Resources section", () => {
+    it("renders the heading and both DDBJ / DBCLS group labels", () => {
+      renderHome()
+      expect(
+        screen.getByRole("heading", { name: "Popular Resources" }),
+      ).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "DDBJ" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "DBCLS" })).toBeInTheDocument()
+    })
+
+    it("links each DDBJ resource to its ddbj.nig.ac.jp page with target=_blank", () => {
+      renderHome()
+      const cases: readonly [string, string][] = [
+        ["BioProject", "https://www.ddbj.nig.ac.jp/bioproject/index.html"],
+        ["BioSample", "https://www.ddbj.nig.ac.jp/biosample/index.html"],
+        ["DRA", "https://www.ddbj.nig.ac.jp/dra/index.html"],
+        ["DDBJ Annotated", "https://www.ddbj.nig.ac.jp/ddbj/index.html"],
+        ["GEA", "https://www.ddbj.nig.ac.jp/gea/index.html"],
+        ["JGA", "https://www.ddbj.nig.ac.jp/jga/index.html"],
+        ["MetaboBank", "https://www.ddbj.nig.ac.jp/metabobank/index.html"],
+      ]
+      for (const [name, href] of cases) {
+        const link = screen.getByRole("link", { name })
+        expect(link).toHaveAttribute("href", href)
+        expect(link).toHaveAttribute("target", "_blank")
+        expect(link).toHaveAttribute("rel", "noopener noreferrer")
+      }
+    })
+
+    it("links each DBCLS resource to its public URL with target=_blank", () => {
+      renderHome()
+      const cases: readonly [string, string][] = [
+        ["TogoVar", "https://togovar.org/"],
+        ["TogoGenome", "https://togogenome.org/"],
+        ["GGGenome", "https://gggenome.dbcls.jp/"],
+        ["RefEx", "https://refex.dbcls.jp/"],
+        ["統合TV", "https://togotv.dbcls.jp/"],
+      ]
+      for (const [name, href] of cases) {
+        const link = screen.getByRole("link", { name })
+        expect(link).toHaveAttribute("href", href)
+        expect(link).toHaveAttribute("target", "_blank")
+      }
+    })
   })
 })

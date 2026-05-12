@@ -37,8 +37,9 @@ const encodeCursor = (item: MirroredNewsItem): string =>
 
 export const queryNews = (snapshot: NewsSnapshot, q: NewsQuery, now: Date = new Date()): NewsQueryResult => {
   const lang = q.lang
+  const sourceSet = q.source && q.source.length > 0 ? new Set(q.source) : null
   const dbSet = q.db && q.db.length > 0 ? new Set(q.db) : null
-  const tagSet = q.tag && q.tag.length > 0 ? new Set(q.tag) : null
+  const tagSet = q.tag && q.tag.length > 0 ? new Set<string>(q.tag) : null
   const year = q.year ?? null
   const type = q.type ?? null
   const retired = q.retired ?? "0"
@@ -48,6 +49,7 @@ export const queryNews = (snapshot: NewsSnapshot, q: NewsQuery, now: Date = new 
   const langFiltered = snapshot.items.filter((item) => (lang ? item.lang === lang : true))
 
   const matchPredicates = (item: MirroredNewsItem): boolean => {
+    if (sourceSet && !sourceSet.has(item.source)) return false
     if (dbSet && !item.db.some((d) => dbSet.has(d))) return false
     if (tagSet && !item.tags.some((t) => tagSet.has(t))) return false
     if (year && item.date.slice(0, 4) !== year) return false

@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router"
 
 import {
   Button,
-  Callout,
   Checkbox,
   Heading,
   Input,
@@ -41,12 +39,10 @@ const KEYWORD_DEBOUNCE_MS = 300
 export interface SidebarFilterProps {
   db: DbId
   state: SidebarState
-  residualDsl: string | null
   facetsData: FacetsResponse | null
   loading: boolean
   className?: string
   onChange: (next: SidebarState) => void
-  advancedSearchHref: string
   subtypeCounts?: Readonly<Record<string, number | null>>
 }
 
@@ -284,12 +280,10 @@ const formatSubtypeLabel = (
 const SidebarFilter = ({
   db,
   state,
-  residualDsl,
   facetsData,
   loading,
   className,
   onChange,
-  advancedSearchHref,
   subtypeCounts,
 }: SidebarFilterProps) => {
   const { t } = useTranslation()
@@ -336,21 +330,6 @@ const SidebarFilter = ({
       <Heading level={3} className="text-sm font-semibold text-gray-900">
         {t("routes.search.sidebar.title")}
       </Heading>
-
-      {residualDsl !== null && (
-        <Callout type="info">
-          <p className="text-xs">{t("routes.search.sidebar.residualNotice")}</p>
-          <p className="mt-1 truncate text-xs text-gray-600" title={residualDsl}>
-            {residualDsl}
-          </p>
-          <Link
-            to={advancedSearchHref}
-            className="text-primary-700 hover:text-primary-800 mt-2 inline-block text-xs font-medium underline"
-          >
-            {t("routes.search.sidebar.editInAdvanced")}
-          </Link>
-        </Callout>
-      )}
 
       {loading && (
         <div className="space-y-2">

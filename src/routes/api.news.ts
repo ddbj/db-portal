@@ -3,16 +3,14 @@ import type { LoaderFunctionArgs } from "react-router"
 import type { Lang } from "@/i18n"
 import { SUPPORTED_LANGS } from "@/i18n"
 import { ensureWorkerStarted, type NewsType, searchNews } from "@/server/news-mirror"
+import {
+  parseCanonicalTagList,
+  parseCsvList,
+  parseSourceList,
+} from "@/server/news-mirror/query-params"
 
 const TYPE_VALUES: readonly NewsType[] = ["notification", "news"] as const
 const RETIRED_VALUES = ["0", "1", "all"] as const
-
-const parseList = (value: string | null): string[] | undefined => {
-  if (!value) return undefined
-  const arr = value.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
-
-  return arr.length > 0 ? arr : undefined
-}
 
 const parseLang = (value: string | null): Lang | undefined => {
   if (!value) return undefined
@@ -51,10 +49,12 @@ export const loader = ({ request }: LoaderFunctionArgs) => {
   const query: Parameters<typeof searchNews>[0] = {}
   const lang = parseLang(params.get("lang"))
   if (lang) query.lang = lang
-  const db = parseList(params.get("db"))
-  if (db) query.db = db
-  const tag = parseList(params.get("tag"))
-  if (tag) query.tag = tag
+  const source = parseSourceList(params.get("source"))
+  if (source.length > 0) query.source = source
+  const db = parseCsvList(params.get("db"))
+  if (db.length > 0) query.db = db
+  const tag = parseCanonicalTagList(params.get("tag"))
+  if (tag.length > 0) query.tag = tag
   const year = params.get("year")
   if (year) query.year = year
   const type = parseType(params.get("type"))

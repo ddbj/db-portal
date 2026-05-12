@@ -38,16 +38,20 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
     ]),
   },
   {
-    id: "bioproject-tier3",
-    labelKey: "routes.advancedSearch.examples.bioproject-tier3.label",
-    db: "bioproject",
+    id: "sra-tier3",
+    labelKey: "routes.advancedSearch.examples.sra-tier3.label",
+    db: "sra",
     tree: makeRoot([
       cond({
-        field: "project_type",
+        field: "library_strategy",
         operator: "equals",
-        value: "Genome sequencing",
+        value: "WGS",
       }),
-      cond({ field: "organism", operator: "equals", value: "Homo sapiens" }),
+      cond({
+        field: "library_source",
+        operator: "equals",
+        value: "GENOMIC",
+      }),
     ]),
   },
   {

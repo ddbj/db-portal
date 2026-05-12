@@ -7,13 +7,14 @@ import type { MirroredNewsItem } from "@/server/news-mirror"
 import { renderWithI18n } from "../../../helpers/i18n"
 
 const item = (overrides: Partial<MirroredNewsItem> & { id: string; title: string }): MirroredNewsItem => ({
+  source: "ddbj",
   slug: overrides.id,
   lang: "ja",
   date: "2026-04-08",
   dateTime: "2026-04-08T00:00:00.000Z",
   retireTime: null,
   db: [],
-  tags: ["Announcement"],
+  tags: ["announcement"],
   bodyHtml: "",
   sourceUrl: "https://www.ddbj.nig.ac.jp/news/ja/sample.html",
   sourceMdUrl: "",

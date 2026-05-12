@@ -24,7 +24,7 @@ describe("/advanced-search route", () => {
     })
     const singleRadio = screen.getByLabelText("単一 DB") as HTMLInputElement
     expect(singleRadio.checked).toBe(true)
-    expect(screen.getByText(/SRA/)).toBeInTheDocument()
+    expect(screen.getByDisplayValue("SRA")).toBeInTheDocument()
   })
 
   it("?q=title:cancer で preview に title:cancer が表示される", () => {

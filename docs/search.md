@@ -455,10 +455,10 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 **レイアウト:**
 
 ```
-┌─ ヘッダー ───────────────────────────────────────────────────┐
-│ [🔍 BioProject で絞り込み中: "cancer" AND organism:"Homo sa  │
-│   piens"] [✕ クリア]                                          │
-└──────────────────────────────────────────────────────────────┘
+┌─ ヘッダー ──────────────────────────────────────────────────────────────┐
+│ [🔍 BioProject で絞り込み中: "cancer" AND organism:"Homo sa            │
+│   piens"]                       [詳細検索 GUI で編集] [✕ クリア]        │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **サマリ文言の生成ルール:**
@@ -471,10 +471,9 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 **操作:**
 
+- **[詳細検索 GUI で編集] ボタン**: 現在のクエリを引き継いで `/advanced-search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
 - **[✕ クリア] ボタン**: `q` を解除してホーム (`/`) にリダイレクト（`db` も解除）。
 - サマリチップ自体にはクリックアクションは割り当てない。
-
-サイドバーから Advanced Search GUI に編集動線を引きたい場合は、Sidebar Filter UI の「詳細検索 GUI で編集」リンク (`/advanced-search?db=<db>&q=<現在の DSL>`) を使う（[Sidebar Filter UI](#sidebar-filter-ui) 参照）。
 
 ### ヒット件数表示
 
@@ -717,7 +716,7 @@ URL `?q=<DSL>` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse`
 
 - **URL → sidebar**: portal 側で `parseQ({q, db})` を呼び ParseAst を取得 → `parseAstToSearchAst()` で内部 AST に変換 → `splitAstForSidebar(ast, db)` で AST を「sidebar 対応 clause」と「residual（sidebar 非対応 clause）」に分解 → sidebar 対応分を sidebar UI 状態に反映。residual とは「AST clause のうち sidebar UI が表現できないもの」（複雑な OR 結合、wildcard、NOT、未対応 field、FreeText 等）の総称
 - **sidebar → URL**: sidebar 変更時に `sidebarStateToAst(next)` で AST を構築 → `mergeAstAnd([residual, sidebarAst])` で AST レベルで AND 結合 → `astToDsl(merged)` で DSL 文字列化 → URL `?q=<DSL>` を更新（navigate）。文字列レベルでの `(A) AND (B)` ラップは行わないため、ラウンドトリップで冗長な BoolOp は増えない
-- residual がある場合、sidebar 上部に notice（「詳細検索 GUI 編集中の条件があります」）と詳細検索 GUI への編集リンク (`/advanced-search?db=<db>&q=<現在の DSL>`) を表示
+- residual があっても sidebar 上には専用の表示を出さない（GUI が持つ内部 state はユーザに露出しない方針）。詳細検索 GUI への編集動線は検索条件サマリチップの「詳細検索 GUI で編集」ボタンに集約する
 
 ##### sidebar 対応 clause の判定ルール
 

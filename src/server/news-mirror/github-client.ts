@@ -1,7 +1,6 @@
-const OWNER = "ddbj"
-const REPO = "www"
-const DEFAULT_BRANCH = "main"
-const branch = (): string => process.env.NEWS_MIRROR_BRANCH ?? DEFAULT_BRANCH
+import type { NewsSourceConfig } from "./sources"
+import type { NewsSource } from "./types"
+
 const API_BASE = "https://api.github.com"
 const RAW_BASE = "https://raw.githubusercontent.com"
 
@@ -28,8 +27,21 @@ interface GitHubTreeResponse {
   truncated: boolean
 }
 
-const lastRefSha: { value: string | null } = { value: null }
-let treeETag: string | null = null
+interface ClientCacheEntry {
+  refSha: string | null
+  treeETag: string | null
+}
+
+const clientCache = new Map<NewsSource, ClientCacheEntry>()
+
+const getCacheEntry = (source: NewsSource): ClientCacheEntry => {
+  const existing = clientCache.get(source)
+  if (existing) return existing
+  const next: ClientCacheEntry = { refSha: null, treeETag: null }
+  clientCache.set(source, next)
+
+  return next
+}
 
 export interface NewsFileEntry {
   path: string
@@ -42,8 +54,8 @@ export interface FetchTreeResult {
   refSha: string
 }
 
-const fetchBranchSha = async (): Promise<string> => {
-  const url = `${API_BASE}/repos/${OWNER}/${REPO}/branches/${branch()}`
+const fetchBranchSha = async (cfg: NewsSourceConfig): Promise<string> => {
+  const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/branches/${cfg.branch}`
   const res = await fetch(url, {
     headers: {
       Accept: "application/vnd.github+json",
@@ -52,56 +64,57 @@ const fetchBranchSha = async (): Promise<string> => {
     },
   })
   if (!res.ok) {
-    throw new Error(`GitHub branches API ${res.status}: ${await res.text()}`)
+    throw new Error(`GitHub branches API ${res.status} (${cfg.source}): ${await res.text()}`)
   }
   const body = (await res.json()) as { commit?: { sha?: string } }
   const sha = body.commit?.sha
-  if (!sha) throw new Error("GitHub branches API: missing commit.sha")
+  if (!sha) throw new Error(`GitHub branches API (${cfg.source}): missing commit.sha`)
 
   return sha
 }
 
-export const fetchNewsTree = async (): Promise<FetchTreeResult> => {
-  const refSha = await fetchBranchSha()
-  if (lastRefSha.value === refSha && treeETag) {
+export const fetchNewsTree = async (cfg: NewsSourceConfig): Promise<FetchTreeResult> => {
+  const cache = getCacheEntry(cfg.source)
+  const refSha = await fetchBranchSha(cfg)
+  if (cache.refSha === refSha && cache.treeETag) {
     return { changed: false, files: [], refSha }
   }
-  const url = `${API_BASE}/repos/${OWNER}/${REPO}/git/trees/${refSha}?recursive=1`
+  const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/git/trees/${refSha}?recursive=1`
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     ...authHeaders(),
   }
-  if (treeETag) headers["If-None-Match"] = treeETag
+  if (cache.treeETag) headers["If-None-Match"] = cache.treeETag
   const res = await fetch(url, { headers })
   if (res.status === 304) {
-    lastRefSha.value = refSha
+    cache.refSha = refSha
 
     return { changed: false, files: [], refSha }
   }
   if (!res.ok) {
-    throw new Error(`GitHub git/trees API ${res.status}: ${await res.text()}`)
+    throw new Error(`GitHub git/trees API ${res.status} (${cfg.source}): ${await res.text()}`)
   }
   const etag = res.headers.get("ETag")
-  if (etag) treeETag = etag
+  if (etag) cache.treeETag = etag
   const body = (await res.json()) as GitHubTreeResponse
   if (body.truncated) {
-    console.warn("[news-mirror] GitHub git/trees response truncated")
+    console.warn(`[news-mirror] GitHub git/trees response truncated (${cfg.source})`)
   }
   const files = body.tree
     .filter((e) => e.type === "blob")
-    .filter((e) => /^_news\/(ja|en)\/[^/]+\.md$/.test(e.path))
+    .filter((e) => cfg.filenamePattern.test(e.path))
     .map((e) => ({ path: e.path, sha: e.sha }))
-  lastRefSha.value = refSha
+  cache.refSha = refSha
 
   return { changed: true, files, refSha }
 }
 
-export const fetchRawFile = async (filePath: string): Promise<string> => {
-  const url = `${RAW_BASE}/${OWNER}/${REPO}/${branch()}/${filePath}`
+export const fetchRawFile = async (cfg: NewsSourceConfig, filePath: string): Promise<string> => {
+  const url = `${RAW_BASE}/${cfg.owner}/${cfg.repo}/${cfg.branch}/${filePath}`
   const res = await fetch(url, { headers: authHeaders() })
   if (!res.ok) {
-    throw new Error(`raw fetch ${filePath} ${res.status}`)
+    throw new Error(`raw fetch ${cfg.source}:${filePath} ${res.status}`)
   }
 
   return await res.text()
@@ -109,9 +122,9 @@ export const fetchRawFile = async (filePath: string): Promise<string> => {
 
 export const GLOBAL_YAML_PATH = "_data/global.yml" as const
 
-export const fetchGlobalYaml = async (): Promise<string> => fetchRawFile(GLOBAL_YAML_PATH)
+export const fetchGlobalYaml = async (cfg: NewsSourceConfig): Promise<string> =>
+  fetchRawFile(cfg, GLOBAL_YAML_PATH)
 
 export const __resetClientCacheForTest = (): void => {
-  lastRefSha.value = null
-  treeETag = null
+  clientCache.clear()
 }

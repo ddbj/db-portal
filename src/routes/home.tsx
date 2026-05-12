@@ -23,6 +23,7 @@ import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
+import { astToDsl, qStringToAst } from "@/lib/search-ast"
 import { ALL_DB_VALUE, buildSearchUrl, type DbSelectValue } from "@/lib/search-url"
 import { searchNews } from "@/server/news-mirror"
 
@@ -126,6 +127,92 @@ const SERVICE_CARDS: readonly ServiceCard[] = [
   },
 ]
 
+type ResourceGroup = "ddbj" | "dbcls"
+
+interface PopularResource {
+  key: string
+  group: ResourceGroup
+  labelKey: TranslationKey
+  href: string
+}
+
+const POPULAR_RESOURCES: readonly PopularResource[] = [
+  {
+    key: "bioproject",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.bioproject.label",
+    href: "https://www.ddbj.nig.ac.jp/bioproject/index.html",
+  },
+  {
+    key: "biosample",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.biosample.label",
+    href: "https://www.ddbj.nig.ac.jp/biosample/index.html",
+  },
+  {
+    key: "dra",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.dra.label",
+    href: "https://www.ddbj.nig.ac.jp/dra/index.html",
+  },
+  {
+    key: "ddbj",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.ddbj.label",
+    href: "https://www.ddbj.nig.ac.jp/ddbj/index.html",
+  },
+  {
+    key: "gea",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.gea.label",
+    href: "https://www.ddbj.nig.ac.jp/gea/index.html",
+  },
+  {
+    key: "jga",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.jga.label",
+    href: "https://www.ddbj.nig.ac.jp/jga/index.html",
+  },
+  {
+    key: "metabobank",
+    group: "ddbj",
+    labelKey: "routes.home.popularResources.items.metabobank.label",
+    href: "https://www.ddbj.nig.ac.jp/metabobank/index.html",
+  },
+  {
+    key: "togovar",
+    group: "dbcls",
+    labelKey: "routes.home.popularResources.items.togovar.label",
+    href: "https://togovar.org/",
+  },
+  {
+    key: "togogenome",
+    group: "dbcls",
+    labelKey: "routes.home.popularResources.items.togogenome.label",
+    href: "https://togogenome.org/",
+  },
+  {
+    key: "gggenome",
+    group: "dbcls",
+    labelKey: "routes.home.popularResources.items.gggenome.label",
+    href: "https://gggenome.dbcls.jp/",
+  },
+  {
+    key: "refex",
+    group: "dbcls",
+    labelKey: "routes.home.popularResources.items.refex.label",
+    href: "https://refex.dbcls.jp/",
+  },
+  {
+    key: "togotv",
+    group: "dbcls",
+    labelKey: "routes.home.popularResources.items.togotv.label",
+    href: "https://togotv.dbcls.jp/",
+  },
+]
+
+const RESOURCE_GROUPS: readonly ResourceGroup[] = ["ddbj", "dbcls"]
+
 const Home = ({ loaderData }: Route.ComponentProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -138,7 +225,8 @@ const Home = ({ loaderData }: Route.ComponentProps) => {
   ]
 
   const handleSubmit = (q: string) => {
-    void navigate(buildSearchUrl({ q, db }))
+    const dsl = astToDsl(qStringToAst(q))
+    void navigate(buildSearchUrl({ q: dsl, db }))
   }
 
   return (
@@ -203,26 +291,60 @@ const Home = ({ loaderData }: Route.ComponentProps) => {
           </div>
         </section>
 
-        <aside
-          aria-labelledby="home-news-heading"
-          className="lg:sticky lg:top-6 lg:self-start"
-        >
-          <div className="flex items-baseline justify-between gap-4">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <section aria-labelledby="home-news-heading">
+            <div className="flex items-baseline justify-between gap-4">
+              <Heading
+                level={2}
+                id="home-news-heading"
+                className="text-base font-semibold tracking-wide text-gray-900"
+              >
+                {t("routes.home.news.tabs.news")}
+              </Heading>
+              <TextLink to="/news" className="text-xs">
+                {t("routes.home.news.viewMore")}
+                <span aria-hidden={true}> →</span>
+              </TextLink>
+            </div>
+            <div className="mt-3">
+              <NewsList items={news} variant="compact" />
+            </div>
+          </section>
+
+          <section
+            aria-labelledby="home-popular-resources-heading"
+            className="mt-10"
+          >
             <Heading
               level={2}
-              id="home-news-heading"
+              id="home-popular-resources-heading"
               className="text-base font-semibold tracking-wide text-gray-900"
             >
-              {t("routes.home.news.tabs.news")}
+              {t("routes.home.popularResources.heading")}
             </Heading>
-            <TextLink to="/news" className="text-xs">
-              {t("routes.home.news.viewMore")}
-              <span aria-hidden={true}> →</span>
-            </TextLink>
-          </div>
-          <div className="mt-3">
-            <NewsList items={news} variant="compact" />
-          </div>
+            <div className="mt-3 space-y-4">
+              {RESOURCE_GROUPS.map((group) => {
+                const items = POPULAR_RESOURCES.filter((r) => r.group === group)
+
+                return (
+                  <div key={group}>
+                    <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                      {t(`routes.home.popularResources.groups.${group}.label`)}
+                    </h3>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {items.map((r) => (
+                        <li key={r.key} className="text-sm">
+                          <TextLink external href={r.href}>
+                            {t(r.labelKey)}
+                          </TextLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         </aside>
       </div>
     </div>

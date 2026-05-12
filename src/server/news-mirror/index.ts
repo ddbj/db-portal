@@ -10,7 +10,7 @@ export const searchNews = (q: NewsQuery, now: Date = new Date()): NewsQueryResul
     return {
       hits: [],
       total: 0,
-      facets: { year: [], db: [], tag: [], type: [] },
+      facets: { year: [], source: [], db: [], tag: [], type: [] },
       builtAt: new Date(0).toISOString(),
       nextCursor: null,
     }
@@ -20,12 +20,15 @@ export const searchNews = (q: NewsQuery, now: Date = new Date()): NewsQueryResul
 }
 
 export type {
+  CanonicalTag,
   MirroredNewsItem,
   NewsFacetBucket,
   NewsFacets,
   NewsQuery,
   NewsQueryResult,
   NewsSnapshot,
+  NewsSource,
   NewsType,
 } from "./types"
+export { SUPPORTED_SOURCES, SUPPORTED_TAGS } from "./types"
 export { ensureWorkerStarted, runOnce } from "./worker"
