@@ -1048,10 +1048,7 @@
         "subtitle": "Check off the data types you have and we'll narrow down the registration targets and prerequisites."
       },
       "sections": {
-        "dataTypes": "Data types you have",
         "qa": "Question wizard",
-        "cards": "Pick from use cases",
-        "tree": "Follow the decision tree",
         "detail": "Details"
       },
       "qa": {
@@ -1121,144 +1118,18 @@
         "human-raw-assembly-open": { "label": "Human raw + assembly (open)" },
         "human-assembly-only-open": { "label": "Human assembly only (open)" }
       },
-      "placeholder": {
-        "section1": "Section 1: Data type Y/N multi-select (built in Phase 1)",
-        "section2": "Section 2: Use Case Cards (built in Phase 2)",
-        "section3": "Section 3: Decision Tree (built in Phase 3)",
-        "section4": "Section 4: Detail Panel (built in Phase 4)"
-      },
       "dataTypes": {
-        "human-restricted": {
-          "label": "Human restricted access",
-          "description": "Human data subject to NBDC approval (JGA)"
-        },
-        "sequence-read": {
-          "label": "Sequence reads",
-          "description": "NGS / long-read raw sequence data (DRA)"
-        },
-        "genome": {
-          "label": "Genome",
-          "description": "Assembled genomes (MSS / Haplotype / TSA / TPA / MAG / SAG)"
-        },
-        "variation": {
-          "label": "Variation",
-          "description": "SNP / SV / structural variant analysis results"
-        },
-        "proteomics": {
-          "label": "Proteomics",
-          "description": "Proteome analysis by LC-MS/MS (jPOST)"
-        },
-        "est": {
-          "label": "EST",
-          "description": "Sanger single-pass cDNA"
-        },
-        "microarray": {
-          "label": "Microarray",
-          "description": "Microarray expression data (GEA)"
-        },
-        "spatial-transcriptomics": {
-          "label": "Spatial transcriptomics",
-          "description": "Spatial gene expression data such as 10x Genomics Xenium"
-        },
-        "metabolomics": {
-          "label": "Metabolomics",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "label": "Small-scale sequence",
-          "description": "Sequences below 100 entries / 500 kb (NSSS)"
-        }
-      },
-      "dataTypes": {
-        "groupAriaLabel": "Data type selection",
-        "human-restricted": {
-          "label": "Human restricted access",
-          "description": "Human data subject to NBDC approval (JGA)"
-        },
-        "sequence-read": {
-          "label": "Sequence reads",
-          "description": "NGS / long-read raw sequence data (DRA)"
-        },
-        "genome": {
-          "label": "Genome",
-          "description": "Assembled genomes (MSS / Haplotype / TSA / TPA / MAG / SAG)"
-        },
-        "variation": {
-          "label": "Variation",
-          "description": "SNP / SV / structural variant analysis results"
-        },
-        "proteomics": {
-          "label": "Proteomics",
-          "description": "Proteome analysis by LC-MS/MS (jPOST)"
-        },
-        "est": {
-          "label": "EST",
-          "description": "Sanger single-pass cDNA"
-        },
-        "microarray": {
-          "label": "Microarray",
-          "description": "Microarray expression data (GEA)"
-        },
-        "spatial-transcriptomics": {
-          "label": "Spatial transcriptomics",
-          "description": "Spatial gene expression data such as 10x Genomics Xenium"
-        },
-        "metabolomics": {
-          "label": "Metabolomics",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "label": "Small-scale sequence",
-          "description": "Sequences below 100 entries / 500 kb (NSSS)"
-        }
-      },
-      "cards": {
-        "microbial-genome": {
-          "title": "Microbial genomes",
-          "description": "Genome submissions for prokaryotes / viruses / organelles / plasmids"
-        },
-        "eukaryote-genome": {
-          "title": "Eukaryotic genomes",
-          "description": "Animal / plant / fungi genome submissions (Haplotype / TSA / EST / TPA)"
-        },
-        "metagenome": {
-          "title": "Metagenome / MAG / SAG",
-          "description": "Environmental / metagenomic data (including restricted human microbiome)"
-        },
-        "expression": {
-          "title": "Gene expression",
-          "description": "Expression analysis data via RNA-seq / microarray / 10x Xenium"
-        },
-        "spatial-tx": {
-          "title": "Spatial transcriptomics",
-          "description": "Spatial gene expression data such as 10x Genomics Xenium"
-        },
-        "variation": {
-          "title": "Variation",
-          "description": "SNP / SV / structural variants (per-sample / aggregate / restricted)"
-        },
-        "proteomics": {
-          "title": "Proteomics",
-          "description": "Proteome analysis by LC-MS/MS (via jPOST)"
-        },
-        "metabolomics": {
-          "title": "Metabolomics",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "title": "Small-scale sequence / PCR products",
-          "description": "Sequences below 100 entries (via NSSS)"
-        },
-        "human-restricted": {
-          "title": "Human restricted access",
-          "description": "Human data subject to NBDC approval"
-        }
+        "human-restricted": { "label": "Human restricted access" },
+        "proteomics": { "label": "Proteomics" },
+        "microarray": { "label": "Microarray" },
+        "metabolomics": { "label": "Metabolomics" },
+        "small-sequence": { "label": "Small-scale sequence" }
       },
       "multiSelect": {
         "patterns": {
           "single": {
             "title": "Single selection",
-            "description": "Pick the matching registration flow from the Decision Tree."
+            "description": "The matching registration flow is shown in the detail panel."
           },
           "merged-submission": {
             "title": "Can be merged into one submission",
@@ -1279,18 +1150,6 @@
         }
       },
       "tree": {
-        "questions": {
-          "genome": "Genome category?",
-          "genome-eukaryote": "Eukaryote genome format?",
-          "genome-prokaryote": "Prokaryote genome format?",
-          "genome-virus": "Virus genome format?",
-          "genome-metagenome": "Metagenome category?",
-          "sequence-read": "Source of sequence reads?",
-          "sequence-read-metagenome": "Metagenome read type?",
-          "variation": "Variation category?",
-          "spatial-transcriptomics": "Spatial transcriptomics category?",
-          "est": "EST analysis scale?"
-        },
         "options": {
           "genome": {
             "eukaryote": "Eukaryote",
@@ -1348,15 +1207,15 @@
         }
       },
       "breadcrumb": {
-        "aria": "Breadcrumb showing active filters and tree path"
+        "aria": "Breadcrumb showing the active Q&A answers"
       },
       "detail": {
         "empty": {
           "title": "Answer the Q&A to see details",
-          "description": "Answer the question wizard in Section 1, or pick from Use Case Cards / Decision Tree."
+          "description": "Answer the question wizard above to narrow down the registration targets and prerequisites."
         },
-        "candidatesPrompt": "{{count}} candidate(s) match so far. Answer the remaining questions or pick one directly below.",
-        "overviewPlaceholder": "You stopped at an intermediate node. Drill down to a leaf to see registration details.",
+        "candidatesPrompt": "{{count}} candidate(s) match so far. Answer the remaining questions to narrow down to a single leaf.",
+        "overviewPlaceholder": "Not yet narrowed to a single leaf. Answer the remaining questions.",
         "placeholderSummary": "Detailed copy is being expanded.",
         "venue": {
           "internal": "DDBJ internal",

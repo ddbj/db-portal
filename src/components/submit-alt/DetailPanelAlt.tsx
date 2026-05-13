@@ -1,9 +1,8 @@
-import { ChevronRight, MousePointerClick } from "lucide-react"
+import { MousePointerClick } from "lucide-react"
 import type { Ref } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Badge, EmptyState, Heading } from "@/components/ui"
-import cn from "@/components/ui/cn"
 import InternalExternalBadge from "@/components/ui/InternalExternalBadge"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import {
@@ -13,30 +12,25 @@ import {
   LEAF_LEGACY_ID,
   LEAF_VENUE_ALT,
 } from "@/lib/mock-data/submit-alt-tree"
-import { resolveDetailModeAlt } from "@/lib/submit-alt/node-selectors"
-import type { LeafNodeIdAlt, TreeNodeIdAlt } from "@/types/submit-alt"
+import type { LeafNodeIdAlt } from "@/types/submit-alt"
 
 import DetailLeafTemplateAlt from "./DetailLeafTemplateAlt"
 
 interface DetailPanelAltProps {
-  selectedNodeId: TreeNodeIdAlt | null
-  // Q&A の途中で leaf が一意化されていない時の候補一覧。
-  // selectedNodeId === null の時に表示する。
+  resolvedLeaf: LeafNodeIdAlt | null
   candidateLeaves?: readonly LeafNodeIdAlt[]
-  onCandidateSelect?: (leafId: LeafNodeIdAlt) => void
   headingRef?: Ref<HTMLHeadingElement>
 }
 
 const DetailPanelAlt = ({
-  selectedNodeId,
+  resolvedLeaf,
   candidateLeaves,
-  onCandidateSelect,
   headingRef,
 }: DetailPanelAltProps) => {
   const { t } = useDynamicTranslation()
   const { t: tStatic } = useTranslation()
 
-  if (selectedNodeId === null) {
+  if (resolvedLeaf === null) {
     const candidates = candidateLeaves ?? []
 
     return (
@@ -65,37 +59,23 @@ const DetailPanelAlt = ({
                   const venue = LEAF_VENUE_ALT[leafId]
 
                   return (
-                    <li key={leafId}>
-                      <button
-                        type="button"
-                        onClick={() => onCandidateSelect?.(leafId)}
-                        className={cn(
-                          "group flex w-full items-center gap-3 rounded-lg border bg-white px-4 py-3 text-left transition-all",
-                          "hover:border-primary-400 hover:-translate-y-0.5 hover:shadow-md",
-                          "focus:ring-primary-200 focus:ring-2 focus:outline-none",
-                          "border-gray-200",
-                        )}
-                      >
-                        <div className="flex grow flex-wrap items-center gap-2">
-                          <Badge variant="gray" size="sm">
-                            {LEAF_LEGACY_ID[leafId]}
-                          </Badge>
-                          <span className="text-sm font-semibold text-gray-800">
-                            {t(LEAF_LABEL_KEY_ALT[leafId])}
-                          </span>
-                          <InternalExternalBadge
-                            venue={venue}
-                            label={t(`routes.submitAlt.detail.venue.${venue}`)}
-                          />
-                        </div>
-                        <span className="text-primary-700 text-xs font-medium whitespace-nowrap">
-                          → {LEAF_GOALS_ALT[leafId]}
-                        </span>
-                        <ChevronRight
-                          className="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5"
-                          aria-hidden="true"
-                        />
-                      </button>
+                    <li
+                      key={leafId}
+                      className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3"
+                    >
+                      <Badge variant="gray" size="sm">
+                        {LEAF_LEGACY_ID[leafId]}
+                      </Badge>
+                      <span className="text-sm font-semibold text-gray-800">
+                        {t(LEAF_LABEL_KEY_ALT[leafId])}
+                      </span>
+                      <InternalExternalBadge
+                        venue={venue}
+                        label={t(`routes.submitAlt.detail.venue.${venue}`)}
+                      />
+                      <span className="text-primary-700 ml-auto text-xs font-medium whitespace-nowrap">
+                        → {LEAF_GOALS_ALT[leafId]}
+                      </span>
                     </li>
                   )
                 })}
@@ -115,9 +95,7 @@ const DetailPanelAlt = ({
     )
   }
 
-  const mode = resolveDetailModeAlt(selectedNodeId)
-  const isLeaf = mode === "leaf"
-    && LEAF_DETAILS_ALT[selectedNodeId as LeafNodeIdAlt] !== undefined
+  const hasLeafDetail = LEAF_DETAILS_ALT[resolvedLeaf] !== undefined
 
   return (
     <section
@@ -132,12 +110,8 @@ const DetailPanelAlt = ({
       >
         {t("routes.submitAlt.sections.detail")}
       </Heading>
-      {isLeaf
-        ? (
-          <DetailLeafTemplateAlt
-            leafId={selectedNodeId as LeafNodeIdAlt}
-          />
-        )
+      {hasLeafDetail
+        ? <DetailLeafTemplateAlt leafId={resolvedLeaf} />
         : (
           <p className="text-sm text-gray-600">
             {t("routes.submitAlt.detail.overviewPlaceholder")}

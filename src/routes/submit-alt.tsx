@@ -1,14 +1,10 @@
-import { ChevronDown } from "lucide-react"
-import { useEffect, useMemo, useRef } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useSearchParams } from "react-router"
 
 import Breadcrumb from "@/components/submit-alt/Breadcrumb"
-import DecisionTreeAlt from "@/components/submit-alt/DecisionTreeAlt"
 import DetailPanelAlt from "@/components/submit-alt/DetailPanelAlt"
 import MultiSelectGuidance from "@/components/submit-alt/MultiSelectGuidance"
 import QAWizard from "@/components/submit-alt/QAWizard"
-import UseCaseCardGridAlt from "@/components/submit-alt/UseCaseCardGridAlt"
 import { Heading } from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
@@ -18,19 +14,7 @@ import {
   resolveLeafFromAnswers,
 } from "@/lib/submit-alt/leaf-resolver"
 import { resolveMultiSelectPattern } from "@/lib/submit-alt/multi-select-patterns"
-import { resolveActiveCardAlt } from "@/lib/submit-alt/node-selectors"
-import {
-  applyQAAnswersToParams,
-  parseForParam,
-  parseQAAnswers,
-} from "@/lib/submit-alt/url"
-import type {
-  Q1Id,
-  Q6Id,
-  QAAnswers,
-  TreeNodeIdAlt,
-  UseCaseCardAlt,
-} from "@/types/submit-alt"
+import type { Q1Id, Q6Id, QAAnswers } from "@/types/submit-alt"
 
 import type { Route } from "./+types/submit-alt"
 
@@ -55,61 +39,31 @@ export const meta = ({ data }: Route.MetaArgs) => [
   { tagName: "link", rel: "canonical", href: `${PORTAL_ORIGIN}/submit-alt` },
 ]
 
+const EMPTY_ANSWERS: QAAnswers = {
+  q1: new Set(),
+  q2: null,
+  q3: null,
+  q4: null,
+  q5: null,
+  q6: new Set(),
+  q7: null,
+  q8: null,
+  q9: null,
+}
+
 const SubmitAlt = () => {
   const { t } = useTranslation()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const answers = useMemo(() => parseQAAnswers(searchParams), [searchParams])
-  const selectedNodeId = parseForParam(searchParams)
-  const activeCardId = resolveActiveCardAlt(selectedNodeId)
-  const pattern = resolveMultiSelectPattern(answers)
+  const [answers, setAnswers] = useState<QAAnswers>(EMPTY_ANSWERS)
 
   const resolvedLeaf = useMemo(() => resolveLeafFromAnswers(answers), [answers])
   const candidateLeaves = useMemo(() => findMatchingLeaves(answers), [answers])
+  const pattern = resolveMultiSelectPattern(answers)
 
-  // Q&A の答えで leaf が一意に決まったら ?for= を自動でセットする (ユーザーが手動で別 leaf をクリック中でない時)。
-  const lastAutoLeafRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (resolvedLeaf === null) return
-    if (selectedNodeId === resolvedLeaf) return
-    if (lastAutoLeafRef.current === resolvedLeaf) return
-    lastAutoLeafRef.current = resolvedLeaf
-    const next = new URLSearchParams(searchParams)
-    next.set("for", resolvedLeaf)
-    setSearchParams(next, { preventScrollReset: true, replace: true })
-  }, [resolvedLeaf, selectedNodeId, searchParams, setSearchParams])
-
-  const handleAnswersChange = (nextAnswers: QAAnswers): void => {
-    const next = new URLSearchParams(searchParams)
-    applyQAAnswersToParams(next, nextAnswers)
-    setSearchParams(next, { preventScrollReset: true })
-  }
-
-  const handleCardSelect = (card: UseCaseCardAlt): void => {
-    const next = new URLSearchParams(searchParams)
-    next.set("for", card.treeNodeId)
-    setSearchParams(next, { preventScrollReset: true })
-  }
-
-  const handleNodeSelect = (nodeId: TreeNodeIdAlt): void => {
-    const next = new URLSearchParams(searchParams)
-    next.set("for", nodeId)
-    setSearchParams(next, { preventScrollReset: true })
-  }
-
-  const handleCandidateSelect = (leafId: TreeNodeIdAlt): void => {
-    const next = new URLSearchParams(searchParams)
-    next.set("for", leafId)
-    setSearchParams(next, { preventScrollReset: true })
-  }
+  const handleAnswersChange = (next: QAAnswers): void => setAnswers(next)
 
   const updateAnswers = (
     mutator: (a: QAAnswers) => QAAnswers,
-  ): void => {
-    const next = new URLSearchParams(searchParams)
-    applyQAAnswersToParams(next, mutator(answers))
-    setSearchParams(next, { preventScrollReset: true })
-  }
+  ): void => setAnswers((prev) => mutator(prev))
 
   const handleQ1Remove = (id: Q1Id): void => {
     updateAnswers((a) => {
@@ -162,61 +116,9 @@ const SubmitAlt = () => {
         <MultiSelectGuidance pattern={pattern} />
       </section>
 
-      <section aria-labelledby="submit-alt-cards-heading">
-        <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-            <Heading
-              level={2}
-              id="submit-alt-cards-heading"
-              className="grow"
-            >
-              {t("routes.submitAlt.sections.cards")}
-            </Heading>
-            <ChevronDown
-              className="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
-              aria-hidden="true"
-            />
-          </summary>
-          <div className="mt-4">
-            <UseCaseCardGridAlt
-              candidateLeaves={candidateLeaves}
-              activeCardId={activeCardId}
-              onSelect={handleCardSelect}
-            />
-          </div>
-        </details>
-      </section>
-
-      <section aria-labelledby="submit-alt-tree-heading">
-        <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-            <Heading
-              level={2}
-              id="submit-alt-tree-heading"
-              className="grow"
-            >
-              {t("routes.submitAlt.sections.tree")}
-            </Heading>
-            <ChevronDown
-              className="h-5 w-5 shrink-0 text-gray-500 transition-transform group-open:rotate-180"
-              aria-hidden="true"
-            />
-          </summary>
-          <div className="mt-4">
-            <DecisionTreeAlt
-              selectedNodeId={selectedNodeId}
-              candidateLeaves={candidateLeaves}
-              isQAStarted={answers.q1.size > 0 && answers.q2 !== null}
-              onNodeClick={handleNodeSelect}
-            />
-          </div>
-        </details>
-      </section>
-
       <div className="space-y-4">
         <Breadcrumb
           answers={answers}
-          selectedNodeId={selectedNodeId}
           onQ1Remove={handleQ1Remove}
           onQ2Clear={handleQ2Clear}
           onQ3Clear={handleQ3Clear}
@@ -228,9 +130,8 @@ const SubmitAlt = () => {
           onQ9Clear={handleQ9Clear}
         />
         <DetailPanelAlt
-          selectedNodeId={selectedNodeId}
+          resolvedLeaf={resolvedLeaf}
           candidateLeaves={candidateLeaves}
-          onCandidateSelect={handleCandidateSelect}
         />
       </div>
     </div>

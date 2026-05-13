@@ -1,11 +1,6 @@
-import { ChevronRight } from "lucide-react"
-
 import { Chip } from "@/components/ui"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
-import { LEAF_LABEL_KEY_ALT } from "@/lib/mock-data/submit-alt-tree"
-import { NODE_BY_ID_ALT } from "@/lib/submit-alt/node-selectors"
 import type {
-  LeafNodeIdAlt,
   Q1Id,
   Q2Id,
   Q3Id,
@@ -16,12 +11,10 @@ import type {
   Q8Id,
   Q9Id,
   QAAnswers,
-  TreeNodeIdAlt,
 } from "@/types/submit-alt"
 
 interface BreadcrumbProps {
   answers: QAAnswers
-  selectedNodeId: TreeNodeIdAlt | null
   onQ1Remove: (id: Q1Id) => void
   onQ2Clear: () => void
   onQ3Clear: () => void
@@ -33,11 +26,8 @@ interface BreadcrumbProps {
   onQ9Clear: () => void
 }
 
-// docs/submit-alt.md「パンくずリスト」参照。
-// Q&A 回答の chip と leaf 名を併記する。
 const Breadcrumb = ({
   answers,
-  selectedNodeId,
   onQ1Remove,
   onQ2Clear,
   onQ3Clear,
@@ -117,16 +107,7 @@ const Breadcrumb = ({
     })
   }
 
-  const leafLabel = ((): string | null => {
-    if (selectedNodeId === null) return null
-    const node = NODE_BY_ID_ALT.get(selectedNodeId)
-    if (!node || node.type !== "leaf") return null
-    const key = LEAF_LABEL_KEY_ALT[selectedNodeId as LeafNodeIdAlt]
-
-    return t(key, { defaultValue: selectedNodeId })
-  })()
-
-  if (chips.length === 0 && leafLabel === null) return null
+  if (chips.length === 0) return null
 
   return (
     <nav
@@ -138,20 +119,10 @@ const Breadcrumb = ({
           {c.label}
         </Chip>
       ))}
-      {chips.length > 0 && leafLabel !== null && (
-        <ChevronRight
-          className="h-3 w-3 text-gray-400"
-          aria-hidden="true"
-        />
-      )}
-      {leafLabel !== null && (
-        <span className="text-primary-700 font-semibold">{leafLabel}</span>
-      )}
     </nav>
   )
 }
 
-// 型を Re-export して routes 側で利用する
 export type {
   Q1Id,
   Q2Id,

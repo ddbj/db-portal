@@ -8,17 +8,15 @@ DDBJ の複数 DB にまたがる登録フローを、研究者の **持って�
 
 研究者の動機（何を持っていて、何を登録したいか）から登録先の組み合わせ・必要な準備物・登録手順をガイドする。v1（[submit.md](./submit.md)）との差分は以下:
 
-- **質問ウィザード (Q&A) をメイン導線にする**: Q1「持っているファイル」(複数選択) → Q2「対象生物」(単一選択) → 条件付き Q3-Q9 の多段質問で leaf を絞り込む。研究者の自己認識（手元のファイル形式 + 対象生物）から登録先に辿り着く。
-- **Decision Tree は結果表示として残す**: Q&A の答えに応じて Tree 上の該当 leaf がハイライトされる「俯瞰ビュー」として、デフォルト折りたたみで併設。Tree クリックで詳細パネルへも到達可能。
-- **Cards / Tree の折り畳み**: Section 2 (Cards) と Section 3 (Tree) はデフォルトで折りたたみ、ユーザー操作で展開する。Q&A ウィザードと詳細パネルに視線を集中させ、入口の重複による情報過多を抑える。
+- **質問ウィザード (Q&A) を唯一の導線にする**: Q1「持っているファイル」(複数選択) → Q2「対象生物」(単一選択) → 条件付き Q3-Q9 の多段質問で leaf を絞り込む。研究者の自己認識（手元のファイル形式 + 対象生物）から登録先に辿り着く。Decision Tree / Use Case Cards は v2 では持たない。
 - **leaf の再構成**: variant 系を 3 leaf に集約、ヒトマイクロバイオーム制限と空間トランスクリプトームを新規追加、ヒト × 非制限の Raw/アセンブリ leaf を 3 件新規追加（旧仕様の穴を埋める）。合計 36 leaf。
 - **詳細パネルの情報強化**: BioProject Project Data type / BioSample Package / DRA submission type / experiment type / GEA submission type / Annotation 制約 を leaf 単位で表示。
-- **パンくずリスト**: Q&A の回答経路 (Q1 chip + Q2 + 条件付き Q) と tree 経路を併記。
+- **パンくずリスト**: Q&A の回答経路 (Q1 chip + Q2 + 条件付き Q) を chip で表示する。
 - **内部/外部の色区分**: BSI/DDBJ 登録先と外部登録先を色 + アイコンで明示。
 
 ## ページ構成
 
-`/submit-alt` は 4 セクションの縦構成。
+`/submit-alt` は 3 セクションの縦構成。
 
 ```
 +--- /submit-alt -----------------------------------------+
@@ -26,17 +24,14 @@ DDBJ の複数 DB にまたがる登録フローを、研究者の **持って�
 |    Q1 持物 (8 種、複数) + Q2 生物 (6 種、単一) +        |
 |    条件付き Q3-Q9                                       |
 +---------------------------------------------------------+
-|  Section 2: Use Case Cards (10 枚) [▶ 折り畳み・閉]    |
+|  Section 2: Breadcrumb (Q&A 回答 chip)                 |
 +---------------------------------------------------------+
-|  Section 3: Decision Tree (簡略化版) [▶ 折り畳み・閉]  |
-|    Q&A の回答に応じて該当 leaf がハイライト              |
-+---------------------------------------------------------+
-|  Section 4: Detail Panel                               |
-|    パンくず + 概要/具体 2 段階ドリルダウン              |
+|  Section 3: Detail Panel                               |
+|    leaf 一意化後の登録先・準備物・手順                 |
 +---------------------------------------------------------+
 ```
 
-Section 1 と Section 4 は常時表示、Section 2 と Section 3 はデフォルトで折りたたまれている。ユーザーが見出しをクリックすることで展開される。Section 3 (Tree) は Q&A の回答進行に伴って内部ハイライトが動くため、開いた時に「Q&A の結果が tree のどこに該当するか」がすぐ見える。
+全セクションが常時表示。Q&A の回答進行に応じて Detail Panel の内容が動的に更新される。候補が複数残る間は「候補があります」相当のプロンプトが表示され、leaf が一意に決まると詳細パネルが leaf 詳細に切り替わる。
 
 ## 設計原則
 
@@ -44,26 +39,15 @@ Section 1 と Section 4 は常時表示、Section 2 と Section 3 はデフォ�
 
 | セクション | 役割 | 表示 |
 |---|---|---|
-| 質問ウィザード (Q&A) | データ起点で leaf を絞り込む多段質問 (デフォルト導線) | 常時表示 |
-| Use Case Cards | 研究テーマで一発入る（ショートカット） | デフォルト折りたたみ |
-| Decision Tree | Q&A 回答に応じた俯瞰結果ビュー / クリックで leaf に到達 | デフォルト折りたたみ |
-| Detail Panel | 2 段階ドリルダウンの情報開示装置 | 常時表示 |
+| 質問ウィザード (Q&A) | データ起点で leaf を絞り込む多段質問（唯一の導線） | 常時表示 |
+| Breadcrumb | Q&A 回答の chip 表示。chip × クリックで該当回答を解除 | chip がある時のみ表示 |
+| Detail Panel | leaf 一意化時の詳細表示 / 未一意化時の候補プロンプト | 常時表示 |
 
-研究者は以下 3 経路で詳細パネルへ到達する:
-
-1. **Q&A → leaf 到達**: Q1〜Q6 に答えて leaf が一意に絞れた時点で詳細パネルに自動表示（デフォルト導線、データ起点）
-2. **Cards → 直行**: Cards セクションを展開し、研究テーマカードをクリックして tree 中間 node または leaf へ直行（テーマ起点のショートカット）
-3. **Tree → 順次降下**: Tree セクションを展開し、tree を上から順に降りる（俯瞰したい研究者向け）
-
-Q&A をメイン、Cards / Tree を補助的に折りたたみで残す構造とする。Q&A の回答進行で Section 3 (Tree) 内部の該当 leaf がハイライトされるため、tree は「答えの俯瞰確認」としても機能する。
-
-### tree の深さ
-
-旧 `/submit` の深さ 2-7 から、生物種・規模など不要な中間ノード分岐を Detail Panel に移行することで簡略化する。tree を浅くしすぎると tree の意味がなくなるため、登録先システム・ワークフロー構造・必要準備物が違うものは引き続き分岐させる。
+研究者は Q&A の質問に順番に答えることで leaf に到達する。Q1 + Q2 が必須、Q3〜Q9 は前段の回答に応じて条件付きで出現し、必要な質問にすべて答えると leaf が一意に決まる。
 
 ## Section 1: 質問ウィザード (Q&A)
 
-研究者の自己認識（手元のファイル形式 + 対象生物）から leaf を絞り込む多段質問形式。**Q1 + Q2 が必須**、**Q3〜Q9 は前段の回答に応じて条件付きで出現**する。回答進行に応じて、Section 3 (Tree) の該当 leaf がリアルタイムにハイライトされる（折りたたみ閉じたままでも内部状態は更新）。leaf が一意に決まった時点で詳細パネル (Section 4) に内容が反映される。
+研究者の自己認識（手元のファイル形式 + 対象生物）から leaf を絞り込む多段質問形式。**Q1 + Q2 が必須**、**Q3〜Q9 は前段の回答に応じて条件付きで出現**する。leaf が一意に決まった時点で Detail Panel に内容が反映される。
 
 ### Q1. 何のファイル/データを持っていますか？（複数選択、必須）
 
@@ -171,8 +155,8 @@ Q&A をメイン、Cards / Tree を補助的に折りたたみで残す構造と
 ### 質問の表示・進行
 
 - Q1 と Q2 は常時表示（必須）。Q3〜Q9 は発火条件を満たした時のみ表示される（未表示 = 該当 leaf に分岐がない、または前段未回答）
-- 回答途中でも Section 3 (Tree) の該当候補 leaf 群がハイライトされる
-- 必要な質問に全て答えると leaf が一意に決まり、Section 4 (Detail Panel) に詳細が表示される
+- 回答途中でも候補 leaf 群が Detail Panel に「候補があります」プロンプトとして表示される
+- 必要な質問に全て答えると leaf が一意に決まり、Detail Panel に詳細が表示される
 - 答えの組み合わせで leaf が一意化されないケース（例: assembled + eukaryote + primary + normal + Q6=none で leaf-26/leaf-27 のいずれか）は、追加で「配列リードもセットで持っているか」を Q1 のチェックで判定する（leaf-26 = リード+アセンブリ、leaf-27 = アセンブリのみ）
 
 ### マルチ選択時の登録フロー案内（Q&A 完了前）
@@ -240,39 +224,13 @@ Q1 + Q2 が回答済みで Q3-Q8 を埋めている途中の段階で、現時�
 - **m06 と leaf-01 の判定 (Q9)**: Q2=human + Q3=restricted の段階では未確定。Q9（メタゲノム由来？）で明確に分岐する
 - **ヒト × 非制限の Raw/アセンブリ leaf を新設**: leaf-32 / leaf-33 / leaf-34 を新規追加（旧仕様の穴を埋める）。BS Package で Human を扱う、DRA / MSS の通常フローを使う。最終的に JGA 移行が必要かどうかは詳細パネルで案内
 
-## Section 2: Use Case Cards (10 枚)
+## Section 2: leaf 仕様一覧
 
-研究テーマでショートカットするカード。Section 1 の選択に応じてハイライトされる。
+合計 36 leaf。Q&A の回答から到達する leaf の SSOT として、leaf ID / URL ID / 登録先ゴールを下記に列挙する（コード側 SSOT は `src/lib/mock-data/submit-alt-tree/leafGoals.ts`）。
 
-| # | カード | 主な leaf |
-|---|---|---|
-| 1 | 微生物ゲノム | leaf-16 〜 leaf-22 |
-| 2 | 真核生物ゲノム | leaf-23 〜 leaf-31 |
-| 3 | メタゲノム / MAG / SAG | leaf-11 〜 leaf-15, m06 |
-| 4 | 遺伝子発現 | leaf-08, leaf-09 |
-| 5 | 空間トランスクリプトーム | s01, s02 |
-| 6 | 変異データ | v01, v02, v03 |
-| 7 | プロテオミクス | leaf-02 |
-| 8 | メタボロミクス | leaf-03 |
-| 9 | 小規模塩基配列・PCR 産物 | leaf-10 |
-| 10 | ヒト制限アクセス | leaf-01 |
+### 旧 `/submit` からの整理方針
 
-カード表示順はゲノム系を先頭、ヒト制限アクセスを最後（データ種別ではなくアクセス制限属性のため）。
-
-### カード refine の重点
-
-- **メタゲノムカード**: m06（ヒトマイクロバイオーム制限）を追加表示し、「DRA のみ / DRA + MAG / TLS / TSA / ヒト制限」の選択を自明化する
-- **遺伝子発現カード**: GEA submission type を 3 サブカテゴリ（Sequencing / Microarray / 10x Genomics Xenium）で構成
-- **変異データカード**: v01-v03 の集約構造を反映し、詳細パネルでの登録先選択（JVar / EVA / dgVa / SRA-analysis / JGA-analysis / HumanDBs）に誘導
-- **空間トランスクリプトームカード**: 新規追加
-
-## Section 3: Decision Tree（簡略化版）
-
-合計 36 leaf。Q&A ウィザードが旧 tree の上層分岐を吸収することで、tree の深さと横の広がりを大幅に縮小する。Q&A メイン導線への切り替え後は、tree は「Q&A の回答結果の俯瞰ビュー」として機能する。
-
-### 簡略化方針
-
-旧 `/submit` の tree（深さ 2-7、中間 node 約 13 個）に対し、Q&A ウィザード（Q1〜Q8）が以下の旧分岐を吸収することで tree を浅くする。
+旧 `/submit` の tree（深さ 2-7、中間 node 約 13 個）の分岐軸は、すべて Q&A の質問軸に吸収する。
 
 | 旧 /submit の分岐 | 新 /submit-alt での扱い |
 |---|---|
@@ -280,75 +238,10 @@ Q1 + Q2 が回答済みで Q3-Q8 を埋めている途中の段階で、現時�
 | L2 計測モダリティ | Q1 (持物 8 種) に吸収 |
 | L3-seq 規模分岐 | Q5 (規模 small/normal) に吸収 |
 | L4-seq 由来分岐 | Q1 (sequence-read / assembled の組み合わせ) + Q8 (raw/primary) に吸収 |
-| L5-L6 生物カテゴリ | Q2 (生物 6 種) で吸収 / tree にも残す |
-| L7 データ形式 | Q6 (特殊形式) と tree の組み合わせで扱う |
+| L5-L6 生物カテゴリ | Q2 (生物 6 種) に吸収 |
+| L7 データ形式 | Q6 (特殊形式) に吸収 |
 
-結果として新 tree は **depth 2-3**、中間 node は **5-6 個程度** に減少する。leaf 数は 31 → 36 に増加するが、tree の縦の深さと横の広がりは大幅に縮小する。
-
-### 新 tree の構造
-
-Q&A の回答（Section 1）に応じて該当起点配下が active 表示される。tree クリックでも詳細パネルに到達できる（Cards 経由と同じ）。
-
-```
-[ゲノム] 起点:
-  ├─ 真核
-  │   ├─ Raw + アセンブリ → leaf-26
-  │   ├─ アセンブリのみ → leaf-27
-  │   ├─ Haplotype Raw + アセンブリ → leaf-28
-  │   ├─ Haplotype アセンブリのみ → leaf-29
-  │   ├─ TSA → leaf-23
-  │   └─ TPA → leaf-24
-  ├─ 原核
-  │   ├─ Raw + アセンブリ → leaf-18
-  │   └─ アセンブリのみ → leaf-19
-  ├─ ウイルス
-  │   ├─ Raw + アセンブリ → leaf-21
-  │   └─ アセンブリのみ → leaf-22
-  ├─ オルガネラ/プラスミド → leaf-16
-  └─ メタゲノム
-      ├─ MAG/Binned/SAG → leaf-13
-      ├─ TLS → leaf-14
-      ├─ TSA → leaf-15
-      └─ ヒトマイクロバイオーム制限 → m06
-
-[シーケンスリード] 起点:
-  ├─ 真核 → leaf-25
-  ├─ 原核 → leaf-17
-  ├─ ウイルス → leaf-20
-  └─ メタゲノム
-      ├─ Raw → leaf-11
-      └─ Primary → leaf-12
-
-[バリアント解析] 起点:
-  → v01（非ヒト） / v02（ヒト非制限） / v03（ヒト制限）
-
-[空間トランスクリプトーム] 起点:
-  → s01（非ヒト） / s02（ヒト制限）
-
-[EST 解析] 起点:
-  → leaf-30（小規模） / leaf-31（大規模）
-
-[Microarray] 起点:               → leaf-09 (depth 0)
-[プロテオミクス] 起点:           → leaf-02 (depth 0)
-[メタボロミクス] 起点:           → leaf-03 (depth 0)
-[小規模塩基配列] 起点:           → leaf-10 (depth 0)
-[ヒト制限公開アクセス] 起点:     → leaf-01 (depth 0)
-```
-
-「ゲノム」と「シーケンスリード」を両方選択した場合、Raw + アセンブリ系の leaf（leaf-13 / leaf-18 / leaf-21 / leaf-26 / leaf-28）が強調表示される。
-
-### マルチ選択時の tree 動作
-
-Tree セクションを展開した時のハイライト規則:
-
-| 状態 | tree 表示 |
-|---|---|
-| 全項目未選択 | tree 全体を通常表示（俯瞰モード） |
-| 単一項目選択 | 該当起点配下の枝のみ active 表示、他は灰色化（folded） |
-| 複数項目選択 | 該当枝の OR 合成。複数項目に該当する leaf は強調表示 |
-| パンくず連動 | Section 1 の選択 chip + tree 経路をパンくずに反映 |
-
-非該当の枝は**非表示にせず灰色化（folded）**で残すことで、「全体俯瞰したい」要望と「絞り込みたい」要望を両立する。
+leaf 数は 31 → 36 に増加（variant 集約 -1、ヒトマイクロバイオーム制限 +1、空間 Tx +2、ヒト × 非制限 Raw/Asm 系 +3）。
 
 ### 36 leaf 一覧
 
@@ -458,25 +351,24 @@ per-sample / aggregate の解像度は v02 / v03 の詳細パネル内で分岐�
 
 略語は `/submit` と同じ（BP = BioProject、BS = BioSample、DRA = DDBJ Sequence Read Archive、GEA = Genomic Expression Archive、MSS = Mass Submission System、NSSS = Nucleotide Sequence Submission System、JGA = Japanese Genotype-phenotype Archive）。
 
-## Section 4: Detail Panel
+## Section 3: Detail Panel
 
 ### パンくずリスト
 
-Q&A の回答経路（Q1〜Q8 の chip）と tree 経路を併記する:
+Q&A の回答経路（Q1〜Q9 の chip）を chip で並べる。各 chip の × ボタンで該当回答を解除できる。
 
 ```
-[FASTQ ☑] [アセンブリ ☑] [真核 ☑] [Primary ☑] [通常規模 ☑]   >   真核   >   Raw + アセンブリ
-└────────── Q&A 回答 chip ──────────────────────────────┘     └────── tree 経路 ──────┘
+[配列リード ☑] [アセンブリ ☑] [真核 ☑] [Primary ☑] [通常規模 ☑] [どれにも該当しない ☑]
 ```
 
-Q&A の回答は chip で並べ、tree 経路を `>` 区切りで表示する。Tree セクションが折りたたまれていてもパンくずは詳細パネル上に表示する。Q&A 未完了で leaf に到達していない場合、tree 経路部分は省略される。
+回答が 1 つも入っていない時は Breadcrumb 自体を非表示にする。
 
-### 2 段階ドリルダウン
+### 表示モード
 
-- **概要レベル**: カード or 中間 node 選択時。ユースケース概要・3 層構造（該当時）・登録先分岐テーブル・共通の準備物・主要外部リンク。
-- **具体レベル**: leaf 到達時。概要レベルに加えて、登録先・登録順序・具体的な準備物・leaf 固有補足・外部ツール/固有リンクを表示。
+- **未一意化**: leaf が一意に決まっていない時。「Q&A に答えると詳細が表示されます」または「候補があります」プロンプトを表示する。
+- **leaf 一意化**: leaf が決まった時。leaf 詳細（登録先・登録順序・準備物・固有補足・外部リンク）と軸補強情報を表示する。
 
-### 具体レベルの追加情報（軸補強）
+### leaf 一意化時の追加情報（軸補強）
 
 leaf 単位で以下を表示する。
 
@@ -492,7 +384,7 @@ leaf 単位で以下を表示する。
 | Annotation ファイル制約 | MSS data type 別、qualifier 制約等 |
 | JGA 登録オブジェクト | Study / Sample / Experiment / Data / Analysis / Dataset / Policy（leaf-01, v03, m06, s02 で関連分を表示） |
 
-### NSSS 制約（leaf-10 / leaf-30 の具体レベル）
+### NSSS 制約（leaf-10 / leaf-30）
 
 NSSS で受付可能な範囲:
 
@@ -519,54 +411,12 @@ NSSS で受付可能な範囲:
 | セクション | 表示 |
 |---|---|
 | 質問ウィザード (Q&A) | 常時表示 |
-| Use Case Cards | デフォルト折りたたみ（閉）、見出しクリックで展開 |
-| Decision Tree | デフォルト折りたたみ（閉）、見出しクリックで展開 |
-| パンくず + Detail Panel | 常時表示 |
-
-Cards / Tree が折りたたまれていても、Q&A の回答状態は内部で保持され、展開時に該当 leaf がハイライトされる。詳細パネル展開時に他セクションは消えない（折りたたみ状態のまま残る）ことで、選択条件の中間経路の可視性を維持する。
-
-折り畳み UI は HTML ネイティブの `<details>` / `<summary>` 要素で実装する（追加 JS なし、a11y はブラウザ既定に委ねる）。
+| Breadcrumb | Q&A 回答 chip がある時のみ表示 |
+| Detail Panel | 常時表示。leaf 一意化前は候補プロンプト、一意化後は leaf 詳細 |
 
 ## URL 設計
 
-DB ポータル全体の URL 設計方針は `overview.md#url-設計` を参照。
-
-### ページとレンダリング
-
-| URL | 用途 | レンダリング |
-|---|---|---|
-| `/submit-alt` | 登録ナビゲーション v2 | プリレンダ |
-
-### クエリパラメータ
-
-Q&A の各回答を独立したクエリパラメータで保持する（React Router の `useSearchParams` で扱いやすく、URL からの直接到達も可能）。
-
-| パラメータ | 値 | 用途 |
-|---|---|---|
-| `q1` | カンマ区切り。`sequence-read,assembled,annotation,variation,expression,mass-spec,spatial-tx` から複数 | Q1 持物（複数選択） |
-| `q2` | `human` / `eukaryote` / `prokaryote` / `virus` / `metagenome` / `organelle-plasmid` | Q2 対象生物（単一） |
-| `q3` | `open` / `restricted` | Q3 公開可否（Q2=human の時のみ有効） |
-| `q4` | `primary` / `tpa` | Q4 由来（Q1 に assembled を含む時のみ有効） |
-| `q5` | `small` / `normal` | Q5 規模（条件付き） |
-| `q6` | カンマ区切り。`haplotype,tsa,tls,mag-sag,est,none` から複数 | Q6 特殊形式（条件付き） |
-| `q7` | `proteomics` / `metabolomics` | Q7 質量分析サブ種別（Q1 に mass-spec を含む時のみ有効） |
-| `q8` | `raw` / `primary` | Q8 メタゲノム種別（Q1=sequence-read、Q2=metagenome、assembled 非含有 の時のみ有効） |
-| `q9` | `yes` / `no` | Q9 ヒト試料のメタゲノム由来判定（Q2=human、Q3=restricted の時のみ有効） |
-| `for` | tree node ID（ケバブケース） | tree クリック・use case card クリックの遷移先（旧 `/submit` と同じ） |
-
-発火条件を満たさない q3-q8 パラメータが URL に含まれていても無視する（reachable な状態のみ反映）。
-
-### URL の組み合わせ
-
-- `/submit-alt`: 初期状態（Q&A 未回答）
-- `/submit-alt?q1=sequence-read,assembled&q2=eukaryote&q4=primary&q5=normal&q6=none`: 真核 Raw+アセンブリ → leaf-26 に到達
-- `/submit-alt?q1=mass-spec&q7=proteomics`: プロテオミクス → leaf-02
-- `/submit-alt?q1=sequence-read&q2=human&q3=restricted`: ヒト制限 Raw → leaf-01
-- `/submit-alt?for=eukaryote-raw-assembly`: Q&A をスキップし tree クリック相当で直接 leaf 到達（Use Case Card 経由と同じ）
-
-### canonical
-
-`/submit-alt?...` の canonical はすべて `/submit-alt`。全バリエーションは同一コンテンツの断片表示であり、検索インデックスは `/submit-alt` に集約する。
+`/submit-alt` は常に裸の `/submit-alt` で動作する。クエリパラメータ・履歴連携は持たず、Q&A 状態はコンポーネント内 `useState` で保持する。canonical は `/submit-alt`。
 
 ## 実装関連
 
@@ -584,23 +434,21 @@ leaf 定義（`leafDetails.ts` 等）からマスタを参照キーで引く。
 
 ### i18n
 
-UI テキスト（質問文、選択肢、カードタイトル、ボタン等）は `locales/ja.json`, `locales/en.json`。詳細パネル本文は言語別 TSX コンポーネント（例: `MicrobialGenomeDetail.ja.tsx`, `MicrobialGenomeDetail.en.tsx`）。
+UI テキスト（質問文、選択肢、ボタン等）は `locales/ja.json`, `locales/en.json`。詳細パネル本文は言語別 TSX コンポーネント（例: `MicrobialGenomeDetail.ja.tsx`, `MicrobialGenomeDetail.en.tsx`）。
 
 ## 設計上の決定事項
 
-- **質問ウィザード (Q&A) をメイン導線にする**: Q1 (持物 8 種、複数選択、必須) + Q2 (生物 6 種、単一選択、必須) + 条件付き Q3〜Q9 (公開可否 / 由来 / 規模 / 形式 / 質量分析サブ / メタゲノム種別 / ヒトメタゲノム由来) の多段。研究者が「自分の手元」から自己認識で leaf に辿り着く
-- **旧 DataTypeSelector (10 項目チェック) は廃止**: data type 10 種は Q1 (8 種) × Q2 (6 種) の組に再マップする。研究目的軸 (ゲノム / 発現 / 変異) ではなく **ファイル形式軸 + 生物軸** に切り替える
+- **質問ウィザード (Q&A) が唯一の導線**: Q1 (持物 8 種、複数選択、必須) + Q2 (生物 6 種、単一選択、必須) + 条件付き Q3〜Q9 の多段で leaf を一意化する。Decision Tree / Use Case Cards は v2 では持たない
+- **旧 DataTypeSelector (10 項目チェック) は廃止**: data type 10 種は Q1 (8 種) × Q2 (6 種) の組に再マップする
 - **横断属性「ヒト由来」は廃止**: ヒト関連の分岐は Q2 = human + Q3 (open/restricted) に一本化する
-- **Cards / Tree のデフォルト折り畳み**: Section 2 (Cards) と Section 3 (Tree) はデフォルトで `<details>` ネイティブ要素により折りたたみ表示。Tree は Q&A の回答進行に応じて該当 leaf がハイライトされる「俯瞰結果ビュー」として機能する
-- **Cards 数**: 9 → 10 枚（空間トランスクリプトームカード新設）
 - **leaf 数**: 31 → 36（variant 集約 -1、ヒトマイクロバイオーム制限 +1、空間 Tx +2、ヒト × 非制限 Raw/Asm 系 +3）
 - **variant 集約の方針**: ヒト/非ヒト × 制限/非制限 の 3 区分で集約（v01-v03）。per-sample/aggregate と各登録先の選択は詳細パネル分岐に閉じる
 - **空間 Tx leaf 構成**: 非ヒト（s01）と ヒト制限（s02）の 2 leaf。DB-2021 の詳細仕様確認後に統合判断する余地を残す
-- **Decision Tree の深さ**: 簡略化するが浅くしすぎない方針。tree の俯瞰価値を残しつつ、不要な中間ノード分岐を Detail Panel に移行
-- **詳細パネルの 2 段階ドリルダウン**: 維持。leaf 単位で軸補強情報を表示
+- **詳細パネルの 1 段階表示**: leaf 一意化時に詳細を出す単純構造。中間ノード概要は廃止
 - **内部/外部色区分**: 内部 = `emerald-500`、外部 = `amber-500` で一貫
-- **画面構成**: 4 セクション縦構成。Section 1 (Q&A) と Section 4 (Detail Panel) は常時表示、Section 2 (Cards) と Section 3 (Tree) はデフォルト折り畳み
-- **leaf マッピングの SSOT**: Q1〜Q8 の組み合わせから leaf を一意に決めるルールを実装する。`src/lib/mock-data/submit-alt-tree/leafGoals.ts` の `LEAF_DATA_TYPES_ALT`（旧 10 軸）は廃止し、Q1〜Q8 軸ベースの leaf 属性 (新ファイル `leafQAMapping.ts` 等) に置き換える
+- **画面構成**: 3 セクション縦構成（Q&A / Breadcrumb / Detail Panel）。全て常時表示
+- **URL 連携の廃止**: Q&A 状態はコンポーネント内 `useState` で保持する。URL クエリパラメータ・履歴連携は持たない
+- **leaf マッピングの SSOT**: `src/lib/mock-data/submit-alt-tree/leafQAMapping.ts` の `LEAF_QA_CONDITIONS` が Q1〜Q9 → leaf の決定ルール
 
 ## コンテンツ原典
 

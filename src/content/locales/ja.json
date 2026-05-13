@@ -1048,10 +1048,7 @@
         "subtitle": "持っているデータをチェックすると、必要な登録先と準備物が動的に絞り込まれる"
       },
       "sections": {
-        "dataTypes": "持っているデータの種別",
         "qa": "質問ウィザード",
-        "cards": "ユースケースから選ぶ",
-        "tree": "判断フローから辿る",
         "detail": "詳細"
       },
       "qa": {
@@ -1121,144 +1118,18 @@
         "human-raw-assembly-open": { "label": "ヒト Raw + アセンブリ（公開）" },
         "human-assembly-only-open": { "label": "ヒト アセンブリのみ（公開）" }
       },
-      "placeholder": {
-        "section1": "Section 1: データ種別 Y/N 複数選択 (Phase 1 で実装)",
-        "section2": "Section 2: Use Case Cards (Phase 2 で実装)",
-        "section3": "Section 3: Decision Tree (Phase 3 で実装)",
-        "section4": "Section 4: Detail Panel (Phase 4 で実装)"
-      },
       "dataTypes": {
-        "human-restricted": {
-          "label": "ヒト制限公開アクセス",
-          "description": "NBDC の提供申請が必要 / 既に承認済みのヒトデータ (JGA)"
-        },
-        "sequence-read": {
-          "label": "シーケンスリード",
-          "description": "NGS / 長鎖リーダ等の生リード (DRA)"
-        },
-        "genome": {
-          "label": "ゲノム",
-          "description": "アセンブリ済みゲノム (MSS / Haplotype / TSA / TPA / MAG / SAG)"
-        },
-        "variation": {
-          "label": "バリアント解析",
-          "description": "SNP / SV / 構造変異の解析結果"
-        },
-        "proteomics": {
-          "label": "プロテオミクス",
-          "description": "LC-MS/MS によるプロテオーム解析 (jPOST)"
-        },
-        "est": {
-          "label": "EST 解析",
-          "description": "Sanger シングルパス cDNA"
-        },
-        "microarray": {
-          "label": "Microarray",
-          "description": "マイクロアレイ発現データ (GEA)"
-        },
-        "spatial-transcriptomics": {
-          "label": "空間トランスクリプトーム",
-          "description": "10x Genomics Xenium 等の空間遺伝子発現データ"
-        },
-        "metabolomics": {
-          "label": "メタボロミクス",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "label": "小規模塩基配列",
-          "description": "100 配列未満・500 kb 未満の塩基配列 (NSSS)"
-        }
-      },
-      "dataTypes": {
-        "groupAriaLabel": "データ種別の選択",
-        "human-restricted": {
-          "label": "ヒト制限公開アクセス",
-          "description": "NBDC の提供申請が必要 / 既に承認済みのヒトデータ (JGA)"
-        },
-        "sequence-read": {
-          "label": "シーケンスリード",
-          "description": "NGS / 長鎖リーダ等の生リード (DRA)"
-        },
-        "genome": {
-          "label": "ゲノム",
-          "description": "アセンブリ済みゲノム (MSS / Haplotype / TSA / TPA / MAG / SAG)"
-        },
-        "variation": {
-          "label": "バリアント解析",
-          "description": "SNP / SV / 構造変異の解析結果"
-        },
-        "proteomics": {
-          "label": "プロテオミクス",
-          "description": "LC-MS/MS によるプロテオーム解析 (jPOST)"
-        },
-        "est": {
-          "label": "EST 解析",
-          "description": "Sanger シングルパス cDNA"
-        },
-        "microarray": {
-          "label": "Microarray",
-          "description": "マイクロアレイ発現データ (GEA)"
-        },
-        "spatial-transcriptomics": {
-          "label": "空間トランスクリプトーム",
-          "description": "10x Genomics Xenium 等の空間遺伝子発現データ"
-        },
-        "metabolomics": {
-          "label": "メタボロミクス",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "label": "小規模塩基配列",
-          "description": "100 配列未満・500 kb 未満の塩基配列 (NSSS)"
-        }
-      },
-      "cards": {
-        "microbial-genome": {
-          "title": "微生物ゲノム",
-          "description": "原核生物 / ウイルス / オルガネラ / プラスミドのゲノム登録"
-        },
-        "eukaryote-genome": {
-          "title": "真核生物ゲノム",
-          "description": "動物 / 植物 / 菌類のゲノム登録 (Haplotype / TSA / EST / TPA 含む)"
-        },
-        "metagenome": {
-          "title": "メタゲノム / MAG / SAG",
-          "description": "環境サンプル・メタゲノム由来データ (ヒトマイクロバイオーム制限を含む)"
-        },
-        "expression": {
-          "title": "遺伝子発現",
-          "description": "RNA-seq / マイクロアレイ / 10x Xenium 等の発現解析データ"
-        },
-        "spatial-tx": {
-          "title": "空間トランスクリプトーム",
-          "description": "10x Genomics Xenium 等の空間遺伝子発現データ"
-        },
-        "variation": {
-          "title": "変異データ",
-          "description": "SNP / SV / 構造変異 (per-sample / aggregate / ヒト制限を含む)"
-        },
-        "proteomics": {
-          "title": "プロテオミクス",
-          "description": "LC-MS/MS によるプロテオーム解析データ (jPOST 経由)"
-        },
-        "metabolomics": {
-          "title": "メタボロミクス",
-          "description": "LC-MS / GC-MS / CE-MS / NMR (MetaboBank)"
-        },
-        "small-sequence": {
-          "title": "小規模塩基配列・PCR 産物",
-          "description": "100 配列未満の塩基配列 (NSSS 経由)"
-        },
-        "human-restricted": {
-          "title": "ヒト制限アクセス",
-          "description": "ヒトを対象とした個人特定リスクのあるデータ (NBDC 承認要)"
-        }
+        "human-restricted": { "label": "ヒト制限公開アクセス" },
+        "proteomics": { "label": "プロテオミクス" },
+        "microarray": { "label": "Microarray" },
+        "metabolomics": { "label": "メタボロミクス" },
+        "small-sequence": { "label": "小規模塩基配列" }
       },
       "multiSelect": {
         "patterns": {
           "single": {
             "title": "1 項目だけ選択",
-            "description": "選択した項目に応じた登録フローを Decision Tree から選んでください。"
+            "description": "選択した項目に応じた登録フローが詳細パネルに表示されます。"
           },
           "merged-submission": {
             "title": "1 つの登録フローに統合できます",
@@ -1279,18 +1150,6 @@
         }
       },
       "tree": {
-        "questions": {
-          "genome": "ゲノムの種別は？",
-          "genome-eukaryote": "真核ゲノムのデータ形式は？",
-          "genome-prokaryote": "原核ゲノムのデータ形式は？",
-          "genome-virus": "ウイルスゲノムのデータ形式は？",
-          "genome-metagenome": "メタゲノムの種別は？",
-          "sequence-read": "シーケンスリードの由来は？",
-          "sequence-read-metagenome": "メタゲノムリードの種別は？",
-          "variation": "変異データの種別は？",
-          "spatial-transcriptomics": "空間トランスクリプトームの種別は？",
-          "est": "EST 解析の規模は？"
-        },
         "options": {
           "genome": {
             "eukaryote": "真核生物",
@@ -1348,15 +1207,15 @@
         }
       },
       "breadcrumb": {
-        "aria": "選択中のフィルタとパスを示すパンくずリスト"
+        "aria": "選択中の Q&A 回答を示すパンくずリスト"
       },
       "detail": {
         "empty": {
           "title": "Q&A に答えると詳細が表示されます",
-          "description": "Section 1 の質問ウィザードに答えるか、Use Case Cards / Decision Tree から登録先を絞り込んでください。"
+          "description": "上の質問ウィザードに答えると、登録先と準備物が動的に絞り込まれます。"
         },
-        "candidatesPrompt": "現在 {{count}} 件の候補があります。残りの質問に答えるか、下記から直接選んでください。",
-        "overviewPlaceholder": "中間ノードまで降りました。さらに leaf を選ぶと登録の詳細が表示されます。",
+        "candidatesPrompt": "現在 {{count}} 件の候補があります。残りの質問に答えると leaf が一意に決まります。",
+        "overviewPlaceholder": "leaf がまだ一意に決まっていません。残りの質問に答えてください。",
         "placeholderSummary": "詳細は順次拡充中です。",
         "venue": {
           "internal": "DDBJ 内部",

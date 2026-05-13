@@ -1,6 +1,5 @@
 import type {
   LeafNodeIdAlt,
-  QuestionNodeIdAlt,
   RegistrationGoalAlt,
   RegistrationVenue,
 } from "@/types/submit-alt"
@@ -126,8 +125,8 @@ export const LEAF_VENUE_ALT: Readonly<Record<LeafNodeIdAlt, RegistrationVenue>> 
   "human-assembly-only-open": "internal",
 }
 
-// tree node 表示で使う leaf のラベルキー。i18n の routes.submitAlt.tree.options.* と整合。
-// 起点 leaf (depth 0) は dataTypes.* のラベルを再利用する。
+// 候補リスト表示で使う leaf のラベルキー。i18n の routes.submitAlt.tree.options.* と
+// routes.submitAlt.dataTypes.*.label / routes.submitAlt.leaves.*.label を参照する。
 export const LEAF_LABEL_KEY_ALT: Readonly<Record<LeafNodeIdAlt, string>> = {
   "human-restricted": "routes.submitAlt.dataTypes.human-restricted.label",
   "proteomics": "routes.submitAlt.dataTypes.proteomics.label",
@@ -167,42 +166,3 @@ export const LEAF_LABEL_KEY_ALT: Readonly<Record<LeafNodeIdAlt, string>> = {
   "human-assembly-only-open": "routes.submitAlt.leaves.human-assembly-only-open.label",
 }
 
-// tree 構造での親 question node。null は depth 0 の起点 leaf。
-export const LEAF_PARENTS_ALT: Readonly<Record<LeafNodeIdAlt, QuestionNodeIdAlt | null>> = {
-  "human-restricted": null,
-  "proteomics": null,
-  "metabolomics": null,
-  "small-sequence": null,
-  "expression-array": null,
-  "expression-ngs": "sequence-read",
-  "variation-nonhuman": "variation",
-  "variation-human-open": "variation",
-  "variation-human-restricted": "variation",
-  "spatial-tx-nonhuman": "spatial-transcriptomics",
-  "spatial-tx-restricted": "spatial-transcriptomics",
-  "eukaryote-est-small": "est",
-  "eukaryote-est-large": "est",
-  "metagenome-raw": "sequence-read-metagenome",
-  "metagenome-primary": "sequence-read-metagenome",
-  "metagenome-genome-bin": "genome-metagenome",
-  "metagenome-tls": "genome-metagenome",
-  "metagenome-tsa": "genome-metagenome",
-  "human-microbiome-restricted": "genome-metagenome",
-  "organelle-plasmid": "genome",
-  "prokaryote-raw": "sequence-read",
-  "prokaryote-raw-assembly": "genome-prokaryote",
-  "prokaryote-assembly-only": "genome-prokaryote",
-  "virus-raw": "sequence-read",
-  "virus-raw-assembly": "genome-virus",
-  "virus-assembly-only": "genome-virus",
-  "eukaryote-tsa": "genome-eukaryote",
-  "eukaryote-tpa": "genome-eukaryote",
-  "eukaryote-raw": "sequence-read",
-  "eukaryote-raw-assembly": "genome-eukaryote",
-  "eukaryote-assembly-only": "genome-eukaryote",
-  "eukaryote-haplotype-raw-assembly": "genome-eukaryote",
-  "eukaryote-haplotype-assembly-only": "genome-eukaryote",
-  "human-raw-open": null,
-  "human-raw-assembly-open": null,
-  "human-assembly-only-open": null,
-}

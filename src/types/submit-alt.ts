@@ -104,23 +104,7 @@ export type LeafNodeIdAlt =
   | "human-raw-assembly-open"
   | "human-assembly-only-open"
 
-// tree の中間 question node。簡略化方針に従い depth 2-3 に収める。
-// docs/submit-alt.md L142-188 の構造を反映。
-export type QuestionNodeIdAlt =
-  | "genome"
-  | "genome-eukaryote"
-  | "genome-prokaryote"
-  | "genome-virus"
-  | "genome-metagenome"
-  | "sequence-read"
-  | "sequence-read-metagenome"
-  | "variation"
-  | "spatial-transcriptomics"
-  | "est"
-
-export type TreeNodeIdAlt = LeafNodeIdAlt | QuestionNodeIdAlt
-
-// 新ゴール一覧。docs/submit-alt.md L277-298 参照。
+// 新ゴール一覧。docs/submit-alt.md 参照。
 // 旧 /submit より JGA-analysis / HumanDBs / SRA-analysis / GEA(Xenium) / NSSS(EST) / BP+BS+MSS(TPA/EST) を追加。
 export type RegistrationGoalAlt =
   | "JGA"
@@ -175,57 +159,6 @@ export type MultiSelectPattern =
   | "fully-independent"
   | "jga-unified"
 
-export interface QuestionOptionAlt {
-  labelKey: string
-  childId: TreeNodeIdAlt
-}
-
-export interface QuestionNodeAlt {
-  id: QuestionNodeIdAlt
-  type: "question"
-  questionKey: string
-  // 起点（root）と中間 node の区別。起点は data type に対応する。
-  isRoot: boolean
-  options: readonly QuestionOptionAlt[]
-  parentId: QuestionNodeIdAlt | null
-}
-
-export interface LeafNodeAlt {
-  id: LeafNodeIdAlt
-  type: "leaf"
-  // 仕様書の番号（leaf-NN / v01-v03 / m06 / s01-s02 / leaf-32-34）。表示・テスト用。
-  legacyId: string
-  goal: RegistrationGoalAlt
-  venue: RegistrationVenue
-  parentId: QuestionNodeIdAlt | null
-}
-
-export type TreeNodeAlt = QuestionNodeAlt | LeafNodeAlt
-
-export type CardIdAlt =
-  | "microbial-genome"
-  | "eukaryote-genome"
-  | "metagenome"
-  | "expression"
-  | "spatial-tx"
-  | "variation"
-  | "proteomics"
-  | "metabolomics"
-  | "small-sequence"
-  | "human-restricted"
-
-export interface UseCaseCardAlt {
-  id: CardIdAlt
-  titleKey: string
-  descriptionKey: string
-  iconName: string
-  // クリック時の遷移先 (?for=...)
-  treeNodeId: TreeNodeIdAlt
-  // ハイライト判定: Q&A 候補 leaf の集合と交差する場合に active 表示
-  relatedLeafIds: readonly LeafNodeIdAlt[]
-  order: number
-}
-
 export interface DetailLinkAlt {
   labelKey: string
   url: string
@@ -264,17 +197,3 @@ export interface GoalTemplateAlt {
   primaryLinks: readonly DetailLinkAlt[]
 }
 
-export interface DetailOverviewBranchAlt {
-  dataLabelKey: string
-  leafId: LeafNodeIdAlt
-  goalLabel: string
-}
-
-export interface DetailOverviewAltDef {
-  cardId: CardIdAlt
-  summaryKey: string
-  hasThreeLayer: boolean
-  branches: readonly DetailOverviewBranchAlt[]
-  commonRequirementsKey: string
-  primaryLinks: readonly DetailLinkAlt[]
-}
