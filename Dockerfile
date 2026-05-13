@@ -1,4 +1,4 @@
-FROM node:24.13.0-bookworm
+FROM node:24.15.0-bookworm
 
 LABEL org.opencontainers.image.title="db-portal" \
       org.opencontainers.image.description="DDBJ DB Portal - integrated web portal for DDBJ services" \
@@ -18,7 +18,7 @@ RUN apt update && \
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 
 # chmod: named volume inherits image permissions on first creation;
 #        make writable so arbitrary UID (dev) can run `npm install`.
