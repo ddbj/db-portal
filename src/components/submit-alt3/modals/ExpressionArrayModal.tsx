@@ -66,7 +66,7 @@ const ExpressionArrayModal = ({ open, onClose, onSubmit }: Props) => {
       members,
       chipTags,
     })
-    // 連続追加対応: modal は閉じずに保持
+    onClose()
   }
 
   return (

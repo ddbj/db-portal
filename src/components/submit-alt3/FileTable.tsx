@@ -37,6 +37,7 @@ interface Props {
     value: Organism | AccessRestriction | DataForm | undefined,
   ) => void
   onRemoveFile: (fileId: string) => void
+  onEditRow?: (fileId: string) => void
   onSetChip: (
     fileId: string,
     axis: ChipAxis,
@@ -53,6 +54,7 @@ const FileTable = ({
   highlightedFileIds,
   onEditCell,
   onRemoveFile,
+  onEditRow,
   onSetChip,
   onResetChipManual,
 }: Props) => {
@@ -115,6 +117,7 @@ const FileTable = ({
                     highlighted={highlightedFileIds?.has(m.id) ?? false}
                     onEditCell={onEditCell}
                     onRemove={onRemoveFile}
+                    {...(onEditRow ? { onEdit: onEditRow } : {})}
                     onSetChip={onSetChip}
                     onResetChipManual={onResetChipManual}
                   />

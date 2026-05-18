@@ -354,7 +354,14 @@ const handleAddFile = (
         entry.columnSource.accessRestriction = "auto"
       }
     }
-    // modal で確定した autoAccess (個人特定 yes 等) は直前行コピーより優先
+    // 最初の 1 ファイル追加 (prev=undefined) かつ modal で autoAccess も指定されていない場合のみ、
+    // access を "open" を default として auto セット (submit-alt3.md §5.4)。
+    // 2 回目以降は prev コピーに任せ、prev も未設定なら undefined のまま。
+    if (prev === undefined && entry.accessRestriction === undefined && autoAccess === undefined) {
+      entry.accessRestriction = "open"
+      entry.columnSource.accessRestriction = "auto"
+    }
+    // modal で確定した autoAccess (個人特定 yes 等) は直前行コピー / open default より優先
     if (autoAccess !== undefined) {
       entry.accessRestriction = autoAccess
       entry.columnSource.accessRestriction = "auto"
@@ -396,6 +403,19 @@ const handleEditCell = (
     if (column === "dataForm") {
       if (value === undefined) delete next.dataForm
       else next.dataForm = value as DataForm
+    }
+
+    // organism を human / human-microbiome に変更したとき、access がまだ user 入力で
+    // 確定されていなければ auto で restricted にセット (Rule 6 JGA 経路を自動で発火させる)。
+    // ユーザーがそれでも open に上書きしたい場合は、列で明示的に open を選び直せば
+    // columnSource.accessRestriction="user" となり以後の自動上書きを抑止する。
+    if (
+      column === "organism" &&
+      (value === "human" || value === "human-microbiome") &&
+      next.columnSource.accessRestriction !== "user"
+    ) {
+      next.accessRestriction = "restricted"
+      next.columnSource = { ...next.columnSource, accessRestriction: "auto" }
     }
 
     return next

@@ -81,7 +81,7 @@ const SpatialTxModal = ({ open, onClose, onSubmit }: Props) => {
         ? { groupOverrides: { referenceMeta: refMeta } }
         : {}),
     })
-    // 連続追加対応: modal は閉じずに保持
+    onClose()
   }
 
   return (

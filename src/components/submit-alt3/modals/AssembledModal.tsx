@@ -5,7 +5,6 @@ import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import { ASSEMBLY_FORM_TO_FUNCTIONAL_GENOMICS } from "@/lib/mock-data/submit-alt3"
 import type { AddFilePayload } from "@/lib/submit-alt3"
 import type {
-  AccessRestriction,
   AssemblyForm,
   BioSampleDraft,
   ChipTag,
@@ -83,7 +82,6 @@ const AssembledModal = ({
   const { t } = useDynamicTranslation()
   const [form, setForm] = useState<AssemblyForm>("wgs")
   const [analysisKind, setAnalysisKind] = useState<AnalysisKind>("primary")
-  const [access, setAccess] = useState<AccessRestriction>("open")
   const [tpaSubtype, setTpaSubtype] = useState<TpaSubtype>("tpa-assembly")
   const [phased, setPhased] = useState(false)
   const [naming, setNaming] = useState<HaplotypeNaming>("principal-alternate")
@@ -96,7 +94,6 @@ const AssembledModal = ({
   const resetForm = (): void => {
     setForm("wgs")
     setAnalysisKind("primary")
-    setAccess("open")
     setTpaSubtype("tpa-assembly")
     setPhased(false)
     setNaming("principal-alternate")
@@ -139,14 +136,12 @@ const AssembledModal = ({
       groupType: "single",
       members: [{ displayName: `${baseName}.fasta`, role: "single" }],
       chipTags,
-      autoAccess: access,
       ...(thirdParty && (refMeta.citedAccessions || refMeta.doi)
         ? { groupOverrides: { referenceMeta: refMeta } }
         : {}),
       ...(linkToBsId !== "" ? { linkToBsId } : {}),
     })
-    // 連続追加: modal は閉じずフォームのみリセット
-    resetForm()
+    onClose()
   }
 
   return (
@@ -196,29 +191,6 @@ const AssembledModal = ({
           },
         ]}
         onChange={setAnalysisKind}
-      />
-
-      <RadioGroup
-        legend={t("routes.submitAlt3.modals.assembled.access.label", {
-          defaultValue: "公開範囲",
-        })}
-        name="assembled-access"
-        value={access}
-        options={[
-          {
-            value: "open",
-            label: t("routes.submitAlt3.modals.assembled.access.options.open", {
-              defaultValue: "公開 (既定)",
-            }),
-          },
-          {
-            value: "restricted",
-            label: t("routes.submitAlt3.modals.assembled.access.options.restricted", {
-              defaultValue: "制限公開 (JGA 経路)",
-            }),
-          },
-        ]}
-        onChange={setAccess}
       />
 
       {analysisKind === "third-party" && (

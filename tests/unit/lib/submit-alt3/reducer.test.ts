@@ -78,10 +78,7 @@ describe("add-file action", () => {
       type: "edit-cell",
       payload: { fileId: "file-1", column: "organism", value: "prokaryote" },
     })
-    s = submissionReducer(s, {
-      type: "edit-cell",
-      payload: { fileId: "file-1", column: "accessRestriction", value: "open" },
-    })
+    // file-1 への明示的 access edit は不要 (1st add で auto open default が立つ)
     s = submissionReducer(s, {
       type: "add-file",
       payload: {
@@ -91,11 +88,58 @@ describe("add-file action", () => {
         defaultDataForm: "assembled",
       },
     })
-    const newEntry = s.fileEntries.find((f) => f.displayName === "assembly.fa")!
-    // file-2 の organism は未設定なので、直前行 (= file-2) の値が継承される
-    // file-2 は file-1 の auto コピーで organism=undefined のまま
-    expect(newEntry.organism).toBeUndefined()
-    expect(newEntry.accessRestriction).toBeUndefined()
+    const newEntry = s.fileEntries.find((f) => f.displayName === "assembly.fa")
+    // 直前行 (= file-2) の organism は user 入力なしなので undefined のまま → 新行も undefined
+    expect(newEntry?.organism).toBeUndefined()
+    // 1st add で access=open auto がセットされており、それが prev コピーされて継承される
+    expect(newEntry?.accessRestriction).toBe("open")
+    expect(newEntry?.columnSource.accessRestriction).toBe("auto")
+  })
+
+  it("最初の add-file (prev=undefined) で access=open auto がデフォルト付与される", () => {
+    let s = createEmptySubmission()
+    s = submissionReducer(s, {
+      type: "add-file",
+      payload: {
+        buttonType: "sequence-read",
+        groupType: "single",
+        members: [{ displayName: "x.fastq", role: "single" }],
+        defaultDataForm: "raw",
+      },
+    })
+    const entry = s.fileEntries[0]
+    expect(entry?.accessRestriction).toBe("open")
+    expect(entry?.columnSource.accessRestriction).toBe("auto")
+  })
+
+  it("edit-cell で organism=human にすると access が auto restricted へ自動切り替え (Rule 6 JGA 発火)", () => {
+    let s = seedWithOnePairEnd()
+    // 初期 access は open auto。organism を human に変更すると access が auto restricted へ
+    expect(s.fileEntries[0]?.accessRestriction).toBe("open")
+    s = submissionReducer(s, {
+      type: "edit-cell",
+      payload: { fileId: "file-1", column: "organism", value: "human" },
+    })
+    expect(s.fileEntries[0]?.organism).toBe("human")
+    expect(s.fileEntries[0]?.accessRestriction).toBe("restricted")
+    expect(s.fileEntries[0]?.columnSource.accessRestriction).toBe("auto")
+  })
+
+  it("edit-cell で organism=human にしてもユーザーが access=open を明示済みなら維持", () => {
+    let s = seedWithOnePairEnd()
+    // user 明示で access=open に固定
+    s = submissionReducer(s, {
+      type: "edit-cell",
+      payload: { fileId: "file-1", column: "accessRestriction", value: "open" },
+    })
+    expect(s.fileEntries[0]?.columnSource.accessRestriction).toBe("user")
+    s = submissionReducer(s, {
+      type: "edit-cell",
+      payload: { fileId: "file-1", column: "organism", value: "human" },
+    })
+    // user が open を明示しているので auto 上書きしない
+    expect(s.fileEntries[0]?.accessRestriction).toBe("open")
+    expect(s.fileEntries[0]?.columnSource.accessRestriction).toBe("user")
   })
 
   it("add-file の autoAccess を指定すると accessRestriction が auto で上書き", () => {

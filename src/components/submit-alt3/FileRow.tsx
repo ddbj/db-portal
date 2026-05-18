@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 
 import { Select } from "@/components/ui"
 import cn from "@/components/ui/cn"
@@ -29,6 +29,8 @@ interface Props {
     value: Organism | AccessRestriction | DataForm | undefined,
   ) => void
   onRemove: (fileId: string) => void
+  // 該当 file の Group を編集 (modal を初期値で再オープン、submit 時に旧 Group を置換)
+  onEdit?: (fileId: string) => void
   onSetChip: (
     fileId: string,
     axis: ChipAxis,
@@ -56,6 +58,7 @@ const FileRow = ({
   highlighted = false,
   onEditCell,
   onRemove,
+  onEdit,
   onSetChip,
   onResetChipManual,
 }: Props) => {
@@ -158,14 +161,29 @@ const FileRow = ({
         />
       </td>
       <td className="text-right">
-        <button
-          type="button"
-          onClick={() => onRemove(file.id)}
-          className="rounded p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-          aria-label={t("routes.submitAlt3.table.removeRow")}
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-        </button>
+        <div className="inline-flex items-center gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              data-testid={`file-row-edit-${file.id}`}
+              onClick={() => onEdit(file.id)}
+              className="rounded p-1 text-gray-400 hover:bg-primary-50 hover:text-primary-700 focus:ring-2 focus:ring-primary-200 focus:outline-none"
+              aria-label={t("routes.submitAlt3.table.editRow", {
+                defaultValue: "この行を編集",
+              })}
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onRemove(file.id)}
+            className="rounded p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+            aria-label={t("routes.submitAlt3.table.removeRow")}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </td>
     </tr>
   )
