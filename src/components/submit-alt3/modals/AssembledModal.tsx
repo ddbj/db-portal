@@ -5,6 +5,7 @@ import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import { ASSEMBLY_FORM_TO_FUNCTIONAL_GENOMICS } from "@/lib/mock-data/submit-alt3"
 import type { AddFilePayload } from "@/lib/submit-alt3"
 import type {
+  AccessRestriction,
   AssemblyForm,
   BioSampleDraft,
   ChipTag,
@@ -18,6 +19,8 @@ import CheckboxField from "./CheckboxField"
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
 import TextField from "./TextField"
+
+type AnalysisKind = "primary" | "third-party"
 
 // + 組み立て済み配列 modal
 // SSOT: docs/submit-alt3-modals.md §+ 組み立て済み配列
@@ -79,7 +82,8 @@ const AssembledModal = ({
 }: Props) => {
   const { t } = useDynamicTranslation()
   const [form, setForm] = useState<AssemblyForm>("wgs")
-  const [thirdParty, setThirdParty] = useState(false)
+  const [analysisKind, setAnalysisKind] = useState<AnalysisKind>("primary")
+  const [access, setAccess] = useState<AccessRestriction>("open")
   const [tpaSubtype, setTpaSubtype] = useState<TpaSubtype>("tpa-assembly")
   const [phased, setPhased] = useState(false)
   const [naming, setNaming] = useState<HaplotypeNaming>("principal-alternate")
@@ -89,21 +93,25 @@ const AssembledModal = ({
   // ""は「新しい sample として登録」、それ以外は既存 BS id (data-model §4.3.1)
   const [linkToBsId, setLinkToBsId] = useState("")
 
+  const resetForm = (): void => {
+    setForm("wgs")
+    setAnalysisKind("primary")
+    setAccess("open")
+    setTpaSubtype("tpa-assembly")
+    setPhased(false)
+    setNaming("principal-alternate")
+    setBaseName("assembly")
+    setCitedAccession("")
+    setDoi("")
+    setLinkToBsId("")
+  }
+
   useEffect(() => {
-    if (!open) {
-      setForm("wgs")
-      setThirdParty(false)
-      setTpaSubtype("tpa-assembly")
-      setPhased(false)
-      setNaming("principal-alternate")
-      setBaseName("assembly")
-      setCitedAccession("")
-      setDoi("")
-      setLinkToBsId("")
-    }
+    if (!open) resetForm()
   }, [open])
 
   const handleSubmit = () => {
+    const thirdParty = analysisKind === "third-party"
     const chipTags: ChipTag[] = [
       { axis: "assembly-form", value: form },
       {
@@ -131,12 +139,14 @@ const AssembledModal = ({
       groupType: "single",
       members: [{ displayName: `${baseName}.fasta`, role: "single" }],
       chipTags,
+      autoAccess: access,
       ...(thirdParty && (refMeta.citedAccessions || refMeta.doi)
         ? { groupOverrides: { referenceMeta: refMeta } }
         : {}),
       ...(linkToBsId !== "" ? { linkToBsId } : {}),
     })
-    onClose()
+    // 連続追加: modal は閉じずフォームのみリセット
+    resetForm()
   }
 
   return (
@@ -165,14 +175,53 @@ const AssembledModal = ({
         onChange={setBaseName}
       />
 
-      <CheckboxField
-        label={t("routes.submitAlt3.modals.assembled.thirdParty.label")}
-        description={t("routes.submitAlt3.modals.assembled.thirdParty.hint")}
-        checked={thirdParty}
-        onChange={setThirdParty}
+      <RadioGroup
+        legend={t("routes.submitAlt3.modals.assembled.analysisKind.label", {
+          defaultValue: "解析の種類",
+        })}
+        name="assembled-analysis-kind"
+        value={analysisKind}
+        options={[
+          {
+            value: "primary",
+            label: t("routes.submitAlt3.modals.assembled.analysisKind.options.primary", {
+              defaultValue: "Primary 解析 (新規アセンブル、既定)",
+            }),
+          },
+          {
+            value: "third-party",
+            label: t("routes.submitAlt3.modals.assembled.analysisKind.options.thirdParty", {
+              defaultValue: "Third-party 解析 (TPA、公開配列を再アセンブル)",
+            }),
+          },
+        ]}
+        onChange={setAnalysisKind}
       />
 
-      {thirdParty && (
+      <RadioGroup
+        legend={t("routes.submitAlt3.modals.assembled.access.label", {
+          defaultValue: "公開範囲",
+        })}
+        name="assembled-access"
+        value={access}
+        options={[
+          {
+            value: "open",
+            label: t("routes.submitAlt3.modals.assembled.access.options.open", {
+              defaultValue: "公開 (既定)",
+            }),
+          },
+          {
+            value: "restricted",
+            label: t("routes.submitAlt3.modals.assembled.access.options.restricted", {
+              defaultValue: "制限公開 (JGA 経路)",
+            }),
+          },
+        ]}
+        onChange={setAccess}
+      />
+
+      {analysisKind === "third-party" && (
         <>
           <RadioGroup
             legend={t("routes.submitAlt3.modals.assembled.tpaSubtype.label")}

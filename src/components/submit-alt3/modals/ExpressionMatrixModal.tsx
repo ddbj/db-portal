@@ -79,7 +79,7 @@ const ExpressionMatrixModal = ({ open, onClose, onSubmit }: Props) => {
       chipTags,
       groupOverrides: { experimentTypeHint: category },
     })
-    onClose()
+    // 連続追加対応: modal は閉じずに保持
   }
 
   return (

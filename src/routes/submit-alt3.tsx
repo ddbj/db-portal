@@ -204,6 +204,7 @@ const SubmitAlt3 = () => {
       <FlowCardSection
         flowCard={flowCard}
         hasFiles={submission.fileEntries.length > 0}
+        fileEntries={submission.fileEntries}
         onUpdateStepInput={handleUpdateStepInput}
         onAcknowledgeWarning={handleAcknowledgeWarning}
         onRestoreWarning={handleRestoreWarning}

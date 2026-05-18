@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Callout, Heading } from "@/components/ui"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import type {
   ChipAxis,
+  FileEntry,
   FlowCard,
   ServiceKind,
 } from "@/types/submit-alt3"
@@ -15,6 +16,8 @@ import StepInputPopover from "./StepInputPopover"
 interface Props {
   flowCard: FlowCard
   hasFiles: boolean
+  // 対象ファイル名表示用 (FlowStepCard が file id → displayName を引く)
+  fileEntries: readonly FileEntry[]
   onUpdateStepInput: (
     stepId: string,
     serviceKind: ServiceKind,
@@ -34,6 +37,7 @@ interface Props {
 const FlowCardSection = ({
   flowCard,
   hasFiles,
+  fileEntries,
   onUpdateStepInput,
   onAcknowledgeWarning,
   onRestoreWarning,
@@ -44,6 +48,11 @@ const FlowCardSection = ({
   // Step ID -> 1-based 表示番号 (upstream 解決用)
   const stepNumbers = new Map<string, number>()
   flowCard.steps.forEach((s, idx) => stepNumbers.set(s.id, idx + 1))
+
+  const fileById = useMemo(
+    () => new Map(fileEntries.map((f) => [f.id, f] as const)),
+    [fileEntries],
+  )
 
   // StepInputPopover の open 管理: { stepId, focusField? }
   const [openInput, setOpenInput] = useState<
@@ -121,6 +130,7 @@ const FlowCardSection = ({
                 step={step}
                 stepNumber={idx + 1}
                 upstreamStepNumbers={stepNumbers}
+                fileById={fileById}
                 onEditInputs={handleEditInputs}
                 acknowledgedWarningCount={acknowledgedCount}
               />

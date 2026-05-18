@@ -11,6 +11,7 @@ const NAV_LABELS_JA = {
   "header.nav.advancedSearch": "詳細検索",
   "header.nav.submit": "登録",
   "header.nav.submitAlt": "登録-alt",
+  "header.nav.submitAlt3": "登録-alt-3",
 } as const satisfies Record<NavItem["labelKey"], string>
 
 const renderHeader = (initialPath = "/") => {

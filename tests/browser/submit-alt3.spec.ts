@@ -34,6 +34,11 @@ const setOrganismAccess = async (
     .selectOption(access)
 }
 
+// 「追加」を押した後、modal は閉じないため Escape で明示的に閉じる (連続追加 UX 対応)
+const closeModal = async (page: Page): Promise<void> => {
+  await page.keyboard.press("Escape")
+}
+
 const addSequenceReadPairEnd = async (
   page: Page,
   options: { functionalGenomicsYes?: boolean } = {},
@@ -47,12 +52,7 @@ const addSequenceReadPairEnd = async (
       .check()
   }
   await page.getByRole("button", { name: "追加" }).click()
-}
-
-const addAssembledWgs = async (page: Page): Promise<void> => {
-  // 既定: form=wgs, baseName=assembly, thirdParty/phased = false
-  await page.getByTestId("add-file-button-assembled").click()
-  await page.getByRole("button", { name: "追加" }).click()
+  await closeModal(page)
 }
 
 const addAssembledPhased = async (page: Page): Promise<void> => {
@@ -62,6 +62,7 @@ const addAssembledPhased = async (page: Page): Promise<void> => {
     .getByRole("checkbox", { name: /Haplotype phased/ })
     .check()
   await page.getByRole("button", { name: "追加" }).click()
+  await closeModal(page)
 }
 
 const countFlowStepCards = async (page: Page): Promise<number> =>
@@ -106,13 +107,18 @@ test.describe("Submit Alt 3 (/submit-alt3) — Phase C 動作確認の自動化"
     await setOrganismAccess(page, "file-1", "prokaryote", "open")
     await setOrganismAccess(page, "file-2", "prokaryote", "open")
 
-    // 「組み立て済み配列」追加 modal で「既存 sample (bs-1)」と関連付ける
+    // 「組み立て済み配列」追加 modal で「既存 sample (bs-1)」と関連付ける。
+    // AssembledModal は default で 公開 (access=open) が選ばれているので組織だけ追加で済む。
     await page.getByTestId("add-file-button-assembled").click()
     const linkSelect = page.getByTestId("assembled-link-to-bs")
     await expect(linkSelect).toBeVisible()
     await linkSelect.selectOption("bs-1")
     await page.getByRole("button", { name: "追加" }).click()
-    await setOrganismAccess(page, "file-3", "prokaryote", "open")
+    await closeModal(page)
+    // assembled 行 (file-3) は modal で access=open 確定済み、organism のみ補完
+    await page
+      .locator('[data-testid="file-cell-organism-file-3"] select')
+      .selectOption("prokaryote")
 
     await expect(
       page.getByTestId("flow-step-card-step-primary-bioproject-bp-1"),

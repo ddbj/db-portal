@@ -63,7 +63,7 @@ const SequenceReadModal = ({ open, onClose, onSubmit }: Props) => {
         members,
         chipTags,
       })
-      onClose()
+      // 連続追加対応: modal は閉じずに保持
 
       return
     }
@@ -130,7 +130,7 @@ const SequenceReadModal = ({ open, onClose, onSubmit }: Props) => {
     }
 
     onSubmit(payload)
-    onClose()
+    // 連続追加対応: modal は閉じずに保持 (キャンセル / ESC / 背景クリックで閉じる)
   }
 
   const layoutOptions = (

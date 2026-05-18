@@ -67,7 +67,7 @@ const VariationModal = ({ open, onClose, onSubmit }: Props) => {
         ...(refMeta !== undefined ? { groupOverrides: { referenceMeta: refMeta } } : {}),
       })
     }
-    onClose()
+    // 連続追加対応: modal は閉じずに保持
   }
 
   return (

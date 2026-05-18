@@ -56,7 +56,7 @@ const PhenotypeModal = ({ open, onClose, onSubmit }: Props) => {
       chipTags,
       ...(autoAccess !== undefined ? { autoAccess } : {}),
     })
-    onClose()
+    // 連続追加対応: modal は閉じずに保持
   }
 
   return (

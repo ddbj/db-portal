@@ -1,14 +1,16 @@
-import { ArrowRight, Pencil } from "lucide-react"
+import { ArrowRight, FileText, Pencil } from "lucide-react"
 
 import { InternalExternalBadge } from "@/components/ui"
 import cn from "@/components/ui/cn"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
-import type { FlowStep } from "@/types/submit-alt3"
+import type { FileEntry, FlowStep } from "@/types/submit-alt3"
 
 interface Props {
   step: FlowStep
   stepNumber: number
   upstreamStepNumbers: ReadonlyMap<string, number>
+  // 対象ファイル名表示用の id → FileEntry マップ
+  fileById?: ReadonlyMap<string, FileEntry>
   onEditInputs?: (stepId: string) => void
   acknowledgedWarningCount?: number
 }
@@ -24,6 +26,7 @@ const FlowStepCard = ({
   step,
   stepNumber,
   upstreamStepNumbers,
+  fileById,
   onEditInputs,
   acknowledgedWarningCount = 0,
 }: Props) => {
@@ -122,11 +125,35 @@ const FlowStepCard = ({
             <dt className="w-28 text-gray-500">
               {t("routes.submitAlt3.flowCard.targets")}
             </dt>
-            <dd className="text-gray-700">
-              {t("routes.submitAlt3.flowCard.fileCount").replace(
-                /\{\{count\}\}/g,
-                String(step.targetFileIds.length),
-              )}
+            <dd className="space-y-1 text-gray-700">
+              <span>
+                {t("routes.submitAlt3.flowCard.fileCount").replace(
+                  /\{\{count\}\}/g,
+                  String(step.targetFileIds.length),
+                )}
+              </span>
+              <ul
+                data-testid={`flow-step-target-files-${step.id}`}
+                className="ml-0 space-y-0.5"
+              >
+                {step.targetFileIds.map((fid) => {
+                  const f = fileById?.get(fid)
+                  const display = f?.displayName ?? fid
+
+                  return (
+                    <li
+                      key={fid}
+                      className="flex items-center gap-1 font-mono text-[11px] text-gray-600"
+                    >
+                      <FileText
+                        className="h-3 w-3 flex-shrink-0 text-gray-400"
+                        aria-hidden="true"
+                      />
+                      <span className="break-all">{display}</span>
+                    </li>
+                  )
+                })}
+              </ul>
             </dd>
           </div>
         )}

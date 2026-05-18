@@ -100,7 +100,7 @@ const MassSpecModal = ({ open, onClose, onSubmit }: Props) => {
         metaboBankSubmissionType: finalSubmissionType,
       },
     })
-    onClose()
+    // 連続追加対応: modal は閉じずに保持
   }
 
   return (

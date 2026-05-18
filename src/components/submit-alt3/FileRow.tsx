@@ -12,7 +12,6 @@ import type {
 } from "@/types/submit-alt3"
 import {
   ACCESS_RESTRICTIONS,
-  DATA_FORMS,
   ORGANISMS,
 } from "@/types/submit-alt3"
 
@@ -84,17 +83,6 @@ const FileRow = ({
     })),
   ]
 
-  const dataFormOptions = [
-    {
-      value: UNSET_VALUE,
-      label: t("routes.submitAlt3.tableColumns.unset"),
-    },
-    ...DATA_FORMS.map((d) => ({
-      value: d,
-      label: t(`routes.submitAlt3.tableColumns.dataForm.values.${d}`),
-    })),
-  ]
-
   return (
     <tr
       data-testid={`file-row-${file.id}`}
@@ -150,22 +138,16 @@ const FileRow = ({
         />
       </td>
       <td data-testid={`file-cell-dataForm-${file.id}`}>
-        <Select
-          selectSize="sm"
-          options={dataFormOptions}
-          value={file.dataForm ?? UNSET_VALUE}
-          invalid={file.dataForm === undefined}
+        {/* dataForm は追加時の modal で確定 (Button + chip から自動推測)。
+            テーブル上は read-only で表示し、列内編集は提供しない。 */}
+        <span
+          className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
           aria-label={t("routes.submitAlt3.tableColumns.dataForm.label")}
-          onChange={(e) =>
-            onEditCell(
-              file.id,
-              "dataForm",
-              e.target.value === UNSET_VALUE
-                ? undefined
-                : (e.target.value as DataForm),
-            )
-          }
-        />
+        >
+          {file.dataForm !== undefined
+            ? t(`routes.submitAlt3.tableColumns.dataForm.values.${file.dataForm}`)
+            : t("routes.submitAlt3.tableColumns.unset")}
+        </span>
       </td>
       <td data-testid={`file-cell-chips-${file.id}`}>
         <ChipList
