@@ -1,0 +1,131 @@
+import { Fragment } from "react"
+
+import { Table } from "@/components/ui"
+import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
+import type {
+  AccessRestriction,
+  ChipAxis,
+  DataForm,
+  FileEntry,
+  Organism,
+  Submission,
+} from "@/types/submit-alt3"
+
+import FileRow from "./FileRow"
+import GroupHeader from "./GroupHeader"
+
+// MAG/SAG chain Group での派生段階。Rule 8a の raw → primary → binned → mag/sag に対応
+const magSagDepthOf = (file: FileEntry): 0 | 1 | 2 | 3 => {
+  switch (file.role) {
+    case "primary-fasta":
+      return 1
+    case "binned-fasta":
+      return 2
+    case "mag-fasta":
+      return 3
+    default:
+      return 0
+  }
+}
+
+interface Props {
+  submission: Submission
+  highlightedFileIds?: ReadonlySet<string> | undefined
+  onEditCell: (
+    fileId: string,
+    column: "organism" | "accessRestriction" | "dataForm",
+    value: Organism | AccessRestriction | DataForm | undefined,
+  ) => void
+  onRemoveFile: (fileId: string) => void
+  onSetChip: (
+    fileId: string,
+    axis: ChipAxis,
+    value: string | undefined,
+    manualOverride?: boolean,
+  ) => void
+  onResetChipManual: (fileId: string, axis: ChipAxis) => void
+}
+
+// Section A 内のテーブル本体
+// SSOT: docs/submit-alt3.md §2 / §5
+const FileTable = ({
+  submission,
+  highlightedFileIds,
+  onEditCell,
+  onRemoveFile,
+  onSetChip,
+  onResetChipManual,
+}: Props) => {
+  const { t } = useDynamicTranslation()
+
+  if (submission.fileEntries.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-400">
+        {t("routes.submitAlt3.table.emptyHint")}
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <Table>
+        <thead>
+          <tr>
+            <th className="w-1/3">
+              {t("routes.submitAlt3.tableColumns.file.label")}
+            </th>
+            <th>
+              {t("routes.submitAlt3.tableColumns.organism.label")}
+            </th>
+            <th>
+              {t("routes.submitAlt3.tableColumns.access.label")}
+            </th>
+            <th>
+              {t("routes.submitAlt3.tableColumns.dataForm.label")}
+            </th>
+            <th>
+              {t("routes.submitAlt3.tableColumns.chips.label")}
+            </th>
+            <th aria-label={t("routes.submitAlt3.table.actionsColumn")} />
+          </tr>
+        </thead>
+        <tbody>
+          {submission.fileGroups.map((group) => {
+            const members = group.memberFileIds
+              .map((id) => submission.fileEntries.find((f) => f.id === id))
+              .filter((f): f is NonNullable<typeof f> => f !== undefined)
+            const isMulti = group.groupType !== "single"
+
+            return (
+              <Fragment key={group.id}>
+                {isMulti && (
+                  <GroupHeader
+                    group={group}
+                    memberCount={members.length}
+                  />
+                )}
+                {members.map((m) => (
+                  <FileRow
+                    key={m.id}
+                    file={m}
+                    indent={isMulti}
+                    {...(group.groupType === "mag-sag-chain"
+                      ? { magSagDepth: magSagDepthOf(m) }
+                      : {})}
+                    highlighted={highlightedFileIds?.has(m.id) ?? false}
+                    onEditCell={onEditCell}
+                    onRemove={onRemoveFile}
+                    onSetChip={onSetChip}
+                    onResetChipManual={onResetChipManual}
+                  />
+                ))}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </Table>
+    </div>
+  )
+}
+
+export default FileTable

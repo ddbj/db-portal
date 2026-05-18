@@ -1387,6 +1387,527 @@
         }
       }
     },
+    "submitAlt3": {
+      "title": "登録 v3",
+      "meta": {
+        "title": "登録ナビゲーション v3 | DDBJ 刷新 (仮)",
+        "description": "テーブル中心のファイル登録ナビゲーション。手元のファイルをテーブルに並べ、属性を埋めるほど登録フローカードが詳細化される。"
+      },
+      "hero": {
+        "title": "登録ナビゲーション v3",
+        "subtitle": "手元のファイルをテーブルに並べると、必要な登録手順 (BioProject + BioSample + DRA / MSS / GEA / JGA など) が動的に組み立てられる。"
+      },
+      "sections": {
+        "fileTable": "ファイルテーブル",
+        "fileTableHint": "ファイル種別ボタンでテーブルに追加し、各セルで「生物 / 公開 / データ形態」を埋めてください。",
+        "flowCard": "登録フローカード"
+      },
+      "buttons": {
+        "sequenceRead": { "label": "+ 配列リード" },
+        "assembled": { "label": "+ 組み立て済み配列" },
+        "annotation": { "label": "+ 遺伝子アノテーション" },
+        "variation": { "label": "+ 変異情報" },
+        "phenotype": { "label": "+ 表現型データ" },
+        "expressionArray": { "label": "+ マイクロアレイ発現" },
+        "expressionMatrix": { "label": "+ RNA-seq マトリクス" },
+        "massSpec": { "label": "+ 質量分析" },
+        "spatialTx": { "label": "+ 空間トランスクリプトーム" }
+      },
+      "modals": {
+        "common": { "cancel": "キャンセル", "add": "追加" },
+        "sequenceRead": {
+          "title": "配列リードを追加",
+          "layout": {
+            "label": "リードの構成は?",
+            "singleEnd": "single-end FASTQ (1 ファイル)",
+            "pairEnd": "pair-end FASTQ (R1 + R2 の 2 ファイル)",
+            "tenx": "10x Genomics FASTQ (I1 + R1 + R2)",
+            "bam": "BAM / SAM (1 ファイル)",
+            "pacbioHdf5": "PacBio HDF5 (bas.h5 + bax.h5 × 3)"
+          },
+          "multiplex": {
+            "label": "multiplex pool ですか?",
+            "singleSample": "1 サンプル分の FASTQ",
+            "demultiplexed": "事前 demultiplex 済み per-sample FASTQ",
+            "demultiplexedHint": "DDBJ では事前 demultiplex 必須。N 個の per-sample FASTQ と N 個の BS が登録されます",
+            "sampleCount": "サンプル数 (per-sample FASTQ の数)"
+          },
+          "hybrid": {
+            "label": "Hybrid Assembly (異 instrument の Run を組み合わせる)",
+            "hint": "同 BioSample 配下に複数 Experiment として登録されます"
+          },
+          "baseName": { "label": "ファイル名 (拡張子は自動付与)" },
+          "q1": {
+            "label": "Q1: この実験では発現量 / エピジェネティクス / ジェノタイピング等の解析済みデータも登録しますか?",
+            "yes": "はい (発現量行列 / peak / methylation / scRNA counts / Hi-C contact matrix 等)",
+            "no": "いいえ (raw 配列だけ、GEA には登録しない)"
+          },
+          "q2": {
+            "label": "Q2: 最終的なアウトプットはどれが一番近いですか?",
+            "options": {
+              "wgs-target": "完成ゲノム / Draft assembly (WGS)",
+              "tsa-target": "Transcriptome assembly (TSA)",
+              "metagenome-target": "メタゲノムアセンブリ (MAG / SAG / Binned)",
+              "variation-target": "変異情報 (variation / CNV)",
+              "wes-target": "全エクソーム配列 (WES)",
+              "other": "その他 / 不明"
+            }
+          }
+        },
+        "assembled": {
+          "title": "組み立て済み配列を追加",
+          "form": {
+            "label": "何のアセンブリですか?",
+            "options": {
+              "wgs": "ゲノム (de novo, primary、WGS)",
+              "gnm": "完成ゲノム (Finished)",
+              "tsa": "転写産物 (TSA)",
+              "tls": "16S/COI などマーカー (TLS)",
+              "est": "EST",
+              "mag": "MAG (メタゲノム由来 derived BS chain)",
+              "sag": "SAG (single amplified genome)",
+              "htg": "HTG (高処理ゲノム)",
+              "htc": "HTC (高処理 cDNA)",
+              "gss": "GSS (Genome Survey Sequence)",
+              "syn": "合成配列 (SYN)",
+              "ask": "DDBJ Curator に相談する / 不明"
+            }
+          },
+          "baseName": { "label": "ファイル名 (拡張子 .fasta は自動付与)" },
+          "thirdParty": {
+            "label": "第三者再アセンブル (TPA) ですか?",
+            "hint": "公開配列を再解析した assembly。peer-review 論文が必要"
+          },
+          "tpaSubtype": {
+            "label": "TPA サブタイプ",
+            "options": {
+              "tpa-assembly": "TPA:assembly (一般的な再アセンブル、peer-review 対象)",
+              "tpa-specialist-db": "TPA:specialist_db (DDBJ では受付しない、案内のみ)"
+            }
+          },
+          "citedAccession": { "label": "参照元 accession (カンマ区切り可)" },
+          "doi": { "label": "公開済み peer-review 論文の DOI / PubMed ID" },
+          "phased": {
+            "label": "Haplotype phased ですか?",
+            "hint": "BP Step が Principal / Alternate / DRA 用 / Umbrella に分かれます"
+          },
+          "naming": {
+            "label": "Haplotype の命名規則",
+            "options": {
+              "principal-alternate": "Principal / Alternate (どちらかが優先品質)",
+              "haplotype-1-2": "Haplotype 1 / 2 (同等品質)",
+              "maternal-paternal": "Maternal / Paternal (由来親が分かる)"
+            }
+          },
+          "linkToBs": {
+            "label": "既存 sample (BioSample) と関連付け",
+            "newSample": "新しい sample として登録 (既定)",
+            "hint": "raw リードと組み立て結果が同一 sample 由来なら、関連付けて 1 つの BioSample に集約します"
+          }
+        },
+        "annotation": {
+          "title": "遺伝子アノテーションを追加",
+          "target": {
+            "label": "何の配列に対する annotation ですか?",
+            "options": {
+              "assembly": "アセンブリ済みゲノム配列 (一次)",
+              "transcriptome": "Transcriptome assembly (一次)",
+              "third-party": "既存公開配列の第三者アノテーション",
+              "other": "その他"
+            }
+          },
+          "format": {
+            "label": "ファイル形式は?",
+            "options": {
+              "gff": "GFF / GFF3",
+              "genbank": "GenBank flat",
+              "other": "その他"
+            }
+          },
+          "baseName": { "label": "ファイル名" },
+          "citedAccession": { "label": "参照元 accession" },
+          "doi": { "label": "peer-review 論文の DOI / PubMed ID (必須)" }
+        },
+        "variation": {
+          "title": "変異情報を追加",
+          "form": {
+            "label": "VCF の集約形態は?",
+            "options": {
+              "per-sample": "サンプル個別の VCF (per-sample)",
+              "aggregate": "集約 VCF (複数サンプル統合)"
+            }
+          },
+          "type": {
+            "label": "変異の種類は?",
+            "options": {
+              "snp-indel": "SNP / Indel (短い変異、≤50 bp)",
+              "sv": "Structural Variant (SV、>50 bp)",
+              "cnv": "Copy Number Variant (CNV)"
+            }
+          },
+          "reference": {
+            "label": "参照配列はありますか?",
+            "options": {
+              "none": "添付しない",
+              "attach": "reference FASTA を一緒に登録 (variation-ref Group)",
+              "reference-only": "既存 accession を参照のみ"
+            }
+          },
+          "baseName": { "label": "ファイル名 (.vcf.gz が自動付与)" },
+          "referenceAccession": { "label": "参照配列の accession" }
+        },
+        "phenotype": {
+          "title": "表現型データを追加",
+          "format": {
+            "label": "ファイル形式は?",
+            "options": {
+              "tsv": "TSV / CSV (BS と紐付ける表現型表)",
+              "xlsx": "Excel / .xlsx",
+              "other": "その他"
+            }
+          },
+          "identifiable": {
+            "label": "個人特定可能な情報 (氏名 / 住所 / ID 番号 等) が含まれますか?",
+            "options": {
+              "no": "いいえ",
+              "yes": "はい → access=restricted を自動設定",
+              "unknown": "不明 → 安全側として restricted 暫定"
+            }
+          },
+          "dataset": {
+            "label": "このデータを JGA Dataset として束ねますか?",
+            "options": {
+              "no": "いいえ",
+              "yes": "はい (同 Submission 内の他行と Dataset として束ねる)"
+            }
+          },
+          "baseName": { "label": "ファイル名" }
+        },
+        "expressionArray": {
+          "title": "マイクロアレイ発現データを追加",
+          "color": {
+            "label": "カラー数は?",
+            "options": {
+              "single-color": "single-color (Cy3 のみ)",
+              "two-color": "two-color (Cy3 + Cy5)"
+            }
+          },
+          "mageTab": {
+            "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
+            "hint": "GEA の Experiment / Array Design 登録に必要"
+          },
+          "baseName": { "label": "ファイル名 (CEL / iDAT 等が自動付与)" }
+        },
+        "expressionMatrix": {
+          "title": "RNA-seq 発現マトリクスを追加",
+          "content": {
+            "label": "ファイル内容は?",
+            "options": {
+              "counts": "カウント行列 (counts.tsv)",
+              "normalized": "TPM / FPKM 正規化値",
+              "other": "その他"
+            }
+          },
+          "category": {
+            "label": "GEA Experiment Type の大まかなカテゴリは?",
+            "options": {
+              "bulk-rnaseq": "bulk RNA-seq (coding / non-coding)",
+              "single-cell": "single-cell RNA-seq",
+              "mirna": "miRNA / small RNA profiling",
+              "bisulfite": "Bisulfite-seq / methylation profiling",
+              "chipseq": "ChIP-seq / ATAC-seq / FAIRE-seq / MNase-seq / MeDIP-seq",
+              "hic": "Hi-C / 4C / Capture-C",
+              "ripseq": "RIP-seq / CLIP-seq",
+              "genotyping": "genotyping / DNA-seq / GRO-seq",
+              "other": "その他"
+            }
+          },
+          "mageTab": {
+            "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
+            "hint": "Step GEA pulldown を補強するヒント"
+          },
+          "baseName": { "label": "ファイル名" }
+        },
+        "massSpec": {
+          "title": "質量分析データを追加",
+          "domain": {
+            "label": "何の分析ですか?",
+            "options": {
+              "proteomics": "プロテオーム (proteomics) → jPOST 外部",
+              "metabolomics": "メタボローム (metabolomics) → MetaboBank",
+              "imaging": "Imaging MS → MetaboBank imaging stream"
+            }
+          },
+          "submissionType": { "label": "MetaboBank Submission Type" },
+          "maf": {
+            "label": "メタボローム代謝物アサインメント (MAF) も添付しますか?",
+            "hint": "MetaboBank の関連メタデータ"
+          },
+          "baseName": { "label": "ファイル名" }
+        },
+        "spatialTx": {
+          "title": "空間トランスクリプトームを追加",
+          "platform": {
+            "label": "プラットフォームは?",
+            "options": {
+              "visium": "10x Genomics Visium",
+              "xenium": "10x Genomics Xenium",
+              "merfish": "MERFISH / MERSCOPE",
+              "stereo-seq": "Stereo-seq (BGI / STOmics)",
+              "slide-seq": "Slide-seq / Slide-seqV2",
+              "geomx": "NanoString GeoMx DSP",
+              "other": "その他 (GEA チーム要問い合わせ)"
+            }
+          },
+          "geomxReadout": {
+            "label": "GeoMx の readout は?",
+            "options": {
+              "ngs": "NGS (シーケンサー、Visium 型 = Sequencing 二段)",
+              "ncounter": "nCounter (蛍光プローブ、Microarray 型 = 1 段)"
+            }
+          },
+          "mageTab": {
+            "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
+            "hint": "Xenium / MERFISH は専用 Array Design テンプレートあり"
+          },
+          "baseName": { "label": "ファイル名" }
+        }
+      },
+      "tableColumns": {
+        "unset": "(未設定)",
+        "file": { "label": "ファイル" },
+        "organism": {
+          "label": "生物",
+          "values": {
+            "human": "human (ヒト)",
+            "human-microbiome": "human-microbiome (ヒト由来メタゲノム)",
+            "eukaryote": "eukaryote (真核)",
+            "prokaryote": "prokaryote (原核)",
+            "virus": "virus (ウイルス)",
+            "metagenome": "metagenome",
+            "organelle-plasmid": "organelle / plasmid"
+          }
+        },
+        "access": {
+          "label": "公開",
+          "values": {
+            "open": "open (公開)",
+            "restricted": "restricted (制限公開)"
+          }
+        },
+        "dataForm": {
+          "label": "データ形態",
+          "values": {
+            "raw": "raw",
+            "assembled": "組み立て済み",
+            "analysis-output": "解析出力",
+            "matrix": "行列",
+            "annotation": "アノテーション",
+            "mass-spec": "質量分析",
+            "phenotype": "表現型"
+          }
+        },
+        "chips": { "label": "Tag" }
+      },
+      "table": {
+        "emptyHint": "+ ボタンを押してファイルを追加してください",
+        "removeRow": "この行を削除",
+        "actionsColumn": "操作"
+      },
+      "groupHeader": {
+        "single": "single",
+        "pair-end": "pair-end (R1 + R2)",
+        "10x": "10x Genomics",
+        "pacbio-hdf5": "PacBio HDF5",
+        "two-color": "two-color microarray",
+        "hybrid": "Hybrid Assembly",
+        "multiplex": "multiplex (per-sample demultiplexed)",
+        "mage-tab": "MAGE-TAB",
+        "imaging-ms": "Imaging MS",
+        "variation-ref": "variation + reference",
+        "mag-sag-chain": "MAG / SAG chain",
+        "assembly-annotation": "assembly + annotation",
+        "jga-dataset": "JGA Dataset"
+      },
+      "flowCard": {
+        "emptyHint": "ファイル種別ボタンを押してテーブルにファイルを追加してください。追加した瞬間から登録フローカードが組み上がります。",
+        "noStepsYet": "テーブルの列を埋めると登録フローカードが詳細化されます。",
+        "venue": { "internal": "DDBJ", "external": "外部" },
+        "issuesAccession": "発行 accession",
+        "dependsOn": "依存",
+        "targets": "対象",
+        "fileCount": "{{count}} ファイル"
+      },
+      "flowSteps": {
+        "umbrella-bioproject": { "title": "Umbrella BioProject 登録" },
+        "primary-bioproject": { "title": "Primary BioProject 登録" },
+        "biosample": { "title": "BioSample 登録" },
+        "dra": { "title": "DRA (Run / Experiment / Analysis)" },
+        "mss": { "title": "MSS / NSSS 登録" },
+        "gea": { "title": "GEA 登録" },
+        "metabobank": { "title": "MetaboBank 登録" },
+        "togovar": { "title": "TogoVar-repository 登録" },
+        "jga-submission": { "title": "JGA Submission" },
+        "jga-study": { "title": "JGA Study" },
+        "jga-sample": { "title": "JGA Sample" },
+        "jga-experiment": { "title": "JGA Experiment" },
+        "jga-data": { "title": "JGA Data" },
+        "jga-analysis": { "title": "JGA Analysis" },
+        "jga-dataset": { "title": "JGA Dataset" },
+        "jga-policy": { "title": "JGA Policy" },
+        "dbcls-application": { "title": "DBCLS 提供申請 + ポリシー承認" },
+        "jpost": { "title": "jPOST (外部)" },
+        "eva": { "title": "EVA (外部)" },
+        "dgva": { "title": "dgVa (外部)" },
+        "humandbs": { "title": "HumanDBs (外部、公開後参照)" }
+      },
+      "flowStepCard": {
+        "editStepInputs": "Step 入力を編集",
+        "stepInputsHeading": "Step 入力 (Library Strategy など)",
+        "noEditableInputs": "この Step に編集可能な pulldown はまだありません (PoC スコープ)",
+        "externalLink": "外部リンク",
+        "warningAcknowledged": "確認済み",
+        "warningAcknowledgedSummary": "{{count}} 件の警告を確認済み",
+        "warningActions": {
+          "fixChip": "chip を修正",
+          "editStepInput": "Step 入力を変更",
+          "acknowledge": "無視 (上級者向け)",
+          "restore": "確認済みを取り消す"
+        }
+      },
+      "chips": {
+        "actions": {
+          "resetManual": "自動推測に戻す",
+          "remove": "削除"
+        },
+        "assembly-form": { "label": "アセンブリ形態", "values": { "wgs": "WGS", "gnm": "GNM", "tsa": "TSA", "tls": "TLS", "est": "EST", "mag": "MAG", "sag": "SAG", "htg": "HTG", "htc": "HTC", "gss": "GSS", "syn": "SYN", "misc": "MISC", "ask": "ASK" } },
+        "provenance": { "label": "Provenance", "values": { "third-party": "第三者再解析" } },
+        "variation-form": { "label": "Variation form", "values": { "per-sample": "per-sample", "aggregate": "aggregate" } },
+        "variation-type": { "label": "Variation type", "values": { "snp-indel": "SNP/Indel", "sv": "SV", "cnv": "CNV" } },
+        "haplotype-mode": { "label": "Haplotype mode", "values": { "phased": "Haplotype phased" } },
+        "functional-genomics": { "label": "Functional genomics", "values": { "yes": "GEA 登録", "wgs-target": "WGS-target", "tsa-target": "TSA-target", "metagenome-target": "metagenome-target", "variation-target": "variation-target", "wes-target": "WES-target", "other": "other" } },
+        "mass-spec-domain": { "label": "Mass spec domain", "values": { "proteomics": "プロテオーム", "metabolomics": "メタボローム", "imaging": "Imaging MS" } },
+        "spatial-platform": { "label": "Spatial platform", "values": { "visium": "Visium", "xenium": "Xenium", "merfish": "MERFISH", "stereo-seq": "Stereo-seq", "slide-seq": "Slide-seq", "geomx": "GeoMx", "other": "その他" } },
+        "tpa-subtype": { "label": "TPA サブタイプ", "values": { "tpa-assembly": "TPA:assembly", "tpa-specialist-db": "TPA:specialist_db" } },
+        "haplotype-naming": { "label": "Haplotype 命名", "values": { "principal-alternate": "Principal / Alternate", "haplotype-1-2": "Haplotype 1 / 2", "maternal-paternal": "Maternal / Paternal" } }
+      },
+      "flowGen": {
+        "global": {
+          "unsetCells": "テーブル中の未設定セル (⚠) を埋めると、登録フローカードがさらに詳細化されます。"
+        },
+        "rule02": {
+          "haplotypeNote": "Haplotype phased の Principal / Alternate / DRA 用 BP を統括する Umbrella BioProject。Private comments to DDBJ staff に配下 BP のアクセッション + 区別を記入してください。",
+          "mixedLineageNote": "host-pathogen / multi-modal 研究のため、複数 Primary BP を統括する Umbrella BioProject を提案しています。"
+        },
+        "rule04c": {
+          "studyOnly": "MetaboBank は Study レベルの accession (MTBKSn) のみを発行します。異なる実験デザインは Study を分割し BioProject でまとめてください。"
+        },
+        "rule04d": {
+          "unsupportedPlatform": "このプラットフォームは GEA に Array Design が未収録です。新規 Array Design 登録は DDBJ Contact 経由で相談してください。"
+        },
+        "rule06": {
+          "dbclsApplication": {
+            "notes": "JGA 登録は DBCLS / NBDC ポリシー下で承認された利用制限ポリシー (提供申請グループ) が前提です。事前申請を済ませてから JGA Step に進んでください。"
+          }
+        },
+        "rule06b": {
+          "analysisNotes": "Analysis 1 個 = 1 VCF が制約 (variation の場合)。aggregate 解析は JGA チームへの事前連絡が必要です。"
+        },
+        "rule06c": {
+          "phenotypeOnlyDataset": "配列なしの表現型 Dataset です。Experiment / Data / Analysis をスキップし Sample → Dataset を直結します。"
+        },
+        "rule07a": {
+          "tpaPrimaryRequired": "PRIMARY ブロックに引用元プライマリーエントリの accession を記載してください。引用元領域以外は 50 bp 上限です。",
+          "locusTagPrefix": "BioSample 登録時に locus_tag_prefix を申請してください (DDBJ 登録窓口経由)。"
+        },
+        "rule07b": {
+          "teamReviewRequired": "GEA / MetaboBank チームへの事前問い合わせが必要です。確認状態が「確認済み」でないと Submit できません。",
+          "peerReviewedRequired": "査読論文公開済みの参照元 (PubMed ID / DOI) が必須です (プレプリント不可)。",
+          "warning": {
+            "unconfirmed": "チーム事前確認が未完了です。お問い合わせフォームから連絡してください。"
+          }
+        },
+        "rule07c": {
+          "tpaAnnotationStopped": "2025/01 より TPA:inferential / TPA:experimental の登録受付は停止しています。",
+          "curatorRequired": "Third-party annotation の登録経路は DDBJ Curator への事前相談が必要です。",
+          "warning": {
+            "curatorRequired": "Curator 事前相談が完了するまで送信できません。"
+          }
+        },
+        "rule08": {
+          "rawExternalChoose": "raw リードの登録状態を選択してください (外部で登録済み / 未登録・後ほど登録予定 / 外部 DB に登録予定)。",
+          "externalDbConsult": "外部 DB に raw 登録する場合は DDBJ チームに事前相談してください。",
+          "primaryContigsNote": "primary contigs は Sequence Annotation でなく De Novo Assembly として登録します。",
+          "derivedBsNote": "派生 BioSample (binned / MAG / SAG) は derived_from 属性で元 BS と関連付けます。生物名は帰属生物名 (metagenome を含まない) を使用してください。",
+          "warning": {
+            "rawPending": "raw リードの登録状態が未確定です。Step 内の 3 択 (外部登録済み / 未登録 / 外部 DB) のいずれかを選択してください。"
+          }
+        },
+        "rule08c": {
+          "derivedFromNote": "derived_from 属性は単数 accession もしくは範囲 (SAMD###-SAMD###) で記入できます。"
+        },
+        "rule09": {
+          "barcodeProtocol": "barcode-sample 対応表は Step DRA カードの Library Construction Protocol 入力欄に自由記述で記入してください。"
+        },
+        "rule10c": {
+          "jgaSampleNotes": "個人特定可能情報の判定が不明な場合は、安全側として restricted に設定しています。DDBJ Contact / DBCLS 提供申請システムで判定を確認し、必要に応じてテーブルの access 列を編集してください。"
+        },
+        "rule11": {
+          "draSharedNote": "両 Haplotype 由来のリードが混在しているため、DRA 用の Primary BioProject を別途生成しています。",
+          "sharedBsNote": "Principal / Alternate / DRA 用 BP が同じ BioSample を参照します。Package は MIGS variant (MIGS.eu / MIGS.ba / MIGS.vi) で上書き、locus_tag_prefix は共通化してください。",
+          "principal-alternate": {
+            "primaryLabel": "Principal haplotype",
+            "secondaryLabel": "Alternate haplotype"
+          },
+          "haplotype-1-2": {
+            "primaryLabel": "Haplotype 1",
+            "secondaryLabel": "Haplotype 2"
+          },
+          "maternal-paternal": {
+            "primaryLabel": "Maternal haplotype",
+            "secondaryLabel": "Paternal haplotype"
+          }
+        },
+        "rule12": {
+          "humandbs": {
+            "notes": "JGA Policy 確定後、データ公開は HumanDBs (NBDC ヒトデータベース) で hum 番号付き専用サイトとして公開されます。"
+          },
+          "jpost": {
+            "notes": "jPOST は外部 DB として運用されます。BioProject / BioSample は jPOST 側で管理してください。"
+          },
+          "eva": {
+            "notes": "非ヒトの SNP / Indel は European Variation Archive (EVA) に登録します。DDBJ ポータルでは案内のみです。"
+          },
+          "dgva": {
+            "notes": "非ヒトの SV / CNV は DGVa (Database of Genomic Variants archive) に登録します。DDBJ ポータルでは案内のみです。"
+          }
+        },
+        "rule13": {
+          "htgPhaseNote": "HTG は KEYWORDS に HTG_PHASE0 / HTG_PHASE1 / HTG_PHASE2 を自動付与します。",
+          "keywordsReferenceNote": "INSDC methodological keywords (~40 種) を任意で追加できます。詳細は外部リンクを参照してください。"
+        },
+        "rule14": {
+          "warning": {
+            "wgs_vs_genomicsYes": "Library Strategy「{{strategy}}」は WGS 系ですが、chip functional-genomics が「{{currentChip}}」になっています。chip を「wgs-target」/「wes-target」に修正するか、Step 入力を RNA-Seq 系などに変更してください。",
+            "rnaseq_vs_chip": "Library Strategy「{{strategy}}」は RNA-Seq 系ですが、chip functional-genomics が「{{currentChip}}」になっています。chip を「yes (GEA 登録)」または「tsa-target」に修正するか、Step 入力を WGS 系などに変更してください。",
+            "epigenetics_vs_chip": "Library Strategy「{{strategy}}」はエピジェネティクス系の解析で、通常 GEA 登録となります。chip functional-genomics を「yes」に修正することを推奨します。",
+            "amplicon_metagenomic": "AMPLICON × METAGENOMIC の組合せは TLS (16S/COI マーカー遺伝子) を想定しますが、chip functional-genomics が「{{currentChip}}」になっています。chip を「metagenome-target」に修正することを推奨します。",
+            "targeted_capture_info": "Targeted-Capture は wes-target / wgs-target の両方が候補です。chip functional-genomics を確認してください。",
+            "metatranscriptomic_info": "METATRANSCRIPTOMIC は tsa-target / metagenome-target / GEA のいずれかに該当します。",
+            "synthetic_info": "合成配列の read library は GEA / TPA など通常経路に該当しません。Step MSS カードで適切な DATATYPE を選択してください。",
+            "mss_wgs_assemblyForm": "DDBJ データタイプ「{{dataType}}」と chip assembly-form「{{currentForm}}」が一致しません。chip を「wgs」/「gnm」に修正するか、Step 入力を「{{currentForm}}」に対応するデータタイプに変更してください。",
+            "mss_tsa_assemblyForm": "DDBJ データタイプ「{{dataType}}」と chip assembly-form「{{currentForm}}」が一致しません。chip を「tsa」/「htc」に修正するか、Step 入力を変更してください。",
+            "mss_magsag_assemblyForm": "DDBJ データタイプ「{{dataType}}」と chip assembly-form「{{currentForm}}」が一致しません。chip を「mag」/「sag」に修正するか、Step 入力を変更してください。",
+            "mss_misc_ask": "データタイプ「{{dataType}}」を選択中です。DDBJ チームへの事前相談が推奨されます。"
+          }
+        },
+        "rule15": {
+          "accessMismatch": "Hybrid Assembly Group 内の short-read と long-read で access が異なります。1 BS 内で混在は登録仕様上不可のため、Group を解除して別 BS として登録するか access を統一してください。",
+          "hybridMember": "Hybrid Assembly Group の構成 Run です。相手側 Experiment は次の Group を参照してください:",
+          "noPair": "(他のメンバ未生成)"
+        }
+      }
+    },
     "designSystem": { "title": "Design System" },
     "news": {
       "meta": {

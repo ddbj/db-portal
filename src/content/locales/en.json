@@ -1387,6 +1387,527 @@
         }
       }
     },
+    "submitAlt3": {
+      "title": "Submit v3",
+      "meta": {
+        "title": "Submission Navigation v3 | DDBJ Portal (WIP)",
+        "description": "Table-first file submission navigation. Add files to the table and the registration flow cards refine themselves as you fill in attributes."
+      },
+      "hero": {
+        "title": "Submission Navigation v3",
+        "subtitle": "Drop your files into the table and the required submission steps (BioProject + BioSample + DRA / MSS / GEA / JGA, etc.) are assembled dynamically."
+      },
+      "sections": {
+        "fileTable": "File table",
+        "fileTableHint": "Add files via the buttons, then fill in Organism / Access / Data form per cell.",
+        "flowCard": "Submission flow cards"
+      },
+      "buttons": {
+        "sequenceRead": { "label": "+ Sequence reads" },
+        "assembled": { "label": "+ Assembled sequence" },
+        "annotation": { "label": "+ Gene annotation" },
+        "variation": { "label": "+ Variation" },
+        "phenotype": { "label": "+ Phenotype data" },
+        "expressionArray": { "label": "+ Microarray expression" },
+        "expressionMatrix": { "label": "+ RNA-seq matrix" },
+        "massSpec": { "label": "+ Mass spectrometry" },
+        "spatialTx": { "label": "+ Spatial transcriptome" }
+      },
+      "modals": {
+        "common": { "cancel": "Cancel", "add": "Add" },
+        "sequenceRead": {
+          "title": "Add sequence reads",
+          "layout": {
+            "label": "Read layout",
+            "singleEnd": "single-end FASTQ (1 file)",
+            "pairEnd": "pair-end FASTQ (R1 + R2)",
+            "tenx": "10x Genomics FASTQ (I1 + R1 + R2)",
+            "bam": "BAM / SAM (1 file)",
+            "pacbioHdf5": "PacBio HDF5 (bas.h5 + bax.h5 × 3)"
+          },
+          "multiplex": {
+            "label": "Is this a multiplex pool?",
+            "singleSample": "Single-sample FASTQ",
+            "demultiplexed": "Pre-demultiplexed per-sample FASTQ",
+            "demultiplexedHint": "DDBJ requires pre-demultiplexing. N per-sample FASTQ + N BioSamples will be registered",
+            "sampleCount": "Sample count (number of per-sample FASTQ)"
+          },
+          "hybrid": {
+            "label": "Hybrid Assembly (combine reads from different instruments)",
+            "hint": "Multiple Experiments under the same BioSample"
+          },
+          "baseName": { "label": "Base file name (extension is auto-added)" },
+          "q1": {
+            "label": "Q1: Will you also submit processed data such as expression / epigenetics / genotyping outputs?",
+            "yes": "Yes (expression matrix / peaks / methylation / scRNA counts / Hi-C contact matrix, etc.)",
+            "no": "No (raw reads only, not registered to GEA)"
+          },
+          "q2": {
+            "label": "Q2: What is the closest final output?",
+            "options": {
+              "wgs-target": "Finished genome / Draft assembly (WGS)",
+              "tsa-target": "Transcriptome assembly (TSA)",
+              "metagenome-target": "Metagenome assembly (MAG / SAG / Binned)",
+              "variation-target": "Variation / CNV",
+              "wes-target": "Whole exome sequencing (WES)",
+              "other": "Other / unknown"
+            }
+          }
+        },
+        "assembled": {
+          "title": "Add assembled sequence",
+          "form": {
+            "label": "What kind of assembly?",
+            "options": {
+              "wgs": "Genome (de novo, primary, WGS)",
+              "gnm": "Finished genome",
+              "tsa": "Transcriptome assembly (TSA)",
+              "tls": "16S / COI marker (TLS)",
+              "est": "EST",
+              "mag": "MAG (metagenome-derived BS chain)",
+              "sag": "SAG (single amplified genome)",
+              "htg": "HTG (high-throughput genome)",
+              "htc": "HTC (high-throughput cDNA)",
+              "gss": "GSS (Genome Survey Sequence)",
+              "syn": "Synthetic construct (SYN)",
+              "ask": "Consult DDBJ Curator / unknown"
+            }
+          },
+          "baseName": { "label": "File name (.fasta auto-added)" },
+          "thirdParty": {
+            "label": "Third-party reassembly (TPA)?",
+            "hint": "Reanalysis of public sequences. Requires a peer-reviewed publication"
+          },
+          "tpaSubtype": {
+            "label": "TPA subtype",
+            "options": {
+              "tpa-assembly": "TPA:assembly (general reassembly, peer-review target)",
+              "tpa-specialist-db": "TPA:specialist_db (DDBJ does not accept, info only)"
+            }
+          },
+          "citedAccession": { "label": "Cited accessions (comma-separated)" },
+          "doi": { "label": "Peer-reviewed publication DOI / PubMed ID" },
+          "phased": {
+            "label": "Haplotype phased?",
+            "hint": "BP Step splits into Principal / Alternate / DRA / Umbrella"
+          },
+          "naming": {
+            "label": "Haplotype naming convention",
+            "options": {
+              "principal-alternate": "Principal / Alternate (one is higher quality)",
+              "haplotype-1-2": "Haplotype 1 / 2 (equal quality)",
+              "maternal-paternal": "Maternal / Paternal (parent origin known)"
+            }
+          },
+          "linkToBs": {
+            "label": "Link to existing BioSample",
+            "newSample": "Register as a new sample (default)",
+            "hint": "If raw reads and assembly come from the same sample, link them so a single BioSample is shared"
+          }
+        },
+        "annotation": {
+          "title": "Add gene annotation",
+          "target": {
+            "label": "Annotation target?",
+            "options": {
+              "assembly": "Assembled genome sequence (primary)",
+              "transcriptome": "Transcriptome assembly (primary)",
+              "third-party": "Third-party annotation of public sequence",
+              "other": "Other"
+            }
+          },
+          "format": {
+            "label": "File format?",
+            "options": {
+              "gff": "GFF / GFF3",
+              "genbank": "GenBank flat",
+              "other": "Other"
+            }
+          },
+          "baseName": { "label": "File name" },
+          "citedAccession": { "label": "Cited accession" },
+          "doi": { "label": "Peer-reviewed DOI / PubMed ID (required)" }
+        },
+        "variation": {
+          "title": "Add variation data",
+          "form": {
+            "label": "VCF aggregation form?",
+            "options": {
+              "per-sample": "Per-sample VCF",
+              "aggregate": "Aggregate VCF (multi-sample merged)"
+            }
+          },
+          "type": {
+            "label": "Variation type?",
+            "options": {
+              "snp-indel": "SNP / Indel (short variation, ≤50 bp)",
+              "sv": "Structural Variant (SV, >50 bp)",
+              "cnv": "Copy Number Variant (CNV)"
+            }
+          },
+          "reference": {
+            "label": "Reference sequence?",
+            "options": {
+              "none": "Do not attach",
+              "attach": "Submit reference FASTA together (variation-ref Group)",
+              "reference-only": "Reference an existing accession"
+            }
+          },
+          "baseName": { "label": "File name (.vcf.gz auto-added)" },
+          "referenceAccession": { "label": "Reference accession" }
+        },
+        "phenotype": {
+          "title": "Add phenotype data",
+          "format": {
+            "label": "File format?",
+            "options": {
+              "tsv": "TSV / CSV (phenotype table linked to BS)",
+              "xlsx": "Excel / .xlsx",
+              "other": "Other"
+            }
+          },
+          "identifiable": {
+            "label": "Does this data contain identifiable information (name / address / ID number, etc.)?",
+            "options": {
+              "no": "No",
+              "yes": "Yes → access=restricted auto-applied",
+              "unknown": "Unknown → restricted as a safe default"
+            }
+          },
+          "dataset": {
+            "label": "Bundle this as a JGA Dataset?",
+            "options": {
+              "no": "No",
+              "yes": "Yes (bundle with other rows as a Dataset)"
+            }
+          },
+          "baseName": { "label": "File name" }
+        },
+        "expressionArray": {
+          "title": "Add microarray expression data",
+          "color": {
+            "label": "Number of colors?",
+            "options": {
+              "single-color": "single-color (Cy3 only)",
+              "two-color": "two-color (Cy3 + Cy5)"
+            }
+          },
+          "mageTab": {
+            "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
+            "hint": "Required for GEA Experiment / Array Design"
+          },
+          "baseName": { "label": "File name (CEL / iDAT etc. auto-added)" }
+        },
+        "expressionMatrix": {
+          "title": "Add RNA-seq expression matrix",
+          "content": {
+            "label": "File content?",
+            "options": {
+              "counts": "Count matrix (counts.tsv)",
+              "normalized": "TPM / FPKM normalized values",
+              "other": "Other"
+            }
+          },
+          "category": {
+            "label": "GEA Experiment Type general category?",
+            "options": {
+              "bulk-rnaseq": "bulk RNA-seq (coding / non-coding)",
+              "single-cell": "single-cell RNA-seq",
+              "mirna": "miRNA / small RNA profiling",
+              "bisulfite": "Bisulfite-seq / methylation profiling",
+              "chipseq": "ChIP-seq / ATAC-seq / FAIRE-seq / MNase-seq / MeDIP-seq",
+              "hic": "Hi-C / 4C / Capture-C",
+              "ripseq": "RIP-seq / CLIP-seq",
+              "genotyping": "genotyping / DNA-seq / GRO-seq",
+              "other": "Other"
+            }
+          },
+          "mageTab": {
+            "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
+            "hint": "Hint for the GEA Step pulldown"
+          },
+          "baseName": { "label": "File name" }
+        },
+        "massSpec": {
+          "title": "Add mass spectrometry data",
+          "domain": {
+            "label": "What analysis type?",
+            "options": {
+              "proteomics": "Proteomics → external jPOST",
+              "metabolomics": "Metabolomics → MetaboBank",
+              "imaging": "Imaging MS → MetaboBank imaging stream"
+            }
+          },
+          "submissionType": { "label": "MetaboBank Submission Type" },
+          "maf": {
+            "label": "Attach metabolite assignment file (MAF)?",
+            "hint": "MetaboBank associated metadata"
+          },
+          "baseName": { "label": "File name" }
+        },
+        "spatialTx": {
+          "title": "Add spatial transcriptome data",
+          "platform": {
+            "label": "Platform?",
+            "options": {
+              "visium": "10x Genomics Visium",
+              "xenium": "10x Genomics Xenium",
+              "merfish": "MERFISH / MERSCOPE",
+              "stereo-seq": "Stereo-seq (BGI / STOmics)",
+              "slide-seq": "Slide-seq / Slide-seqV2",
+              "geomx": "NanoString GeoMx DSP",
+              "other": "Other (consult GEA team)"
+            }
+          },
+          "geomxReadout": {
+            "label": "GeoMx readout?",
+            "options": {
+              "ngs": "NGS (sequencer; Visium-like, Sequencing two-tier)",
+              "ncounter": "nCounter (fluorescent probes; Microarray-like, single-tier)"
+            }
+          },
+          "mageTab": {
+            "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
+            "hint": "Xenium / MERFISH have dedicated Array Design templates"
+          },
+          "baseName": { "label": "File name" }
+        }
+      },
+      "tableColumns": {
+        "unset": "(unset)",
+        "file": { "label": "File" },
+        "organism": {
+          "label": "Organism",
+          "values": {
+            "human": "human",
+            "human-microbiome": "human-microbiome",
+            "eukaryote": "eukaryote",
+            "prokaryote": "prokaryote",
+            "virus": "virus",
+            "metagenome": "metagenome",
+            "organelle-plasmid": "organelle / plasmid"
+          }
+        },
+        "access": {
+          "label": "Access",
+          "values": {
+            "open": "open",
+            "restricted": "restricted"
+          }
+        },
+        "dataForm": {
+          "label": "Data form",
+          "values": {
+            "raw": "raw",
+            "assembled": "assembled",
+            "analysis-output": "analysis output",
+            "matrix": "matrix",
+            "annotation": "annotation",
+            "mass-spec": "mass spec",
+            "phenotype": "phenotype"
+          }
+        },
+        "chips": { "label": "Tags" }
+      },
+      "table": {
+        "emptyHint": "Click a + button above to add files.",
+        "removeRow": "Remove this row",
+        "actionsColumn": "Actions"
+      },
+      "groupHeader": {
+        "single": "single",
+        "pair-end": "pair-end (R1 + R2)",
+        "10x": "10x Genomics",
+        "pacbio-hdf5": "PacBio HDF5",
+        "two-color": "two-color microarray",
+        "hybrid": "Hybrid Assembly",
+        "multiplex": "multiplex (per-sample demultiplexed)",
+        "mage-tab": "MAGE-TAB",
+        "imaging-ms": "Imaging MS",
+        "variation-ref": "variation + reference",
+        "mag-sag-chain": "MAG / SAG chain",
+        "assembly-annotation": "assembly + annotation",
+        "jga-dataset": "JGA Dataset"
+      },
+      "flowCard": {
+        "emptyHint": "Add files via the buttons. Flow cards appear as soon as a file is added.",
+        "noStepsYet": "Fill in the table cells to refine the flow cards.",
+        "venue": { "internal": "DDBJ", "external": "External" },
+        "issuesAccession": "Issues accession",
+        "dependsOn": "Depends on",
+        "targets": "Targets",
+        "fileCount": "{{count}} file(s)"
+      },
+      "flowSteps": {
+        "umbrella-bioproject": { "title": "Umbrella BioProject" },
+        "primary-bioproject": { "title": "Primary BioProject" },
+        "biosample": { "title": "BioSample" },
+        "dra": { "title": "DRA (Run / Experiment / Analysis)" },
+        "mss": { "title": "MSS / NSSS" },
+        "gea": { "title": "GEA" },
+        "metabobank": { "title": "MetaboBank" },
+        "togovar": { "title": "TogoVar-repository" },
+        "jga-submission": { "title": "JGA Submission" },
+        "jga-study": { "title": "JGA Study" },
+        "jga-sample": { "title": "JGA Sample" },
+        "jga-experiment": { "title": "JGA Experiment" },
+        "jga-data": { "title": "JGA Data" },
+        "jga-analysis": { "title": "JGA Analysis" },
+        "jga-dataset": { "title": "JGA Dataset" },
+        "jga-policy": { "title": "JGA Policy" },
+        "dbcls-application": { "title": "DBCLS Application + Policy approval" },
+        "jpost": { "title": "jPOST (external)" },
+        "eva": { "title": "EVA (external)" },
+        "dgva": { "title": "dgVa (external)" },
+        "humandbs": { "title": "HumanDBs (external, post-release reference)" }
+      },
+      "flowStepCard": {
+        "editStepInputs": "Edit step inputs",
+        "stepInputsHeading": "Step inputs (Library Strategy, etc.)",
+        "noEditableInputs": "This step has no editable pulldowns yet (PoC scope)",
+        "externalLink": "External link",
+        "warningAcknowledged": "acknowledged",
+        "warningAcknowledgedSummary": "{{count}} warning(s) acknowledged",
+        "warningActions": {
+          "fixChip": "Fix chip",
+          "editStepInput": "Edit step input",
+          "acknowledge": "Ignore (advanced)",
+          "restore": "Undo acknowledgement"
+        }
+      },
+      "chips": {
+        "actions": {
+          "resetManual": "Reset to auto",
+          "remove": "Remove"
+        },
+        "assembly-form": { "label": "Assembly form", "values": { "wgs": "WGS", "gnm": "GNM", "tsa": "TSA", "tls": "TLS", "est": "EST", "mag": "MAG", "sag": "SAG", "htg": "HTG", "htc": "HTC", "gss": "GSS", "syn": "SYN", "misc": "MISC", "ask": "ASK" } },
+        "provenance": { "label": "Provenance", "values": { "third-party": "Third-party reanalysis" } },
+        "variation-form": { "label": "Variation form", "values": { "per-sample": "per-sample", "aggregate": "aggregate" } },
+        "variation-type": { "label": "Variation type", "values": { "snp-indel": "SNP/Indel", "sv": "SV", "cnv": "CNV" } },
+        "haplotype-mode": { "label": "Haplotype mode", "values": { "phased": "Haplotype phased" } },
+        "functional-genomics": { "label": "Functional genomics", "values": { "yes": "GEA target", "wgs-target": "WGS-target", "tsa-target": "TSA-target", "metagenome-target": "metagenome-target", "variation-target": "variation-target", "wes-target": "WES-target", "other": "other" } },
+        "mass-spec-domain": { "label": "Mass spec domain", "values": { "proteomics": "proteomics", "metabolomics": "metabolomics", "imaging": "Imaging MS" } },
+        "spatial-platform": { "label": "Spatial platform", "values": { "visium": "Visium", "xenium": "Xenium", "merfish": "MERFISH", "stereo-seq": "Stereo-seq", "slide-seq": "Slide-seq", "geomx": "GeoMx", "other": "Other" } },
+        "tpa-subtype": { "label": "TPA subtype", "values": { "tpa-assembly": "TPA:assembly", "tpa-specialist-db": "TPA:specialist_db" } },
+        "haplotype-naming": { "label": "Haplotype naming", "values": { "principal-alternate": "Principal / Alternate", "haplotype-1-2": "Haplotype 1 / 2", "maternal-paternal": "Maternal / Paternal" } }
+      },
+      "flowGen": {
+        "global": {
+          "unsetCells": "Fill in the unset cells (⚠) in the table to refine the flow cards."
+        },
+        "rule02": {
+          "haplotypeNote": "Umbrella BioProject grouping the Principal / Alternate / DRA-shared BPs for Haplotype phased. Record the child BP accessions and roles in Private comments to DDBJ staff.",
+          "mixedLineageNote": "Suggesting an Umbrella BioProject because this study contains multiple Primary BPs (host-pathogen or multi-modal design)."
+        },
+        "rule04c": {
+          "studyOnly": "MetaboBank issues accessions only at the Study level (MTBKSn). Split different experimental designs into separate Studies and group them under one BioProject."
+        },
+        "rule04d": {
+          "unsupportedPlatform": "No Array Design is registered in GEA for this platform. Contact the DDBJ team to register a new Array Design."
+        },
+        "rule06": {
+          "dbclsApplication": {
+            "notes": "JGA submissions require an approved data-sharing policy under the DBCLS / NBDC framework (provider application group). Complete this application before proceeding."
+          }
+        },
+        "rule06b": {
+          "analysisNotes": "An Analysis must contain a single VCF (variation case). Aggregate analyses require prior contact with the JGA team."
+        },
+        "rule06c": {
+          "phenotypeOnlyDataset": "Phenotype-only Dataset without sequencing. Sample → Dataset is connected directly, skipping Experiment / Data / Analysis."
+        },
+        "rule07a": {
+          "tpaPrimaryRequired": "Record the cited primary accessions in the PRIMARY block. Non-cited regions cannot exceed 50 bp.",
+          "locusTagPrefix": "Apply for a locus_tag_prefix at BioSample registration (via the DDBJ submission desk)."
+        },
+        "rule07b": {
+          "teamReviewRequired": "Prior consultation with the GEA / MetaboBank team is required. Submission is disabled until the review status becomes confirmed.",
+          "peerReviewedRequired": "Peer-reviewed publication (PubMed ID / DOI) referencing the original data is mandatory (preprints not accepted).",
+          "warning": {
+            "unconfirmed": "Team review is not yet confirmed. Reach the team via the contact form before proceeding."
+          }
+        },
+        "rule07c": {
+          "tpaAnnotationStopped": "Registration of TPA:inferential / TPA:experimental has been suspended since 2025-01.",
+          "curatorRequired": "Third-party annotation requires prior consultation with a DDBJ Curator.",
+          "warning": {
+            "curatorRequired": "Submission is blocked until curator consultation is completed."
+          }
+        },
+        "rule08": {
+          "rawExternalChoose": "Choose the raw read registration status (external / pending / external DB).",
+          "externalDbConsult": "Consult the DDBJ team before registering raw reads to an external DB.",
+          "primaryContigsNote": "Register primary contigs as De Novo Assembly (not Sequence Annotation).",
+          "derivedBsNote": "Derived BioSamples (binned / MAG / SAG) reference the source BS via derived_from. Use the attributed organism (no 'metagenome' suffix) as the organism name.",
+          "warning": {
+            "rawPending": "Raw read status is not yet selected. Choose one of the three options (external / pending / external DB) in this step."
+          }
+        },
+        "rule08c": {
+          "derivedFromNote": "derived_from accepts a single accession or a range (SAMD###-SAMD###)."
+        },
+        "rule09": {
+          "barcodeProtocol": "Enter the barcode-sample mapping in the Library Construction Protocol field of the DRA step."
+        },
+        "rule10c": {
+          "jgaSampleNotes": "When personal-identifiability is unknown, the access is provisionally set to restricted. Confirm with DDBJ Contact / DBCLS application system, then edit the access column if needed."
+        },
+        "rule11": {
+          "draSharedNote": "A separate DRA-shared Primary BioProject is generated because both Haplotype-derived reads are mixed.",
+          "sharedBsNote": "Principal / Alternate / DRA-shared BPs reference the same BioSample. Override the package with a MIGS variant (MIGS.eu / MIGS.ba / MIGS.vi) and share the locus_tag_prefix.",
+          "principal-alternate": {
+            "primaryLabel": "Principal haplotype",
+            "secondaryLabel": "Alternate haplotype"
+          },
+          "haplotype-1-2": {
+            "primaryLabel": "Haplotype 1",
+            "secondaryLabel": "Haplotype 2"
+          },
+          "maternal-paternal": {
+            "primaryLabel": "Maternal haplotype",
+            "secondaryLabel": "Paternal haplotype"
+          }
+        },
+        "rule12": {
+          "humandbs": {
+            "notes": "After JGA Policy is set, data is published on HumanDBs (NBDC human data archive) with a dedicated hum-numbered site."
+          },
+          "jpost": {
+            "notes": "jPOST is operated as an external repository; manage BioProject / BioSample on the jPOST side."
+          },
+          "eva": {
+            "notes": "Non-human SNP / Indel goes to the European Variation Archive (EVA). DDBJ portal provides only guidance."
+          },
+          "dgva": {
+            "notes": "Non-human SV / CNV goes to DGVa (Database of Genomic Variants archive). DDBJ portal provides only guidance."
+          }
+        },
+        "rule13": {
+          "htgPhaseNote": "HTG_PHASE0 / HTG_PHASE1 / HTG_PHASE2 are automatically appended to KEYWORDS for HTG.",
+          "keywordsReferenceNote": "Add INSDC methodological keywords (~40 options) as needed. See the external link below."
+        },
+        "rule14": {
+          "warning": {
+            "wgs_vs_genomicsYes": "Library Strategy '{{strategy}}' is a WGS-class assay, but chip functional-genomics is '{{currentChip}}'. Either fix the chip to 'wgs-target'/'wes-target' or change the strategy (e.g. to RNA-Seq).",
+            "rnaseq_vs_chip": "Library Strategy '{{strategy}}' is an RNA-Seq-class assay, but chip functional-genomics is '{{currentChip}}'. Either fix the chip to 'yes (GEA)' or 'tsa-target', or change the strategy (e.g. to WGS).",
+            "epigenetics_vs_chip": "Library Strategy '{{strategy}}' is an epigenetics assay typically registered to GEA. We recommend setting functional-genomics chip to 'yes'.",
+            "amplicon_metagenomic": "AMPLICON × METAGENOMIC typically targets TLS (16S/COI), but chip functional-genomics is '{{currentChip}}'. We recommend setting the chip to 'metagenome-target'.",
+            "targeted_capture_info": "Targeted-Capture matches wes-target / wgs-target. Please verify the functional-genomics chip.",
+            "metatranscriptomic_info": "METATRANSCRIPTOMIC may match tsa-target / metagenome-target / GEA.",
+            "synthetic_info": "Synthetic read libraries do not match standard GEA / TPA routes. Choose an appropriate DATATYPE in the MSS step.",
+            "mss_wgs_assemblyForm": "DDBJ DATATYPE '{{dataType}}' and chip assembly-form '{{currentForm}}' do not match. Either fix the chip to 'wgs'/'gnm' or change the step input.",
+            "mss_tsa_assemblyForm": "DDBJ DATATYPE '{{dataType}}' and chip assembly-form '{{currentForm}}' do not match. Either fix the chip to 'tsa'/'htc' or change the step input.",
+            "mss_magsag_assemblyForm": "DDBJ DATATYPE '{{dataType}}' and chip assembly-form '{{currentForm}}' do not match. Either fix the chip to 'mag'/'sag' or change the step input.",
+            "mss_misc_ask": "DATATYPE '{{dataType}}' is selected. Prior consultation with the DDBJ team is recommended."
+          }
+        },
+        "rule15": {
+          "accessMismatch": "Access values differ between the short-read and long-read members of this Hybrid Assembly group. A single BS cannot mix access values; either ungroup and register as separate BSes, or align the access values.",
+          "hybridMember": "Part of a Hybrid Assembly group. See the following group ID(s) for the counterpart experiment(s):",
+          "noPair": "(no counterpart members yet)"
+        }
+      }
+    },
     "designSystem": { "title": "Design System" },
     "news": {
       "meta": {

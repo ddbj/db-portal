@@ -6,6 +6,7 @@ export default [
   route("advanced-search", "routes/advanced-search.tsx"),
   route("submit", "routes/submit.tsx"),
   route("submit-alt", "routes/submit-alt.tsx"),
+  route("submit-alt3", "routes/submit-alt3.tsx"),
   route("news", "routes/news.tsx"),
   route("api/news", "routes/api.news.ts"),
   route("api/llm/suggest", "routes/api.llm.suggest.ts"),
