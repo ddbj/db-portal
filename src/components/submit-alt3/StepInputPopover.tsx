@@ -16,10 +16,15 @@ import {
   MSS_DIVISION_VALUES,
   MSS_KEYWORDS_VOCABULARY,
 } from "@/lib/mock-data/submit-alt3"
-import type { FlowStep, ServiceKind } from "@/types/submit-alt3"
+import type {
+  FlowStep,
+  FlowStepSegment,
+  ServiceKind,
+} from "@/types/submit-alt3"
 
 interface Props {
   step: FlowStep
+  segment?: FlowStepSegment
   focusField?: string
   onUpdate: (
     stepId: string,
@@ -52,8 +57,14 @@ const joinKeywords = (selected: readonly string[]): string =>
   selected.length === 0 ? "" : `${selected.join("; ")}.`
 
 // Step pulldown 入力 inline popover (Rule 14a/14b で参照される入力源)
-// SSOT: docs/submit-alt3-tags.md §5.3 + docs/submit-alt3-flow-rules.md §8.1 Rule 13/14
-const StepInputPopover = ({ step, focusField, onUpdate, onClose }: Props) => {
+// SSOT: docs/submit-alt3-tags.md §5.3 + docs/submit-alt3-flow-rules.md §8.1 Rule 13/14 + docs/submit-alt3-modals.md §8
+const StepInputPopover = ({
+  step,
+  segment,
+  focusField,
+  onUpdate,
+  onClose,
+}: Props) => {
   const { t } = useDynamicTranslation()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -76,9 +87,12 @@ const StepInputPopover = ({ step, focusField, onUpdate, onClose }: Props) => {
     }
   }, [onClose])
 
-  const inputs = step.intraDbInputs
+  // merge 後 Step は segment.intraDbInputs を、merge されていない Step は step.intraDbInputs を読む
+  // reducer の serviceDrafts キーは segmentId (= merge 前 Step.id) で一意なので、書き込み時も segmentId を使う
+  const inputs = segment?.intraDbInputs ?? step.intraDbInputs
+  const segmentId = segment?.segmentId ?? step.id
   const setValue = (key: string, value: string) => {
-    onUpdate(step.id, step.service, { [key]: value })
+    onUpdate(segmentId, step.service, { [key]: value })
   }
 
   const fieldClass = (field: string): string =>
@@ -90,7 +104,7 @@ const StepInputPopover = ({ step, focusField, onUpdate, onClose }: Props) => {
   return (
     <div
       ref={ref}
-      data-testid={`step-input-popover-${step.id}`}
+      data-testid={`step-input-popover-${segmentId}`}
       className="z-30 mt-2 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3 shadow-inner"
     >
       <div className="flex items-center justify-between">
@@ -238,14 +252,14 @@ const StepInputPopover = ({ step, focusField, onUpdate, onClose }: Props) => {
           </div>
           <div className={fieldClass("keywords")}>
             <label
-              htmlFor={`step-input-keywords-${step.id}`}
+              htmlFor={`step-input-keywords-${segmentId}`}
               className="block text-[10px] font-semibold tracking-wide text-gray-500 uppercase"
             >
               KEYWORDS (INSDC methodological)
             </label>
             <select
-              id={`step-input-keywords-${step.id}`}
-              data-testid={`step-input-keywords-${step.id}`}
+              id={`step-input-keywords-${segmentId}`}
+              data-testid={`step-input-keywords-${segmentId}`}
               multiple
               size={6}
               className="w-full rounded border border-gray-200 bg-white p-1 text-xs"
@@ -276,14 +290,14 @@ const StepInputPopover = ({ step, focusField, onUpdate, onClose }: Props) => {
       {step.service === "dbcls-application" && (
         <div className={fieldClass("subgrpId")}>
           <label
-            htmlFor={`step-input-subgrp-id-${step.id}`}
+            htmlFor={`step-input-subgrp-id-${segmentId}`}
             className="block text-[10px] font-semibold tracking-wide text-gray-500 uppercase"
           >
             subgrp ID (DBCLS 申請ヘッダー)
           </label>
           <input
-            id={`step-input-subgrp-id-${step.id}`}
-            data-testid={`step-input-subgrp-id-${step.id}`}
+            id={`step-input-subgrp-id-${segmentId}`}
+            data-testid={`step-input-subgrp-id-${segmentId}`}
             type="text"
             value={(inputs.subgrpId as string) ?? ""}
             placeholder="例: hum0001"

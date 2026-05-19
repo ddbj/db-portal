@@ -4,13 +4,19 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  BUTTON_BASE_NAME_PREFIX,
   buildDefaultAddFilePayload,
+  BUTTON_BASE_NAME_PREFIX,
+  DEFAULT_CHIP_VALUES,
+  filterDisplayChips,
+  isDefaultChip,
+  isSingleRowGroup,
   nextBaseName,
+  SINGLE_ROW_GROUP_TYPES,
 } from "@/lib/submit-alt3/defaultPayload"
 import { submissionReducer } from "@/lib/submit-alt3/reducer"
 import {
   type ButtonType,
+  type ChipTag,
   createEmptySubmission,
   type Submission,
 } from "@/types/submit-alt3"
@@ -162,5 +168,152 @@ describe("buildDefaultAddFilePayload", () => {
     s = addDefault(s, "annotation") // ann-002
     const next = buildDefaultAddFilePayload(s, "annotation")
     expect(next.members[0]?.displayName).toBe("ann-003.gff3")
+  })
+})
+
+describe("DEFAULT_CHIP_VALUES と filterDisplayChips", () => {
+  it("buildDefaultAddFilePayload の chipTags は全て DEFAULT_CHIP_VALUES に一致", () => {
+    // 「default で生成した chip は全部隠れる」ことが整合性の最低条件
+    const s = createEmptySubmission()
+    for (const bt of ALL_BUTTONS) {
+      const payload = buildDefaultAddFilePayload(s, bt)
+      for (const chip of payload.chipTags ?? []) {
+        expect(isDefaultChip(bt, chip)).toBe(true)
+      }
+      // 言い換え: default 構成の chip は全てフィルタで消える
+      expect(filterDisplayChips(bt, payload.chipTags ?? [])).toEqual([])
+    }
+  })
+
+  it("assembled で assembly-form=mag は表示される (default wgs ではない)", () => {
+    const chips: ChipTag[] = [
+      { axis: "assembly-form", value: "mag" },
+      { axis: "functional-genomics", value: "metagenome-target" },
+    ]
+    const filtered = filterDisplayChips("assembled", chips)
+    expect(filtered).toHaveLength(2) // どちらも default ではない
+    expect(filtered).toEqual(chips)
+  })
+
+  it("assembled で assembly-form=wgs + provenance=third-party は third-party のみ表示", () => {
+    const chips: ChipTag[] = [
+      { axis: "assembly-form", value: "wgs" }, // default = 隠す
+      { axis: "functional-genomics", value: "wgs-target" }, // default = 隠す
+      { axis: "provenance", value: "third-party" }, // default なし = 表示
+    ]
+    const filtered = filterDisplayChips("assembled", chips)
+    expect(filtered).toEqual([{ axis: "provenance", value: "third-party" }])
+  })
+
+  it("variation で aggregate + sv に変えると 2 chip 表示 (functional-genomics は default のまま隠す)", () => {
+    const chips: ChipTag[] = [
+      { axis: "variation-form", value: "aggregate" },
+      { axis: "variation-type", value: "sv" },
+      { axis: "functional-genomics", value: "variation-target" }, // default
+    ]
+    const filtered = filterDisplayChips("variation", chips)
+    expect(filtered).toEqual([
+      { axis: "variation-form", value: "aggregate" },
+      { axis: "variation-type", value: "sv" },
+    ])
+  })
+
+  it("sequence-read で Q1=no, Q2=variation-target にすると functional-genomics chip が表示", () => {
+    const chips: ChipTag[] = [
+      { axis: "functional-genomics", value: "variation-target" },
+    ]
+    const filtered = filterDisplayChips("sequence-read", chips)
+    expect(filtered).toEqual(chips)
+  })
+
+  it("spatial-tx で platform=visium (default) は隠し、xenium に変えると表示", () => {
+    const visium: ChipTag[] = [
+      { axis: "functional-genomics", value: "yes" },
+      { axis: "spatial-platform", value: "visium" },
+    ]
+    expect(filterDisplayChips("spatial-tx", visium)).toEqual([])
+
+    const xenium: ChipTag[] = [
+      { axis: "functional-genomics", value: "yes" },
+      { axis: "spatial-platform", value: "xenium" },
+    ]
+    expect(filterDisplayChips("spatial-tx", xenium)).toEqual([
+      { axis: "spatial-platform", value: "xenium" },
+    ])
+  })
+
+  it("空 chipTags は空配列を返す", () => {
+    expect(filterDisplayChips("assembled", [])).toEqual([])
+  })
+
+  it("DEFAULT_CHIP_VALUES が全 ButtonType をカバー", () => {
+    for (const bt of ALL_BUTTONS) {
+      expect(DEFAULT_CHIP_VALUES[bt]).toBeDefined()
+    }
+  })
+
+  it("isDefaultChip: 軸が default に無い chip は default ではない", () => {
+    // annotation の default は functional-genomics=other のみ。provenance は default に無い
+    expect(isDefaultChip("annotation", { axis: "provenance", value: "third-party" })).toBe(false)
+  })
+
+  it("isDefaultChip: 軸はあるが値が違う chip は default ではない", () => {
+    // assembled の assembly-form default は wgs。mag は非 default
+    expect(isDefaultChip("assembled", { axis: "assembly-form", value: "mag" })).toBe(false)
+  })
+})
+
+describe("isSingleRowGroup / SINGLE_ROW_GROUP_TYPES (クラス A 判定)", () => {
+  // SSOT: docs/submit-alt3.md §4.1 (Group のクラス分け)
+  it("クラス A 7 種は true を返す", () => {
+    for (
+      const t of [
+        "single",
+        "pair-end",
+        "10x",
+        "pacbio-hdf5",
+        "two-color",
+        "mage-tab",
+        "imaging-ms",
+      ] as const
+    ) {
+      expect(isSingleRowGroup(t)).toBe(true)
+    }
+  })
+
+  it("クラス B / C は false を返す", () => {
+    for (
+      const t of [
+        "hybrid",
+        "multiplex",
+        "variation-ref",
+        "mag-sag-chain",
+        "assembly-annotation",
+        "jga-dataset",
+      ] as const
+    ) {
+      expect(isSingleRowGroup(t)).toBe(false)
+    }
+  })
+
+  it("SINGLE_ROW_GROUP_TYPES と isSingleRowGroup の判定が一致する", () => {
+    const allTypes = [
+      "single",
+      "pair-end",
+      "10x",
+      "pacbio-hdf5",
+      "two-color",
+      "hybrid",
+      "multiplex",
+      "mage-tab",
+      "imaging-ms",
+      "variation-ref",
+      "mag-sag-chain",
+      "assembly-annotation",
+      "jga-dataset",
+    ] as const
+    for (const t of allTypes) {
+      expect(isSingleRowGroup(t)).toBe(SINGLE_ROW_GROUP_TYPES.includes(t))
+    }
   })
 })

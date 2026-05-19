@@ -126,6 +126,7 @@ const handleChain = (
       createStep({
         service: "dra",
         discriminator: `${group.id}-raw`,
+        mergeKey: `dra:magsag:${group.id}:raw`,
         targetGroupIds: [group.id],
         targetFileIds: raw.map((m) => m.id),
         intraDbInputs: mergeServiceDraft(submission, stepId, {
@@ -152,6 +153,7 @@ const handleChain = (
       createStep({
         service: "dra",
         discriminator: `${group.id}-raw-external`,
+        mergeKey: `dra:magsag:${group.id}:raw-external`,
         targetGroupIds: [group.id],
         targetFileIds: [],
         intraDbInputs: mergeServiceDraft(submission, stepId, {
@@ -184,6 +186,7 @@ const handleChain = (
       createStep({
         service: "dra",
         discriminator: `${group.id}-primary`,
+        mergeKey: `dra:magsag:${group.id}:primary`,
         targetGroupIds: [group.id],
         targetFileIds: primary.map((m) => m.id),
         intraDbInputs: mergeServiceDraft(submission, stepId, {
@@ -206,6 +209,7 @@ const handleChain = (
       createStep({
         service: "biosample",
         discriminator: derivedBsDiscriminator,
+        mergeKey: `biosample:magsag:${group.id}:derived`,
         targetGroupIds: [group.id],
         targetFileIds: [...binned, ...mag].map((m) => m.id),
         intraDbInputs: mergeServiceDraft(submission, bsStepId, {
@@ -234,6 +238,7 @@ const handleChain = (
       createStep({
         service: "dra",
         discriminator: `${group.id}-binned`,
+        mergeKey: `dra:magsag:${group.id}:binned`,
         targetGroupIds: [group.id],
         targetFileIds: binned.map((m) => m.id),
         intraDbInputs: mergeServiceDraft(submission, stepId, {
@@ -260,6 +265,7 @@ const handleChain = (
       createStep({
         service: "mss",
         discriminator: derivedBsDiscriminator,
+        mergeKey: `mss:magsag:${group.id}`,
         targetGroupIds: [group.id],
         targetFileIds: mag.map((m) => m.id),
         intraDbInputs: mergeServiceDraft(submission, stepId, {

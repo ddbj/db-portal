@@ -7,11 +7,13 @@ import { renderWithProviders } from "../../../helpers/providers"
 
 describe("Pagination", () => {
 
-  it("renders page info", () => {
+  it("renders current page in input and total in label", () => {
     renderWithProviders(
       <Pagination page={3} totalPages={10} onChange={vi.fn()} />,
     )
-    expect(screen.getByText(/3 \/ 10/)).toBeInTheDocument()
+    const input = screen.getByRole("spinbutton") as HTMLInputElement
+    expect(input.value).toBe("3")
+    expect(screen.getByText(/\/ 10/)).toBeInTheDocument()
   })
 
   it("disables prev on page 1", () => {
@@ -59,5 +61,59 @@ describe("Pagination", () => {
     )
     fireEvent.click(screen.getByRole("button", { name: "次へ" }))
     expect(onChange).toHaveBeenCalledWith(4)
+  })
+
+  it("jumps to first page when first button clicked", () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Pagination page={5} totalPages={10} onChange={onChange} />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "最初" }))
+    expect(onChange).toHaveBeenCalledWith(1)
+  })
+
+  it("jumps to last page when last button clicked", () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Pagination page={3} totalPages={10} onChange={onChange} />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "最後" }))
+    expect(onChange).toHaveBeenCalledWith(10)
+  })
+
+  it("uses maxJumpPage as last page ceiling when smaller than totalPages", () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Pagination
+        page={1}
+        totalPages={1000}
+        onChange={onChange}
+        maxJumpPage={500}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "最後" }))
+    expect(onChange).toHaveBeenCalledWith(500)
+  })
+
+  it("commits page input on Enter", () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Pagination page={1} totalPages={10} onChange={onChange} />,
+    )
+    const input = screen.getByRole("spinbutton") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "7" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(onChange).toHaveBeenCalledWith(7)
+  })
+
+  it("clamps page input to valid range on blur", () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <Pagination page={1} totalPages={10} onChange={onChange} />,
+    )
+    const input = screen.getByRole("spinbutton") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "9999" } })
+    fireEvent.blur(input)
+    expect(onChange).toHaveBeenCalledWith(10)
   })
 })

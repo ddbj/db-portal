@@ -2,6 +2,7 @@ import { Fragment } from "react"
 
 import { Table } from "@/components/ui"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
+import { isSingleRowGroup } from "@/lib/submit-alt3"
 import type {
   AccessRestriction,
   ChipAxis,
@@ -12,6 +13,7 @@ import type {
 } from "@/types/submit-alt3"
 
 import FileRow from "./FileRow"
+import GroupFileRow from "./GroupFileRow"
 import GroupHeader from "./GroupHeader"
 
 // MAG/SAG chain Group での派生段階。Rule 8a の raw → primary → binned → mag/sag に対応
@@ -73,6 +75,9 @@ const FileTable = ({
       <Table>
         <thead>
           <tr>
+            <th>
+              {t("routes.submitAlt3.tableColumns.kind.label")}
+            </th>
             <th className="w-1/3">
               {t("routes.submitAlt3.tableColumns.file.label")}
             </th>
@@ -81,9 +86,6 @@ const FileTable = ({
             </th>
             <th>
               {t("routes.submitAlt3.tableColumns.access.label")}
-            </th>
-            <th>
-              {t("routes.submitAlt3.tableColumns.dataForm.label")}
             </th>
             <th>
               {t("routes.submitAlt3.tableColumns.chips.label")}
@@ -96,16 +98,37 @@ const FileTable = ({
             const members = group.memberFileIds
               .map((id) => submission.fileEntries.find((f) => f.id === id))
               .filter((f): f is NonNullable<typeof f> => f !== undefined)
-            const isMulti = group.groupType !== "single"
+
+            // クラス A (single / pair-end / 10x / pacbio-hdf5 / two-color / mage-tab / imaging-ms):
+            //   1 Group = 1 行に集約。GroupHeader は出さず、ファイル列セルに displayName を縦並び表示。
+            //   docs/submit-alt3.md §4.1 / docs/submit-alt3-tags.md §5.1
+            if (isSingleRowGroup(group.groupType)) {
+              const groupHighlighted = members.some(
+                (m) => highlightedFileIds?.has(m.id) ?? false,
+              )
+
+              return (
+                <GroupFileRow
+                  key={group.id}
+                  group={group}
+                  files={members}
+                  highlighted={groupHighlighted}
+                  onEditCell={onEditCell}
+                  onRemove={onRemoveFile}
+                  {...(onEditRow ? { onEdit: onEditRow } : {})}
+                  onSetChip={onSetChip}
+                  onResetChipManual={onResetChipManual}
+                />
+              )
+            }
+
+            // クラス B (hybrid / multiplex) / クラス C (variation-ref / mag-sag-chain /
+            // assembly-annotation / jga-dataset): 複数行表示 + GroupHeader を維持
+            const isMulti = true
 
             return (
               <Fragment key={group.id}>
-                {isMulti && (
-                  <GroupHeader
-                    group={group}
-                    memberCount={members.length}
-                  />
-                )}
+                <GroupHeader group={group} memberCount={members.length} />
                 {members.map((m) => (
                   <FileRow
                     key={m.id}

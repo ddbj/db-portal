@@ -488,34 +488,26 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### 検索条件サマリ表示
 
-`/search/results?q=<DSL>` で到達した検索結果ページは、ヘッダ位置に**検索条件サマリチップ**を表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま 1 つの chip に出す。`q` が未指定 (`/search/results?db=<id>` のみ) の場合はサマリチップを表示しない。
+`/search/results?q=<DSL>` で到達した検索結果ページは、上部 SearchBox の直下に**クエリプレビュー行**を 1 行で表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま表示し、編集 / クリア / コピーの 3 アクションを行末に並べる。`q` が未指定 (`/search/results?db=<id>` のみ) の場合は表示しない。
 
-**根拠:** portal の URL 表現を `?q=<DSL>` 1 本に統一しているため、シンプル検索由来 / Advanced Search 由来 / Sidebar 絞り込み由来を区別する必要がない。すべて単一の AST のシリアライズ形式である。
+**根拠:** portal の URL 表現を `?q=<DSL>` 1 本に統一しているため、シンプル検索由来 / Advanced Search 由来 / Sidebar 絞り込み由来を区別する必要がない。DB ラベルは上部 SearchBox の disabled DbDropdown と H2 で既に提示されているため、プレビュー行では DSL 文字列のみに集中する。
 
 **レイアウト:**
 
 ```
-┌─ ヘッダー ──────────────────────────────────────────────────────────────┐
-│ [🔍 BioProject で絞り込み中: "cancer" AND organism:"Homo sa            │
-│   piens"]                       [検索画面で編集] [✕ クリア]            │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─ クエリプレビュー (1 行) ──────────────────────────────────────────────┐
+│ クエリ  "cancer" AND organism:"Homo sapiens"   [✏ 編集] [✕ クリア] [📋] │
+└────────────────────────────────────────────────────────────────────────┘
 ```
-
-**サマリ文言の生成ルール:**
-
-| 条件 | 表示 |
-|---|---|
-| `q` の中身 | DSL 文字列をそのまま表示（CSS で折り返し） |
-| 単一 DB 指定時 | プレフィックスに `{DB UI ラベル} で絞り込み中: ` を付与（例: `BioProject で絞り込み中:`） |
-| 横断モード（`db` 未指定） | プレフィックスに `全データベースで絞り込み中: ` を付与 |
 
 **操作:**
 
-- **[検索画面で編集] ボタン**: 現在のクエリを引き継いで `/search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
+- **[✏ 検索画面で編集] ボタン**: 現在のクエリを引き継いで `/search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
 - **[✕ クリア] ボタン**: `q`・サイドバー由来絞り込み・ページング・ソート等の検索条件をすべて解除する。`db` は保持する。
   - 単一 DB モード (`db` 指定あり) → `/search/results?db=<id>` に遷移する
   - 横断モード (`db` 未指定) → トップページ `/` にリダイレクトする
-- サマリチップ自体にはクリックアクションは割り当てない。
+- **[📋 コピー] ボタン**: 表示中の DSL 文字列をクリップボードにコピーする。
+- DSL 表示自体にはクリックアクションは割り当てない（テキスト選択は許可）。
 
 ### ヒット件数表示
 
@@ -523,7 +515,7 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 - 横断検索: DB カードに件数を大きく表示（`noindex` なのでクロール負荷は気にせず同期取得）
 - DB 指定検索: 「全 X 件中 N-M 件を表示」形式でページネーション近傍に置く
-- 10,000 件超で cursor 非対応（Solr バックエンド）の場合は「10,000 件以上」と表記し、正確な件数は出さない
+- 10,000 件超で cursor 非対応（Solr バックエンド）の場合も、API が返す実数の `total` をそのまま表記する（例「全 43,869,940 件中 1-20 件を表示」）。表示できるのが 10,000 件までである旨は件数表示の横に置く info アイコンの hover tooltip で伝える
 - ES バックエンドで `track_total_hits` により正確な件数が取れるケースでも、上限を超える場合は「X 件以上（正確な件数は絞り込みを推奨）」と表記する
 
 ### 10,000 件超のハンドリング
@@ -531,16 +523,16 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 | バックエンド | 件数表示 | ページ送り |
 |---|---|---|
 | ES（`sra`/`bioproject`/`biosample`/`jga`/`gea`/`metabobank`） | 正確な件数 | 10,000 件までは `page` ベース、超過時は cursor-based |
-| Solr（Trad / Taxonomy） | 10,000 件以上の場合「10,000 件以上」と表記 | 10,000 件まで。500 ページ目（`perPage=20` 換算）でページャは無効化 |
+| Solr（Trad / Taxonomy） | 10,000 件超でも実数の `total` を表示（横の info アイコン hover で 10,000 件 limit を案内） | 10,000 件まで。`page * perPage >= 10000` でページャ「次へ」「最後へ」を無効化（perPage=20 換算で 500 ページ目） |
 
-Solr バックエンド（Trad / Taxonomy）で件数が 10,000 以上のとき、ページャの直下に `Callout type="info"` を出す:
+Solr バックエンド（Trad / Taxonomy）で件数が 10,000 以上のとき、SearchToolbar の件数表示の横に **info アイコン + hover tooltip** を出す（独立した Callout は出さない。NCBI Entrez 風に件数表示と一体化させ、上下のページャ近傍にコンパクトに収める）:
 
-- **文言**: 「表示できる検索結果は 10,000 件までです。キーワードを追加するか、検索画面で条件を絞り込んでください。」
-- **CTA**: 「検索画面を開く」（`TextLink` で `/search` へ遷移。DB が選択済みなら `?db=xxx` 引き継ぎ）
-- **タイプ**: `info`（システム上の制約であり error ではないため）
-- **表示条件**: `db` が `trad` または `taxonomy` かつ件数が 10,000 以上
+- **アイコン**: `lucide-react` の `Info`（16px、gray-400）
+- **tooltip 文言**: 「表示できる検索結果は 10,000 件までです。キーワードを追加して絞り込んでください。」
+- **実装**: HTML 標準の `title` 属性 + `aria-label` で読み上げ対応、tab フォーカス可
+- **表示条件**: `db` が `trad` または `taxonomy` かつ件数が 10,000 以上（= `hardLimitReached && isSolrBackedDb(db)`）
 
-ES バックエンドは cursor-based で全件走査できるため、10,000 件超でも Callout は出さない。件数表示は正確な値（例「全 45,678 件」）のまま。ただし非常に大量のヒット時（例 100 万件超）は絞り込みを促す別の案内を将来検討。
+ES バックエンドは cursor-based で全件走査できるため、10,000 件超でも tooltip は出さない。件数表示は正確な値（例「全 45,678 件」）のまま。ただし非常に大量のヒット時（例 100 万件超）は絞り込みを促す別の案内を将来検討。
 
 ### loading / error 状態
 
@@ -663,38 +655,42 @@ null / 空配列の field は skip して、表示すべき field がない場�
 
 #### ページ全体のレイアウト
 
-```
-┌─ ヘッダ ─────────────────────────────────────────────────────┐
-│ [search human                                    ] [Search]   │
-└──────────────────────────────────────────────────────────────┘
+DB 指定検索結果（`/search/results?db=<id>&q=<DSL>`）は NCBI Entrez 風の 3 カラム構成を採る。検索結果カードリストをページ上部の目線位置に置くため、上部には検索ボックスとクエリプレビューだけを残し、LLM 補助は右サイドカラムに切り出す。
 
-┌─ Sidebar(left) ─┐  全 189,923 件中 1-20 件を表示
-│ Filter          │   ソート: [Relevance v]  表示: [20 v]
-│  Entry type     │
-│   o All         │  ┌─ 結果カード x20 ────────────────────┐
-│   o sra-exp(N)  │  │  ...                                 │
-│   ...           │  └──────────────────────────────────────┘
-│  Organism       │
-│   [x] Homo s..  │  [< 前へ]  1 / 9,497 ページ  [次へ >]
-│   [ ] Mus m..   │
-│  Accessibility  │
-│   [ ] public..  │
-│  Package        │
-│   ...           │
-│  Host           │
-│   [____________]│
-│  Strain         │
-│   [____________]│
-│  Date range     │
-│   o Publication │
-│   [All][1y][5y] │
-│   From [____]   │
-│   To   [____]   │
-└─────────────────┘
+```
+┌─ 上部 ─────────────────────────────────────────────────────────────────────┐
+│ BioProject                                                                 │
+│ [BioProject ▼ (disabled)] [cancer                              ] [検索]    │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ 左 ────────────┐ ┌─ 中央 ─────────────────────────────┐ ┌─ 右 ──────────┐
+│ 絞り込み         │ │ 全 43,869,940 件中 1-20 件 (i)       │ │ AI 検索アシス │
+│  Entry type      │ │  [<前] 1 / 5,035 [次>]               │ │   タント BETA │
+│   o All          │ │  ソート [関連度▼]   表示 [20▼]      │ │               │
+│   o sra-exp(N)   │ │                                      │ │ 自然文で絞り │
+│  Organism        │ │  ┌─ 結果カード x20 ───────────────┐ │ │ 込み案を生成 │
+│   [x] Homo s..   │ │  │ PRJNA729258      2024-03-15    │ │ │              │
+│   [ ] Mus m..    │ │  │ Cancer specific microbiome ... │ │ │ 例 (chip):    │
+│  Accessibility   │ │  │ Homo sapiens (9606)            │ │ │  ヒト 2022 〜 │
+│  Package         │ │  │ Project type: ...              │ │ │  JSPS ...    │
+│  Date range      │ │  └────────────────────────────────┘ │ │              │
+│   o Publication  │ │  ...                                 │ │ [_________]  │
+│   From [____]    │ │                                      │ │ [提案を生成] │
+│   To   [____]    │ │  [<前] 1 / 5,035 [次>]               │ │              │
+│                  │ │                                      │ │ クエリ        │
+│                  │ │                                      │ │  cancer       │
+│                  │ │                                      │ │  [編集][クリア]│
+│                  │ │                                      │ │  [コピー]     │
+└──────────────────┘ └──────────────────────────────────────┘ └──────────────┘
 ```
 
-- **ツールバー**（結果リスト上部）: 件数表示 + ソートセレクト + 表示件数セレクト
-- **Sidebar Filter UI**（左サイドバー、`/search/results?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar Filter UI](#sidebar-filter-ui)
+- **上部 SearchBox**: `/search` と同じ DbDropdown + 検索入力 + Search ボタンの統合フォームを再利用する。`/search/results` では DbDropdown を **disabled state** で表示し、現在の DB を常時可視化する。DB を変更するには右カラムのクエリプレビュー行の「検索画面で編集」から `/search` に戻る動線とする。送信すると free text を反映した DSL を組み立てて `/search/results?q=<新DSL>&db=<同じ>` に navigate する。検索構文の hintText は表示せず、純粋な検索入力に集中させる
+- **SearchToolbar**（中央 pane 上部、`/search/results?db=*` モードのみ）: 件数表示 + ミニページネーション + ソートセレクト + 表示件数セレクトを 1 ブロックに集約する。狭幅ブラウザでは flex-wrap で 2 行に折り返す
+- **ページネーション（中央 pane）**: 結果カードリストの**上下両方**に配置する。上は SearchToolbar 内のミニページャ、下は独立した Pagination コンポーネント。1 ページ分の結果を見終わってすぐ次へ送れるようにする（NCBI Entrez と同等の配置）
+- **Sidebar Filter UI**（左カラム、`/search/results?db=*` モードのみ）: facet checkbox + keyword input + date range filter。詳細は次節 [Sidebar Filter UI](#sidebar-filter-ui)
+- **LLM Assist Box**（右カラム上段、`/search/results?db=*` モードのみ）: `LlmAssistBox` を縦長のサイドカラム向けにレイアウトし、`mode="db-list"` で現在クエリへの絞り込み案を生成する。`lg` 以下のブレークポイントでは中央カラム下に積む
+- **クエリプレビュー**（右カラム下段、`/search/results?db=*` モードのみ）: LLM Assist Box の下に compact 表示する。DSL 文字列 + 「編集」「クリア」「コピー」アクションを 1 ブロックに集約し、従来の検索条件サマリチップを兼ねる。エラーやバリデーション結果は `/search` 側にのみ出し、`/search/results` 側では純粋な表示用とする
+- **横断検索結果（`db=all`）**: 上部 SearchBox（DB セレクタは "全データベース（横断）" を disabled で表示）+ クエリプレビュー（compact, 横配置）+ 左カラムに **Cross Sidebar Filter UI**（Tier 1 cross の `organism` facet + `date_published` 単軸 range のみ）+ 中央カラムに ActiveFilterChips / DB カードヒット一覧の 2 カラム構成とする。LLM Assist は出さない。DB 別 facet / per-DB keyword / subtype は cross-search API が `field-not-available-in-cross-db` を返すため sidebar に出さない
 
 #### カードクリック時の遷移
 
@@ -702,13 +698,13 @@ null / 空配列の field は skip して、表示すべき field がない場�
 
 #### Sidebar Filter UI
 
-DB 指定検索結果ページ（`/search/results?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search/results?db=all`）では Sidebar Filter UI は表示しない（DB 別 facet endpoint の結果が混在しないため）。
+DB 指定検索結果ページ（`/search/results?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search/results?db=all`）にも縮退版の **Cross Sidebar Filter** を表示する（cross-search API が q に受け付ける Tier 1 cross の許可リスト = `organism` facet と `date_published` 単軸 range のみ。subtype / per-DB facet / per-DB keyword は不可）。facet bucket は `GET /facets`（dbType=null、cross-type aggregation）で取得する。
 
 ##### 構成（DB 別）
 
 各 DB の sidebar 構成は portal 側 `src/lib/sidebar-fields.ts` が SSOT。
 
-全 DB のサイドバー最上部には、後述の **Free word section**（フィールドを問わないフリーワード入力）を共通で配置する。
+フィールド非依存のフリーワード入力は、`/search/results` のページ上部 SearchBox に集約する（SidebarFilter には Free word section を置かない。AST レベルでは従来通り FreeText ノードとして表現し、`SidebarState.freeText` で sidebar / 上部 SearchBox の同期に使う）。
 
 | DB | facet（checkbox + count） | keyword（text input + 300ms debounce） | date range | subtype radio |
 |---|---|---|---|---|
@@ -723,12 +719,13 @@ DB 指定検索結果ページ（`/search/results?db=*`）には左サイドバ�
 
 `accessibility` / `library_selection` は API allowlist 拡張依頼（`from-db-portal-allowlist-expansion.md`）で追加された field。
 
-##### Free word section
+##### Free word（上部 SearchBox に集約）
 
-- サイドバー最上部に常設するフィールド非依存のフリーワード入力（テキスト 1 本）
-- 入力値は keyword section と同じ 300ms debounce で URL 反映
+- フィールド非依存のフリーワード入力は `/search/results` ページ上部の SearchBox に集約する（NCBI Entrez のヘッダ検索バーと同じ位置取り）
+- SidebarFilter には Free word section を置かない。状態は `SidebarState.freeText` に保持し、上部 SearchBox とは双方向に同期する
+- 上部 SearchBox の送信ハンドラは `handleSidebarChange({...derivedSidebar, freeText: value})` を呼び、他の sidebar 状態（facet / keyword / date range / subtype）と residual を保持したまま FreeText 部分だけを更新する
 - DSL 合算: `freeText(value)` ノード（シンプル検索ボックスや Advanced のフリーワード条件と同じ表現）
-- 1 サイドバーに 1 つのみ。AST の FreeText 位置制約に合わせて常に root の AND 直下に置かれる
+- 1 ページに 1 つのみ。AST の FreeText 位置制約に合わせて常に root の AND 直下に置かれる
 
 ##### facet（controlled value）
 
@@ -795,6 +792,7 @@ URL `?q=<DSL>` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse`
 | 件数選択肢 | 20 / 50 / 100 |
 | 方式 | offset-based（上限 10,000 件）+ cursor-based（10,000 件超、ES バックエンドのみ） |
 | ソート | Relevance（デフォルト）/ Date 新しい順 / Date 古い順 |
+| 配置 | DB 指定検索結果は結果カードリストの**上下両方**にページャを置く（上は SearchToolbar 内、下は独立 Pagination）。横断モードはページャ自体なし |
 
 DDBJ Search API の既存ページネーション方式をそのまま利用する。ES バックエンドは PIT + `search_after` で 10,000 件超の deep paging を提供。Solr バックエンド（ARSA / TXSearch）は Solr 4.4 の制約で cursor 非対応のため offset ベースの上位 10,000 件までサポート、それ以上は対象外。
 

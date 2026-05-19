@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Select } from "@/components/ui"
 import cn from "@/components/ui/cn"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
+import { BUTTON_META } from "@/lib/mock-data/submit-alt3"
 import type {
   AccessRestriction,
   ChipAxis,
@@ -86,11 +87,22 @@ const FileRow = ({
     })),
   ]
 
+  const kindMeta = BUTTON_META[file.buttonType]
+  const kindLabel = t(
+    `routes.submitAlt3.buttons.${kindMeta.i18nKey}.shortLabel`,
+    { defaultValue: file.buttonType },
+  )
+
   return (
     <tr
       data-testid={`file-row-${file.id}`}
       className={cn(highlighted && "bg-primary-50/40")}
     >
+      <td data-testid={`file-cell-kind-${file.id}`}>
+        <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+          {kindLabel}
+        </span>
+      </td>
       <td
         className={cn(
           magSagDepth !== undefined
@@ -140,21 +152,10 @@ const FileRow = ({
           }
         />
       </td>
-      <td data-testid={`file-cell-dataForm-${file.id}`}>
-        {/* dataForm は追加時の modal で確定 (Button + chip から自動推測)。
-            テーブル上は read-only で表示し、列内編集は提供しない。 */}
-        <span
-          className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
-          aria-label={t("routes.submitAlt3.tableColumns.dataForm.label")}
-        >
-          {file.dataForm !== undefined
-            ? t(`routes.submitAlt3.tableColumns.dataForm.values.${file.dataForm}`)
-            : t("routes.submitAlt3.tableColumns.unset")}
-        </span>
-      </td>
       <td data-testid={`file-cell-chips-${file.id}`}>
         <ChipList
           fileId={file.id}
+          buttonType={file.buttonType}
           chipTags={file.chipTags}
           onSetChip={onSetChip}
           onResetChipManual={onResetChipManual}

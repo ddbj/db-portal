@@ -31,6 +31,21 @@ const DEFAULT_DATE_AXES: readonly DateAxis[] = [
   "date_created",
 ]
 
+const CROSS_DATE_AXES: readonly DateAxis[] = ["date_published"]
+
+export const CROSS_SIDEBAR_FIELDS: SidebarFieldsForDb = {
+  facets: [
+    {
+      facetKey: "organism",
+      dslName: "organism",
+      labelKey: "routes.search.fields.organism.label",
+    },
+  ],
+  keywords: [],
+  dateAxes: CROSS_DATE_AXES,
+  subtype: false,
+}
+
 const advancedFieldLabel = (id: string): string =>
   `routes.search.fields.${id}.label`
 

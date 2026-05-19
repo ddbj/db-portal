@@ -135,22 +135,14 @@ describe("generateFlowCard / 例 1 prokaryote raw + assembly (data-model §4.3.1
 describe("generateFlowCard / 例 2 human restricted + per-sample VCF (JGA 集約)", () => {
   const card = generateFlowCard(example2HumanRestrictedVcf())
 
-  it("Step 数 = 11 (DBCLS + JGA submission/study/sample×2/experiment/data/analysis/dataset/policy + humandbs)", () => {
-    expect(card.steps).toHaveLength(11)
+  it("Step 数 = 3 (DBCLS + JGA 単一 + humandbs)", () => {
+    expect(card.steps).toHaveLength(3)
   })
 
-  it("物理表示順序: DBCLS → JGA chain → humandbs", () => {
+  it("物理表示順序: DBCLS → jga → humandbs", () => {
     expect(stepDescriptors(card.steps)).toEqual([
       { id: "step-dbcls-application", service: "dbcls-application" },
-      { id: "step-jga-submission", service: "jga-submission" },
-      { id: "step-jga-study", service: "jga-study" },
-      { id: "step-jga-sample-bs-1", service: "jga-sample" },
-      { id: "step-jga-sample-bs-2", service: "jga-sample" },
-      { id: "step-jga-experiment", service: "jga-experiment" },
-      { id: "step-jga-data", service: "jga-data" },
-      { id: "step-jga-analysis", service: "jga-analysis" },
-      { id: "step-jga-dataset", service: "jga-dataset" },
-      { id: "step-jga-policy", service: "jga-policy" },
+      { id: "step-jga", service: "jga" },
       { id: "step-humandbs", service: "humandbs" },
     ])
   })
@@ -160,44 +152,67 @@ describe("generateFlowCard / 例 2 human restricted + per-sample VCF (JGA 集約
     expect(card.steps.find((s) => s.service === "biosample")).toBeUndefined()
   })
 
-  it("DBCLS Step に DBCLS 提供申請 URL が intraDbInputs.url で乗る (Rule 12 enrich)", () => {
+  it("DBCLS Step に DBCLS 提供申請 URL が intraDbInputs.url で乗る (Rule 12 enrich、linkLabel は i18n key)", () => {
     const dbcls = card.steps.find((s) => s.id === "step-dbcls-application")!
     expect(dbcls.badgeKind).toBe("external")
     expect(dbcls.intraDbInputs.url).toBe(
       "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
     )
-    expect(dbcls.intraDbInputs.linkLabel).toBe("DBCLS 提供申請システム")
+    expect(dbcls.intraDbInputs.linkLabel).toBe(
+      "routes.submitAlt3.flowSteps.dbcls-application.serviceLink",
+    )
   })
 
-  it("JGA Experiment / Data は raw Group のみを target", () => {
-    const exp = card.steps.find((s) => s.id === "step-jga-experiment")!
-    expect(exp.targetFileIds).toEqual(["file-1", "file-2"])
-    expect(exp.upstreamStepIds).toEqual([
-      "step-jga-sample-bs-1",
-      "step-jga-sample-bs-2",
+  it("JGA Step は notes-only (intraDbInputs={}、8 オブジェクトの prep notes + raw/analysis 用 notes が乗る)", () => {
+    const jga = card.steps.find((s) => s.id === "step-jga")!
+    expect(jga.intraDbInputs).toEqual({})
+    expect(jga.badgeKind).toBe("internal")
+    expect(jga.upstreamStepIds).toEqual(["step-dbcls-application"])
+    // 全 jgaPrep ノート + raw (experiment/data) + analysis (Rule 6b)
+    for (const key of [
+      "overview",
+      "submission",
+      "study",
+      "sample",
+      "experiment",
+      "data",
+      "analysis",
+      "dataset",
+      "policy",
+    ]) {
+      expect(jga.notes, `jgaPrep.${key} が乗る`).toContain(
+        `routes.submitAlt3.flowGen.rule06.jgaPrep.${key}`,
+      )
+    }
+    expect(jga.notes).toContain("routes.submitAlt3.flowGen.rule06b.analysisNotes")
+    // phenotype-only でないので phenotype-only ノートは乗らない
+    expect(jga.notes).not.toContain(
+      "routes.submitAlt3.flowGen.rule06c.phenotypeOnlyDataset",
+    )
+  })
+
+  it("JGA Step は raw + per-sample VCF 行を全て target", () => {
+    const jga = card.steps.find((s) => s.id === "step-jga")!
+    expect(jga.targetFileIds).toEqual(["file-1", "file-2", "file-3"])
+  })
+
+  it("JGA Step は 8 prefix の発行 accession を表示する", () => {
+    const jga = card.steps.find((s) => s.id === "step-jga")!
+    expect(jga.issuedAccessionTypes).toEqual([
+      "JGA######",
+      "JGAS######",
+      "JGAN#########",
+      "JGAX#########",
+      "JGAR#########",
+      "JGAZ#########",
+      "JGAD######",
+      "JGAP######",
     ])
-    const data = card.steps.find((s) => s.id === "step-jga-data")!
-    expect(data.upstreamStepIds).toEqual(["step-jga-experiment"])
   })
 
-  it("JGA Analysis は per-sample VCF (analysis-output) を target", () => {
-    const an = card.steps.find((s) => s.id === "step-jga-analysis")!
-    expect(an.targetFileIds).toEqual(["file-3"])
-    expect(an.upstreamStepIds).toEqual([
-      "step-jga-sample-bs-1",
-      "step-jga-sample-bs-2",
-    ])
-  })
-
-  it("JGA Dataset の upstream は Data + Analysis 両方", () => {
-    const ds = card.steps.find((s) => s.id === "step-jga-dataset")!
-    expect(ds.upstreamStepIds).toEqual(["step-jga-data", "step-jga-analysis"])
-    expect(ds.intraDbInputs.phenotypeOnly).toBe(false)
-  })
-
-  it("humandbs Step は jga-policy を upstream に持ち external URL を持つ", () => {
+  it("humandbs Step は jga を upstream に持ち external URL を持つ", () => {
     const hd = card.steps.find((s) => s.id === "step-humandbs")!
-    expect(hd.upstreamStepIds).toEqual(["step-jga-policy"])
+    expect(hd.upstreamStepIds).toEqual(["step-jga"])
     expect(hd.intraDbInputs.url).toBe("https://humandbs.dbcls.jp/")
   })
 })
@@ -268,17 +283,26 @@ describe("generateFlowCard / 例 3 metagenome MAG chain (Rule 8)", () => {
 describe("generateFlowCard / 例 4 host-pathogen 混合 (Rule 5 / Rule 6)", () => {
   const card = generateFlowCard(example4HostPathogenMix())
 
-  it("Step 数 = 14 (DBCLS + pathogen 系 5 + JGA chain 7 + humandbs)", () => {
-    expect(card.steps).toHaveLength(14)
+  it("Step 数 = 7 (DBCLS + pathogen 系 4 (BS merge 後) + JGA 単一 + humandbs)", () => {
+    // pathogen BS が 2 → merge により 1 Step (segments=2)
+    // JGA は 8 オブジェクトを単一 Step に集約
+    expect(card.steps).toHaveLength(7)
   })
 
-  it("Pathogen 系 (BP + BS×2 + DRA + MSS) と JGA 系が両方生成される", () => {
+  it("Pathogen 系 (BP + BS(merged segments=2) + DRA + MSS) と JGA + humandbs が両立する", () => {
     const services = card.steps.map((s) => s.service)
     expect(services.filter((s) => s === "primary-bioproject")).toHaveLength(1)
-    expect(services.filter((s) => s === "biosample")).toHaveLength(2)
+    expect(services.filter((s) => s === "biosample")).toHaveLength(1)
     expect(services.filter((s) => s === "dra")).toHaveLength(1)
     expect(services.filter((s) => s === "mss")).toHaveLength(1)
-    expect(services.filter((s) => s === "jga-sample")).toHaveLength(1)
+    expect(services.filter((s) => s === "jga")).toHaveLength(1)
+    const pathogenBs = card.steps.find(
+      (s) => s.service === "biosample",
+    )!
+    expect(pathogenBs.segments?.map((seg) => seg.segmentId)).toEqual([
+      "step-biosample-bs-2",
+      "step-biosample-bs-3",
+    ])
   })
 
   it("Umbrella BP は出ない (open 集合内で organism は prokaryote 1 系統のみ → assignments.length=1)", () => {
@@ -292,38 +316,40 @@ describe("generateFlowCard / 例 4 host-pathogen 混合 (Rule 5 / Rule 6)", () =
     expect(bp.intraDbInputs.commonLineage).toBe("Bacteria")
   })
 
-  it("JGA Sample は host BS (bs-1) ごとに 1 個", () => {
-    const samples = card.steps.filter((s) => s.service === "jga-sample")
-    expect(samples).toHaveLength(1)
-    expect(samples[0]!.id).toBe("step-jga-sample-bs-1")
-    expect(samples[0]!.targetFileIds).toEqual(["file-1", "file-2"])
+  it("JGA Step は host 行を target に含む (per-individual の Sample 内訳は JGA システム側で記入)", () => {
+    const jga = card.steps.find((s) => s.service === "jga")!
+    expect(jga.id).toBe("step-jga")
+    expect(jga.targetFileIds).toEqual(["file-1", "file-2"])
   })
 })
 
 describe("generateFlowCard / 例 5 phenotype-only (Rule 6c)", () => {
   const card = generateFlowCard(example5PhenotypeOnly())
 
-  it("Step 数 = 7 (DBCLS + JGA submission/study/sample/dataset/policy + humandbs)", () => {
-    expect(card.steps).toHaveLength(7)
+  it("Step 数 = 3 (DBCLS + JGA 単一 + humandbs)", () => {
+    expect(card.steps).toHaveLength(3)
   })
 
-  it("JGA Experiment / Data / Analysis は phenotype-only で生成されない", () => {
-    const services = card.steps.map((s) => s.service)
-    expect(services).not.toContain("jga-experiment")
-    expect(services).not.toContain("jga-data")
-    expect(services).not.toContain("jga-analysis")
+  it("JGA Step の notes に experiment/data/analysis prep は出ず、phenotype-only ノートが乗る", () => {
+    const jga = card.steps.find((s) => s.id === "step-jga")!
+    expect(jga.notes).not.toContain(
+      "routes.submitAlt3.flowGen.rule06.jgaPrep.experiment",
+    )
+    expect(jga.notes).not.toContain(
+      "routes.submitAlt3.flowGen.rule06.jgaPrep.data",
+    )
+    expect(jga.notes).not.toContain(
+      "routes.submitAlt3.flowGen.rule06.jgaPrep.analysis",
+    )
+    expect(jga.notes).toContain(
+      "routes.submitAlt3.flowGen.rule06c.phenotypeOnlyDataset",
+    )
   })
 
-  it("JGA Dataset は Sample を直接 upstream、phenotypeOnly=true", () => {
-    const ds = card.steps.find((s) => s.id === "step-jga-dataset")!
-    expect(ds.upstreamStepIds).toEqual(["step-jga-sample-bs-1"])
-    expect(ds.intraDbInputs.phenotypeOnly).toBe(true)
-  })
-
-  it("JGA Sample に Rule 10c notes (Curator/DBCLS 相談 + URL) が乗る", () => {
-    const sample = card.steps.find((s) => s.id === "step-jga-sample-bs-1")!
-    expect(sample.notes).toContain("routes.submitAlt3.flowGen.rule10c.jgaSampleNotes")
-    expect(sample.notes).toContain("https://www.ddbj.nig.ac.jp/contact-ddbj-e.html")
+  it("JGA Step に Rule 10c notes (Curator/DBCLS 相談 + URL) が乗る", () => {
+    const jga = card.steps.find((s) => s.id === "step-jga")!
+    expect(jga.notes).toContain("routes.submitAlt3.flowGen.rule10c.jgaSampleNotes")
+    expect(jga.notes).toContain("https://www.ddbj.nig.ac.jp/contact-ddbj-e.html")
   })
 })
 
@@ -362,8 +388,9 @@ describe("generateFlowCard / 例 7 hybrid (短 + 長 + 組み立て)", () => {
   // 3 個独立 Group としての PoC 出力を golden として固定。
   const card = generateFlowCard(example7HybridAssembly())
 
-  it("Step 数 = 7 (BP + BS×3 + DRA×2 + MSS)", () => {
-    expect(card.steps).toHaveLength(7)
+  it("Step 数 = 4 (BP + BS(merged segments=3) + DRA(merged segments=2) + MSS)", () => {
+    // 3 独立 Group → BS/DRA が Service 単位 merge で 1 Step に集約。BP と MSS は元から 1 件。
+    expect(card.steps).toHaveLength(4)
   })
 
   it("hybrid メタ Group が無いため Rule 15 globalWarning は出ない", () => {
@@ -376,21 +403,23 @@ describe("generateFlowCard / 例 7 hybrid (短 + 長 + 組み立て)", () => {
     expect(bp.intraDbInputs.projectDataType).toBe("Genome Sequencing")
   })
 
-  it("DRA Run が 2 個生成 (短鎖 group-1=bs-1、長鎖 group-2=bs-2)", () => {
-    const draIds = card.steps
-      .filter((s) => s.service === "dra")
-      .map((s) => s.id)
-    expect(draIds).toEqual(["step-dra-bs-1", "step-dra-bs-2"])
+  it("DRA Run は merge 後 1 Step、segments=2 (短鎖 step-dra-bs-1、長鎖 step-dra-bs-2)", () => {
+    const draSteps = card.steps.filter((s) => s.service === "dra")
+    expect(draSteps).toHaveLength(1)
+    expect(draSteps[0]!.segments?.map((seg) => seg.segmentId)).toEqual([
+      "step-dra-bs-1",
+      "step-dra-bs-2",
+    ])
   })
 })
 
 describe("generateFlowCard / 例 7-linked hybrid (短 + 長 + 組み立て、同 sample 関連付け)", () => {
   // 短鎖 raw + 長鎖 raw + 組み立て fasta を同 sample (bs-1) に関連付け、
-  // BP + BS + DRA×2 (短鎖 / 長鎖) + MSS = 5 Step に正規化される。
+  // BP + BS + DRA(merged) + MSS = 4 Step に集約される (Service 単位 merge)。
   const card = generateFlowCard(example7HybridAssemblyLinked())
 
-  it("Step 数 = 5 (BP + BS + DRA×2 + MSS)", () => {
-    expect(card.steps).toHaveLength(5)
+  it("Step 数 = 4 (BP + BS + DRA(merged segments=2) + MSS)", () => {
+    expect(card.steps).toHaveLength(4)
   })
 
   it("BS は 1 個 (sourceGroupIds=[group-1, group-2, group-3])", () => {
@@ -400,15 +429,11 @@ describe("generateFlowCard / 例 7-linked hybrid (短 + 長 + 組み立て、同
     expect(bsSteps[0]?.targetGroupIds).toEqual(["group-1", "group-2", "group-3"])
   })
 
-  it("PoC バグ: DRA Run 2 個が同 discriminator (bs-1) で Step ID 衝突 (rule04 で group id を suffix に持たない)", () => {
-    // 短鎖 (group-1) と 長鎖 (group-2) の DRA Run はどちらも bs-1 由来。
-    // rule04 の DRA discriminator は bs id のみなので、step ID `step-dra-bs-1` が重複する。
-    // React 描画では <li key> 重複となるため、本来は rule04 で group id を suffix に追加する必要あり。
-    // 本テストは現状のバグを golden として明示する (本番フェーズで rule04 改善時に expected も更新)。
+  it("DRA Run は merge 後 1 Step、segments=2 (rule04 が同 discriminator=bs-1 で 2 件生成し merge で集約)", () => {
     const draSteps = card.steps.filter((s) => s.service === "dra")
-    expect(draSteps).toHaveLength(2)
-    const ids = draSteps.map((s) => s.id)
-    expect(ids).toEqual(["step-dra-bs-1", "step-dra-bs-1"])
+    expect(draSteps).toHaveLength(1)
+    expect(draSteps[0]!.id).toBe("step-dra-bs-1")
+    expect(draSteps[0]!.segments).toHaveLength(2)
   })
 
   it("MSS は assembly Group (group-3) + bs-1、Rule 13 で BCT/WGS/wgs", () => {
@@ -707,29 +732,26 @@ describe("generateFlowCard / Rule 13 chip 変化 → division override 連動", 
 })
 
 describe("generateFlowCard / 物理表示順序ソート安定性", () => {
-  it("例 2 で JGA Step 群が SERVICE_PHYSICAL_ORDER の順 (submission/study/sample/.../policy)", () => {
+  it("例 2 で JGA は単一 Step (`jga`) で生成され、SERVICE_PHYSICAL_ORDER では togovar の直後 / 外部 Service より前に並ぶ", () => {
     const card = generateFlowCard(example2HumanRestrictedVcf())
-    const jgaServices = card.steps
-      .map((s) => s.service)
-      .filter((s) => s.startsWith("jga-"))
-    expect(jgaServices).toEqual([
-      "jga-submission",
-      "jga-study",
-      "jga-sample",
-      "jga-sample",
-      "jga-experiment",
-      "jga-data",
-      "jga-analysis",
-      "jga-dataset",
-      "jga-policy",
+    const orderIdx = card.steps.findIndex((s) => s.service === "jga")
+    expect(orderIdx).toBeGreaterThan(-1)
+    // dbcls-application (Step 0) → jga (Step 1) → humandbs (Step 2) の順
+    expect(card.steps.map((s) => s.service)).toEqual([
+      "dbcls-application",
+      "jga",
+      "humandbs",
     ])
   })
 
-  it("同 service 内は id.localeCompare 昇順 (例 4 の biosample bs-2 → bs-3)", () => {
+  it("例 4 の biosample は merge 後 1 Step (segments で bs-2 → bs-3 を保持)", () => {
     const card = generateFlowCard(example4HostPathogenMix())
-    const bsIds = card.steps
-      .filter((s) => s.service === "biosample")
-      .map((s) => s.id)
-    expect(bsIds).toEqual(["step-biosample-bs-2", "step-biosample-bs-3"])
+    const bsSteps = card.steps.filter((s) => s.service === "biosample")
+    expect(bsSteps).toHaveLength(1)
+    expect(bsSteps[0]!.id).toBe("step-biosample-bs-2")
+    expect(bsSteps[0]!.segments?.map((seg) => seg.segmentId)).toEqual([
+      "step-biosample-bs-2",
+      "step-biosample-bs-3",
+    ])
   })
 })

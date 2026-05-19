@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { Callout, Heading } from "@/components/ui"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
@@ -6,6 +6,7 @@ import type {
   ChipAxis,
   FileEntry,
   FlowCard,
+  FlowStep,
   ServiceKind,
 } from "@/types/submit-alt3"
 
@@ -54,22 +55,36 @@ const FlowCardSection = ({
     [fileEntries],
   )
 
-  // StepInputPopover の open 管理: { stepId, focusField? }
+  // StepInputPopover の open 管理: { stepId, segmentId, focusField? }
+  // - stepId: merge 後 Step.id (UI scope)
+  // - segmentId: 編集対象 segment の id (= reducer の serviceDrafts キー)
   const [openInput, setOpenInput] = useState<
-    { stepId: string; focusField?: string } | null
+    { stepId: string; segmentId: string; focusField?: string } | null
   >(null)
 
-  const handleEditInputs = (stepId: string) => {
-    setOpenInput((prev) =>
-      prev?.stepId === stepId && prev.focusField === undefined
-        ? null
-        : { stepId },
-    )
-  }
+  const handleEditInputs = useCallback(
+    (stepId: string, segmentId?: string) => {
+      const targetSegmentId = segmentId ?? stepId
+      setOpenInput((prev) =>
+        prev?.segmentId === targetSegmentId && prev.focusField === undefined
+          ? null
+          : { stepId, segmentId: targetSegmentId },
+      )
+    },
+    [],
+  )
 
-  const handleFocusStepInput = (stepId: string, field: string) => {
-    setOpenInput({ stepId, focusField: field })
-  }
+  const handleFocusStepInput = useCallback(
+    (stepId: string, field: string) => {
+      setOpenInput({ stepId, segmentId: stepId, focusField: field })
+    },
+    [],
+  )
+
+  const handleCloseInput = useCallback(() => setOpenInput(null), [])
+
+  const findSegment = (step: FlowStep, segmentId: string) =>
+    step.segments?.find((s) => s.segmentId === segmentId)
 
   return (
     <section
@@ -115,6 +130,10 @@ const FlowCardSection = ({
           )
           const acknowledgedCount = step.warnings.length - activeWarnings.length
           const isInputOpen = openInput?.stepId === step.id
+          const openSegmentId = isInputOpen ? openInput.segmentId : undefined
+          const openSegment = openSegmentId
+            ? findSegment(step, openSegmentId)
+            : undefined
 
           return (
             <li key={step.id} data-testid={`flow-step-${step.id}`}>
@@ -137,11 +156,12 @@ const FlowCardSection = ({
               {isInputOpen && (
                 <StepInputPopover
                   step={step}
+                  {...(openSegment ? { segment: openSegment } : {})}
                   {...(openInput?.focusField !== undefined
                     ? { focusField: openInput.focusField }
                     : {})}
                   onUpdate={onUpdateStepInput}
-                  onClose={() => setOpenInput(null)}
+                  onClose={handleCloseInput}
                 />
               )}
             </li>

@@ -7,18 +7,25 @@ import {
   useSearchParams,
 } from "react-router"
 
+import { QueryPreview } from "@/components/advanced-search"
 import { LlmAssistBox } from "@/components/llm"
 import {
+  ActiveFilterChips,
+  CrossSidebarFilter,
   DbHitCountList,
-  Over10kCallout,
   Pagination,
   PartialFailureBanner,
   ResultCardList,
-  SearchSummaryChip,
   SearchToolbar,
   SidebarFilter,
 } from "@/components/search"
-import { Callout, Heading, SkeletonCard } from "@/components/ui"
+import {
+  Callout,
+  Heading,
+  SearchBox,
+  type SelectOption,
+  SkeletonCard,
+} from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import {
@@ -40,6 +47,7 @@ import {
   parseAstToSearchAst,
   type SearchAstNode,
   sidebarStateToAst,
+  splitAstForCrossSidebar,
   splitAstForSidebar,
 } from "@/lib/search-ast"
 import {
@@ -50,7 +58,7 @@ import {
   type SearchParams,
   type SortValue,
 } from "@/lib/search-url"
-import { sidebarFieldsForDb } from "@/lib/sidebar-fields"
+import { CROSS_SIDEBAR_FIELDS, sidebarFieldsForDb } from "@/lib/sidebar-fields"
 import type { SidebarState } from "@/lib/sidebar-state-types"
 import {
   DB_ORDER,
@@ -221,6 +229,43 @@ const CrossModeView = ({ params }: ModeViewProps) => {
 
   const hasQuery = params.q !== null
 
+  const parseQuery = useQuery({
+    queryKey: ["parseQCross", params.q] as const,
+    queryFn: ({ signal }) =>
+      parseQ({ q: params.q ?? "" }, signal),
+    enabled: params.q !== null && params.q !== "",
+    staleTime: Infinity,
+  })
+
+  const parsedAst: SearchAstNode | null = useMemo(() => {
+    if (parseQuery.data === undefined) return null
+
+    return parseAstToSearchAst(parseQuery.data.ast)
+  }, [parseQuery.data])
+
+  const { sidebar: derivedSidebar, residual } = useMemo(
+    () => splitAstForCrossSidebar(parsedAst),
+    [parsedAst],
+  )
+
+  const freeTextForFacets = useMemo(
+    () => extractFreeText(parsedAst),
+    [parsedAst],
+  )
+
+  const facetsQuery = useQuery({
+    queryKey: ["facetsCross", freeTextForFacets] as const,
+    queryFn: ({ signal }) =>
+      fetchFacets(
+        null,
+        {
+          ...(freeTextForFacets !== null && { keywords: freeTextForFacets }),
+          facets: "organism",
+        },
+        signal,
+      ),
+  })
+
   const query = useQuery({
     queryKey: ["crossSearch", params.q] as const,
     queryFn: ({ signal }) =>
@@ -268,48 +313,102 @@ const CrossModeView = ({ params }: ModeViewProps) => {
     params.q !== null ? `?q=${encodeURIComponent(params.q)}` : ""
   }`
 
+  const dbOptions: readonly SelectOption[] = useMemo(() => [
+    { value: ALL_DB_VALUE, label: t("routes.search.dbSelector.all") },
+    ...DATABASES.map((d) => ({ value: d.id, label: d.displayName })),
+  ], [t])
+
+  const updateQ = (newQ: string | null) => {
+    const url = buildSearchUrlFull({
+      db: ALL_DB_VALUE,
+      ...(newQ !== null && newQ !== "" && { q: newQ }),
+    })
+    void navigate(url)
+  }
+
+  const handleSearchBoxSubmit = (value: string) => {
+    updateQ(value.trim() === "" ? null : value.trim())
+  }
+
+  const handleSidebarChange = (next: SidebarState) => {
+    const sidebarAst = sidebarStateToAst(next)
+    const mergedAst = mergeAstAnd([residual, sidebarAst])
+    const newQ = mergedAst === null ? null : astToDsl(mergedAst)
+    updateQ(newQ === "" ? null : newQ)
+  }
+
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
+    <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-8">
+      <Heading level={2} className="mb-0">
+        {t("routes.searchResults.crossMode.heading")}
+      </Heading>
+
+      <SearchBox
+        size="large"
+        value={parseQuery.isError ? (params.q ?? "") : derivedSidebar.freeText}
+        placeholder={t("routes.search.searchBox.placeholder")}
+        buttonLabel={t("routes.search.actions.search")}
+        dbOptions={dbOptions}
+        selectedDb={ALL_DB_VALUE}
+        dbDisabled
+        dbDisabledTitle={t("routes.searchResults.searchBox.dbDisabledHint")}
+        dbAriaLabel={t("routes.search.searchBox.dbSelectorAria")}
+        onSubmit={handleSearchBoxSubmit}
+      />
+
       {params.q !== null && (
-        <SearchSummaryChip
-          mode="simple"
-          q={params.q}
-          db={params.db}
+        <QueryPreview
+          dsl={params.q}
+          initialQ={null}
+          errors={[]}
+          compact
+          editHref={advancedSearchHref}
           onClear={handleClear}
-          advancedSearchHref={advancedSearchHref}
         />
       )}
-      <div>
-        <Heading level={2} className="mb-3">
-          {t("routes.searchResults.crossMode.heading")}
-        </Heading>
-        {query.isError ? (() => {
-          const tDynamic = t as unknown as (key: string) => string
-          const { headline, detail } = getErrorMessage(query.error, tDynamic)
 
-          return (
-            <Callout type="error">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p>{headline}</p>
-                  {detail !== null && (
-                    <p className="mt-1 text-xs text-gray-600">{detail}</p>
-                  )}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="flex flex-col gap-6">
+          <ActiveFilterChips
+            state={derivedSidebar}
+            fields={CROSS_SIDEBAR_FIELDS}
+            onChange={handleSidebarChange}
+            className="w-64"
+          />
+          <CrossSidebarFilter
+            state={derivedSidebar}
+            facetsData={facetsQuery.data ?? null}
+            loading={facetsQuery.isPending}
+            onChange={handleSidebarChange}
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          {query.isError ? (() => {
+            const tDynamic = t as unknown as (key: string) => string
+            const { headline, detail } = getErrorMessage(query.error, tDynamic)
+
+            return (
+              <Callout type="error">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p>{headline}</p>
+                    {detail !== null && (
+                      <p className="mt-1 text-xs text-gray-600">{detail}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
+                    onClick={() => handleRetry()}
+                  >
+                    {t("routes.searchResults.crossMode.retryAll")}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
-                  onClick={() => handleRetry()}
-                >
-                  {t("routes.searchResults.crossMode.retryAll")}
-                </button>
-              </div>
-            </Callout>
-          )
-        })() : (
-          <PartialFailureBanner databases={databases} onRetryAll={() => handleRetry()} />
-        )}
-        <div className="mt-3">
+              </Callout>
+            )
+          })() : (
+            <PartialFailureBanner databases={databases} onRetryAll={() => handleRetry()} />
+          )}
           <DbHitCountList
             databases={databases}
             query={params.q}
@@ -555,38 +654,52 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
 
   const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
 
+  const dbOptions: readonly SelectOption[] = useMemo(() => [
+    { value: ALL_DB_VALUE, label: t("routes.search.dbSelector.all") },
+    ...DATABASES.map((d) => ({ value: d.id, label: d.displayName })),
+  ], [t])
+
+  const handleSearchBoxSubmit = (value: string) => {
+    handleSidebarChange({ ...derivedSidebar, freeText: value })
+  }
+
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
-      {params.q !== null && (
-        <SearchSummaryChip
-          mode="simple"
-          q={params.q}
-          db={params.db}
-          onClear={handleClear}
-          advancedSearchHref={advancedSearchHref}
-        />
-      )}
+    <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-8">
       <Heading level={2} className="mb-0">
         {displayName}
       </Heading>
 
-      <LlmAssistBox
-        mode="db-list"
-        db={db}
-        currentQ={params.q}
-        onApply={handleLlmApply}
+      <SearchBox
+        size="large"
+        value={parseQuery.isError ? (params.q ?? "") : derivedSidebar.freeText}
+        placeholder={t("routes.search.searchBox.placeholder")}
+        buttonLabel={t("routes.search.actions.search")}
+        dbOptions={dbOptions}
+        selectedDb={db}
+        dbDisabled
+        dbDisabledTitle={t("routes.searchResults.searchBox.dbDisabledHint")}
+        dbAriaLabel={t("routes.search.searchBox.dbSelectorAria")}
+        onSubmit={handleSearchBoxSubmit}
       />
 
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
         {showSidebar && (
-          <SidebarFilter
-            db={db}
-            state={derivedSidebar}
-            facetsData={facetsQuery.data ?? null}
-            loading={facetsDbType !== null && facetsQuery.isPending}
-            onChange={handleSidebarChange}
-            subtypeCounts={subtypeCounts}
-          />
+          <div className="flex flex-col gap-6">
+            <ActiveFilterChips
+              state={derivedSidebar}
+              fields={sidebarFields}
+              onChange={handleSidebarChange}
+              className="w-64"
+            />
+            <SidebarFilter
+              db={db}
+              state={derivedSidebar}
+              facetsData={facetsQuery.data ?? null}
+              loading={facetsDbType !== null && facetsQuery.isPending}
+              onChange={handleSidebarChange}
+              subtypeCounts={subtypeCounts}
+            />
+          </div>
         )}
 
         <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -623,36 +736,75 @@ const DbModeView = ({ params, db }: DbModeViewProps) => {
             )
           })()}
 
-          {query.isSuccess && (
-            <>
-              <SearchToolbar
-                total={query.data.total}
-                page={params.page}
-                perPage={params.perPage}
-                sort={params.sort}
-                onSortChange={handleSortChange}
-                onPerPageChange={handlePerPageChange}
-                isOver10kLimit={query.data.hardLimitReached}
-              />
-              <ResultCardList hits={query.data.hits} />
-              <Pagination
-                page={params.page}
-                totalPages={Math.max(
-                  1,
-                  Math.ceil(query.data.total / params.perPage),
-                )}
-                onChange={handlePageChange}
-                hardLimitReached={query.data.hardLimitReached && isSolrBackedDb(db)}
-                cursorMode={params.cursor !== null && !isSolrBackedDb(db)}
-                nextCursor={query.data.nextCursor ?? null}
-                onCursorNext={handleCursorNext}
-              />
-              {query.data.hardLimitReached && isSolrBackedDb(db) && (
-                <Over10kCallout db={db} />
-              )}
-            </>
-          )}
+          {query.isSuccess && (() => {
+            const totalPages = Math.max(
+              1,
+              Math.ceil(query.data.total / params.perPage),
+            )
+            const solrBacked = isSolrBackedDb(db)
+            const solrOver10k = solrBacked && query.data.hardLimitReached
+            const pageOver10k = solrBacked
+              && params.page * params.perPage >= 10_000
+            const cursorMode = params.cursor !== null && !solrBacked
+            const nextCursor = query.data.nextCursor ?? null
+            const maxJumpPage = solrBacked
+              ? Math.min(totalPages, Math.floor(10_000 / params.perPage))
+              : totalPages
+
+            return (
+              <>
+                <SearchToolbar
+                  total={query.data.total}
+                  page={params.page}
+                  perPage={params.perPage}
+                  sort={params.sort}
+                  onSortChange={handleSortChange}
+                  onPerPageChange={handlePerPageChange}
+                  isOver10kLimit={solrOver10k}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  hardLimitReached={pageOver10k}
+                  cursorMode={cursorMode}
+                  nextCursor={nextCursor}
+                  onCursorNext={handleCursorNext}
+                  maxJumpPage={maxJumpPage}
+                />
+                <ResultCardList hits={query.data.hits} />
+                <Pagination
+                  page={params.page}
+                  totalPages={totalPages}
+                  onChange={handlePageChange}
+                  hardLimitReached={pageOver10k}
+                  cursorMode={cursorMode}
+                  nextCursor={nextCursor}
+                  onCursorNext={handleCursorNext}
+                  maxJumpPage={maxJumpPage}
+                />
+              </>
+            )
+          })()}
         </div>
+
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-80">
+          <LlmAssistBox
+            mode="db-list"
+            db={db}
+            currentQ={params.q}
+            onApply={handleLlmApply}
+            layout="vertical"
+          />
+          {params.q !== null && (
+            <QueryPreview
+              dsl={params.q}
+              initialQ={null}
+              errors={[]}
+              compact
+              compactVariant="textarea"
+              editHref={advancedSearchHref}
+              onClear={handleClear}
+            />
+          )}
+        </aside>
       </div>
     </section>
   )

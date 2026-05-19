@@ -529,3 +529,29 @@ Library Name / Library Construction Protocol への入力案内 (`_dra/metadata.
 - Library Construction Protocol (自由記述) で Hybrid Assembly 構成と相手側 instrument を記載
 
 ddbj/www に Hybrid Assembly 専用の明示規範記述はないが、DRA データモデルの「1 Experiment = 1 instrument」制約と BioSample 多重参照可能性から、上記構造が正当な表現となる。
+
+## 8. Step Input Popover (Section B の Step 入力編集)
+
+各 Step カードの「Step 入力を編集」ボタンから開く inline popover。`StepInputPopover` ([`src/components/submit-alt3/StepInputPopover.tsx`](../src/components/submit-alt3/StepInputPopover.tsx)) が実装。
+
+### 8.1 開閉条件
+
+- **open**: Step カードの「Step 入力を編集」ボタン押下、または warning UI の `onFocusStepInput(field)` 呼び出し時にフォーカス指定で open
+- **close**: 同じボタン再押下 (toggle) / popover 外クリック / Esc キー
+- **Service 単位 merge との関係**: merge 後 Step カードでは segments[] が複数並ぶため、open 状態は `{ stepId, segmentId, focusField? }` で保持し、同 Step カード内で別 segment にトグルできる
+
+### 8.2 不変条件 (props 安定性)
+
+`StepInputPopover` の外部クリック検知 `useEffect` は `[onClose]` を依存配列に持つ。`onClose` が再レンダごとに新規参照になると `useEffect` の register / cleanup が競合し、外部クリックハンドラが安定して登録されない (popover が閉じられない原因となる)。
+
+呼び出し元 (`FlowCardSection`) は以下を満たす:
+
+- `onClose` を `useCallback` でメモ化 (依存配列は `[]`)
+- `setOpenInput` を引き渡す関数も同様に安定化
+- segment 経由の open は `setOpenInput((prev) => ...)` の関数形式で記述し、stale closure を避ける
+
+### 8.3 segment 単位の Step 入力
+
+merge 後 Step では `intraDbInputs` は `step.segments[].intraDbInputs` 側に格納される。`StepInputPopover` は props で受け取った `segment?: FlowStepSegment` を優先し、segment が undefined のときに限り `step.intraDbInputs` を読む。`onUpdate` 経路の stepId 引数は **segmentId** (= merge 前 Step.id、`Submission.serviceDrafts[]` のキーと一致) を渡す。
+
+詳細な型は [`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.4.2 / §4.6 参照。

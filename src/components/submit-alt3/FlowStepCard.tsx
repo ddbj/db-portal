@@ -1,9 +1,13 @@
-import { ArrowRight, FileText, Pencil } from "lucide-react"
+import { ArrowRight, ExternalLink, FileText, Pencil } from "lucide-react"
 
 import { InternalExternalBadge } from "@/components/ui"
 import cn from "@/components/ui/cn"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
-import type { FileEntry, FlowStep } from "@/types/submit-alt3"
+import type {
+  FileEntry,
+  FlowStep,
+  FlowStepSegment,
+} from "@/types/submit-alt3"
 
 interface Props {
   step: FlowStep
@@ -11,7 +15,7 @@ interface Props {
   upstreamStepNumbers: ReadonlyMap<string, number>
   // 対象ファイル名表示用の id → FileEntry マップ
   fileById?: ReadonlyMap<string, FileEntry>
-  onEditInputs?: (stepId: string) => void
+  onEditInputs?: (stepId: string, segmentId?: string) => void
   acknowledgedWarningCount?: number
 }
 
@@ -36,8 +40,21 @@ const FlowStepCard = ({
   })
 
   const isExternal = step.badgeKind === "external"
-  const linkLabel = step.intraDbInputs.linkLabel as string | undefined
-  const url = step.intraDbInputs.url as string | undefined
+  const segments = step.segments ?? []
+  const editable = isEditableService(step.service)
+
+  const renderDescriptionParagraph = (suffix: string) => {
+    if (!step.descriptionKey) return null
+    const key = `${step.descriptionKey}.${suffix}`
+    const text = t(key, { defaultValue: "" })
+    if (!text || text === key) return null
+
+    return (
+      <p key={suffix} className="text-xs leading-relaxed text-gray-600">
+        {text}
+      </p>
+    )
+  }
 
   return (
     <article
@@ -54,7 +71,7 @@ const FlowStepCard = ({
         <h3 className="flex-1 text-base font-semibold text-gray-800">
           {title}
         </h3>
-        {isEditableService(step.service) && onEditInputs && (
+        {editable && segments.length === 0 && onEditInputs && (
           <button
             type="button"
             data-testid={`flow-step-edit-inputs-${step.id}`}
@@ -76,6 +93,31 @@ const FlowStepCard = ({
           )}
         />
       </header>
+
+      <div className="mb-3 space-y-1.5">
+        {renderDescriptionParagraph("overview")}
+        {renderDescriptionParagraph("prerequisites")}
+        {renderDescriptionParagraph("outputs")}
+      </div>
+
+      {step.serviceUrl && (
+        <div className="mb-3">
+          <a
+            href={step.serviceUrl.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid={`flow-step-service-link-${step.id}`}
+            className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-white px-2.5 py-1 text-xs font-medium text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-50"
+          >
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            {t(step.serviceUrl.labelKey, {
+              defaultValue: t("routes.submitAlt3.flowStepCard.serviceLinkFallback", {
+                defaultValue: "登録サービスを開く",
+              }),
+            })}
+          </a>
+        </div>
+      )}
 
       <dl className="space-y-2 text-xs">
         {step.issuedAccessionTypes.length > 0 && (
@@ -120,7 +162,7 @@ const FlowStepCard = ({
           </div>
         )}
 
-        {step.targetFileIds.length > 0 && (
+        {segments.length === 0 && step.targetFileIds.length > 0 && (
           <div className="flex items-baseline gap-2">
             <dt className="w-28 text-gray-500">
               {t("routes.submitAlt3.flowCard.targets")}
@@ -157,27 +199,46 @@ const FlowStepCard = ({
             </dd>
           </div>
         )}
-
-        {url && (
-          <div className="flex items-baseline gap-2">
-            <dt className="w-28 text-gray-500">
-              {t("routes.submitAlt3.flowStepCard.externalLink", {
-                defaultValue: "外部リンク",
-              })}
-            </dt>
-            <dd>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-700 underline hover:text-emerald-900"
-              >
-                {linkLabel ?? url}
-              </a>
-            </dd>
-          </div>
-        )}
       </dl>
+
+      {segments.length > 0 && (
+        <section className="mt-3 space-y-2">
+          <h4 className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+            {t("routes.submitAlt3.flowStepCard.segmentsHeading", {
+              defaultValue: "登録単位",
+            }).replace(/\{\{count\}\}/g, String(segments.length))}
+          </h4>
+          <ol className="space-y-2">
+            {segments.map((segment, segIdx) => (
+              <li
+                key={segment.segmentId}
+                data-testid={`flow-step-segment-${segment.segmentId}`}
+                className="rounded border border-gray-200 bg-gray-50 p-2.5 text-xs"
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] text-gray-400">
+                    {`${segIdx + 1}/${segments.length}`}
+                  </span>
+                  {editable && onEditInputs && (
+                    <button
+                      type="button"
+                      data-testid={`flow-step-edit-inputs-${segment.segmentId}`}
+                      onClick={() => onEditInputs(step.id, segment.segmentId)}
+                      className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                    >
+                      <Pencil className="h-3 w-3" aria-hidden="true" />
+                      {t("routes.submitAlt3.flowStepCard.editStepInputs", {
+                        defaultValue: "Step 入力を編集",
+                      })}
+                    </button>
+                  )}
+                </div>
+                {renderSegmentBody(segment, fileById, t)}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {step.notes.length > 0 && (
         <ul className="mt-3 space-y-1 text-xs text-gray-600">
@@ -219,5 +280,65 @@ const FlowStepCard = ({
     </article>
   )
 }
+
+type TranslateFn = (key: string, params?: Record<string, string>) => string
+
+const renderSegmentBody = (
+  segment: FlowStepSegment,
+  fileById: ReadonlyMap<string, FileEntry> | undefined,
+  t: TranslateFn,
+) => (
+  <>
+    {segment.targetFileIds.length > 0 && (
+      <ul className="space-y-0.5">
+        {segment.targetFileIds.map((fid) => {
+          const f = fileById?.get(fid)
+          const display = f?.displayName ?? fid
+
+          return (
+            <li
+              key={fid}
+              className="flex items-center gap-1 font-mono text-[11px] text-gray-600"
+            >
+              <FileText
+                className="h-3 w-3 flex-shrink-0 text-gray-400"
+                aria-hidden="true"
+              />
+              <span className="break-all">{display}</span>
+            </li>
+          )
+        })}
+      </ul>
+    )}
+    {segment.notes.length > 0 && (
+      <ul className="mt-1 space-y-0.5 text-[11px] text-gray-500">
+        {segment.notes.map((n, idx) => {
+          const isUrl = n.startsWith("http")
+          const isI18nKey = n.startsWith("routes.submitAlt3.")
+
+          return (
+            <li key={idx} className="flex gap-1.5">
+              <span className="text-gray-400">·</span>
+              {isUrl
+                ? (
+                  <a
+                    href={n}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-emerald-700 underline hover:text-emerald-900"
+                  >
+                    {n}
+                  </a>
+                )
+                : isI18nKey
+                  ? <span>{t(n, { defaultValue: n })}</span>
+                  : <span>{n}</span>}
+            </li>
+          )
+        })}
+      </ul>
+    )}
+  </>
+)
 
 export default FlowStepCard

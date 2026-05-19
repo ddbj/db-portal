@@ -191,14 +191,7 @@ export const SERVICE_KINDS = [
   "primary-bioproject",
   "biosample",
   "dra",
-  "jga-submission",
-  "jga-study",
-  "jga-sample",
-  "jga-experiment",
-  "jga-data",
-  "jga-analysis",
-  "jga-dataset",
-  "jga-policy",
+  "jga",
   "gea",
   "mss",
   "metabobank",
@@ -350,8 +343,11 @@ export interface FlowWarning {
 
 export interface FlowStep {
   id: string
+  mergeKey: string
   service: ServiceKind
   title: string
+  descriptionKey?: string
+  serviceUrl?: { url: string; labelKey: string }
   targetGroupIds: string[]
   targetFileIds: string[]
   intraDbInputs: Record<string, unknown>
@@ -360,6 +356,16 @@ export interface FlowStep {
   badgeKind: "internal" | "external"
   notes: string[]
   warnings: FlowWarning[]
+  segments?: FlowStepSegment[]
+}
+
+export interface FlowStepSegment {
+  segmentId: string
+  targetGroupIds: string[]
+  targetFileIds: string[]
+  upstreamStepIds: string[]
+  intraDbInputs: Record<string, unknown>
+  notes: string[]
 }
 
 export interface FlowCard {

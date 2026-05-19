@@ -34,6 +34,8 @@ interface SearchBoxProps {
   selectedDb?: string
   onDbChange?: (db: string) => void
   dbAriaLabel?: string
+  dbDisabled?: boolean
+  dbDisabledTitle?: string
 }
 
 interface DbDropdownProps {
@@ -41,15 +43,24 @@ interface DbDropdownProps {
   value?: string | undefined
   onChange?: ((db: string) => void) | undefined
   ariaLabel?: string | undefined
+  disabled?: boolean | undefined
+  disabledTitle?: string | undefined
 }
 
-const DbDropdown = ({ options, value, onChange, ariaLabel }: DbDropdownProps) => {
+const DbDropdown = (
+  { options, value, onChange, ariaLabel, disabled = false, disabledTitle }: DbDropdownProps,
+) => {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const listId = useId()
   const selectedLabel = options.find((o) => o.value === value)?.label ?? options[0]?.label ?? ""
 
   useEffect(() => {
+    if (disabled) {
+      if (open) setOpen(false)
+
+      return
+    }
     if (!open) return
     const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -66,23 +77,34 @@ const DbDropdown = ({ options, value, onChange, ariaLabel }: DbDropdownProps) =>
       document.removeEventListener("mousedown", handleClick)
       document.removeEventListener("keydown", handleKey)
     }
-  }, [open])
+  }, [open, disabled])
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (disabled) return
+          setOpen((v) => !v)
+        }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         aria-label={ariaLabel}
-        className="flex h-full w-auto min-w-28 items-center justify-between gap-2 bg-transparent px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none"
+        aria-disabled={disabled || undefined}
+        title={disabled ? disabledTitle : undefined}
+        className={cn(
+          "flex h-full w-auto min-w-28 items-center justify-between gap-2 px-4 py-3 text-sm font-medium transition focus:outline-none",
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-500"
+            : "bg-transparent text-gray-700 hover:bg-gray-50",
+        )}
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-gray-400 transition-transform",
+            "h-4 w-4 shrink-0 transition-transform",
+            disabled ? "text-gray-300" : "text-gray-400",
             open && "rotate-180",
           )}
           aria-hidden="true"
@@ -140,6 +162,8 @@ const SearchBox = ({
   selectedDb,
   onDbChange,
   dbAriaLabel,
+  dbDisabled = false,
+  dbDisabledTitle,
 }: SearchBoxProps) => {
   const [internalValue, setInternalValue] = useState(defaultValue)
   const isControlled = controlledValue !== undefined
@@ -189,6 +213,8 @@ const SearchBox = ({
             value={selectedDb}
             onChange={onDbChange}
             ariaLabel={dbAriaLabel}
+            disabled={dbDisabled}
+            disabledTitle={dbDisabledTitle}
           />
           <div className="w-px self-stretch bg-gray-200" aria-hidden="true" />
           <div className="relative flex-1">

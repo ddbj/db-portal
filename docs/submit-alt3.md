@@ -148,19 +148,29 @@ modal で確定しないこと: 組織 / 公開可否 / library strategy など�
 
 ### 4.1 主な Group 化の単位 (`single` を除く)
 
-| Group | ファイル構成 | グルーピングのトリガ |
-|---|---|---|
-| pair-end Run | R1 + R2 FASTQ | + 配列リード modal で「pair-end」選択時 |
-| 10x Run | I1 / R1 / R2 (場合により I2) FASTQ | + 配列リード modal で「10x 系」選択時 |
-| multiplex / pooled Run | **事前 demultiplex 済みの per-sample FASTQ 群** (元の barcode-sample 対応表は Library Construction Protocol に自由記述) | + 配列リード modal で「multiplex / pooled 構成」選択時。1 Group = N per-sample FASTQ + N BioSample |
-| Hybrid Assembly | 異 instrument の Run 群 (各 Run = 別 Experiment、同 BioSample 配下) | + 配列リード modal で「複数機器」選択時 |
-| アセンブリ + アノテーション | FASTA + GFF | + 組み立て済み配列 + + 遺伝子アノテーション併用時に手動関連付け |
-| Two-color microarray | Cy3 / Cy5 ペア | + マイクロアレイ発現 modal で「two-color」選択時 |
-| MAGE-TAB セット | matrix + IDF + SDRF | + マイクロアレイ / + RNA-seq マトリクス / + 空間 Tx modal で「メタデータも添付」選択時 |
-| Imaging MS セット | imzML + ibd (+ 画像) | + 質量分析 modal で「imaging MS」選択時 |
-| 変異 + 参照 | VCF + reference FASTA | + 変異情報 modal で「reference FASTA を一緒に登録」選択時 |
-| MAG / SAG derived chain | 派生 BioSample のチェーン | + 組み立て済み配列 modal で MAG / SAG 選択時 (派生 BS Step が自動展開) |
-| JGA Dataset | 配列リード / 変異 / 表現型の組合せを Dataset として束ねる | + 表現型データ modal で JGA Dataset 選択時、または事後にテーブル上で複数行を Dataset としてまとめる |
+各 GroupType は **UI 表示クラス** で 3 つに分かれる:
+
+- **クラス A (1 行集約、`SINGLE_ROW_GROUP_TYPES`)**: Group 内全 file の列 (organism / access / dataForm) と chip が **完全共通**。UI 上は GroupHeader を出さず 1 行に集約し、ファイル列セルに displayName を縦並びで表示する。組織 / 公開 / chip の編集は Group 内全 file に伝播する。SSOT 実装は `src/lib/submit-alt3/defaultPayload.ts` の `SINGLE_ROW_GROUP_TYPES`
+- **クラス B (1 行 + 必要時展開)**: 列は共通だが Step DRA 上で別 Experiment になる (hybrid) / N 個の BS を抱える (multiplex) ケース。Phase 1 では複数行 + GroupHeader 表示、Phase 2 で 1 行集約 + 展開 UI に移行予定
+- **クラス C (複数行 + GroupHeader 維持)**: Group 内で dataForm / chip がまたがるケース。複数行で表現する必要があり、1 行集約はできない
+
+| Group | クラス | ファイル構成 | グルーピングのトリガ |
+|---|---|---|---|
+| single | A | 1 ファイル (Group 単位の Default) | (Group Q&A なし、`+ 配列リード` 以外の default GroupType) |
+| pair-end Run | A | R1 + R2 FASTQ | + 配列リード modal で「pair-end」選択時 |
+| 10x Run | A | I1 / R1 / R2 (場合により I2) FASTQ | + 配列リード modal で「10x 系」選択時 |
+| pacbio-hdf5 | A | bas.h5 + bax.h5 × 3 | + 配列リード modal で「PacBio HDF5」選択時 |
+| Two-color microarray | A | Cy3 / Cy5 ペア | + マイクロアレイ発現 modal で「two-color」選択時 |
+| MAGE-TAB セット | A | matrix + IDF + SDRF | + マイクロアレイ / + RNA-seq マトリクス / + 空間 Tx modal で「メタデータも添付」選択時 |
+| Imaging MS セット | A | imzML + ibd (+ 画像) | + 質量分析 modal で「imaging MS」選択時 |
+| Hybrid Assembly | B | 異 instrument の Run 群 (各 Run = 別 Experiment、同 BioSample 配下) | + 配列リード modal で「複数機器」選択時 |
+| multiplex / pooled Run | B | **事前 demultiplex 済みの per-sample FASTQ 群** (元の barcode-sample 対応表は Library Construction Protocol に自由記述) | + 配列リード modal で「multiplex / pooled 構成」選択時。1 Group = N per-sample FASTQ + N BioSample |
+| 変異 + 参照 | C | VCF + reference FASTA | + 変異情報 modal で「reference FASTA を一緒に登録」選択時 |
+| MAG / SAG derived chain | C | 派生 BioSample のチェーン (raw → primary → binned → mag/sag) | + 組み立て済み配列 modal で MAG / SAG 選択時 (派生 BS Step が自動展開) |
+| アセンブリ + アノテーション | C | FASTA + GFF | + 組み立て済み配列 + + 遺伝子アノテーション併用時に手動関連付け |
+| JGA Dataset | C | 配列リード / 変異 / 表現型の組合せを Dataset として束ねる | + 表現型データ modal で JGA Dataset 選択時、または事後にテーブル上で複数行を Dataset としてまとめる |
+
+**data-model の Group 13 種は維持** (`Submission.fileGroups` / `GroupType` は変更しない)。UI 表現だけがクラスによって分かれる。クラスを軽率に整理して tag (chip / 列) に流用すると、tag 軸の整合性が崩れる (例: JGA Dataset を chip 化すると「default 逸脱だけ表示」原則と衝突)。クラス分けは UI レイアウト判定の局所 helper として扱う。
 
 ### 4.2 grouping を modal で決める理由
 
@@ -202,17 +212,20 @@ modal で確定する質問は性質によって 3 種類に分かれる。**質
 
 Cross-DB Tag を **列にするか chip にするか** は UX の都合で振り分ける: ほぼ全種別のファイルが値を持ち、行間比較や一括編集が有用な軸は列、ファイル種別に紐づき列にすると空が増える軸は chip。
 
-### 5.1 テーブルの列で表現する Cross-DB Tag (3 軸)
+### 5.1 テーブルの列で表現する Cross-DB Tag
 
-行間で値が異なり、行間比較と一括編集が有用な軸:
+行間で値が異なり、行間比較と一括編集が有用な軸。**画面に表示するのは「種別 / 組織 / 公開可否」の 3 列**。データ形態 (`dataForm`) は **内部 state には保持するが UI 列としては非表示** (理由は表の下に記載)。
 
-| 列 | 値の例 | 役割 |
-|---|---|---|
-| 組織 | human / human-microbiome / 真核 / 原核 / virus / metagenome / オルガネラ・プラスミド (7 種) | 混在ケースで行ごとに異なる、共通系統判定や Step 振り分けに必要。`human-microbiome` (ヒト由来メタゲノム) は restricted 時 JGA 集約対象 (§6.4) |
-| 公開可否 | open / restricted | 混在ケースで行ごとに異なる、DRA vs JGA の Step 振り分けに直結 |
-| データ形態 | raw / 組み立て済み / 解析出力 / 行列 / アノテーション / 質量分析 / 表現型 | ButtonType + modal で初期確定、行間比較が有用 |
+| 列 | 表示 | 値の例 | 役割 |
+|---|---|---|---|
+| 種別 (ButtonType) | **表示** | 配列リード / 組み立て済み配列 / 遺伝子アノテーション / 変異情報 / 表現型データ / マイクロアレイ発現 / RNA-seq マトリクス / 質量分析 / 空間トランスクリプトーム (9 種) | ボタン押下時に確定、後から変更不可。Step 振り分けの最上位識別子 |
+| 組織 | **表示** | human / human-microbiome / 真核 / 原核 / virus / metagenome / オルガネラ・プラスミド (7 種) | 混在ケースで行ごとに異なる、共通系統判定や Step 振り分けに必要。`human-microbiome` (ヒト由来メタゲノム) は restricted 時 JGA 集約対象 (§6.4) |
+| 公開可否 | **表示** | open / restricted | 混在ケースで行ごとに異なる、DRA vs JGA の Step 振り分けに直結 |
+| データ形態 (`dataForm`) | **非表示** (内部のみ) | raw / 組み立て済み / 解析出力 / 行列 / アノテーション / 質量分析 / 表現型 (7 種) | ButtonType ごとに default が決まる (`BUTTON_META.defaultDataForm`)。Step 振り分け (rule06 JGA aggregation の raw vs analysis-output 分岐、rule08 MAG-SAG chain、rule13 MSS auxiliary) で参照される |
 
-これら 3 列は **per-cell に編集可能**。同じ値が連続する場合は「直前の行と同じ」がデフォルト候補として提案される。値が変わると Section B の Step カードが再生成される。
+「組織 / 公開可否」は **per-cell に編集可能**。同じ値が連続する場合は「直前の行と同じ」がデフォルト候補として提案される。値が変わると Section B の Step カードが再生成される。「種別」は行追加時のボタン選択で確定する固定値で、テーブル上では編集不可。
+
+**データ形態を UI 列にしない理由**: ButtonType と default `dataForm` の関係は 1:1 (`sequence-read` → `raw`、`assembled` → `assembled`、…) で、典型ケースではユーザーが per-cell で書き換える必要がほぼ無い。代わりに「種別」列で ButtonType の短縮名 (配列リード / 組み立て済み配列 / …) を表示することで、ユーザーは行の意味づけを直感できる。`dataForm` は Step 振り分けロジックが内部 state を参照し続けるため、UI に出さなくても登録経路の決定は変わらない (`docs/submit-alt3-flow-rules.md` Rule 6 / 8 / 13)。
 
 混在は許容される。1 研究内で human / mouse の混在、open / restricted の混在は現実的にあり得る (`_bioproject/project-info.md` で複数生物 BP は共通系統で対応)。混在がある場合、Section B には tag 組合せごとに異なる Step が並ぶ (例: DRA Step + JGA Step が並列)。
 
@@ -238,6 +251,10 @@ chip として残すのは **modal で確定する「非 grouping」属性** (= 
 | `spatial-platform` (従属) | visium / xenium / merfish / stereo-seq / slide-seq / geomx / other | ButtonType=`spatial-tx` の行だけ表示 |
 
 chip は **テーブル行の右側にまとめて表示** する。行内で「この行はこういう属性が付いている」が一目で見えれば十分。chip を直接クリックすると変更可能 (アセンブリの形態のように modal 確定値は modal 再オープン、他は inline 編集)。
+
+**表示方針 (default 逸脱のみ表示)**: 内部 state は上記 10 軸 (主軸 7 + 従属 3) を **全て保持** し Step 生成ロジックが参照するが、**UI 表示は ButtonType ごとの「default 値」と一致する chip を隠す**。たとえば `+ 組み立て済み配列` の default は `assembly-form=wgs` + `functional-genomics=wgs-target` なので、典型ケース (WGS) では chip 列は空欄になり、MAG / SAG / TPA / haplotype phased 等の **非典型ケースだけ** chip で目立つ。各 ButtonType の default chip 値の SSOT は [`submit-alt3-modals.md`](./submit-alt3-modals.md) §6.2 の表と同値 (実装は `src/lib/submit-alt3/defaultPayload.ts` の `DEFAULT_CHIP_VALUES`)。
+
+判定基準の変更点: 当初は「Step 列を変える属性は全て chip」としていたが、それだと典型ケースでも chip が並んで視認性が下がる。改訂後は「**default からの逸脱**」(= modal で確定された値が ButtonType の default と異なる) を chip 表示の必要十分条件とする。Step 列生成ロジックは内部 state の全 chip を見続けるため、表示フィルタによって Step が変わることはない。
 
 ### 5.3 Step カード内の pulldown (Intra-DB Tag)
 
@@ -271,7 +288,9 @@ Section B には Step カードが縦に並ぶ。各 Step カードは「DDBJ �
 
 ### 6.1 Step カードの構成要素
 
-- **Step タイトル** (例: Umbrella BioProject 登録、Primary BioProject 登録、DRA Run 登録、JGA Dataset 登録)
+- **Step タイトル** (例: Umbrella BioProject 登録、Primary BioProject 登録、DRA Run 登録、JGA への登録)
+- **Service 説明** (i18n key 必須): Service の「目的・前提・成果物」を `routes.submitAlt3.flowSteps.<service>.overview` / `.prerequisites` / `.outputs` から描画する。Step カードは現時点では「別サービスである DDBJ の各登録ページへの案内」を担うため、利用者が遷移先の意味を理解できる粒度の説明を必ず持たせる
+- **遷移ボタン** (必須): その Service の登録 / 案内ページに直接飛ぶリンクボタン。ラベルは `「{Service名} 登録サービスを開く」` 形式で、URL は [`src/lib/mock-data/submit-alt3/flowRulesMasters.ts`](../src/lib/mock-data/submit-alt3/flowRulesMasters.ts) の `SERVICE_URLS` で一括管理
 - **対象ファイル一覧** (Section A のテーブル行と双方向リンク、対象行をハイライトできる)
 - **入力フィールド** (intra-DB pulldown + テキスト入力)
 - **依存 accession** (前段 Step で取得した accession への参照)
@@ -280,11 +299,17 @@ Section B には Step カードが縦に並ぶ。各 Step カードは「DDBJ �
 - **Step ノート** (補足情報、規程参照リンク、事前申請要件など)
 - **未確定警告** (テーブルに未設定 cell があり、その Step の入力が決まらない場合)
 
+#### Service 単位 merge
+
+同一 `ServiceKind` + 同一 `mergeKey` の Step は 1 枚の Step カードに集約される。1 枚の Step カードは「集約された複数 origin」を `segments[]` として配下に列挙し、対象ファイル・派生関係・per-segment の入力フィールドをそれぞれ可視化する。`mergeKey` は Rule 側で意図的に分離が必要なケース (Rule 9 multiplex per-file / Rule 11 haplotype phase 別 / Rule 8 MAG-SAG stage 別) で異なる値を指定する。それ以外は `mergeKey = service` がデフォルトとなり、同一 Service の Step は 1 枚に畳まれる。
+
+merge の適用タイミング・例外仕様の SSOT は [`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md) §8.1.A、型と命名規約の SSOT は [`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.6 / §4.6.1。
+
 ### 6.2 色区分
 
 | 区分 | 色 | アイコン | 該当 Service (`ServiceKind`) |
 |---|---|---|---|
-| 内部 (BSI / DDBJ) | emerald-500 | DDBJ ロゴ | `umbrella-bioproject` / `primary-bioproject` / `biosample` / `dra` / `mss` / `gea` / `metabobank` / `togovar` / JGA 8 種 (`jga-submission` / `jga-study` / `jga-sample` / `jga-experiment` / `jga-data` / `jga-analysis` / `jga-dataset` / `jga-policy`) |
+| 内部 (BSI / DDBJ) | emerald-500 | DDBJ ロゴ | `umbrella-bioproject` / `primary-bioproject` / `biosample` / `dra` / `mss` / `gea` / `metabobank` / `togovar` / `jga` (JGA 8 オブジェクトを 1 Step に集約、`dra` の Run+Experiment+Analysis 集約と同型) |
 | 外部 | amber-500 | 外部リンクアイコン | `dbcls-application` (DBCLS / NBDC 提供申請) / `jpost` / `eva` / `dgva` / `humandbs` |
 
 `NSSS` (Nucleotide Sequence Submission System、ウェブ登録系) は MSS の登録経路の 1 つで、PoC では独立した Service にせず `mss` ServiceKind の `intraDbInputs.entryRoute = "mss" | "nsss"` 区別で表現する (`_ddbj/web-submission.md` の経路区分、`_faq/restricton-seq-length.md` の 100 bp 下限などはこのフラグから派生して案内する)。
@@ -298,13 +323,14 @@ Warning UI で使用する `amber-500` (Rule 14b) は外部 Service バッジと
 - **Umbrella BioProject Step** (任意): 複数の独立した研究単位が並立する場合 (host-pathogen / multi-modal 研究) に上位の統括 Project として生成される。テーブル行群を解析して「複数の primary BP に分離すべき」と判定した場合に Section B のトップに提案される
 - **Primary BioProject Step**: 登録単位の起点。1 研究 = 1 primary BP が基本だが、host-pathogen のような場合は複数 primary BP に分かれ、Umbrella BP が上位にぶら下がる
 - **BioSample Step**: BioProject の次。テーブル行ごとに sample が違うなら BS が複数生成される。組織別に異なる Package が選ばれる
-- **DRA / GEA / MSS / MetaboBank / TogoVar / JGA Data などの Step**: BS の次に並ぶ
-- **混在ケースでは Step が分岐**: 例えば open 行が DRA Run / restricted 行が JGA Data に振り分けられ、Section B は両方の Step を並列に表示する
-- **外部 Service Step** (jPOST / EVA / dgVa / HumanDBs) は「リンクと案内」のみで、入力フォームは出さない
+- **DRA / GEA / MSS / MetaboBank / TogoVar / JGA などの Step**: BS の次に並ぶ
+- **混在ケースでは Step が分岐**: 例えば open 行が DRA Run / restricted 行が JGA に振り分けられ、Section B は両方の Step を並列に表示する
+- **外部 Service Step** (jPOST / EVA / dgVa / HumanDBs / DBCLS 提供申請) は「リンクと案内」のみで、入力フォームは出さない
+- **内部 Service だが notes-only の Step** (`jga`、§6.4 で詳述): badgeKind=internal を維持するが Step カード内は notes + JGA 案内ページ遷移のみで入力フォームは出さない。`dra` Step が Run + Experiment + Analysis を 1 枚に集約しているのと同じ方針で、JGA 8 オブジェクトも 1 Step に集約 (同一 JGA 申請管理システムで完結するため)
 
 ### 6.4 特殊な集約モード
 
-- **JGA 集約モード**: ヒト個人レベル + 制限公開のテーブル行は、通常 (BP + BS + DRA など) の Step 列ではなく JGA 単体の Step 列に集約される。DBCLS 事前申請 + 提供申請グループの subgrp ID が前提となるため Step カードのノートで明示
+- **JGA 集約モード**: ヒト個人レベル + 制限公開のテーブル行は、通常 (BP + BS + DRA など) の Step 列ではなく **単一の JGA Step** に集約される。DBCLS 事前申請 + 提供申請グループの subgrp ID が前提となるため Step カードのノートで明示。なお JGA は **D-way とは別系統の独自申請・登録系統** (NBDC 申請システム → 承認 → sftp upload + 独自 XSD) であり、8 オブジェクト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) はすべて同一の JGA 申請管理システム 1 箇所で登録するため、PoC では **JGA は 1 Step に集約された notes-only Step** に縮退する (db-portal 内に XSD 入力 UI を内包しない、`dra` Step が Run+Experiment+Analysis を 1 枚に集約しているのと同型、[`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md) Rule 6 共通 + open-questions §10.2 で決着)
 - **JGA Dataset (phenotype-only 含む)**: 配列なしの表現型データのみ、もしくは配列 + 表現型を束ねた登録単位として JGA Dataset Step が生成される。表現型 table 単独でも JGA Dataset として登録できる
 - **TPA 経路**: 第三者再アセンブル / 第三者アノテーションの行は、TPA 規範 (peer reviewed publication 必須) を Step カードで案内
 - **混合 BioSample**: 複数 sample のリードを混合してアセンブルした場合は、`derived_from` 属性で元 sample を列挙する派生 BioSample Step が生成される

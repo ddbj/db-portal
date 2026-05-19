@@ -108,6 +108,7 @@ export const generateRule11Steps = (
     createStep({
       service: "primary-bioproject",
       discriminator: principalBpId,
+      mergeKey: "primary-bioproject:haplotype:principal",
       targetGroupIds: Array.from(new Set(principalFiles.map((f) => f.groupId))),
       targetFileIds: principalFiles.map((f) => f.id),
       intraDbInputs: mergeServiceDraft(submission, principalBpStepId, {
@@ -128,6 +129,7 @@ export const generateRule11Steps = (
     createStep({
       service: "primary-bioproject",
       discriminator: alternateBpId,
+      mergeKey: "primary-bioproject:haplotype:alternate",
       targetGroupIds: Array.from(new Set(alternateFiles.map((f) => f.groupId))),
       targetFileIds: alternateFiles.map((f) => f.id),
       intraDbInputs: mergeServiceDraft(submission, alternateBpStepId, {
@@ -149,6 +151,7 @@ export const generateRule11Steps = (
       createStep({
         service: "primary-bioproject",
         discriminator: draBpId,
+        mergeKey: "primary-bioproject:haplotype:dra-shared",
         targetGroupIds: Array.from(new Set(rawFiles.map((f) => f.groupId))),
         targetFileIds: rawFiles.map((f) => f.id),
         intraDbInputs: mergeServiceDraft(submission, draBpStepId, {
@@ -168,6 +171,7 @@ export const generateRule11Steps = (
     createStep({
       service: "biosample",
       discriminator: sharedBsId,
+      mergeKey: "biosample:haplotype:shared",
       targetGroupIds: Array.from(
         new Set([
           ...assemblyFiles.map((f) => f.groupId),
@@ -196,6 +200,7 @@ export const generateRule11Steps = (
       createStep({
         service: "dra",
         discriminator: sharedBsId,
+        mergeKey: "dra:haplotype:shared",
         targetGroupIds: Array.from(new Set(rawFiles.map((f) => f.groupId))),
         targetFileIds: rawFiles.map((f) => f.id),
         intraDbInputs: mergeServiceDraft(submission, draStepId, {
@@ -216,6 +221,7 @@ export const generateRule11Steps = (
       createStep({
         service: "mss",
         discriminator: principalBpId,
+        mergeKey: "mss:haplotype:principal",
         targetGroupIds: Array.from(new Set(principalFiles.map((f) => f.groupId))),
         targetFileIds: principalFiles.map((f) => f.id),
         intraDbInputs: mergeServiceDraft(submission, mssPrincipalStepId, {
@@ -234,6 +240,7 @@ export const generateRule11Steps = (
       createStep({
         service: "mss",
         discriminator: alternateBpId,
+        mergeKey: "mss:haplotype:alternate",
         targetGroupIds: Array.from(new Set(alternateFiles.map((f) => f.groupId))),
         targetFileIds: alternateFiles.map((f) => f.id),
         intraDbInputs: mergeServiceDraft(submission, mssAlternateStepId, {

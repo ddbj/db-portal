@@ -16,6 +16,7 @@ export { sidebarStateToAst } from "./from-sidebar"
 export { nextAstId } from "./id"
 export { mergeAstAnd } from "./merge"
 export { type AstSplitResult, splitAstForSidebar } from "./split"
+export { splitAstForCrossSidebar } from "./split-cross"
 export { searchAstToAdvancedTree } from "./to-advanced"
 export { astToDsl, escapePhrase, needsPhrase } from "./to-dsl"
 export {

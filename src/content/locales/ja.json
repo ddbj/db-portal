@@ -153,16 +153,36 @@
         "nest-depth-exceeded": "条件のネストが深すぎます。",
         "missing-value": "値が空です。"
       },
+      "searchBox": {
+        "dbDisabledHint": "DB を変更するには「検索画面で編集」から検索画面を開いてください"
+      },
+      "activeFilters": {
+        "label": "適用中の絞り込み",
+        "clearAll": "すべて解除",
+        "dateRangeFormat": "{{from}} 〜 {{to}}",
+        "dateRangeFromOnly": "{{from}} 以降",
+        "dateRangeToOnly": "{{to}} まで"
+      },
       "sidebar": {
         "label": "絞り込みサイドバー",
         "title": "絞り込み",
         "entryType": "種別",
         "all": "すべて",
-        "keywordPlaceholder": "キーワードで絞り込み...",
-        "freeWord": {
-          "title": "フリーワード",
-          "placeholder": "例: Escherichia coli"
+        "clearAll": "すべて解除",
+        "clearSection": "解除",
+        "subtypeLabel": {
+          "sra-submission": "Submission",
+          "sra-study": "Study",
+          "sra-experiment": "Experiment",
+          "sra-run": "Run",
+          "sra-sample": "Sample",
+          "sra-analysis": "Analysis",
+          "jga-study": "Study",
+          "jga-dataset": "Dataset",
+          "jga-dac": "DAC",
+          "jga-policy": "Policy"
         },
+        "keywordPlaceholder": "キーワードで絞り込み...",
         "fields": {
           "accessibility": { "label": "公開状態" },
           "package": { "label": "パッケージ" },
@@ -188,7 +208,6 @@
       },
       "dbMode": {
         "resultsCount": "全 {{total}} 件中 {{from}}-{{to}} 件を表示",
-        "resultsCountOver10k": "10,000 件以上 {{from}}-{{to}} 件を表示",
         "noResults": "検索結果が見つかりませんでした",
         "sort": {
           "label": "ソート",
@@ -203,12 +222,17 @@
         "pagination": {
           "prev": "前へ",
           "next": "次へ",
+          "first": "最初",
+          "last": "最後",
           "pageInfo": "{{current}} / {{total}} ページ",
+          "pageInputLabel": "ページ",
+          "pageInputAria": "ページ番号を指定して移動",
+          "pageOf": "/ {{total}}",
           "cursorMode": "カーソル送り（10,000 件超）"
         },
         "over10k": {
-          "message": "表示できる検索結果は 10,000 件までです。キーワードを追加するか、検索画面で条件を絞り込んでください。",
-          "cta": "検索画面を開く"
+          "tooltip": "表示できる検索結果は 10,000 件までです。キーワードを追加して絞り込んでください。",
+          "inlineNote": "最大 10,000 件まで表示可能"
         },
         "publishedAtAria": "公開日",
         "status": {
@@ -218,6 +242,37 @@
         },
         "accessibility": {
           "controlled-access": "アクセス制限"
+        }
+      },
+      "resultCard": {
+        "metaLabels": {
+          "projectType": "Project type",
+          "organization": "Organization",
+          "package": "Package",
+          "model": "Model",
+          "library": "Library",
+          "platform": "Platform",
+          "instrument": "Instrument",
+          "analysis": "Analysis",
+          "studyType": "Study type",
+          "datasetType": "Dataset type",
+          "vendor": "Vendor",
+          "experimentType": "Experiment type",
+          "submissionType": "Submission type",
+          "division": "Division",
+          "type": "Type",
+          "length": "Length",
+          "rank": "Rank",
+          "common": "Common",
+          "japanese": "Japanese",
+          "relevance": "Relevance",
+          "host": "Host",
+          "strain": "Strain",
+          "isolate": "Isolate",
+          "geo": "Geo",
+          "collection": "Collection",
+          "libraryName": "Library name",
+          "constructionProtocol": "Construction protocol"
         }
       }
     },
@@ -466,7 +521,11 @@
       },
       "actions": {
         "search": "検索",
-        "reset": "リセット"
+        "reset": "リセット",
+        "disabledReason": {
+          "empty": "条件を 1 つ以上追加してください",
+          "invalid": "バリデーションエラー: {{count}} 件"
+        }
       },
       "dbSwitchWarning": {
         "heading": "データベースを切り替えると、以下の {{currentDb}} 固有の条件が削除されます:",
@@ -1410,15 +1469,15 @@
         "flowCard": "登録フローカード"
       },
       "buttons": {
-        "sequenceRead": { "label": "+ 配列リード (fastq)" },
-        "assembled": { "label": "+ 組み立て済み配列 (fasta)" },
-        "annotation": { "label": "+ 遺伝子アノテーション (gff)" },
-        "variation": { "label": "+ 変異情報 (vcf)" },
-        "phenotype": { "label": "+ 表現型データ (tsv)" },
-        "expressionArray": { "label": "+ マイクロアレイ発現 (cel)" },
-        "expressionMatrix": { "label": "+ RNA-seq マトリクス (tsv)" },
-        "massSpec": { "label": "+ 質量分析 (mzML)" },
-        "spatialTx": { "label": "+ 空間トランスクリプトーム (tsv)" }
+        "sequenceRead": { "label": "+ 配列リード (fastq)", "shortLabel": "配列リード" },
+        "assembled": { "label": "+ 組み立て済み配列 (fasta)", "shortLabel": "組み立て済み配列" },
+        "annotation": { "label": "+ 遺伝子アノテーション (gff)", "shortLabel": "遺伝子アノテーション" },
+        "variation": { "label": "+ 変異情報 (vcf)", "shortLabel": "変異情報" },
+        "phenotype": { "label": "+ 表現型データ (tsv)", "shortLabel": "表現型データ" },
+        "expressionArray": { "label": "+ マイクロアレイ発現 (cel)", "shortLabel": "マイクロアレイ発現" },
+        "expressionMatrix": { "label": "+ RNA-seq マトリクス (tsv)", "shortLabel": "RNA-seq マトリクス" },
+        "massSpec": { "label": "+ 質量分析 (mzML)", "shortLabel": "質量分析" },
+        "spatialTx": { "label": "+ 空間トランスクリプトーム (tsv)", "shortLabel": "空間トランスクリプトーム" }
       },
       "modals": {
         "common": { "cancel": "キャンセル", "add": "追加" },
@@ -1673,6 +1732,7 @@
       },
       "tableColumns": {
         "unset": "(未設定)",
+        "kind": { "label": "種別" },
         "file": { "label": "ファイル" },
         "organism": {
           "label": "生物",
@@ -1737,35 +1797,116 @@
         "fileCount": "{{count}} ファイル"
       },
       "flowSteps": {
-        "umbrella-bioproject": { "title": "Umbrella BioProject 登録" },
-        "primary-bioproject": { "title": "Primary BioProject 登録" },
-        "biosample": { "title": "BioSample 登録" },
-        "dra": { "title": "DRA (Run / Experiment / Analysis)" },
-        "mss": { "title": "MSS / NSSS 登録" },
-        "gea": { "title": "GEA 登録" },
-        "metabobank": { "title": "MetaboBank 登録" },
-        "togovar": { "title": "TogoVar-repository 登録" },
-        "jga-submission": { "title": "JGA Submission" },
-        "jga-study": { "title": "JGA Study" },
-        "jga-sample": { "title": "JGA Sample" },
-        "jga-experiment": { "title": "JGA Experiment" },
-        "jga-data": { "title": "JGA Data" },
-        "jga-analysis": { "title": "JGA Analysis" },
-        "jga-dataset": { "title": "JGA Dataset" },
-        "jga-policy": { "title": "JGA Policy" },
-        "dbcls-application": { "title": "DBCLS 提供申請 + ポリシー承認" },
-        "jpost": { "title": "jPOST (外部)" },
-        "eva": { "title": "EVA (外部)" },
-        "dgva": { "title": "dgVa (外部)" },
-        "humandbs": { "title": "HumanDBs (外部、公開後参照)" }
+        "umbrella-bioproject": {
+          "title": "Umbrella BioProject 登録",
+          "overview": "複数の Primary BioProject を統括する上位プロジェクト。host-pathogen / multi-modal 研究や Haplotype phased の Principal / Alternate / DRA 用 BP を 1 つに束ねます。",
+          "prerequisites": "配下となる Primary BioProject の役割分担を明確化。Umbrella は非公開化不可、各 Primary は Hold 可。",
+          "outputs": "Umbrella 用の PRJDB##### を発行 (Private comments to DDBJ staff に配下 BP を記載)。",
+          "serviceLink": "Umbrella BioProject 登録 (D-way) を開く"
+        },
+        "primary-bioproject": {
+          "title": "Primary BioProject 登録",
+          "overview": "研究単位ごとに 1 件作成するメタデータプロジェクト。BioSample / DRA / MSS / GEA など複数 DB の登録を束ねる起点となります。",
+          "prerequisites": "研究目的と Project data type を確定。混在ケースでは organism / data type 別に分割し Umbrella BP 配下に並べます。",
+          "outputs": "PRJDB##### を発行。",
+          "serviceLink": "BioProject 登録 (D-way) を開く"
+        },
+        "biosample": {
+          "title": "BioSample 登録",
+          "overview": "試料 (個体・組織・培養株・環境メタゲノム等) 1 件ごとのメタデータ。organism / 試料採取方法に対応する Package を選択します。",
+          "prerequisites": "BioProject (or 仮 ID) を発行済み。GroupType により Group 単位 1 BS / per-sample N BS / 派生 BS chain などに集約。",
+          "outputs": "SAMD00000000 を発行。Package 例: Human, Microbe, Viral, Model organism or animal, MIMS.me, MIMAG など。",
+          "serviceLink": "BioSample 登録 (D-way) を開く"
+        },
+        "dra": {
+          "title": "DRA (Run / Experiment / Analysis)",
+          "overview": "DDBJ Sequence Read Archive。raw sequence read (FASTQ/BAM/HDF5) と Analysis 成果物 (BAM/VCF/contigs 等) の登録先。",
+          "prerequisites": "BioProject + BioSample が登録済み (or 仮 ID)。Library 構築プロトコル (Library Source / Strategy / Selection / Platform / Instrument) を記述。",
+          "outputs": "DRR##### (Run) / DRX##### (Experiment) / DRZ##### (Analysis) を発行。",
+          "serviceLink": "DRA 登録 (D-way) を開く"
+        },
+        "mss": {
+          "title": "MSS / NSSS 登録",
+          "overview": "Mass Submission System (MSS) と Web 経由の NSSS。組み立て済み配列 (WGS / TSA / TLS / HTG / HTC 等) のアノテーション付き INSDC flat file を登録します。",
+          "prerequisites": "BioProject + BioSample を登録済み。INSDC FF 形式に準拠し、locus_tag_prefix を BioSample 登録時に申請。",
+          "outputs": "DDBJ から割り当てられた INSDC 二文字 prefix のアクセッション (BAxx#### 等) を発行。",
+          "serviceLink": "MSS 登録フォームを開く"
+        },
+        "gea": {
+          "title": "GEA 登録",
+          "overview": "Genomic Expression Archive。マイクロアレイ / RNA-seq / 空間トランスクリプトームなどの発現データ登録先。",
+          "prerequisites": "BioProject + BioSample を登録済み。Submission Type (Sequencing / Microarray) と sample-by-sample のマトリクスを準備。",
+          "outputs": "GEA Series accession を発行。",
+          "serviceLink": "GEA 登録 (D-way) を開く"
+        },
+        "metabobank": {
+          "title": "MetaboBank 登録",
+          "overview": "メタボローム / イメージング MS データの登録先。Run / Analysis レベル accession は発行されず、Study レベルのみ。",
+          "prerequisites": "BioProject + BioSample を登録済み。異なる実験デザインは Study を分割し BioProject でまとめます。",
+          "outputs": "MTBKSn (Study) を発行。",
+          "serviceLink": "MetaboBank を開く"
+        },
+        "togovar": {
+          "title": "TogoVar-repository 登録",
+          "overview": "日本人由来の集団・疾患関連バリアントを集約する TogoVar リポジトリ。aggregate VCF を登録します。",
+          "prerequisites": "BioProject + BioSample を登録済み。aggregate variation の origin / Study type / sample size を記述。",
+          "outputs": "dstd### を発行。",
+          "serviceLink": "TogoVar-repository を開く"
+        },
+        "jga": {
+          "title": "JGA への登録",
+          "overview": "Japanese Genotype-phenotype Archive (JGA) は D-way とは別系統の独自申請・登録系統です。Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy の 8 オブジェクトを JGA 申請管理システム 1 箇所で順に登録します。db-portal は登録 UI を内包せず、外部誘導 + 準備物チェックリストのみ提供します。",
+          "prerequisites": "DBCLS / NBDC ポリシー下で利用制限ポリシー (提供申請グループ subgrp ID) を取得済み。",
+          "outputs": "JGA / JGAS / JGAN / JGAX / JGAR / JGAZ / JGAD / JGAP の 8 prefix accession を発行。",
+          "serviceLink": "JGA 登録ガイドを開く"
+        },
+        "dbcls-application": {
+          "title": "DBCLS 提供申請 + ポリシー承認",
+          "overview": "JGA 登録に先立つ事前申請。NBDC ヒトデータ取扱ガイドラインに準拠した提供申請グループ (subgrp ID) を取得します。",
+          "prerequisites": "個人情報保護 / インフォームドコンセントなど institutional 要件を満たすこと。",
+          "outputs": "subgrp ID (hum#### 等) を取得 (DDBJ portal の accession ではない)。",
+          "serviceLink": "DBCLS 提供申請システムを開く"
+        },
+        "jpost": {
+          "title": "jPOST Repository",
+          "overview": "プロテオーム MS データ (mass-spec-domain=proteomics) の登録先。DDBJ ではなく jPOST に直接登録します。",
+          "prerequisites": "jPOST アカウント。BioProject はメタデータの紐付けに使用。",
+          "outputs": "JPST### (jPOST Study ID) を取得。",
+          "serviceLink": "jPOST Repository を開く"
+        },
+        "eva": {
+          "title": "EVA (European Variation Archive)",
+          "overview": "open な per-sample / aggregate の SNP / Indel の登録先 (EBI 提供)。DDBJ ではなく EVA に直接登録します。",
+          "prerequisites": "EVA アカウント。",
+          "outputs": "EVA accession を取得。",
+          "serviceLink": "EVA を開く"
+        },
+        "dgva": {
+          "title": "DGVa (Database of Genomic Variants archive)",
+          "overview": "Structural Variants (SV) / CNV の登録先 (EBI 提供)。",
+          "prerequisites": "DGVa アカウント。",
+          "outputs": "DGVa accession を取得。",
+          "serviceLink": "DGVa を開く"
+        },
+        "humandbs": {
+          "title": "HumanDBs (公開後参照)",
+          "overview": "公開後に DDBJ 登録データへ割り振られる hum 番号閲覧先。登録経路ではなく案内のみ。",
+          "prerequisites": "JGA / 関連 DB への登録 + 公開完了。",
+          "outputs": "hum#### を取得 (公開後)。",
+          "serviceLink": "HumanDBs を開く"
+        }
       },
       "flowStepCard": {
         "editStepInputs": "Step 入力を編集",
         "stepInputsHeading": "Step 入力 (Library Strategy など)",
         "noEditableInputs": "この Step に編集可能な pulldown はまだありません (PoC スコープ)",
         "externalLink": "外部リンク",
+        "serviceLinkFallback": "登録サービスを開く",
+        "segmentsHeading": "{{count}} 件の登録単位",
         "warningAcknowledged": "確認済み",
         "warningAcknowledgedSummary": "{{count}} 件の警告を確認済み",
+        "subgrpIdHint": "DBCLS から発番される subgrp ID を控えておくと、後続 JGA Step の controlled-access ID として参照できます",
+        "keywordsHint": "Ctrl/⌘ クリックで複数選択。Rule 7a の TPA 自動付与文字列は保持されます",
         "warningActions": {
           "fixChip": "chip を修正",
           "editStepInput": "Step 入力を変更",
@@ -1806,6 +1947,17 @@
         "rule06": {
           "dbclsApplication": {
             "notes": "JGA 登録は DBCLS / NBDC ポリシー下で承認された利用制限ポリシー (提供申請グループ) が前提です。事前申請を済ませてから JGA Step に進んでください。"
+          },
+          "jgaPrep": {
+            "overview": "JGA 申請管理システム 1 箇所で 8 オブジェクト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) を順に登録します。db-portal は登録 UI を持たず、各オブジェクトで何を準備すべきかのチェックリストのみ提供します。",
+            "submission": "Submission: 提供申請グループ (subgrp ID) の紐付け、連絡先 / 公開予定の概要を準備。",
+            "study": "Study: タイトル / 概要 / 研究目的 / 関連 publication (PubMed ID / DOI) を準備。",
+            "sample": "Sample: 個人 (donor) ごとに 1 Sample。発行予定数は対象 BioSample 行から導けます。性別 / 年齢 / 表現型 / インフォームドコンセント条件を準備。",
+            "experiment": "Experiment: Library Strategy / Source / Selection / Instrument / Library Construction Protocol を準備 (DRA Experiment と同型)。",
+            "data": "Data (raw): FASTQ 等の raw 配列ファイル。承認後に JGA サーバへ sftp / WinSCP でアップロード。",
+            "analysis": "Analysis: VCF / BAM 等の解析成果物、リファレンス配列 accession / ラベル名、解析パイプライン情報を準備。",
+            "dataset": "Dataset: 束ねる Sample / Data / Analysis の一覧、タイトル / 概要、紐付ける Policy を準備。",
+            "policy": "Policy: 提供申請グループ (subgrp ID)、DAC / DUO 公開条件、利用申請審査ポリシーを準備。"
           }
         },
         "rule06b": {

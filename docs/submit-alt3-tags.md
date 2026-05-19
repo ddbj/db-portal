@@ -8,17 +8,20 @@
 - 各軸を確定する Q&A (per-cell 編集 + modal) → [`submit-alt3-modals.md`](./submit-alt3-modals.md)
 - Tag から Step 列を生成するルール → [`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md)
 
-## 5.1 テーブル列 3 軸 (Cross-DB Tag、per-cell 編集)
+## 5.1 テーブル列 (Cross-DB Tag、per-cell 編集)
 
-本体 §5.1 のテーブル直接列。全 ButtonType の行に共通して現れ、行間比較と一括編集が有用な軸。未設定 cell は ⚠ で警告表示。
+本体 §5.1 のテーブル直接列。UI に表示するのは **「種別 / 組織 / 公開可否」の 3 列**。`data-form` 軸は **内部 state には保持するが UI 列としては非表示** (理由は表の下に記載)。未設定 cell は ⚠ で警告表示。
 
-| 列 | 値 | 主な決定 UI | 登録先振り分けへの影響 |
-|---|---|---|---|
-| **organism** | `human` / `human-microbiome` / `eukaryote` / `prokaryote` / `virus` / `metagenome` / `organelle-plasmid` | テーブル cell 編集 (デフォルト = 直前の行と同じ値) | `metagenome` → MIxS BS Package / MSS ENV。`organelle-plasmid` → MSS specialized。`human` / `human-microbiome` + `restricted` → JGA 集約 (本体 §6.4)。複数値混在は許容 (本体 §5.1) で、Section B に組織別の Step が並ぶ |
-| **access** | `open` / `restricted` | テーブル cell 編集 | `restricted` + `organism ∈ {human, human-microbiome}` → JGA 集約。混在は許容、open 行 → DRA / restricted 行 → JGA に分岐 (本体 §6.3) |
-| **data-form** | `raw` / `assembled` / `analysis-output` / `matrix` / `annotation` / `mass-spec` / `phenotype` | ButtonType + modal で初期確定、テーブルで per-cell 編集可 | `raw` → DRA Run。`assembled` → MSS / NSSS。`analysis-output` → DRA Analysis。`matrix` → GEA processed。`annotation` → MSS 付随。`mass-spec` → MetaboBank / jPOST。`phenotype` → JGA Dataset |
+| 列 | UI 表示 | 値 | 主な決定 UI | 登録先振り分けへの影響 |
+|---|---|---|---|---|
+| **kind** (ButtonType) | **表示**、編集不可 | 9 種 (`sequence-read` / `assembled` / `annotation` / `variation` / `phenotype` / `expression-array` / `expression-matrix` / `mass-spec` / `spatial-tx`) | ボタン押下時に確定 (行ごとに固定、書き換え不可) | Step 振り分けの最上位識別子。`BUTTON_META.defaultDataForm` を介して `data-form` の初期値も決定 |
+| **organism** | **表示**、テーブル cell 編集 | `human` / `human-microbiome` / `eukaryote` / `prokaryote` / `virus` / `metagenome` / `organelle-plasmid` | テーブル cell 編集 (デフォルト = 直前の行と同じ値) | `metagenome` → MIxS BS Package / MSS ENV。`organelle-plasmid` → MSS specialized。`human` / `human-microbiome` + `restricted` → JGA 集約 (本体 §6.4)。複数値混在は許容 (本体 §5.1) で、Section B に組織別の Step が並ぶ |
+| **access** | **表示**、テーブル cell 編集 | `open` / `restricted` | テーブル cell 編集 | `restricted` + `organism ∈ {human, human-microbiome}` → JGA 集約。混在は許容、open 行 → DRA / restricted 行 → JGA に分岐 (本体 §6.3) |
+| **data-form** | **非表示** (内部のみ) | `raw` / `assembled` / `analysis-output` / `matrix` / `annotation` / `mass-spec` / `phenotype` | ButtonType ごとに default が決まる (`BUTTON_META.defaultDataForm`)、UI からの上書きは無し | `raw` → DRA Run。`assembled` → MSS / NSSS。`analysis-output` → DRA Analysis。`matrix` → GEA processed。`annotation` → MSS 付随。`mass-spec` → MetaboBank / jPOST。`phenotype` → JGA Dataset。Rule 6 / 8 / 13 が内部 state を参照する |
 
-これら 3 列は per-cell に独立に編集できる。`organism` / `access` を組み合わせて Section B の Step 列が再生成される (例: open + human → DRA Run、restricted + human → JGA、open + metagenome → DRA + MSS-MAG/SAG)。
+`organism` / `access` は per-cell に独立に編集できる。組み合わせで Section B の Step 列が再生成される (例: open + human → DRA Run、restricted + human → JGA、open + metagenome → DRA + MSS-MAG/SAG)。
+
+**data-form を UI 列にしない理由**: ButtonType と default `data-form` の関係は実質 1:1 (`sequence-read` → `raw`、`assembled` → `assembled` 等。`raw` は `sequence-read` + `expression-array` の 2 ボタンで共有、`matrix` は `expression-matrix` + `spatial-tx` で共有) で、典型ケースでユーザーが per-cell に書き換える必要がほぼ無い。代わりに「種別」列で ButtonType の短縮名を表示すれば、行の意味づけは直感的に分かる。`data-form` 自体は Rule 6 / 8 / 13 の Step 振り分けロジックが内部 state を参照し続けるため、UI に出さなくても登録経路の決定は変わらない。
 
 ## 5.2 行内 chip 10 軸 (Cross-DB Tag non-grouping、modal 確定)
 
@@ -113,7 +116,7 @@ manual override flag は次のいずれの初期値も対象とする:
 | MSS DIVISION | 17 種 PoC 対象 (HUM / PRI / ROD / MAM / VRT / INV / PLN / BCT / VRL / PHG = 生物由来 10 種 + ENV / SYN + EST / TSA / GSS / HTC / HTG)。組織列 7 値 → DIVISION のマッピングは §5.6.1 (PoC は backend taxonomy 解決を持たない簡略マッピングを採用)。値域全体は 21 種 (`_ddbj/flat-file.md` SSOT、HUM/PRI/ROD/MAM/VRT/INV/PLN/BCT/VRL/PHG/PAT/ENV/SYN/EST/TSA/GSS/HTC/HTG/STS/UNA/CON) だが `PAT` (特許機関経由) / `STS` / `UNA` / `CON` は PoC 対象外 | Step MSS (補助 pulldown) | `_ddbj/flat-file.md`, `_ddbj/data-categories.md` |
 | MSS KEYWORDS / DATATYPE | INSDC FF メタフィールド (TPA 系 prefix 4 種 + HTG phase 3 種 + INSDC methodological keywords) | Step MSS (補助 notes、自動付与中心) | `_ddbj/file-format.md`, INSDC methodological keywords |
 | Annotation / Feature 制約 | MSS data type 別の qualifier 制約 (mandatory / forbidden / recommended) | Step MSS (詳細補助) | `_ddbj/qualifiers.md` |
-| JGA 内部 pulldown | 各 ServiceKind (`jga-submission` / `jga-study` / `jga-sample` / `jga-experiment` / `jga-data` / `jga-analysis` / `jga-dataset` / `jga-policy`) ごとに XML スキーマ準拠の入力フィールド (本番フェーズで XSD マッピング、本体 §7.2 / open-questions §10.2) | 各 JGA Step | `_jga/submission.md` |
+| JGA 準備物チェックリスト | 単一 `jga` ServiceKind の Step カードは PoC では **notes-only**、JGA 8 オブジェクト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) を 1 Step に集約 ([`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md) Rule 6 共通)。XSD 準拠の pulldown / 入力欄は db-portal 側に持たず、JGA システム側で記入すべき項目を notes 箇条書きで案内 (Rule 6a / 6b / 6c の発火条件に応じて段階的に表示) | `jga` Step (notes) | `_jga/submission.md`、`https://github.com/ddbj/pub/tree/master/docs/jga` |
 
 ### 5.3.1 `functional-genomics ≠ yes` 時の Step pulldown 振り分け
 
@@ -131,8 +134,13 @@ manual override flag は次のいずれの初期値も対象とする:
 判定基準 (本体 §5 と整合):
 
 1. **テーブル列** (per-cell 編集): 全 ButtonType 共通で値があり、行間比較・一括編集が有用な Cross-DB Tag。3 軸固定 (organism / access / data-form)。
-2. **行内 chip** (modal 確定): ファイル種別に紐づき、登録先 Service の集合 / 順序が変わる Cross-DB Tag だが、列にすると他種別で空が増えるもの。Group 構造で表現される情報 (pair-end / 10x / multiplex 等) は chip に含めない。
+2. **行内 chip** (modal 確定): ファイル種別に紐づき、登録先 Service の集合 / 順序が変わる Cross-DB Tag だが、列にすると他種別で空が増えるもの。Group 構造で表現される情報 (pair-end / 10x / multiplex 等) は chip に含めない。**UI 表示は ButtonType の default 値と一致する chip を隠し、default からの逸脱だけを表示** する (本体 §5.2 「表示方針」 / 実装 `defaultPayload.ts` `DEFAULT_CHIP_VALUES`)。内部 state には全 chip を保持し Step 生成ロジックが参照する。
 3. **Step カード pulldown** (Service 確定後): 値が変わっても Step 列の Service 集合は変わらないが、その Step 内の入力テンプレートが変わる Intra-DB Tag。Step カードを開いた中でのみ表示。
+
+「chip 軸として持つか」と「UI に表示するか」は別判定:
+
+- 軸として持つかは「Step 列の Service 集合 / 順序を変える」で従来通り判定 (主軸 7 + 従属 3 軸の構成は変えない)
+- UI 表示は「default 値と異なるか」で別判定。default と一致する chip は **内部 state にはあるが画面には出ない**。これにより典型ケース (`assembled` = WGS、`sequence-read` = pair-end + GEA、`variation` = per-sample + snp-indel など) はテーブル右側が空欄となり、MAG / SAG / TPA / haplotype phased / SV / CNV / Xenium 等の非典型だけが chip で目立つ
 
 境界事例:
 
@@ -160,7 +168,7 @@ Step カードに表示する accession 例示用。`FlowStep.issuedAccessionTyp
 | `mss` | INSDC 二文字 + 数字 (例 `AB######` 直接登録 / `AP######` ゲノムプロジェクト / `BA######` CON / `LC######` 直接登録)、大規模は INSDC 4 文字 (例 `BAAA-BZZZ` general WGS / `IAAA-IZZZ` TSA / `TAAA-TZZZ` TLS / `EAAA-EZZZ` TPA-WGS / `YAAA-YZZZ` TPA-TSA / `ZAAA-ZZZZ` TPA-TLS) | `_insdc/prefix.md`, `_insdc/accessions.md` |
 | `gea` | `E-GEAD-n` (Experiment) / `A-GEAD-n` (Array Design) | 例 `E-GEAD-369`, `A-GEAD-246` (Xenium), `A-GEAD-247` (MERFISH) (`_gea/overview.md`, `_gea/spatial-gene-expression.md`) |
 | `metabobank` | `MTBKS` (Study、桁数固定なし。`_metabobank/submission.md` 例は `MTBKS1` / `MTBKS1000`)。`FlowStep.issuedAccessionTypes` 上は `"MTBKSn"` (連番) と表示し桁数 placeholder にしない | 例 `MTBKS1` (`_metabobank/submission.md`)。Run / Analysis レベル prefix は MetaboBank 仕様上存在しない |
-| `jga` (8 種) | `JGA` (Submission, 6 桁) / `JGAS` (Study, 6 桁) / `JGAN` (Sample, 9 桁) / `JGAX` (Experiment, 9 桁) / `JGAR` (Data, 9 桁) / `JGAZ` (Analysis, 9 桁) / `JGAD` (Dataset, 6 桁) / `JGAP` (Policy, 6 桁)。`generateFlowCard` は ServiceKind `jga-submission` / `jga-study` / `jga-sample` / `jga-experiment` / `jga-data` / `jga-analysis` / `jga-dataset` / `jga-policy` の 8 種に分けて Step を生成する ([`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.6) | `_jga/submission.md` |
+| `jga` (8 prefix を 1 Step に集約) | `JGA` (Submission, 6 桁) / `JGAS` (Study, 6 桁) / `JGAN` (Sample, 9 桁) / `JGAX` (Experiment, 9 桁) / `JGAR` (Data, 9 桁) / `JGAZ` (Analysis, 9 桁) / `JGAD` (Dataset, 6 桁) / `JGAP` (Policy, 6 桁)。`generateFlowCard` は単一 `jga` ServiceKind の Step 1 枚に集約し、`issuedAccessionTypes` 配列に 8 prefix を並べる (`dra` の Run+Experiment+Analysis 集約と同型、[`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.6) | `_jga/submission.md` |
 | `togovar` (4 種) | `dstd` (Study, SNP/SV 共通) / `dss` (SNP variant) / `dssv` (SV variant call) / `dsv` (SV variant region) | `_togovar/submission.md`, `_togovar/metadata.md`。SNP ≤50 bp、SV >50 bp (CNV 含む)。BP + BS 登録必須 |
 | `humandbs` (外部) | `hum######` 系 | NBDC ヒトデータ共有方針 (`_jga/submission.md` §データの公開) |
 

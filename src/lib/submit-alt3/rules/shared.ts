@@ -39,9 +39,12 @@ export const makeStepId = (
 
 // Step の skeleton を生成 (`title` は i18n key、`intraDbInputs` 等はデフォルト空)。
 // 各 rule は本 helper を呼び、戻り値の Step を patch して push する。
+// mergeKey は Service 単位 merge の同一性キー (docs/submit-alt3-flow-rules.md §8.1.A)。
+// デフォルト = service 文字列。Rule 8/9/11 のように per-origin で Step を維持したい場合のみ明示指定する。
 export const createStep = (params: {
   service: ServiceKind
   discriminator?: string
+  mergeKey?: string
   targetGroupIds?: readonly string[]
   targetFileIds?: readonly string[]
   intraDbInputs?: Record<string, unknown>
@@ -53,6 +56,7 @@ export const createStep = (params: {
   const {
     service,
     discriminator,
+    mergeKey,
     targetGroupIds = [],
     targetFileIds = [],
     intraDbInputs = {},
@@ -64,6 +68,7 @@ export const createStep = (params: {
 
   return {
     id: makeStepId(service, discriminator),
+    mergeKey: mergeKey ?? service,
     service,
     title: titleOverride ?? `flowSteps.${service}.title`,
     targetGroupIds: [...targetGroupIds],

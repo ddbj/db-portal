@@ -289,29 +289,51 @@ ddbj/www `_jga/submission.md` + `_jga/group.md` + `_jga/submission-step.md` SSOT
 
 PoC では Step 0 として外部リダイレクト (申請システム URL) の notes-only Step を生成する。HumanDBs データ閲覧側のリンクは `https://humandbs.dbcls.jp/`。
 
+#### Rule 6 共通: JGA Step カードの「外部誘導」方針 + 単一 Step 集約 (PoC)
+
+JGA は **D-way ではなく独自の申請・登録系統**である (`_jga/submission.md` / `_jga/submission-step.md` SSOT)。承認後の実体は (1) NBDC 申請システム (`https://humandbs.ddbj.nig.ac.jp/nbdc/application/`) + (2) 承認後に sftp / WinSCP で JGA サーバへ直接 upload + (3) JGA 独自 XML スキーマ (`https://github.com/ddbj/pub/tree/master/docs/jga`) という構成で、db-portal が同じ UI を再実装する経路は PoC スコープ外。
+
+さらに JGA 8 オブジェクト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) は **すべて同一の JGA 申請管理システム 1 箇所** で登録するため、Step を 8 枚に並べる必然性はない。`dra` Step が Run + Experiment + Analysis を 1 Step に集約しているのと同じ方針で、PoC では **JGA も単一 `jga` ServiceKind 1 Step に集約する**:
+
+- `serviceUrl`: JGA 案内ページ (`https://www.ddbj.nig.ac.jp/jga/submission.html`)
+- `notes`: JGA 8 オブジェクトの準備物チェックリスト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) を Rule 6a / 6b / 6c の発火条件に応じて段階的に表示
+- `intraDbInputs`: 空 `{}` (XSD 準拠の pulldown / 入力欄は持たない、`serviceDrafts["step-jga"]` は採番されない)
+- `issuedAccessionTypes`: 8 prefix (`JGA######` / `JGAS######` / `JGAN#########` / `JGAX#########` / `JGAR#########` / `JGAZ#########` / `JGAD######` / `JGAP######`) を `dra` Step と同型の配列で 1 枚に並べる
+- `targetGroupIds` / `targetFileIds`: Rule 6 集約対象の全行 / 全 Group を 1 Step に集約
+- `upstreamStepIds`: `["step-dbcls-application"]`
+- `warnings`: 通常通り (テーブル未設定 cell / Rule 14 chip 整合の警告も従来通り表示)
+- `badgeKind`: `internal` (DDBJ 運営、本体 §6.2)
+
+XSD フィールド mapping を Step カード上で扱う本格実装、および 8 Step に再分割する必要性は本番フェーズで再評価する (open-questions §10.2 / §10.4 参照)。
+
+`dbcls-application` (Step 0) はもともと `external` badgeKind + notes-only であり (本体 §6.2)、これは現状維持。
+
 #### Rule 6a: Sample-Experiment-Data チェーン (raw 配列データ系)
 
-ServiceKind 8 種に対応した Step 構造 ([`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.6):
+raw 配列 (dataForm=raw) を含むケース。単一 `jga` Step の notes に以下 6 オブジェクトの準備物チェックリストを乗せる (Submission / Study / Sample / Experiment / Data / Dataset / Policy)。実体は JGA 申請管理システム側で順に登録:
 
 ```
-Step 0: DBCLS 事前申請 + ポリシー承認         (service=dbcls-application、外部手続き、notes のみ)
-Step 1: JGA Submission 作成                  (service=jga-submission)   # JGA######          (6 桁)
-Step 2: JGA Study 登録                       (service=jga-study)        # JGAS######         (6 桁)
-Step 3: JGA Sample 登録 (各個人 = 1 Sample)  (service=jga-sample)       # JGAN#########      (9 桁、複数)
-Step 4: JGA Experiment 登録                  (service=jga-experiment)   # JGAX#########      (9 桁、複数)
-Step 5: JGA Data 登録 (raw 配列単位)         (service=jga-data)         # JGAR#########      (9 桁、複数)
-Step 6: JGA Dataset 編成                     (service=jga-dataset)      # JGAD######         (6 桁)
-Step 7: JGA Policy 設定                      (service=jga-policy)       # JGAP######         (6 桁)
+Step 0: DBCLS 事前申請 + ポリシー承認  (service=dbcls-application、外部、notes のみ)
+Step 1: JGA                            (service=jga、notes-only、issuedAccessionTypes に 8 prefix を並べる)
+  notes (Rule 6a 発火時):
+    - jgaPrep.overview
+    - jgaPrep.submission  → JGA######          (Submission 1 件)
+    - jgaPrep.study       → JGAS######         (Study 1 件)
+    - jgaPrep.sample      → JGAN######### × N  (個人ごと、JGA システム側で N 件登録)
+    - jgaPrep.experiment  → JGAX######### × N  (Experiment、JGA システム側で記入)
+    - jgaPrep.data        → JGAR######### × N  (raw 配列ファイル単位、sftp/WinSCP で upload)
+    - jgaPrep.dataset     → JGAD######         (Dataset、束ねる Sample / Data の一覧を準備)
+    - jgaPrep.policy      → JGAP######         (Policy、subgrp ID + DAC / DUO)
 ```
 
-**Step 3 の JGA Sample 数 N の決まり方** (本体 §4.4「1 file = 1 sample 原則」と整合):
+**JGA Sample 数 N の決まり方** (本体 §4.4「1 file = 1 sample 原則」と整合)。db-portal は N を厳密に計算せず、jgaPrep.sample notes に「個人ごとに 1 Sample。実体は JGA システム側で N 件登録」と汎用案内するに留める:
 
-- raw 配列ありの典型ケース: BioSample 数の決定ルール ([`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.3.1) を Rule 6 集約モードでも流用。`single` Group / `pair-end` Group / `10x` Group / `pacbio-hdf5` Group は Group 全体で 1 個人 → 1 JGA Sample、`multiplex` Group は per-sample FASTQ ごとに 1 JGA Sample、`hybrid` メタ Group は配下 Group の Sample を共有 (1 個人 → 1 JGA Sample)
+- raw 配列ありの典型ケース: BioSample 数の決定ルール ([`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.3.1) と同じ N に相当 (Group 1 個 → 1 個人 → 1 JGA Sample、multiplex は per-sample FASTQ ごとに 1)
 - per-sample VCF / 個別 array / 個別 metabolomics: 行ごとに 1 JGA Sample
-- aggregate VCF / 集計 array: 集計対象 Sample 集合に対応する N 個の JGA Sample (Sample 集合は元の per-sample 行を持たないと判別できないため、Step JGA Sample カードに「**何個の個人を含めるか**」の N 入力欄を提示)
-- phenotype-only Dataset (Rule 6c 経路、配列行なし + ButtonType=phenotype のみ): pheno.tsv の中身を解析しないと N が決まらないため、Step JGA Sample カードに「**個人数 N**」の入力欄を提示し、ユーザー入力値 N に応じて Step が N 個に展開される。PoC ではユーザー入力 N を `Submission` の `serviceDrafts["step-jga-sample"].jgaSampleCount` で永続化
+- aggregate VCF / 集計 array: Section A から N が一意に決まらない
+- phenotype-only Dataset (Rule 6c 経路): pheno.tsv の中身を解析しないと N が決まらない
 
-`generateFlowCard` 出力では、Step JGA Sample は 1 個の Step として表示し、Step カード内に「JGA Sample #1 / #2 / ... / #N」のリスト UI を持つ (Step を N 個並べない、UI 上の煩雑さ回避)。N 個別の入力フィールドは Step 内のリスト UI で管理。
+N 個別の入力フィールドや「JGA Sample #1 / #2 / ... / #N」リスト UI は db-portal 側で持たない (実体は JGA システム上で完結)。
 
 #### Rule 6b: Sample-Analysis チェーン (集計 / array / variation / metabolomics / proteomics)
 
@@ -322,34 +344,40 @@ raw 配列以外は Experiment / Data を介さず Analysis に直接登録で�
 | Sample-Analysis 1:1 | 1 Sample = 1 Analysis | per-sample VCF / 個別 array / 個別 metabolomics |
 | Sample 集計 Analysis | 複数 Sample = 1 Analysis | aggregate VCF / 集計 array / 統合解析 (JGA チーム事前連絡必須) |
 
+単一 `jga` Step の notes に Rule 6a の準備物に加えて Analysis の準備物を足す:
+
 ```
-Step 0-3: 同 Rule 6a の Step 0-3 (dbcls-application / jga-submission / jga-study / jga-sample)
-Step 4: JGA Analysis 登録                (service=jga-analysis)   # JGAZ#########  (9 桁、複数)
-   notes:
-     - 1 Analysis = 1 VCF の制約 (variation の場合、ddbj/www `_jga/submission.md` §Analysis)
-     - per-sample: N Sample → N Analysis
-     - aggregate: 1 集計 → 1 Analysis (複数 Sample 参照、JGA チーム事前連絡)
-     - VCF で使用したリファレンス配列は INSDC accession もしくはラベル名で記載
-Step 5: JGA Dataset 編成                 (service=jga-dataset)    # JGAD######     (6 桁)
-Step 6: JGA Policy 設定                  (service=jga-policy)     # JGAP######     (6 桁)
+Step 0: DBCLS 事前申請 + ポリシー承認  (service=dbcls-application、外部、notes のみ)
+Step 1: JGA                            (service=jga、notes-only)
+  notes (Rule 6b 発火時、Rule 6a と排他ではなく追加):
+    - jgaPrep.overview
+    - jgaPrep.submission / jgaPrep.study / jgaPrep.sample
+    - (Rule 6a 発火時のみ) jgaPrep.experiment / jgaPrep.data
+    - jgaPrep.analysis                                            → JGAZ######### × N
+    - rule06b.analysisNotes (1 Analysis = 1 VCF、aggregate は JGA チーム事前連絡)
+    - jgaPrep.dataset / jgaPrep.policy
 ```
 
-raw 配列と Analysis が混在する場合は Rule 6a + Rule 6b を併走 (Submission / Study / Sample / Dataset / Policy は共有、Experiment + Data と Analysis を並行で生成)。
+raw 配列と Analysis が混在する場合は Rule 6a + Rule 6b の notes が両方乗る (1 Step に集約された notes リスト)。
 
 #### Rule 6c: Sample-Dataset 直結チェーン (phenotype-only Dataset)
 
-配列なしの表現型 table 単独 (ButtonType=`phenotype` のみ、`jga-dataset` Group 内に他の配列 / 変異行を含まない) で Rule 10a 経路に乗ったケース。Experiment / Data / Analysis をスキップし、Sample → Dataset を直結する第三の chain (ddbj/www `_jga/submission.md` 「JGA はサンプルに関連した表現型 (phenotype) 情報も Analysis にアーカイブしています」規程と、本体 §6.4 phenotype-only Dataset 規定の組合せ):
+配列なしの表現型 table 単独 (ButtonType=`phenotype` のみ、`jga-dataset` Group 内に他の配列 / 変異行を含まない) で Rule 10a 経路に乗ったケース。Experiment / Data / Analysis をスキップし、Sample → Dataset を直結する第三の chain (ddbj/www `_jga/submission.md` 「JGA はサンプルに関連した表現型 (phenotype) 情報も Analysis にアーカイブしています」規程と、本体 §6.4 phenotype-only Dataset 規定の組合せ)。単一 `jga` Step の notes から Experiment / Data / Analysis 系を抑制し、phenotype-only 専用 notes を追加する:
 
 ```
-Step 0: DBCLS 事前申請 + ポリシー承認 (service=dbcls-application、外部、notes のみ)
-Step 1: JGA Submission           (service=jga-submission)  → JGA######
-Step 2: JGA Study                (service=jga-study)       → JGAS######
-Step 3: JGA Sample × N           (service=jga-sample)      → JGAN#########  (N はユーザー入力、Rule 6a 「Step 3 の JGA Sample 数 N の決まり方」phenotype-only ケース)
-Step 4: JGA Dataset (phenotype-only)  (service=jga-dataset)     → JGAD######
-Step 5: JGA Policy               (service=jga-policy)      → JGAP######
+Step 0: DBCLS 事前申請 + ポリシー承認  (service=dbcls-application、外部、notes のみ)
+Step 1: JGA                            (service=jga、notes-only)
+  notes (Rule 6c 発火時):
+    - jgaPrep.overview
+    - jgaPrep.submission / jgaPrep.study / jgaPrep.sample
+    - (experiment / data / analysis は抑制)
+    - jgaPrep.dataset
+    - rule06c.phenotypeOnlyDataset (Sample → Dataset 直結の案内)
+    - jgaPrep.policy
+    - rule10c.jgaSampleNotes + DDBJ Contact + DBCLS application URL (個人特定判定が不明な時の Curator 相談案内)
 ```
 
-raw 配列 / 変異と phenotype を束ねる通常 Dataset (例: pheno.tsv + sample_R1/R2.fastq + variants.vcf を 1 Dataset に集約) は Rule 6a / 6b に Step JGA Dataset を追加する形で発火し、Rule 6c には該当しない (Rule 6c は phenotype-only 限定)。
+raw 配列 / 変異と phenotype を束ねる通常 Dataset (例: pheno.tsv + sample_R1/R2.fastq + variants.vcf を 1 Dataset に集約) は Rule 6a / 6b の jga Step に jgaPrep.dataset を含む通常 notes セットが乗り、Rule 6c には該当しない (Rule 6c は phenotype-only 限定で、experiment/data/analysis notes が抑制されるケース)。
 
 #### Rule 6 共通: 全 Service Step の抑制と公開連動
 
@@ -784,6 +812,36 @@ DRA データモデル上、1 Experiment = 1 library + 1 instrument の制約 (`
 Hybrid Assembly Group メンバが open + restricted で organism 混在 (例: pathogen short-read open + host long-read restricted) は登録仕様上不可能 (1 BS = 1 organism 制約)、上記 access 不一致と同様の warning + Ungroup 案内で対応。
 
 ddbj/www に Hybrid Assembly 専用の明示規範はない (BioNano hybrid assembly の datafile 仕様のみ `_dra/datafile-e.md` に記載) が、DRA データモデルの「1 Experiment = 1 instrument」制約と BioSample 多重参照可能性から上記構造が正当。
+
+## 8.1.A Service 単位 merge ポリシー (Phase 3 後処理)
+
+Rule 1-15 は per-row / per-group / per-stage の判定で複数の Step を生成する。同一 ServiceKind に対して複数の Step が並ぶケース (例: BS が GroupType 別に N 個、MSS が fasta ファイル別に N 個) では、利用者から見ると登録単位は「1 つの DDBJ DB への 1 つの登録操作」のため、Step を 1 枚に集約して segment 単位で対象ファイル / 派生関係 / Step 入力を開示する。
+
+### 適用タイミング
+
+`generateFlowCard` orchestrator の Phase 3 で `applyRule13Auxiliary` → `applyRule14Consistency` → `applyRule15Notes` を実行した後、`enrichExternalServiceSteps` の前に `mergeStepsByMergeKey` を適用する。Rule 13-15 が per-segment 単位で warning / note を付与した後に merge することで、warning ID は segmentId に紐づいて安定化する。
+
+### merge 条件
+
+`step.service` と `step.mergeKey` の両方が一致する Step を 1 つの Step に畳む。
+
+- `mergeKey` は Rule 側で `createStep({ mergeKey })` 経由で明示する (`src/lib/submit-alt3/rules/shared.ts`)
+- デフォルト値は `service` 文字列。`mergeKey` を渡さない Rule (Rule 1 / 2 / 3 / 4 / 6 / 7 / 10 / 12) の Step は同 ServiceKind 内で全て 1 枚に集約される
+- merge 後の `FlowStep` は `segments[]` を持ち、merge 前 Step を `FlowStepSegment` 配列として保持する。Step.id は最古 (sort 済みの先頭) segment の id を継承
+- `targetGroupIds` / `targetFileIds` / `upstreamStepIds` / `notes` / `warnings` は union (dedupe)。`intraDbInputs` は merge 後トップでは空 `{}` とし、各 segment 側に実値を保持
+- `length === 1` の場合は `segments` を未設定のまま温存 (後方互換)
+
+### 例外仕様 (意図的に分離を維持する Rule)
+
+以下の Rule は「per-origin で Step を維持する」ことが仕様要件のため、異なる `mergeKey` を仕込んで畳まれないようにする。命名規約は [`submit-alt3-data-model.md`](./submit-alt3-data-model.md) §4.6.1 を参照:
+
+- **Rule 9 multiplex**: per-sample FASTQ 行ごとに DRA Run Step を維持する仕様 (Rule 3 で「per-sample FASTQ → 1 BS」と整合)。`mergeKey = "dra:multiplex:" + fileId` で per-file 維持
+- **Rule 11 haplotype phased**: Principal / Alternate / DRA-shared の phase 別 BP と phase 別 MSS は登録先 INSDC prefix が異なるため、phase 別の Step を維持する必要がある。`mergeKey = service + ":haplotype:" + phase`
+- **Rule 8 MAG-SAG chain**: raw / primary / binned / MSS / 派生 BS の stage 別 Step を維持し、`derived_from` chain を Step カード列で可視化する仕様。`mergeKey = service + ":magsag:" + stage`
+
+### 適用後の例
+
+§8.2 の例 7 (Hybrid Assembly、BS×3 + DRA×2 + MSS) は merge 後に BS 1 segments=3 / DRA 1 segments=2 / BP 1 / MSS 1 = 4 Step に集約される。例 9 (haplotype phased) は phase 別 `mergeKey` により 4 BP + 1 BS + 1 DRA + 2 MSS = 8 Step が維持される。例 6 (multiplex) は per-file `mergeKey` により BP + BS + DRA Run × N = 2+N Step が維持される。
 
 ## 8.2 例
 

@@ -199,7 +199,7 @@ type ServiceDraft =
   | { kind: "biosample"; package?: string; geoLocName?: string; collectionDate?: string; locusTagPrefix?: string; derivedFrom?: string }
   | { kind: "primary-bioproject"; projectDataType?: string; sampleScope?: string; material?: string; capture?: string; methodology?: string; objective?: string; title?: string; description?: string }
   | { kind: "umbrella-bioproject"; title?: string; description?: string; privateCommentsToDdbjStaff?: string }
-  | { kind: "jga-submission" | "jga-study" | "jga-sample" | "jga-experiment" | "jga-data" | "jga-analysis" | "jga-dataset" | "jga-policy"; [field: string]: unknown }  // 詳細は XSD 準拠で本番フェーズ確定
+  | { kind: "jga" }  // PoC は単一 Step に集約された notes-only Step (8 オブジェクトを 1 枚に集約、XSD 入力フィールドを持たない)。詳細は [`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md) Rule 6 共通 + open-questions §10.2 参照
   | { kind: "togovar"; studyType?: "snp" | "sv" }
   | { kind: "dbcls-application"; applicationConfirmedSubgroupId?: string }
   | { kind: "jpost" | "eva" | "dgva" | "humandbs"; [field: string]: unknown }  // 外部、入力なし
@@ -232,12 +232,12 @@ type ServiceDraft =
 
 ### 4.4.2 `serviceDrafts` と `dismissedWarnings` の管理
 
-`Submission.serviceDrafts[stepId]` は Step カードでユーザーが入力した値を保存する。Step id は `generateFlowCard` が生成する確定的命名 (§4.6 命名規約) を流用するため、Submission state 上では「過去に存在した Step id」が含まれる可能性がある (例: ユーザーが行を削除すると対応 Step が消える)。
+`Submission.serviceDrafts[segmentId]` は Step カードでユーザーが入力した値を保存する。キーは **merge 前 Step.id (= `FlowStepSegment.segmentId`)** で、`generateFlowCard` の Rule 1-15 が生成する確定的命名 (§4.6.1 命名規約) と一致する。merge 後の Step トップの `intraDbInputs` は空 `{}` で、実値は `segments[].intraDbInputs` に格納される。Submission state 上では「過去に存在した segment id」が含まれる可能性がある (例: ユーザーが行を削除すると対応 Step が消える)。
 
-`generateFlowCard` 出力時、各 `FlowStep.intraDbInputs` は以下の merge で得る:
+`generateFlowCard` 出力時、merge 前の各 Step は以下の合成で `intraDbInputs` を得て、その後 Service 単位 merge (§8.1.A) で segments[].intraDbInputs に移送される:
 
 ```
-FlowStep.intraDbInputs = {
+mergedInputs = {
   ...自動推測値 (Rule 13 等),
   ...submission.serviceDrafts[step.id],          // ユーザー入力が自動推測値を上書き
 }
@@ -308,6 +308,8 @@ interface ChipTag {
 
 ### 4.6.0 Step 物理表示順序の SSOT
 
+`sortStepsByPhysicalOrder` は **Service 単位 merge (§8.1.A) 後の Step 配列** に対して適用する。同一 ServiceKind + 同一 `mergeKey` の Step が複数 segment に畳まれた後の Step.id は最古 segment の id を継承するため、merge 前後で物理表示順序は決定的に再現される。
+
 `steps` 配列の順序は次の固定優先度で決定的に並べる (混在ケースで分岐するときも、各経路はこの順序内で構築する):
 
 1. `dbcls-application` (Rule 6 集約発火時の Step 0、最上位)
@@ -319,25 +321,38 @@ interface ChipTag {
 7. `gea` (Rule 4 / 4a / 4b、対象行昇順)
 8. `metabobank` (Rule 4 / 4c)
 9. `togovar` (Rule 4)
-10. `jga-submission` / `jga-study` / `jga-sample` / `jga-experiment` / `jga-data` / `jga-analysis` / `jga-dataset` / `jga-policy` (Rule 6a / 6b の 8 段、この内部順序)
+10. `jga` (Rule 6a / 6b / 6c、8 オブジェクトを 1 Step に集約)
 11. 外部 Service (`jpost` / `eva` / `dgva` / `humandbs`)
 
-### 4.6.1 `FlowStep.id` 命名規則
+### 4.6.1 `FlowStep.id` / `mergeKey` 命名規則
 
-決定的に採番するため命名規約を固定する。warning ID は本 id に依存して構築されるため、`Submission` を入力に同じ id が再生成される必要。
+決定的に採番するため命名規約を固定する。warning ID は本 id (merge 後は `segmentId`) に依存して構築されるため、`Submission` を入力に同じ id / segmentId が再生成される必要がある。
 
 ```
 step-<service>[-<discriminator>]
 ```
 
-- `<service>` = ServiceKind 値そのまま (例 `step-primary-bioproject`、`step-jga-sample`)
-- `<discriminator>` = 同 Service で複数 Step が並ぶ時の識別子。原則は紐づく `BioSampleDraft.id` / `BioProjectDraft.id` / `FileGroup.id` の id。例:
+- `<service>` = ServiceKind 値そのまま (例 `step-primary-bioproject`、`step-jga`)
+- `<discriminator>` = 同 Service で複数 Step が並ぶ時の識別子。原則は紐づく `BioSampleDraft.id` / `BioProjectDraft.id` / `FileGroup.id` / `FileEntry.id` の id。例:
   - `step-primary-bioproject-bp-1` (primary BP 複数の場合、`bp-1` は `primaryBioProjects[0].id`)
   - `step-biosample-bs-3` (BS 1 個ごとに Step)
   - `step-dra-bs-3` (BS bs-3 配下の DRA Step)
   - `step-mss-bs-3` (BS bs-3 配下の MSS Step)
   - `step-umbrella-bioproject` (Umbrella は 1 個固定、discriminator なし)
   - `step-dbcls-application` (固定、Rule 6 発火時のみ)
+
+#### `mergeKey` の命名規約
+
+`mergeKey` は Service 単位 merge の同一性キー。Rule 側で各 Step を生成する際に明示する。同一 ServiceKind + 同一 `mergeKey` の Step は 1 枚に集約される。
+
+| 状況 | `mergeKey` 値 | 効果 |
+|---|---|---|
+| デフォルト (Rule 1 / 2 / 3 / 4 / 6 / 7 / 10 / 12 など) | `service` (例 `"mss"`) | 同 Service の Step は 1 枚に集約 |
+| Rule 9 multiplex per-file DRA Run | `dra:multiplex:${fileId}` | per-file DRA Run Step が維持 (多重化 N → N Step) |
+| Rule 11 haplotype phased | `${service}:haplotype:${phase}` (例 `primary-bioproject:haplotype:principal`) | phase 別 BP / MSS Step が維持 |
+| Rule 8 MAG-SAG chain | `${service}:magsag:${stage}` (例 `biosample:magsag:binned`) | stage 別の BS / MSS Step が維持 |
+
+`FlowStep.id` は merge 後も「最古 (= 物理表示順序ソート後の先頭) segment.id」を継承する。`segments[].segmentId` は merge 前の Step.id をそのまま保持し、warning ID と `Submission.serviceDrafts[]` のキーとして安定化させる。`FlowStep.id` ≠ `segments[0].segmentId` のケースは存在しない (id は segments[0] と一致する)。
 
 ### 4.6.2 generateFlowCard と reducer の責務境界
 
@@ -359,17 +374,31 @@ interface FlowCard {
 }
 
 interface FlowStep {
-  id: string                                      // ステップ一意 ID (例 "step-primary-bp-1")
+  id: string                                      // ステップ一意 ID (例 "step-primary-bp-1"、merge 後は最古 segment.id を継承)
+  mergeKey: string                                 // Service 単位 merge の同一性キー (デフォルト = service、§4.6.1)
   service: ServiceKind
   title: string                                   // 例 "Umbrella BioProject 登録"
-  targetGroupIds: string[]                        // Section A の行群と双方向リンク
+  descriptionKey?: string                         // 説明文 i18n key prefix。例 "routes.submitAlt3.flowSteps.dra" → .overview / .prerequisites / .outputs / .serviceLink を展開
+  serviceUrl?: { url: string; labelKey: string }  // 登録 / 案内サービスへの遷移ボタン (SERVICE_URLS で集約)
+  targetGroupIds: string[]                        // Section A の行群と双方向リンク (merge 後は union)
   targetFileIds: string[]
-  intraDbInputs: Record<string, unknown>          // Step カード内の pulldown + テキスト入力
-  upstreamStepIds: string[]                       // 前段 Step の id を参照 (accession 発行前から成立)。表示時は対応 Step の issuedAccessionTypes / 仮 ID を解決
+  intraDbInputs: Record<string, unknown>          // Step カード内の pulldown + テキスト入力 (merge 後の Step トップは空 {} で、実値は segments[].intraDbInputs)
+  upstreamStepIds: string[]                       // 前段 Step の id を参照 (merge 後は union、accession 発行前から成立)。表示時は対応 Step の issuedAccessionTypes / 仮 ID を解決
   issuedAccessionTypes: string[]                  // 例 ["PRJDB#####"] / ["DRR#####", "DRX#####"]、複数 prefix が同 Step で発行されるケースに対応
   badgeKind: "internal" | "external"              // 本体 §6.2 (内部 = emerald-500 / 外部 = amber-500)
+  notes: string[]                                 // merge 後は union (dedupe)
+  warnings: FlowWarning[]                         // テーブル未設定 cell 起因 / Rule 14 chip 整合 等。merge 後は union (id で dedupe)
+  segments?: FlowStepSegment[]                    // Service 単位 merge で 2 件以上が畳まれた場合の per-origin 開示
+}
+
+// merge 前の Step に対応する単位。segmentId は merge 前 Step.id と同一で、warning ID stability と serviceDrafts[] のキーを担う
+interface FlowStepSegment {
+  segmentId: string
+  targetGroupIds: string[]
+  targetFileIds: string[]
+  upstreamStepIds: string[]
+  intraDbInputs: Record<string, unknown>
   notes: string[]
-  warnings: FlowWarning[]                         // テーブル未設定 cell 起因 / Rule 14 chip 整合 等
 }
 
 interface FlowWarning {
@@ -381,30 +410,30 @@ interface FlowWarning {
 }
 
 type ServiceKind =
-  // 内部 (BSI / DDBJ)
+  // 内部 (BSI / DDBJ 運営、Step カードに `intraDbInputs` pulldown / 入力欄を表示)
   | "umbrella-bioproject"
   | "primary-bioproject"
   | "biosample"
   | "dra"                                         // DRA Run / Experiment / Analysis を 1 Step に集約 (issuedAccessionTypes で複数 prefix 表現)
-  | "jga-submission"                              // JGA Submission オブジェクト (Rule 6a Step 1)
-  | "jga-study"                                   // JGA Study (Rule 6a Step 2)
-  | "jga-sample"                                  // JGA Sample (Rule 6a Step 3)
-  | "jga-experiment"                              // JGA Experiment (Rule 6a Step 4)
-  | "jga-data"                                    // JGA Data raw (Rule 6a Step 5)
-  | "jga-analysis"                                // JGA Analysis (Rule 6b 集計 / array / variation)
-  | "jga-dataset"                                 // JGA Dataset (配列 / 変異 / 表現型を束ねる)
-  | "jga-policy"                                  // JGA Policy (公開可否方針)
   | "gea"
   | "mss"                                         // MSS / NSSS を統合 (intraDbInputs.entryRoute = "mss" | "nsss" で区別、本体 §6.2)
   | "metabobank"
   | "togovar"
-  // 外部 (リンク + 案内のみ、入力フォームなし)
+  // 内部 (DDBJ 運営) だが D-way 外の独自系統。Step カードは notes + serviceUrl のみで入力 UI を持たない
+  // (JGA は NBDC 提供申請 + sftp + 独自 XSD で完結、db-portal は外部誘導のみ。
+  //  8 オブジェクト = Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy は
+  //  同一 JGA 申請管理システム 1 箇所で完結するため、Step も 1 枚に集約。
+  //  [`submit-alt3-flow-rules.md`](./submit-alt3-flow-rules.md) Rule 6 共通参照)
+  | "jga"                                         // JGA 8 オブジェクトを集約した単一 Step (Rule 6a/6b/6c)
+  // 外部 (DDBJ 運営外、リンク + 案内のみ、入力フォームなし)
   | "dbcls-application"                           // DBCLS / NBDC 提供申請システム (Rule 6 Step 0 の事前申請)
   | "jpost"
   | "eva"
   | "dgva"
   | "humandbs"
 ```
+
+`jga` は `badgeKind = "internal"` を維持 (DDBJ 運営、本体 §6.2)、外部 5 種 (`dbcls-application` 等) は `badgeKind = "external"`。「Step カードに入力 UI を持つか否か」は badgeKind とは独立した属性で、`jga` は internal でありながら notes-only。flow-rules.md Rule 6 共通でこの例外を一括規定し、`SERVICE_URLS["jga"]` には JGA 案内ページ (`https://www.ddbj.nig.ac.jp/jga/submission.html`) を割り当てる (D-way URL は割り当てない、`flowRulesMasters.ts` SSOT)。発行予定 accession は `issuedAccessionTypes` 配列に 8 prefix (`JGA######` / `JGAS######` / `JGAN#########` / `JGAX#########` / `JGAR#########` / `JGAZ#########` / `JGAD######` / `JGAP######`) を並べる (`dra` Step の Run+Experiment+Analysis 集約と同型の表現)。
 
 `upstreamStepIds` は Step ID 参照とし、accession 未発行時も成立。UI 表示時は参照先 Step の発行型を解決して `"参照: Step 2 (PRJDB#####)"` のように表示する。同 Service で複数 prefix を発行する DRA (Run + Experiment) や Haplotype の MSS (Principal + Alternate) は 1 Step 内 `issuedAccessionTypes` を配列に持って表現する。
 

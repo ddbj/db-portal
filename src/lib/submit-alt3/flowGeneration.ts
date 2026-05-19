@@ -16,6 +16,8 @@ import type {
   Submission,
 } from "@/types/submit-alt3"
 
+import { enrichStepsWithDescriptions } from "./enrichSteps"
+import { mergeStepsByMergeKey } from "./mergeSteps"
 import { computeFlowGenContext } from "./rules/context"
 import { generateRule1Steps } from "./rules/rule01_primaryBioproject"
 import { generateRule2Step } from "./rules/rule02_umbrellaBioproject"
@@ -153,8 +155,14 @@ export const generateFlowCard = (submission: Submission): FlowCard => {
   processed = applyRule15Notes(processed, rule15Result)
   globalWarnings.push(...rule15Result.globalWarnings)
 
+  // Service 単位 merge (docs/submit-alt3-flow-rules.md §8.1.A)
+  processed = mergeStepsByMergeKey(processed)
+
   // 外部 Service Step の URL / linkLabel 補強
   processed = enrichExternalServiceSteps(processed)
+
+  // descriptionKey / serviceUrl の補強 (docs/submit-alt3.md §6.1)
+  processed = enrichStepsWithDescriptions(processed)
 
   // dismissedWarnings → acknowledged
   processed = applyDismissedWarnings(submission, processed)

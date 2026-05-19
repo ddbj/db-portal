@@ -31,6 +31,7 @@ export interface LlmAssistBoxProps {
   currentQ: string | null
   onApply: (dsl: string) => void | Promise<void>
   className?: string
+  layout?: "auto" | "vertical"
 }
 
 interface SuggestSuccessBody {
@@ -80,6 +81,7 @@ const LlmAssistBox = ({
   currentQ,
   onApply,
   className,
+  layout = "auto",
 }: LlmAssistBoxProps) => {
   const { t } = useTranslation()
   const tDynamic = t as unknown as (key: string, options?: { defaultValue?: string }) => string
@@ -251,7 +253,11 @@ const LlmAssistBox = ({
         )
       })()}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+      <div
+        className={layout === "vertical"
+          ? "flex flex-col gap-2"
+          : "flex flex-col gap-2 sm:flex-row sm:items-end"}
+      >
         <div className="flex-1">
           <Textarea
             value={text}

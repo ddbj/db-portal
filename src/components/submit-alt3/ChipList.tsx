@@ -1,13 +1,15 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import cn from "@/components/ui/cn"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
-import type { ChipAxis, ChipTag } from "@/types/submit-alt3"
+import { filterDisplayChips } from "@/lib/submit-alt3"
+import type { ButtonType, ChipAxis, ChipTag } from "@/types/submit-alt3"
 
 import ChipEditPopover from "./ChipEditPopover"
 
 interface Props {
   fileId: string
+  buttonType: ButtonType
   chipTags: readonly ChipTag[]
   onSetChip: (
     fileId: string,
@@ -20,8 +22,13 @@ interface Props {
 
 // 行内 chip 表示 + 編集 popover
 // SSOT: docs/submit-alt3-tags.md §5.2
+//
+// 表示方針: 内部 state には全 chip 軸を保持するが、UI 表示は ButtonType ごとの「default 値」と一致する
+// chip を隠す (例: assembled の default assembly-form=wgs は表示しない、MAG/SAG/TPA 等の非典型のみ表示)。
+// chip 編集 popover や reducer 側のロジックには影響しない。SSOT: docs/submit-alt3.md §5。
 const ChipList = ({
   fileId,
+  buttonType,
   chipTags,
   onSetChip,
   onResetChipManual,
@@ -29,13 +36,18 @@ const ChipList = ({
   const { t } = useDynamicTranslation()
   const [openAxis, setOpenAxis] = useState<ChipAxis | null>(null)
 
-  if (chipTags.length === 0) {
+  const displayChips = useMemo(
+    () => filterDisplayChips(buttonType, chipTags),
+    [buttonType, chipTags],
+  )
+
+  if (displayChips.length === 0) {
     return <span className="text-xs text-gray-400">—</span>
   }
 
   return (
     <div className="relative flex flex-wrap gap-1">
-      {chipTags.map((c) => {
+      {displayChips.map((c) => {
         const isManual =
           c.axis === "functional-genomics" && c.manualOverride === true
         const isOpen = openAxis === c.axis

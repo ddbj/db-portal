@@ -16,6 +16,7 @@ import {
   type KeywordFieldMapping,
   sidebarFieldsForDb,
 } from "@/lib/sidebar-fields"
+import { clearAllSidebar } from "@/lib/sidebar-state-to-chips"
 import type {
   DateAxis,
   SidebarDateRange,
@@ -46,7 +47,7 @@ export interface SidebarFilterProps {
   subtypeCounts?: Readonly<Record<string, number | null>>
 }
 
-interface FacetBucketLite {
+export interface FacetBucketLite {
   value: string
   count: number
   label?: string | null
@@ -58,13 +59,30 @@ const toggleValue = (
 ): readonly string[] =>
   arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
 
-const SectionHeading = ({ children }: { children: string }) => (
-  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase">
-    {children}
-  </h4>
+interface SectionHeadingProps {
+  children: string
+  onClear?: () => void
+  clearLabel?: string
+}
+
+const SectionHeading = ({ children, onClear, clearLabel }: SectionHeadingProps) => (
+  <div className="mb-2 flex items-baseline justify-between gap-2">
+    <h4 className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+      {children}
+    </h4>
+    {onClear !== undefined && (
+      <button
+        type="button"
+        onClick={onClear}
+        className="text-primary-700 hover:text-primary-800 text-xs hover:underline focus:ring-2 focus:ring-gray-300 focus:outline-none"
+      >
+        {clearLabel}
+      </button>
+    )}
+  </div>
 )
 
-const getFacetBuckets = (
+export const getFacetBuckets = (
   facetsData: FacetsResponse | null,
   facetKey: string,
 ): readonly FacetBucketLite[] => {
@@ -76,18 +94,22 @@ const getFacetBuckets = (
   return value as readonly FacetBucketLite[]
 }
 
-interface FacetSectionProps {
+export interface FacetSectionProps {
   mapping: FacetFieldMapping
   buckets: readonly FacetBucketLite[]
   selected: readonly string[]
   onToggle: (value: string) => void
+  onClear?: () => void
+  clearLabel?: string
 }
 
-const FacetSection = ({
+export const FacetSection = ({
   mapping,
   buckets,
   selected,
   onToggle,
+  onClear,
+  clearLabel,
 }: FacetSectionProps) => {
   const { t } = useTranslation()
   const tDynamic = t as unknown as (key: string) => string
@@ -96,7 +118,12 @@ const FacetSection = ({
 
   return (
     <section>
-      <SectionHeading>{tDynamic(mapping.labelKey)}</SectionHeading>
+      <SectionHeading
+        {...(selected.length > 0 && onClear !== undefined && { onClear })}
+        {...(clearLabel !== undefined && { clearLabel })}
+      >
+        {tDynamic(mapping.labelKey)}
+      </SectionHeading>
       <div className="space-y-1">
         {buckets.slice(0, FACET_BUCKET_LIMIT).map((bucket) => {
           const facetValue = bucket.label ?? bucket.value
@@ -119,12 +146,16 @@ interface KeywordSectionProps {
   mapping: KeywordFieldMapping
   value: string
   onChange: (next: string) => void
+  onClear?: () => void
+  clearLabel?: string
 }
 
-interface DateRangeSectionProps {
+export interface DateRangeSectionProps {
   axes: readonly DateAxis[]
   value: SidebarDateRange | null
   onChange: (next: SidebarDateRange | null) => void
+  onClear?: () => void
+  clearLabel?: string
 }
 
 const DEFAULT_DATE_AXIS: DateAxis = "date_published"
@@ -137,7 +168,9 @@ const formatDateISO = (d: Date): string => {
   return `${yyyy}-${mm}-${dd}`
 }
 
-const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
+export const DateRangeSection = (
+  { axes, value, onChange, onClear, clearLabel }: DateRangeSectionProps,
+) => {
   const { t } = useTranslation()
   const tDynamic = t as unknown as (key: string) => string
 
@@ -182,7 +215,10 @@ const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
 
   return (
     <section>
-      <SectionHeading>
+      <SectionHeading
+        {...(value !== null && onClear !== undefined && { onClear })}
+        {...(clearLabel !== undefined && { clearLabel })}
+      >
         {t("routes.searchResults.sidebar.dateRange.title")}
       </SectionHeading>
       <div className="space-y-3">
@@ -238,7 +274,9 @@ const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
   )
 }
 
-const KeywordSection = ({ mapping, value, onChange }: KeywordSectionProps) => {
+const KeywordSection = (
+  { mapping, value, onChange, onClear, clearLabel }: KeywordSectionProps,
+) => {
   const { t } = useTranslation()
   const tDynamic = t as unknown as (key: string) => string
   const [local, setLocal] = useState(value)
@@ -256,7 +294,12 @@ const KeywordSection = ({ mapping, value, onChange }: KeywordSectionProps) => {
 
   return (
     <section>
-      <SectionHeading>{tDynamic(mapping.labelKey)}</SectionHeading>
+      <SectionHeading
+        {...(value !== "" && onClear !== undefined && { onClear })}
+        {...(clearLabel !== undefined && { clearLabel })}
+      >
+        {tDynamic(mapping.labelKey)}
+      </SectionHeading>
       <Input
         type="text"
         value={local}
@@ -267,47 +310,18 @@ const KeywordSection = ({ mapping, value, onChange }: KeywordSectionProps) => {
   )
 }
 
-interface FreeTextSectionProps {
-  value: string
-  onChange: (next: string) => void
-}
-
-const FreeTextSection = ({ value, onChange }: FreeTextSectionProps) => {
-  const { t } = useTranslation()
-  const [local, setLocal] = useState(value)
-
-  useEffect(() => {
-    setLocal(value)
-  }, [value])
-
-  useEffect(() => {
-    if (local === value) return
-    const timer = setTimeout(() => onChange(local), KEYWORD_DEBOUNCE_MS)
-
-    return () => clearTimeout(timer)
-  }, [local, value, onChange])
-
-  return (
-    <section>
-      <SectionHeading>{t("routes.searchResults.sidebar.freeWord.title")}</SectionHeading>
-      <Input
-        type="text"
-        value={local}
-        onChange={(e) => setLocal(e.target.value)}
-        placeholder={t("routes.searchResults.sidebar.freeWord.placeholder")}
-      />
-    </section>
-  )
-}
-
 const formatSubtypeLabel = (
   subtype: string,
+  translate: (key: string) => string,
   counts?: Readonly<Record<string, number | null>>,
 ): string => {
+  const key = `routes.searchResults.sidebar.subtypeLabel.${subtype}`
+  const translated = translate(key)
+  const displayName = translated === key ? subtype : translated
   const count = counts?.[subtype] ?? null
-  if (count === null) return subtype
+  if (count === null) return displayName
 
-  return `${subtype} (${count.toLocaleString()})`
+  return `${displayName} (${count.toLocaleString()})`
 }
 
 const SidebarFilter = ({
@@ -320,6 +334,7 @@ const SidebarFilter = ({
   subtypeCounts,
 }: SidebarFilterProps) => {
   const { t } = useTranslation()
+  const tDynamic = t as unknown as (key: string) => string
   const fields = sidebarFieldsForDb(db, state.subtype)
   const subtypes: readonly string[] = db === "sra"
     ? SRA_SUBTYPES
@@ -355,14 +370,33 @@ const SidebarFilter = ({
     onChange({ ...state, subtype })
   }
 
+  const clearSectionLabel = t("routes.searchResults.sidebar.clearSection")
+  const hasAnyFilter = Object.keys(state.facets).length > 0
+    || Object.keys(state.keywords).length > 0
+    || state.dateRange !== null
+    || state.subtype !== null
+
+  const handleClearAll = () => onChange(clearAllSidebar(state))
+
   return (
     <aside
       className={cn("w-64 flex-shrink-0 space-y-6", className)}
       aria-label={t("routes.searchResults.sidebar.label")}
     >
-      <Heading level={3} className="text-sm font-semibold text-gray-900">
-        {t("routes.searchResults.sidebar.title")}
-      </Heading>
+      <div className="flex items-baseline justify-between gap-2">
+        <Heading level={3} className="mb-0 text-sm font-semibold text-gray-900">
+          {t("routes.searchResults.sidebar.title")}
+        </Heading>
+        {hasAnyFilter && (
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="text-primary-700 hover:text-primary-800 text-xs hover:underline focus:ring-2 focus:ring-gray-300 focus:outline-none"
+          >
+            {t("routes.searchResults.sidebar.clearAll")}
+          </button>
+        )}
+      </div>
 
       {loading && (
         <div className="space-y-2">
@@ -372,14 +406,14 @@ const SidebarFilter = ({
         </div>
       )}
 
-      <FreeTextSection
-        value={state.freeText}
-        onChange={(value) => onChange({ ...state, freeText: value })}
-      />
-
       {subtypes.length > 0 && (
         <section>
-          <SectionHeading>{t("routes.searchResults.sidebar.entryType")}</SectionHeading>
+          <SectionHeading
+            {...(state.subtype !== null && { onClear: () => updateSubtype(null) })}
+            clearLabel={clearSectionLabel}
+          >
+            {t("routes.searchResults.sidebar.entryType")}
+          </SectionHeading>
           <div className="space-y-1">
             <Radio
               label={t("routes.searchResults.sidebar.all")}
@@ -390,7 +424,7 @@ const SidebarFilter = ({
             {subtypes.map((subtype) => (
               <Radio
                 key={subtype}
-                label={formatSubtypeLabel(subtype, subtypeCounts)}
+                label={formatSubtypeLabel(subtype, tDynamic, subtypeCounts)}
                 name={`${db}-subtype`}
                 checked={state.subtype === subtype}
                 onChange={() => updateSubtype(subtype)}
@@ -407,6 +441,8 @@ const SidebarFilter = ({
           buckets={getFacetBuckets(facetsData, mapping.facetKey)}
           selected={state.facets[mapping.dslName] ?? []}
           onToggle={(value) => toggleFacet(mapping.dslName, value)}
+          onClear={() => updateFacetValues(mapping.dslName, [])}
+          clearLabel={clearSectionLabel}
         />
       ))}
 
@@ -416,6 +452,8 @@ const SidebarFilter = ({
           mapping={mapping}
           value={state.keywords[mapping.dslName] ?? ""}
           onChange={(value) => updateKeyword(mapping.dslName, value)}
+          onClear={() => updateKeyword(mapping.dslName, "")}
+          clearLabel={clearSectionLabel}
         />
       ))}
 
@@ -423,6 +461,8 @@ const SidebarFilter = ({
         axes={fields.dateAxes}
         value={state.dateRange}
         onChange={(next) => onChange({ ...state, dateRange: next })}
+        onClear={() => onChange({ ...state, dateRange: null })}
+        clearLabel={clearSectionLabel}
       />
     </aside>
   )

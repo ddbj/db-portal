@@ -11,29 +11,33 @@ export interface ResultCardProps {
   className?: string
 }
 
-const buildMetaLine = (hit: DbPortalHit): string | null => {
+type Translate = (key: string) => string
+
+const buildMetaLine = (hit: DbPortalHit, t: Translate): string | null => {
   const parts: string[] = []
+  const ml = (key: string) =>
+    t(`routes.searchResults.resultCard.metaLabels.${key}`)
   switch (hit.type) {
     case "bioproject": {
       if (hit.objectType !== null && hit.objectType !== undefined) {
-        parts.push(`Project type: ${hit.objectType}`)
+        parts.push(`${ml("projectType")}: ${hit.objectType}`)
       }
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       break
     }
     case "biosample": {
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       if (hit.package?.name !== null && hit.package?.name !== undefined && hit.package.name !== "") {
-        parts.push(`Package: ${hit.package.name}`)
+        parts.push(`${ml("package")}: ${hit.package.name}`)
       }
       if (hit.model !== null && hit.model !== undefined && hit.model.length > 0) {
-        parts.push(`Model: ${hit.model.join(", ")}`)
+        parts.push(`${ml("model")}: ${hit.model.join(", ")}`)
       }
       break
     }
@@ -45,19 +49,19 @@ const buildMetaLine = (hit: DbPortalHit): string | null => {
     case "sra-analysis": {
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       if (hit.libraryStrategy !== null && hit.libraryStrategy !== undefined) {
-        parts.push(`Library: ${hit.libraryStrategy}`)
+        parts.push(`${ml("library")}: ${hit.libraryStrategy}`)
       }
       if (hit.platform !== null && hit.platform !== undefined) {
-        parts.push(`Platform: ${hit.platform}`)
+        parts.push(`${ml("platform")}: ${hit.platform}`)
       }
       if (hit.instrumentModel !== null && hit.instrumentModel !== undefined) {
-        parts.push(`Instrument: ${hit.instrumentModel}`)
+        parts.push(`${ml("instrument")}: ${hit.instrumentModel}`)
       }
       if (hit.analysisType !== null && hit.analysisType !== undefined) {
-        parts.push(`Analysis: ${hit.analysisType}`)
+        parts.push(`${ml("analysis")}: ${hit.analysisType}`)
       }
       break
     }
@@ -67,66 +71,66 @@ const buildMetaLine = (hit: DbPortalHit): string | null => {
     case "jga-policy": {
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       if (hit.studyType !== null && hit.studyType !== undefined) {
-        parts.push(`Study type: ${hit.studyType}`)
+        parts.push(`${ml("studyType")}: ${hit.studyType}`)
       }
       if (hit.datasetType !== null && hit.datasetType !== undefined) {
-        parts.push(`Dataset type: ${hit.datasetType}`)
+        parts.push(`${ml("datasetType")}: ${hit.datasetType}`)
       }
       if (hit.vendor !== null && hit.vendor !== undefined) {
-        parts.push(`Vendor: ${hit.vendor}`)
+        parts.push(`${ml("vendor")}: ${hit.vendor}`)
       }
       break
     }
     case "gea": {
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       if (hit.experimentType !== null && hit.experimentType !== undefined) {
-        parts.push(`Experiment type: ${hit.experimentType}`)
+        parts.push(`${ml("experimentType")}: ${hit.experimentType}`)
       }
       break
     }
     case "metabobank": {
       const orgName = hit.organization?.[0]?.name
       if (orgName !== null && orgName !== undefined && orgName !== "") {
-        parts.push(`Organization: ${orgName}`)
+        parts.push(`${ml("organization")}: ${orgName}`)
       }
       if (hit.studyType !== null && hit.studyType !== undefined) {
-        parts.push(`Study type: ${hit.studyType}`)
+        parts.push(`${ml("studyType")}: ${hit.studyType}`)
       }
       if (hit.experimentType !== null && hit.experimentType !== undefined) {
-        parts.push(`Experiment type: ${hit.experimentType}`)
+        parts.push(`${ml("experimentType")}: ${hit.experimentType}`)
       }
       if (hit.submissionType !== null && hit.submissionType !== undefined) {
-        parts.push(`Submission type: ${hit.submissionType}`)
+        parts.push(`${ml("submissionType")}: ${hit.submissionType}`)
       }
       break
     }
     case "trad": {
       if (hit.division !== null && hit.division !== undefined) {
-        parts.push(`Division: ${hit.division}`)
+        parts.push(`${ml("division")}: ${hit.division}`)
       }
       if (hit.molecularType !== null && hit.molecularType !== undefined) {
-        parts.push(`Type: ${hit.molecularType}`)
+        parts.push(`${ml("type")}: ${hit.molecularType}`)
       }
       if (hit.sequenceLength !== null && hit.sequenceLength !== undefined) {
-        parts.push(`Length: ${hit.sequenceLength.toLocaleString()}`)
+        parts.push(`${ml("length")}: ${hit.sequenceLength.toLocaleString()}`)
       }
       break
     }
     case "taxonomy": {
       if (hit.rank !== null && hit.rank !== undefined) {
-        parts.push(`Rank: ${hit.rank}`)
+        parts.push(`${ml("rank")}: ${hit.rank}`)
       }
       if (hit.commonName !== null && hit.commonName !== undefined) {
-        parts.push(`Common: ${hit.commonName}`)
+        parts.push(`${ml("common")}: ${hit.commonName}`)
       }
       if (hit.japaneseName !== null && hit.japaneseName !== undefined) {
-        parts.push(`Japanese: ${hit.japaneseName}`)
+        parts.push(`${ml("japanese")}: ${hit.japaneseName}`)
       }
       break
     }
@@ -151,28 +155,33 @@ const stringifyField = (
   return str === "" ? null : str
 }
 
-const buildSecondaryMetaLine = (hit: DbPortalHit): string | null => {
+const buildSecondaryMetaLine = (
+  hit: DbPortalHit,
+  t: Translate,
+): string | null => {
   const parts: string[] = []
   const push = (
-    label: string,
+    labelKey: string,
     v: string | readonly string[] | null | undefined,
   ) => {
     const s = stringifyField(v)
-    if (s !== null) parts.push(`${label}: ${s}`)
+    if (s === null) return
+    const label = t(`routes.searchResults.resultCard.metaLabels.${labelKey}`)
+    parts.push(`${label}: ${s}`)
   }
 
   switch (hit.type) {
     case "bioproject": {
-      push("Relevance", hit.relevance as readonly string[] | null | undefined)
+      push("relevance", hit.relevance as readonly string[] | null | undefined)
       break
     }
     case "biosample": {
-      push("Host", hit.host as string | readonly string[] | null | undefined)
-      push("Strain", hit.strain as string | readonly string[] | null | undefined)
-      push("Isolate", hit.isolate as string | readonly string[] | null | undefined)
-      push("Geo", hit.geoLocName as string | readonly string[] | null | undefined)
+      push("host", hit.host as string | readonly string[] | null | undefined)
+      push("strain", hit.strain as string | readonly string[] | null | undefined)
+      push("isolate", hit.isolate as string | readonly string[] | null | undefined)
+      push("geo", hit.geoLocName as string | readonly string[] | null | undefined)
       push(
-        "Collection",
+        "collection",
         hit.collectionDate as string | readonly string[] | null | undefined,
       )
       break
@@ -184,16 +193,16 @@ const buildSecondaryMetaLine = (hit: DbPortalHit): string | null => {
     case "sra-sample":
     case "sra-analysis": {
       push(
-        "Library name",
+        "libraryName",
         hit.libraryName as string | readonly string[] | null | undefined,
       )
       push(
-        "Construction protocol",
+        "constructionProtocol",
         hit.libraryConstructionProtocol as string | readonly string[] | null | undefined,
       )
-      push("Geo", hit.geoLocName as string | readonly string[] | null | undefined)
+      push("geo", hit.geoLocName as string | readonly string[] | null | undefined)
       push(
-        "Collection",
+        "collection",
         hit.collectionDate as string | readonly string[] | null | undefined,
       )
       break
@@ -224,6 +233,7 @@ const buildRelated = (hit: DbPortalHit): readonly RelatedRef[] => {
 
 const ResultCard = ({ hit, className }: ResultCardProps) => {
   const { t } = useTranslation()
+  const tDynamic = t as unknown as Translate
   const dbId = mapTypeToDbId(hit.type)
   const title = hit.title ?? hit.identifier
   const description = hit.description ?? null
@@ -233,8 +243,8 @@ const ResultCard = ({ hit, className }: ResultCardProps) => {
     && hit.organism !== undefined
     && hit.organism.name !== null
     && hit.organism.name !== undefined
-  const metaLine = buildMetaLine(hit)
-  const secondaryMetaLine = buildSecondaryMetaLine(hit)
+  const metaLine = buildMetaLine(hit, tDynamic)
+  const secondaryMetaLine = buildSecondaryMetaLine(hit, tDynamic)
   const related = buildRelated(hit)
   const externalUrl = hit.url ?? "#"
   const status = hit.status ?? null

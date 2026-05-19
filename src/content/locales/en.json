@@ -153,16 +153,36 @@
         "nest-depth-exceeded": "Condition nesting is too deep.",
         "missing-value": "The value is empty."
       },
+      "searchBox": {
+        "dbDisabledHint": "To change the database, open the search page via \"Edit in search page\"."
+      },
+      "activeFilters": {
+        "label": "Active filters",
+        "clearAll": "Clear all",
+        "dateRangeFormat": "{{from}} – {{to}}",
+        "dateRangeFromOnly": "From {{from}}",
+        "dateRangeToOnly": "Until {{to}}"
+      },
       "sidebar": {
         "label": "Filter sidebar",
         "title": "Filter",
         "entryType": "Entry type",
         "all": "All",
-        "keywordPlaceholder": "Filter by keyword...",
-        "freeWord": {
-          "title": "Free word",
-          "placeholder": "e.g. Escherichia coli"
+        "clearAll": "Clear all",
+        "clearSection": "Clear",
+        "subtypeLabel": {
+          "sra-submission": "Submission",
+          "sra-study": "Study",
+          "sra-experiment": "Experiment",
+          "sra-run": "Run",
+          "sra-sample": "Sample",
+          "sra-analysis": "Analysis",
+          "jga-study": "Study",
+          "jga-dataset": "Dataset",
+          "jga-dac": "DAC",
+          "jga-policy": "Policy"
         },
+        "keywordPlaceholder": "Filter by keyword...",
         "fields": {
           "accessibility": { "label": "Accessibility" },
           "package": { "label": "Package" },
@@ -188,7 +208,6 @@
       },
       "dbMode": {
         "resultsCount": "{{from}}-{{to}} of {{total}} results",
-        "resultsCountOver10k": "{{from}}-{{to}} of 10,000+ results",
         "noResults": "No results found",
         "sort": {
           "label": "Sort",
@@ -203,12 +222,17 @@
         "pagination": {
           "prev": "Prev",
           "next": "Next",
+          "first": "First",
+          "last": "Last",
           "pageInfo": "Page {{current}} of {{total}}",
+          "pageInputLabel": "Page",
+          "pageInputAria": "Jump to page",
+          "pageOf": "of {{total}}",
           "cursorMode": "Cursor mode (over 10,000 results)"
         },
         "over10k": {
-          "message": "Only up to 10,000 results can be displayed. Please add keywords or refine on the Search page.",
-          "cta": "Open Search"
+          "tooltip": "Only up to 10,000 results can be shown. Add keywords to narrow down.",
+          "inlineNote": "Up to 10,000 results can be shown"
         },
         "publishedAtAria": "Published at",
         "status": {
@@ -218,6 +242,37 @@
         },
         "accessibility": {
           "controlled-access": "Controlled access"
+        }
+      },
+      "resultCard": {
+        "metaLabels": {
+          "projectType": "Project type",
+          "organization": "Organization",
+          "package": "Package",
+          "model": "Model",
+          "library": "Library",
+          "platform": "Platform",
+          "instrument": "Instrument",
+          "analysis": "Analysis",
+          "studyType": "Study type",
+          "datasetType": "Dataset type",
+          "vendor": "Vendor",
+          "experimentType": "Experiment type",
+          "submissionType": "Submission type",
+          "division": "Division",
+          "type": "Type",
+          "length": "Length",
+          "rank": "Rank",
+          "common": "Common",
+          "japanese": "Japanese",
+          "relevance": "Relevance",
+          "host": "Host",
+          "strain": "Strain",
+          "isolate": "Isolate",
+          "geo": "Geo",
+          "collection": "Collection",
+          "libraryName": "Library name",
+          "constructionProtocol": "Construction protocol"
         }
       }
     },
@@ -466,7 +521,11 @@
       },
       "actions": {
         "search": "Search",
-        "reset": "Reset"
+        "reset": "Reset",
+        "disabledReason": {
+          "empty": "Add at least one condition",
+          "invalid": "{{count}} validation error(s)"
+        }
       },
       "dbSwitchWarning": {
         "heading": "Switching database will remove these {{currentDb}}-specific conditions:",
@@ -1410,15 +1469,15 @@
         "flowCard": "Submission flow cards"
       },
       "buttons": {
-        "sequenceRead": { "label": "+ Sequence reads (fastq)" },
-        "assembled": { "label": "+ Assembled sequence (fasta)" },
-        "annotation": { "label": "+ Gene annotation (gff)" },
-        "variation": { "label": "+ Variation (vcf)" },
-        "phenotype": { "label": "+ Phenotype data (tsv)" },
-        "expressionArray": { "label": "+ Microarray expression (cel)" },
-        "expressionMatrix": { "label": "+ RNA-seq matrix (tsv)" },
-        "massSpec": { "label": "+ Mass spectrometry (mzML)" },
-        "spatialTx": { "label": "+ Spatial transcriptome (tsv)" }
+        "sequenceRead": { "label": "+ Sequence reads (fastq)", "shortLabel": "Sequence reads" },
+        "assembled": { "label": "+ Assembled sequence (fasta)", "shortLabel": "Assembled sequence" },
+        "annotation": { "label": "+ Gene annotation (gff)", "shortLabel": "Gene annotation" },
+        "variation": { "label": "+ Variation (vcf)", "shortLabel": "Variation" },
+        "phenotype": { "label": "+ Phenotype data (tsv)", "shortLabel": "Phenotype data" },
+        "expressionArray": { "label": "+ Microarray expression (cel)", "shortLabel": "Microarray expression" },
+        "expressionMatrix": { "label": "+ RNA-seq matrix (tsv)", "shortLabel": "RNA-seq matrix" },
+        "massSpec": { "label": "+ Mass spectrometry (mzML)", "shortLabel": "Mass spectrometry" },
+        "spatialTx": { "label": "+ Spatial transcriptome (tsv)", "shortLabel": "Spatial transcriptome" }
       },
       "modals": {
         "common": { "cancel": "Cancel", "add": "Add" },
@@ -1673,6 +1732,7 @@
       },
       "tableColumns": {
         "unset": "(unset)",
+        "kind": { "label": "Kind" },
         "file": { "label": "File" },
         "organism": {
           "label": "Organism",
@@ -1737,35 +1797,116 @@
         "fileCount": "{{count}} file(s)"
       },
       "flowSteps": {
-        "umbrella-bioproject": { "title": "Umbrella BioProject" },
-        "primary-bioproject": { "title": "Primary BioProject" },
-        "biosample": { "title": "BioSample" },
-        "dra": { "title": "DRA (Run / Experiment / Analysis)" },
-        "mss": { "title": "MSS / NSSS" },
-        "gea": { "title": "GEA" },
-        "metabobank": { "title": "MetaboBank" },
-        "togovar": { "title": "TogoVar-repository" },
-        "jga-submission": { "title": "JGA Submission" },
-        "jga-study": { "title": "JGA Study" },
-        "jga-sample": { "title": "JGA Sample" },
-        "jga-experiment": { "title": "JGA Experiment" },
-        "jga-data": { "title": "JGA Data" },
-        "jga-analysis": { "title": "JGA Analysis" },
-        "jga-dataset": { "title": "JGA Dataset" },
-        "jga-policy": { "title": "JGA Policy" },
-        "dbcls-application": { "title": "DBCLS Application + Policy approval" },
-        "jpost": { "title": "jPOST (external)" },
-        "eva": { "title": "EVA (external)" },
-        "dgva": { "title": "dgVa (external)" },
-        "humandbs": { "title": "HumanDBs (external, post-release reference)" }
+        "umbrella-bioproject": {
+          "title": "Umbrella BioProject",
+          "overview": "An upper-level project that groups multiple Primary BioProjects. Used for host-pathogen / multi-modal studies and the Principal / Alternate / DRA BPs of Haplotype phased assemblies.",
+          "prerequisites": "Roles of the underlying Primary BioProjects are clearly defined. Umbrellas cannot be unpublished, while each Primary can be put on Hold.",
+          "outputs": "Issues a PRJDB##### accession dedicated to the Umbrella (record the child BPs in Private comments to DDBJ staff).",
+          "serviceLink": "Open Umbrella BioProject submission (D-way)"
+        },
+        "primary-bioproject": {
+          "title": "Primary BioProject",
+          "overview": "A metadata project created per research unit. Acts as the anchor that ties together BioSample / DRA / MSS / GEA and other DB submissions.",
+          "prerequisites": "The research scope and Project data type are finalized. Mixed cases (host-pathogen, multi-modal) are split per organism / data type under an Umbrella BP.",
+          "outputs": "Issues a PRJDB##### accession.",
+          "serviceLink": "Open BioProject submission (D-way)"
+        },
+        "biosample": {
+          "title": "BioSample",
+          "overview": "Metadata per biological sample (individual, tissue, culture, environmental metagenome, etc.). Picks a Package that matches the organism and sampling method.",
+          "prerequisites": "BioProject (or a placeholder ID) is issued. The GroupType determines the aggregation: one BS per Group, one BS per FASTQ row, or a derived-BS chain.",
+          "outputs": "Issues a SAMD00000000 accession. Common Packages include Human, Microbe, Viral, Model organism or animal, MIMS.me, and MIMAG.",
+          "serviceLink": "Open BioSample submission (D-way)"
+        },
+        "dra": {
+          "title": "DRA (Run / Experiment / Analysis)",
+          "overview": "DDBJ Sequence Read Archive. Hosts raw sequence reads (FASTQ/BAM/HDF5) and analysis products (BAM/VCF/contigs).",
+          "prerequisites": "BioProject + BioSample are registered (or placeholders). Library construction (Source / Strategy / Selection / Platform / Instrument) must be described.",
+          "outputs": "Issues DRR##### (Run), DRX##### (Experiment), and DRZ##### (Analysis).",
+          "serviceLink": "Open DRA submission (D-way)"
+        },
+        "mss": {
+          "title": "MSS / NSSS submission",
+          "overview": "Mass Submission System (MSS) and the web-based NSSS. Used to submit annotated INSDC flat files for assembled sequences (WGS / TSA / TLS / HTG / HTC).",
+          "prerequisites": "BioProject + BioSample are registered. Files must comply with INSDC FF format, and a locus_tag_prefix is requested at BioSample submission.",
+          "outputs": "Issues the assigned INSDC two-letter prefix accessions (e.g. BAxx####).",
+          "serviceLink": "Open MSS submission form"
+        },
+        "gea": {
+          "title": "GEA submission",
+          "overview": "Genomic Expression Archive. Hosts microarray, RNA-seq, and spatial transcriptomics expression data.",
+          "prerequisites": "BioProject + BioSample are registered. Submission Type (Sequencing / Microarray) and a sample-by-sample matrix are prepared.",
+          "outputs": "Issues GEA Series accessions.",
+          "serviceLink": "Open GEA submission (D-way)"
+        },
+        "metabobank": {
+          "title": "MetaboBank submission",
+          "overview": "Repository for metabolomics and imaging MS data. Only Study-level accessions are issued (no Run / Analysis level).",
+          "prerequisites": "BioProject + BioSample are registered. Different experimental designs are split into separate Studies grouped under one BioProject.",
+          "outputs": "Issues MTBKSn (Study) accessions.",
+          "serviceLink": "Open MetaboBank"
+        },
+        "togovar": {
+          "title": "TogoVar-repository submission",
+          "overview": "TogoVar repository for Japanese population / disease-associated aggregate variants. Accepts aggregate VCFs.",
+          "prerequisites": "BioProject + BioSample are registered. The aggregate variation origin, study type, and sample size are described.",
+          "outputs": "Issues a dstd### accession.",
+          "serviceLink": "Open TogoVar-repository"
+        },
+        "jga": {
+          "title": "JGA registration",
+          "overview": "The Japanese Genotype-phenotype Archive (JGA) uses its own application and submission pipeline, separate from D-way. Eight objects (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) are registered in sequence in the JGA submission management system. db-portal does not host the input UI; it provides external redirection and a preparation checklist only.",
+          "prerequisites": "An access-controlled policy (subgrp ID) approved under DBCLS / NBDC is already issued.",
+          "outputs": "Issues eight prefixes: JGA / JGAS / JGAN / JGAX / JGAR / JGAZ / JGAD / JGAP.",
+          "serviceLink": "Open JGA submission guide"
+        },
+        "dbcls-application": {
+          "title": "DBCLS Application + Policy approval",
+          "overview": "Mandatory prior application for JGA submissions. Obtains an access-controlled subgrp ID under the NBDC Human Data guidelines.",
+          "prerequisites": "Institutional requirements (privacy, informed consent) are satisfied.",
+          "outputs": "Obtains a subgrp ID (hum####, etc.). Not a DDBJ portal accession.",
+          "serviceLink": "Open DBCLS application portal"
+        },
+        "jpost": {
+          "title": "jPOST Repository",
+          "overview": "Repository for proteomics MS data (mass-spec-domain=proteomics). Submitted directly to jPOST, not DDBJ.",
+          "prerequisites": "jPOST account. BioProject is used to link the metadata.",
+          "outputs": "Obtains a JPST### (jPOST Study ID).",
+          "serviceLink": "Open jPOST Repository"
+        },
+        "eva": {
+          "title": "EVA (European Variation Archive)",
+          "overview": "EBI-hosted repository for open per-sample / aggregate SNP / Indel variants. Submitted directly to EVA, not DDBJ.",
+          "prerequisites": "EVA account.",
+          "outputs": "Obtains an EVA accession.",
+          "serviceLink": "Open EVA"
+        },
+        "dgva": {
+          "title": "DGVa (Database of Genomic Variants archive)",
+          "overview": "EBI-hosted repository for structural variants (SV) and CNV submissions.",
+          "prerequisites": "DGVa account.",
+          "outputs": "Obtains a DGVa accession.",
+          "serviceLink": "Open DGVa"
+        },
+        "humandbs": {
+          "title": "HumanDBs (post-release reference)",
+          "overview": "Reference site for hum-numbered DDBJ datasets after public release. Not a submission portal; informational only.",
+          "prerequisites": "Submission to JGA / related DBs and public release are complete.",
+          "outputs": "Obtains the hum#### (after release).",
+          "serviceLink": "Open HumanDBs"
+        }
       },
       "flowStepCard": {
         "editStepInputs": "Edit step inputs",
         "stepInputsHeading": "Step inputs (Library Strategy, etc.)",
         "noEditableInputs": "This step has no editable pulldowns yet (PoC scope)",
         "externalLink": "External link",
+        "serviceLinkFallback": "Open submission service",
+        "segmentsHeading": "{{count}} submission unit(s)",
         "warningAcknowledged": "acknowledged",
         "warningAcknowledgedSummary": "{{count}} warning(s) acknowledged",
+        "subgrpIdHint": "Keep the DBCLS-issued subgrp ID at hand; later JGA steps reference it as the controlled-access ID.",
+        "keywordsHint": "Ctrl/⌘ click for multi-select. Rule 7a TPA auto-appended strings are preserved.",
         "warningActions": {
           "fixChip": "Fix chip",
           "editStepInput": "Edit step input",
@@ -1806,6 +1947,17 @@
         "rule06": {
           "dbclsApplication": {
             "notes": "JGA submissions require an approved data-sharing policy under the DBCLS / NBDC framework (provider application group). Complete this application before proceeding."
+          },
+          "jgaPrep": {
+            "overview": "Register eight objects (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) in sequence in the JGA submission management system. db-portal does not host the input UI; the checklist below describes what to prepare for each object.",
+            "submission": "Submission: provider-application group (subgrp ID) linkage, contact information, release-plan summary.",
+            "study": "Study: title, abstract, research aim, related publications (PubMed ID / DOI).",
+            "sample": "Sample: one per donor. The count can be derived from the target BioSample rows. Prepare sex, age, phenotype, informed-consent conditions.",
+            "experiment": "Experiment: Library Strategy / Source / Selection / Instrument / Library Construction Protocol (same shape as DRA Experiment).",
+            "data": "Data (raw): FASTQ etc. raw sequence files. After approval, upload to the JGA server via sftp / WinSCP.",
+            "analysis": "Analysis: VCF / BAM analysis products, reference accession or label, and analysis-pipeline information.",
+            "dataset": "Dataset: the bundled list of Samples / Data / Analyses, Dataset title and abstract, linked Policy.",
+            "policy": "Policy: provider-application group (subgrp ID), DAC / DUO release conditions, request-review policy."
           }
         },
         "rule06b": {

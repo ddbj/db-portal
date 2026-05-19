@@ -36,7 +36,7 @@ export const generateRule12Steps = (
         intraDbInputs: mergeServiceDraft(submission, "step-humandbs", {
           url: humandbsConfig?.url,
         }),
-        upstreamStepIds: ["step-jga-policy"],
+        upstreamStepIds: ["step-jga"],
         notes: [
           "routes.submitAlt3.flowGen.rule12.humandbs.notes",
           ...(humandbsConfig?.url ? [humandbsConfig.url] : []),
@@ -62,7 +62,7 @@ export const enrichExternalServiceSteps = (steps: FlowStep[]): FlowStep[] =>
       intraDbInputs: {
         ...step.intraDbInputs,
         url: step.intraDbInputs.url ?? cfg.url,
-        linkLabel: cfg.label,
+        linkLabel: cfg.labelKey,
       },
       notes: hasUrlNote ? step.notes : [...step.notes, cfg.url],
     }

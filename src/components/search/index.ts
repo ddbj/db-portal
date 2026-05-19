@@ -1,6 +1,7 @@
+export { default as ActiveFilterChips, type ActiveFilterChipsProps } from "./ActiveFilterChips"
+export { default as CrossSidebarFilter, type CrossSidebarFilterProps } from "./CrossSidebarFilter"
 export { default as DbHitCountCard, type DbHitCountCardProps } from "./DbHitCountCard"
 export { default as DbHitCountList, type DbHitCountListProps } from "./DbHitCountList"
-export { default as Over10kCallout, type Over10kCalloutProps } from "./Over10kCallout"
 export { default as Pagination, type PaginationProps } from "./Pagination"
 export {
   type BannerKind,
@@ -10,6 +11,5 @@ export {
 } from "./PartialFailureBanner"
 export { default as ResultCard, type ResultCardProps } from "./ResultCard"
 export { default as ResultCardList, type ResultCardListProps } from "./ResultCardList"
-export { default as SearchSummaryChip, type SearchSummaryChipProps } from "./SearchSummaryChip"
 export { default as SearchToolbar, type SearchToolbarProps } from "./SearchToolbar"
 export { default as SidebarFilter, type SidebarFilterProps } from "./SidebarFilter"

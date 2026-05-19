@@ -10,7 +10,13 @@ import {
   QueryPreview,
 } from "@/components/advanced-search"
 import { LlmAssistBox } from "@/components/llm"
-import { Button, Heading, SearchBox, type SelectOption } from "@/components/ui"
+import {
+  Button,
+  Heading,
+  SearchBox,
+  type SelectOption,
+  Tooltip,
+} from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import {
@@ -22,7 +28,7 @@ import {
 } from "@/lib/advanced-search"
 import type { ValidationMode } from "@/lib/advanced-search/types"
 import { parseQ } from "@/lib/api"
-import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
+import { DATABASES } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
   advancedTreeToAst,
@@ -239,15 +245,17 @@ const Search = () => {
         value={currentFreeText}
         placeholder={t("routes.search.searchBox.placeholder")}
         hintText={t("routes.search.searchBox.hint")}
-        helperText={t("routes.search.searchBox.examplesLabel")}
         buttonLabel={t("routes.search.actions.search")}
-        examples={EXAMPLE_CHIPS}
         dbOptions={dbOptions}
         selectedDb={state.db}
         onDbChange={handleDbChange}
         dbAriaLabel={t("routes.search.searchBox.dbSelectorAria")}
         onChange={handleSearchBoxChange}
         onSubmit={handleSearchBoxSubmit}
+      />
+
+      <ExamplesChipList
+        onApply={(example) => dispatch({ type: "APPLY_EXAMPLE", example })}
       />
 
       <DbSwitchWarning
@@ -282,21 +290,32 @@ const Search = () => {
         />
       </section>
 
-      <ExamplesChipList
-        onApply={(example) => dispatch({ type: "APPLY_EXAMPLE", example })}
-      />
-
       <div className="flex justify-end gap-2">
         <Button variant="tertiary" onClick={() => dispatch({ type: "RESET" })}>
           {t("routes.search.actions.reset")}
         </Button>
-        <Button
-          variant="primary"
-          disabled={!canSearch}
-          onClick={handleSearch}
-        >
-          {t("routes.search.actions.search")}
-        </Button>
+        {canSearch
+          ? (
+            <Button variant="primary" onClick={handleSearch}>
+              {t("routes.search.actions.search")}
+            </Button>
+          )
+          : (
+            <Tooltip
+              content={dsl === ""
+                ? t("routes.search.actions.disabledReason.empty")
+                : t("routes.search.actions.disabledReason.invalid", {
+                  count: errors.length,
+                })}
+              side="top"
+            >
+              <span tabIndex={0} className="inline-block">
+                <Button variant="primary" disabled onClick={handleSearch}>
+                  {t("routes.search.actions.search")}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
       </div>
     </section>
   )

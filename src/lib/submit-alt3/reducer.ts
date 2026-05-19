@@ -242,9 +242,9 @@ const recomputeBpAndBs = (submission: Submission): Submission => {
   }
 
   // dismissedWarnings cleanup (data-model.md §4.4.2 / open-questions §10.1)
-  // 動的 step (step-(biosample|dra|mss|gea|jga-sample|primary-bioproject)-${discriminator})
-  // の discriminator が現存 bs/bp id のいずれにも該当しないなら、関連 warning を捨てる。
-  // 固定 step ID (step-umbrella-bioproject / step-jga-* / step-togovar / step-metabobank /
+  // 動的 step (step-(biosample|dra|mss|gea|primary-bioproject)-${discriminator}) の
+  // discriminator が現存 bs/bp id のいずれにも該当しないなら、関連 warning を捨てる。
+  // 固定 step ID (step-umbrella-bioproject / step-jga / step-togovar / step-metabobank /
   // step-humandbs / step-dbcls-application / step-jpost / step-eva / step-dgva) は warning が
   // 再生成された際に id が変わらないため cleanup 対象外。
   const aliveDiscriminators = new Set<string>()
@@ -277,9 +277,10 @@ const recomputeBpAndBs = (submission: Submission): Submission => {
 }
 
 // warning id 構造: `${stepId}:rule14:...`
-// 動的 step prefix の正規表現 (rules/shared.ts createStep / rule04 / rule06 と整合)
+// 動的 step prefix の正規表現 (rules/shared.ts createStep / rule04 と整合)。
+// JGA は単一 Step (step-jga) で固定 id のため動的 step prefix には含めない。
 const DYNAMIC_STEP_PREFIX_RE =
-  /^step-(?:biosample|dra|mss|gea|jga-sample|primary-bioproject)-(.+?)(?:-analysis)?:/
+  /^step-(?:biosample|dra|mss|gea|primary-bioproject)-(.+?)(?:-analysis)?:/
 
 const isDynamicStepWarning = (warningId: string): boolean =>
   DYNAMIC_STEP_PREFIX_RE.test(warningId)

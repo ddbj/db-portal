@@ -1,12 +1,13 @@
 // submit-alt3 flow generation rule のルックアップテーブル
 // SSOT: docs/submit-alt3-flow-rules.md §8.1 (Rule 1 優先順序 / Rule 5 系統距離 / Rule 6 JGA / Rule 11 / Rule 12 / Rule 14a)
 
-import type {
-  AssemblyForm,
-  FunctionalGenomics,
-  Organism,
-  ServiceKind,
-  SpatialPlatform,
+import {
+  type AssemblyForm,
+  EXTERNAL_SERVICES,
+  type FunctionalGenomics,
+  type Organism,
+  type ServiceKind,
+  type SpatialPlatform,
 } from "@/types/submit-alt3"
 
 import type {
@@ -128,31 +129,85 @@ export const HAPLOTYPE_NAMING_LABELS: Readonly<
   "maternal-paternal": { primary: "Maternal", secondary: "Paternal" },
 }
 
-// Rule 12: 外部 Service の URL hard-code (docs から)
-export const EXTERNAL_SERVICE_URLS: Readonly<
-  Partial<Record<ServiceKind, { label: string; url: string }>>
+// 全 ServiceKind の登録 / 案内ページ URL + 「{Service名} 登録サービスを開く」ボタンの i18n labelKey
+// SSOT: docs/submit-alt3.md §6.1 (Step カードに遷移ボタン必須)
+// URL の根拠: docs/submit-details.md (D-way / MSS フォーム / BioProject 等の登録手順ページ)。
+// JGA 8 種は D-way ではなく JGA 案内ページ (`_jga/submission.md` 該当ページ) を割り当てる
+// (docs/submit-alt3-flow-rules.md Rule 6 共通: JGA は NBDC 申請 + sftp + 独自 XSD で完結)。
+// 各 ServiceKind の labelKey は ja.json / en.json の routes.submitAlt3.flowSteps.<service>.serviceLink を参照。
+export const SERVICE_URLS: Readonly<
+  Partial<Record<ServiceKind, { url: string; labelKey: string }>>
 > = {
+  "umbrella-bioproject": {
+    url: "https://ddbj.nig.ac.jp/D-way",
+    labelKey: "routes.submitAlt3.flowSteps.umbrella-bioproject.serviceLink",
+  },
+  "primary-bioproject": {
+    url: "https://ddbj.nig.ac.jp/D-way",
+    labelKey: "routes.submitAlt3.flowSteps.primary-bioproject.serviceLink",
+  },
+  "biosample": {
+    url: "https://ddbj.nig.ac.jp/D-way",
+    labelKey: "routes.submitAlt3.flowSteps.biosample.serviceLink",
+  },
+  "dra": {
+    url: "https://ddbj.nig.ac.jp/D-way",
+    labelKey: "routes.submitAlt3.flowSteps.dra.serviceLink",
+  },
+  // JGA は 8 オブジェクト (Submission / Study / Sample / Experiment / Data / Analysis / Dataset / Policy) を
+  // 単一 Step に集約。JGA 申請管理システム 1 箇所で完結するため、Step / serviceUrl も 1 つに統一。
+  "jga": {
+    url: "https://www.ddbj.nig.ac.jp/jga/submission.html",
+    labelKey: "routes.submitAlt3.flowSteps.jga.serviceLink",
+  },
+  "gea": {
+    url: "https://ddbj.nig.ac.jp/D-way",
+    labelKey: "routes.submitAlt3.flowSteps.gea.serviceLink",
+  },
+  "mss": {
+    url: "https://mss.ddbj.nig.ac.jp/",
+    labelKey: "routes.submitAlt3.flowSteps.mss.serviceLink",
+  },
+  "metabobank": {
+    url: "https://mb2.ddbj.nig.ac.jp/",
+    labelKey: "routes.submitAlt3.flowSteps.metabobank.serviceLink",
+  },
+  "togovar": {
+    url: "https://togovar.org/",
+    labelKey: "routes.submitAlt3.flowSteps.togovar.serviceLink",
+  },
   "dbcls-application": {
-    label: "DBCLS 提供申請システム",
     url: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
+    labelKey: "routes.submitAlt3.flowSteps.dbcls-application.serviceLink",
   },
   "humandbs": {
-    label: "HumanDBs (公開後の hum 番号閲覧)",
     url: "https://humandbs.dbcls.jp/",
+    labelKey: "routes.submitAlt3.flowSteps.humandbs.serviceLink",
   },
   "jpost": {
-    label: "jPOST Repository",
     url: "https://repository.jpostdb.org/",
+    labelKey: "routes.submitAlt3.flowSteps.jpost.serviceLink",
   },
   "eva": {
-    label: "European Variation Archive (EVA)",
     url: "https://www.ebi.ac.uk/eva/",
+    labelKey: "routes.submitAlt3.flowSteps.eva.serviceLink",
   },
   "dgva": {
-    label: "DGVa (Database of Genomic Variants archive)",
     url: "https://www.ebi.ac.uk/dgva/",
+    labelKey: "routes.submitAlt3.flowSteps.dgva.serviceLink",
   },
 }
+
+// rule12 が参照する外部 Service 用の派生定数 (SERVICE_URLS から filter)。
+// 旧 API 互換性のため独立した名前を残すが、内容は SERVICE_URLS の subset。
+export const EXTERNAL_SERVICE_URLS: Readonly<
+  Partial<Record<ServiceKind, { url: string; labelKey: string }>>
+> = Object.fromEntries(
+  EXTERNAL_SERVICES.map((s) => [s, SERVICE_URLS[s]] as const).filter(
+    (entry): entry is readonly [ServiceKind, { url: string; labelKey: string }] =>
+      entry[1] !== undefined,
+  ),
+)
 
 // DDBJ お問い合わせ / Curator Contact / DBCLS / MetaboBank Contact 等の汎用 URL
 export const DDBJ_CONTACT_URL = "https://www.ddbj.nig.ac.jp/contact-ddbj-e.html"

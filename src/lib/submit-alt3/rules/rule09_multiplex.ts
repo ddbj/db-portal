@@ -71,13 +71,14 @@ export const generateRule9Steps = (
     if (bpId) upstream.push(bpId)
     if (bsId) upstream.push(bsId)
 
-    // per-sample 各 file について 1 DRA Run Step
+    // per-sample 各 file について 1 DRA Run Step (mergeKey で file 単位の維持を保証)
     for (const file of members) {
       const stepId = `step-dra-${file.id}`
       steps.push(
         createStep({
           service: "dra",
           discriminator: file.id,
+          mergeKey: `dra:multiplex:${file.id}`,
           targetGroupIds: [group.id],
           targetFileIds: [file.id],
           intraDbInputs: mergeServiceDraft(submission, stepId, {
