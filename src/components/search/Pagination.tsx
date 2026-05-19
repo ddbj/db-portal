@@ -52,17 +52,17 @@ const Pagination = ({
         onClick={handlePrev}
         disabled={prevDisabled}
       >
-        {t("routes.search.dbMode.pagination.prev")}
+        {t("routes.searchResults.dbMode.pagination.prev")}
       </Button>
       {cursorMode
         ? (
           <span className="text-sm text-gray-600">
-            {t("routes.search.dbMode.pagination.cursorMode")}
+            {t("routes.searchResults.dbMode.pagination.cursorMode")}
           </span>
         )
         : (
           <span className="text-sm text-gray-600 tabular-nums">
-            {t("routes.search.dbMode.pagination.pageInfo", {
+            {t("routes.searchResults.dbMode.pagination.pageInfo", {
               current: page,
               total: totalPages,
             })}
@@ -74,7 +74,7 @@ const Pagination = ({
         onClick={handleNext}
         disabled={nextDisabled}
       >
-        {t("routes.search.dbMode.pagination.next")}
+        {t("routes.searchResults.dbMode.pagination.next")}
       </Button>
     </nav>
   )

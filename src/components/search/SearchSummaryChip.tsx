@@ -29,8 +29,8 @@ const SearchSummaryChip = ({
     ? null
     : DATABASES.find((d) => d.id === db)?.displayName ?? db
   const prefix = dbName === null
-    ? t("routes.search.summary.filteredByAll")
-    : t("routes.search.summary.filteredByDb", { db: dbName })
+    ? t("routes.searchResults.summary.filteredByAll")
+    : t("routes.searchResults.summary.filteredByDb", { db: dbName })
 
   return (
     <div
@@ -48,17 +48,17 @@ const SearchSummaryChip = ({
         className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs leading-none font-medium text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:outline-none"
       >
         <Pencil className="h-3 w-3" aria-hidden="true" />
-        {t("routes.search.summary.editInAdvanced")}
+        {t("routes.searchResults.summary.editInAdvanced")}
       </Link>
       <Button
         variant="tertiary"
         size="sm"
         onClick={onClear}
-        aria-label={t("routes.search.summary.clearAria")}
+        aria-label={t("routes.searchResults.summary.clearAria")}
         className="inline-flex items-center gap-1"
       >
         <X className="h-3 w-3" aria-hidden="true" />
-        {t("routes.search.summary.clear")}
+        {t("routes.searchResults.summary.clear")}
       </Button>
     </div>
   )

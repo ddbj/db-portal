@@ -4,6 +4,7 @@ import { Heading } from "@/components/ui"
 import { useDynamicTranslation } from "@/i18n/useDynamicTranslation"
 import { BUTTON_GRID_ORDER } from "@/lib/mock-data/submit-alt3"
 import type { AddFilePayload } from "@/lib/submit-alt3"
+import { buildDefaultAddFilePayload } from "@/lib/submit-alt3"
 import type {
   AccessRestriction,
   ButtonType,
@@ -47,8 +48,13 @@ interface Props {
 // Section A: 9 ボタン + テーブル
 // SSOT: docs/submit-alt3.md §2 / §3
 //
+// ボタン押下時の挙動:
+//   modal を出さず、buildDefaultAddFilePayload で生成したデフォルト値で即時に行を追加する。
+//   ファイル名は ButtonType ごとの prefix + 連番で自動命名 (例 read-001_R1.fastq.gz)。
+//   行追加後の詳細な属性 (assembly-form / variation-form 等) は per-cell 編集 or 行の編集動線で modal を開いて確定する。
+//
 // 編集モード: 行の「編集」ボタン押下時、該当 file の buttonType に対応する modal を再オープンし、
-// modal の「追加」 submit 時に旧 Group を atomic に置換する (= 旧 Group の全 file を remove-file
+// modal の「追加」submit 時に旧 Group を atomic に置換する (= 旧 Group の全 file を remove-file
 // → 新規 add-file)。modal の初期値は default のまま (前回値復元は本番フェーズ送り)。
 const FileTableSection = ({
   submission,
@@ -64,8 +70,8 @@ const FileTableSection = ({
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
 
   const handleSelectButton = (type: ButtonType) => {
-    setEditingGroupId(null)
-    setOpenModal(type)
+    // 編集動線 (handleEditRow) ではなく純粋な「追加」操作: modal を出さず即追加。
+    onAddFile(buildDefaultAddFilePayload(submission, type))
   }
   const closeModal = () => {
     setOpenModal(null)
@@ -84,14 +90,32 @@ const FileTableSection = ({
   }
 
   const handleSubmitWithReplace = (payload: AddFilePayload) => {
+    let nextPayload = payload
     if (editingGroupId !== null) {
-      // 旧 Group の全 file を削除 (空 Group は handleRemoveFile が自動で消す)
       const group = submission.fileGroups.find((g) => g.id === editingGroupId)
       if (group) {
+        // 編集前の displayName を継承 (members 数が一致する場合のみ)。grouping を変えた (single → pair-end 等)
+        // 場合は数が変わるので新 payload の default displayName をそのまま使う。
+        const oldDisplayNames = group.memberFileIds
+          .map((fid) => submission.fileEntries.find((f) => f.id === fid)?.displayName)
+          .filter((n): n is string => n !== undefined)
+        if (
+          oldDisplayNames.length === payload.members.length &&
+          oldDisplayNames.length === group.memberFileIds.length
+        ) {
+          nextPayload = {
+            ...payload,
+            members: payload.members.map((m, i) => ({
+              ...m,
+              displayName: oldDisplayNames[i] ?? m.displayName,
+            })),
+          }
+        }
+        // 旧 Group の全 file を削除 (空 Group は handleRemoveFile が自動で消す)
         for (const fid of group.memberFileIds) onRemoveFile(fid)
       }
     }
-    onAddFile(payload)
+    onAddFile(nextPayload)
   }
 
   const existingBsOptions = useMemo(

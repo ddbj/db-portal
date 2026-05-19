@@ -13,7 +13,6 @@ import type {
 import CheckboxField from "./CheckboxField"
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
-import TextField from "./TextField"
 
 // + 空間トランスクリプトーム modal
 // SSOT: docs/submit-alt3-modals.md §+ 空間トランスクリプトーム
@@ -39,18 +38,18 @@ const SpatialTxModal = ({ open, onClose, onSubmit }: Props) => {
   const [platform, setPlatform] = useState<SpatialPlatform>("visium")
   const [geomxReadout, setGeomxReadout] = useState<"ngs" | "ncounter">("ngs")
   const [attachMageTab, setAttachMageTab] = useState(false)
-  const [baseName, setBaseName] = useState("spatial")
 
   useEffect(() => {
     if (!open) {
       setPlatform("visium")
       setGeomxReadout("ngs")
       setAttachMageTab(false)
-      setBaseName("spatial")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "spatial"
     const chipTags: ChipTag[] = [
       { axis: "functional-genomics", value: "yes" },
       { axis: "spatial-platform", value: platform },
@@ -121,13 +120,6 @@ const SpatialTxModal = ({ open, onClose, onSubmit }: Props) => {
         description={t("routes.submitAlt3.modals.spatialTx.mageTab.hint")}
         checked={attachMageTab}
         onChange={setAttachMageTab}
-      />
-
-      <TextField
-        id="spatialtx-basename"
-        label={t("routes.submitAlt3.modals.spatialTx.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
     </ModalShell>
   )

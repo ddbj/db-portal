@@ -25,17 +25,17 @@ const DbSelector = ({ value, onChange }: DbSelectorProps) => {
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-sm font-medium text-gray-700">
-        {t("routes.advancedSearch.db.heading")}
+        {t("routes.search.db.heading")}
       </legend>
       <div className="flex flex-col gap-2">
         <Radio
-          label={t("routes.advancedSearch.db.all")}
+          label={t("routes.search.db.all")}
           checked={isCross}
           onChange={() => onChange(ALL_DB_VALUE)}
         />
         <div className="flex items-center gap-3">
           <Radio
-            label={t("routes.advancedSearch.db.single")}
+            label={t("routes.search.db.single")}
             checked={!isCross}
             onChange={() => onChange(singleValue)}
           />

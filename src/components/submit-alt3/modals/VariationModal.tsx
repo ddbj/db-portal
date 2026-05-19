@@ -24,7 +24,6 @@ const VariationModal = ({ open, onClose, onSubmit }: Props) => {
   const [form, setForm] = useState<VariationForm>("per-sample")
   const [variationType, setVariationType] = useState<VariationType>("snp-indel")
   const [reference, setReference] = useState<ReferenceChoice>("none")
-  const [baseName, setBaseName] = useState("variants")
   const [referenceAccession, setReferenceAccession] = useState("")
 
   useEffect(() => {
@@ -32,12 +31,13 @@ const VariationModal = ({ open, onClose, onSubmit }: Props) => {
       setForm("per-sample")
       setVariationType("snp-indel")
       setReference("none")
-      setBaseName("variants")
       setReferenceAccession("")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "variants"
     const chipTags: ChipTag[] = [
       { axis: "variation-form", value: form },
       { axis: "variation-type", value: variationType },
@@ -109,13 +109,6 @@ const VariationModal = ({ open, onClose, onSubmit }: Props) => {
           label: t(`routes.submitAlt3.modals.variation.reference.options.${v}`),
         }))}
         onChange={setReference}
-      />
-
-      <TextField
-        id="variation-basename"
-        label={t("routes.submitAlt3.modals.variation.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
 
       {reference === "reference-only" && (

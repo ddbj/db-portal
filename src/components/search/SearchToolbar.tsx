@@ -33,8 +33,8 @@ const SearchToolbar = ({
   const to = hasResults ? Math.min(from + perPage - 1, total) : 0
 
   const countLabel = isOver10kLimit
-    ? t("routes.search.dbMode.resultsCountOver10k", { from, to })
-    : t("routes.search.dbMode.resultsCount", {
+    ? t("routes.searchResults.dbMode.resultsCountOver10k", { from, to })
+    : t("routes.searchResults.dbMode.resultsCount", {
       from,
       to,
       total: total.toLocaleString(),
@@ -42,11 +42,11 @@ const SearchToolbar = ({
 
   const sortOptions = SORT_VALUES.map((v) => ({
     value: v,
-    label: t(`routes.search.dbMode.sort.${v}`),
+    label: t(`routes.searchResults.dbMode.sort.${v}`),
   }))
   const perPageOptions = PER_PAGE_VALUES.map((v) => ({
     value: String(v),
-    label: t("routes.search.dbMode.perPage.option", { count: v }),
+    label: t("routes.searchResults.dbMode.perPage.option", { count: v }),
   }))
 
   return (
@@ -54,7 +54,7 @@ const SearchToolbar = ({
       <p className="text-sm text-gray-700 tabular-nums">{countLabel}</p>
       <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm text-gray-600">
-          <span>{t("routes.search.dbMode.sort.label")}</span>
+          <span>{t("routes.searchResults.dbMode.sort.label")}</span>
           <Select
             selectSize="sm"
             options={sortOptions}
@@ -63,7 +63,7 @@ const SearchToolbar = ({
           />
         </label>
         <label className="flex items-center gap-2 text-sm text-gray-600">
-          <span>{t("routes.search.dbMode.perPage.label")}</span>
+          <span>{t("routes.searchResults.dbMode.perPage.label")}</span>
           <Select
             selectSize="sm"
             options={perPageOptions}

@@ -32,7 +32,7 @@ const DbSwitchWarning = ({ state, onConfirm, onCancel }: DbSwitchWarningProps) =
   if (state.pendingDb === null) return null
 
   const currentDbDisplay = state.db === ALL_DB_VALUE
-    ? t("routes.advancedSearch.db.all")
+    ? t("routes.search.db.all")
     : DATABASES.find((d) => d.id === state.db)?.displayName ?? state.db
 
   const idSet = new Set(state.pendingDb.toRemoveIds)
@@ -51,7 +51,7 @@ const DbSwitchWarning = ({ state, onConfirm, onCancel }: DbSwitchWarningProps) =
     <Callout type="warning">
       <div className="flex flex-col gap-3">
         <p>
-          {t("routes.advancedSearch.dbSwitchWarning.heading", {
+          {t("routes.search.dbSwitchWarning.heading", {
             currentDb: currentDbDisplay,
           })}
         </p>
@@ -64,10 +64,10 @@ const DbSwitchWarning = ({ state, onConfirm, onCancel }: DbSwitchWarningProps) =
         </ul>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={onConfirm}>
-            {t("routes.advancedSearch.dbSwitchWarning.confirm")}
+            {t("routes.search.dbSwitchWarning.confirm")}
           </Button>
           <Button variant="tertiary" size="sm" onClick={onCancel}>
-            {t("routes.advancedSearch.dbSwitchWarning.cancel")}
+            {t("routes.search.dbSwitchWarning.cancel")}
           </Button>
         </div>
       </div>

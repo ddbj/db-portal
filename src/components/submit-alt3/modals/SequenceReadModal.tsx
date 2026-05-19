@@ -31,7 +31,6 @@ const SequenceReadModal = ({ open, onClose, onSubmit }: Props) => {
   const [hybrid, setHybrid] = useState(false)
   const [q1, setQ1] = useState<Q1>("yes")
   const [q2, setQ2] = useState<Q2Value>("wgs-target")
-  const [baseName, setBaseName] = useState("sample")
   const [sampleCount, setSampleCount] = useState("3")
 
   useEffect(() => {
@@ -41,12 +40,15 @@ const SequenceReadModal = ({ open, onClose, onSubmit }: Props) => {
       setHybrid(false)
       setQ1("yes")
       setQ2("wgs-target")
-      setBaseName("sample")
       setSampleCount("3")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は新規追加時 (FileTableSection の handleSelectButton) で生成され、編集動線では旧 Group の
+    // displayName を継承する (FileTableSection.handleSubmitWithReplace)。modal は ButtonType ごとの default
+    // baseName (= "sample") を members template に埋め込むだけで、ユーザーには見せない。
+    const baseName = "sample"
     const fg: FunctionalGenomics = q1 === "yes" ? "yes" : q2
     const chipTags: ChipTag[] = [{ axis: "functional-genomics", value: fg }]
 
@@ -181,13 +183,6 @@ const SequenceReadModal = ({ open, onClose, onSubmit }: Props) => {
           onChange={setMultiplex}
         />
       )}
-
-      <TextField
-        id="seqread-basename"
-        label={t("routes.submitAlt3.modals.sequenceRead.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
-      />
 
       {multiplex === "demultiplexed" && (
         <TextField

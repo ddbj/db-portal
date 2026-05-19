@@ -18,30 +18,30 @@ test.describe("Phase 3: Top (/)", () => {
     }
   })
 
-  test("submit with db=all navigates to /search?q=<q>", async ({ page }) => {
+  test("submit with db=all navigates to /search/results?q=<q>", async ({ page }) => {
     await page.goto("/")
     await page.getByPlaceholder(/キーワード/).fill("SARS-CoV-2")
     await page.getByRole("button", { name: "検索" }).click()
-    await expect(page).toHaveURL(/\/search\?q=SARS-CoV-2$/)
+    await expect(page).toHaveURL(/\/search\/results\?q=%22SARS-CoV-2%22$/)
   })
 
-  test("submit with a specific DB navigates to /search?q=<q>&db=<id>", async ({ page }) => {
+  test("submit with a specific DB navigates to /search/results?q=<q>&db=<id>", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("combobox", { name: "検索対象 DB" }).selectOption("sra")
     await page.getByPlaceholder(/キーワード/).fill("Homo sapiens")
     await page.getByRole("button", { name: "検索" }).click()
-    await expect(page).toHaveURL(/\/search\?q=Homo\+sapiens&db=sra$/)
+    await expect(page).toHaveURL(/\/search\/results\?q=%22Homo\+sapiens%22&db=sra$/)
   })
 
   test("clicking an example chip submits with that chip's query", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("button", { name: "Escherichia coli" }).click()
-    await expect(page).toHaveURL(/\/search\?q=Escherichia\+coli$/)
+    await expect(page).toHaveURL(/\/search\/results\?q=%22Escherichia\+coli%22$/)
   })
 
   test("renders 6 service cards (2 internal + 4 external) with expected hrefs", async ({ page }) => {
     await page.goto("/")
-    await expect(page.getByRole("link", { name: /詳細検索へ/ })).toHaveAttribute("href", "/advanced-search")
+    await expect(page.getByRole("link", { name: /検索ページへ/ })).toHaveAttribute("href", "/search")
     await expect(page.getByRole("link", { name: /登録ナビへ/ })).toHaveAttribute("href", "/submit")
     await expect(page.getByRole("link", { name: /サービス一覧/ })).toHaveAttribute(
       "href",
@@ -61,10 +61,10 @@ test.describe("Phase 3: Top (/)", () => {
     )
   })
 
-  test("CTA 詳細検索へ navigates to /advanced-search", async ({ page }) => {
+  test("CTA 検索ページへ navigates to /search", async ({ page }) => {
     await page.goto("/")
-    await page.getByRole("link", { name: /詳細検索へ/ }).click()
-    await expect(page).toHaveURL(/\/advanced-search$/)
+    await page.getByRole("link", { name: /検索ページへ/ }).click()
+    await expect(page).toHaveURL(/\/search$/)
   })
 
   test("CTA 登録ナビへ navigates to /submit", async ({ page }) => {

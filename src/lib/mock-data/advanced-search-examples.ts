@@ -30,7 +30,7 @@ const nested = (
 export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   {
     id: "cross-tier1",
-    labelKey: "routes.advancedSearch.examples.cross-tier1.label",
+    labelKey: "routes.search.examples.cross-tier1.label",
     db: ALL_DB_VALUE,
     tree: makeRoot([
       cond({ field: "title", operator: "contains", value: "cancer" }),
@@ -39,7 +39,7 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   },
   {
     id: "sra-tier3",
-    labelKey: "routes.advancedSearch.examples.sra-tier3.label",
+    labelKey: "routes.search.examples.sra-tier3.label",
     db: "sra",
     tree: makeRoot([
       cond({
@@ -56,7 +56,7 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   },
   {
     id: "date-between",
-    labelKey: "routes.advancedSearch.examples.date-between.label",
+    labelKey: "routes.search.examples.date-between.label",
     db: ALL_DB_VALUE,
     tree: makeRoot([
       cond({
@@ -68,7 +68,7 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   },
   {
     id: "or-compound",
-    labelKey: "routes.advancedSearch.examples.or-compound.label",
+    labelKey: "routes.search.examples.or-compound.label",
     db: ALL_DB_VALUE,
     tree: makeRoot([
       nested("OR", [
@@ -80,7 +80,7 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   },
   {
     id: "single-tier1",
-    labelKey: "routes.advancedSearch.examples.single-tier1.label",
+    labelKey: "routes.search.examples.single-tier1.label",
     db: "biosample",
     tree: makeRoot([
       cond({
@@ -92,7 +92,7 @@ export const ADVANCED_EXAMPLES: readonly AdvancedExample[] = [
   },
   {
     id: "identifier-wildcard",
-    labelKey: "routes.advancedSearch.examples.identifier-wildcard.label",
+    labelKey: "routes.search.examples.identifier-wildcard.label",
     db: "bioproject",
     tree: makeRoot([
       cond({

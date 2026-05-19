@@ -91,9 +91,7 @@ export type AdvancedSearchAction =
   | { type: "CANCEL_DB_CHANGE" }
   | { type: "ADD_CONDITION"; path: readonly number[]; fieldId?: string }
   | { type: "ADD_GROUP"; path: readonly number[] }
-  | { type: "ADD_FREE_TEXT" }
-  | { type: "UPDATE_FREE_TEXT"; value: string }
-  | { type: "REMOVE_FREE_TEXT" }
+  | { type: "SET_FREE_TEXT"; value: string }
   | { type: "REMOVE_NODE"; path: readonly number[] }
   | {
     type: "UPDATE_CONDITION"

@@ -32,7 +32,7 @@ DB ポータルにおける LLM (大規模言語モデル) サービングの構
 | Prefix caching | 有効 (vLLM v0.5+ デフォルト ON) |
 | restart policy | `unless-stopped` |
 
-採用根拠と評価過程は `.claude/docs/llm-experiment.md` (6 モデル × 25 タスクの比較) を参照。
+採用根拠と評価過程は `.claude/docs/archive/llm-experiment.md` (6 モデル × 25 タスクの比較) を参照。
 
 将来 GPU を増設する場合は `--tensor-parallel-size` で対応する設計。
 
@@ -168,7 +168,7 @@ BFF (portal app) 側で以下を保存:
 
 ## Phase 1: 検索クエリ補助 (POC)
 
-`/advanced-search` と `/search?db=<id>` (DB 一覧) に「自然文 → DSL 提案」テキストボックスを常設する。LLM は検索を直接実行せず、DSL を**提案**するだけ。ユーザーが [採用] で初めて URL 反映 (`?q=<DSL>`) される。
+`/search` と `/search/results?db=<id>` (DB 一覧) に「自然文 → DSL 提案」テキストボックスを常設する。LLM は検索を直接実行せず、DSL を**提案**するだけ。ユーザーが [採用] で初めて URL 反映 (`?q=<DSL>`) される。
 
 ### 配置・統合方式 (合意済み)
 
@@ -180,9 +180,9 @@ BFF (portal app) 側で以下を保存:
 | LLM の権限 | 検索を直接実行しない。DSL を提案するのみ |
 | ラベル | 「🤖 AI 生成・要確認」を提案 DSL に併記 |
 
-`/advanced-search` での [採用] は `navigate("?db=<db>&q=<dsl>")` で loader 再走行 → `parseQ` → tree 再構築という既存ルートを使う (DSL 生成→tree 化のロジックは LLM 専用パスを作らず、URL を経由させる)。
+`/search` での [採用] は `navigate("?db=<db>&q=<dsl>")` で loader 再走行 → `parseQ` → tree 再構築という既存ルートを使う (DSL 生成→tree 化のロジックは LLM 専用パスを作らず、URL を経由させる)。
 
-`/search?db=<id>` (DB 一覧) での [採用] は `navigate("/search?db=<id>&q=<dsl>")` で q を置換。SidebarFilter 状態も loader 経由で `splitAstForSidebar` で再導出されるため、特別なマージロジックは不要。
+`/search/results?db=<id>` (DB 一覧) での [採用] は `navigate("/search/results?db=<id>&q=<dsl>")` で q を置換。SidebarFilter 状態も loader 経由で `splitAstForSidebar` で再導出されるため、特別なマージロジックは不要。
 
 ### BFF API contract
 
@@ -234,14 +234,14 @@ POC スコープ。rate limit / PII redaction / SSE / logging / kill switch は 
 
 | パラメータ | 値 | 根拠 |
 |---|---|---|
-| `model` | `LLM_MODEL` (Qwen2.5-32B-AWQ) | `.claude/docs/llm-experiment.md` で 19/25 |
+| `model` | `LLM_MODEL` (Qwen2.5-32B-AWQ) | `.claude/docs/archive/llm-experiment.md` で 19/25 |
 | `temperature` | `0.1` | DSL は決定的に出すべき |
 | `max_tokens` | `256` | DSL 1 行は 100 token 未満。安全マージン |
 | `top_p` | `1.0` | (default) |
 
 ## 未実装スコープ (Phase 2 以降)
 
-設計議論の記録は `.claude/docs/llm-integration-plan.md` を参照。
+設計議論の記録は `.claude/docs/archive/llm-integration-plan.md` を参照。
 
 - **rate limit / PII redaction / logging** ミドルウェア (cookie session 単位、docs/llm.md `Rate limit` 節)
 - **`LLM_FEATURE_DISABLED` kill switch** env (BFF で 503 を即返却)
@@ -259,6 +259,6 @@ POC スコープ。rate limit / PII redaction / SSE / logging / kill switch は 
 - `docs/deployment.md` — 環境一覧 (LLM node を含む)
 - `docs/search.md`, `docs/search-backends.md` — 検索仕様 (LLM 補助対象)
 - `docs/submit.md`, `docs/submit-details.md` — 登録ナビ仕様 (LLM 補助対象)
-- `.claude/docs/llm-integration-plan.md` — 設計議論の記録 (議論経緯・代替案・保留事項)
-- `.claude/docs/llm-experiment.md` — モデル評価ログ (採用根拠)
+- `.claude/docs/archive/llm-integration-plan.md` — 設計議論の記録 (議論経緯・代替案・保留事項)
+- `.claude/docs/archive/llm-experiment.md` — モデル評価ログ (採用根拠)
 - `.claude/llm/` — 実験用コード保管 (bench / eval / prompts、本番運用では不使用)

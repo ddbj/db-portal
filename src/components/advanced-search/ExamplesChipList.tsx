@@ -14,7 +14,7 @@ const ExamplesChipList = ({ onApply }: ExamplesChipListProps) => {
 
   return (
     <section className="flex flex-col gap-2">
-      <Heading level={3}>{t("routes.advancedSearch.examples.heading")}</Heading>
+      <Heading level={3}>{t("routes.search.examples.heading")}</Heading>
       <div className="flex flex-wrap gap-2">
         {ADVANCED_EXAMPLES.map((ex) => (
           <Chip key={ex.id} onClick={() => onApply(ex)}>

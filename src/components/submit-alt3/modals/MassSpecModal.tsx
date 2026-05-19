@@ -12,7 +12,6 @@ import type {
 import CheckboxField from "./CheckboxField"
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
-import TextField from "./TextField"
 
 // + 質量分析 modal
 // SSOT: docs/submit-alt3-modals.md §+ 質量分析
@@ -54,18 +53,18 @@ const MassSpecModal = ({ open, onClose, onSubmit }: Props) => {
   const [domain, setDomain] = useState<MassSpecDomain>("metabolomics")
   const [submissionType, setSubmissionType] = useState<MetaboBankSubmissionType>("LC-MS")
   const [attachMaf, setAttachMaf] = useState(false)
-  const [baseName, setBaseName] = useState("massspec")
 
   useEffect(() => {
     if (!open) {
       setDomain("metabolomics")
       setSubmissionType("LC-MS")
       setAttachMaf(false)
-      setBaseName("massspec")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "massspec"
     const chipTags: ChipTag[] = [
       { axis: "mass-spec-domain", value: domain },
       { axis: "functional-genomics", value: "other" },
@@ -143,13 +142,6 @@ const MassSpecModal = ({ open, onClose, onSubmit }: Props) => {
           onChange={setAttachMaf}
         />
       )}
-
-      <TextField
-        id="massspec-basename"
-        label={t("routes.submitAlt3.modals.massSpec.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
-      />
     </ModalShell>
   )
 }

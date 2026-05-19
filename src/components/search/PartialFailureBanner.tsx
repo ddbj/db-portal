@@ -30,9 +30,9 @@ const PartialFailureBanner = ({ databases, onRetryAll }: PartialFailureBannerPro
     return (
       <Callout type="error">
         <div className="flex items-center justify-between gap-3">
-          <p>{t("routes.search.crossMode.partialFailure.allError")}</p>
+          <p>{t("routes.searchResults.crossMode.partialFailure.allError")}</p>
           <Button variant="tertiary" size="sm" onClick={onRetryAll}>
-            {t("routes.search.crossMode.retryAll")}
+            {t("routes.searchResults.crossMode.retryAll")}
           </Button>
         </div>
       </Callout>
@@ -41,7 +41,7 @@ const PartialFailureBanner = ({ databases, onRetryAll }: PartialFailureBannerPro
 
   return (
     <Callout type="warning">
-      {t("routes.search.crossMode.partialFailure.partial")}
+      {t("routes.searchResults.crossMode.partialFailure.partial")}
     </Callout>
   )
 }

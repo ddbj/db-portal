@@ -12,9 +12,9 @@ const Over10kCallout = ({ db }: Over10kCalloutProps) => {
 
   return (
     <Callout type="info">
-      <p>{t("routes.search.dbMode.over10k.message")}</p>
-      <TextLink to={`/advanced-search?db=${db}`} className="mt-2 inline-block">
-        {t("routes.search.dbMode.over10k.cta")}
+      <p>{t("routes.searchResults.dbMode.over10k.message")}</p>
+      <TextLink to={`/search?db=${db}`} className="mt-2 inline-block">
+        {t("routes.searchResults.dbMode.over10k.cta")}
       </TextLink>
     </Callout>
   )

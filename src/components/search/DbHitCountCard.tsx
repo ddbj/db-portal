@@ -23,7 +23,7 @@ const TopHitItem = ({ hit }: { hit: DbPortalLightweightHit }) => {
   const title = hit.title ?? hit.identifier
   const date = hit.datePublished ?? null
   const url = hit.url ?? null
-  const ariaLabel = t("routes.search.crossMode.topHits.openExternalAria", {
+  const ariaLabel = t("routes.searchResults.crossMode.topHits.openExternalAria", {
     identifier: hit.identifier,
   })
 
@@ -96,7 +96,7 @@ const DbHitCountCard = ({
         {state === "loading" && (
           <Skeleton
             className="h-8 w-24"
-            ariaLabel={t("routes.search.crossMode.loadingAria")}
+            ariaLabel={t("routes.searchResults.crossMode.loadingAria")}
           />
         )}
         {state === "success" && count !== null && (
@@ -113,11 +113,11 @@ const DbHitCountCard = ({
         {state === "error" && (
           <div>
             <p className="text-sm text-gray-700">
-              {t("routes.search.crossMode.errorLabel")}
+              {t("routes.searchResults.crossMode.errorLabel")}
             </p>
             {error !== null && (
               <p className="mt-0.5 text-xs text-gray-500">
-                {t(`routes.search.crossMode.errorKind.${error}`)}
+                {t(`routes.searchResults.crossMode.errorKind.${error}`)}
               </p>
             )}
             <Button
@@ -126,7 +126,7 @@ const DbHitCountCard = ({
               onClick={() => onRetry(dbId)}
               className="mt-2"
             >
-              {t("routes.search.crossMode.retry")}
+              {t("routes.searchResults.crossMode.retry")}
             </Button>
           </div>
         )}
@@ -137,7 +137,7 @@ const DbHitCountCard = ({
           data-testid={`top-hits-${dbId}`}
         >
           <h4 className="text-xs font-medium tracking-wide text-gray-500 uppercase">
-            {t("routes.search.crossMode.topHits.heading")}
+            {t("routes.searchResults.crossMode.topHits.heading")}
           </h4>
           <ul className="mt-1">
             {topHits.map((hit) => (

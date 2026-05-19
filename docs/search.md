@@ -117,12 +117,12 @@ DB セレクタ
 [トップページ] キーワード入力 + DB セレクタ
   |
   v
-[/search?q=xxx] 横断検索結果
+[/search/results?q=xxx] 横断検索結果
   ├── DB ごとのヒット数サマリー
   └── 各 DB の結果リストへのリンク
   |  (DB をクリック)
   v
-[/search?q=xxx&db=yyy] DB 指定検索結果
+[/search/results?q=xxx&db=yyy] DB 指定検索結果
   ├── カードリスト形式（NCBI Entrez 風）
   │     各カード: accession / title / description / organism / DB 固有メタデータ / 関連 DB リンク
   └── タイトルクリックで外部詳細ページへ遷移（target="_blank"）
@@ -141,7 +141,7 @@ Accession（例: `PRJDB12345`）も通常のキーワードとして全文検索
 
 ## キーワード検索仕様
 
-シンプル検索ボックスと Advanced Search（クエリビルダ）の 2 層構成。複雑な構文はシンプル検索ボックスに詰め込まず、Advanced Search に分離する。さらに Phase 1 では LLM による「自然文 → DSL 提案」テキストボックスを `/advanced-search` と `/search?db=<id>` に常設し、Boolean 構文を書けないユーザの入口にする（[LLM 補助テキストボックス](#llm-補助テキストボックス) 参照）。
+シンプル検索ボックスと Advanced Search（クエリビルダ）の 2 層構成。複雑な構文はシンプル検索ボックスに詰め込まず、Advanced Search に分離する。さらに Phase 1 では LLM による「自然文 → DSL 提案」テキストボックスを `/search` と `/search/results?db=<id>` に常設し、Boolean 構文を書けないユーザの入口にする（[LLM 補助テキストボックス](#llm-補助テキストボックス) 参照）。
 
 方針の根拠:
 
@@ -192,7 +192,7 @@ proxy 層でユーザ入力を次のように正規化する:
 
 ### Advanced Search
 
-別ページ（`/advanced-search`）に配置する GUI クエリビルダ（PubMed Advanced / ENA Advanced 型）。
+検索ページ (`/search`) に配置する GUI クエリビルダ (PubMed Advanced / ENA Advanced 型)。シンプル検索ボックスと同じ画面上部に大型 `SearchBox` を載せ、その下に Query Builder を並べる構成にすることで「キーワード + フィールド条件」を 1 画面で組めるようにする (詳細は後述の [フリーワード入力 (SearchBox に集約)](#フリーワード入力-searchbox-に集約) と [レイアウト](#レイアウト))。
 
 DB ポータルの存在意義は「横断検索」なので、**Advanced Search も横断検索を許可する**。以下 2 モードを切り替え:
 
@@ -292,57 +292,66 @@ GUI セレクタはフィールドの型に応じて選べる演算子を動的�
 | 数値（`sequence_length` 等） | `between` / `gte` / `lte` / `equals` |
 | 列挙値（`library_strategy` / `platform` / `rank` 等） | `equals` / `not_equals`（プルダウン選択） |
 
-#### フィールドなしフリーワード条件
+#### フリーワード入力 (SearchBox に集約)
 
-通常の条件行は「フィールド × 演算子 × 値」の三つ組だが、それに加えて **フィールドを指定しないフリーワード条件**を 1 つだけ条件ツリーに追加できる。`/advanced-search` のシンプル検索ボックス相当のテキスト入力を、AND/OR ツリーの中に「条件のひとつ」として組み込めるようにする位置付け。
+検索ページ (`/search`) の最上部に、トップページと同じ大型の `SearchBox` (DB ドロップダウン + フリーワード入力 + 検索ボタン) を配置し、フリーワード入力はここに集約する。Query Builder からは独立した `+ フリーワード` ボタンを設けない。
 
-- **配置**: ツリー root 直下のみ。ネストグループ内には置けない（[検索の内部モデル](#検索の内部モデル)の `FreeText` 位置制約と整合）
-- **個数**: ツリー全体で最大 1 個
-- **論理結合**: root の logic が `AND` のときだけ追加可。`OR` / `NOT` root のときは `+ フリーワード` ボタンを非活性化（追加すると AND root と矛盾する）
-- **入力**: テキスト 1 本のみ（フィールド選択 / 演算子選択なし）。空欄なら DSL に出さない
-- **DSL 表現**: シンプル検索ボックスと同じく `freeText(value)` ノードに変換 → `astToDsl()` で `"value"`（自動フレーズ化を経た裸トークン or quote 文字列）として出力。他条件と AND 結合時は `"value" AND field:val` の形になる
-- **AST → ツリー復元**: AST root 単独 / root の AND 直下にある FreeText のみ拾い、フリーワード条件として復元する。深い場所（NOT 配下や OR 内）の FreeText は構築不能なため捨てる（既存挙動と同じ）
-
-UI 上は「+ 条件を追加」「+ グループを追加」と並んで「+ フリーワード」ボタンを root にのみ表示する（深いグループでは非表示）。
+- **AST 上の表現**: SearchBox の入力値は AST root (AND) 直下の `FreeText` ノード 1 個に双方向 bind する。`SearchBox.onChange` で逐次 `SET_FREE_TEXT` action を発火し、`QueryPreview` にも即時反映される
+- **配置**: ツリー root 直下のみ ([検索の内部モデル](#検索の内部モデル) の `FreeText` 位置制約と整合)
+- **個数**: ツリー全体で最大 1 個 (空文字なら root から削除)
+- **論理結合**: root の logic は常に AND (root logic 切替 UI は出さない)
+- **DSL 表現**: `freeText(value)` ノードに変換 → `astToDsl()` で `"value"`(自動フレーズ化を経た裸トークン or quote 文字列)として出力。他条件と AND 結合時は `"value" AND field:val` の形になる
+- **submit**: `SearchBox.onSubmit` (Enter / 検索ボタン) と画面下 Actions の「検索」ボタンは同じ handler を呼び、現時点の AST (FreeText + Query Builder 行を AND 結合) を `astToDsl` で DSL 化して `/search/results?q=...&db=...` に navigate する
+- **URL 復元**: `/search?q=<DSL>` 着地時の AST 復元で root 直下に FreeText が見つかれば SearchBox の `defaultValue` に流す。Query Builder からは render されない (フリーワード行 UI は撤去済み)
+- **API 側との整合**: `invalid-freetext-position` / `duplicate-freetext` の検証 (search-backends.md 参照) は portal の UI 仕様で自然と守られる (root 直下のみ・最大 1 個)
 
 #### レイアウト
 
 ```
-┌─ /advanced-search ─────────────────────────────────────┐
-│  詳細検索                                                │
-│                                                        │
-│  Database                                              │
-│  ○ 全データベース（横断）                                  │
-│  ○ [ BioProject ▼ ]                                    │
-│                                                        │
-│  検索条件                                                │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ フリーワード [Escherichia coli__________] [✕]   │   │
-│  │        [Title     ▼][contains ▼][__________]   │   │
-│  │ [AND▼] [Organism  ▼][equals   ▼][__________] [✕]│   │
-│  │ [OR ▼] [Date ▼ 公開日▼][between ▼][__ 〜 __] [✕]│   │
-│  │                                                  │   │
-│  │ [+ 条件を追加] [+ グループ] [+ フリーワード]       │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                        │
-│  クエリプレビュー                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ title:"cancer" AND organism:"Homo sapiens"      │   │
-│  │   AND date_published:[2020-01-01 TO 2024-12-31] │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                        │
-│  Examples                                              │
-│  [ヒトの最新 BioProject] [BRCA1 関連の SRA]              │
-│                                                        │
-│                                            [ 検索 ]    │
-└────────────────────────────────────────────────────────┘
+┌─ /search ──────────────────────────────────────────────────┐
+│  検索                                                       │
+│  (キーワード入力と、フィールド・演算子・値を組み合わせた条件で      │
+│   DDBJ の各データベースを横断または単一で検索)                     │
+│                                                            │
+│  ┌─[全データベース ▼][_____ free text _____][検索]─────┐    │
+│  │  hint                                              │    │
+│  │  EXAMPLES (chip x N)                               │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                            │
+│  DbSwitchWarning (Tier 3 条件があるときだけインライン表示)        │
+│                                                            │
+│  クエリプレビュー                                            │
+│  ┌─────────────────────────────────────────────────┐       │
+│  │ "cancer" AND title:"BRCA1" AND organism:"..."   │       │
+│  └─────────────────────────────────────────────────┘       │
+│                                                            │
+│  LLM Assist (自然文 → DSL 提案)                              │
+│                                                            │
+│  検索条件                                                   │
+│  ┌─────────────────────────────────────────────────┐       │
+│  │ [Title    ▼][contains ▼][__________] [✕]        │       │
+│  │ [AND▼] [Organism ▼][equals ▼][__________] [✕]   │       │
+│  │ [OR ▼] [Date ▼ 公開日▼][between ▼][__〜__] [✕]  │       │
+│  │                                                  │       │
+│  │ [+ 条件を追加] [+ グループ]                       │       │
+│  └─────────────────────────────────────────────────┘       │
+│                                                            │
+│  Examples                                                  │
+│  [ヒトの最新 BioProject] [BRCA1 関連の SRA]                  │
+│                                                            │
+│                                          [リセット] [検索]   │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- 1 行目には演算子ドロップダウンを置かない（最初の条件に AND/OR は不要）
+- 最上部の `SearchBox` はトップページ (`/`) と同じ component (`SearchBox` size="large")。同じ DB ドロップダウン + フリーワード入力 + 検索ボタンを提供し、認知負荷の連続性を保つ
+- Query Builder からは「+ フリーワード」ボタン / フリーワード行を撤去。フリーワード入力は SearchBox に一本化 ([フリーワード入力 (SearchBox に集約)](#フリーワード入力-searchbox-に集約) 参照)
+- DB 切替は SearchBox 内の DB ドロップダウンで実施。`Tier 3` 条件がある状態で別 DB に切り替えると、SearchBox 直下に `DbSwitchWarning` (Callout type="warning") を表示し削除予定の条件を列挙する (詳細は [DB 切り替え時の条件引き継ぎ](#db-切り替え時の条件引き継ぎ))
+- 1 行目の条件には演算子ドロップダウンを置かない (最初の条件に AND/OR は不要)
 - 2 行目以降の先頭に `AND` / `OR` / `NOT`
-- 各行に削除ボタン（✕）
-- 「+ 条件を追加」で行追加（ネスト深さ上限 5、[search-backends.md のスキーマ仕様](./search-backends.md#スキーマ仕様) 参照）
-- フィールド型に応じて入力 UI が切り替わる（テキスト / DatePicker / 列挙値プルダウン）
+- 各行に削除ボタン (✕)
+- 「+ 条件を追加」で行追加 (ネスト深さ上限 5、[search-backends.md のスキーマ仕様](./search-backends.md#スキーマ仕様) 参照)
+- フィールド型に応じて入力 UI が切り替わる (テキスト / DatePicker / 列挙値プルダウン)
+- SearchBox の Enter / 検索ボタンと画面下 Actions の「検索」ボタンは同じ submit handler を呼び、AST root の FreeText に SearchBox の値を commit してから `/search/results?q=...&db=...` に navigate する
 - クエリプレビューの挙動は [クエリプレビュー](#クエリプレビュー) 参照
 
 #### クエリプレビュー
@@ -369,16 +378,19 @@ UI 上は「+ 条件を追加」「+ グループを追加」と並んで「+ �
 #### ユーザー動線
 
 ```
-トップ/ヘッダー「詳細検索」リンク
-  → /advanced-search（DB 未選択 = 全データベースが初期選択）
+トップ/ヘッダー「検索」リンク
+  → /search (DB 未選択 = 全データベースが初期選択)
+
+トップページ SearchBox での submit
+  → /search/results?q=<DSL>&db=<id>
 
 横断検索結果ページの DB カード
-  → 「この DB で詳細検索」ボタン
-  → /advanced-search?db=xxx（DB 選択済み）
+  → 「この DB で検索」ボタン
+  → /search?db=<id> (DB 選択済みで検索フォームに着地)
 
 DB 指定検索結果ページ
-  → 「詳細検索で絞り込む」リンク
-  → /advanced-search?db=xxx&...（将来拡張: 現在のクエリも引き継ぐ）
+  → 「検索画面で編集」リンク (検索条件サマリチップ内)
+  → /search?db=<id>&q=<現在の DSL> (SearchBox + Query Builder に DSL 復元)
 ```
 
 #### DB 切り替え時の条件引き継ぎ
@@ -415,8 +427,8 @@ DB 切り替え時、Tier ごとに条件の扱いが異なる:
 
 **GUI → DSL 出力と DSL → GUI 復元の両方をサポートする。**
 
-- **GUI → DSL**: GUI クエリビルダの状態 (`AdvancedNodeWithId`) を `advancedTreeToAst()` で `SearchAstNode` に正規化し、`astToDsl()` で DSL 文字列を生成して URL `?q=<DSL>` に載せる。検索ボタンで `/search?q=<DSL>` へ遷移する。
-- **DSL → GUI**: `/advanced-search?q=<DSL>` 着地時、`GET /db-portal/parse?q=<DSL>&db=...` を呼んで AST の構造化 JSON を取得 → `parseAstToSearchAst()` で内部 AST に変換 → `searchAstToAdvancedTree()` で GUI tree に逆変換 → 初期 GUI 状態に流し込む。
+- **GUI → DSL**: GUI クエリビルダの状態 (`AdvancedNodeWithId`) を `advancedTreeToAst()` で `SearchAstNode` に正規化し、`astToDsl()` で DSL 文字列を生成して URL `?q=<DSL>` に載せる。検索ボタンで `/search/results?q=<DSL>` へ遷移する。
+- **DSL → GUI**: `/search?q=<DSL>` 着地時、`GET /db-portal/parse?q=<DSL>&db=...` を呼んで AST の構造化 JSON を取得 → `parseAstToSearchAst()` で内部 AST に変換 → `searchAstToAdvancedTree()` で GUI tree に逆変換 → 初期 GUI 状態に流し込む。
 
 **SSOT は AST**（[検索の内部モデル](#検索の内部モデル) 参照）。DSL 文字列は AST のシリアライズ形式（URL `?q=<DSL>` 載せ替え用）に過ぎない。Advanced Search の reducer state は `AdvancedNodeWithId` のままだが、外部接点（URL / API / Sidebar マージ）では必ず `advancedTreeToAst()` で `SearchAstNode` に正規化される。Lark パーサは「URL から GUI を復元する」経路（DSL → ParseAst → AST → GUI tree）の起点を担う。
 
@@ -436,7 +448,7 @@ DB 切り替え時、Tier ごとに条件の扱いが異なる:
 NN/g は「シンプル検索ボックスは何ができるか伝わらない」問題も指摘している。ユーザが迷わないよう以下を合わせて提供する:
 
 - **プレースホルダ**: `例: "Homo sapiens" BRCA1` のようにフレーズと通常語の併記例を出す
-- **検索ボックス下の small text**: 「スペース区切りで AND 検索。`"..."` でフレーズ検索。AND/OR/NOT や絞り込み検索は [詳細検索](#)」
+- **検索ボックス下の small text**: 「スペース区切りで AND 検索。`"..."` でフレーズ検索。AND/OR/NOT や絞り込み検索は [検索ページ](#) の条件ビルダで指定」
 - **Examples チップ**: 代表的なクエリ（accession 例・学名例・研究テーマ例）をクリックで入力できるチップを数個配置
 - **オートサジェスト**（将来）: Taxonomy（学名/一般名/和名）・既知 accession・過去検索から候補を出す
 
@@ -444,15 +456,15 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### LLM 補助テキストボックス
 
-「Boolean 構文を書けない」ユーザでも Advanced Search を使えるよう、`/advanced-search` と `/search?db=<id>` (DB 一覧) の上部に**自然文 → DSL 提案** テキストボックスを常設する。LLM サービング・BFF 設計・プロンプトの詳細は [`docs/llm.md`](./llm.md#phase-1-検索クエリ補助-poc) を SSOT として参照。
+「Boolean 構文を書けない」ユーザでも Advanced Search を使えるよう、`/search` と `/search/results?db=<id>` (DB 一覧) の上部に**自然文 → DSL 提案** テキストボックスを常設する。LLM サービング・BFF 設計・プロンプトの詳細は [`docs/llm.md`](./llm.md#phase-1-検索クエリ補助-poc) を SSOT として参照。
 
 | 項目 | 仕様 |
 |---|---|
-| 配置 | `/advanced-search` ではビルダの上、`/search?db=<id>` では `SearchToolbar` の上 (常設) |
+| 配置 | `/search` ではビルダの上、`/search/results?db=<id>` では `SearchToolbar` の上 (常設) |
 | 入力 | textarea + [提案を生成] ボタン (Enter 送信、Esc キャンセル) |
 | 出力 | 提案 DSL を `CodeBlock` でプレビュー、「🤖 AI 生成・要確認」ラベル併記 |
 | 適用 | [採用] ボタンで `?q=<提案 DSL>` に navigate (置換)。loader 経由で既存の `parseQ` → tree 復元 / SidebarFilter 状態導出のフローに乗せる |
-| 横断検索結果 (`/search` で `db` 未指定) | LLM ボックスは出さない (`/advanced-search?q=` への誘導 chip だけは継続) |
+| 横断検索結果 (`/search` で `db` 未指定) | LLM ボックスは出さない (`/search?q=` への誘導 chip だけは継続) |
 | dev 環境 | `LLM_BASE_URL` 未設定なら BFF が `503`、UI は「LLM 機能は staging/production でのみ利用可能」を Callout 表示 |
 | 注意 | LLM は検索を直接実行しない (誤情報リスク抑止)。常にユーザーの明示採用を要求 |
 
@@ -476,7 +488,7 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 ### 検索条件サマリ表示
 
-`/search?q=<DSL>` で到達した検索結果ページは、ヘッダ位置に**検索条件サマリチップ**を表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま 1 つの chip に出す。`q` が未指定 (`/search?db=<id>` のみ) の場合はサマリチップを表示しない。
+`/search/results?q=<DSL>` で到達した検索結果ページは、ヘッダ位置に**検索条件サマリチップ**を表示する。`q` の値（FreeText / FieldClause / BoolOp 任意組み合わせの DSL 文字列）をそのまま 1 つの chip に出す。`q` が未指定 (`/search/results?db=<id>` のみ) の場合はサマリチップを表示しない。
 
 **根拠:** portal の URL 表現を `?q=<DSL>` 1 本に統一しているため、シンプル検索由来 / Advanced Search 由来 / Sidebar 絞り込み由来を区別する必要がない。すべて単一の AST のシリアライズ形式である。
 
@@ -485,7 +497,7 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 ```
 ┌─ ヘッダー ──────────────────────────────────────────────────────────────┐
 │ [🔍 BioProject で絞り込み中: "cancer" AND organism:"Homo sa            │
-│   piens"]                       [詳細検索 GUI で編集] [✕ クリア]        │
+│   piens"]                       [検索画面で編集] [✕ クリア]            │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -499,9 +511,9 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 **操作:**
 
-- **[詳細検索 GUI で編集] ボタン**: 現在のクエリを引き継いで `/advanced-search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
+- **[検索画面で編集] ボタン**: 現在のクエリを引き継いで `/search?db=<db>&q=<現在の DSL>` を開く（横断モードでは `db` パラメータなし）。クエリがある場合は横断 / 単一 DB のいずれでも常時表示する。
 - **[✕ クリア] ボタン**: `q`・サイドバー由来絞り込み・ページング・ソート等の検索条件をすべて解除する。`db` は保持する。
-  - 単一 DB モード (`db` 指定あり) → `/search?db=<id>` に遷移する
+  - 単一 DB モード (`db` 指定あり) → `/search/results?db=<id>` に遷移する
   - 横断モード (`db` 未指定) → トップページ `/` にリダイレクトする
 - サマリチップ自体にはクリックアクションは割り当てない。
 
@@ -523,8 +535,8 @@ NN/g は「シンプル検索ボックスは何ができるか伝わらない」
 
 Solr バックエンド（Trad / Taxonomy）で件数が 10,000 以上のとき、ページャの直下に `Callout type="info"` を出す:
 
-- **文言**: 「表示できる検索結果は 10,000 件までです。キーワードを追加するか、詳細検索で絞り込んでください。」
-- **CTA**: 「詳細検索を開く」（`TextLink` で `/advanced-search` へ遷移。DB が選択済みなら `?db=xxx` 引き継ぎ）
+- **文言**: 「表示できる検索結果は 10,000 件までです。キーワードを追加するか、検索画面で条件を絞り込んでください。」
+- **CTA**: 「検索画面を開く」（`TextLink` で `/search` へ遷移。DB が選択済みなら `?db=xxx` 引き継ぎ）
 - **タイプ**: `info`（システム上の制約であり error ではないため）
 - **表示条件**: `db` が `trad` または `taxonomy` かつ件数が 10,000 以上
 
@@ -573,7 +585,7 @@ DB 名は静的情報なので先に描画し、件数欄だけ Skeleton にす�
 
 ### DB 指定検索結果のカードリスト
 
-DB 指定検索結果（`/search?q=xxx&db=yyy`）は **テーブルではなくカードリスト形式** で表示する。NCBI Entrez の DB 指定検索結果と同じアプローチで、Google 検索結果のような縦積みリストとする。
+DB 指定検索結果（`/search/results?q=xxx&db=yyy`）は **テーブルではなくカードリスト形式** で表示する。NCBI Entrez の DB 指定検索結果と同じアプローチで、Google 検索結果のような縦積みリストとする。
 
 **根拠:** テーブル形式は列数が多いと横スクロールが発生し、DB ごとに列構成が変わる場合に統一が難しい。カードリスト形式なら DB ごとにメタデータ行の内容を自然に変えられ、タイトルやアクセッションのような長い文字列も折り返して表示できる。
 
@@ -646,7 +658,7 @@ null / 空配列の field は skip して、表示すべき field がない場�
 `sameAs` / `dbXrefs` から関連するレコードへのリンクを生成する。NCBI BioSample の結果に `[BioProject] [SRA] [dbGaP]` リンクが出るのと同じパターン。
 
 - 関連 DB 名を `Badge` またはインラインリンクで表示（例: `BioProject: PRJDB12345`）
-- リンク先は db-portal 内の検索（`/search?q=<accession>&db=<related_db>`）。外部詳細ページへの直リンクでもよい（実装時に決定）
+- リンク先は db-portal 内の検索（`/search/results?q=<accession>&db=<related_db>`）。外部詳細ページへの直リンクでもよい（実装時に決定）
 - `sameAs` / `dbXrefs` がいずれも空の場合は L6 行自体を非表示
 
 #### ページ全体のレイアウト
@@ -682,7 +694,7 @@ null / 空配列の field は skip して、表示すべき field がない場�
 ```
 
 - **ツールバー**（結果リスト上部）: 件数表示 + ソートセレクト + 表示件数セレクト
-- **Sidebar Filter UI**（左サイドバー、`/search?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar Filter UI](#sidebar-filter-ui)
+- **Sidebar Filter UI**（左サイドバー、`/search/results?db=*` モードのみ）: facet checkbox + keyword input + date range filter。Phase C で実装。詳細は次節 [Sidebar Filter UI](#sidebar-filter-ui)
 
 #### カードクリック時の遷移
 
@@ -690,7 +702,7 @@ null / 空配列の field は skip して、表示すべき field がない場�
 
 #### Sidebar Filter UI
 
-DB 指定検索結果ページ（`/search?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search?db=all`）では Sidebar Filter UI は表示しない（DB 別 facet endpoint の結果が混在しないため）。
+DB 指定検索結果ページ（`/search/results?db=*`）には左サイドバーに絞り込み filter UI を配置する。NCBI Entrez の sidebar facet と同じパターン。横断検索結果ページ（`/search/results?db=all`）では Sidebar Filter UI は表示しない（DB 別 facet endpoint の結果が混在しないため）。
 
 ##### 構成（DB 別）
 
@@ -755,7 +767,7 @@ URL `?q=<DSL>` ⇄ sidebar UI 状態の双方向同期は `GET /db-portal/parse`
 
 - **URL → sidebar**: portal 側で `parseQ({q, db})` を呼び ParseAst を取得 → `parseAstToSearchAst()` で内部 AST に変換 → `splitAstForSidebar(ast, db)` で AST を「sidebar 対応 clause」と「residual（sidebar 非対応 clause）」に分解 → sidebar 対応分を sidebar UI 状態に反映。residual とは「AST clause のうち sidebar UI が表現できないもの」（複雑な OR 結合、wildcard、NOT、未対応 field、FreeText 等）の総称
 - **sidebar → URL**: sidebar 変更時に `sidebarStateToAst(next)` で AST を構築 → `mergeAstAnd([residual, sidebarAst])` で AST レベルで AND 結合 → `astToDsl(merged)` で DSL 文字列化 → URL `?q=<DSL>` を更新（navigate）。文字列レベルでの `(A) AND (B)` ラップは行わないため、ラウンドトリップで冗長な BoolOp は増えない
-- residual があっても sidebar 上には専用の表示を出さない（GUI が持つ内部 state はユーザに露出しない方針）。詳細検索 GUI への編集動線は検索条件サマリチップの「詳細検索 GUI で編集」ボタンに集約する
+- residual があっても sidebar 上には専用の表示を出さない（GUI が持つ内部 state はユーザに露出しない方針）。検索画面への編集動線は検索条件サマリチップの「検索画面で編集」ボタンに集約する
 
 ##### sidebar 対応 clause の判定ルール
 
@@ -794,10 +806,10 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 
 | ページ | URL | レンダリング |
 |---|---|---|
-| 横断検索結果 | `/search?q=<DSL>` | CSR |
-| DB 指定検索結果 | `/search?q=<DSL>&db=<id>` | CSR |
-| Advanced Search UI（空） | `/advanced-search` | SSR |
-| Advanced Search UI（条件付き） | `/advanced-search?q=<DSL>&db=<id>` | SSR |
+| 横断検索結果 | `/search/results?q=<DSL>` | CSR |
+| DB 指定検索結果 | `/search/results?q=<DSL>&db=<id>` | CSR |
+| Advanced Search UI（空） | `/search` | SSR |
+| Advanced Search UI（条件付き） | `/search?q=<DSL>&db=<id>` | SSR |
 
 `/search` は SSR でシェル HTML（meta / canonical / ナビゲーション）のみを返し、検索結果データは CSR で TanStack Query 経由に取得する構成。根拠: (1) 検索クエリはユーザー固有で SEO 対象ではない（`noindex`）。(2) proxy バックエンド（ARSA / TXSearch）のレイテンシが読めないため loader で await すると TTFB が悪化する。SSR は URL から決まる部分（meta / 正規化リダイレクト）のみに限定。(3) DB ごとに独立した `useQuery` を発行することで progressive rendering（先に返った DB から順次表示）が自然に成立する。
 
@@ -812,7 +824,7 @@ DB ポータル全体の URL 設計方針は [overview.md#url-設計](./overview
 | `sort` | `relevance` / `date_desc` / `date_asc` | `relevance` |
 | `cursor` | opaque 文字列（ES deep paging、10,000 件超） | なし |
 
-`q` が未指定で `db` が指定されている `/search?db=<id>` は、そのデータベースに対する match_all クエリ（全件表示）として有効な URL とする。サイドバーフィルタは動作し、ユーザがフィルタを操作した時点で `q` が AST から生成されてサマリチップが現れる。`q` も `db` も未指定の `/search` は意味を持たないため、トップページ `/` にリダイレクトする。
+`q` が未指定で `db` が指定されている `/search/results?db=<id>` は、そのデータベースに対する match_all クエリ（全件表示）として有効な URL とする。サイドバーフィルタは動作し、ユーザがフィルタを操作した時点で `q` が AST から生成されてサマリチップが現れる。`q` も `db` も未指定の `/search` は意味を持たないため、トップページ `/` にリダイレクトする。
 
 **`?q=<DSL>` 一本化**: シンプル検索 / Advanced Search / Sidebar 絞り込みのいずれもすべて単一の `q` パラメータに集約する。portal 内部で `SearchAstNode` に正規化したうえで `astToDsl()` でシリアライズ、portal → API は URL contract が完全一致 (`?q=<DSL>`) のままパススルーされる。
 
@@ -850,11 +862,11 @@ UI 表示ラベルは [DB 一覧](#db-一覧) のテーブルの値をそのま�
 
 | ケース | canonical | robots |
 |---|---|---|
-| `/search?q=xxx&db=bs` | 自身（デフォルト値省略後） | `noindex, follow` |
-| `/search?db=bs`（`q` なし、`db` あり） | 自身 | `noindex, follow` |
-| `/search?q=xxx&page=2&sort=relevance` | `/search?q=xxx&page=2` | `noindex, follow` |
+| `/search/results?q=xxx&db=bs` | 自身（デフォルト値省略後） | `noindex, follow` |
+| `/search/results?db=bs`（`q` なし、`db` あり） | 自身 | `noindex, follow` |
+| `/search/results?q=xxx&page=2&sort=relevance` | `/search/results?q=xxx&page=2` | `noindex, follow` |
 | `/search`（`q` も `db` も無し） | トップページ `/` に 302 リダイレクト | - |
-| `/advanced-search` | `/advanced-search` | `index, follow` |
+| `/search` | `/search` | `index, follow` |
 
 `/search` を `noindex` にする理由: (1) 検索結果はユーザー固有で SEO インデックスに入れる価値が低い。(2) クローラによる不要な負荷（proxy バックエンドへの fan-out）を避ける。
 
@@ -862,7 +874,7 @@ UI 表示ラベルは [DB 一覧](#db-一覧) のテーブルの値をそのま�
 
 以下を公約する:
 
-- ルートパス `/search`, `/advanced-search` は変えない
+- ルートパス `/search`, `/search` は変えない
 - `db` の値（`trad` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy`）は変えない
 - パラメータ名（`q`, `db`, `page`, `perPage`, `sort`, `cursor`, `adv`）は変えない
 
@@ -875,7 +887,7 @@ UI 表示ラベルは [DB 一覧](#db-一覧) のテーブルの値をそのま�
 例:
 
 ```
-/search?db=bioproject&adv=organism%3A%22Homo+sapiens%22+AND+date%3A%5B2020-01-01+TO+2024-12-31%5D+AND+(title%3Acancer+OR+title%3Atumor)
+/search/results?db=bioproject&adv=organism%3A%22Homo+sapiens%22+AND+date%3A%5B2020-01-01+TO+2024-12-31%5D+AND+(title%3Acancer+OR+title%3Atumor)
 ```
 
 URL デコード後:
@@ -924,7 +936,7 @@ GUI クエリビルダは常に上記ルールに準拠する DSL を生成す�
 **横断 Advanced Search の URL 例:**
 
 ```
-/search?adv=title%3Acancer+AND+organism%3A%22Homo+sapiens%22+AND+date_published%3A%5B2020-01-01+TO+2024-12-31%5D
+/search/results?adv=title%3Acancer+AND+organism%3A%22Homo+sapiens%22+AND+date_published%3A%5B2020-01-01+TO+2024-12-31%5D
 ```
 
 デコード後:
@@ -951,7 +963,7 @@ DDBJ ポータルは「単一パラメータに DSL 文字列を載せる」点�
 
 - [PubMed Advanced Search Help](https://pubmed.ncbi.nlm.nih.gov/help/) — `term` パラメータ・`[fieldtag]` 記法
 - [EBI Search REST API](https://www.ebi.ac.uk/ebisearch/documentation/rest-api) — `query` パラメータに Apache Lucene query syntax
-- [ENA Advanced Search Documentation](https://ena-docs.readthedocs.io/en/latest/retrieval/programmatic-access/advanced-search.html) — `query` パラメータに `field="value"` + 関数記法
+- [ENA Advanced Search Documentation](https://ena-docs.readthedocs.io/en/latest/retrieval/programmatic-access/search.html) — `query` パラメータに `field="value"` + 関数記法
 - [ENA Portal API Swagger](https://www.ebi.ac.uk/ena/portal/api/swagger-ui/index.html)
 - [The EBI search engine: EBI search as a service (PMC)](https://pmc.ncbi.nlm.nih.gov/articles/PMC5570174/)
 
@@ -966,7 +978,7 @@ DDBJ ポータルは「単一パラメータに DSL 文字列を載せる」点�
 ### EBI Search
 
 - **トップページ**: カテゴリセレクタ（DB 名ではなくデータタイプで分類）+ テキストボックス
-- **横断検索結果** (`/ebisearch/search?db=allebi&query=xxx`): 左サイドバーにカテゴリ別ヒット数ツリー。メインにカテゴリ別の上位結果を表示
+- **横断検索結果** (`/ebisearch/search/results?db=allebi&query=xxx`): 左サイドバーにカテゴリ別ヒット数ツリー。メインにカテゴリ別の上位結果を表示
 
 ### DB ポータルへの適用
 

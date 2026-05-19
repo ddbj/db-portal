@@ -14,7 +14,7 @@ const NUMBER_OPS = ["between", "gte", "lte", "equals"] as const
 const ENUM_OPS = ["equals", "not_equals"] as const
 
 const enumKey = (fieldId: string, valueKey: string): string =>
-  `routes.advancedSearch.fields.${fieldId}.enumValues.${valueKey}`
+  `routes.search.fields.${fieldId}.enumValues.${valueKey}`
 
 const TIER1_FIELDS: readonly AdvancedFieldDef[] = [
   {
@@ -24,7 +24,7 @@ const TIER1_FIELDS: readonly AdvancedFieldDef[] = [
     type: "identifier",
     availableOps: IDENTIFIER_OPS,
     availableDbs: DB_ORDER,
-    placeholderKey: "routes.advancedSearch.fields.identifier.placeholder",
+    placeholderKey: "routes.search.fields.identifier.placeholder",
   },
   {
     id: "title",
@@ -49,7 +49,7 @@ const TIER1_FIELDS: readonly AdvancedFieldDef[] = [
     type: "organism",
     availableOps: ORGANISM_OPS,
     availableDbs: DB_EXCEPT_TAXONOMY,
-    placeholderKey: "routes.advancedSearch.fields.organism.placeholder",
+    placeholderKey: "routes.search.fields.organism.placeholder",
   },
   {
     id: "date_published",
@@ -579,4 +579,4 @@ export const isFieldAvailableForDb = (
 }
 
 export const fieldLabelKey = (fieldId: string): string =>
-  `routes.advancedSearch.fields.${fieldId}.label`
+  `routes.search.fields.${fieldId}.label`

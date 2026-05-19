@@ -2,7 +2,7 @@
   "header": {
     "serviceName": "DDBJ 刷新 (仮)",
     "nav": {
-      "advancedSearch": "詳細検索",
+      "search": "検索",
       "submit": "登録",
       "submitAlt": "登録-alt",
       "submitAlt3": "登録-alt-3",
@@ -31,7 +31,7 @@
       },
       "search": {
         "placeholder": "キーワード、accession、学名で検索",
-        "hint": "スペース区切りは AND 検索。\"...\" でフレーズ検索。- や : を含む語句は厳密一致（例: COVID-19）。AND/OR/NOT などは詳細検索へ。",
+        "hint": "スペース区切りは AND 検索。\"...\" でフレーズ検索。- や : を含む語句は厳密一致（例: COVID-19）。AND/OR/NOT やフィールド指定は下の検索条件ビルダで指定。",
         "examplesLabel": "検索例",
         "submit": "検索",
         "dbAll": "すべての DB",
@@ -40,10 +40,10 @@
       "services": {
         "heading": "サービス・リソース",
         "cards": {
-          "advancedSearch": {
-            "title": "詳細検索",
-            "description": "フィールド指定・複数条件・期間指定で絞り込み検索",
-            "link": "詳細検索へ"
+          "search": {
+            "title": "検索",
+            "description": "キーワード + フィールド指定・複数条件・期間指定で絞り込み検索",
+            "link": "検索ページへ"
           },
           "submit": {
             "title": "データ登録",
@@ -103,7 +103,7 @@
         }
       }
     },
-    "search": {
+    "searchResults": {
       "title": "検索",
       "meta": {
         "titleCross": "検索結果: {{q}}",
@@ -115,7 +115,7 @@
       "summary": {
         "filteredByAll": "全データベースで絞り込み中: ",
         "filteredByDb": "{{db}} で絞り込み中: ",
-        "editInAdvanced": "詳細検索 GUI で編集",
+        "editInAdvanced": "検索画面で編集",
         "clear": "クリア",
         "clearAria": "検索条件をクリア"
       },
@@ -207,8 +207,8 @@
           "cursorMode": "カーソル送り（10,000 件超）"
         },
         "over10k": {
-          "message": "表示できる検索結果は 10,000 件までです。キーワードを追加するか、詳細検索で絞り込んでください。",
-          "cta": "詳細検索を開く"
+          "message": "表示できる検索結果は 10,000 件までです。キーワードを追加するか、検索画面で条件を絞り込んでください。",
+          "cta": "検索画面を開く"
         },
         "publishedAtAria": "公開日",
         "status": {
@@ -221,15 +221,24 @@
         }
       }
     },
-    "advancedSearch": {
-      "title": "詳細検索",
+    "search": {
+      "title": "検索",
       "meta": {
-        "title": "詳細検索 - DDBJ 刷新 (仮)",
-        "description": "DDBJ のデータベースを、フィールド・演算子・値を組み合わせて検索"
+        "title": "検索 - DDBJ 刷新 (仮)",
+        "description": "キーワード + フィールド条件で DDBJ の各データベースを検索"
       },
       "hero": {
-        "title": "詳細検索",
-        "subtitle": "フィールド・演算子・値を組み合わせて条件を構築し、DDBJ の各データベースを横断または単一で検索"
+        "title": "検索",
+        "subtitle": "キーワード入力と、フィールド・演算子・値を組み合わせた条件で、DDBJ の各データベースを横断または単一で検索"
+      },
+      "searchBox": {
+        "placeholder": "キーワード、accession、学名で検索",
+        "hint": "スペース区切りは AND 検索。\"...\" でフレーズ検索。- や : を含む語句は厳密一致（例: COVID-19）。下の検索条件ビルダでフィールド指定や AND/OR/NOT を組み合わせられます。",
+        "examplesLabel": "検索例",
+        "dbSelectorAria": "検索対象 DB"
+      },
+      "dbSelector": {
+        "all": "全データベース（横断）"
       },
       "db": {
         "heading": "データベース",
@@ -240,9 +249,6 @@
         "heading": "検索条件",
         "addCondition": "+ 条件を追加",
         "addGroup": "+ グループを追加",
-        "addFreeText": "+ フリーワード",
-        "freeTextLabel": "フリーワード",
-        "freeTextPlaceholder": "例: Escherichia coli",
         "removeAria": "条件を削除",
         "depthBadge": "深さ {{current}} / {{max}}",
         "depthLimitTooltip": "ネスト深さの上限に達しました",
@@ -1404,15 +1410,15 @@
         "flowCard": "登録フローカード"
       },
       "buttons": {
-        "sequenceRead": { "label": "+ 配列リード" },
-        "assembled": { "label": "+ 組み立て済み配列" },
-        "annotation": { "label": "+ 遺伝子アノテーション" },
-        "variation": { "label": "+ 変異情報" },
-        "phenotype": { "label": "+ 表現型データ" },
-        "expressionArray": { "label": "+ マイクロアレイ発現" },
-        "expressionMatrix": { "label": "+ RNA-seq マトリクス" },
-        "massSpec": { "label": "+ 質量分析" },
-        "spatialTx": { "label": "+ 空間トランスクリプトーム" }
+        "sequenceRead": { "label": "+ 配列リード (fastq)" },
+        "assembled": { "label": "+ 組み立て済み配列 (fasta)" },
+        "annotation": { "label": "+ 遺伝子アノテーション (gff)" },
+        "variation": { "label": "+ 変異情報 (vcf)" },
+        "phenotype": { "label": "+ 表現型データ (tsv)" },
+        "expressionArray": { "label": "+ マイクロアレイ発現 (cel)" },
+        "expressionMatrix": { "label": "+ RNA-seq マトリクス (tsv)" },
+        "massSpec": { "label": "+ 質量分析 (mzML)" },
+        "spatialTx": { "label": "+ 空間トランスクリプトーム (tsv)" }
       },
       "modals": {
         "common": { "cancel": "キャンセル", "add": "追加" },
@@ -1437,7 +1443,6 @@
             "label": "Hybrid Assembly (異 instrument の Run を組み合わせる)",
             "hint": "同 BioSample 配下に複数 Experiment として登録されます"
           },
-          "baseName": { "label": "ファイル名 (拡張子は自動付与)" },
           "q1": {
             "label": "Q1: この実験では発現量 / エピジェネティクス / ジェノタイピング等の解析済みデータも登録しますか?",
             "yes": "はい (発現量行列 / peak / methylation / scRNA counts / Hi-C contact matrix 等)",
@@ -1474,7 +1479,6 @@
               "ask": "DDBJ Curator に相談する / 不明"
             }
           },
-          "baseName": { "label": "ファイル名 (拡張子 .fasta は自動付与)" },
           "thirdParty": {
             "label": "第三者再アセンブル (TPA) ですか?",
             "hint": "公開配列を再解析した assembly。peer-review 論文が必要"
@@ -1525,7 +1529,6 @@
               "other": "その他"
             }
           },
-          "baseName": { "label": "ファイル名" },
           "citedAccession": { "label": "参照元 accession" },
           "doi": { "label": "peer-review 論文の DOI / PubMed ID (必須)" }
         },
@@ -1554,7 +1557,6 @@
               "reference-only": "既存 accession を参照のみ"
             }
           },
-          "baseName": { "label": "ファイル名 (.vcf.gz が自動付与)" },
           "referenceAccession": { "label": "参照配列の accession" }
         },
         "phenotype": {
@@ -1581,8 +1583,7 @@
               "no": "いいえ",
               "yes": "はい (同 Submission 内の他行と Dataset として束ねる)"
             }
-          },
-          "baseName": { "label": "ファイル名" }
+          }
         },
         "expressionArray": {
           "title": "マイクロアレイ発現データを追加",
@@ -1596,8 +1597,7 @@
           "mageTab": {
             "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
             "hint": "GEA の Experiment / Array Design 登録に必要"
-          },
-          "baseName": { "label": "ファイル名 (CEL / iDAT 等が自動付与)" }
+          }
         },
         "expressionMatrix": {
           "title": "RNA-seq 発現マトリクスを追加",
@@ -1626,8 +1626,7 @@
           "mageTab": {
             "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
             "hint": "Step GEA pulldown を補強するヒント"
-          },
-          "baseName": { "label": "ファイル名" }
+          }
         },
         "massSpec": {
           "title": "質量分析データを追加",
@@ -1643,8 +1642,7 @@
           "maf": {
             "label": "メタボローム代謝物アサインメント (MAF) も添付しますか?",
             "hint": "MetaboBank の関連メタデータ"
-          },
-          "baseName": { "label": "ファイル名" }
+          }
         },
         "spatialTx": {
           "title": "空間トランスクリプトームを追加",
@@ -1670,8 +1668,7 @@
           "mageTab": {
             "label": "MAGE-TAB メタデータ (IDF + SDRF) も添付しますか?",
             "hint": "Xenium / MERFISH は専用 Array Design テンプレートあり"
-          },
-          "baseName": { "label": "ファイル名" }
+          }
         }
       },
       "tableColumns": {
@@ -1958,11 +1955,11 @@
       "title": "AI 検索アシスタント",
       "inputLabel": "自然文で検索したい内容を入力",
       "placeholder": {
-        "advancedSearch": "例: ヒトの 2020 年以降に公開されたがん研究の BioProject",
+        "search": "例: ヒトの 2020 年以降に公開されたがん研究の BioProject",
         "dbList": "例: 2020 年以降に公開、Illumina プラットフォームのもの"
       },
       "helper": {
-        "advancedSearch": "自然文を入力すると、検索 DSL を提案します。提案を確認してから [採用] を押してください。",
+        "search": "自然文を入力すると、検索 DSL を提案します。提案を確認してから [採用] を押してください。",
         "dbList": "現在の検索条件をベースに、絞り込み案を提案します。提案を確認してから [採用] で適用されます。"
       },
       "shortcutHint": "Ctrl/Cmd + Enter で送信、Esc で取消",

@@ -12,7 +12,6 @@ import { getFieldsForDb } from "@/lib/mock-data"
 import type { DbSelectValue } from "@/lib/search-url"
 import type { LogicOperator } from "@/types/search"
 
-import AdvancedSearchFreeText from "./AdvancedSearchFreeText"
 import AdvancedSearchRow from "./AdvancedSearchRow"
 
 interface AdvancedSearchGroupProps {
@@ -35,13 +34,11 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
   const canAddGroup = depth + 1 < MAX_NEST_DEPTH
   const isNotGroup = group.logic === "NOT"
   const notLimitHit = isNotGroup && group.children.length >= 1
-  const isRoot = depth === 0
   const hasFreeText = group.children.some((c) => c.kind === "free_text")
-  const canAddFreeText = isRoot && !hasFreeText && group.logic === "AND"
 
   const logicOptions = (["AND", "OR", "NOT"] as LogicOperator[]).map((l) => ({
     value: l,
-    label: t(`routes.advancedSearch.logic.${l}`),
+    label: t(`routes.search.logic.${l}`),
   }))
 
   const containerClass = depth === 0
@@ -65,14 +62,14 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
             className="w-20"
           />
           <Badge variant="gray" size="sm">
-            {t("routes.advancedSearch.builder.depthBadge", {
+            {t("routes.search.builder.depthBadge", {
               current: depth,
               max: MAX_NEST_DEPTH,
             })}
           </Badge>
           {notLimitHit && (
             <span className="text-xs text-gray-500">
-              {t("routes.advancedSearch.builder.notGroupLock")}
+              {t("routes.search.builder.notGroupLock")}
             </span>
           )}
           <div className="ml-auto">
@@ -80,7 +77,7 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
               variant="tertiary"
               size="sm"
               onClick={() => dispatch({ type: "REMOVE_NODE", path })}
-              aria-label={t("routes.advancedSearch.builder.removeAria")}
+              aria-label={t("routes.search.builder.removeAria")}
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -89,22 +86,12 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
       )}
       {group.children.length === 0 && depth === 0 && (
         <EmptyState
-          title={t("routes.advancedSearch.builder.emptyState")}
+          title={t("routes.search.builder.emptyState")}
           description=""
         />
       )}
       {group.children.map((child, idx) => {
-        if (child.kind === "free_text") {
-          return (
-            <AdvancedSearchFreeText
-              key={child.id}
-              value={child.value}
-              onChange={(value) =>
-                dispatch({ type: "UPDATE_FREE_TEXT", value })}
-              onRemove={() => dispatch({ type: "REMOVE_FREE_TEXT" })}
-            />
-          )
-        }
+        if (child.kind === "free_text") return null
         if (child.kind === "condition") {
           const hasNonFreeTextBefore = group.children
             .slice(0, idx)
@@ -157,7 +144,7 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
           disabled={notLimitHit}
         >
           <Plus className="mr-1 h-3 w-3" />
-          {t("routes.advancedSearch.builder.addCondition")}
+          {t("routes.search.builder.addCondition")}
         </Button>
         {canAddGroup && !notLimitHit && (
           <Button
@@ -166,29 +153,18 @@ const AdvancedSearchGroup = (props: AdvancedSearchGroupProps) => {
             onClick={() => dispatch({ type: "ADD_GROUP", path })}
           >
             <Plus className="mr-1 h-3 w-3" />
-            {t("routes.advancedSearch.builder.addGroup")}
+            {t("routes.search.builder.addGroup")}
           </Button>
         )}
         {!canAddGroup && (
           <Tooltip
-            content={t("routes.advancedSearch.builder.depthLimitTooltip")}
+            content={t("routes.search.builder.depthLimitTooltip")}
           >
             <Button variant="tertiary" size="sm" disabled>
               <Plus className="mr-1 h-3 w-3" />
-              {t("routes.advancedSearch.builder.addGroup")}
+              {t("routes.search.builder.addGroup")}
             </Button>
           </Tooltip>
-        )}
-        {isRoot && (
-          <Button
-            variant="tertiary"
-            size="sm"
-            onClick={() => dispatch({ type: "ADD_FREE_TEXT" })}
-            disabled={!canAddFreeText}
-          >
-            <Plus className="mr-1 h-3 w-3" />
-            {t("routes.advancedSearch.builder.addFreeText")}
-          </Button>
         )}
       </div>
     </div>

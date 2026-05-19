@@ -90,6 +90,19 @@ export const removeFreeTextAtRoot = (
   }
 }
 
+export const setFreeTextAtRoot = (
+  root: AdvancedGroupNode,
+  value: string,
+): AdvancedGroupNode => {
+  const trimmed = value.trim()
+  if (trimmed === "") return removeFreeTextAtRoot(root)
+  if (findRootFreeTextIndex(root) !== -1) {
+    return updateFreeTextAtRoot(root, trimmed)
+  }
+
+  return addFreeTextAtRoot(root, trimmed)
+}
+
 export const getNodeAt = (
   root: AdvancedGroupNode,
   path: readonly number[],

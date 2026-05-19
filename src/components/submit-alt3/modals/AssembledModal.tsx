@@ -85,7 +85,6 @@ const AssembledModal = ({
   const [tpaSubtype, setTpaSubtype] = useState<TpaSubtype>("tpa-assembly")
   const [phased, setPhased] = useState(false)
   const [naming, setNaming] = useState<HaplotypeNaming>("principal-alternate")
-  const [baseName, setBaseName] = useState("assembly")
   const [citedAccession, setCitedAccession] = useState("")
   const [doi, setDoi] = useState("")
   // ""は「新しい sample として登録」、それ以外は既存 BS id (data-model §4.3.1)
@@ -97,7 +96,6 @@ const AssembledModal = ({
     setTpaSubtype("tpa-assembly")
     setPhased(false)
     setNaming("principal-alternate")
-    setBaseName("assembly")
     setCitedAccession("")
     setDoi("")
     setLinkToBsId("")
@@ -108,6 +106,8 @@ const AssembledModal = ({
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は新規追加時 / 編集時とも FileTableSection 側で確定する (defaultPayload / handleSubmitWithReplace)。
+    const baseName = "assembly"
     const thirdParty = analysisKind === "third-party"
     const chipTags: ChipTag[] = [
       { axis: "assembly-form", value: form },
@@ -161,13 +161,6 @@ const AssembledModal = ({
           label: t(`routes.submitAlt3.modals.assembled.form.options.${v}`),
         }))}
         onChange={setForm}
-      />
-
-      <TextField
-        id="assembled-basename"
-        label={t("routes.submitAlt3.modals.assembled.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
 
       <RadioGroup

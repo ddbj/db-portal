@@ -6,7 +6,6 @@ import type { ChipTag } from "@/types/submit-alt3"
 
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
-import TextField from "./TextField"
 
 // + 表現型データ modal
 // SSOT: docs/submit-alt3-modals.md §+ 表現型データ
@@ -26,18 +25,18 @@ const PhenotypeModal = ({ open, onClose, onSubmit }: Props) => {
   const [format, setFormat] = useState<Format>("tsv")
   const [identifiable, setIdentifiable] = useState<Identifiable>("no")
   const [dataset, setDataset] = useState<Dataset>("no")
-  const [baseName, setBaseName] = useState("phenotype")
 
   useEffect(() => {
     if (!open) {
       setFormat("tsv")
       setIdentifiable("no")
       setDataset("no")
-      setBaseName("phenotype")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "phenotype"
     const chipTags: ChipTag[] = [
       { axis: "functional-genomics", value: "other" },
     ]
@@ -100,12 +99,6 @@ const PhenotypeModal = ({ open, onClose, onSubmit }: Props) => {
         onChange={setDataset}
       />
 
-      <TextField
-        id="phenotype-basename"
-        label={t("routes.submitAlt3.modals.phenotype.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
-      />
     </ModalShell>
   )
 }

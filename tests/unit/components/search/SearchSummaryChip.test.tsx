@@ -80,8 +80,8 @@ describe("SearchSummaryChip", () => {
     expect(onClear).toHaveBeenCalled()
   })
 
-  it("renders edit-in-advanced link pointing to advancedSearchHref", () => {
-    const href = "/advanced-search?db=sra&q=human"
+  it("renders edit link pointing to advancedSearchHref", () => {
+    const href = "/search?db=sra&q=human"
     renderWithProviders(
       <SearchSummaryChip
         mode="simple"
@@ -91,12 +91,12 @@ describe("SearchSummaryChip", () => {
         advancedSearchHref={href}
       />,
     )
-    const link = screen.getByRole("link", { name: /詳細検索 GUI で編集/ })
+    const link = screen.getByRole("link", { name: /検索画面で編集/ })
     expect(link).toHaveAttribute("href", href)
   })
 
   it("renders edit link for cross-mode (db=all) without db param", () => {
-    const href = "/advanced-search?q=human"
+    const href = "/search?q=human"
     renderWithProviders(
       <SearchSummaryChip
         mode="simple"
@@ -107,7 +107,7 @@ describe("SearchSummaryChip", () => {
       />,
     )
     expect(
-      screen.getByRole("link", { name: /詳細検索 GUI で編集/ }),
+      screen.getByRole("link", { name: /検索画面で編集/ }),
     ).toHaveAttribute("href", href)
   })
 })

@@ -2,7 +2,7 @@
   "header": {
     "serviceName": "DDBJ 刷新 (仮)",
     "nav": {
-      "advancedSearch": "Advanced Search",
+      "search": "Search",
       "submit": "Submit",
       "submitAlt": "Submit-alt",
       "submitAlt3": "Submit-alt-3",
@@ -31,7 +31,7 @@
       },
       "search": {
         "placeholder": "Search by keyword, accession, or taxonomic name",
-        "hint": "Space-separated terms are joined with AND. Use \"...\" for phrases. Terms containing - or : are matched as exact phrases (e.g. COVID-19). For AND/OR/NOT or field queries, see Advanced Search.",
+        "hint": "Space-separated terms are joined with AND. Use \"...\" for phrases. Terms containing - or : are matched as exact phrases (e.g. COVID-19). Use the query builder below for AND/OR/NOT or field-scoped queries.",
         "examplesLabel": "Examples",
         "submit": "Search",
         "dbAll": "All databases",
@@ -40,10 +40,10 @@
       "services": {
         "heading": "Services & Resources",
         "cards": {
-          "advancedSearch": {
-            "title": "Advanced Search",
-            "description": "Refine by field, combined conditions, and date range",
-            "link": "Go to Advanced Search"
+          "search": {
+            "title": "Search",
+            "description": "Keyword + field-scoped conditions, combined queries, and date ranges",
+            "link": "Go to Search"
           },
           "submit": {
             "title": "Data Submission",
@@ -103,7 +103,7 @@
         }
       }
     },
-    "search": {
+    "searchResults": {
       "title": "Search",
       "meta": {
         "titleCross": "Search results: {{q}}",
@@ -115,7 +115,7 @@
       "summary": {
         "filteredByAll": "Filtering across all databases: ",
         "filteredByDb": "Filtering {{db}}: ",
-        "editInAdvanced": "Edit in advanced search GUI",
+        "editInAdvanced": "Edit in Search page",
         "clear": "Clear",
         "clearAria": "Clear search conditions"
       },
@@ -207,8 +207,8 @@
           "cursorMode": "Cursor mode (over 10,000 results)"
         },
         "over10k": {
-          "message": "Only up to 10,000 results can be displayed. Please add keywords or refine with advanced search.",
-          "cta": "Open advanced search"
+          "message": "Only up to 10,000 results can be displayed. Please add keywords or refine on the Search page.",
+          "cta": "Open Search"
         },
         "publishedAtAria": "Published at",
         "status": {
@@ -221,15 +221,24 @@
         }
       }
     },
-    "advancedSearch": {
-      "title": "Advanced Search",
+    "search": {
+      "title": "Search",
       "meta": {
-        "title": "Advanced Search - DDBJ 刷新 (仮)",
-        "description": "Build field-scoped queries across DDBJ databases"
+        "title": "Search - DDBJ 刷新 (仮)",
+        "description": "Keyword + field-scoped queries across DDBJ databases"
       },
       "hero": {
-        "title": "Advanced Search",
-        "subtitle": "Combine fields, operators, and values to query DDBJ databases across or within a single service"
+        "title": "Search",
+        "subtitle": "Combine keywords with field, operator, and value conditions to query DDBJ databases across or within a single service"
+      },
+      "searchBox": {
+        "placeholder": "Search by keyword, accession, or taxonomic name",
+        "hint": "Space-separated terms are joined with AND. Use \"...\" for phrases. Terms containing - or : are matched as exact phrases (e.g. COVID-19). Use the query builder below to add field-scoped conditions or AND/OR/NOT.",
+        "examplesLabel": "Examples",
+        "dbSelectorAria": "Search target database"
+      },
+      "dbSelector": {
+        "all": "All databases (cross)"
       },
       "db": {
         "heading": "Database",
@@ -240,9 +249,6 @@
         "heading": "Search conditions",
         "addCondition": "+ Add condition",
         "addGroup": "+ Add group",
-        "addFreeText": "+ Free text",
-        "freeTextLabel": "Free text",
-        "freeTextPlaceholder": "e.g. Escherichia coli",
         "removeAria": "Remove condition",
         "depthBadge": "depth {{current}} / {{max}}",
         "depthLimitTooltip": "Maximum nesting depth reached",
@@ -1404,15 +1410,15 @@
         "flowCard": "Submission flow cards"
       },
       "buttons": {
-        "sequenceRead": { "label": "+ Sequence reads" },
-        "assembled": { "label": "+ Assembled sequence" },
-        "annotation": { "label": "+ Gene annotation" },
-        "variation": { "label": "+ Variation" },
-        "phenotype": { "label": "+ Phenotype data" },
-        "expressionArray": { "label": "+ Microarray expression" },
-        "expressionMatrix": { "label": "+ RNA-seq matrix" },
-        "massSpec": { "label": "+ Mass spectrometry" },
-        "spatialTx": { "label": "+ Spatial transcriptome" }
+        "sequenceRead": { "label": "+ Sequence reads (fastq)" },
+        "assembled": { "label": "+ Assembled sequence (fasta)" },
+        "annotation": { "label": "+ Gene annotation (gff)" },
+        "variation": { "label": "+ Variation (vcf)" },
+        "phenotype": { "label": "+ Phenotype data (tsv)" },
+        "expressionArray": { "label": "+ Microarray expression (cel)" },
+        "expressionMatrix": { "label": "+ RNA-seq matrix (tsv)" },
+        "massSpec": { "label": "+ Mass spectrometry (mzML)" },
+        "spatialTx": { "label": "+ Spatial transcriptome (tsv)" }
       },
       "modals": {
         "common": { "cancel": "Cancel", "add": "Add" },
@@ -1437,7 +1443,6 @@
             "label": "Hybrid Assembly (combine reads from different instruments)",
             "hint": "Multiple Experiments under the same BioSample"
           },
-          "baseName": { "label": "Base file name (extension is auto-added)" },
           "q1": {
             "label": "Q1: Will you also submit processed data such as expression / epigenetics / genotyping outputs?",
             "yes": "Yes (expression matrix / peaks / methylation / scRNA counts / Hi-C contact matrix, etc.)",
@@ -1474,7 +1479,6 @@
               "ask": "Consult DDBJ Curator / unknown"
             }
           },
-          "baseName": { "label": "File name (.fasta auto-added)" },
           "thirdParty": {
             "label": "Third-party reassembly (TPA)?",
             "hint": "Reanalysis of public sequences. Requires a peer-reviewed publication"
@@ -1525,7 +1529,6 @@
               "other": "Other"
             }
           },
-          "baseName": { "label": "File name" },
           "citedAccession": { "label": "Cited accession" },
           "doi": { "label": "Peer-reviewed DOI / PubMed ID (required)" }
         },
@@ -1554,7 +1557,6 @@
               "reference-only": "Reference an existing accession"
             }
           },
-          "baseName": { "label": "File name (.vcf.gz auto-added)" },
           "referenceAccession": { "label": "Reference accession" }
         },
         "phenotype": {
@@ -1581,8 +1583,7 @@
               "no": "No",
               "yes": "Yes (bundle with other rows as a Dataset)"
             }
-          },
-          "baseName": { "label": "File name" }
+          }
         },
         "expressionArray": {
           "title": "Add microarray expression data",
@@ -1596,8 +1597,7 @@
           "mageTab": {
             "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
             "hint": "Required for GEA Experiment / Array Design"
-          },
-          "baseName": { "label": "File name (CEL / iDAT etc. auto-added)" }
+          }
         },
         "expressionMatrix": {
           "title": "Add RNA-seq expression matrix",
@@ -1626,8 +1626,7 @@
           "mageTab": {
             "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
             "hint": "Hint for the GEA Step pulldown"
-          },
-          "baseName": { "label": "File name" }
+          }
         },
         "massSpec": {
           "title": "Add mass spectrometry data",
@@ -1643,8 +1642,7 @@
           "maf": {
             "label": "Attach metabolite assignment file (MAF)?",
             "hint": "MetaboBank associated metadata"
-          },
-          "baseName": { "label": "File name" }
+          }
         },
         "spatialTx": {
           "title": "Add spatial transcriptome data",
@@ -1670,8 +1668,7 @@
           "mageTab": {
             "label": "Attach MAGE-TAB metadata (IDF + SDRF)?",
             "hint": "Xenium / MERFISH have dedicated Array Design templates"
-          },
-          "baseName": { "label": "File name" }
+          }
         }
       },
       "tableColumns": {
@@ -1958,11 +1955,11 @@
       "title": "AI search assistant",
       "inputLabel": "Describe in natural language what you want to search",
       "placeholder": {
-        "advancedSearch": "e.g. BioProject for human cancer studies published since 2020",
+        "search": "e.g. BioProject for human cancer studies published since 2020",
         "dbList": "e.g. published since 2020, Illumina platform"
       },
       "helper": {
-        "advancedSearch": "Type a natural-language request and we will draft a search DSL. Review it before pressing [Apply].",
+        "search": "Type a natural-language request and we will draft a search DSL. Review it before pressing [Apply].",
         "dbList": "We will refine the current query with a draft. Review and press [Apply] to use it."
       },
       "shortcutHint": "Ctrl/Cmd + Enter to submit, Esc to cancel",

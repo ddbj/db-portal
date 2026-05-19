@@ -32,10 +32,10 @@ const DEFAULT_DATE_AXES: readonly DateAxis[] = [
 ]
 
 const advancedFieldLabel = (id: string): string =>
-  `routes.advancedSearch.fields.${id}.label`
+  `routes.search.fields.${id}.label`
 
 const sidebarFieldLabel = (dslName: string): string =>
-  `routes.search.sidebar.fields.${dslName}.label`
+  `routes.searchResults.sidebar.fields.${dslName}.label`
 
 export const SIDEBAR_FIELDS_BY_DB: Readonly<Record<DbId, SidebarFieldsForDb>> = {
   bioproject: {

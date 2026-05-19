@@ -8,7 +8,7 @@ import i18n from "@/i18n"
 import { NAV_ITEMS, type NavItem } from "@/lib/nav"
 
 const NAV_LABELS_JA = {
-  "header.nav.advancedSearch": "詳細検索",
+  "header.nav.search": "検索",
   "header.nav.submit": "登録",
   "header.nav.submitAlt": "登録-alt",
   "header.nav.submitAlt3": "登録-alt-3",
@@ -71,9 +71,9 @@ describe("Header", () => {
   })
 
   it("marks current route as active via NavLink isActive (aria-current='page')", () => {
-    renderHeader("/advanced-search")
+    renderHeader("/search")
     const nav = screen.getByRole("navigation", { name: "メインナビゲーション" })
-    const active = within(nav).getByRole("link", { name: "詳細検索" })
+    const active = within(nav).getByRole("link", { name: "検索" })
     expect(active).toHaveAttribute("aria-current", "page")
 
     const inactive = within(nav).getByRole("link", { name: "登録" })

@@ -21,11 +21,13 @@ export interface ExampleChip {
 interface SearchBoxProps {
   size: "large" | "small"
   defaultValue?: string
+  value?: string
   placeholder?: string
   hintText?: ReactNode
   helperText?: ReactNode
   examples?: readonly ExampleChip[]
   onSubmit: (query: string) => void
+  onChange?: (query: string) => void
   className?: string
   buttonLabel?: string
   dbOptions?: readonly SelectOption[]
@@ -125,11 +127,13 @@ const DbDropdown = ({ options, value, onChange, ariaLabel }: DbDropdownProps) =>
 const SearchBox = ({
   size,
   defaultValue = "",
+  value: controlledValue,
   placeholder,
   hintText,
   helperText,
   examples,
   onSubmit,
+  onChange,
   className,
   buttonLabel = "検索",
   dbOptions,
@@ -137,9 +141,16 @@ const SearchBox = ({
   onDbChange,
   dbAriaLabel,
 }: SearchBoxProps) => {
-  const [value, setValue] = useState(defaultValue)
+  const [internalValue, setInternalValue] = useState(defaultValue)
+  const isControlled = controlledValue !== undefined
+  const value = isControlled ? controlledValue : internalValue
   const isLarge = size === "large"
   const showDbSelector = isLarge && dbOptions !== undefined && dbOptions.length > 0
+
+  const handleInputChange = (next: string) => {
+    if (!isControlled) setInternalValue(next)
+    onChange?.(next)
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -154,7 +165,7 @@ const SearchBox = ({
             key={ex.label}
             variant="default"
             onClick={() => {
-              setValue(ex.query)
+              handleInputChange(ex.query)
               onSubmit(ex.query)
             }}
           >
@@ -188,7 +199,7 @@ const SearchBox = ({
             <input
               type="search"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => handleInputChange(e.target.value)}
               placeholder={placeholder}
               className="block h-full w-full rounded-none border-0 bg-transparent py-3.5 pr-4 pl-12 text-base text-gray-900 placeholder:text-gray-400 focus:border-0 focus:ring-0 focus:ring-offset-0"
             />
@@ -229,7 +240,7 @@ const SearchBox = ({
           <input
             type="search"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
             placeholder={placeholder}
             className={cn(
               "focus:border-primary-500 focus:ring-primary-200 block w-full rounded-md border-gray-300",

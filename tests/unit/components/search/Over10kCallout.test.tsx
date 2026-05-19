@@ -7,16 +7,16 @@ import { renderWithProviders } from "../../../helpers/providers"
 
 describe("Over10kCallout", () => {
 
-  it("renders message and CTA link to advanced-search with db", () => {
+  it("renders message and CTA link to search page with db", () => {
     renderWithProviders(<Over10kCallout db="trad" />)
     expect(screen.getByText(/10,000 件まで/)).toBeInTheDocument()
-    const cta = screen.getByRole("link", { name: "詳細検索を開く" })
-    expect(cta.getAttribute("href")).toBe("/advanced-search?db=trad")
+    const cta = screen.getByRole("link", { name: "検索画面を開く" })
+    expect(cta.getAttribute("href")).toBe("/search?db=trad")
   })
 
   it("works for taxonomy too", () => {
     renderWithProviders(<Over10kCallout db="taxonomy" />)
-    const cta = screen.getByRole("link", { name: "詳細検索を開く" })
-    expect(cta.getAttribute("href")).toBe("/advanced-search?db=taxonomy")
+    const cta = screen.getByRole("link", { name: "検索画面を開く" })
+    expect(cta.getAttribute("href")).toBe("/search?db=taxonomy")
   })
 })

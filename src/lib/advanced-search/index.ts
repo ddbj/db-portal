@@ -18,6 +18,7 @@ export {
   removeAt,
   removeFreeTextAtRoot,
   ROOT_ID,
+  setFreeTextAtRoot,
   setGroupLogicAt,
   updateConditionAt,
   updateFreeTextAtRoot,

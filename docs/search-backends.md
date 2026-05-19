@@ -769,8 +769,8 @@ cold cache と warm cache のレイテンシ差は 100〜1000 倍。対策方針
 
 #### 2 段構成（count 先行 + 詳細 fetch）
 
-1. 横断検索エンドポイント（`/search?q=...`）: 各 DB の count のみ取得。`rows=0` / `size=0` で軽量化
-2. DB 指定検索エンドポイント（`/search?q=...&db=...`）: 該当 DB の結果リストを取得
+1. 横断検索エンドポイント（`/search/results?q=...`）: 各 DB の count のみ取得。`rows=0` / `size=0` で軽量化
+2. DB 指定検索エンドポイント（`/search/results?q=...&db=...`）: 該当 DB の結果リストを取得
 
 これにより横断検索のレイテンシを低く保ち、ユーザが DB をクリックしたときだけ詳細を fetch する。
 
@@ -832,9 +832,9 @@ GET /db-portal/parse?adv=<dsl>&db=<id>                 # DSL → AST 構造化 J
 
 | portal URL | 呼び出す API endpoint |
 |---|---|
-| `/search?q=xxx` または `/search?adv=...` | `GET /db-portal/cross-search` |
-| `/search?q=xxx&db=yyy` または `/search?adv=...&db=yyy` | `GET /db-portal/search` |
-| `/advanced-search?adv=...` 着地時の GUI 復元 | `GET /db-portal/parse` |
+| `/search/results?q=xxx` または `/search/results?adv=...` | `GET /db-portal/cross-search` |
+| `/search/results?q=xxx&db=yyy` または `/search/results?adv=...&db=yyy` | `GET /db-portal/search` |
+| `/search?adv=...` 着地時の GUI 復元 | `GET /db-portal/parse` |
 
 #### 設計理由
 

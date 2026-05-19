@@ -183,14 +183,14 @@ const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
   return (
     <section>
       <SectionHeading>
-        {t("routes.search.sidebar.dateRange.title")}
+        {t("routes.searchResults.sidebar.dateRange.title")}
       </SectionHeading>
       <div className="space-y-3">
         <div className="space-y-1">
           {axes.map((a) => (
             <Radio
               key={a}
-              label={tDynamic(`routes.search.sidebar.dateRange.axis.${a}`)}
+              label={tDynamic(`routes.searchResults.sidebar.dateRange.axis.${a}`)}
               name="sidebar-date-axis"
               checked={axis === a}
               onChange={() => updateAxis(a)}
@@ -199,22 +199,22 @@ const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
         </div>
         <div className="flex flex-wrap gap-1">
           <Button variant="tertiary" size="sm" onClick={() => applyQuickRange(null)}>
-            {t("routes.search.sidebar.dateRange.quick.all")}
+            {t("routes.searchResults.sidebar.dateRange.quick.all")}
           </Button>
           <Button variant="tertiary" size="sm" onClick={() => applyQuickRange(1)}>
-            {t("routes.search.sidebar.dateRange.quick.year1")}
+            {t("routes.searchResults.sidebar.dateRange.quick.year1")}
           </Button>
           <Button variant="tertiary" size="sm" onClick={() => applyQuickRange(5)}>
-            {t("routes.search.sidebar.dateRange.quick.year5")}
+            {t("routes.searchResults.sidebar.dateRange.quick.year5")}
           </Button>
           <Button variant="tertiary" size="sm" onClick={() => applyQuickRange(10)}>
-            {t("routes.search.sidebar.dateRange.quick.year10")}
+            {t("routes.searchResults.sidebar.dateRange.quick.year10")}
           </Button>
         </div>
         <div className="space-y-1">
           <label className="block text-xs">
             <span className="block text-gray-700">
-              {t("routes.search.sidebar.dateRange.from")}
+              {t("routes.searchResults.sidebar.dateRange.from")}
             </span>
             <Input
               type="date"
@@ -224,7 +224,7 @@ const DateRangeSection = ({ axes, value, onChange }: DateRangeSectionProps) => {
           </label>
           <label className="block text-xs">
             <span className="block text-gray-700">
-              {t("routes.search.sidebar.dateRange.to")}
+              {t("routes.searchResults.sidebar.dateRange.to")}
             </span>
             <Input
               type="date"
@@ -261,7 +261,7 @@ const KeywordSection = ({ mapping, value, onChange }: KeywordSectionProps) => {
         type="text"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
-        placeholder={t("routes.search.sidebar.keywordPlaceholder")}
+        placeholder={t("routes.searchResults.sidebar.keywordPlaceholder")}
       />
     </section>
   )
@@ -289,12 +289,12 @@ const FreeTextSection = ({ value, onChange }: FreeTextSectionProps) => {
 
   return (
     <section>
-      <SectionHeading>{t("routes.search.sidebar.freeWord.title")}</SectionHeading>
+      <SectionHeading>{t("routes.searchResults.sidebar.freeWord.title")}</SectionHeading>
       <Input
         type="text"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
-        placeholder={t("routes.search.sidebar.freeWord.placeholder")}
+        placeholder={t("routes.searchResults.sidebar.freeWord.placeholder")}
       />
     </section>
   )
@@ -358,10 +358,10 @@ const SidebarFilter = ({
   return (
     <aside
       className={cn("w-64 flex-shrink-0 space-y-6", className)}
-      aria-label={t("routes.search.sidebar.label")}
+      aria-label={t("routes.searchResults.sidebar.label")}
     >
       <Heading level={3} className="text-sm font-semibold text-gray-900">
-        {t("routes.search.sidebar.title")}
+        {t("routes.searchResults.sidebar.title")}
       </Heading>
 
       {loading && (
@@ -379,10 +379,10 @@ const SidebarFilter = ({
 
       {subtypes.length > 0 && (
         <section>
-          <SectionHeading>{t("routes.search.sidebar.entryType")}</SectionHeading>
+          <SectionHeading>{t("routes.searchResults.sidebar.entryType")}</SectionHeading>
           <div className="space-y-1">
             <Radio
-              label={t("routes.search.sidebar.all")}
+              label={t("routes.searchResults.sidebar.all")}
               name={`${db}-subtype`}
               checked={state.subtype === null}
               onChange={() => updateSubtype(null)}

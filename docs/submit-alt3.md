@@ -88,13 +88,15 @@ v3: 「手元のファイルをテーブルに並べる」と「未設定の cel
 
 操作の典型的な順序:
 
-1. ボタンを押してファイルをテーブルに追加する。1 回の押下で 1 行 (または複数行 = Group) が append される。**この時点で列の値はほぼ空欄** で警告マーク (⚠) が並ぶ
-2. ボタン押下時の modal は **最小限の質問だけ** (例: pair-end か single-end か、MAG-SAG どっちか、合成配列か GSS か) で、grouping と構造的属性を確定するためだけのもの。組織 / 公開可否 / library strategy などの tag はテーブルに移ってから per-cell で埋める
+1. ボタンを押してファイルをテーブルに追加する。**ボタン押下時は modal を出さず、ButtonType ごとの default 構成 + 自動連番 baseName (`read-001` / `asm-001` 等) で 1 Group が即時に append される**。1 回の押下で 1 行 (または default Group 構成によっては複数行 = pair-end 等) が増える。この時点で列の値はほぼ空欄で警告マーク (⚠) が並ぶ
+2. 行追加後に、必要に応じて行右端の「編集」アイコンから ButtonType に対応する modal を開き、**grouping (pair-end / 10x / multiplex / two-color 等) と構造的属性 (assembly-form / variation-form / mass-spec-domain 等)** を確定する。modal は最小限の質問だけで、組織 / 公開可否 / library strategy などの tag はテーブルに移ってから per-cell で埋める
 3. テーブル上で per-cell に組織 / 公開可否 / データ形態 を編集していく。同じ値が連続するなら「上の行と同じ」がデフォルト候補として提案される
 4. 各行の右側には modal で確定した「非 grouping」属性が **chip** として並ぶ (アセンブリ種別 / 第三者 / variation-type / functional-genomics 系など)。pair-end / 10x / multiplex のような grouping 由来の情報は Group ヘッダ + indent で表現するため chip にしない
 5. cell が埋まるほど Section B の Step カードが詳細化される。未設定 cell は警告マークが付き、Step カードにも「⚠ X 列が未設定のため Y Step は未確定」と表示される
 6. 行をコピー / 削除 / 一括編集することで、大量ファイルを効率的に扱える
 7. tag の組み合わせが変わるたびに Step カード列は自動再生成される
+
+**ボタン押下=即追加にする理由**: 「とりあえず行を増やす」操作のたびに modal を出すと Q&A の摩擦が大きい。default 構成 (例: `+ 配列リード` = pair-end FASTQ × 1 Group、`+ 組み立て済み配列` = WGS FASTA × 1 行、それ以外 = single ファイル) はカバー率の高い典型ケースに合わせる。非典型ケース (10x / multiplex / TPA / haplotype phased / two-color 等) は編集動線で modal を開いて該当属性を上書きする。各 ButtonType の default 値は [`submit-alt3-modals.md`](./submit-alt3-modals.md) §6.2 を参照。
 
 途中で「やり直す」「ファイル削除」「tag 上書き」した場合も Section B は即座に追従する。テーブルが完全に埋まれば Step カード列も完全 = 登録準備が整った状態になる。
 
@@ -122,7 +124,7 @@ v3: 「手元のファイルをテーブルに並べる」と「未設定の cel
 | **+ 質量分析** | mzML、vendor RAW、imzML+ibd、ピークリスト、MAF | `mass-spec` |
 | **+ 空間トランスクリプトーム** | Visium / Xenium / MERFISH / Stereo-seq / Slide-seq / GeoMx 出力 | `matrix` |
 
-ボタン押下時の modal は **grouping の確定と構造的属性だけに使う**。例:
+ボタン押下時は modal を出さず、ButtonType ごとの default 構成 (下表) で行を即追加する。modal は **行ごとの「編集」アイコン押下時にのみ表示** し、**grouping の確定と構造的属性だけに使う**。例:
 
 - **+ 配列リード**: pair-end / single-end / 10x / multiplex / Hybrid Assembly のいずれか
 - **+ 組み立て済み配列**: アセンブリ種別 = WGS / 完成ゲノム (GNM) / TSA / TLS / EST / MAG / SAG / HTG / HTC / GSS / 合成配列 (SYN) / その他 (MISC, ASK)、Haplotype phased か、アノテーションファイルも同時に持つか
@@ -163,9 +165,10 @@ modal で確定しないこと: 組織 / 公開可否 / library strategy など�
 ### 4.2 grouping を modal で決める理由
 
 - ファイル関係性 (どの R1 とどの R2 が pair か) はテーブルの行配置では表現しきれない (cell 編集とは別次元)
-- 漏れが発生しにくい (ファイル追加と grouping が同じ操作で完結)
 - テーブル上では Group ヘッダ + indent で視覚的にまとまる
 - 後から「これとこれは pair-end」を行選択で指定する UI は採用しない (実装複雑 / 漏れやすい)
+
+modal はボタン押下時には開かず、行追加後の「編集」アクションで開く (§2 操作の典型的な順序 / [`submit-alt3-modals.md`](./submit-alt3-modals.md) §6.2)。default 構成で典型ケースを吸収し、非典型ケースは編集動線で grouping / 構造的属性を上書きする方針。
 
 ### 4.3 modal とテーブルの境界
 

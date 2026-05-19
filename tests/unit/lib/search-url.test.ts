@@ -21,36 +21,36 @@ const DB_VALUES: readonly DbSelectValue[] = [ALL_DB_VALUE, ...DB_ORDER]
 
 describe("buildSearchUrl", () => {
 
-  it("returns /search when both q and db are empty/all", () => {
-    expect(buildSearchUrl({ q: "", db: ALL_DB_VALUE })).toBe("/search")
+  it("returns /search/results when both q and db are empty/all", () => {
+    expect(buildSearchUrl({ q: "", db: ALL_DB_VALUE })).toBe("/search/results")
   })
 
   it("omits q when it is whitespace-only", () => {
-    expect(buildSearchUrl({ q: "   ", db: ALL_DB_VALUE })).toBe("/search")
+    expect(buildSearchUrl({ q: "   ", db: ALL_DB_VALUE })).toBe("/search/results")
   })
 
   it("omits db param when db is the all sentinel", () => {
     const url = buildSearchUrl({ q: "SARS-CoV-2", db: ALL_DB_VALUE })
-    expect(url).toBe("/search?q=SARS-CoV-2")
+    expect(url).toBe("/search/results?q=SARS-CoV-2")
     expect(url).not.toContain("db=")
   })
 
   it("includes db param for a specific DB", () => {
     const url = buildSearchUrl({ q: "Homo sapiens", db: "sra" })
-    expect(url).toBe("/search?q=Homo+sapiens&db=sra")
+    expect(url).toBe("/search/results?q=Homo+sapiens&db=sra")
   })
 
   it("trims leading/trailing whitespace from q", () => {
     expect(buildSearchUrl({ q: "  E. coli  ", db: "biosample" }))
-      .toBe("/search?q=E.+coli&db=biosample")
+      .toBe("/search/results?q=E.+coli&db=biosample")
   })
 
-  it("PBT: every output URL starts with /search", () => {
+  it("PBT: every output URL starts with /search/results", () => {
     expect(() => fc.assert(
       fc.property(
         fc.string(),
         fc.constantFrom(...DB_VALUES),
-        (q, db) => buildSearchUrl({ q, db }).startsWith("/search"),
+        (q, db) => buildSearchUrl({ q, db }).startsWith("/search/results"),
       ),
       { numRuns: 200 },
     )).not.toThrow()
@@ -124,8 +124,8 @@ describe("buildSearchUrl", () => {
 
 describe("buildSearchUrlFull", () => {
 
-  it("returns /search when no params given", () => {
-    expect(buildSearchUrlFull({})).toBe("/search")
+  it("returns /search/results when no params given", () => {
+    expect(buildSearchUrlFull({})).toBe("/search/results")
   })
 
   it("preserves order q → db → page → perPage → sort → cursor", () => {
@@ -137,7 +137,7 @@ describe("buildSearchUrlFull", () => {
       q: "human",
       sort: "date_desc",
     })
-    const qp = url.slice("/search?".length)
+    const qp = url.slice("/search/results?".length)
     const keys = [...new URLSearchParams(qp).keys()]
     expect(keys).toEqual(["q", "db", "page", "perPage", "sort", "cursor"])
   })
@@ -150,12 +150,12 @@ describe("buildSearchUrlFull", () => {
       q: "xxx",
       sort: DEFAULT_SORT,
     })
-    expect(url).toBe("/search?q=xxx")
+    expect(url).toBe("/search/results?q=xxx")
   })
 
   it("includes non-default page/perPage/sort", () => {
     const url = buildSearchUrlFull({ page: 3, perPage: 50, q: "xxx", sort: "date_asc" })
-    const params = new URLSearchParams(url.slice("/search?".length))
+    const params = new URLSearchParams(url.slice("/search/results?".length))
     expect(params.get("page")).toBe("3")
     expect(params.get("perPage")).toBe("50")
     expect(params.get("sort")).toBe("date_asc")
@@ -212,7 +212,7 @@ describe("parseSearchUrl", () => {
 
   it("normalizes parameter order (?db=sra&q=xxx → ?q=xxx&db=sra)", () => {
     const result = parse("db=sra&q=xxx")
-    expect(result.canonicalUrl).toBe("/search?q=xxx&db=sra")
+    expect(result.canonicalUrl).toBe("/search/results?q=xxx&db=sra")
   })
 
   it("returns null canonicalUrl when already canonical", () => {
@@ -277,7 +277,7 @@ describe("parseSearchUrl", () => {
         }),
         (p) => {
           const url = buildSearchUrlFull(p)
-          const qs = url.slice("/search?".length)
+          const qs = url.slice("/search/results?".length)
           const parsed = parseSearchUrl(new URLSearchParams(qs))
           expect(parsed.params.q).toBe(p.q.trim())
           expect(parsed.params.db).toBe(p.db)
@@ -348,7 +348,7 @@ describe("parseSearchUrl", () => {
         }),
         (p) => {
           const canonical = buildSearchUrlFull(p)
-          const reparse = parseSearchUrl(new URLSearchParams(canonical.slice("/search?".length)))
+          const reparse = parseSearchUrl(new URLSearchParams(canonical.slice("/search/results?".length)))
 
           return reparse.canonicalUrl === null
         },

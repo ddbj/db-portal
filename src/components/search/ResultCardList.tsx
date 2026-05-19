@@ -13,7 +13,7 @@ const ResultCardList = ({ hits }: ResultCardListProps) => {
   const { t } = useTranslation()
 
   if (hits.length === 0) {
-    return <EmptyState title={t("routes.search.dbMode.noResults")} />
+    return <EmptyState title={t("routes.searchResults.dbMode.noResults")} />
   }
 
   return (

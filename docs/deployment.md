@@ -95,4 +95,4 @@ podman-compose exec app npm install
 
 検索・登録補助用の vLLM を GPU node (nig-gpu-2 / l40s-03) で常時起動し、staging / production の portal app から内部 LAN 経由で共有する構成。
 
-詳細は [`docs/llm.md`](./llm.md) を SSOT として参照（デプロイ構成・環境変数・運用手順）。GPU node のオペレータ向け最小手順は [`llm/README.md`](../llm/README.md)、設計議論の記録は `.claude/docs/llm-integration-plan.md`。
+詳細は [`docs/llm.md`](./llm.md) を SSOT として参照（デプロイ構成・環境変数・運用手順）。GPU node のオペレータ向け最小手順は [`llm/README.md`](../llm/README.md)、設計議論の記録は `.claude/docs/archive/llm-integration-plan.md`。

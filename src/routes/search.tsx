@@ -1,135 +1,66 @@
-import { useQueries, useQuery } from "@tanstack/react-query"
-import { useEffect, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useEffect, useMemo, useReducer, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  redirect,
-  useNavigate,
-  useSearchParams,
-} from "react-router"
+import { useNavigate, useSearchParams } from "react-router"
 
-import { LlmAssistBox } from "@/components/llm"
 import {
-  DbHitCountList,
-  Over10kCallout,
-  Pagination,
-  PartialFailureBanner,
-  ResultCardList,
-  SearchSummaryChip,
-  SearchToolbar,
-  SidebarFilter,
-} from "@/components/search"
-import { Callout, Heading, SkeletonCard } from "@/components/ui"
+  AdvancedSearchGroup,
+  DbSwitchWarning,
+  ExamplesChipList,
+  QueryPreview,
+} from "@/components/advanced-search"
+import { LlmAssistBox } from "@/components/llm"
+import { Button, Heading, SearchBox, type SelectOption } from "@/components/ui"
 import { pickLang } from "@/i18n"
 import { resolveMeta } from "@/i18n/server"
 import {
-  apiCountsToHitCounts,
-  ApiError,
-  crossSearch,
-  dbSearch,
-  type FacetsDbType,
-  fetchFacets,
-  parseQ,
-} from "@/lib/api"
-import { DATABASES } from "@/lib/mock-data"
+  advancedSearchReducer,
+  buildInitialState,
+  findRootFreeTextIndex,
+  setFreeTextAtRoot,
+  validateNode,
+} from "@/lib/advanced-search"
+import type { ValidationMode } from "@/lib/advanced-search/types"
+import { parseQ } from "@/lib/api"
+import { DATABASES, EXAMPLE_CHIPS } from "@/lib/mock-data"
 import { PORTAL_ORIGIN } from "@/lib/portal-origin"
 import {
+  advancedTreeToAst,
   astToDsl,
-  extractFreeText,
-  fieldEq,
-  mergeAstAnd,
   parseAstToSearchAst,
-  type SearchAstNode,
-  sidebarStateToAst,
-  splitAstForSidebar,
+  searchAstToAdvancedTree,
 } from "@/lib/search-ast"
 import {
   ALL_DB_VALUE,
   buildSearchUrlFull,
-  parseSearchUrl,
-  type PerPageValue,
-  type SearchParams,
-  type SortValue,
+  type DbSelectValue,
 } from "@/lib/search-url"
-import { sidebarFieldsForDb } from "@/lib/sidebar-fields"
-import type { SidebarState } from "@/lib/sidebar-state-types"
-import {
-  DB_ORDER,
-  type DbHitCount,
-  type DbId,
-  type ErrorKind,
-} from "@/types/db"
+import { DB_ORDER, type DbId } from "@/types/db"
 
 import type { Route } from "./+types/search"
 
-const toErrorKind = (error: unknown): ErrorKind => {
-  if (error instanceof ApiError) {
-    if (error.status === 502) return "upstream_5xx"
-    if (error.status === 504) return "timeout"
-    if (error.status >= 500) return "upstream_5xx"
-
-    return "unknown"
-  }
-  if (error instanceof TypeError) {
-    return "connection_refused"
-  }
-
-  return "unknown"
-}
-
-const KNOWN_ERROR_SLUGS: ReadonlySet<string> = new Set([
-  "unexpected-parameter",
-  "missing-db",
-  "cursor-not-supported",
-  "unexpected-token",
-  "unknown-field",
-  "field-not-available-in-cross-db",
-  "invalid-date-format",
-  "invalid-operator-for-field",
-  "nest-depth-exceeded",
-  "missing-value",
-  "invalid-freetext-position",
-  "duplicate-freetext",
+const VALID_DB_SET: ReadonlySet<string> = new Set<string>([
+  ALL_DB_VALUE,
+  ...DB_ORDER,
 ])
 
-const getErrorMessage = (
-  error: unknown,
-  t: (key: string) => string,
-): { headline: string; detail: string | null } => {
-  if (error instanceof ApiError) {
-    const slug = error.slug
-    if (slug !== null && KNOWN_ERROR_SLUGS.has(slug)) {
-      return {
-        headline: t(`routes.search.errors.${slug}`),
-        detail: error.problem?.detail ?? null,
-      }
-    }
-  }
+const parseInitialDb = (raw: string | null): DbSelectValue => {
+  if (raw === null || raw === "" || raw === ALL_DB_VALUE) return ALL_DB_VALUE
+  if (VALID_DB_SET.has(raw)) return raw as DbSelectValue
 
-  return {
-    headline: t("routes.search.errors.default"),
-    detail: error instanceof ApiError ? error.problem?.detail ?? null : null,
-  }
+  return ALL_DB_VALUE
 }
 
-const SORT_TO_API: Record<
-  SortValue,
-  "datePublished:asc" | "datePublished:desc" | undefined
-> = {
-  relevance: undefined,
-  date_desc: "datePublished:desc",
-  date_asc: "datePublished:asc",
-}
+const parseInitialQ = (raw: string | null): string | null => {
+  const trimmed = raw?.trim() ?? ""
 
-const SOLR_BACKED_DBS: ReadonlySet<DbId> = new Set<DbId>(["trad", "taxonomy"])
-const isSolrBackedDb = (db: DbId): boolean => SOLR_BACKED_DBS.has(db)
+  return trimmed === "" ? null : trimmed
+}
 
 export const loader = ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url)
-  const parsed = parseSearchUrl(url.searchParams)
-
-  if (parsed.shouldRedirectToHome) {
-    throw redirect("/")
-  }
+  const initialDb = parseInitialDb(url.searchParams.get("db"))
+  const initialQ = parseInitialQ(url.searchParams.get("q"))
 
   const lang = pickLang(
     request.headers.get("Cookie"),
@@ -137,36 +68,20 @@ export const loader = ({ request }: Route.LoaderArgs) => {
   )
   const resource = resolveMeta(lang)
 
-  let metaTitle: string = resource.routes.home.meta.title
-  if (parsed.params.db !== ALL_DB_VALUE) {
-    const displayName = DATABASES.find((d) => d.id === parsed.params.db)?.displayName
-      ?? parsed.params.db
-    if (parsed.params.q !== null) {
-      metaTitle = resource.routes.search.meta.titleDb
-        .replace("{{q}}", parsed.params.q)
-        .replace("{{db}}", displayName)
-    } else {
-      metaTitle = resource.routes.search.meta.titleDbNoQuery
-        .replace("{{db}}", displayName)
-    }
-  } else if (parsed.params.q !== null) {
-    metaTitle = resource.routes.search.meta.titleCross.replace("{{q}}", parsed.params.q)
-  }
+  const metaTitle = resource.routes.search.meta.title
+  const metaDescription = resource.routes.search.meta.description
 
-  const canonicalSearch = buildSearchUrlFull({
-    cursor: parsed.params.cursor,
-    db: parsed.params.db,
-    page: parsed.params.page,
-    perPage: parsed.params.perPage,
-    q: parsed.params.q,
-    sort: parsed.params.sort,
-  })
+  const canonicalPath = initialDb === ALL_DB_VALUE
+    ? "/search"
+    : `/search?db=${initialDb}`
 
   return {
     lang,
     metaTitle,
-    metaDescription: resource.routes.search.meta.description,
-    canonicalUrl: `${PORTAL_ORIGIN}${canonicalSearch}`,
+    metaDescription,
+    canonicalUrl: `${PORTAL_ORIGIN}${canonicalPath}`,
+    initialDb,
+    initialQ,
   }
 }
 
@@ -174,9 +89,9 @@ export const meta = ({ data }: Route.MetaArgs) => {
   const fallbackCanonical = `${PORTAL_ORIGIN}/search`
 
   return [
-    { title: data?.metaTitle ?? "DDBJ 刷新 (仮)" },
-    { name: "description", content: data?.metaDescription ?? "DDBJ 検索" },
-    { name: "robots", content: "noindex, follow" },
+    { title: data?.metaTitle ?? "検索" },
+    { name: "description", content: data?.metaDescription ?? "" },
+    { name: "robots", content: "index, follow" },
     {
       tagName: "link",
       rel: "canonical",
@@ -186,474 +101,205 @@ export const meta = ({ data }: Route.MetaArgs) => {
 }
 
 const Search = () => {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
 
-  const parsed = useMemo(() => parseSearchUrl(searchParams), [searchParams])
+  const [state, dispatch] = useReducer(
+    advancedSearchReducer,
+    searchParams,
+    (sp) => {
+      const initialDb = parseInitialDb(sp.get("db"))
+      const initialQ = parseInitialQ(sp.get("q"))
 
-  useEffect(() => {
-    if (parsed.canonicalUrl !== null) {
-      void navigate(parsed.canonicalUrl, { replace: true })
-    }
-  }, [parsed.canonicalUrl, navigate])
-
-  if (parsed.params.db === ALL_DB_VALUE) {
-    return <CrossModeView params={parsed.params} />
-  }
-
-  return (
-    <DbModeView
-      params={parsed.params}
-      db={parsed.params.db}
-    />
+      return buildInitialState(initialDb, initialQ)
+    },
   )
-}
 
-export default Search
-
-interface ModeViewProps {
-  params: SearchParams
-}
-
-const CrossModeView = ({ params }: ModeViewProps) => {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-
-  const hasQuery = params.q !== null
-
-  const query = useQuery({
-    queryKey: ["crossSearch", params.q] as const,
-    queryFn: ({ signal }) =>
-      crossSearch(
-        {
-          ...(params.q !== null && { q: params.q }),
-          topHits: 5,
-        },
-        signal,
-      ),
-    enabled: hasQuery,
-  })
-
-  const databases: readonly DbHitCount[] = useMemo(() => {
-    if (!hasQuery || query.isPending) {
-      return DB_ORDER.map((dbId) => ({
-        dbId,
-        state: "loading" as const,
-        count: null,
-      }))
-    }
-    if (query.isError) {
-      const errorKind = toErrorKind(query.error)
-
-      return DB_ORDER.map((dbId) => ({
-        dbId,
-        state: "error" as const,
-        count: null,
-        error: errorKind,
-      }))
-    }
-
-    return apiCountsToHitCounts(query.data.databases)
-  }, [hasQuery, query.isPending, query.isError, query.error, query.data])
-
-  const handleRetry = (_dbId?: DbId) => {
-    void query.refetch()
-  }
-
-  const handleClear = () => {
-    void navigate("/", { replace: true })
-  }
-
-  const advancedSearchHref = `/advanced-search${
-    params.q !== null ? `?q=${encodeURIComponent(params.q)}` : ""
-  }`
-
-  return (
-    <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      {params.q !== null && (
-        <SearchSummaryChip
-          mode="simple"
-          q={params.q}
-          db={params.db}
-          onClear={handleClear}
-          advancedSearchHref={advancedSearchHref}
-        />
-      )}
-      <div>
-        <Heading level={2} className="mb-3">
-          {t("routes.search.crossMode.heading")}
-        </Heading>
-        {query.isError ? (() => {
-          const tDynamic = t as unknown as (key: string) => string
-          const { headline, detail } = getErrorMessage(query.error, tDynamic)
-
-          return (
-            <Callout type="error">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p>{headline}</p>
-                  {detail !== null && (
-                    <p className="mt-1 text-xs text-gray-600">{detail}</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
-                  onClick={() => handleRetry()}
-                >
-                  {t("routes.search.crossMode.retryAll")}
-                </button>
-              </div>
-            </Callout>
-          )
-        })() : (
-          <PartialFailureBanner databases={databases} onRetryAll={() => handleRetry()} />
-        )}
-        <div className="mt-3">
-          <DbHitCountList
-            databases={databases}
-            query={params.q}
-            onRetry={handleRetry}
-          />
-        </div>
-      </div>
-    </section>
-  )
-}
-
-interface DbModeViewProps extends ModeViewProps {
-  db: DbId
-}
-
-const resolveFacetsDbType = (
-  db: DbId,
-  subtype: string | null,
-): FacetsDbType | null => {
-  if (db === "trad" || db === "taxonomy") return null
-  if (subtype !== null) return subtype as FacetsDbType
-  if (db === "sra") return "sra-experiment"
-  if (db === "jga") return "jga-study"
-
-  return db as FacetsDbType
-}
-
-const DbModeView = ({ params, db }: DbModeViewProps) => {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
+  const initialQ = state.initialQ
+  const restoredRef = useRef(false)
 
   const parseQuery = useQuery({
-    queryKey: ["parseQ", db, params.q] as const,
-    queryFn: ({ signal }) =>
-      parseQ({ q: params.q ?? "", db }, signal),
-    enabled: params.q !== null && params.q !== "",
-    staleTime: Infinity,
-  })
-
-  const parsedAst: SearchAstNode | null = useMemo(() => {
-    if (parseQuery.data === undefined) return null
-
-    return parseAstToSearchAst(parseQuery.data.ast)
-  }, [parseQuery.data])
-
-  const { sidebar: derivedSidebar, residual } = useMemo(
-    () => splitAstForSidebar(parsedAst, db),
-    [parsedAst, db],
-  )
-
-  const freeTextForFacets = useMemo(
-    () => extractFreeText(parsedAst),
-    [parsedAst],
-  )
-
-  const facetsDbType = useMemo(
-    () => resolveFacetsDbType(db, derivedSidebar.subtype),
-    [db, derivedSidebar.subtype],
-  )
-
-  const sidebarFields = useMemo(
-    () => sidebarFieldsForDb(db, derivedSidebar.subtype),
-    [db, derivedSidebar.subtype],
-  )
-
-  const showSidebar = sidebarFields.facets.length > 0
-    || sidebarFields.keywords.length > 0
-    || sidebarFields.dateAxes.length > 0
-    || sidebarFields.subtype
-
-  const facetsParam = useMemo(() => {
-    if (facetsDbType === null) return ""
-
-    return sidebarFields.facets.map((f) => f.facetKey).join(",")
-  }, [facetsDbType, sidebarFields])
-
-  const subtypeList: readonly string[] = useMemo(
-    () =>
-      db === "sra"
-        ? ["sra-submission", "sra-study", "sra-experiment", "sra-run", "sra-sample", "sra-analysis"]
-        : db === "jga"
-          ? ["jga-study", "jga-dataset", "jga-dac", "jga-policy"]
-          : [],
-    [db],
-  )
-
-  const baseAstForSubtypeCount = useMemo(() => {
-    const baseSidebarState: SidebarState = { ...derivedSidebar, subtype: null }
-    const baseSidebarAst = sidebarStateToAst(baseSidebarState)
-
-    return mergeAstAnd([residual, baseSidebarAst])
-  }, [derivedSidebar, residual])
-
-  const subtypeCountQueries = useQueries({
-    queries: subtypeList.map((subtype) => ({
-      queryKey: [
-        "subtypeCount",
-        db,
-        subtype,
-        params.q,
-      ] as const,
-      queryFn: ({ signal }: { signal: AbortSignal }) => {
-        const merged = mergeAstAnd([
-          baseAstForSubtypeCount,
-          fieldEq("type", subtype),
-        ])
-        const subtypeQ = astToDsl(merged)
-
-        return dbSearch(
-          {
-            db,
-            ...(subtypeQ !== "" && { q: subtypeQ }),
-            page: 1,
-            perPage: 20,
-          },
-          signal,
-        )
-      },
-      enabled: subtypeList.length > 0,
-    })),
-  })
-
-  const subtypeCounts = useMemo(() => {
-    const result: Record<string, number | null> = {}
-    subtypeList.forEach((subtype, i) => {
-      const q = subtypeCountQueries[i]
-      result[subtype] = q?.data?.total ?? null
-    })
-
-    return result
-  }, [subtypeList, subtypeCountQueries])
-
-  const query = useQuery({
-    queryKey: [
-      "dbSearch",
-      db,
-      params.q,
-      params.page,
-      params.perPage,
-      params.sort,
-      params.cursor,
-    ] as const,
+    queryKey: ["parseQ", initialQ] as const,
     queryFn: ({ signal }) => {
-      const apiSort = SORT_TO_API[params.sort]
-      if (params.cursor !== null) {
-        return dbSearch(
-          {
-            db,
-            cursor: params.cursor,
-            perPage: params.perPage,
-          },
-          signal,
-        )
-      }
+      const dbForApi = state.db !== ALL_DB_VALUE ? (state.db as DbId) : null
 
-      return dbSearch(
+      return parseQ(
         {
-          db,
-          ...(params.q !== null && { q: params.q }),
-          page: params.page,
-          perPage: params.perPage,
-          ...(apiSort !== undefined && { sort: apiSort }),
+          q: initialQ ?? "",
+          ...(dbForApi !== null && { db: dbForApi }),
         },
         signal,
       )
     },
+    enabled: initialQ !== null,
+    retry: false,
+    staleTime: Infinity,
   })
 
-  const facetsQuery = useQuery({
-    queryKey: ["facets", facetsDbType, freeTextForFacets, facetsParam] as const,
-    queryFn: ({ signal }) =>
-      fetchFacets(
-        facetsDbType,
-        {
-          ...(freeTextForFacets !== null && { keywords: freeTextForFacets }),
-          ...(facetsParam !== "" && { facets: facetsParam }),
-        },
-        signal,
-      ),
-    enabled: facetsDbType !== null,
-  })
+  useEffect(() => {
+    if (restoredRef.current) return
+    if (!parseQuery.isSuccess) return
+    restoredRef.current = true
+    const ast = parseAstToSearchAst(parseQuery.data.ast)
+    const tree = searchAstToAdvancedTree(ast, state.db)
+    dispatch({ type: "APPLY_PARSED_TREE", tree })
+  }, [parseQuery.isSuccess, parseQuery.data, state.db])
 
-  const updateParams = (changes: Partial<SearchParams>) => {
-    const merged = { ...params, ...changes }
-    const url = buildSearchUrlFull({
-      cursor: merged.cursor,
-      db: merged.db,
-      page: merged.page,
-      perPage: merged.perPage,
-      q: merged.q,
-      sort: merged.sort,
-    })
+  const currentFreeText = useMemo(() => {
+    const idx = findRootFreeTextIndex(state.tree)
+    if (idx === -1) return ""
+    const node = state.tree.children[idx]
+
+    return node?.kind === "free_text" ? node.value : ""
+  }, [state.tree])
+
+  const dsl = useMemo(
+    () => astToDsl(advancedTreeToAst(state.tree)),
+    [state.tree],
+  )
+  const errors = useMemo(() => {
+    const mode: ValidationMode = state.mode === "cross"
+      ? "cross"
+      : { db: state.db as DbId }
+
+    return validateNode(state.tree, mode)
+  }, [state.tree, state.mode, state.db])
+
+  const canSearch = dsl !== "" && errors.length === 0
+
+  const dbOptions: readonly SelectOption[] = useMemo(() => [
+    { value: ALL_DB_VALUE, label: t("routes.search.dbSelector.all") },
+    ...DATABASES.map((d) => ({ value: d.id, label: d.displayName })),
+  ], [t])
+
+  const buildNavigateUrl = (freeTextOverride?: string): string | null => {
+    const treeWithFreeText = freeTextOverride === undefined
+      ? state.tree
+      : setFreeTextAtRoot(state.tree, freeTextOverride)
+    const finalDsl = astToDsl(advancedTreeToAst(treeWithFreeText))
+    if (finalDsl === "") return null
+    const mode: ValidationMode = state.mode === "cross"
+      ? "cross"
+      : { db: state.db as DbId }
+    const localErrors = validateNode(treeWithFreeText, mode)
+    if (localErrors.length !== 0) return null
+
+    return buildSearchUrlFull({ q: finalDsl, db: state.db })
+  }
+
+  const handleSearch = () => {
+    const url = buildNavigateUrl()
+    if (url === null) return
     void navigate(url)
   }
 
-  const handleSidebarChange = (next: SidebarState) => {
-    const sidebarAst = sidebarStateToAst(next)
-    const mergedAst = mergeAstAnd([residual, sidebarAst])
-    const newQ = mergedAst === null ? null : astToDsl(mergedAst)
-    updateParams({
-      q: newQ === "" ? null : newQ,
-      page: 1,
-      cursor: null,
+  const handleSearchBoxSubmit = (value: string) => {
+    dispatch({ type: "SET_FREE_TEXT", value })
+    const url = buildNavigateUrl(value)
+    if (url === null) return
+    void navigate(url)
+  }
+
+  const handleSearchBoxChange = (value: string) => {
+    dispatch({ type: "SET_FREE_TEXT", value })
+  }
+
+  const handleDbChange = (next: string) => {
+    dispatch({ type: "CHANGE_DB_REQUEST", next: next as DbSelectValue })
+  }
+
+  const handleLlmApply = async (newDsl: string): Promise<void> => {
+    const dbForApi = state.db !== ALL_DB_VALUE ? (state.db as DbId) : null
+    const result = await parseQ({
+      q: newDsl,
+      ...(dbForApi !== null && { db: dbForApi }),
     })
+    const ast = parseAstToSearchAst(result.ast)
+    const tree = searchAstToAdvancedTree(ast, state.db)
+    dispatch({ type: "APPLY_PARSED_TREE", tree })
   }
-
-  const handleSortChange = (sort: SortValue) =>
-    updateParams({ sort, page: 1, cursor: null })
-  const handlePerPageChange = (perPage: PerPageValue) =>
-    updateParams({ perPage, page: 1, cursor: null })
-  const handlePageChange = (page: number) => {
-    const nextOffset = page * params.perPage
-    const apiNextCursor = query.data?.nextCursor ?? null
-    if (
-      !isSolrBackedDb(db)
-      && nextOffset > 10_000
-      && apiNextCursor !== null
-      && apiNextCursor !== ""
-    ) {
-      updateParams({ cursor: apiNextCursor, page: 1 })
-
-      return
-    }
-    updateParams({ page, cursor: null })
-  }
-  const handleCursorNext = (cursor: string) => updateParams({ cursor, page: 1 })
-
-  const handleClear = () => {
-    void navigate(buildSearchUrlFull({ db }), { replace: true })
-  }
-
-  const handleRetry = () => {
-    void query.refetch()
-  }
-
-  const handleLlmApply = (newDsl: string): void => {
-    updateParams({ q: newDsl, page: 1, cursor: null })
-  }
-
-  const advancedSearchHref = `/advanced-search?db=${db}${
-    params.q !== null ? `&q=${encodeURIComponent(params.q)}` : ""
-  }`
-
-  const displayName = DATABASES.find((d) => d.id === db)?.displayName ?? db
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
-      {params.q !== null && (
-        <SearchSummaryChip
-          mode="simple"
-          q={params.q}
-          db={params.db}
-          onClear={handleClear}
-          advancedSearchHref={advancedSearchHref}
-        />
-      )}
-      <Heading level={2} className="mb-0">
-        {displayName}
-      </Heading>
+    <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+      <header className="flex flex-col gap-2">
+        <Heading
+          level={1}
+          className="text-3xl font-semibold tracking-wide text-gray-900"
+        >
+          {t("routes.search.hero.title")}
+        </Heading>
+        <p className="text-gray-600">
+          {t("routes.search.hero.subtitle")}
+        </p>
+      </header>
+
+      <SearchBox
+        size="large"
+        value={currentFreeText}
+        placeholder={t("routes.search.searchBox.placeholder")}
+        hintText={t("routes.search.searchBox.hint")}
+        helperText={t("routes.search.searchBox.examplesLabel")}
+        buttonLabel={t("routes.search.actions.search")}
+        examples={EXAMPLE_CHIPS}
+        dbOptions={dbOptions}
+        selectedDb={state.db}
+        onDbChange={handleDbChange}
+        dbAriaLabel={t("routes.search.searchBox.dbSelectorAria")}
+        onChange={handleSearchBoxChange}
+        onSubmit={handleSearchBoxSubmit}
+      />
+
+      <DbSwitchWarning
+        state={state}
+        onConfirm={() => dispatch({ type: "CONFIRM_DB_CHANGE" })}
+        onCancel={() => dispatch({ type: "CANCEL_DB_CHANGE" })}
+      />
+
+      <QueryPreview
+        dsl={dsl}
+        initialQ={state.initialQ}
+        errors={errors}
+      />
 
       <LlmAssistBox
-        mode="db-list"
-        db={db}
-        currentQ={params.q}
+        mode="search"
+        db={state.db === ALL_DB_VALUE ? null : (state.db as DbId)}
+        currentQ={dsl !== "" ? dsl : state.initialQ}
         onApply={handleLlmApply}
       />
 
-      <div className="flex gap-6">
-        {showSidebar && (
-          <SidebarFilter
-            db={db}
-            state={derivedSidebar}
-            facetsData={facetsQuery.data ?? null}
-            loading={facetsDbType !== null && facetsQuery.isPending}
-            onChange={handleSidebarChange}
-            subtypeCounts={subtypeCounts}
-          />
-        )}
+      <section className="flex flex-col gap-2">
+        <Heading level={2}>
+          {t("routes.search.builder.heading")}
+        </Heading>
+        <AdvancedSearchGroup
+          group={state.tree}
+          path={[]}
+          depth={0}
+          db={state.db}
+          dispatch={dispatch}
+        />
+      </section>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          {query.isPending && (
-            <div className="flex flex-col gap-3">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          )}
+      <ExamplesChipList
+        onApply={(example) => dispatch({ type: "APPLY_EXAMPLE", example })}
+      />
 
-          {query.isError && (() => {
-            const tDynamic = t as unknown as (key: string) => string
-            const { headline, detail } = getErrorMessage(query.error, tDynamic)
-
-            return (
-              <Callout type="error">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p>{headline}</p>
-                    {detail !== null && (
-                      <p className="mt-1 text-xs text-gray-600">{detail}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium underline"
-                    onClick={handleRetry}
-                  >
-                    {t("routes.search.crossMode.retryAll")}
-                  </button>
-                </div>
-              </Callout>
-            )
-          })()}
-
-          {query.isSuccess && (
-            <>
-              <SearchToolbar
-                total={query.data.total}
-                page={params.page}
-                perPage={params.perPage}
-                sort={params.sort}
-                onSortChange={handleSortChange}
-                onPerPageChange={handlePerPageChange}
-                isOver10kLimit={query.data.hardLimitReached}
-              />
-              <ResultCardList hits={query.data.hits} />
-              <Pagination
-                page={params.page}
-                totalPages={Math.max(
-                  1,
-                  Math.ceil(query.data.total / params.perPage),
-                )}
-                onChange={handlePageChange}
-                hardLimitReached={query.data.hardLimitReached && isSolrBackedDb(db)}
-                cursorMode={params.cursor !== null && !isSolrBackedDb(db)}
-                nextCursor={query.data.nextCursor ?? null}
-                onCursorNext={handleCursorNext}
-              />
-              {query.data.hardLimitReached && isSolrBackedDb(db) && (
-                <Over10kCallout db={db} />
-              )}
-            </>
-          )}
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="tertiary" onClick={() => dispatch({ type: "RESET" })}>
+          {t("routes.search.actions.reset")}
+        </Button>
+        <Button
+          variant="primary"
+          disabled={!canSearch}
+          onClick={handleSearch}
+        >
+          {t("routes.search.actions.search")}
+        </Button>
       </div>
     </section>
   )
 }
+
+export default Search

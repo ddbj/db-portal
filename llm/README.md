@@ -73,5 +73,5 @@ podman-compose up -d
 ## 関連
 
 - 詳細仕様: [`../docs/llm.md`](../docs/llm.md)
-- 設計議論記録: `../.claude/docs/llm-integration-plan.md`
-- モデル評価ログ: `../.claude/docs/llm-experiment.md`
+- 設計議論記録: `../.claude/docs/archive/llm-integration-plan.md`
+- モデル評価ログ: `../.claude/docs/archive/llm-experiment.md`

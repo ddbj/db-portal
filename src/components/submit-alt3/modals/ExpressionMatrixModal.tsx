@@ -7,7 +7,6 @@ import type { ChipTag, FileRole, GroupType } from "@/types/submit-alt3"
 import CheckboxField from "./CheckboxField"
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
-import TextField from "./TextField"
 
 // + RNA-seq 発現マトリクス modal
 // SSOT: docs/submit-alt3-modals.md §+ RNA-seq 発現マトリクス
@@ -47,18 +46,18 @@ const ExpressionMatrixModal = ({ open, onClose, onSubmit }: Props) => {
   const [content, setContent] = useState<Content>("counts")
   const [category, setCategory] = useState<ExperimentCategory>("bulk-rnaseq")
   const [attachMageTab, setAttachMageTab] = useState(false)
-  const [baseName, setBaseName] = useState("matrix")
 
   useEffect(() => {
     if (!open) {
       setContent("counts")
       setCategory("bulk-rnaseq")
       setAttachMageTab(false)
-      setBaseName("matrix")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "matrix"
     const chipTags: ChipTag[] = [{ axis: "functional-genomics", value: "yes" }]
     const groupType: GroupType = attachMageTab ? "mage-tab" : "single"
     const members: { displayName: string; role: FileRole }[] = [
@@ -117,13 +116,6 @@ const ExpressionMatrixModal = ({ open, onClose, onSubmit }: Props) => {
         description={t("routes.submitAlt3.modals.expressionMatrix.mageTab.hint")}
         checked={attachMageTab}
         onChange={setAttachMageTab}
-      />
-
-      <TextField
-        id="expmatrix-basename"
-        label={t("routes.submitAlt3.modals.expressionMatrix.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
     </ModalShell>
   )

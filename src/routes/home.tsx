@@ -72,13 +72,13 @@ type ServiceCard =
 
 const SERVICE_CARDS: readonly ServiceCard[] = [
   {
-    key: "advancedSearch",
+    key: "search",
     icon: SlidersHorizontal,
-    titleKey: "routes.home.services.cards.advancedSearch.title",
-    descriptionKey: "routes.home.services.cards.advancedSearch.description",
-    linkKey: "routes.home.services.cards.advancedSearch.link",
+    titleKey: "routes.home.services.cards.search.title",
+    descriptionKey: "routes.home.services.cards.search.description",
+    linkKey: "routes.home.services.cards.search.link",
     external: false,
-    to: "/advanced-search",
+    to: "/search",
   },
   {
     key: "submit",

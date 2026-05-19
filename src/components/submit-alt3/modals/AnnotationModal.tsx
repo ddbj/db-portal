@@ -24,7 +24,6 @@ const AnnotationModal = ({ open, onClose, onSubmit }: Props) => {
   const { t } = useDynamicTranslation()
   const [target, setTarget] = useState<Target>("assembly")
   const [format, setFormat] = useState<Format>("gff")
-  const [baseName, setBaseName] = useState("annotation")
   const [citedAccession, setCitedAccession] = useState("")
   const [doi, setDoi] = useState("")
 
@@ -32,13 +31,14 @@ const AnnotationModal = ({ open, onClose, onSubmit }: Props) => {
     if (!open) {
       setTarget("assembly")
       setFormat("gff")
-      setBaseName("annotation")
       setCitedAccession("")
       setDoi("")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定 (defaultPayload / 編集時は旧 Group の displayName 継承)
+    const baseName = "annotation"
     const chipTags: ChipTag[] = [
       { axis: "functional-genomics", value: "other" },
     ]
@@ -98,13 +98,6 @@ const AnnotationModal = ({ open, onClose, onSubmit }: Props) => {
           label: t(`routes.submitAlt3.modals.annotation.format.options.${v}`),
         }))}
         onChange={setFormat}
-      />
-
-      <TextField
-        id="annot-basename"
-        label={t("routes.submitAlt3.modals.annotation.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
 
       {target === "third-party" && (

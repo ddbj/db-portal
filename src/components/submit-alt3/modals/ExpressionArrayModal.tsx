@@ -7,7 +7,6 @@ import type { ChipTag, FileRole, GroupType } from "@/types/submit-alt3"
 import CheckboxField from "./CheckboxField"
 import ModalShell from "./ModalShell"
 import RadioGroup from "./RadioGroup"
-import TextField from "./TextField"
 
 // + マイクロアレイ発現 modal
 // SSOT: docs/submit-alt3-modals.md §+ マイクロアレイ発現
@@ -24,17 +23,17 @@ const ExpressionArrayModal = ({ open, onClose, onSubmit }: Props) => {
   const { t } = useDynamicTranslation()
   const [color, setColor] = useState<Color>("single-color")
   const [attachMageTab, setAttachMageTab] = useState(false)
-  const [baseName, setBaseName] = useState("array")
 
   useEffect(() => {
     if (!open) {
       setColor("single-color")
       setAttachMageTab(false)
-      setBaseName("array")
     }
   }, [open])
 
   const handleSubmit = () => {
+    // ファイル名は FileTableSection 側で確定
+    const baseName = "array"
     const chipTags: ChipTag[] = [{ axis: "functional-genomics", value: "yes" }]
 
     let groupType: GroupType
@@ -93,13 +92,6 @@ const ExpressionArrayModal = ({ open, onClose, onSubmit }: Props) => {
         description={t("routes.submitAlt3.modals.expressionArray.mageTab.hint")}
         checked={attachMageTab}
         onChange={setAttachMageTab}
-      />
-
-      <TextField
-        id="exparray-basename"
-        label={t("routes.submitAlt3.modals.expressionArray.baseName.label")}
-        value={baseName}
-        onChange={setBaseName}
       />
     </ModalShell>
   )

@@ -40,7 +40,7 @@
 
 - エラーレスポンスは RFC 9457 形式（`application/problem+json`、`type` / `title` / `status` / `detail` / `instance` / `code` を含む）
 - `/search` と検索結果系ページは `<meta name="robots" content="noindex, follow">`
-- `/advanced-search` / `/submit` / `/` は `index, follow`
+- `/search` / `/submit` / `/` は `index, follow`
 - 外部リンクは `target="_blank" rel="noopener noreferrer"`
 - canonical link が正しく出力される
 - i18n cookie `lang` が反映される
@@ -122,7 +122,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 - **前提**: テスト実行時の条件
 - **手順**: バケツに応じた記述粒度
   - unit: 対象関数・hook の呼び出しレベル（例: `useCrossSearchQuery("cancer")` を呼ぶ）
-  - browser: ユーザ操作レベル（例: `/search?q=cancer` を開き DB カードをクリック）
+  - browser: ユーザ操作レベル（例: `/search/results?q=cancer` を開き DB カードをクリック）
   - integration: 実環境での操作・API コール
 - **期待**: 検証可能な具体的な事項
 - **根拠**: docs/X.md の「section 名」（複数あれば列挙）
@@ -151,7 +151,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: ES / ARSA / TXSearch を異なるレイテンシで返す MSW stub（TXSearch 0.1s / ES 0.5s / ARSA 2s）
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: TXSearch 系（Taxonomy）カードが先に success 表示、ES 系（6 DB）が次、ARSA 系（Trad）が最後。各 DB カードは loading → success へ独立遷移
 - **根拠**: docs/search.md の「段階表示（progressive rendering）」、docs/search-backends.md の「並列実行」
 
@@ -169,7 +169,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: 8 DB のうち 3 DB が error、5 DB が success の MSW stub
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: 全体バナー非表示。error カードに個別エラー表示（再試行ボタン + エラー種別補足）のみ
 - **根拠**: docs/search.md の「全体バナーの出し分け」
 
@@ -177,7 +177,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: 8 DB のうち 4 DB が error の MSW stub
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: `Callout type="warning"` + 「一部の検索サービスが不安定です。」を表示。個別カードにもエラー表示
 - **根拠**: docs/search.md の「全体バナーの出し分け」
 
@@ -185,7 +185,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: 8 DB のうち 7 DB が error、1 DB が success の MSW stub
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: warning バナーを表示。error バナー（全 DB error 用）は出さない
 - **根拠**: docs/search.md の「全体バナーの出し分け」
 
@@ -193,7 +193,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: 全 8 DB が error を返す MSW stub
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: `Callout type="error"` + `role="alert"` + 「検索サービスに接続できません。しばらくしてからもう一度お試しください。」 + 再試行ボタン
 - **根拠**: docs/search.md の「全体バナーの出し分け」
 
@@ -219,7 +219,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: browser
 - **前提**: ES 全滅（sra / bioproject / biosample / jga / gea / metabobank が error）、ARSA と TXSearch は success
-- **手順**: `/search?q=cancer` を開く
+- **手順**: `/search/results?q=cancer` を開く
 - **期待**: 半数以上 error なので warning バナー。ES 系 6 DB カードは個別 error 表示
 - **根拠**: docs/search.md の「全体バナーの出し分け」
 
@@ -231,7 +231,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - **バケツ**: integration
 - **前提**: staging Solr が起動済み、直前に再起動でキャッシュクリア
-- **手順**: cold cache 状態で `/db-portal/search?q=cancer&db=trad`、続けて同一クエリを実行
+- **手順**: cold cache 状態で `/db-portal/search/results?q=cancer&db=trad`、続けて同一クエリを実行
 - **期待**: 2 回目（warm cache）が初回より明らかに速い。両方 HTTP 200（具体的なレイテンシ値は docs/search-backends.md の「Solr cold cache 対策（warming）」参照だが、閾値超えで fail にしない）
 - **根拠**: docs/search-backends.md の「Solr cold cache 対策（warming）」
 
@@ -268,8 +268,8 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 ### 正常系
 
 - 8 DB カードが件数降順で並び、`null` は末尾 [browser] — docs/search.md の「横断検索結果の DB 表示順序」
-- DB カードクリックで `/search?q=xxx&db=yyy` に遷移 [browser] — docs/search.md の「検索フロー」
-- 「この DB で詳細検索」ボタンで `/advanced-search?db=xxx` に遷移 [browser] — docs/search.md の「ユーザー動線」
+- DB カードクリックで `/search/results?q=xxx&db=yyy` に遷移 [browser] — docs/search.md の「検索フロー」
+- 「この DB で検索」ボタンで `/search?db=xxx` に遷移 [browser] — docs/search.md の「ユーザー動線」
 
 ### 境界値
 
@@ -346,7 +346,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 - ES 10,001 件目の end-to-end 挙動（実 ES での cursor 生成と遷移） [integration] — docs/search.md の「10,000 件超のハンドリング」
 - Solr（Trad / Taxonomy）500 ページ目（`perPage=20` × 500 = 10,000）でページャ無効化 [browser] — docs/search.md の「10,000 件超のハンドリング」
 - Solr 件数 = 10,000 ちょうどで Callout 非表示（10,001 以上で表示） [browser] — docs/search.md の「10,000 件超のハンドリング」
-- Solr 件数 = 10,001 で Callout `type="info"` + 「詳細検索を開く」CTA が `?db=trad` 引継ぎ [browser] — docs/search.md の「10,000 件超のハンドリング」
+- Solr 件数 = 10,001 で Callout `type="info"` + 「検索画面を開く」CTA が `?db=trad` 引継ぎ [browser] — docs/search.md の「10,000 件超のハンドリング」
 
 ### エッジケース
 
@@ -454,7 +454,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 ### エッジケース
 
-- [編集] ボタンが `/advanced-search?db=xxx&adv=<現在の DSL>` の URL を生成する [unit] — docs/search.md の「操作」
+- [編集] ボタンが `/search?db=xxx&adv=<現在の DSL>` の URL を生成する [unit] — docs/search.md の「操作」
 - [編集] ボタンクリックで上記 URL に遷移（インターナルリリースでは GUI 復元せず、Advanced Search ページの DSL プレビュー欄に文字列表示のみ） [browser] — docs/search.md の「操作」、docs/search.md の「GUI ↔ DSL の方向性」
 - [✕ クリア] で `adv` / `db` 解除、`/search` にリダイレクトしシンプル検索ボックス再表示 [browser] — docs/search.md の「操作」
 - サマリチップ本体クリックでは何も起きない（[編集] / [✕] のみアクション） [browser] — docs/search.md の「操作」
@@ -636,7 +636,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 - ヘッダー `position: static`（上部固定しない）の className 検証 [unit] — .claude/docs/design-system.md の「レイアウト」
 - ヘッダー背景色なし・ボーダーなしの className 検証 [unit] — .claude/docs/design-system.md の「レイアウト」
 - コンテンツ最大幅 `max-w-6xl`（1152px） [unit] — .claude/docs/design-system.md の「レイアウト」
-- 「詳細検索」リンクから `/advanced-search` に遷移 [browser] — docs/search.md の「ユーザー動線」
+- 「検索」リンクから `/search` に遷移 [browser] — docs/search.md の「ユーザー動線」
 - 問い合わせリンクが Google Form を指す（外部） [browser] — docs/overview.md の「スコープ」
 
 ### 境界値
@@ -661,7 +661,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 ### 境界値
 
-- `/search?q=xxx&db=unknown_db`（allowlist 外 DB 値） [integration] — docs/search.md の「db パラメータの値」
+- `/search/results?q=xxx&db=unknown_db`（allowlist 外 DB 値） [integration] — docs/search.md の「db パラメータの値」
 - `adv` に構文エラー DSL → 400 Problem Details [integration] — docs/search-backends.md の「エラーレスポンス」
 
 ### エッジケース
@@ -690,8 +690,8 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 ### 境界値
 
-- キーワード入力 + DB セレクタ（`All Databases`）+ Enter → `/search?q=xxx` [browser] — docs/search.md の「検索フロー」
-- キーワード入力 + DB セレクタ（個別 DB）+ Enter → `/search?q=xxx&db=yyy` [browser] — docs/search.md の「検索フロー」
+- キーワード入力 + DB セレクタ（`All Databases`）+ Enter → `/search/results?q=xxx` [browser] — docs/search.md の「検索フロー」
+- キーワード入力 + DB セレクタ（個別 DB）+ Enter → `/search/results?q=xxx&db=yyy` [browser] — docs/search.md の「検索フロー」
 - DB セレクタ選択肢: 8 DB + "All Databases"（横断、デフォルト） [unit] — docs/search.md の「DB 一覧」
 
 ### エッジケース
@@ -739,8 +739,8 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 ### 正常系
 
 - TanStack Query `useQueries` で 3 並列 fetch（ES / ARSA / TXSearch） [unit] — docs/search.md の「段階表示（progressive rendering）」
-- `/db-portal/search?q=<keyword>` で count 先行取得（2 段構成） [integration] — docs/search-backends.md の「2 段構成（count 先行 + 詳細 fetch）」
-- `/db-portal/search?q=<keyword>&db=<id>` で結果リスト取得 [integration] — docs/search-backends.md の「endpoint 設計」
+- `/db-portal/search/results?q=<keyword>` で count 先行取得（2 段構成） [integration] — docs/search-backends.md の「2 段構成（count 先行 + 詳細 fetch）」
+- `/db-portal/search/results?q=<keyword>&db=<id>` で結果リスト取得 [integration] — docs/search-backends.md の「endpoint 設計」
 
 ### 境界値
 
@@ -787,7 +787,7 @@ tests/README.md の「3 バケツ」を補足する判定軸。迷った時の�
 
 - 未閉じクォート `"Homo sapiens`（末尾未閉）を末尾まで閉じられず無視してリテラル扱い [unit] — docs/search-backends.md の「シンプル検索ボックスからの入力」
 - 日本語トークンはフレーズ化しない（記号判定文字集合に日本語句読点を含めない） [unit] — docs/search-backends.md の「日本語入力の扱い」
-- 空クエリ `/search?q=` の扱い（`MISSING_VALUE` 寄り） [integration] — docs/search-backends.md の「値のバリデーション」
+- 空クエリ `/search/results?q=` の扱い（`MISSING_VALUE` 寄り） [integration] — docs/search-backends.md の「値のバリデーション」
 
 ---
 

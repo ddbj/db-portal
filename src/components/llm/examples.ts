@@ -9,7 +9,7 @@ interface ExampleEntry {
   text: string
 }
 
-const ADVANCED_SEARCH_JA: readonly ExampleEntry[] = [
+const SEARCH_EXAMPLES_JA: readonly ExampleEntry[] = [
   { id: "adv-1", text: "ヒトの 2020 年以降に公開されたがん研究" },
   { id: "adv-2", text: "大腸菌の WGS、Illumina プラットフォーム" },
   { id: "adv-3", text: "JSPS 助成のゲノムシークエンスプロジェクト" },
@@ -17,7 +17,7 @@ const ADVANCED_SEARCH_JA: readonly ExampleEntry[] = [
   { id: "adv-5", text: "マウスの RNA-Seq 発現プロファイル" },
 ] as const
 
-const ADVANCED_SEARCH_EN: readonly ExampleEntry[] = [
+const SEARCH_EXAMPLES_EN: readonly ExampleEntry[] = [
   { id: "adv-1", text: "Human cancer studies published since 2020" },
   { id: "adv-2", text: "E. coli WGS reads on Illumina" },
   { id: "adv-3", text: "Genome sequencing projects funded by JSPS" },
@@ -118,8 +118,8 @@ export const getExamples = (
   db: DbId | null,
   lang: Lang,
 ): readonly ExampleEntry[] => {
-  if (mode === "advanced-search") {
-    return lang === "en" ? ADVANCED_SEARCH_EN : ADVANCED_SEARCH_JA
+  if (mode === "search") {
+    return lang === "en" ? SEARCH_EXAMPLES_EN : SEARCH_EXAMPLES_JA
   }
   if (db === null) return []
 

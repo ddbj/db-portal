@@ -234,10 +234,10 @@ describe("isTier3 / findField", () => {
     expect(findField("title")?.tier).toBe(1)
   })
 
-  it("fieldLabelKey は routes.advancedSearch.fields.{id}.label", () => {
-    expect(fieldLabelKey("title")).toBe("routes.advancedSearch.fields.title.label")
+  it("fieldLabelKey は routes.search.fields.{id}.label", () => {
+    expect(fieldLabelKey("title")).toBe("routes.search.fields.title.label")
     expect(fieldLabelKey("library_strategy")).toBe(
-      "routes.advancedSearch.fields.library_strategy.label",
+      "routes.search.fields.library_strategy.label",
     )
   })
 })

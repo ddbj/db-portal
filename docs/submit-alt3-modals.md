@@ -36,11 +36,31 @@
 - **IDF/SDRF (MAGE-TAB) / MAF / reference FASTA** などの付随メタデータ → 対応する主要 modal の「メタデータも添付」サブ選択で吸収
 - **特許配列 (PAT)** → ポータル外、ヘルプから特許機関 (JPO / EPO / USPTO / KIPO) への出願案内のみ
 
-## 6.2 ボタン押下時 modal の Q&A
+## 6.2 modal の Q&A (行ごとの編集動線でのみ表示)
+
+**重要**: 9 種ボタンを押した瞬間は modal を出さず、ButtonType ごとの default 構成 + 自動連番 baseName (`read-001` / `asm-001` 等) で 1 Group が即時に追加される (本体 §2 操作の典型的な順序 / §3)。modal は **行右端の「編集」アイコン押下時にのみ** 表示し、grouping (pair-end / 10x / multiplex / two-color / hybrid 等) と構造的属性 (assembly-form / variation-form / mass-spec-domain 等) の上書きに使う。
+
+各 ButtonType の default 構成 (modal を開かずに追加される最小構成):
+
+| ButtonType | default groupType | default members (displayName, role) | default chip |
+|---|---|---|---|
+| `sequence-read` | `pair-end` | `{base}_R1.fastq.gz` (r1) + `{base}_R2.fastq.gz` (r2) | `functional-genomics=yes` |
+| `assembled` | `single` | `{base}.fasta` (single) | `assembly-form=wgs` + `functional-genomics=wgs-target` |
+| `annotation` | `single` | `{base}.gff3` (single) | `functional-genomics=other` |
+| `variation` | `single` | `{base}.vcf.gz` (vcf) | `variation-form=per-sample` + `variation-type=snp-indel` + `functional-genomics=variation-target` |
+| `phenotype` | `single` | `{base}.tsv` (phenotype-table) | `functional-genomics=other` |
+| `expression-array` | `single` | `{base}.cel` (single) | `functional-genomics=yes` |
+| `expression-matrix` | `single` | `{base}_counts.tsv` (single) | `functional-genomics=yes` + groupOverrides `experimentTypeHint=bulk-rnaseq` |
+| `mass-spec` | `single` | `{base}.mzML` (single) | `mass-spec-domain=metabolomics` + `functional-genomics=other` + groupOverrides `metaboBankSubmissionType=LC-MS` |
+| `spatial-tx` | `single` | `{base}_matrix.tsv` (single) | `functional-genomics=yes` + `spatial-platform=visium` |
+
+`{base}` は ButtonType ごとの prefix + 連番 (3 桁 zero-padded)。prefix: `sequence-read=read` / `assembled=asm` / `annotation=ann` / `variation=var` / `phenotype=phe` / `expression-array=arr` / `expression-matrix=mtx` / `mass-spec=ms` / `spatial-tx=spt`。連番は同 ButtonType 内の既存 displayName から max+1 を取る (削除後の再追加で衝突しない)。実装は `src/lib/submit-alt3/defaultPayload.ts`。
 
 各 modal は **grouping + 構造的属性の確定のみ** に絞る。組織 / 公開可否 / データ形態などのテーブル列 3 軸はテーブル per-cell 編集に委ね、Library Strategy / Library Selection / Library Source / Package / GEA Experiment Type 等の Intra-DB pulldown は Step カード内 ([`submit-alt3-tags.md`](./submit-alt3-tags.md) §5.3) で後段確定する。
 
-modal の **「キャンセル」操作** はテーブルに行を追加せず元の状態に戻す (副作用なし)。modal で「OK / 追加」を押下するまで `Submission` state は変更されない。
+行の「編集」アイコンで modal を開いた場合、modal の「OK / 追加」を押下した瞬間に **旧 Group の全 file が remove され、新規 Group + members が atomic に置換される** (`src/components/submit-alt3/FileTableSection.tsx` `handleSubmitWithReplace`)。modal の **「キャンセル」操作** は state を変更せず元の状態に戻す。
+
+**ファイル名の取り扱い**: modal はファイル名 (baseName) のテキスト入力を **持たない**。modal は ButtonType ごとの内部 default baseName (`sample` / `assembly` / `annotation` / `variants` / `phenotype` / `array` / `matrix` / `massspec` / `spatial`) を members template に埋め込むだけで、ユーザーには見せない。編集動線で modal を再オープンして submit すると、`handleSubmitWithReplace` が **旧 Group の displayName を継承** する (members 数が変わらない場合)。grouping を変更 (single → pair-end 等) した場合は members 数が変わるので modal の default baseName が使われる (この場合だけファイル名が `sample_R1.fastq.gz` 等に変わる)。新規追加でも modal を経由しないため、ファイル名は `defaultPayload.ts` の自動連番 (`read-001_R1.fastq.gz` 等) で決まる。
 
 modal で確定するもの:
 

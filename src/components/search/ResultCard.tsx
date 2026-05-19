@@ -255,18 +255,18 @@ const ResultCard = ({ hit, className }: ResultCardProps) => {
           <span className="font-mono font-medium text-gray-700">{hit.identifier}</span>
           {showStatusBadge && status !== null && (
             <Badge variant="warning" size="sm">
-              {t(`routes.search.dbMode.status.${status}`)}
+              {t(`routes.searchResults.dbMode.status.${status}`)}
             </Badge>
           )}
           {showAccessibilityBadge && accessibility !== null && (
             <Badge variant="secondary" size="sm">
-              {t(`routes.search.dbMode.accessibility.${accessibility}`)}
+              {t(`routes.searchResults.dbMode.accessibility.${accessibility}`)}
             </Badge>
           )}
         </div>
         {hit.datePublished !== null && hit.datePublished !== undefined && (
           <time
-            aria-label={t("routes.search.dbMode.publishedAtAria")}
+            aria-label={t("routes.searchResults.dbMode.publishedAtAria")}
             dateTime={hit.datePublished}
           >
             {hit.datePublished}

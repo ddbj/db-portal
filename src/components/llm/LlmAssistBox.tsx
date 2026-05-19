@@ -23,7 +23,7 @@ import { getExamples } from "./examples"
 
 const MAX_NATURAL_TEXT = 1000
 
-export type LlmAssistBoxMode = "advanced-search" | "db-list"
+export type LlmAssistBoxMode = "search" | "db-list"
 
 export interface LlmAssistBoxProps {
   mode: LlmAssistBoxMode
@@ -189,12 +189,12 @@ const LlmAssistBox = ({
     setState(initialState)
   }
 
-  const placeholder = mode === "advanced-search"
-    ? t("components.llm.placeholder.advancedSearch")
+  const placeholder = mode === "search"
+    ? t("components.llm.placeholder.search")
     : t("components.llm.placeholder.dbList")
 
-  const helperKey = mode === "advanced-search"
-    ? "components.llm.helper.advancedSearch"
+  const helperKey = mode === "search"
+    ? "components.llm.helper.search"
     : "components.llm.helper.dbList"
 
   const errorMessageKey = state.errorSlug !== null

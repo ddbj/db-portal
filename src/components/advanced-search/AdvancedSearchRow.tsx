@@ -40,18 +40,18 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
 
   const fieldOptions = availableFields.map((f) => ({
     value: f.id,
-    label: t(`routes.advancedSearch.fields.${f.id}.label`),
+    label: t(`routes.search.fields.${f.id}.label`),
   }))
   const operatorOptions = fieldDef
     ? fieldDef.availableOps.map((op) => ({
       value: op,
-      label: t(`routes.advancedSearch.operators.${op}`),
+      label: t(`routes.search.operators.${op}`),
     }))
     : []
 
   const logicOptions = (["AND", "OR", "NOT"] as const).map((l) => ({
     value: l,
-    label: t(`routes.advancedSearch.logic.${l}`),
+    label: t(`routes.search.logic.${l}`),
   }))
 
   return (
@@ -72,7 +72,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
         onChange={(v) => onChange({ field: v })}
         inputSize="sm"
         className="w-48"
-        placeholder={t("routes.advancedSearch.builder.selectField")}
+        placeholder={t("routes.search.builder.selectField")}
       />
       <Select
         options={operatorOptions}
@@ -94,7 +94,7 @@ const AdvancedSearchRow = (props: AdvancedSearchRowProps) => {
         variant="tertiary"
         size="sm"
         onClick={onRemove}
-        aria-label={t("routes.advancedSearch.builder.removeAria")}
+        aria-label={t("routes.search.builder.removeAria")}
       >
         <X className="h-4 w-4" />
       </Button>
@@ -115,7 +115,7 @@ const ValueInput = ({ condition, fieldDef, onChange }: ValueInputProps) => {
   if (!fieldDef) {
     return (
       <Input
-        placeholder={t("routes.advancedSearch.builder.selectFieldFirst")}
+        placeholder={t("routes.search.builder.selectFieldFirst")}
         disabled
         inputSize="sm"
       />

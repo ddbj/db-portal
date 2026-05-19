@@ -23,7 +23,7 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 
 ### 含まれるもの
 
-- **トップページ**: 横断検索ボックス + DB セレクタ、DDBJ センター動線カード（詳細検索 / 登録ナビ / サービス / スパコン / 統計 / 活動の 6 枚を 1 グリッドに混在）、ニュース（ddbj/www からミラー、右ペイン表示）。将来 ddbj.nig.ac.jp を置き換えるための入口を兼ねるため、ポータル機能（検索・登録）と DDBJ サイト全体の動線を同居させる
+- **トップページ**: 横断検索ボックス + DB セレクタ、DDBJ センター動線カード（検索 / 登録ナビ / サービス / スパコン / 統計 / 活動の 6 枚を 1 グリッドに混在）、ニュース（ddbj/www からミラー、右ペイン表示）。将来 ddbj.nig.ac.jp を置き換えるための入口を兼ねるため、ポータル機能（検索・登録）と DDBJ サイト全体の動線を同居させる
 - **横断検索結果ページ**: DB ごとのヒット数サマリー、各 DB の検索ページへのリンク
 - **DB 個別結果リストページ**: カードリスト形式（NCBI Entrez 風）+ 各 DB 詳細ページへの動線
 - **登録ナビゲーションページ**: ユースケースカード + フローチャート形式ナビゲーション + 詳細パネルを 1 ページに集約（独立した QuickStart ページは作らない）
@@ -52,15 +52,15 @@ DB ポータルは、DDBJ の登録・検索サービスへの統合的な入口
 ├── search box (cross-db search) + DB selector
 └── 2-col grid (lg:grid-cols-[1fr_320px]):
     ├── left main: service grid (lg:2-col)
-    │     /advanced-search, /submit (internal)
+    │     /search, /submit (internal)
     │     DDBJ services, supercomputer, statistics, activities (external)
     └── right aside (sticky): News (compact list, 8 件) + "もっと見る →" /news
 
-/search?q=xxx (cross-db search results)
+/search/results?q=xxx (cross-db search results)
 ├── hit count summary per DB
-└── link to /search?q=xxx&db=yyy or external DB search
+└── link to /search/results?q=xxx&db=yyy or external DB search
 
-/search?q=xxx&db=yyy (per-DB result list)
+/search/results?q=xxx&db=yyy (per-DB result list)
 ├── simple unified list
 └── link to external DB detail page
 
@@ -83,8 +83,8 @@ DB ポータル全体の URL 設計方針。検索系の詳細は [search.md#url
 | URL | 用途 | レンダリング | robots |
 |---|---|---|---|
 | `/` | トップ | SSR | `index, follow` |
-| `/search` | 横断 / DB 指定検索結果 | SSR シェル + CSR データ取得 | `noindex, follow` |
-| `/advanced-search` | GUI クエリビルダ | SSR | `index, follow` |
+| `/search` | 検索ページ (SearchBox + GUI クエリビルダ) | SSR | `index, follow` |
+| `/search/results` | 横断 / DB 指定検索結果 | SSR シェル + CSR データ取得 | `noindex, follow` |
 | `/submit` | 登録ナビゲーション | SSR | `index, follow` |
 | `/news` | ニュース全件アーカイブ（ファセット絞り込み、ddbj/www ミラー） | SSR | `index, follow` |
 | `/api/news` | ニュース取得 API（resource route） | - | `noindex, nofollow` |
@@ -104,7 +104,7 @@ DB ポータル全体の URL 設計方針。検索系の詳細は [search.md#url
 
 ### Accession 直アクセス
 
-Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/accession/...`）は設けない。`/search?q=PRJDB12345` に統一する。
+Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/accession/...`）は設けない。`/search/results?q=PRJDB12345` に統一する。
 
 理由:
 
@@ -122,7 +122,7 @@ Accession（`PRJDB12345` 等）を URL で直接指定する専用パス（`/acc
 
 ## トップページ
 
-`/` は (a) ポータル機能（横断検索 / 詳細検索 / 登録ナビ）への動線、(b) DDBJ センター主要ページ（サービス・スパコン・統計・活動）への動線、(c) ニュースの 3 機能を同居させる。将来 ddbj.nig.ac.jp 廃止に向けて、現 DDBJ サイトのホーム機能を段階的に吸収する位置づけ。
+`/` は (a) ポータル機能（トップ SearchBox からの横断検索 / 検索ページの条件ビルダ / 登録ナビ）への動線、(b) DDBJ センター主要ページ（サービス・スパコン・統計・活動）への動線、(c) ニュースの 3 機能を同居させる。将来 ddbj.nig.ac.jp 廃止に向けて、現 DDBJ サイトのホーム機能を段階的に吸収する位置づけ。
 
 ### 構成
 

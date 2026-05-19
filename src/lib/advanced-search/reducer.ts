@@ -8,15 +8,13 @@ import type { AdvancedCondition, FieldOperator } from "@/types/search"
 
 import {
   addConditionAt,
-  addFreeTextAtRoot,
   addGroupAt,
   createEmptyRoot,
   findRootFreeTextIndex,
   removeAt,
-  removeFreeTextAtRoot,
+  setFreeTextAtRoot,
   setGroupLogicAt,
   updateConditionAt,
-  updateFreeTextAtRoot,
   walkTree,
 } from "./tree"
 import type {
@@ -248,23 +246,8 @@ export const advancedSearchReducer = (
         tree: addGroupAt(state.tree, action.path, "AND"),
       }
 
-    case "ADD_FREE_TEXT":
-      return {
-        ...state,
-        tree: addFreeTextAtRoot(state.tree, ""),
-      }
-
-    case "UPDATE_FREE_TEXT":
-      return {
-        ...state,
-        tree: updateFreeTextAtRoot(state.tree, action.value),
-      }
-
-    case "REMOVE_FREE_TEXT":
-      return {
-        ...state,
-        tree: removeFreeTextAtRoot(state.tree),
-      }
+    case "SET_FREE_TEXT":
+      return { ...state, tree: setFreeTextAtRoot(state.tree, action.value) }
 
     case "REMOVE_NODE":
       return {

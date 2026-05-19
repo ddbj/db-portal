@@ -83,8 +83,8 @@ describe("Home (/)", () => {
   it("renders 6 service cards (2 internal + 4 external) with expected hrefs", () => {
     renderHome()
 
-    const adv = screen.getByRole("link", { name: /詳細検索/ })
-    expect(adv).toHaveAttribute("href", "/advanced-search")
+    const adv = screen.getByRole("link", { name: /検索ページへ/ })
+    expect(adv).toHaveAttribute("href", "/search")
 
     const sub = screen.getByRole("link", { name: /登録ナビへ/ })
     expect(sub).toHaveAttribute("href", "/submit")
@@ -125,7 +125,7 @@ describe("Home (/)", () => {
     fireEvent.change(input, { target: { value: "SARS-CoV-2" } })
     fireEvent.submit(input.closest("form")!)
     expect(mockNavigate).toHaveBeenCalledTimes(1)
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22SARS-CoV-2%22")
+    expect(mockNavigate).toHaveBeenCalledWith("/search/results?q=%22SARS-CoV-2%22")
   })
 
   it("quotes space-separated input into a single phrase when a specific DB is selected", () => {
@@ -135,13 +135,13 @@ describe("Home (/)", () => {
     const input = screen.getByPlaceholderText(/キーワード/)
     fireEvent.change(input, { target: { value: "Homo sapiens" } })
     fireEvent.submit(input.closest("form")!)
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22Homo+sapiens%22&db=sra")
+    expect(mockNavigate).toHaveBeenCalledWith("/search/results?q=%22Homo+sapiens%22&db=sra")
   })
 
   it("clicking an example chip navigates with that chip's query quoted as a phrase", () => {
     renderHome()
     fireEvent.click(screen.getByRole("button", { name: "Escherichia coli" }))
-    expect(mockNavigate).toHaveBeenCalledWith("/search?q=%22Escherichia+coli%22")
+    expect(mockNavigate).toHaveBeenCalledWith("/search/results?q=%22Escherichia+coli%22")
   })
 
   it("does not navigate when the input is whitespace only (no DSL emitted)", () => {
@@ -149,7 +149,7 @@ describe("Home (/)", () => {
     const input = screen.getByPlaceholderText(/キーワード/)
     fireEvent.change(input, { target: { value: "   " } })
     fireEvent.submit(input.closest("form")!)
-    expect(mockNavigate).toHaveBeenCalledWith("/search")
+    expect(mockNavigate).toHaveBeenCalledWith("/search/results")
   })
 
   it("escapes embedded double quotes when wrapping input as a phrase", () => {

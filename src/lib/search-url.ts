@@ -30,7 +30,7 @@ export const buildSearchUrl = ({ q, db }: BuildSearchUrlParams): string => {
   if (db !== ALL_DB_VALUE) params.set("db", db)
   const query = params.toString()
 
-  return query === "" ? "/search" : `/search?${query}`
+  return query === "" ? "/search/results" : `/search/results?${query}`
 }
 
 export interface SearchParams {
@@ -120,7 +120,7 @@ export const buildSearchUrlFull = (p: BuildSearchUrlFullParams): string => {
   }
   const query = params.toString()
 
-  return query === "" ? "/search" : `/search?${query}`
+  return query === "" ? "/search/results" : `/search/results?${query}`
 }
 
 export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult => {
@@ -137,8 +137,8 @@ export const parseSearchUrl = (searchParams: URLSearchParams): ParseSearchResult
 
   const canonical = buildSearchUrlFull({ q, db, page, perPage, sort, cursor })
   const originalQueryString = searchParams.toString()
-  const canonicalQueryString = canonical.startsWith("/search?")
-    ? canonical.slice("/search?".length)
+  const canonicalQueryString = canonical.startsWith("/search/results?")
+    ? canonical.slice("/search/results?".length)
     : ""
 
   const canonicalUrl = originalQueryString === canonicalQueryString ? null : canonical

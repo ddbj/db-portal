@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test"
 
 const ROUTES = [
   { path: "/", title: /DDBJ 刷新/ },
-  { path: "/search", title: /DDBJ 刷新/ },
-  { path: "/advanced-search", title: /詳細検索.*DDBJ 刷新/ },
+  { path: "/search", title: /検索.*DDBJ 刷新/ },
+  { path: "/search/results?db=biosample", title: /DDBJ 刷新/ },
   { path: "/submit", title: /登録.*DDBJ 刷新/ },
   { path: "/design-system", title: /Design System.*DDBJ DB Portal/ },
 ] as const
@@ -26,9 +26,6 @@ test.describe("Phase 1 routes", () => {
 
     await nav.getByRole("link", { name: "検索" }).click()
     await expect(page).toHaveURL(/\/search$/)
-
-    await nav.getByRole("link", { name: "詳細検索" }).click()
-    await expect(page).toHaveURL(/\/advanced-search$/)
 
     await nav.getByRole("link", { name: "登録" }).click()
     await expect(page).toHaveURL(/\/submit$/)
