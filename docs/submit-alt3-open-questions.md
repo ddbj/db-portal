@@ -25,7 +25,6 @@
 - **エラー回復**: 外部 DB で Step が失敗した場合の、再開ポイント表示と部分再実行 UI。
 - **アクセシビリティ / モバイル**: Group カードの indent UI のキーボード操作、モバイルでの modal UX。
 - **大量ファイル性能チューニング**: PoC は数十行スケール。数千行のテーブル仮想化、Step カード再生成の差分計算最適化。
-- **トップ導線の文言と本流選択**: v1 / v2 / v3 のどれをデフォルトにするか。研究者ペルソナごとの推奨経路。
 - **デザインシステム整合**: 既存 `.claude/docs/design-system.md` と Tailwind トークン / コンポーネント命名の調整。
 - **subgrp ID 取得済み確認 UX**: Rule 6 集約モード発火時に「提供申請グループの subgrp ID をユーザー自己申告 / Step 0 で入力させる / 取得済みでなければアラート」の UX 判断。
 - **aggregate VCF の Section A 表現**: 集約 VCF を 1 行で示すか、複数 Sample の chip を表示するか。
@@ -40,6 +39,8 @@
 - **restricted human + assembled の controlled-access INSDC submission 経路**: flow-rules.md Rule 6 共通の PoC スコープでは MSS Step を完全抑制 (= INSDC 公開前提のため restricted human assembled は JGA Analysis に集約)。本番フェーズで「個人ゲノム de novo アセンブリ」「Haplotype phased + restricted」等のユースケースを ddbj/www / INSDC 側で再確認し、controlled-access での INSDC submission 経路が必要と判明すれば MSS 並走モードを追加する。
 - **JGA Sample N 入力 UX の強化** (本番フェーズで db-portal 側に JGA 入力 UI を内包する方針に転換した場合のみ): PoC 方針 ((a) 外部誘導、Rule 6 共通) では Step JGA Sample は notes-only で N 個別の入力 UI を持たない。本番フェーズで db-portal が JGA 入力 UI を抱える方針に転換するならば、(1) N 個の JGA Sample を 1 Step 内のリスト UI として扱う (Step を N 個並べる代替案)、(2) aggregate VCF / phenotype-only Dataset で N 入力に個人別属性 (年齢 / 性別 / 表現型 table のレコード) を割り当てる UX を XML スキーマと整合させる、の 2 点を検討。
 - **+ 配列リード modal 2 回目以降の Hybrid Group 参加 UX**: modals.md §+ 配列リード で「2 回目に + 配列リードを押下すると『既存の Hybrid Assembly Group に追加しますか?』サブ選択が出る」とした (空き hybrid メタ Group が存在するときのみ表示)。PoC レビューで操作の自然さを再確認、無意味な質問が出ないよう条件 (pending hybrid メタ Group が「子 Group 1 つのみ」のときに限定する等) を本番フェーズで精緻化。
+- **DDBJ Record 経由の登録 UI への進化構想**: 本番フェーズでは [`ddbj/ddbj-record-specifications`](https://github.com/ddbj/ddbj-record-specifications) で定義される **全登録形式を単一 JSON record として統一的に扱う仕様** (v3 で全 DB 横断の submission set 表現を目指して設計中) に乗り換える経路がある。db-portal の Step カード入力を最終的に Record として組み立てて Repository API に POST すれば、複数 DB にまたがる submission set を 1 つの Record にまとめて登録完結できる。PoC は外部の登録窓口 (D-way / MSS フォーム / 等) にリダイレクトする経路で実装するが、本番フェーズでこの Record ベース登録に切替えるかを再評価する。
+- **MGA (Mass sequence for Genome Annotation) の扱い**: ddbj/www `_ddbj/data-categories.md` 上は廃止区分で **新規受付終了済み**。本体 §7.3 (DDBJ ポータルの対象外) に PAT と同列で記載し、ヘルプ表示時に既存データ閲覧経路のみ案内する。
 
 ### 10.2 実装 / データ整備
 
@@ -119,11 +120,6 @@ ddbj/www の新規ファイル / 新規規程は本番フェーズで実装着�
 
 | 原典 | 用途 |
 |---|---|
-| `docs/submit-alt.md` (v2) | v2 Q&A wizard / 36 leaf SSOT (並走評価中) |
-| `docs/submit.md` (v1) + `docs/submit-details.md` | v1 Decision Tree / Use Case Cards (並走評価中) |
-| `src/lib/mock-data/submit-alt-tree/masters.ts` | v2 controlled vocabulary 実装 SSOT (本番フェーズで v3 masters.ts 移植時に参照) |
-| `src/lib/mock-data/submit-alt-tree/` | v2 leaf tree モック (破壊禁止) |
-| `src/routes/submit-alt.tsx`, `src/routes/submit.tsx` | v2 / v1 ルート (破壊禁止) |
 | `../ddbj-search-converter/ddbj_search_converter/sra_accessions_tab.py` | 既発行 accession の関係性 DB (prefix SSOT 源ではない、参考のみ) |
 
 ### 11.3 外部参考 (UX / FAQ / 実例)
@@ -137,7 +133,26 @@ ddbj/www の新規ファイル / 新規規程は本番フェーズで実装着�
 | https://humandbs.dbcls.jp/ | HumanDBs データ閲覧 (JGA データ公開後の参照) |
 | https://insdc.org/submitting-standards/methodological-keywords/ | INSDC methodological keywords (KEYWORDS controlled vocabulary 外部 SSOT) |
 | https://github.com/ddbj/pub/tree/master/docs/jga | JGA XML スキーマ (本番フェーズ実装参照) |
+| https://github.com/ddbj/ddbj-record-specifications | DDBJ Record (全登録形式統一 JSON record 仕様、本番フェーズで Repository API 経由登録 UI 化の検討対象、§10.1) |
 | https://github.com/ddbj/togovar-repository | TogoVar-repository Excel テンプレート (`TogoVar_v1.4.xlsx`) |
 | https://docs.google.com/spreadsheets/d/15gLGL5FMV8gRt46ezc2Gmb-R1NbYsIGMssB0MyHkcwE/ | TPA-WGS サンプルアノテーション (ddbj/www `_ddbj/tpa.md` 参照) |
 | NCBI SRA Submission Portal | DRA 対応 UX 比較 |
 | EBI ENA Webin / ArrayExpress / GEO / PRIDE / MetaboLights / Metabolomics Workbench / EVA / BioStudies | 外部 DB 受入条件・UX 比較 |
+
+### 11.4 付随ツール / 外部リソース (Step カード notes 移植候補)
+
+Step カード notes / serviceLink 補強候補。SERVICE_URLS は登録窓口本体だけを集約し、これら付随ツールへの誘導は `flowSteps.<service>.notes.<noteKey>` の i18n key で扱う想定 (本番フェーズで埋める)。
+
+| ツール / リソース | URL | 関連 Step | 用途 |
+|---|---|---|---|
+| DFAST | https://dfast.ddbj.nig.ac.jp/ | Step MSS (`assembly-form ∈ {wgs, gnm}` + organism=prokaryote) | 原核生物ゲノム自動アノテーション。`assembly-form=wgs/gnm` の prokaryote 行で「DFAST 利用可能」notes を表示 |
+| DFAST_VRL | https://dfast-vrl.ddbj.nig.ac.jp/ | Step MSS (organism=virus) | ウイルスゲノム自動アノテーション (SARS-CoV-2 等)。virus 行の Step MSS で案内 |
+| VecScreen | http://ddbj.nig.ac.jp/vecscreen/ | Step MSS / NSSS (assembled 全般) | ベクター配列の混入確認。MSS / NSSS 提出前のチェックツール |
+| MSS チェックツール (UME / Parser / transChecker) | https://www.ddbj.nig.ac.jp/ddbj/mss-tool.html | Step MSS | INSDC FF 形式の整形と検証 |
+| Japan COVID-19 Open Data Consortium / GISAID 連携 | https://www.ddbj.nig.ac.jp/dra/covid-19.html | Step MSS / DRA (SARS-CoV-2) | COVID-19 関連データの開示ポリシーと外部 DB 連携 |
+| MetaboBank 登録申し込みフォーム (Google Forms) | https://docs.google.com/forms/d/1yrBo95x5leK9aEZImzT6Y5iVyzgwELCgFZtTU9paguU | Step MetaboBank | 新規登録時に必要な事前申請フォーム |
+| Genome Project のデータ登録 (ddbj/www) | https://www.ddbj.nig.ac.jp/ddbj/genome.html | Step MSS / DRA / BS / BP | 3 層構造の解説と全体的な登録手順 |
+| Transcriptome Project のデータ登録 (ddbj/www) | https://www.ddbj.nig.ac.jp/ddbj/transcriptome.html | Step MSS (assembly-form=tsa) | TSA 登録の詳細 |
+| Haplotype 登録 (ddbj/www) | https://www.ddbj.nig.ac.jp/ddbj/haplotype.html | Step MSS / BP (haplotype-mode=phased) | locus_tag prefix/suffix での Haplotype 区別の運用例 (例 `A1C_p00001` = Principal、`A1C_a00001` = Alternate) |
+| データのアップロード (ddbj/www) | https://www.ddbj.nig.ac.jp/upload.html | Step DRA / MSS / MetaboBank | SFTP/SCP アップロード方法 |
+| DDBJ Contact | https://www.ddbj.nig.ac.jp/contact-ddbj-e.html | Curator 相談系全般 (Rule 7c / Rule 4d 等) | 個別相談窓口 |

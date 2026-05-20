@@ -87,7 +87,7 @@ const SERVICE_CARDS: readonly ServiceCard[] = [
     descriptionKey: "routes.home.services.cards.submit.description",
     linkKey: "routes.home.services.cards.submit.link",
     external: false,
-    to: "/submit",
+    to: "/submit-alt3",
   },
   {
     key: "services",

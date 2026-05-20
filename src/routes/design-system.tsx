@@ -1,6 +1,5 @@
-import { BarChart3, Bug, FileText, FlaskConical, GitBranch, Inbox, Lock, Microscope, TestTube, Trees } from "lucide-react"
+import { Inbox } from "lucide-react"
 import { useState } from "react"
-import { useTranslation } from "react-i18next"
 
 import {
   Badge,
@@ -38,22 +37,9 @@ import {
   ALL_SUCCESS_HIT_COUNTS,
   DATABASES,
   PARTIAL_FAILURE_HIT_COUNTS,
-  USE_CASE_CARDS,
 } from "@/lib/mock-data"
 
 import type { Route } from "./+types/design-system"
-
-const ICON_MAP = {
-  Bug,
-  Trees,
-  Microscope,
-  BarChart3,
-  GitBranch,
-  FlaskConical,
-  TestTube,
-  FileText,
-  Lock,
-} as const
 
 export const meta = (_args: Route.MetaArgs) => {
 
@@ -177,8 +163,6 @@ const DatePickerDemo = () => {
 }
 
 const DesignSystem = () => {
-  const { t } = useTranslation()
-
   return (
     <div className="flex-1 bg-gray-50">
       {/* Tailwind safelist */}
@@ -823,26 +807,6 @@ const DesignSystem = () => {
               <p className="mt-1 text-xs text-gray-600">{db.description}</p>
             </div>
           ))}
-        </div>
-
-        <SH3>USE_CASE_CARDS（9 枚 / Phase 4 の登録ナビ）</SH3>
-        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-          {USE_CASE_CARDS.map((card) => {
-            const Icon = ICON_MAP[card.iconName as keyof typeof ICON_MAP] ?? Bug
-
-            return (
-              <div key={card.id} className="rounded-lg border border-gray-200 bg-white p-4">
-                <div className="flex items-start gap-3">
-                  <Icon className="text-primary-600 h-6 w-6 shrink-0" aria-hidden="true" />
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">{t(card.titleKey)}</div>
-                    <div className="mt-1 text-xs text-gray-600">{t(card.descriptionKey)}</div>
-                    <div className="mt-2 text-xs text-gray-400">leaf {card.leafCount} 件</div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
         </div>
 
         <SH3>横断検索 hit count の 3 状態（mock）</SH3>

@@ -87,7 +87,7 @@ describe("Home (/)", () => {
     expect(adv).toHaveAttribute("href", "/search")
 
     const sub = screen.getByRole("link", { name: /登録ナビへ/ })
-    expect(sub).toHaveAttribute("href", "/submit")
+    expect(sub).toHaveAttribute("href", "/submit-alt3")
 
     const services = screen.getByRole("link", { name: /サービス一覧/ })
     expect(services).toHaveAttribute("href", "https://www.ddbj.nig.ac.jp/services/")

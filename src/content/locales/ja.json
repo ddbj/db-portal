@@ -3,9 +3,7 @@
     "serviceName": "DDBJ 刷新 (仮)",
     "nav": {
       "search": "検索",
-      "submit": "登録",
-      "submitAlt": "登録-alt",
-      "submitAlt3": "登録-alt-3",
+      "submitAlt3": "登録",
       "aboutUs": "About us"
     },
     "language": {
@@ -84,22 +82,50 @@
       "popularResources": {
         "heading": "Popular Resources",
         "groups": {
-          "ddbj": { "label": "DDBJ" },
-          "dbcls": { "label": "DBCLS" }
+          "ddbj": {
+            "label": "DDBJ"
+          },
+          "dbcls": {
+            "label": "DBCLS"
+          }
         },
         "items": {
-          "bioproject": { "label": "BioProject" },
-          "biosample": { "label": "BioSample" },
-          "dra": { "label": "DRA" },
-          "ddbj": { "label": "DDBJ Annotated" },
-          "gea": { "label": "GEA" },
-          "jga": { "label": "JGA" },
-          "metabobank": { "label": "MetaboBank" },
-          "togovar": { "label": "TogoVar" },
-          "togogenome": { "label": "TogoGenome" },
-          "gggenome": { "label": "GGGenome" },
-          "refex": { "label": "RefEx" },
-          "togotv": { "label": "統合TV" }
+          "bioproject": {
+            "label": "BioProject"
+          },
+          "biosample": {
+            "label": "BioSample"
+          },
+          "dra": {
+            "label": "DRA"
+          },
+          "ddbj": {
+            "label": "DDBJ Annotated"
+          },
+          "gea": {
+            "label": "GEA"
+          },
+          "jga": {
+            "label": "JGA"
+          },
+          "metabobank": {
+            "label": "MetaboBank"
+          },
+          "togovar": {
+            "label": "TogoVar"
+          },
+          "togogenome": {
+            "label": "TogoGenome"
+          },
+          "gggenome": {
+            "label": "GGGenome"
+          },
+          "refex": {
+            "label": "RefEx"
+          },
+          "togotv": {
+            "label": "統合TV"
+          }
         }
       }
     },
@@ -184,10 +210,18 @@
         },
         "keywordPlaceholder": "キーワードで絞り込み...",
         "fields": {
-          "accessibility": { "label": "公開状態" },
-          "package": { "label": "パッケージ" },
-          "model": { "label": "モデル" },
-          "library_selection": { "label": "ライブラリセレクション" }
+          "accessibility": {
+            "label": "公開状態"
+          },
+          "package": {
+            "label": "パッケージ"
+          },
+          "model": {
+            "label": "モデル"
+          },
+          "library_selection": {
+            "label": "ライブラリセレクション"
+          }
         },
         "dateRange": {
           "title": "日付範囲",
@@ -332,18 +366,34 @@
           "label": "アクセッション",
           "placeholder": "例: PRJDB*"
         },
-        "title": { "label": "タイトル" },
-        "description": { "label": "記述" },
+        "title": {
+          "label": "タイトル"
+        },
+        "description": {
+          "label": "記述"
+        },
         "organism": {
           "label": "生物種",
           "placeholder": "学名 または Taxonomy ID（例: Homo sapiens / 9606）"
         },
-        "date_published": { "label": "公開日" },
-        "date_modified": { "label": "更新日" },
-        "date_created": { "label": "作成日" },
-        "date": { "label": "いずれかの日付" },
-        "submitter": { "label": "登録者" },
-        "publication": { "label": "公表文献" },
+        "date_published": {
+          "label": "公開日"
+        },
+        "date_modified": {
+          "label": "更新日"
+        },
+        "date_created": {
+          "label": "作成日"
+        },
+        "date": {
+          "label": "いずれかの日付"
+        },
+        "submitter": {
+          "label": "登録者"
+        },
+        "publication": {
+          "label": "公表文献"
+        },
         "type": {
           "label": "種別",
           "enumValues": {
@@ -401,19 +451,45 @@
             "ion_torrent": "ION_TORRENT"
           }
         },
-        "instrument_model": { "label": "機種" },
-        "analysis_type": { "label": "解析種別 (SRA)" },
-        "library_name": { "label": "ライブラリ名" },
-        "library_construction_protocol": { "label": "ライブラリ作製プロトコル" },
-        "geo_loc_name": { "label": "採取地" },
-        "collection_date": { "label": "採取日" },
-        "derived_from_id": { "label": "由来サンプル ID" },
-        "host": { "label": "宿主" },
-        "strain": { "label": "系統 (Strain)" },
-        "isolate": { "label": "分離株 (Isolate)" },
-        "disease": { "label": "疾患" },
-        "tissue": { "label": "組織" },
-        "env_biome": { "label": "生態系バイオーム" },
+        "instrument_model": {
+          "label": "機種"
+        },
+        "analysis_type": {
+          "label": "解析種別 (SRA)"
+        },
+        "library_name": {
+          "label": "ライブラリ名"
+        },
+        "library_construction_protocol": {
+          "label": "ライブラリ作製プロトコル"
+        },
+        "geo_loc_name": {
+          "label": "採取地"
+        },
+        "collection_date": {
+          "label": "採取日"
+        },
+        "derived_from_id": {
+          "label": "由来サンプル ID"
+        },
+        "host": {
+          "label": "宿主"
+        },
+        "strain": {
+          "label": "系統 (Strain)"
+        },
+        "isolate": {
+          "label": "分離株 (Isolate)"
+        },
+        "disease": {
+          "label": "疾患"
+        },
+        "tissue": {
+          "label": "組織"
+        },
+        "env_biome": {
+          "label": "生態系バイオーム"
+        },
         "project_type": {
           "label": "プロジェクト形式",
           "enumValues": {
@@ -421,8 +497,12 @@
             "umbrella_bioproject": "UmbrellaBioProject"
           }
         },
-        "bioproject_grant_agency": { "label": "助成機関（BioProject）" },
-        "bioproject_external_link_label": { "label": "外部リンクラベル（BioProject）" },
+        "bioproject_grant_agency": {
+          "label": "助成機関（BioProject）"
+        },
+        "bioproject_external_link_label": {
+          "label": "外部リンクラベル（BioProject）"
+        },
         "relevance": {
           "label": "関連性タグ (BioProject)",
           "enumValues": {
@@ -460,9 +540,15 @@
             "ncrna": "ncRNA"
           }
         },
-        "sequence_length": { "label": "配列長 (bp)" },
-        "feature_gene_name": { "label": "遺伝子名（feature）" },
-        "reference_journal": { "label": "参考文献誌名" },
+        "sequence_length": {
+          "label": "配列長 (bp)"
+        },
+        "feature_gene_name": {
+          "label": "遺伝子名（feature）"
+        },
+        "reference_journal": {
+          "label": "参考文献誌名"
+        },
         "rank": {
           "label": "階層",
           "enumValues": {
@@ -476,15 +562,33 @@
             "strain": "Strain"
           }
         },
-        "lineage": { "label": "系統" },
-        "kingdom": { "label": "Kingdom" },
-        "phylum": { "label": "Phylum" },
-        "class": { "label": "Class" },
-        "order": { "label": "Order" },
-        "family": { "label": "Family" },
-        "genus": { "label": "Genus" },
-        "species": { "label": "Species" },
-        "common_name": { "label": "一般名" },
+        "lineage": {
+          "label": "系統"
+        },
+        "kingdom": {
+          "label": "Kingdom"
+        },
+        "phylum": {
+          "label": "Phylum"
+        },
+        "class": {
+          "label": "Class"
+        },
+        "order": {
+          "label": "Order"
+        },
+        "family": {
+          "label": "Family"
+        },
+        "genus": {
+          "label": "Genus"
+        },
+        "species": {
+          "label": "Species"
+        },
+        "common_name": {
+          "label": "一般名"
+        },
         "jga_study_type": {
           "label": "研究種別 (JGA)",
           "enumValues": {
@@ -494,14 +598,30 @@
             "cohort": "Cohort"
           }
         },
-        "jga_grant_agency": { "label": "助成機関（JGA）" },
-        "jga_external_link_label": { "label": "外部リンクラベル（JGA）" },
-        "dataset_type": { "label": "データセット種別 (JGA)" },
-        "vendor": { "label": "ベンダー (JGA)" },
-        "gea_experiment_type": { "label": "実験種別 (GEA)" },
-        "metabobank_study_type": { "label": "研究種別 (MetaboBank)" },
-        "metabobank_experiment_type": { "label": "実験種別 (MetaboBank)" },
-        "submission_type": { "label": "登録種別 (MetaboBank)" }
+        "jga_grant_agency": {
+          "label": "助成機関（JGA）"
+        },
+        "jga_external_link_label": {
+          "label": "外部リンクラベル（JGA）"
+        },
+        "dataset_type": {
+          "label": "データセット種別 (JGA)"
+        },
+        "vendor": {
+          "label": "ベンダー (JGA)"
+        },
+        "gea_experiment_type": {
+          "label": "実験種別 (GEA)"
+        },
+        "metabobank_study_type": {
+          "label": "研究種別 (MetaboBank)"
+        },
+        "metabobank_experiment_type": {
+          "label": "実験種別 (MetaboBank)"
+        },
+        "submission_type": {
+          "label": "登録種別 (MetaboBank)"
+        }
       },
       "dateSubSelector": {
         "label": "日付種別",
@@ -565,894 +685,6 @@
         "WILDCARD_VALUE_CONTAINS_QUOTE": "ワイルドカード値にクォートは含められません"
       }
     },
-    "submit": {
-      "title": "登録",
-      "meta": {
-        "title": "登録ナビゲーション | DDBJ 刷新 (仮)",
-        "description": "登録したいデータから、DDBJ のどの登録サービス（BioProject / BioSample / DRA / MSS / NSSS / GEA / JGA 等）を使うかを見つける統合ナビ"
-      },
-      "hero": {
-        "title": "登録ナビゲーション",
-        "subtitle": "登録したいデータから、DDBJ のどの登録サービスを使うかを見つける"
-      },
-      "sections": {
-        "cards": "ユースケースから選ぶ",
-        "tree": "判断フローから辿る",
-        "detail": "詳細"
-      },
-      "cards": {
-        "microbial": {
-          "title": "微生物ゲノム",
-          "description": "原核生物・ウイルス・オルガネラ・プラスミドのゲノム登録"
-        },
-        "eukaryote": {
-          "title": "真核生物ゲノム",
-          "description": "動物・植物・菌類のゲノム登録（Haplotype / TSA / EST / TPA 含む）"
-        },
-        "metagenome": {
-          "title": "メタゲノム / MAG / SAG",
-          "description": "環境サンプル・メタゲノム由来データ"
-        },
-        "expression": {
-          "title": "遺伝子発現",
-          "description": "RNA-seq・マイクロアレイ等の発現解析データ"
-        },
-        "variation": {
-          "title": "変異データ",
-          "description": "SNP / 構造変異等の変異コール結果"
-        },
-        "proteomics": {
-          "title": "プロテオミクス",
-          "description": "LC-MS/MS によるプロテオーム解析データ（jPOST 経由）"
-        },
-        "metabolomics": {
-          "title": "メタボロミクス",
-          "description": "LC-MS / GC-MS 等のメタボロミクスデータ"
-        },
-        "small-sequence": {
-          "title": "小規模塩基配列・PCR 産物",
-          "description": "100 配列未満の塩基配列（NSSS 経由）"
-        },
-        "human-restricted": {
-          "title": "ヒト制限アクセス",
-          "description": "ヒトを対象とした個人特定リスクのあるデータ（NBDC 承認要）"
-        }
-      },
-      "tree": {
-        "goalBadge": "ゴール",
-        "nodeAria": "ノード",
-        "questions": {
-          "root": "ヒトを対象とした個人特定リスクのあるデータか？",
-          "modality": "計測モダリティは？",
-          "variation": "対象生物 × 変異タイプは？",
-          "expression": "計測技術は？",
-          "sequence-scale": "規模は？",
-          "sequence-source": "由来は？",
-          "metagenome": "メタゲノム種別は？",
-          "single-organism": "生物カテゴリは？",
-          "microbial": "微生物のサブカテゴリは？",
-          "prokaryote": "原核ゲノムのデータ形式は？",
-          "virus": "ウイルスゲノムのデータ形式は？",
-          "eukaryote": "真核ゲノムのデータ特殊性は？",
-          "eukaryote-genome": "真核ゲノムのデータ形式は？",
-          "eukaryote-haplotype": "Haplotype のデータ形式は？",
-          "eukaryote-est": "EST の規模は？"
-        },
-        "options": {
-          "root": {
-            "human-restricted": "はい（NBDC 承認要）",
-            "modality": "いいえ"
-          },
-          "modality": {
-            "proteomics": "プロテオミクス",
-            "metabolomics": "メタボロミクス",
-            "variation": "変異コール結果（SNP / SV）",
-            "expression": "遺伝子発現プロファイリング",
-            "sequence-scale": "塩基配列（DNA / RNA）"
-          },
-          "variation": {
-            "variation-human-snp": "ヒト × SNP / Indel（≤ 50 bp）",
-            "variation-human-sv": "ヒト × SV（> 50 bp）",
-            "variation-nonhuman-snp": "非ヒト × SNP / Indel",
-            "variation-nonhuman-sv": "非ヒト × SV"
-          },
-          "expression": {
-            "expression-ngs": "NGS による RNA-seq",
-            "expression-array": "マイクロアレイ"
-          },
-          "sequence-scale": {
-            "small-sequence": "小規模（< 100 配列・< 500 kb）",
-            "sequence-source": "大規模"
-          },
-          "sequence-source": {
-            "single-organism": "単一生物",
-            "metagenome": "環境サンプル / メタゲノム"
-          },
-          "metagenome": {
-            "metagenome-raw": "生リードのみ",
-            "metagenome-primary": "未同定コンティグ（Primary）",
-            "metagenome-genome-bin": "ゲノムビン（MAG / Binned / SAG）",
-            "metagenome-tls": "OTU プロファイル（TLS）",
-            "metagenome-tsa": "メタトランスクリプトーム（メタ TSA）"
-          },
-          "single-organism": {
-            "microbial": "微生物（原核・ウイルス・オルガネラ）",
-            "eukaryote": "真核生物（動物・植物・菌類）"
-          },
-          "microbial": {
-            "prokaryote": "原核生物（細菌・古細菌）",
-            "virus": "ウイルス / ファージ",
-            "organelle-plasmid": "オルガネラ / プラスミド"
-          },
-          "prokaryote": {
-            "prokaryote-raw": "生リードのみ",
-            "prokaryote-raw-assembly": "生リード + アセンブリ",
-            "prokaryote-assembly-only": "アセンブリのみ"
-          },
-          "virus": {
-            "virus-raw": "生リードのみ",
-            "virus-raw-assembly": "生リード + アセンブリ",
-            "virus-assembly-only": "アセンブリのみ"
-          },
-          "eukaryote": {
-            "eukaryote-genome": "通常の真核ゲノム",
-            "eukaryote-haplotype": "Haplotype 区別あり（二倍体）",
-            "eukaryote-tsa": "de novo 転写産物アセンブリ（TSA）",
-            "eukaryote-est": "単発 cDNA（EST）",
-            "eukaryote-tpa": "第三者アノテーション（TPA）"
-          },
-          "eukaryote-genome": {
-            "eukaryote-raw": "生リードのみ",
-            "eukaryote-raw-assembly": "生リード + アセンブリ",
-            "eukaryote-assembly-only": "アセンブリのみ"
-          },
-          "eukaryote-haplotype": {
-            "eukaryote-haplotype-raw-assembly": "生リード + アセンブリ",
-            "eukaryote-haplotype-assembly-only": "アセンブリのみ"
-          },
-          "eukaryote-est": {
-            "eukaryote-est-small": "小規模（< 100 配列）",
-            "eukaryote-est-large": "大規模"
-          }
-        }
-      },
-      "detail": {
-        "overviewTitle": "概要",
-        "threeLayerHeading": "3 層構造で登録",
-        "threeLayerDescription": "ゲノム登録は、メタデータ（BioProject + BioSample）→ 生リード（DRA）→ アセンブリ（MSS / NSSS）の 3 層を段階的・並行的に登録する統合プロセス。層間は BioProject / BioSample のアクセッションで結びつく。",
-        "threeLayerLayer1": "Layer 1: メタデータ — BioProject + BioSample（D-way）",
-        "threeLayerLayer2": "Layer 2: 生リード — DRA（D-way）",
-        "threeLayerLayer3": "Layer 3: アセンブリ — DDBJ (Trad) via MSS / NSSS",
-        "branchesHeading": "データ形式別の登録先",
-        "branchesColDataLabel": "持っているデータ",
-        "branchesColLeaf": "登録先ゴール",
-        "branchesColAction": "詳細へ",
-        "branchLinkLabel": "この leaf の詳細",
-        "commonHeading": "共通の準備物",
-        "linksHeading": "主要な外部リンク",
-        "stepsHeading": "登録の流れ",
-        "backToOverview": "← 概要に戻る",
-        "empty": {
-          "title": "ユースケースを選ぶと詳細が表示されます",
-          "description": "上のカードから選ぶか、Decision Tree を辿ると、登録先の詳細がこの領域に表示されます。"
-        },
-        "placeholder": {
-          "title": "詳細は準備中です",
-          "description": "この leaf の具体的な登録手順・準備物は後続フェーズで書き下ろし予定。上位カードの概要レベルで共通情報を確認できます。",
-          "action": "カードの概要を見る"
-        },
-        "overviews": {
-          "microbial": {
-            "summary": "微生物（原核生物・ウイルス・オルガネラ・プラスミド）のゲノム登録。3 層構造（メタデータ → 生リード → アセンブリ）に従い、原核は DFAST で自動アノテーションが可能。",
-            "commonRequirements": "DDBJ Account、公開鍵、BioProject + BioSample の事前登録",
-            "links": {
-              "dway": "D-way（BioProject / BioSample / DRA）",
-              "mss": "MSS（DDBJ Trad）"
-            }
-          },
-          "eukaryote": {
-            "summary": "真核生物（動物・植物・菌類）のゲノム登録。Haplotype（二倍体 umbrella + Principal + Alternate）、de novo 転写産物（TSA）、単発 cDNA（EST）、第三者アノテーション（TPA）などの特殊ケースを含む。",
-            "commonRequirements": "DDBJ Account、公開鍵、BioProject + BioSample の事前登録、locus_tag prefix 必須",
-            "links": {
-              "dway": "D-way",
-              "mss": "MSS（DDBJ Trad）"
-            }
-          },
-          "metagenome": {
-            "summary": "環境サンプル・メタゲノム由来データ。生リードのみ、Primary（未同定コンティグ）、ゲノムビン（MAG / Binned / SAG）、OTU プロファイル（TLS）、メタトランスクリプトーム（メタ TSA）の 5 つに分岐。",
-            "commonRequirements": "DDBJ Account、公開鍵、BioProject + BioSample の事前登録",
-            "links": {
-              "dway": "D-way",
-              "mss": "MSS（DDBJ Trad）"
-            }
-          },
-          "expression": {
-            "summary": "RNA-seq・マイクロアレイ等の発現解析データ。GEA に登録する。NGS 由来は DRA + GEA、アレイは GEA のみ。",
-            "commonRequirements": "DDBJ Account、BioProject + BioSample",
-            "links": {
-              "dway": "D-way",
-              "gea": "GEA（D-way 内）"
-            }
-          },
-          "variation": {
-            "summary": "SNP / 構造変異等の変異コール結果。対象生物（ヒト / 非ヒト）と変異タイプ（SNP / SV）で登録先が分かれる。DDBJ 運営の JVar または EBI の EVA / dgVa。",
-            "commonRequirements": "登録先（JVar / EVA / dgVa）の各アカウント",
-            "links": {
-              "jvar": "JVar（DDBJ）",
-              "eva": "EVA（EBI）",
-              "dgva": "dgVa（EBI）"
-            }
-          },
-          "proteomics": {
-            "summary": "LC-MS/MS によるプロテオーム解析データ。jPOST（外部）に登録する。",
-            "commonRequirements": "jPOST アカウント",
-            "links": {
-              "jpost": "jPOST"
-            }
-          },
-          "metabolomics": {
-            "summary": "LC-MS / GC-MS 等のメタボロミクスデータ。MetaboBank に登録する。",
-            "commonRequirements": "DDBJ Account、BioProject + BioSample",
-            "links": {
-              "metabobank": "MetaboBank"
-            }
-          },
-          "small-sequence": {
-            "summary": "100 配列未満かつ 500 kb 未満の塩基配列。BioProject / BioSample なしで NSSS から直接登録できる。",
-            "commonRequirements": "DDBJ Account",
-            "links": {
-              "nsss": "NSSS（DDBJ Trad）"
-            }
-          },
-          "human-restricted": {
-            "summary": "ヒトを対象とした個人特定リスクのあるデータ。NBDC の提供申請が必要で、JGA に登録する。",
-            "commonRequirements": "NBDC ヒトデータベース データ提供承認、JGA 登録アカウント",
-            "links": {
-              "nbdc": "NBDC ヒトデータベース",
-              "jga": "JGA"
-            }
-          }
-        },
-        "branchLabels": {
-          "microbial": {
-            "organelle-plasmid": "オルガネラ / プラスミド",
-            "prokaryote-raw": "原核（生リードのみ）",
-            "prokaryote-raw-assembly": "原核（生リード + アセンブリ）",
-            "prokaryote-assembly-only": "原核（アセンブリのみ）",
-            "virus-raw": "ウイルス（生リードのみ）",
-            "virus-raw-assembly": "ウイルス（生リード + アセンブリ）",
-            "virus-assembly-only": "ウイルス（アセンブリのみ）"
-          },
-          "eukaryote": {
-            "eukaryote-raw": "通常（生リードのみ）",
-            "eukaryote-raw-assembly": "通常（生リード + アセンブリ）",
-            "eukaryote-assembly-only": "通常（アセンブリのみ）",
-            "eukaryote-haplotype-raw-assembly": "Haplotype（生リード + アセンブリ）",
-            "eukaryote-haplotype-assembly-only": "Haplotype（アセンブリのみ）",
-            "eukaryote-tsa": "TSA（de novo transcriptome）",
-            "eukaryote-tpa": "TPA（peer-reviewed 必須）",
-            "eukaryote-est-small": "EST（小規模 < 100）",
-            "eukaryote-est-large": "EST（大規模）"
-          },
-          "metagenome": {
-            "metagenome-raw": "生リードのみ",
-            "metagenome-primary": "Primary（DRA Analysis）",
-            "metagenome-genome-bin": "ゲノムビン（MAG / Binned / SAG）",
-            "metagenome-tls": "OTU プロファイル（TLS）",
-            "metagenome-tsa": "メタトランスクリプトーム（メタ TSA）"
-          },
-          "expression": {
-            "expression-ngs": "NGS による RNA-seq",
-            "expression-array": "マイクロアレイ"
-          },
-          "variation": {
-            "variation-human-snp": "ヒト × SNP / Indel",
-            "variation-human-sv": "ヒト × SV",
-            "variation-nonhuman-snp": "非ヒト × SNP / Indel",
-            "variation-nonhuman-sv": "非ヒト × SV"
-          },
-          "proteomics": {
-            "proteomics": "プロテオミクス全般"
-          },
-          "metabolomics": {
-            "metabolomics": "メタボロミクス全般"
-          },
-          "small-sequence": {
-            "small-sequence": "100 配列未満の塩基配列"
-          },
-          "human-restricted": {
-            "human-restricted": "個人特定リスクのあるヒトデータ"
-          }
-        },
-        "steps": {
-          "bp-bs-dra-mss": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録しアクセッション (PRJDB*) を取得" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録し BioProject と紐づけ" },
-            "dra": { "title": "DRA", "description": "生シーケンスデータ (FASTQ / BAM) を DRA にアップロード" },
-            "mss": { "title": "MSS", "description": "アセンブリ配列とアノテーションを MSS フォームで登録" }
-          },
-          "bp-bs-mss": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "mss": { "title": "MSS", "description": "アセンブリ配列とアノテーションを MSS フォームで登録" }
-          },
-          "bp-bs-dra": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "dra": { "title": "DRA", "description": "生シーケンスデータ (FASTQ / BAM) を DRA にアップロード" }
-          },
-          "bp-bs-dra-analysis": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "draAnalysis": { "title": "DRA (Analysis)", "description": "解析結果ファイル（未同定コンティグ等）を DRA Analysis に登録" }
-          },
-          "bp-bs-dra-gea": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "dra": { "title": "DRA", "description": "生リード (FASTQ) を DRA にアップロード" },
-            "gea": { "title": "GEA", "description": "発現データ (Series / Sample / Raw files) を GEA に登録" }
-          },
-          "bp-bs-gea": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "gea": { "title": "GEA", "description": "アレイ生データと解析済みデータを GEA に登録 (DRA は不要)" }
-          },
-          "bp-bs-metabobank": {
-            "bioproject": { "title": "BioProject", "description": "D-way で研究プロジェクトを登録" },
-            "biosample": { "title": "BioSample", "description": "D-way でサンプル情報を登録" },
-            "metabobank": { "title": "MetaboBank", "description": "IDF + SDRF メタデータ、生データ、MAF を MetaboBank に登録" }
-          },
-          "bp-bs-dra-mss-haplotype": {
-            "umbrella": { "title": "Umbrella BioProject", "description": "Haplotype 群を束ねる umbrella BioProject を登録" },
-            "principalAlternate": { "title": "Principal / Alternate BioProject", "description": "Principal と Alternate の 2 つを登録し umbrella に紐づけ" },
-            "biosample": { "title": "BioSample", "description": "Haplotype 共通の BioSample を 1 個登録" },
-            "dra": { "title": "DRA", "description": "生リードを DRA にアップロード" },
-            "mss": { "title": "MSS", "description": "locus_tag prefix を Haplotype 区別 suffix 付きで設定し MSS 登録" }
-          },
-          "bp-bs-mss-haplotype": {
-            "umbrella": { "title": "Umbrella BioProject", "description": "Haplotype 群を束ねる umbrella BioProject を登録" },
-            "principalAlternate": { "title": "Principal / Alternate BioProject", "description": "Principal と Alternate の 2 つを登録し umbrella に紐づけ" },
-            "biosample": { "title": "BioSample", "description": "Haplotype 共通の BioSample を 1 個登録" },
-            "mss": { "title": "MSS", "description": "locus_tag prefix を Haplotype 区別 suffix 付きで設定し MSS 登録" }
-          },
-          "nsss": {
-            "login": { "title": "NSSS ログイン", "description": "DDBJ Account で NSSS を起動" },
-            "form": { "title": "Web フォーム入力", "description": "NSSS の Web フォームで配列・アノテーションを入力" },
-            "review": { "title": "査定", "description": "DDBJ スタッフが内容を査定し問い合わせに対応" }
-          },
-          "jga": {
-            "dbcls": { "title": "DBCLS 提供申請", "description": "humandbs.dbcls.jp に利用計画書を提出し承認を取得" },
-            "guidance": { "title": "JGA チーム案内", "description": "承認後、DDBJ JGA チームに連絡し登録開始" },
-            "upload": { "title": "メタデータ + データアップロード", "description": "XML メタデータを記述し、BAM / FASTQ / VCF 等の実データをアップロード" }
-          },
-          "external-jpost": {
-            "submit": { "title": "jPOST に直接登録", "description": "jPOST のサイトにアクセスし、指示に従って登録を行う" }
-          },
-          "external-jvar-snp": {
-            "submit": { "title": "JVar SNP に直接登録", "description": "JVar SNP サイトで SNP / Indel データを登録" }
-          },
-          "external-jvar-sv": {
-            "submit": { "title": "JVar SV に直接登録", "description": "JVar SV サイトで構造変異データを登録" }
-          },
-          "external-eva": {
-            "submit": { "title": "EVA に直接登録", "description": "EBI の EVA で非ヒト SNP / Indel を登録" }
-          },
-          "external-dgva": {
-            "submit": { "title": "dgVa に直接登録", "description": "EBI の dgVa で非ヒト構造変異を登録" }
-          }
-        },
-        "goalTemplates": {
-          "genome": {
-            "commonRequirements": "DDBJ Account、SSH 公開鍵、配列ファイル (FASTA)、アノテーション (タブ区切り)、NGS 生データ (FASTQ / BAM)、MD5",
-            "links": { "dway": "D-way", "mss": "MSS フォーム" }
-          },
-          "gea": {
-            "commonRequirements": "DDBJ Account、解析済みデータ、生データ、MD5",
-            "links": { "dway": "D-way", "gea": "GEA" }
-          },
-          "nsss": {
-            "commonRequirements": "DDBJ Account、塩基配列データ、アノテーション情報",
-            "links": { "nsss": "NSSS" }
-          },
-          "metabobank": {
-            "commonRequirements": "DDBJ Account、SSH 公開鍵、IDF + SDRF メタデータ、生データ、解析済みデータ、MAF、MD5",
-            "links": { "metabobank": "MetaboBank" }
-          },
-          "jga": {
-            "commonRequirements": "DDBJ Account、DBCLS ヒトデータ提供承認、実データ (BAM / FASTQ / VCF 等)、JGA XML メタデータ",
-            "links": { "nbdc": "NBDC ヒトデータベース", "jga": "JGA" }
-          },
-          "external": {
-            "commonRequirements": "登録先サービスのアカウント（外部サイトで発行）"
-          }
-        },
-        "leafDetails": {
-          "human-restricted": {
-            "summary": "NBDC の提供承認が必要なヒトの個人特定リスクのあるデータ。BAM / FASTQ / VCF 等を JGA に登録する。",
-            "badges": { "package": "BioSample: Human", "access": "アクセス制限あり" }
-          },
-          "proteomics": {
-            "summary": "LC-MS/MS 等のプロテオーム解析データ。DDBJ では扱わず、jPOST の外部サービスで登録を完結する。",
-            "badges": { "external": "外部リダイレクト" },
-            "links": { "jpost": "jPOST" }
-          },
-          "metabolomics": {
-            "summary": "LC-MS / GC-MS 等のメタボロミクスデータ。MetaboBank に登録し、IDF + SDRF メタデータと MAF を添える。",
-            "badges": { "idfSdrf": "IDF + SDRF 必須", "maf": "MAF" }
-          },
-          "variation-human-snp": {
-            "summary": "ヒトの SNP / Indel (≤ 50 bp)。DDBJ 運営の JVar SNP に登録する。",
-            "badges": { "external": "JVar (DDBJ 運営)" },
-            "links": { "jvar": "JVar" }
-          },
-          "variation-human-sv": {
-            "summary": "ヒトの構造変異 (> 50 bp、SV)。DDBJ 運営の JVar SV に登録する。",
-            "badges": { "external": "JVar (DDBJ 運営)" },
-            "links": { "jvar": "JVar" }
-          },
-          "variation-nonhuman-snp": {
-            "summary": "非ヒトの SNP / Indel。EBI の EVA に登録する。",
-            "badges": { "external": "EBI EVA" },
-            "links": { "eva": "EVA" }
-          },
-          "variation-nonhuman-sv": {
-            "summary": "非ヒトの構造変異。EBI の dgVa に登録する。",
-            "badges": { "external": "EBI dgVa" },
-            "links": { "dgva": "dgVa" }
-          },
-          "expression-ngs": {
-            "summary": "NGS による RNA-seq 等の発現解析データ。生リードを DRA に、解析済みデータを GEA に登録する。",
-            "badges": { "rnaseq": "RNA-seq / ChIP-seq", "raw": "DRA (raw) + GEA" }
-          },
-          "expression-array": {
-            "summary": "マイクロアレイ実験データ。DRA は使わず GEA に登録する。",
-            "badges": { "array": "マイクロアレイ" }
-          },
-          "small-sequence": {
-            "summary": "100 配列未満・500 kb 未満の小規模な塩基配列。BioProject / BioSample 不要で NSSS から直接登録できる。",
-            "badges": { "scale": "< 100 配列" }
-          },
-          "metagenome-raw": {
-            "summary": "環境サンプルの生シーケンスリードのみ。DRA に FASTQ をアップロードする。",
-            "badges": { "package": "BioSample: MIxS (MIMS / MIGS env)" }
-          },
-          "metagenome-primary": {
-            "summary": "未同定コンティグ (ビニング前の primary metagenome)。MSS は不要、DRA Analysis に登録する。",
-            "badges": { "package": "BioSample: MIxS", "analysis": "DRA Analysis" }
-          },
-          "metagenome-genome-bin": {
-            "summary": "環境中の個別生物ゲノム再構築 (MAG / Binned / SAG)。MSS 経由でアセンブリを登録する。",
-            "badges": { "mimag": "MIMAG (MAG)", "misag": "MISAG (SAG)", "mssType": "MSS: MAG / SAG" }
-          },
-          "metagenome-tls": {
-            "summary": "16S rRNA 等の特定 locus 解析 (Targeted Locus Study)。MSS の TLS で登録する。",
-            "badges": { "package": "BioSample: MIxS", "mssType": "MSS: TLS" }
-          },
-          "metagenome-tsa": {
-            "summary": "環境サンプル由来の遺伝子発現 (メタトランスクリプトーム)。MSS の TSA で登録する。",
-            "badges": { "package": "BioSample: MIxS", "mssType": "MSS: TSA" }
-          },
-          "organelle-plasmid": {
-            "summary": "オルガネラ (ミトコンドリア・葉緑体等) やプラスミドのゲノム。MSS の GNM で登録する。",
-            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: GNM" }
-          },
-          "prokaryote-raw": {
-            "summary": "原核生物 (細菌・古細菌) のゲノムで生リードのみを保有するケース。DRA に登録する。",
-            "badges": { "package": "BioSample: Microbe" }
-          },
-          "prokaryote-raw-assembly": {
-            "summary": "原核生物ゲノムで生リード + アセンブリを保有するケース。DRA に生リード、MSS にアセンブリを登録。DFAST で自動アノテーション可能。",
-            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: WGS / GNM" },
-            "links": { "dfast": "DFAST（自動アノテーション）" }
-          },
-          "prokaryote-assembly-only": {
-            "summary": "原核生物ゲノムでアセンブリのみを保有するケース。MSS で配列 + アノテーションを登録する。",
-            "badges": { "package": "BioSample: Microbe", "mssType": "MSS: WGS / GNM" },
-            "links": { "dfast": "DFAST（自動アノテーション）" }
-          },
-          "virus-raw": {
-            "summary": "ウイルス / ファージの生リードのみ。DRA に登録する。",
-            "badges": { "package": "BioSample: Virus" }
-          },
-          "virus-raw-assembly": {
-            "summary": "ウイルスゲノムの生リード + アセンブリ。DRA と MSS に登録。SARS-CoV-2 は DFAST_VRL で自動アノテーション。",
-            "badges": { "package": "BioSample: Virus", "mssType": "MSS: GNM / WGS" },
-            "links": { "dfastVrl": "DFAST_VRL（ウイルス自動アノテーション）" }
-          },
-          "virus-assembly-only": {
-            "summary": "ウイルスゲノムでアセンブリのみ。MSS で登録。segment ウイルス (インフルエンザ等) は複数エントリ登録。",
-            "badges": { "package": "BioSample: Virus", "mssType": "MSS: GNM / WGS" },
-            "links": { "dfastVrl": "DFAST_VRL" }
-          },
-          "eukaryote-tsa": {
-            "summary": "真核生物の de novo 転写産物アセンブリ (TSA)。DRA + MSS の TSA で登録する。",
-            "badges": { "package": "BioSample: Eukaryote", "mssType": "MSS: TSA" }
-          },
-          "eukaryote-tpa": {
-            "summary": "第三者によるアノテーション (TPA assembly / specialist_db)。peer-reviewed 論文発表が必須。",
-            "badges": { "package": "BioSample: Eukaryote", "mssType": "MSS: TPA", "peerReviewed": "peer-reviewed 必須" }
-          },
-          "eukaryote-raw": {
-            "summary": "真核生物ゲノムで生リードのみ。DRA に登録する。",
-            "badges": { "package": "BioSample: Eukaryote" }
-          },
-          "eukaryote-raw-assembly": {
-            "summary": "真核生物ゲノムの生リード + アセンブリ。DRA と MSS に登録。動物 / 植物 / 菌類で BioSample パッケージと qualifier が異なる。",
-            "badges": { "package": "BioSample: Animal / Plant / Microbe", "mssType": "MSS: GNM / WGS / HTG" }
-          },
-          "eukaryote-assembly-only": {
-            "summary": "真核生物ゲノムでアセンブリのみ。MSS で登録する。",
-            "badges": { "package": "BioSample: Animal / Plant / Microbe", "mssType": "MSS: GNM / WGS / HTG" }
-          },
-          "eukaryote-haplotype-raw-assembly": {
-            "summary": "二倍体の Haplotype 区別あり (Principal / Alternate) で生リード + アセンブリ。umbrella + Principal + Alternate の 3 BioProject 構成。",
-            "badges": { "package": "BioSample: Eukaryote", "locusTag": "locus_tag prefix + Haplotype suffix" }
-          },
-          "eukaryote-haplotype-assembly-only": {
-            "summary": "Haplotype 区別ありのアセンブリのみ。umbrella + Principal + Alternate 構成で MSS に登録する。",
-            "badges": { "package": "BioSample: Eukaryote", "locusTag": "locus_tag prefix + Haplotype suffix" }
-          },
-          "eukaryote-est-small": {
-            "summary": "Sanger シングルパス cDNA の小規模 (< 100 配列) 登録。NSSS から直接登録する。",
-            "badges": { "scale": "< 100 配列", "est": "EST 区分" }
-          },
-          "eukaryote-est-large": {
-            "summary": "Sanger シングルパス cDNA の大規模登録。BioProject + BioSample + MSS の EST 区分で登録する。",
-            "badges": { "package": "BioSample: Eukaryote", "est": "MSS: EST" }
-          }
-        }
-      }
-    },
-    "submitAlt": {
-      "title": "登録 v2",
-      "meta": {
-        "title": "登録ナビゲーション v2 | DDBJ 刷新 (仮)",
-        "description": "持っているデータの種別から登録サービスの組み合わせを動的に案内する登録ナビゲーション v2"
-      },
-      "hero": {
-        "title": "登録ナビゲーション v2",
-        "subtitle": "持っているデータをチェックすると、必要な登録先と準備物が動的に絞り込まれる"
-      },
-      "sections": {
-        "qa": "質問ウィザード",
-        "detail": "詳細"
-      },
-      "qa": {
-        "required": "必須",
-        "q1": {
-          "title": "何のファイル/データを持っていますか？（複数選択可、必須）",
-          "sequence-read": { "label": "配列リード（NGS / 長鎖シーケンサ）", "description": "FASTQ / BAM" },
-          "assembled": { "label": "組み立て済み配列（アセンブリ）", "description": "FASTA / アセンブリ" },
-          "annotation": { "label": "配列に対する遺伝子アノテーション", "description": "GFF / GenBank flat" },
-          "variation": { "label": "変異情報", "description": "VCF / TSV" },
-          "expression-array": { "label": "マイクロアレイ発現データ", "description": "CEL / iDAT" },
-          "expression-matrix": { "label": "RNA-seq 発現マトリクス", "description": "カウント表 / TPM / FPKM" },
-          "mass-spec": { "label": "質量分析データ", "description": "mzML / RAW（プロテオ or メタボ）" },
-          "spatial-tx": { "label": "空間トランスクリプトーム", "description": "10x Xenium / Visium" }
-        },
-        "q2": {
-          "title": "データの対象生物は？（1 つ選択、必須）",
-          "human": { "label": "ヒト", "description": "ヒトサンプル" },
-          "eukaryote": { "label": "ヒト以外の真核生物", "description": "動物 / 植物 / 菌類" },
-          "prokaryote": { "label": "原核生物", "description": "細菌 / 古細菌" },
-          "virus": { "label": "ウイルス", "description": "ファージ含む" },
-          "metagenome": { "label": "メタゲノム / 環境試料", "description": "種を特定しない混合" },
-          "organelle-plasmid": { "label": "オルガネラ / プラスミド", "description": "ミトコンドリア / 葉緑体 / プラスミド" }
-        },
-        "q3": {
-          "title": "アクセス制限はどちらですか？",
-          "open": { "label": "一般公開できる", "description": "誰でもアクセス可" },
-          "restricted": { "label": "制限公開が必要", "description": "NBDC 承認要" }
-        },
-        "q4": {
-          "title": "アセンブリの由来は？",
-          "primary": { "label": "自分で新規に決定したデータ", "description": "Primary" },
-          "tpa": { "label": "第三者の配列を利用", "description": "TPA" }
-        },
-        "q5": {
-          "title": "データの規模は？",
-          "small": { "label": "小規模", "description": "100 配列以下 / 100bp〜500kb" },
-          "normal": { "label": "通常規模", "description": "上記の範囲を超える" }
-        },
-        "q6": {
-          "title": "該当する特殊形式は？（複数選択可）",
-          "haplotype": { "label": "Haplotype phased アセンブリ" },
-          "tsa": { "label": "TSA（Transcriptome Shotgun Assembly）" },
-          "tls": { "label": "TLS（Targeted Locus Sequence）" },
-          "mag-sag": { "label": "MAG / SAG / Binned" },
-          "est": { "label": "EST" },
-          "none": { "label": "どれにも該当しない" }
-        },
-        "q7": {
-          "title": "質量分析の種別は？",
-          "proteomics": { "label": "プロテオミクス", "description": "LC-MS/MS 等のプロテオーム" },
-          "metabolomics": { "label": "メタボロミクス", "description": "LC-MS / GC-MS / NMR" }
-        },
-        "q8": {
-          "title": "メタゲノムデータの種別は？",
-          "raw": { "label": "Raw リード", "description": "FASTQ" },
-          "primary": { "label": "一次解析結果", "description": "taxonomy profile / アバンダンス表など" }
-        },
-        "q9": {
-          "title": "ヒト試料はメタゲノム由来ですか？",
-          "yes": { "label": "はい", "description": "口腔・腸内などのマイクロバイオーム" },
-          "no": { "label": "いいえ", "description": "ヒト本体のデータ" }
-        }
-      },
-      "leaves": {
-        "human-raw-open": { "label": "ヒト 配列リード（公開）" },
-        "human-raw-assembly-open": { "label": "ヒト Raw + アセンブリ（公開）" },
-        "human-assembly-only-open": { "label": "ヒト アセンブリのみ（公開）" }
-      },
-      "dataTypes": {
-        "human-restricted": { "label": "ヒト制限公開アクセス" },
-        "proteomics": { "label": "プロテオミクス" },
-        "microarray": { "label": "Microarray" },
-        "metabolomics": { "label": "メタボロミクス" },
-        "small-sequence": { "label": "小規模塩基配列" }
-      },
-      "multiSelect": {
-        "patterns": {
-          "single": {
-            "title": "1 項目だけ選択",
-            "description": "選択した項目に応じた登録フローが詳細パネルに表示されます。"
-          },
-          "merged-submission": {
-            "title": "1 つの登録フローに統合できます",
-            "description": "選択した項目は 1 つの登録 (BioProject + BioSample + 関連 DB) に統合可能です。"
-          },
-          "shared-bp-bs": {
-            "title": "BioProject / BioSample を共有して別 submission",
-            "description": "別の submission になりますが、BioProject / BioSample は共有できます。"
-          },
-          "fully-independent": {
-            "title": "外部窓口での別登録が必要",
-            "description": "選択した項目は DDBJ 外部窓口 (jPOST / EVA / dgVa 等) への別登録が必要で、BioProject / BioSample は共有できません。"
-          },
-          "jga-unified": {
-            "title": "JGA に統合されます",
-            "description": "ヒト制限公開アクセスを含むため、選択した項目は JGA に一本化されます。"
-          }
-        }
-      },
-      "tree": {
-        "options": {
-          "genome": {
-            "eukaryote": "真核生物",
-            "prokaryote": "原核生物",
-            "virus": "ウイルス",
-            "organelle-plasmid": "オルガネラ / プラスミド",
-            "metagenome": "メタゲノム"
-          },
-          "genome-eukaryote": {
-            "raw-assembly": "Raw + アセンブリ",
-            "assembly-only": "アセンブリのみ",
-            "haplotype-raw-assembly": "Haplotype Raw + アセンブリ",
-            "haplotype-assembly-only": "Haplotype アセンブリのみ",
-            "tsa": "TSA (転写産物アセンブリ)",
-            "tpa": "TPA (第三者アノテーション)"
-          },
-          "genome-prokaryote": {
-            "raw-assembly": "Raw + アセンブリ",
-            "assembly-only": "アセンブリのみ"
-          },
-          "genome-virus": {
-            "raw-assembly": "Raw + アセンブリ",
-            "assembly-only": "アセンブリのみ"
-          },
-          "genome-metagenome": {
-            "genome-bin": "MAG / Binned / SAG",
-            "tls": "TLS (OTU プロファイル)",
-            "tsa": "メタ TSA",
-            "human-restricted": "ヒトマイクロバイオーム制限"
-          },
-          "sequence-read": {
-            "eukaryote-raw": "真核生物リード",
-            "prokaryote-raw": "原核生物リード",
-            "virus-raw": "ウイルスリード",
-            "expression-ngs": "NGS による発現解析 (RNA-Seq)",
-            "metagenome": "メタゲノム"
-          },
-          "sequence-read-metagenome": {
-            "raw": "Raw リード",
-            "primary": "Primary metagenome (DRA Analysis)"
-          },
-          "variation": {
-            "nonhuman": "非ヒト",
-            "human-open": "ヒト 非制限",
-            "human-restricted": "ヒト 制限"
-          },
-          "spatial-transcriptomics": {
-            "nonhuman": "非ヒト",
-            "restricted": "ヒト 制限"
-          },
-          "est": {
-            "small": "小規模 (< 100 配列)",
-            "large": "大規模"
-          }
-        }
-      },
-      "breadcrumb": {
-        "aria": "選択中の Q&A 回答を示すパンくずリスト"
-      },
-      "detail": {
-        "empty": {
-          "title": "Q&A に答えると詳細が表示されます",
-          "description": "上の質問ウィザードに答えると、登録先と準備物が動的に絞り込まれます。"
-        },
-        "candidatesPrompt": "現在 {{count}} 件の候補があります。残りの質問に答えると leaf が一意に決まります。",
-        "overviewPlaceholder": "leaf がまだ一意に決まっていません。残りの質問に答えてください。",
-        "placeholderSummary": "詳細は順次拡充中です。",
-        "venue": {
-          "internal": "DDBJ 内部",
-          "external": "外部窓口"
-        },
-        "headings": {
-          "steps": "登録の流れ",
-          "common": "共通の準備物",
-          "links": "外部リンク",
-          "masters": "登録項目の詳細"
-        },
-        "masters": {
-          "bpDataTypes": "BioProject Project Data Type",
-          "bsPackages": "BioSample Package",
-          "draLibrarySources": "DRA Library Source",
-          "draLibraryStrategies": "DRA Library Strategy",
-          "draInstruments": "DRA Instrument Model",
-          "geaSubmissionTypes": "GEA Submission Type",
-          "metabobankSubmissionTypes": "MetaboBank Submission Type",
-          "jgaObjectTypes": "JGA 登録オブジェクト",
-          "mssDataTypes": "MSS Data Type"
-        },
-        "goalTemplates": {
-          "jga": {
-            "common": "DDBJ Account / 公開鍵 / NBDC HumanDBs での提供承認が必要。",
-            "links": { "nbdc": "NBDC HumanDBs", "jga": "JGA 提出ガイド" }
-          },
-          "jga-analysis": {
-            "common": "JGA 既存 Study に対する Analysis 登録。Policy / Dataset の関連付けが必要。",
-            "links": { "jga": "JGA Analysis ガイド" }
-          },
-          "external-jpost": {
-            "common": "jPOST に直接登録。DDBJ 側のアカウントは不要。",
-            "links": { "jpost": "jPOST" }
-          },
-          "external-eva": {
-            "common": "EBI の European Variation Archive (EVA) に直接登録。",
-            "links": { "eva": "EVA" }
-          },
-          "external-dgva": {
-            "common": "EBI の Database of Genomic Variants archive (dgVa) に直接登録。",
-            "links": { "dgva": "dgVa" }
-          },
-          "external-humandbs": {
-            "common": "NBDC HumanDBs に登録 (制限公開データ)。",
-            "links": { "humandbs": "HumanDBs" }
-          },
-          "jvar": {
-            "common": "DDBJ JVar に SNP/Indel または SV を登録。",
-            "links": { "jvar": "JVar" }
-          },
-          "sra-analysis": {
-            "common": "BioProject + BioSample に紐付けて DRA Analysis オブジェクトを登録。",
-            "links": { "dway": "D-way" }
-          },
-          "metabobank": {
-            "common": "BioProject + BioSample + MetaboBank の IDF / SDRF / MAF を登録。",
-            "links": { "metabobank": "MetaboBank" }
-          },
-          "gea": {
-            "common": "BioProject + BioSample + (DRA) + GEA Submission を登録。",
-            "links": { "dway": "D-way", "gea": "GEA" }
-          },
-          "gea-xenium": {
-            "common": "BioProject + BioSample + GEA に 10x Genomics Xenium Submission として登録。",
-            "links": { "dway": "D-way", "gea": "GEA" }
-          },
-          "nsss": {
-            "common": "DDBJ Account でログインし、NSSS Web フォームから登録。",
-            "links": { "nsss": "NSSS" }
-          },
-          "genome": {
-            "common": "BioProject → BioSample → (DRA) → MSS の順で登録。",
-            "links": { "dway": "D-way", "mss": "MSS" }
-          }
-        },
-        "steps": {
-          "jga": {
-            "dbcls": { "title": "NBDC への申請", "description": "HumanDBs / DBCLS で提供承認を得る。" },
-            "guidance": { "title": "JGA 提出ガイダンス", "description": "JGA 担当者と提出方針を相談。" },
-            "upload": { "title": "JGA アップロード", "description": "Study / Sample / Experiment / Data / Analysis を順次登録。" }
-          },
-          "jga-analysis": {
-            "guidance": { "title": "JGA Analysis ガイダンス", "description": "既存 Study に対する Analysis 計画を JGA に共有。" },
-            "upload": { "title": "Analysis 登録", "description": "VCF / BAM 等の Analysis オブジェクトをアップロード。" }
-          },
-          "external-jpost": {
-            "submit": { "title": "jPOST に直接登録", "description": "jPOST のサイトにアクセスし、指示に従って登録する。" }
-          },
-          "external-eva": {
-            "submit": { "title": "EVA に直接登録", "description": "EBI の EVA で非ヒト SNP / Indel を登録する。" }
-          },
-          "external-dgva": {
-            "submit": { "title": "dgVa に直接登録", "description": "EBI の dgVa で非ヒト構造変異を登録する。" }
-          },
-          "external-humandbs": {
-            "submit": { "title": "HumanDBs に登録", "description": "NBDC HumanDBs に提供データを登録する。" }
-          },
-          "jvar": {
-            "submit": { "title": "JVar に直接登録", "description": "JVar SNP / JVar SV のいずれかで登録。" }
-          },
-          "sra-analysis": {
-            "bioproject": { "title": "BioProject 登録", "description": "親 Project を D-way で登録。" },
-            "biosample": { "title": "BioSample 登録", "description": "サンプル属性を登録。" },
-            "draAnalysis": { "title": "DRA Analysis 登録", "description": "Analysis オブジェクトを D-way で登録。" }
-          },
-          "metabobank": {
-            "bioproject": { "title": "BioProject 登録", "description": "プロジェクト情報を登録。" },
-            "biosample": { "title": "BioSample 登録", "description": "サンプル情報を登録。" },
-            "metabobank": { "title": "MetaboBank 登録", "description": "IDF / SDRF / MAF を MetaboBank に登録。" }
-          },
-          "gea": {
-            "bioproject": { "title": "BioProject 登録", "description": "プロジェクト情報を登録。" },
-            "biosample": { "title": "BioSample 登録", "description": "サンプル情報を登録。" },
-            "dra": { "title": "DRA 登録 (RNA-Seq raw)", "description": "Sequencing リードを DRA に登録。" },
-            "gea": { "title": "GEA Submission", "description": "発現プロファイルを GEA に登録。" }
-          },
-          "gea-xenium": {
-            "bioproject": { "title": "BioProject 登録", "description": "プロジェクト情報を登録。" },
-            "biosample": { "title": "BioSample 登録", "description": "サンプル情報を登録。" },
-            "gea": { "title": "GEA (Xenium) 登録", "description": "10x Genomics Xenium 由来の空間発現データを登録。" }
-          },
-          "nsss": {
-            "login": { "title": "NSSS ログイン", "description": "DDBJ Account でログイン。" },
-            "form": { "title": "Web フォーム入力", "description": "塩基配列・参照情報・Annotation を入力。" },
-            "review": { "title": "確認・送信", "description": "DDBJ スタッフが確認後、アクセッション番号を発行。" }
-          },
-          "genome": {
-            "bioproject": { "title": "BioProject 登録", "description": "プロジェクト情報を D-way で登録。" },
-            "biosample": { "title": "BioSample 登録", "description": "サンプル属性を D-way で登録。" },
-            "dra": { "title": "DRA 登録 (Raw)", "description": "Sequencing リードを DRA に登録 (raw が無い場合は省略)。" },
-            "mss": { "title": "MSS 登録 (Annotation)", "description": "アセンブリ + アノテーションを MSS に登録。" }
-          }
-        },
-        "leaves": {
-          "human-restricted": { "summary": "ヒトを対象とした個人特定リスクのあるデータ。NBDC 承認後、JGA に登録する。" },
-          "proteomics": { "summary": "LC-MS/MS によるプロテオーム解析データ。jPOST に直接登録する。" },
-          "metabolomics": { "summary": "LC-MS / GC-MS / NMR 等のメタボロミクスデータ。BioProject + BioSample + MetaboBank で登録する。" },
-          "expression-ngs": { "summary": "NGS による RNA-Seq raw を DRA に登録し、発現プロファイルを GEA Submission として併設登録する。" },
-          "expression-array": { "summary": "マイクロアレイで得た発現データを GEA Microarray Submission として登録する。" },
-          "small-sequence": { "summary": "100 配列未満・< 500 kb の塩基配列を NSSS Web フォームから直接登録する。" },
-          "metagenome-raw": { "summary": "環境サンプル由来のメタゲノム raw を BioProject + BioSample + DRA に登録する。" },
-          "metagenome-primary": { "summary": "未同定コンティグ (Primary metagenome) を DRA Analysis として登録する。" },
-          "metagenome-genome-bin": { "summary": "MAG / Binned / SAG のアセンブリを MSS で登録する (MIMAG / MISAG パッケージ)。" },
-          "metagenome-tls": { "summary": "16S rRNA 等の OTU プロファイル (TLS) を MSS の TLS データ種別で登録する。" },
-          "metagenome-tsa": { "summary": "メタゲノム由来の TSA (メタトランスクリプトーム) を MSS で登録する。" },
-          "human-microbiome-restricted": { "summary": "ヒトマイクロバイオームの制限データ。JGA-analysis または HumanDBs で登録する。" },
-          "organelle-plasmid": { "summary": "オルガネラ / プラスミドのアセンブリを BioProject + BioSample + MSS で登録する。" },
-          "prokaryote-raw": { "summary": "原核生物の塩基配列リードを BioProject + BioSample + DRA に登録する。" },
-          "prokaryote-raw-assembly": { "summary": "原核生物ゲノム (Raw + アセンブリ) を BioProject + BioSample + DRA + MSS で登録する。" },
-          "prokaryote-assembly-only": { "summary": "原核生物ゲノムのアセンブリのみを BioProject + BioSample + MSS で登録する。" },
-          "virus-raw": { "summary": "ウイルスゲノムリードを BioProject + BioSample + DRA に登録する。" },
-          "virus-raw-assembly": { "summary": "ウイルスゲノム (Raw + アセンブリ) を BioProject + BioSample + DRA + MSS で登録する。" },
-          "virus-assembly-only": { "summary": "ウイルスゲノムのアセンブリのみを BioProject + BioSample + MSS で登録する。" },
-          "eukaryote-tsa": { "summary": "真核生物の de novo 転写産物アセンブリ (TSA) を BioProject + BioSample + DRA + MSS で登録する。" },
-          "eukaryote-tpa": { "summary": "真核生物の第三者アノテーション (TPA) を BioProject + BioSample + MSS で登録する。peer-reviewed 発表が必須。" },
-          "eukaryote-raw": { "summary": "真核生物の塩基配列リードを BioProject + BioSample + DRA に登録する。" },
-          "eukaryote-raw-assembly": { "summary": "真核生物ゲノム (Raw + アセンブリ) を BioProject + BioSample + DRA + MSS で登録する。" },
-          "eukaryote-assembly-only": { "summary": "真核生物ゲノムのアセンブリのみを BioProject + BioSample + MSS で登録する。" },
-          "eukaryote-haplotype-raw-assembly": { "summary": "二倍体 Haplotype 区別 (Principal / Alternate) で Raw + アセンブリを登録。umbrella + Principal + Alternate の 3 BioProject 構成。" },
-          "eukaryote-haplotype-assembly-only": { "summary": "Haplotype 区別ありのアセンブリのみを MSS で登録する。umbrella + Principal + Alternate 構成。" },
-          "eukaryote-est-small": { "summary": "Sanger シングルパス cDNA を NSSS の EST 区分で登録 (< 100 配列)。" },
-          "eukaryote-est-large": { "summary": "Sanger シングルパス cDNA を BioProject + BioSample + MSS の EST 区分で大規模登録する。" },
-          "spatial-tx-nonhuman": { "summary": "10x Genomics Xenium 等の空間遺伝子発現データを BioProject + BioSample + GEA (Xenium) で登録する。" },
-          "spatial-tx-restricted": { "summary": "ヒト制限の空間トランスクリプトームを JGA-analysis として登録する (DB-2021 詳細仕様確認後に統合判断)。" },
-          "variation-nonhuman": { "summary": "非ヒト由来の SNP / SV を EBI の EVA / dgVa に登録する。" },
-          "variation-human-open": { "summary": "ヒト非制限の SNP / SV を JVar (DDBJ 運営) または DRA Analysis に登録する。" },
-          "variation-human-restricted": { "summary": "ヒト制限の変異データを JGA-analysis または HumanDBs に登録する。" }
-        }
-      }
-    },
     "submitAlt3": {
       "title": "登録 v3",
       "meta": {
@@ -1469,18 +701,48 @@
         "flowCard": "登録フローカード"
       },
       "buttons": {
-        "sequenceRead": { "label": "+ 配列リード (fastq)", "shortLabel": "配列リード" },
-        "assembled": { "label": "+ 組み立て済み配列 (fasta)", "shortLabel": "組み立て済み配列" },
-        "annotation": { "label": "+ 遺伝子アノテーション (gff)", "shortLabel": "遺伝子アノテーション" },
-        "variation": { "label": "+ 変異情報 (vcf)", "shortLabel": "変異情報" },
-        "phenotype": { "label": "+ 表現型データ (tsv)", "shortLabel": "表現型データ" },
-        "expressionArray": { "label": "+ マイクロアレイ発現 (cel)", "shortLabel": "マイクロアレイ発現" },
-        "expressionMatrix": { "label": "+ RNA-seq マトリクス (tsv)", "shortLabel": "RNA-seq マトリクス" },
-        "massSpec": { "label": "+ 質量分析 (mzML)", "shortLabel": "質量分析" },
-        "spatialTx": { "label": "+ 空間トランスクリプトーム (tsv)", "shortLabel": "空間トランスクリプトーム" }
+        "sequenceRead": {
+          "label": "+ 配列リード (fastq)",
+          "shortLabel": "配列リード"
+        },
+        "assembled": {
+          "label": "+ 組み立て済み配列 (fasta)",
+          "shortLabel": "組み立て済み配列"
+        },
+        "annotation": {
+          "label": "+ 遺伝子アノテーション (gff)",
+          "shortLabel": "遺伝子アノテーション"
+        },
+        "variation": {
+          "label": "+ 変異情報 (vcf)",
+          "shortLabel": "変異情報"
+        },
+        "phenotype": {
+          "label": "+ 表現型データ (tsv)",
+          "shortLabel": "表現型データ"
+        },
+        "expressionArray": {
+          "label": "+ マイクロアレイ発現 (cel)",
+          "shortLabel": "マイクロアレイ発現"
+        },
+        "expressionMatrix": {
+          "label": "+ RNA-seq マトリクス (tsv)",
+          "shortLabel": "RNA-seq マトリクス"
+        },
+        "massSpec": {
+          "label": "+ 質量分析 (mzML)",
+          "shortLabel": "質量分析"
+        },
+        "spatialTx": {
+          "label": "+ 空間トランスクリプトーム (tsv)",
+          "shortLabel": "空間トランスクリプトーム"
+        }
       },
       "modals": {
-        "common": { "cancel": "キャンセル", "add": "追加" },
+        "common": {
+          "cancel": "キャンセル",
+          "add": "追加"
+        },
         "sequenceRead": {
           "title": "配列リードを追加",
           "layout": {
@@ -1549,8 +811,12 @@
               "tpa-specialist-db": "TPA:specialist_db (DDBJ では受付しない、案内のみ)"
             }
           },
-          "citedAccession": { "label": "参照元 accession (カンマ区切り可)" },
-          "doi": { "label": "公開済み peer-review 論文の DOI / PubMed ID" },
+          "citedAccession": {
+            "label": "参照元 accession (カンマ区切り可)"
+          },
+          "doi": {
+            "label": "公開済み peer-review 論文の DOI / PubMed ID"
+          },
           "phased": {
             "label": "Haplotype phased ですか?",
             "hint": "BP Step が Principal / Alternate / DRA 用 / Umbrella に分かれます"
@@ -1588,8 +854,12 @@
               "other": "その他"
             }
           },
-          "citedAccession": { "label": "参照元 accession" },
-          "doi": { "label": "peer-review 論文の DOI / PubMed ID (必須)" }
+          "citedAccession": {
+            "label": "参照元 accession"
+          },
+          "doi": {
+            "label": "peer-review 論文の DOI / PubMed ID (必須)"
+          }
         },
         "variation": {
           "title": "変異情報を追加",
@@ -1616,7 +886,9 @@
               "reference-only": "既存 accession を参照のみ"
             }
           },
-          "referenceAccession": { "label": "参照配列の accession" }
+          "referenceAccession": {
+            "label": "参照配列の accession"
+          }
         },
         "phenotype": {
           "title": "表現型データを追加",
@@ -1697,7 +969,9 @@
               "imaging": "Imaging MS → MetaboBank imaging stream"
             }
           },
-          "submissionType": { "label": "MetaboBank Submission Type" },
+          "submissionType": {
+            "label": "MetaboBank Submission Type"
+          },
           "maf": {
             "label": "メタボローム代謝物アサインメント (MAF) も添付しますか?",
             "hint": "MetaboBank の関連メタデータ"
@@ -1732,8 +1006,12 @@
       },
       "tableColumns": {
         "unset": "(未設定)",
-        "kind": { "label": "種別" },
-        "file": { "label": "ファイル" },
+        "kind": {
+          "label": "種別"
+        },
+        "file": {
+          "label": "ファイル"
+        },
         "organism": {
           "label": "生物",
           "values": {
@@ -1765,7 +1043,9 @@
             "phenotype": "表現型"
           }
         },
-        "chips": { "label": "Tag" }
+        "chips": {
+          "label": "Tag"
+        }
       },
       "table": {
         "emptyHint": "+ ボタンを押してファイルを追加してください",
@@ -1790,7 +1070,10 @@
       "flowCard": {
         "emptyHint": "ファイル種別ボタンを押してテーブルにファイルを追加してください。追加した瞬間から登録フローカードが組み上がります。",
         "noStepsYet": "テーブルの列を埋めると登録フローカードが詳細化されます。",
-        "venue": { "internal": "DDBJ", "external": "外部" },
+        "venue": {
+          "internal": "DDBJ",
+          "external": "外部"
+        },
         "issuesAccession": "発行 accession",
         "dependsOn": "依存",
         "targets": "対象",
@@ -1919,16 +1202,98 @@
           "resetManual": "自動推測に戻す",
           "remove": "削除"
         },
-        "assembly-form": { "label": "アセンブリ形態", "values": { "wgs": "WGS", "gnm": "GNM", "tsa": "TSA", "tls": "TLS", "est": "EST", "mag": "MAG", "sag": "SAG", "htg": "HTG", "htc": "HTC", "gss": "GSS", "syn": "SYN", "misc": "MISC", "ask": "ASK" } },
-        "provenance": { "label": "Provenance", "values": { "third-party": "第三者再解析" } },
-        "variation-form": { "label": "Variation form", "values": { "per-sample": "per-sample", "aggregate": "aggregate" } },
-        "variation-type": { "label": "Variation type", "values": { "snp-indel": "SNP/Indel", "sv": "SV", "cnv": "CNV" } },
-        "haplotype-mode": { "label": "Haplotype mode", "values": { "phased": "Haplotype phased" } },
-        "functional-genomics": { "label": "Functional genomics", "values": { "yes": "GEA 登録", "wgs-target": "WGS-target", "tsa-target": "TSA-target", "metagenome-target": "metagenome-target", "variation-target": "variation-target", "wes-target": "WES-target", "other": "other" } },
-        "mass-spec-domain": { "label": "Mass spec domain", "values": { "proteomics": "プロテオーム", "metabolomics": "メタボローム", "imaging": "Imaging MS" } },
-        "spatial-platform": { "label": "Spatial platform", "values": { "visium": "Visium", "xenium": "Xenium", "merfish": "MERFISH", "stereo-seq": "Stereo-seq", "slide-seq": "Slide-seq", "geomx": "GeoMx", "other": "その他" } },
-        "tpa-subtype": { "label": "TPA サブタイプ", "values": { "tpa-assembly": "TPA:assembly", "tpa-specialist-db": "TPA:specialist_db" } },
-        "haplotype-naming": { "label": "Haplotype 命名", "values": { "principal-alternate": "Principal / Alternate", "haplotype-1-2": "Haplotype 1 / 2", "maternal-paternal": "Maternal / Paternal" } }
+        "assembly-form": {
+          "label": "アセンブリ形態",
+          "values": {
+            "wgs": "WGS",
+            "gnm": "GNM",
+            "tsa": "TSA",
+            "tls": "TLS",
+            "est": "EST",
+            "mag": "MAG",
+            "sag": "SAG",
+            "htg": "HTG",
+            "htc": "HTC",
+            "gss": "GSS",
+            "syn": "SYN",
+            "misc": "MISC",
+            "ask": "ASK"
+          }
+        },
+        "provenance": {
+          "label": "Provenance",
+          "values": {
+            "third-party": "第三者再解析"
+          }
+        },
+        "variation-form": {
+          "label": "Variation form",
+          "values": {
+            "per-sample": "per-sample",
+            "aggregate": "aggregate"
+          }
+        },
+        "variation-type": {
+          "label": "Variation type",
+          "values": {
+            "snp-indel": "SNP/Indel",
+            "sv": "SV",
+            "cnv": "CNV"
+          }
+        },
+        "haplotype-mode": {
+          "label": "Haplotype mode",
+          "values": {
+            "phased": "Haplotype phased"
+          }
+        },
+        "functional-genomics": {
+          "label": "Functional genomics",
+          "values": {
+            "yes": "GEA 登録",
+            "wgs-target": "WGS-target",
+            "tsa-target": "TSA-target",
+            "metagenome-target": "metagenome-target",
+            "variation-target": "variation-target",
+            "wes-target": "WES-target",
+            "other": "other"
+          }
+        },
+        "mass-spec-domain": {
+          "label": "Mass spec domain",
+          "values": {
+            "proteomics": "プロテオーム",
+            "metabolomics": "メタボローム",
+            "imaging": "Imaging MS"
+          }
+        },
+        "spatial-platform": {
+          "label": "Spatial platform",
+          "values": {
+            "visium": "Visium",
+            "xenium": "Xenium",
+            "merfish": "MERFISH",
+            "stereo-seq": "Stereo-seq",
+            "slide-seq": "Slide-seq",
+            "geomx": "GeoMx",
+            "other": "その他"
+          }
+        },
+        "tpa-subtype": {
+          "label": "TPA サブタイプ",
+          "values": {
+            "tpa-assembly": "TPA:assembly",
+            "tpa-specialist-db": "TPA:specialist_db"
+          }
+        },
+        "haplotype-naming": {
+          "label": "Haplotype 命名",
+          "values": {
+            "principal-alternate": "Principal / Alternate",
+            "haplotype-1-2": "Haplotype 1 / 2",
+            "maternal-paternal": "Maternal / Paternal"
+          }
+        }
       },
       "flowGen": {
         "global": {
@@ -2058,7 +1423,9 @@
         }
       }
     },
-    "designSystem": { "title": "Design System" },
+    "designSystem": {
+      "title": "Design System"
+    },
     "news": {
       "meta": {
         "title": "お知らせ・ニュース",
@@ -2115,7 +1482,9 @@
         "dbList": "現在の検索条件をベースに、絞り込み案を提案します。提案を確認してから [採用] で適用されます。"
       },
       "shortcutHint": "Ctrl/Cmd + Enter で送信、Esc で取消",
-      "examples": { "label": "例" },
+      "examples": {
+        "label": "例"
+      },
       "actions": {
         "generate": "提案を生成",
         "generating": "生成中...",
@@ -2127,15 +1496,33 @@
         "disclaimer": "🤖 AI 生成・要確認。誤りがあれば [クリア] してから再入力してください。"
       },
       "errors": {
-        "unknown": { "title": "予期しないエラーが発生しました" },
-        "network_error": { "title": "ネットワークエラー。通信状況を確認してから再試行してください。" },
-        "not_configured": { "title": "LLM 機能はこの環境では利用できません (staging / production でのみ稼働)" },
-        "no_dsl": { "title": "入力から検索 DSL を作れませんでした。検索対象 (生物種・タイトル等) を含めて言い換えてください。" },
-        "natural_text_too_long": { "title": "入力が長すぎます (1000 文字以内に収めてください)" },
-        "upstream_timeout": { "title": "LLM サーバーの応答が時間内に得られませんでした。少し時間をおいて再試行してください。" },
-        "upstream_error": { "title": "LLM サーバーがエラーを返しました。少し時間をおいて再試行してください。" },
-        "upstream_unreachable": { "title": "LLM サーバーに接続できませんでした。" },
-        "empty_response": { "title": "LLM が空の応答を返しました。別の表現で再試行してください。" }
+        "unknown": {
+          "title": "予期しないエラーが発生しました"
+        },
+        "network_error": {
+          "title": "ネットワークエラー。通信状況を確認してから再試行してください。"
+        },
+        "not_configured": {
+          "title": "LLM 機能はこの環境では利用できません (staging / production でのみ稼働)"
+        },
+        "no_dsl": {
+          "title": "入力から検索 DSL を作れませんでした。検索対象 (生物種・タイトル等) を含めて言い換えてください。"
+        },
+        "natural_text_too_long": {
+          "title": "入力が長すぎます (1000 文字以内に収めてください)"
+        },
+        "upstream_timeout": {
+          "title": "LLM サーバーの応答が時間内に得られませんでした。少し時間をおいて再試行してください。"
+        },
+        "upstream_error": {
+          "title": "LLM サーバーがエラーを返しました。少し時間をおいて再試行してください。"
+        },
+        "upstream_unreachable": {
+          "title": "LLM サーバーに接続できませんでした。"
+        },
+        "empty_response": {
+          "title": "LLM が空の応答を返しました。別の表現で再試行してください。"
+        }
       }
     }
   }

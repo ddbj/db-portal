@@ -9,9 +9,7 @@ import { NAV_ITEMS, type NavItem } from "@/lib/nav"
 
 const NAV_LABELS_JA = {
   "header.nav.search": "検索",
-  "header.nav.submit": "登録",
-  "header.nav.submitAlt": "登録-alt",
-  "header.nav.submitAlt3": "登録-alt-3",
+  "header.nav.submitAlt3": "登録",
 } as const satisfies Record<NavItem["labelKey"], string>
 
 const renderHeader = (initialPath = "/") => {

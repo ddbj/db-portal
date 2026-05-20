@@ -10,8 +10,7 @@ interface InternalExternalBadgeProps {
   className?: string
 }
 
-// docs/submit-alt.md L348-356 で定義された色区分。
-// 内部 (DDBJ/BSI) = success (emerald)、外部 = warning (amber)。
+// 内部 (DDBJ/BSI) = success (emerald)、外部 = warning (amber)。SSOT: docs/submit-alt3.md §6.2
 const InternalExternalBadge = ({
   venue,
   label,

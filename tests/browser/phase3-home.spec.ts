@@ -42,7 +42,7 @@ test.describe("Phase 3: Top (/)", () => {
   test("renders 6 service cards (2 internal + 4 external) with expected hrefs", async ({ page }) => {
     await page.goto("/")
     await expect(page.getByRole("link", { name: /検索ページへ/ })).toHaveAttribute("href", "/search")
-    await expect(page.getByRole("link", { name: /登録ナビへ/ })).toHaveAttribute("href", "/submit")
+    await expect(page.getByRole("link", { name: /登録ナビへ/ })).toHaveAttribute("href", "/submit-alt3")
     await expect(page.getByRole("link", { name: /サービス一覧/ })).toHaveAttribute(
       "href",
       "https://www.ddbj.nig.ac.jp/services/",
@@ -67,10 +67,10 @@ test.describe("Phase 3: Top (/)", () => {
     await expect(page).toHaveURL(/\/search$/)
   })
 
-  test("CTA 登録ナビへ navigates to /submit", async ({ page }) => {
+  test("CTA 登録ナビへ navigates to /submit-alt3", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("link", { name: /登録ナビへ/ }).click()
-    await expect(page).toHaveURL(/\/submit$/)
+    await expect(page).toHaveURL(/\/submit-alt3$/)
   })
 
   test("お知らせ / News tabs switch on click", async ({ page }) => {

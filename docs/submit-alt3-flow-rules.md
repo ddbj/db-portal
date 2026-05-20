@@ -81,7 +81,7 @@ GroupType 別の集約ルールに従って BS を生成する (詳細表は [`s
 |---|---|---|---|
 | `human` | `human` / `Human` (Standard) | — | ヒト試料は Standard Human Package |
 | `human-microbiome` | `mims-me` / `MIMS.me` (MIxS) | `migs-ba` / `mimarks-survey` 等 | ヒト由来でもメタゲノム由来は MIxS。Rule 6 (JGA 集約) 発火時は BS Step は JGA Sample に置き換え |
-| `eukaryote` (non-human) | `model-organism-or-animal` / `Model organism or animal` | `plant` / `invertebrate` / `pathogen-cl` (寄生虫など病原真核) | 動植物・モデル生物は分類で複数候補。病原性の真核生物は `Pathogen: clinical or host-associated` も選択肢 |
+| `eukaryote` (non-human) | `model-organism-or-animal` / `Model organism or animal` | `plant` / `invertebrate` / `pathogen-cl` (寄生虫など病原真核) | 動植物・モデル生物は分類で複数候補。**動物 / 植物 / 菌類で qualifier 系が分岐** する (動物=`breed` / `strain` / `isolate`、植物=`cultivar` / `ecotype`、菌類=`strain` / `isolate`)。`microbe` Package も真核菌類 (酵母など) で利用可。病原性の真核生物は `Pathogen: clinical or host-associated` も選択肢 |
 | `prokaryote` | `microbe` / `Microbe` (Standard) | `pathogen-cl` / `pathogen-env` / `beta-lactamase` | 培養細菌・古細菌。公衆衛生に関わる病原菌は Pathogen 系を選択 |
 | `virus` | `viral` / `Viral` (Standard) | `sars-cov-2-cl` / `sars-cov-2-wwsurv` / `pathogen-cl` (病原ウイルス) | 病気に直接関係しないウイルスのみ Viral。病原ウイルスは `Pathogen: clinical or host-associated`、SARS-CoV-2 は専用 Package (ddbj/www `_biosample/overview.md`) |
 | `metagenome` | `mims-me` / `MIMS.me` (MIxS) | `mimag` (MAG) / `misag` (SAG) / `mimarks-survey` (marker gene survey) / `mimarks-specimen` (specimen marker) | Rule 8 MAG/SAG chain で段階分け |
@@ -672,6 +672,8 @@ Haplotype の命名規則は?
 ```
 
 選択結果が Step 1 / 2 / ... の Title / バッジ表示 + Step MSS の ST_COMMENT 文字列に反映される (例 `Diploid :: Haplotype 1` / `Diploid :: Maternal haplotype`)。
+
+locus_tag prefix は全 phase で共通の単一 prefix を BioSample 登録時に申請し、Step MSS では **prefix + phase 別 suffix** で Principal / Alternate (もしくは 1 / 2、Maternal / Paternal) を区別する運用に合わせる (ddbj/www `_ddbj/haplotype.md`)。例: prefix `A1C` の場合、`A1C_p00001` = Principal locus、`A1C_a00001` = Alternate locus、`A1C_h1_00001` = Haplotype 1 locus、`A1C_m00001` = Maternal locus。Step MSS カードの locus_tag プレースホルダはこの命名規則を初期表示する。
 
 #### Rule 11d: 複数 Haplotype セット (3 セット以上)
 

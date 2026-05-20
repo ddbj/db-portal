@@ -4,8 +4,6 @@ export default [
   index("routes/home.tsx"),
   route("search", "routes/search.tsx"),
   route("search/results", "routes/search.results.tsx"),
-  route("submit", "routes/submit.tsx"),
-  route("submit-alt", "routes/submit-alt.tsx"),
   route("submit-alt3", "routes/submit-alt3.tsx"),
   route("news", "routes/news.tsx"),
   route("api/news", "routes/api.news.ts"),

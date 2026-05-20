@@ -471,12 +471,6 @@ i18n は表示文字列のみを担当、controlled vocabulary の **値 (英語
 - `/submit-alt3` のみ。`Submission` state は React `useState` (or 軽量 store) で保持
 - URL クエリ連携・履歴連携は持たない (PoC 範囲、本体 §7.2)
 
-### v1 / v2 との並走
-
-- `/submit` (v1) / `/submit-alt` (v2) / `/submit-alt3` (v3) の 3 並走
-- v3 はトップ導線から「実験的」位置付けで到達可能にする (リンク文言は本流選択時に確定)
-- v2 のコード資産 (`src/lib/mock-data/submit-alt-tree/`) は破壊しない
-
 ### コンポーネント分割
 
 - ルートコンポーネント `routes/submit-alt3.tsx` で `Submission` state を保持
