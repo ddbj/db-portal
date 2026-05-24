@@ -10,6 +10,7 @@ const LEVEL_RANK: Record<LogLevel, number> = {
 const REDACT_KEYS = new Set([
   "accessToken",
   "refreshToken",
+  "idToken",
   "cookie",
   "Cookie",
   "authorization",

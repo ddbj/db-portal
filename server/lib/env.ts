@@ -28,6 +28,8 @@ export const ServerEnv = z.object({
   DB_PORTAL_LLM_API_KEY: optionalString,
   DB_PORTAL_LLM_MODEL: z.string().default("Qwen/Qwen2.5-32B-Instruct-AWQ"),
   DB_PORTAL_LLM_TIMEOUT_MS: numberFromString(60000),
+  DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN: numberFromString(60),
+  DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN: numberFromString(30),
   DB_PORTAL_NEWS_MIRROR_REPO: z.string().default("ddbj/www"),
   DB_PORTAL_NEWS_MIRROR_BRANCH: z.string().default("main"),
   DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS: numberFromString(1800),

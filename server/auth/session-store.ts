@@ -4,6 +4,7 @@ export const SessionEntry = z.object({
   tokens: z.object({
     accessToken: z.string().min(1),
     refreshToken: z.string().min(1),
+    idToken: z.string().min(1),
     expiresAt: z.number(),
   }),
   userInfo: z.object({

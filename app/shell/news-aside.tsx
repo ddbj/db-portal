@@ -1,8 +1,19 @@
 import { useQuery } from "@tanstack/react-query"
 
+import type { NewsItem } from "~/lib/api/news"
 import { fetchNews, newsItemTitle } from "~/lib/api/news"
 import { formatDate, type Lang, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
+
+type CategoryLabelKey =
+  | "news.category.announcement"
+  | "news.category.release"
+  | "news.category.maintenance"
+  | "news.category.event"
+  | "news.category.news"
+
+const categoryLabelKey = (category: NewsItem["category"]): CategoryLabelKey =>
+  `news.category.${category}` as CategoryLabelKey
 
 const NEWS_LIMIT = 8
 
@@ -48,7 +59,7 @@ export const NewsAside = () => {
             <div className="flex items-center gap-2 mb-1 text-fs-label">
               <span className="font-mono text-ink-soft">{formatDate(n.publishedAt)}</span>
               <Tag kind="source" name="DDBJ" size="sm" />
-              <Tag kind="tag" size="sm">{n.category}</Tag>
+              <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
             </div>
             <TextLink to={newsHref(n.id, lang)} weight="bold">
               <span className="text-ink line-clamp-1">

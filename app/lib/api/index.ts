@@ -22,8 +22,14 @@ export {
 } from "./llm"
 export {
   fetchNews,
+  type FetchNewsOptions,
+  type FetchNewsQuery,
+  NewsCache,
   NewsCategory,
   NewsItem,
+  newsItemSummary,
+  newsItemTitle,
+  newsItemUrl,
   NewsList,
 } from "./news"
 export {

@@ -43,6 +43,8 @@ const makeNews = (count: number): NewsList =>
     category: "release" as const,
     publishedAt: `2026-05-${String(24 - i).padStart(2, "0")}T00:00:00Z`,
     title: { ja: `お知らせ ${i + 1}`, en: `Announcement ${i + 1}` },
+    db: [],
+    rawTags: { ja: [], en: [] },
   }))
 
 describe("NewsAside", () => {

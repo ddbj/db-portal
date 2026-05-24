@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 
-import { fetchNews, type NewsItem, newsItemTitle } from "~/lib/api/news"
+import { fetchNews, type NewsItem, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
 
@@ -29,7 +29,12 @@ const writeDismissed = (ids: readonly string[]): void => {
   }
 }
 
-const isAnnouncement = (n: NewsItem): boolean => n.category === "announcement"
+const isActiveAnnouncement = (n: NewsItem, now: number): boolean => {
+  if (n.category !== "announcement") return false
+  if (!n.retireTime) return true
+
+  return Date.parse(n.retireTime) > now
+}
 
 export const NotificationBar = () => {
   const t = useT()
@@ -50,8 +55,9 @@ export const NotificationBar = () => {
 
   if (query.isError || !query.data) return null
 
+  const now = Date.now()
   const announcements = query.data
-    .filter(isAnnouncement)
+    .filter((n) => isActiveAnnouncement(n, now))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
 
   const visible = announcements.find(
@@ -64,6 +70,8 @@ export const NotificationBar = () => {
     setDismissed(next)
     writeDismissed(next)
   }
+
+  const externalUrl = newsItemUrl(visible, lang)
 
   return (
     <section
@@ -81,8 +89,8 @@ export const NotificationBar = () => {
         <span className="text-ink font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
           {newsItemTitle(visible, lang)}
         </span>
-        {visible.url !== undefined && (
-          <TextLink href={visible.url} external>
+        {externalUrl !== undefined && (
+          <TextLink href={externalUrl} external>
             {t("common.detail")}
           </TextLink>
         )}

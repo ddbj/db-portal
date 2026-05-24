@@ -21,6 +21,43 @@ export type Resources = {
     login: string
     logout: string
     loggingIn: string
+    callback: {
+      title: string
+      description: string
+      backHome: string
+    }
+    logoutCallback: {
+      title: string
+      description: string
+      backHome: string
+    }
+  }
+  news: {
+    pageTitle: string
+    pageDescription: string
+    toolbar: {
+      count: string
+      sort: string
+      sortNewest: string
+      sortOldest: string
+    }
+    list: {
+      empty: string
+      error: string
+    }
+    facet: {
+      heading: string
+      category: string
+      year: string
+      service: string
+    }
+    category: {
+      announcement: string
+      release: string
+      maintenance: string
+      event: string
+      news: string
+    }
   }
   switchLang: {
     toEn: string
@@ -493,6 +530,43 @@ export const ja: Resources = {
     login: "ログイン",
     logout: "ログアウト",
     loggingIn: "認証中…",
+    callback: {
+      title: "サインイン処理中",
+      description: "認証が完了するまでしばらくお待ちください。",
+      backHome: "トップへ戻る",
+    },
+    logoutCallback: {
+      title: "サインアウトしました",
+      description: "ご利用ありがとうございました。",
+      backHome: "トップへ戻る",
+    },
+  },
+  news: {
+    pageTitle: "お知らせ・ニュース",
+    pageDescription: "DDBJ センターからのお知らせ、 リリースノート、 メンテナンス情報をまとめて確認できます。",
+    toolbar: {
+      count: "全 {{count}} 件",
+      sort: "並び順",
+      sortNewest: "新しい順",
+      sortOldest: "古い順",
+    },
+    list: {
+      empty: "条件に一致するお知らせはありません",
+      error: "お知らせの取得に失敗しました",
+    },
+    facet: {
+      heading: "絞り込み",
+      category: "種別",
+      year: "年",
+      service: "サービス",
+    },
+    category: {
+      announcement: "重要なお知らせ",
+      release: "リリース",
+      maintenance: "メンテナンス",
+      event: "イベント",
+      news: "ニュース",
+    },
   },
   switchLang: {
     toEn: "English",

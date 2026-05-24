@@ -88,14 +88,14 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
         const ready = buffer.slice(0, eventBoundary)
         buffer = buffer.slice(eventBoundary + 2)
         for (const item of parseSseEvents(ready)) {
-          if (item.event === "proposal") {
+          if (item.event === "done") {
             try {
               setProposal(JSON.parse(item.data) as AssistantProposal)
             } catch {
-              // 不正な JSON はスキップ (server 側で正しい JSON を保証する)
+              // server 側で正しい JSON を保証する
             }
+            setState("done")
           }
-          if (item.event === "done") setState("done")
           if (item.event === "error") setState("error")
         }
       }

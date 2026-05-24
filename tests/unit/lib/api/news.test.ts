@@ -12,6 +12,8 @@ const validItem = {
   category: "announcement",
   publishedAt: "2026-05-21T10:00:00Z",
   title: { ja: "お知らせ", en: "Announcement" },
+  db: [],
+  rawTags: { ja: [], en: [] },
 }
 
 describe("fetchNews", () => {

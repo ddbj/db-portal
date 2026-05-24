@@ -23,6 +23,43 @@ export const en: Resources = {
     login: "Sign in",
     logout: "Sign out",
     loggingIn: "Signing in…",
+    callback: {
+      title: "Signing you in",
+      description: "Please wait while we complete authentication.",
+      backHome: "Back to home",
+    },
+    logoutCallback: {
+      title: "You have signed out",
+      description: "Thank you for using the portal.",
+      backHome: "Back to home",
+    },
+  },
+  news: {
+    pageTitle: "News & announcements",
+    pageDescription: "Stay up to date with announcements, release notes, and maintenance schedules from DDBJ Center.",
+    toolbar: {
+      count: "{{count}} items",
+      sort: "Sort",
+      sortNewest: "Newest first",
+      sortOldest: "Oldest first",
+    },
+    list: {
+      empty: "No news matches the selected filters",
+      error: "Failed to load news",
+    },
+    facet: {
+      heading: "Refine",
+      category: "Type",
+      year: "Year",
+      service: "Service",
+    },
+    category: {
+      announcement: "Important",
+      release: "Release",
+      maintenance: "Maintenance",
+      event: "Event",
+      news: "News",
+    },
   },
   switchLang: {
     toEn: "English",

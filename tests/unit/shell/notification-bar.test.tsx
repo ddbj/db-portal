@@ -51,7 +51,9 @@ const announcementList: NewsList = [
     category: "announcement",
     publishedAt: "2026-05-23T12:00:00Z",
     title: { ja: "アナウンス 1", en: "Announcement 1" },
-    url: "https://example.com/ann-1",
+    url: { ja: "https://example.com/ann-1", en: "https://example.com/ann-1-e" },
+    db: [],
+    rawTags: { ja: ["重要"], en: ["Announcement"] },
   },
   {
     id: "ann-2",
@@ -59,7 +61,9 @@ const announcementList: NewsList = [
     category: "announcement",
     publishedAt: "2026-05-24T12:00:00Z",
     title: { ja: "アナウンス 2", en: "Announcement 2" },
-    url: "https://example.com/ann-2",
+    url: { ja: "https://example.com/ann-2", en: "https://example.com/ann-2-e" },
+    db: [],
+    rawTags: { ja: ["重要"], en: ["Announcement"] },
   },
   {
     id: "release-1",
@@ -67,6 +71,8 @@ const announcementList: NewsList = [
     category: "release",
     publishedAt: "2026-05-22T12:00:00Z",
     title: { ja: "リリース", en: "Release" },
+    db: [],
+    rawTags: { ja: [], en: [] },
   },
 ]
 

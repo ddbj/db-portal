@@ -1,15 +1,18 @@
 import { createRequestHandler } from "@react-router/express"
 import express from "express"
 
-import { makeHandleLlmHealth } from "./api/llm/health"
-import { handleLlmProxy } from "./api/llm/proxy"
+import { handleLlmHealth } from "./api/llm/health"
 import { handleMe } from "./api/me"
 import { handleNews } from "./api/news"
 import { handleSearchSerialize } from "./api/search/serialize"
 import { mountAuthRoutes } from "./auth/routes"
 import { parseServerEnv } from "./lib/env"
 import { createLogger } from "./lib/log"
-import { startNewsMirror } from "./news/mirror"
+import { makeHandleSearchAssistant } from "./llm/assistant/route"
+import { createLlmClient } from "./llm/client"
+import { startHealthMonitor } from "./llm/health"
+import { createRateLimiter, setActiveRateLimiter } from "./llm/rate-limit"
+import { createNewsMirror } from "./news/mirror"
 
 const env = parseServerEnv()
 const logger = createLogger(env.DB_PORTAL_LOG_LEVEL)
@@ -20,12 +23,20 @@ app.disable("x-powered-by")
 app.set("trust proxy", "loopback")
 app.use(express.json({ limit: "1mb" }))
 
+const llmClient = createLlmClient(env)
+setActiveRateLimiter(
+  createRateLimiter({
+    perIpPerMin: env.DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN,
+    perSessionPerMin: env.DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN,
+  }),
+)
+
 app.get("/api/me", handleMe)
 app.get("/api/news", handleNews)
-app.get("/api/llm/health", makeHandleLlmHealth(env))
-app.all("/api/llm/*", handleLlmProxy)
+app.get("/api/llm/health", handleLlmHealth)
+app.post("/api/llm/search-assistant", makeHandleSearchAssistant(env, logger, { client: llmClient }))
 app.post("/api/search/serialize", handleSearchSerialize)
-mountAuthRoutes(app)
+mountAuthRoutes(app, env, logger)
 
 if (isProd) {
   app.use(
@@ -54,7 +65,8 @@ if (isProd) {
   )
 }
 
-startNewsMirror(env, logger).start()
+createNewsMirror(env, logger).mirror.start()
+startHealthMonitor(llmClient, logger).start()
 
 const port = env.DB_PORTAL_APP_INTERNAL_PORT
 app.listen(port, () => {
