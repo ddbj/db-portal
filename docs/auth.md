@@ -303,90 +303,107 @@ Cookie: sid=<opaque>
 ### 8.1 シグネチャ
 
 ```ts
-// app/lib/auth/use-auth.ts
-import { useQuery } from "@tanstack/react-query"
-import { z } from "zod"
-
-const Me = z.object({
-  user: z.object({
-    sub: z.string(),
-    name: z.string(),
-    email: z.string().email(),
-  }),
-})
-
-type AuthState =
-  | { status: "loading" }
-  | { status: "authenticated"; user: { sub: string; name: string; email: string } }
-  | { status: "unauthenticated" }
-
-export function useAuth(): AuthState {
+// app/lib/auth/use-auth.ts (抜粋)
+export const useAuth = (): AuthState => {
   const q = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
       const res = await fetch("/api/me", { credentials: "include" })
       if (res.status === 401) return null
-      return Me.parse(await res.json())
+
+      return MeResponse.parse(await res.json())
     },
     staleTime: 5 * 60_000,
   })
   if (q.isLoading) return { status: "loading" }
   if (!q.data) return { status: "unauthenticated" }
+
   return { status: "authenticated", user: q.data.user }
 }
 ```
 
+`AuthState` / `UserInfo` / `MeResponse` は `app/lib/auth/types.ts` で Zod schema として定義する (`z.infer<typeof MeResponse>` で型を取り出す)。
+
 ### 8.2 SSR 経由の userInfo
 
-route loader からも user 情報を取れる構造を最初から持つ。loader 内で `Cookie` header を読み、`server/auth/session-store.ts` の `get()` で entry を引く。
+route loader からも user 情報を取る場合は `loadAuth(request)` を使う。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、 200 なら `UserInfo`、 401 なら `null` を返す。5xx は `Error` を throw する。
+
+```ts
+// app/lib/auth/ssr-loader.ts (抜粋)
+export const loadAuth = async (request: Request): Promise<UserInfo | null> => {
+  const cookie = request.headers.get("cookie") ?? ""
+  const response = await fetch(new URL("/api/me", request.url), {
+    headers: cookie ? { Cookie: cookie } : {},
+  })
+  if (response.status === 401) return null
+  if (!response.ok) throw new Error(`/api/me failed with status ${response.status}`)
+
+  return MeResponse.parse(await response.json()).user
+}
+```
+
+route loader での利用例:
 
 ```ts
 // app/routes/some-route.tsx
+import { loadAuth } from "~/lib/auth"
 import type { Route } from "./+types/some-route"
-import { getUserFromRequest } from "~/lib/auth/server"
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const user = await getUserFromRequest(request)  // server-only helper
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const user = await loadAuth(request)
+
   return { user }
 }
 ```
 
-`getUserFromRequest` は `app` zone からは直接 `server/` を呼べないので、内部で `fetch(new URL("/api/me", request.url), { headers: { cookie: request.headers.get("cookie") ?? "" } })` を発行する形を取る (`architecture.md §4` の「Loader / Action は HTTP を経由する」ルールに従う)。
+`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、 `app → server` 直接 import を避ける (`architecture.md §4`)。`UserInfo` を loader データに乗せておけば、 SSR 初期描画時に Header のユーザー名表示が即座に解決する。
 
-## 9. `<RequireAuth>` wrapper
+#### Cookie 転送の安全性前提
+
+`loadAuth` は受け取った `Request` の `Cookie` ヘッダをそのまま `/api/me` に転送する。`request.url` は React Router の SSR runtime が **portal 自身の origin** を解決した URL である必要がある。リバースプロキシ越しに deploy する場合、Express の `trust proxy` 設定と `X-Forwarded-Host` の許可ホスト制限を BFF (`server/`) で必ず行うこと。攻撃者が `Host:` を任意 origin に書き換えられる構成では `sid` cookie が外部に流出する。
+
+## 9. `<RequireAuth>` wrapper と URL helper
 
 ### 9.1 シグネチャ
 
 ```tsx
-// app/lib/auth/require-auth.tsx
-import { Navigate, useLocation } from "react-router"
-import { useAuth } from "./use-auth"
-import type { ReactNode } from "react"
-
-export function RequireAuth({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
+// app/lib/auth/require-auth.tsx (抜粋)
+export const RequireAuth = ({ children, fallback }: RequireAuthProps) => {
   const auth = useAuth()
   const location = useLocation()
   if (auth.status === "loading") return fallback ?? null
   if (auth.status === "unauthenticated") {
-    const returnTo = encodeURIComponent(location.pathname + location.search)
-    return <Navigate to={`/api/auth/login?return_to=${returnTo}`} replace />
+    return <Navigate to={buildLoginUrl(location.pathname + location.search)} replace />
   }
+
   return <>{children}</>
 }
 ```
+
+URL の組み立ては `app/lib/auth/login-url.ts` の `buildLoginUrl(returnTo?)` / `buildLogoutUrl(returnTo?)` に集約する。`returnTo` を渡すと `?return_to=<URL-encoded>` を付け、 省略すれば endpoint のみを返す。Header の Login / Logout リンクからも同じ helper を使う。
+
+`returnTo` は **同一 origin の絶対パス (`/` 始まり、 `//` でない、 `/\\` でない)** のみ受理する。それ以外 (`//evil.test/`、 `https://evil/`、 空文字、 相対パス等) は `/` に正規化される。lib 側の防御に加えて、 BFF (`server/auth/`) で `return_to` を消費するときも同じ条件で再検証すること (二重防御)。
 
 ### 9.2 使い方
 
 ログイン後限定機能を持つ route で children を包む。リリース時はこの wrapper を使う route がない (機能なし) が、構造として最初から用意する。
 
 ```tsx
-export default function FuturePrivateRoute() {
-  return (
-    <RequireAuth>
-      <PrivateContent />
-    </RequireAuth>
-  )
-}
+const FuturePrivateRoute = () => (
+  <RequireAuth>
+    <PrivateContent />
+  </RequireAuth>
+)
+```
+
+Login / Logout の navigation も URL helper 経由で書く:
+
+```tsx
+import { Link } from "react-router"
+import { buildLoginUrl, buildLogoutUrl } from "~/lib/auth"
+
+<Link to={buildLoginUrl("/databases/bioproject")}>Login</Link>
+<Link to={buildLogoutUrl("/")}>Logout</Link>
 ```
 
 ## 10. 言語の維持 (i18n との連携)

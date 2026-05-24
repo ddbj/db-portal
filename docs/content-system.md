@@ -104,82 +104,62 @@ export type DatabaseContent = z.infer<typeof DatabaseContent>
 
 ### 4.1 列挙と検証
 
-`import.meta.glob` で collection を列挙し、起動時 (server / SSR) と build 時 (Vite plugin / 検証スクリプト) の **両方で** Zod parse を走らせる。
+`import.meta.glob` で collection を列挙し、 module top で Zod parse を走らせる。1 件でも parse 失敗があれば `loader.ts` 自体が `throw` する。
 
 ```ts
 // app/lib/content/loader.ts (抜粋)
-import { DatabaseContent } from "~/schemas/content/database-content"
-
-const modules = import.meta.glob<{ default: unknown }>(
+const databaseModules = import.meta.glob<{ default: unknown }>(
   "/app/content/databases/**/*.content.ts",
   { eager: true },
 )
 
-type Loaded = {
-  filepath: string
-  content: DatabaseContent
+const databaseResult = collectFromModules(DatabaseContent, databaseModules)
+if (!databaseResult.ok) {
+  throw new Error(
+    `Database content validation failed:\n\n${formatValidationErrors(databaseResult.errors)}`,
+  )
 }
 
-const loaded: Loaded[] = Object.entries(modules).map(([filepath, mod]) => ({
-  filepath,
-  content: DatabaseContent.parse(mod.default),
-}))
+const items: DatabaseCollection[] = databaseResult.items
+const bySlug = new Map(items.map((i) => [i.content.slug, i.content]))
 
-const bySlug = new Map<string, Loaded>(loaded.map((l) => [l.content.slug, l]))
+export const getDatabaseBySlug = (slug: string): DatabaseContent | undefined =>
+  bySlug.get(slug)
 
-export function getDatabaseBySlug(slug: string): DatabaseContent | undefined {
-  return bySlug.get(slug)?.content
-}
+export const listDatabases = (): readonly DatabaseContent[] =>
+  items.map((i) => i.content)
 
-export function listDatabases(): readonly DatabaseContent[] {
-  return loaded.map((l) => l.content)
-}
-
-export function validateAll(): { ok: true } | { ok: false; errors: { filepath: string; error: unknown }[] } {
-  const errors: { filepath: string; error: unknown }[] = []
-  for (const [filepath, mod] of Object.entries(modules)) {
-    const r = DatabaseContent.safeParse(mod.default)
-    if (!r.success) errors.push({ filepath, error: r.error })
-  }
-  return errors.length === 0 ? { ok: true } : { ok: false, errors }
-}
+export const validateAllDatabases = (): ValidationResult<DatabaseContent> =>
+  collectFromModules(DatabaseContent, databaseModules)
 ```
+
+`collectFromModules<S extends ZodTypeAny>(schema, modules)` は内部の純粋関数として export され、テスト fixture を直接渡せる (`tests/unit/lib/content/loader.test.ts`)。
 
 ### 4.2 起動時 fail-fast
 
-Server 起動時に `validateAll()` を呼び、1 件でも parse 失敗があれば **server を起動しない**。詳細な error log を stdout に吐き、CI / 運用での発見を容易にする。
-
-```ts
-// server/index.ts (抜粋、起動時)
-import { validateAll } from "~/lib/content/loader"
-
-const r = validateAll()
-if (!r.ok) {
-  for (const { filepath, error } of r.errors) {
-    log.error("Content validation failed", { filepath, error })
-  }
-  process.exit(1)
-}
-```
-
-### 4.3 ビルド時検証
-
-CI で `npm run build` 前に collection を検証するスクリプトを実行する:
+`npm run dev` / `npm run start` の前段で `npm run validate:content` を走らせる。`scripts/validate-content.ts` が Vite SSR module loader 経由で `loader.ts` を `ssrLoadModule` し、 `validateAllDatabases()` を呼んで失敗を stdout に出して `process.exit(1)` する。
 
 ```jsonc
 // package.json
 {
   "scripts": {
-    "validate:content": "node scripts/validate-content.mjs",
+    "validate:content": "tsx scripts/validate-content.ts",
+    "dev": "npm run validate:content && tsx watch ...",
+    "start": "npm run validate:content && NODE_ENV=production tsx server/index.ts",
     "build": "npm run validate:content && react-router build"
   }
 }
 ```
 
-`scripts/validate-content.mjs` は `validateAll()` を呼ぶだけの thin wrapper。これにより:
+起動失敗時のログには `filepath` と Zod issue の path / message が含まれる (`formatValidationErrors` が整形)。dev / staging / production すべてで同じ fail-fast が効く。
 
-- 不正なコンテンツが含まれる branch は CI で fail
-- 起動時 fail と build 時 fail の二重ガードで「production で初めて気付く」事故を防ぐ
+### 4.3 ビルド時検証
+
+`npm run build` も `validate:content` を前段に持つため、 CI でも build 失敗として検知できる。これにより「production で初めて気付く」事故を防ぐ。
+
+### 4.4 fail-fast の保証範囲
+
+`loader.ts` の top-level `throw` は **`loader.ts` が import された瞬間** に発火する。`server/index.ts` は zones の制約 (`server → app/lib` 禁止) で `loader.ts` を直接 import しないため、 server プロセスを `node server/index.ts` のように直接起動した場合は破損 content が runtime まで検知されない。`npm run dev` / `npm run start` / `npm run build` 経由で `validate:content` を必ず前置する運用が fail-fast の唯一の担保となる。
 
 ## 5. Breadcrumb 自動生成
 
@@ -201,48 +181,66 @@ route("databases", "routes/databases/layout.tsx", {
 ])
 ```
 
-### 5.3 Breadcrumb component
+### 5.3 useBreadcrumb hook と Breadcrumb component
 
-```tsx
-// app/shell/Breadcrumb.tsx (抜粋)
-import { useMatches } from "react-router"
-import { useT } from "~/lib/i18n/use-t"
+ロジックは `app/lib/content/breadcrumb.ts` の `useBreadcrumb(options?)` に集約する。`options.resolvers` は dynamic handle (動的ラベル) を解決する関数の辞書。`app/shell/Breadcrumb.tsx` は hook の結果を render するだけの薄い UI 層となる。
 
-type BreadcrumbHandle =
-  | { breadcrumbI18nKey: string }
-  | { breadcrumbResolver: string }
+```ts
+// app/lib/content/breadcrumb.ts (抜粋)
+export type BreadcrumbItem = { label: string; href: string }
+export type BreadcrumbResolver = (input: {
+  data: unknown
+  pathname: string
+  params: Readonly<Record<string, string | undefined>>
+}) => BreadcrumbItem | null
 
-export function Breadcrumb() {
+export const useBreadcrumb = (
+  options: { resolvers?: Record<string, BreadcrumbResolver> } = {},
+): BreadcrumbItem[] => {
   const matches = useMatches()
   const t = useT()
-  const items = matches
-    .map((m) => {
-      const handle = m.handle as BreadcrumbHandle | undefined
-      if (!handle) return null
-      if ("breadcrumbI18nKey" in handle) {
-        return { label: t(handle.breadcrumbI18nKey), href: m.pathname }
-      }
-      if ("breadcrumbResolver" in handle) {
-        return resolveDynamic(handle.breadcrumbResolver, m)
-      }
-      return null
-    })
-    .filter((x): x is { label: string; href: string } => x !== null)
-  return <nav aria-label="breadcrumb">{/* render items */}</nav>
-}
-
-function resolveDynamic(
-  resolver: string,
-  match: ReturnType<typeof useMatches>[number],
-): { label: string; href: string } | null {
-  switch (resolver) {
-    case "database-content": {
-      const data = match.data as { title?: { ja: string; en: string } } | undefined
-      const label = data?.title?.ja ?? "" // useLang() で切替する実装に
-      return { label, href: match.pathname }
+  const resolvers = options.resolvers ?? {}
+  const items: BreadcrumbItem[] = []
+  for (const m of matches) {
+    const handle = m.handle as unknown
+    if (isStaticHandle(handle)) {
+      items.push({ label: t(handle.breadcrumbI18nKey), href: m.pathname })
+      continue
+    }
+    if (isDynamicHandle(handle)) {
+      const resolver = resolvers[handle.breadcrumbResolver]
+      if (!resolver) continue
+      const item = resolver({ data: m.data, pathname: m.pathname, params: m.params })
+      if (item) items.push(item)
     }
   }
-  return null
+
+  return items
+}
+```
+
+shell 側の使い方:
+
+```tsx
+// app/shell/Breadcrumb.tsx
+import { useBreadcrumb } from "~/lib/content/breadcrumb"
+import { getDatabaseBySlug } from "~/lib/content"
+import { useLang } from "~/lib/i18n"
+
+export const Breadcrumb = () => {
+  const lang = useLang()
+  const items = useBreadcrumb({
+    resolvers: {
+      "database-content": ({ params, pathname }) => {
+        const db = params.slug ? getDatabaseBySlug(params.slug) : undefined
+        if (!db) return null
+
+        return { label: db.title[lang], href: pathname }
+      },
+    },
+  })
+
+  return <nav aria-label="breadcrumb">{/* render items */}</nav>
 }
 ```
 

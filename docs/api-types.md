@@ -30,8 +30,13 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 | パス | 内容 |
 |---|---|
 | `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 11k 行。git commit 対象 |
-| `app/lib/api/client.ts` | `fetch` wrapper。operation 型補完を提供 |
+| `app/lib/api/client.ts` | `apiGet` / `apiPost` の operation 型補完付き fetch wrapper |
+| `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 (§6) |
+| `app/lib/api/search.ts` | `crossSearch` / `dbSearch` / `parseQuery` / `serializeAst` の wrapper |
+| `app/lib/api/news.ts` | BFF `/api/news` の wrapper + `NewsItem` Zod schema |
+| `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `LlmHealth` Zod schema + `isLlmAvailable` |
 | `app/lib/api/search-types.ts` | `ParseNode` alias (`-Input` / `-Output` ハイフン名を隠す。§3) |
+| `app/lib/api/index.ts` | 上記の re-export |
 
 `app/lib/api/` 配下は `lib` zone に属するため、`features` / `shell` / `routes` から `import` 可能だが、`schemas` / `ui` / `content` からは `import` できない (`architecture.md §3.1` 参照)。
 
@@ -130,40 +135,62 @@ env の全体方針は `development.md` を参照。
 
 ### 5.1 fetch wrapper
 
-`app/lib/api/client.ts` で `openapi-types.ts` の `paths` 型から operation の request / response 型を引く wrapper を提供する。
+`app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、 client.ts が直接 env を参照しない)。
 
 ```ts
 // app/lib/api/client.ts (抜粋)
-import type { paths } from "./openapi-types"
-
-type Op<P extends keyof paths, M extends keyof paths[P]> = paths[P][M]
-
-type RequestBody<O> = O extends { requestBody: { content: { "application/json": infer B } } } ? B : never
-type ResponseBody<O> = O extends { responses: { 200: { content: { "application/json": infer R } } } } ? R : never
-
-export async function apiPost<P extends keyof paths, M extends "post" = "post">(
+export const apiGet = async <P extends keyof paths & string>(
   path: P,
-  body: RequestBody<Op<P, M>>,
-  init?: RequestInit,
-): Promise<ResponseBody<Op<P, M>>> {
-  // ... fetch 実行 ...
+  options: ApiRequestOptions & { query?: <推論> },
+): Promise<<推論 ResponseBody>> => { /* fetch + APIError throw */ }
+
+export const apiPost = async <P extends keyof paths & string>(
+  path: P,
+  body: <推論 RequestBody>,
+  options: ApiRequestOptions & { query?: <推論> },
+): Promise<<推論 ResponseBody>> => { /* fetch + APIError throw */ }
+```
+
+`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、 query parameter (q / topHits / db / page / perPage / cursor / sort / keywordOperator) を `options.query` で渡す。
+
+呼び出し側は `app/lib/api/search.ts` の thin wrapper を使う:
+
+```ts
+import { crossSearch, dbSearch, parseQuery, serializeAst } from "~/lib/api/search"
+
+const crossResult = await crossSearch({ q: "cancer", topHits: 5 }, { baseUrl })
+const dbResult = await dbSearch({ db: "sra", page: 1, perPage: 20 }, { baseUrl })
+const parsed = await parseQuery({ q: "cancer AND organism:Homo sapiens" }, { baseUrl })
+const serialized = await serializeAst({ ast: parsed.ast }, { baseUrl })
+```
+
+`apiGet` / `apiPost` を直接呼んでも型補完は効くが、 path string の typo を防ぐため通常は `search.ts` の wrapper を経由する。
+
+### 5.2 query 文字列の組み立て
+
+`encodeQuery(query?)` が `Record<string, unknown>` を `?key=value&key=value` 形に変換する (`undefined` / `null` を skip、 配列は repeated key)。`apiGet` / `apiPost` の内部で使い、 直接呼ぶ機会は少ないが、 URL を組み立てて external link を作る場合などに利用可能。
+
+### 5.3 errors と APIError
+
+`app/lib/api/errors.ts` が HTTP エラーレスポンスを `APIError` クラスに正規化する。`apiGet` / `apiPost` の内部で `response.ok` が false なら `toAPIError(response)` を `throw` する。
+
+```ts
+export class APIError extends Error {
+  readonly status: number
+  readonly type: string      // RFC 7807 type URI, default "about:blank"
+  readonly title: string
+  readonly detail?: string
+  readonly instance?: string
 }
 ```
 
-呼び出し側:
+`Content-Type: application/problem+json` のレスポンスは body の `type` / `title` / `status` / `detail` / `instance` を抽出する。それ以外 (text / 空 body) は `response.statusText` を title に、 status code を status に格納。`isAPIError(value)` の type guard で `instanceof APIError` を扱う。
 
-```ts
-// app/features/search/serialize.ts
-import { apiPost } from "~/lib/api/client"
-import type { ParseNodeInput } from "~/lib/api/search-types"
+TanStack Query 側では `APIError` の status を見て 5xx だけ retry (`app/lib/query/client.ts` の `shouldRetry`)。
 
-const result = await apiPost("/db-portal/serialize", { node: input as ParseNodeInput })
-// result の型は paths["/db-portal/serialize"]["post"] のレスポンスとして narrow される
-```
+### 5.4 openapi-fetch 等の外部ライブラリ採用判断
 
-### 5.2 openapi-fetch 等の外部ライブラリ採用判断
-
-複雑な operation (path parameter / query parameter / multipart 等) が増えた場合、`openapi-fetch` のような外部 wrapper への乗り換えを検討する余地はある。判断は実装中に operation 数と複雑度を見て行う。
+複雑な operation (path parameter / multipart 等) が増えた場合、`openapi-fetch` のような外部 wrapper への乗り換えを検討する余地はある。判断は実装中に operation 数と複雑度を見て行う。
 
 ## 6. CI での差分検知
 
@@ -201,8 +228,9 @@ portal は次の前提のもとで動く。これらは ddbj-search-api リポ�
 
 - `openapi.json` が `--strict` な `openapi-typescript` 生成を通る (recursive union / alias / multi-content-type を扱えること)
 - `POST /db-portal/serialize` が AST (Input) を受け、DSL 文字列を返す
-- `POST /db-portal/parse` が DSL を受け、AST (Output) を返す
-- `POST /db-portal/cross-search` / `POST /db-portal/search` が portal の検索結果取得を担う
+- `GET /db-portal/parse?q=...` が DSL を受け、AST (Output) を返す
+- `GET /db-portal/cross-search?q=...&topHits=...` が cross-DB のヒット数と top hits を返す
+- `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
 - discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
 
 API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型が更新される。CI の diff check で更新漏れを検知する。

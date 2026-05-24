@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
-    "build": "react-router build",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "dev": "npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
+    "build": "npm run validate:content && react-router build",
+    "start": "npm run validate:content && NODE_ENV=production tsx server/index.ts",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

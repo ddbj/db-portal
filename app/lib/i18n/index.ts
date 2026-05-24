@@ -26,3 +26,9 @@ export const initI18n = (lng: "ja" | "en"): typeof i18n => {
 }
 
 export { i18n }
+export { flattenKeys } from "./flatten-keys"
+export { en } from "./resources/en"
+export { ja, type Resources } from "./resources/ja"
+export { getCounterpartUrl } from "./url"
+export { determineLang, type Lang, useLang } from "./use-lang"
+export { type TFn, useT } from "./use-t"

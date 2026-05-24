@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { Navigate, useLocation } from "react-router"
 
+import { buildLoginUrl } from "./login-url"
 import { useAuth } from "./use-auth"
 
 type RequireAuthProps = {
@@ -14,9 +15,7 @@ export const RequireAuth = ({ children, fallback }: RequireAuthProps) => {
 
   if (auth.status === "loading") return fallback ?? null
   if (auth.status === "unauthenticated") {
-    const returnTo = encodeURIComponent(location.pathname + location.search)
-
-    return <Navigate to={`/api/auth/login?return_to=${returnTo}`} replace />
+    return <Navigate to={buildLoginUrl(location.pathname + location.search)} replace />
   }
 
   return <>{children}</>
