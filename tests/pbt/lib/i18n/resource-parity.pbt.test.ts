@@ -25,21 +25,30 @@ describe("i18n resource parity", () => {
     expect(jaKeys.length).toBeGreaterThan(0)
   })
 
+  const expectNonEmptyLeaf = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      expect(value.length).toBeGreaterThan(0)
+      for (const item of value) {
+        expect(typeof item).toBe("string")
+        expect(item).not.toBe("")
+      }
+    } else {
+      expect(typeof value).toBe("string")
+      expect(value).not.toBe("")
+    }
+  }
+
   test.prop([fc.constantFrom(...jaKeys)], { numRuns: 100 })(
     "i18n_anyJaKey_resolvesToNonEmptyString",
     (key) => {
-      const value = lookupValue(ja, key)
-      expect(typeof value).toBe("string")
-      expect(value).not.toBe("")
+      expectNonEmptyLeaf(lookupValue(ja, key))
     },
   )
 
   test.prop([fc.constantFrom(...enKeys)], { numRuns: 100 })(
     "i18n_anyEnKey_resolvesToNonEmptyString",
     (key) => {
-      const value = lookupValue(en, key)
-      expect(typeof value).toBe("string")
-      expect(value).not.toBe("")
+      expectNonEmptyLeaf(lookupValue(en, key))
     },
   )
 })

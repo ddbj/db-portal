@@ -1,0 +1,157 @@
+import { useT } from "~/lib/i18n"
+import { CloseIcon, IconButton, Label, NativeSelect, type NativeSelectOption, TextInput } from "~/ui"
+
+import {
+  ADVANCED_FIELDS,
+  type AdvancedCombinator,
+  type AdvancedField,
+  type AdvancedOp,
+  isAdvancedField,
+  isDateField,
+} from "../types"
+import type { AdvancedCondition } from "./reducer"
+
+type CombinatorMode = "where" | "selectable"
+
+const COMBINATOR_VALUES: readonly AdvancedCombinator[] = ["AND", "OR", "NOT"]
+
+const STRING_OPS: readonly AdvancedOp[] = ["eq", "contains", "wildcard"]
+const DATE_OPS: readonly AdvancedOp[] = ["between"]
+
+export type ConditionRowProps = {
+  condition: AdvancedCondition
+  combinatorMode: CombinatorMode
+  removable: boolean
+  onCombinatorChange: (combinator: AdvancedCombinator) => void
+  onFieldChange: (field: AdvancedField) => void
+  onOpChange: (op: AdvancedOp) => void
+  onValueChange: (value: string) => void
+  onRangeChange: (range: { from?: string; to?: string }) => void
+  onRemove: () => void
+}
+
+export const ConditionRow = ({
+  condition,
+  combinatorMode,
+  removable,
+  onCombinatorChange,
+  onFieldChange,
+  onOpChange,
+  onValueChange,
+  onRangeChange,
+  onRemove,
+}: ConditionRowProps) => {
+  const t = useT()
+  const dateField = isDateField(condition.field)
+  const opOptions: NativeSelectOption[] = (dateField ? DATE_OPS : STRING_OPS).map((op) => ({
+    value: op,
+    label: t(`search.builder.op.${op}`),
+  }))
+  const fieldOptions: NativeSelectOption[] = ADVANCED_FIELDS.map((field) => ({
+    value: field,
+    label: t(`search.builder.field.${camelize(field)}`),
+  }))
+  const combinatorOptions: NativeSelectOption[] = COMBINATOR_VALUES.map((value) => ({
+    value,
+    label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or" | "not"}`),
+  }))
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="min-w-20">
+        {combinatorMode === "where"
+          ? <Label>{t("search.builder.where")}</Label>
+          : (
+            <NativeSelect
+              ariaLabel={t("search.a11y.builderConditions")}
+              options={combinatorOptions}
+              value={condition.combinator}
+              onChange={(event) => {
+                const next = event.currentTarget.value
+                if (COMBINATOR_VALUES.includes(next as AdvancedCombinator)) {
+                  onCombinatorChange(next as AdvancedCombinator)
+                }
+              }}
+              width={92}
+            />
+          )}
+      </div>
+      <NativeSelect
+        ariaLabel={t("search.a11y.fieldSelector")}
+        options={fieldOptions}
+        value={condition.field}
+        onChange={(event) => {
+          const next = event.currentTarget.value
+          if (isAdvancedField(next)) onFieldChange(next)
+        }}
+        width={184}
+      />
+      <NativeSelect
+        ariaLabel={t("search.a11y.opSelector")}
+        options={opOptions}
+        value={dateField ? "between" : condition.op}
+        onChange={(event) => onOpChange(event.currentTarget.value as AdvancedOp)}
+        width={148}
+      />
+      {dateField || condition.op === "between"
+        ? (
+          <div className="flex items-center gap-2">
+            <Label>{t("search.builder.rangeFromLabel")}</Label>
+            <TextInput
+              type="date"
+              ariaLabel={t("search.builder.rangeFromLabel")}
+              value={condition.from}
+              onChange={(event) => onRangeChange({ from: event.currentTarget.value })}
+              placeholder={t("search.builder.rangeFromPlaceholder")}
+              mono
+              width={156}
+            />
+            <Label>{t("search.builder.rangeToLabel")}</Label>
+            <TextInput
+              type="date"
+              ariaLabel={t("search.builder.rangeToLabel")}
+              value={condition.to}
+              onChange={(event) => onRangeChange({ to: event.currentTarget.value })}
+              placeholder={t("search.builder.rangeToPlaceholder")}
+              mono
+              width={156}
+            />
+          </div>
+        )
+        : (
+          <TextInput
+            ariaLabel={t("search.builder.valuePlaceholder")}
+            value={condition.value}
+            onChange={(event) => onValueChange(event.currentTarget.value)}
+            placeholder={t("search.builder.valuePlaceholder")}
+            width={232}
+          />
+        )}
+      <IconButton
+        ariaLabel={t("search.builder.removeCondition")}
+        onClick={onRemove}
+        disabled={!removable}
+      >
+        <CloseIcon size={14} />
+      </IconButton>
+    </div>
+  )
+}
+
+const camelize = (field: string): "organism" | "identifier" | "title" | "description" | "datePublished" | "dateModified" | "dateCreated" => {
+  switch (field) {
+    case "organism":
+    case "identifier":
+    case "title":
+    case "description":
+      return field
+    case "date_published":
+      return "datePublished"
+    case "date_modified":
+      return "dateModified"
+    case "date_created":
+      return "dateCreated"
+    default:
+      return "title"
+  }
+}

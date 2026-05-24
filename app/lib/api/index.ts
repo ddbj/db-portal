@@ -2,8 +2,11 @@ export {
   apiGet,
   apiPost,
   type ApiRequestOptions,
+  buildRequestInit,
   encodeQuery,
+  joinUrl,
   type Paths,
+  requestCredentials,
 } from "./client"
 export {
   APIError,

@@ -5,12 +5,14 @@ import { ChevronDownIcon } from "./icons"
 
 type NativeSelectState = "default" | "warn"
 
+export type NativeSelectOption = string | { value: string; label: string }
+
 type NativeSelectProps = Omit<
   SelectHTMLAttributes<HTMLSelectElement>,
   "className" | "aria-label"
 > & {
   ariaLabel: string
-  options: readonly string[]
+  options: readonly NativeSelectOption[]
   width?: number
   state?: NativeSelectState
 }
@@ -43,9 +45,12 @@ export const NativeSelect = ({
           isWarn && isEmpty ? "text-ink-soft" : "text-ink",
         )}
       >
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
+        {options.map((option) => {
+          const value = typeof option === "string" ? option : option.value
+          const label = typeof option === "string" ? option : option.label
+
+          return <option key={value} value={value}>{label}</option>
+        })}
       </select>
       <ChevronDownIcon
         size={14}
