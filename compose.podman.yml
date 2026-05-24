@@ -1,3 +1,0 @@
-services:
-  app:
-    userns_mode: keep-id
