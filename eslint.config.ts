@@ -113,12 +113,7 @@ export default tseslint.config(
           { target: "./app/content", from: "./app/features" },
           { target: "./app/content", from: "./app/shell" },
 
-          { target: "./server", from: "./app/features" },
-          { target: "./server", from: "./app/shell" },
-          { target: "./server", from: "./app/ui" },
-          { target: "./server", from: "./app/lib" },
-          { target: "./server", from: "./app/content" },
-          { target: "./server", from: "./app/routes" },
+          { target: "./server", from: "./app", except: ["./schemas"] },
 
           { target: "./app", from: "./server" },
         ],

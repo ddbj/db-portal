@@ -20,6 +20,7 @@ export const createI18nInstance = (lng: Lang): I18nInstance => {
 }
 
 export { flattenKeys } from "./flatten-keys"
+export { formatDate } from "./format-date"
 export { en } from "./resources/en"
 export { ja, type Resources } from "./resources/ja"
 export { getCounterpartUrl } from "./url"

@@ -51,7 +51,7 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 
 const ButtonGallery = () => (
   <Block title="Button">
-    {(["primary", "secondary", "danger", "ghost", "link"] as const).map((kind) => (
+    {(["primary", "secondary", "danger", "ghost"] as const).map((kind) => (
       <Row key={kind} label={`kind=${kind}`}>
         <Button kind={kind} size="sm">{kind} sm</Button>
         <Button kind={kind} size="md">{kind} md</Button>
@@ -59,6 +59,10 @@ const ButtonGallery = () => (
         <Button kind={kind} disabled>disabled</Button>
       </Row>
     ))}
+    <Row label="kind=link">
+      <Button kind="link">link</Button>
+      <Button kind="link" disabled>disabled</Button>
+    </Row>
     <Row label="IconButton">
       <IconButton ariaLabel="閉じる">
         <CloseIcon size={14} />

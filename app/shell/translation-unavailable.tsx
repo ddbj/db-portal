@@ -5,12 +5,16 @@ import { InfoIcon, TextLink } from "~/ui"
 
 type I18nState = "complete" | "missing" | "partial"
 
-type MatchHandle = { i18n?: { en?: I18nState } } | undefined
+type I18nHandle = { i18n: { en?: I18nState } }
 
-const isMissing = (handle: MatchHandle): boolean => {
-  if (handle === undefined) return false
-  const state = handle.i18n?.en
+const isI18nHandle = (h: unknown): h is I18nHandle =>
+  !!h && typeof h === "object" && "i18n" in h && typeof (h as I18nHandle).i18n === "object"
+
+const isMissing = (handle: unknown): boolean => {
+  if (!isI18nHandle(handle)) return false
+  const state = handle.i18n.en
   if (state === undefined) return false
+
   return state !== "complete"
 }
 
@@ -21,7 +25,7 @@ export const TranslationUnavailable = () => {
   const t = useT()
 
   if (lang !== "en") return null
-  const missing = matches.some((m) => isMissing(m.handle as MatchHandle))
+  const missing = matches.some((m) => isMissing(m.handle))
   if (!missing) return null
 
   return (

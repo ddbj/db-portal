@@ -8,8 +8,8 @@
 
 `@theme` で定義された token (`brand` / `ink` / `border-soft` / `radius-card` …) を Tailwind utility class (`bg-brand` / `text-ink` / `rounded-card` …) で参照する。`app/{features,routes,shell,content}/` 配下で次は ESLint で物理禁止される (`architecture.md §3.3`):
 
-- 生 hex literal (`"#6B3FA0"` のような文字列)
-- arbitrary Tailwind value (`bg-[#6B3FA0]` / `text-[14.5px]` / `p-[3px]`)
+- 生 hex literal (`"#6F4392"` のような文字列)
+- arbitrary Tailwind value (`bg-[#6F4392]` / `text-[14.5px]` / `p-[3px]`)
 
 `app/ui/` のみこの制限から除外される。primitive 内部で 1px のような細部値や、token に表現しきれない計算値を Tailwind class に直接書ける。新しい色や spacing が必要になったら、まず `@theme` に token を追加してから token utility 経由で参照する。
 
@@ -453,8 +453,8 @@ type ChipPropsBase = {
   selected?: boolean
 }
 type ChipProps =
-  | (ChipPropsBase & { as?: "a"; href: string; onClick?: never })
-  | (ChipPropsBase & { as: "button"; onClick?: () => void; href?: never })
+  | (ChipPropsBase & { as?: "a"; to: To; onClick?: never })
+  | (ChipPropsBase & { as: "button"; onClick?: MouseEventHandler<HTMLButtonElement>; to?: never })
 ```
 
 | kind / state | bg | fg | border |

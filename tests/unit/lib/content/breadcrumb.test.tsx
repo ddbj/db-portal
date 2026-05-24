@@ -127,6 +127,20 @@ describe("useBreadcrumb", () => {
     expect(list.children).toHaveLength(1)
   })
 
+  test("useBreadcrumb_unknownI18nKey_returnsRawKeyAsLabel", () => {
+    const Stub = createRoutesStub([
+      {
+        path: "/x",
+        handle: { breadcrumbI18nKey: "nonexistent.key" },
+        Component: () => <BreadcrumbProbe />,
+      },
+    ])
+    renderWithI18n(<Stub initialEntries={["/x"]} />)
+    const list = screen.getByTestId("breadcrumb")
+    expect(list).toHaveTextContent("nonexistent.key")
+    expect(list.children).toHaveLength(1)
+  })
+
   test("useBreadcrumb_dualHandle_staticWinsOverDynamic", () => {
     const Stub = createRoutesStub([
       {

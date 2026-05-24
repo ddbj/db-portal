@@ -11,9 +11,32 @@ type QueryParams<Op> = Op extends { parameters: { query?: infer Q } } ? Q : neve
 type ResponseBody<Op> = Op extends { responses: { 200: { content: { "application/json": infer R } } } } ? R : never
 
 export type ApiRequestOptions = {
-  baseUrl: string
+  baseUrl?: string
   signal?: AbortSignal
   headers?: HeadersInit
+}
+
+export const requestCredentials = (baseUrl: string | undefined): RequestCredentials =>
+  baseUrl ? "same-origin" : "include"
+
+export type BuildInitOptions = {
+  method: "GET" | "POST"
+  signal?: AbortSignal | undefined
+  headers?: HeadersInit | undefined
+  body?: BodyInit | undefined
+  baseUrl?: string | undefined
+}
+
+export const buildRequestInit = ({ method, signal, headers, body, baseUrl }: BuildInitOptions): RequestInit => {
+  const init: RequestInit = {
+    method,
+    headers: { Accept: "application/json", ...headers },
+    credentials: requestCredentials(baseUrl),
+  }
+  if (body !== undefined) init.body = body
+  if (signal) init.signal = signal
+
+  return init
 }
 
 type GetOptions<P extends keyof paths> = ApiRequestOptions & (
@@ -68,11 +91,12 @@ export const apiGet = async <P extends keyof paths & string>(
   options: GetOptions<P>,
 ): Promise<ResponseBody<GetOp<P>>> => {
   const url = `${joinUrl(options.baseUrl, path)}${encodeQuery(options.query as Record<string, unknown> | undefined)}`
-  const init: RequestInit = {
+  const init = buildRequestInit({
     method: "GET",
-    headers: { Accept: "application/json", ...options.headers },
-  }
-  if (options.signal) init.signal = options.signal
+    baseUrl: options.baseUrl,
+    signal: options.signal,
+    headers: options.headers,
+  })
   const response = await fetch(url, init)
   if (!response.ok) throw await toAPIError(response)
 
@@ -85,16 +109,13 @@ export const apiPost = async <P extends keyof paths & string>(
   options: PostOptions<P>,
 ): Promise<ResponseBody<PostOp<P>>> => {
   const url = `${joinUrl(options.baseUrl, path)}${encodeQuery(options.query as Record<string, unknown> | undefined)}`
-  const init: RequestInit = {
+  const init = buildRequestInit({
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    baseUrl: options.baseUrl,
+    signal: options.signal,
+    headers: { "Content-Type": "application/json", ...options.headers },
     body: JSON.stringify(body),
-  }
-  if (options.signal) init.signal = options.signal
+  })
   const response = await fetch(url, init)
   if (!response.ok) throw await toAPIError(response)
 

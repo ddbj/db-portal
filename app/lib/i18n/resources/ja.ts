@@ -1,6 +1,5 @@
 export type Resources = {
   common: {
-    appName: string
     siteName: string
     loading: string
     error: string
@@ -53,13 +52,12 @@ export type Resources = {
     breadcrumbNav: string
     mainNav: string
     languageSwitcher: string
-    paginationNav: string
+    notificationBar: string
   }
 }
 
 export const ja: Resources = {
   common: {
-    appName: "DDBJ ポータル",
     siteName: "DDBJ ポータル",
     loading: "読み込み中",
     error: "エラー",
@@ -112,6 +110,6 @@ export const ja: Resources = {
     breadcrumbNav: "パンくずリスト",
     mainNav: "メインナビゲーション",
     languageSwitcher: "言語切替",
-    paginationNav: "ページネーション",
+    notificationBar: "重要なお知らせ",
   },
 }

@@ -1,22 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { fetchNews } from "~/lib/api/news"
-import { type Lang, useLang, useT } from "~/lib/i18n"
+import { fetchNews, newsItemTitle } from "~/lib/api/news"
+import { formatDate, type Lang, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
 
 const NEWS_LIMIT = 8
 
 const newsHref = (id: string, lang: Lang): string =>
   lang === "en" ? `/en/news#${id}` : `/news#${id}`
-
-const formatDate = (iso: string): string => {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}/${m}/${day}`
-}
 
 export const NewsAside = () => {
   const t = useT()
@@ -61,7 +52,7 @@ export const NewsAside = () => {
             </div>
             <TextLink to={newsHref(n.id, lang)} weight="bold">
               <span className="text-ink line-clamp-1">
-                {n.title[lang] || n.title.ja}
+                {newsItemTitle(n, lang)}
               </span>
             </TextLink>
           </li>

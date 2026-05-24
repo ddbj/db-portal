@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand:        #6B3FA0;
-  --color-brand-deep:   #4B2A78;
-  --color-brand-light:  #9B7BC8;
-  --color-brand-soft:   #EFE7F6;
-  --color-brand-softer: #F6F1FB;
+  --color-brand:        #6F4392;
+  --color-brand-deep:   #502E6B;
+  --color-brand-light:  #A987C5;
+  --color-brand-soft:   #F4F2FA;
+  --color-brand-softer: #F8F4FB;
 
   --color-ink:        #1A1726;
   --color-ink-mid:    #3F3B4F;
@@ -14,7 +14,6 @@
 
   --color-green:      #2F7A48;
   --color-green-deep: #1F5430;
-  --color-ochre:      #B58200;
   --color-red:        #B73B2C;
   --color-focus:      #FFCC33;
 
@@ -24,10 +23,10 @@
   --color-border-soft:    #DAD6E0;
   --color-border-strong:  #1A1726;
 
-  --color-warn-bg:     #FFF7E6;
-  --color-warn-fg:     #7A4F00;
-  --color-warn-border: #F0C870;
-  --color-warn-dot:    #D89A20;
+  --color-warn-bg:     #FCF7E3;
+  --color-warn-fg:     #705800;
+  --color-warn-border: #E3C65F;
+  --color-warn-dot:    #B58E00;
   --color-ok-bg:       #F1F8F3;
   --color-ok-fg:       #1F5430;
   --color-ok-border:   #BFD9C7;
@@ -35,12 +34,12 @@
   --color-critical-fg:     #B73B2C;
   --color-critical-border: #F0BBB2;
 
-  --color-src-ddbj:         #C26416;
-  --color-src-ddbj-soft:    #FBEEDD;
-  --color-src-ddbj-border:  #E8B97F;
-  --color-src-dbcls:        #1F6FB4;
-  --color-src-dbcls-soft:   #E2EEF8;
-  --color-src-dbcls-border: #9DC0E1;
+  --color-src-ddbj:         #A56712;
+  --color-src-ddbj-soft:    #FBEFDF;
+  --color-src-ddbj-border:  #ECBB79;
+  --color-src-dbcls:        #004098;
+  --color-src-dbcls-soft:   #DFEBFB;
+  --color-src-dbcls-border: #7DAAE8;
 
   --font-sans:  "Noto Sans JP Variable", "Public Sans", "Helvetica Neue", system-ui, sans-serif;
   --font-serif: "Noto Serif JP", "Source Serif 4", Georgia, serif;
@@ -68,11 +67,11 @@
   --radius-pill: 9999px;
 
   --shadow-card:       0 1px 2px rgba(26, 23, 38, 0.04);
-  --shadow-card-hover: 0 4px 16px -4px rgba(75, 42, 120, 0.12);
+  --shadow-card-hover: 0 4px 16px -4px rgba(80, 46, 107, 0.12);
   --shadow-modal:      0 20px 50px -10px rgba(20, 15, 30, 0.35);
 }
 
-*:focus {
+*:focus:not(:focus-visible) {
   outline: none;
 }
 

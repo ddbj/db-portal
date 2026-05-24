@@ -3,11 +3,11 @@ import { PageTitle, Section } from "~/ui"
 type Swatch = { token: string; cls: string; hex: string }
 
 const BRAND_SWATCHES: readonly Swatch[] = [
-  { token: "brand", cls: "bg-brand", hex: "#6B3FA0" },
-  { token: "brand-deep", cls: "bg-brand-deep", hex: "#4B2A78" },
-  { token: "brand-light", cls: "bg-brand-light", hex: "#9B7BC8" },
-  { token: "brand-soft", cls: "bg-brand-soft", hex: "#EFE7F6" },
-  { token: "brand-softer", cls: "bg-brand-softer", hex: "#F6F1FB" },
+  { token: "brand", cls: "bg-brand", hex: "#6F4392" },
+  { token: "brand-deep", cls: "bg-brand-deep", hex: "#502E6B" },
+  { token: "brand-light", cls: "bg-brand-light", hex: "#A987C5" },
+  { token: "brand-soft", cls: "bg-brand-soft", hex: "#F4F2FA" },
+  { token: "brand-softer", cls: "bg-brand-softer", hex: "#F8F4FB" },
 ]
 
 const INK_SWATCHES: readonly Swatch[] = [
@@ -18,8 +18,8 @@ const INK_SWATCHES: readonly Swatch[] = [
 ]
 
 const STATUS_SWATCHES: readonly Swatch[] = [
-  { token: "warn-bg", cls: "bg-warn-bg", hex: "#FFF7E6" },
-  { token: "warn-fg", cls: "bg-warn-fg", hex: "#7A4F00" },
+  { token: "warn-bg", cls: "bg-warn-bg", hex: "#FCF7E3" },
+  { token: "warn-fg", cls: "bg-warn-fg", hex: "#705800" },
   { token: "ok-bg", cls: "bg-ok-bg", hex: "#F1F8F3" },
   { token: "ok-fg", cls: "bg-ok-fg", hex: "#1F5430" },
   { token: "critical-bg", cls: "bg-critical-bg", hex: "#FCE8E5" },
@@ -27,10 +27,10 @@ const STATUS_SWATCHES: readonly Swatch[] = [
 ]
 
 const SOURCE_SWATCHES: readonly Swatch[] = [
-  { token: "src-ddbj", cls: "bg-src-ddbj", hex: "#C26416" },
-  { token: "src-ddbj-soft", cls: "bg-src-ddbj-soft", hex: "#FBEEDD" },
-  { token: "src-dbcls", cls: "bg-src-dbcls", hex: "#1F6FB4" },
-  { token: "src-dbcls-soft", cls: "bg-src-dbcls-soft", hex: "#E2EEF8" },
+  { token: "src-ddbj", cls: "bg-src-ddbj", hex: "#A56712" },
+  { token: "src-ddbj-soft", cls: "bg-src-ddbj-soft", hex: "#FBEFDF" },
+  { token: "src-dbcls", cls: "bg-src-dbcls", hex: "#004098" },
+  { token: "src-dbcls-soft", cls: "bg-src-dbcls-soft", hex: "#DFEBFB" },
 ]
 
 const SwatchGrid = ({ swatches }: { swatches: readonly Swatch[] }) => (

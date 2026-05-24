@@ -1,14 +1,9 @@
-import { z } from "zod"
+import { LlmHealth } from "~/schemas/api-bff/llm"
 
-import { joinUrl } from "./client"
+import { buildRequestInit, joinUrl } from "./client"
 import { toAPIError } from "./errors"
 
-export const LlmHealth = z.discriminatedUnion("status", [
-  z.object({ status: z.literal("unset") }),
-  z.object({ status: z.literal("ok"), model: z.string() }),
-  z.object({ status: z.literal("unreachable"), reason: z.string() }),
-])
-export type LlmHealth = z.infer<typeof LlmHealth>
+export { LlmHealth } from "~/schemas/api-bff/llm"
 
 const HEALTH_PATH = "/api/llm/health"
 
@@ -21,12 +16,12 @@ export type FetchLlmHealthOptions = {
 export const fetchLlmHealth = async (
   options: FetchLlmHealthOptions = {},
 ): Promise<LlmHealth> => {
-  const init: RequestInit = {
+  const init = buildRequestInit({
     method: "GET",
-    headers: { Accept: "application/json", ...options.headers },
-    credentials: options.baseUrl ? "same-origin" : "include",
-  }
-  if (options.signal) init.signal = options.signal
+    baseUrl: options.baseUrl,
+    signal: options.signal,
+    headers: options.headers,
+  })
   const response = await fetch(joinUrl(options.baseUrl, HEALTH_PATH), init)
   if (!response.ok) throw await toAPIError(response)
 

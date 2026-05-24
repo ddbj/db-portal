@@ -1,16 +1,12 @@
-export type NewsCategory =
-  | "announcement"
-  | "release"
-  | "maintenance"
-  | "event"
-  | "news"
+import { NewsCategory } from "../../app/schemas/api-bff/news"
 
-const TAG_TO_CATEGORY: [RegExp, NewsCategory][] = [
-  [/^announcement$/i, "announcement"],
-  [/^release$/i, "release"],
-  [/^maintenance$/i, "maintenance"],
-  [/^event$/i, "event"],
-]
+export { NewsCategory } from "../../app/schemas/api-bff/news"
+
+const DEFAULT_CATEGORY: NewsCategory = "news"
+
+const TAG_TO_CATEGORY: [RegExp, NewsCategory][] = NewsCategory.options
+  .filter((category) => category !== DEFAULT_CATEGORY)
+  .map((category) => [new RegExp(`^${category}$`, "i"), category])
 
 export const tagsToCategory = (tags: readonly string[]): NewsCategory => {
   for (const tag of tags) {
@@ -19,5 +15,5 @@ export const tagsToCategory = (tags: readonly string[]): NewsCategory => {
     }
   }
 
-  return "news"
+  return DEFAULT_CATEGORY
 }

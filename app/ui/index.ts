@@ -12,8 +12,6 @@ export { FormGroup } from "./form-group"
 export { IconButton } from "./icon-button"
 export {
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CloseIcon,
   ExternalIcon,
   GlobeIcon,

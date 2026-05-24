@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react"
+import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react"
 import { useEffect, useRef } from "react"
 
 import { cn } from "./cn"
@@ -41,6 +41,7 @@ export const Modal = ({
 }: ModalProps) => {
   const dialogRef = useRef<HTMLDivElement | null>(null)
   const previouslyFocused = useRef<Element | null>(null)
+  const pointerDownOnOverlay = useRef<boolean>(false)
 
   useEffect(() => {
     if (!open) return
@@ -97,12 +98,22 @@ export const Modal = ({
     maxWidth: "calc(100% - 64px)",
   }
 
+  const overlayPointerDown = (e: PointerEvent<HTMLDivElement>): void => {
+    pointerDownOnOverlay.current = e.target === e.currentTarget
+  }
+  const overlayClick = (e: MouseEvent<HTMLDivElement>): void => {
+    if (!closeOnOverlay) return
+    if (e.target === e.currentTarget && pointerDownOnOverlay.current) {
+      onClose()
+    }
+    pointerDownOnOverlay.current = false
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-14 bg-ink/45"
-      onClick={() => {
-        if (closeOnOverlay) onClose()
-      }}
+      onPointerDown={overlayPointerDown}
+      onClick={overlayClick}
     >
       <div
         ref={dialogRef}
@@ -111,7 +122,6 @@ export const Modal = ({
         aria-labelledby={ariaLabelledby}
         aria-describedby={ariaDescribedby}
         tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
         style={dialogStyle}
         className="bg-surface border border-border-soft rounded-card shadow-modal overflow-hidden flex flex-col"
       >

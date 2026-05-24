@@ -17,6 +17,7 @@ const isProd = process.env.NODE_ENV === "production"
 
 const app = express()
 app.disable("x-powered-by")
+app.set("trust proxy", "loopback")
 app.use(express.json({ limit: "1mb" }))
 
 app.get("/api/me", handleMe)

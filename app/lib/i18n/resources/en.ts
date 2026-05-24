@@ -2,7 +2,6 @@ import type { Resources } from "./ja"
 
 export const en: Resources = {
   common: {
-    appName: "DDBJ Portal",
     siteName: "DDBJ Portal",
     loading: "Loading",
     error: "Error",
@@ -55,6 +54,6 @@ export const en: Resources = {
     breadcrumbNav: "Breadcrumb",
     mainNav: "Main navigation",
     languageSwitcher: "Language switcher",
-    paginationNav: "Pagination",
+    notificationBar: "Important notice",
   },
 }

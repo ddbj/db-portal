@@ -3,32 +3,30 @@ import { render, screen } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
 import { I18nextProvider } from "react-i18next"
 import { createRoutesStub } from "react-router"
-import { afterEach, describe, expect, test, vi } from "vitest"
+import { describe, expect, test } from "vitest"
 
-import type * as I18nModule from "~/lib/i18n"
-import { createI18nInstance, useLang } from "~/lib/i18n"
+import { createI18nInstance } from "~/lib/i18n"
 import { createQueryClient } from "~/lib/query/client"
 import { computeActiveNav, Header } from "~/shell/header"
 
 import { server } from "../mocks/server"
 
-vi.mock("~/lib/i18n", async () => {
-  const actual = await vi.importActual<typeof I18nModule>("~/lib/i18n")
-  return { ...actual, useLang: vi.fn(() => "ja" as const) }
-})
+const enHandle = { lang: "en" as const }
 
-afterEach(() => {
-  vi.mocked(useLang).mockReturnValue("ja")
-})
-
-const renderHeader = (path: string, lang: "ja" | "en" = "ja") => {
-  vi.mocked(useLang).mockReturnValue(lang)
+const renderHeader = (path: string) => {
+  const isEn = path === "/en" || path.startsWith("/en/")
   server.use(http.get("/api/me", () => HttpResponse.json(null, { status: 401 })))
-  const i18n = createI18nInstance(lang)
+  const i18n = createI18nInstance(isEn ? "en" : "ja")
   const queryClient = createQueryClient()
   const Stub = createRoutesStub([
-    { path: "/*", Component: () => <Header /> },
+    { path: "/", Component: () => <Header /> },
+    { path: "/search", Component: () => <Header /> },
+    { path: "/search/results", Component: () => <Header /> },
+    { path: "/en", handle: enHandle, Component: () => <Header /> },
+    { path: "/en/search", handle: enHandle, Component: () => <Header /> },
+    { path: "/en/submit", handle: enHandle, Component: () => <Header /> },
   ])
+
   return render(
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
@@ -58,7 +56,7 @@ describe("Header", () => {
   })
 
   test("Header_enRoot_navHrefsArePrefixed", () => {
-    renderHeader("/en", "en")
+    renderHeader("/en")
     const top = screen.getByRole("link", { name: "Top" })
     const search = screen.getByRole("link", { name: "Search" })
     expect(top).toHaveAttribute("href", "/en")

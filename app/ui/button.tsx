@@ -2,14 +2,25 @@ import type { ButtonHTMLAttributes, ReactNode } from "react"
 
 import { cn } from "./cn"
 
-type ButtonKind = "primary" | "secondary" | "danger" | "ghost" | "link"
+type SizedButtonKind = "primary" | "secondary" | "danger" | "ghost"
+type ButtonKind = SizedButtonKind | "link"
 type ButtonSize = "sm" | "md" | "lg"
 
-type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
-  kind?: ButtonKind
+type ButtonHtmlBase = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className">
+
+type SizedButtonProps = ButtonHtmlBase & {
+  kind?: SizedButtonKind
   size?: ButtonSize
   children: ReactNode
 }
+
+type LinkButtonProps = ButtonHtmlBase & {
+  kind: "link"
+  size?: never
+  children: ReactNode
+}
+
+type ButtonProps = SizedButtonProps | LinkButtonProps
 
 const sizeClass: Record<ButtonSize, string> = {
   sm: "px-3 py-1.5 text-[13px]",
@@ -27,24 +38,28 @@ const kindClass: Record<ButtonKind, string> = {
 
 export const Button = ({
   kind = "primary",
-  size = "md",
+  size,
   disabled,
   type = "button",
   children,
   ...rest
-}: ButtonProps) => (
-  <button
-    {...rest}
-    type={type}
-    disabled={disabled || undefined}
-    aria-disabled={disabled || undefined}
-    className={cn(
-      "inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer",
-      kind !== "link" && sizeClass[size],
-      kindClass[kind],
-      disabled && "cursor-not-allowed opacity-55",
-    )}
-  >
-    {children}
-  </button>
-)
+}: ButtonProps) => {
+  const sizedClass = kind === "link" ? null : sizeClass[size ?? "md"]
+
+  return (
+    <button
+      {...rest}
+      type={type}
+      disabled={disabled || undefined}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer",
+        sizedClass,
+        kindClass[kind],
+        disabled && "cursor-not-allowed opacity-55",
+      )}
+    >
+      {children}
+    </button>
+  )
+}

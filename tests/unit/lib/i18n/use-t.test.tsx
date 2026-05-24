@@ -19,12 +19,12 @@ const renderProbe = (lang: "ja" | "en", k: string) => {
 
 describe("useT", () => {
   test("useT_jaKey_resolvesToJa", () => {
-    renderProbe("ja", "common.appName")
+    renderProbe("ja", "common.siteName")
     expect(screen.getByTestId("t")).toHaveTextContent("DDBJ ポータル")
   })
 
   test("useT_enKey_resolvesToEn", () => {
-    renderProbe("en", "common.appName")
+    renderProbe("en", "common.siteName")
     expect(screen.getByTestId("t")).toHaveTextContent("DDBJ Portal")
   })
 

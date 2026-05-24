@@ -180,6 +180,8 @@ sessionStorage は client 専用。SSR では「全件未読」前提で 1 件�
 
 `useBreadcrumb()` は handle resolver パターンで構築される (`docs/content-system.md §5`)。`app/shell/breadcrumb.tsx` は hook を呼んで `<nav aria-label={t("a11y.breadcrumbNav")}>` で wrap するだけ。
 
+`breadcrumbI18nKey` に存在しない i18n キー (typo 等) が渡されたとき、 hook は i18next default に従いキー文字列そのものをラベルとして返す (item は skip しない)。 typo を visible に出すことで dev で早期に気付かせるための挙動。
+
 ### 6.3 表示しないケース
 
 `useBreadcrumb()` が 0-1 件 (= top のみ) を返した場合、 何も render しない (`null`)。 これは top page (`/` / `/en`) で breadcrumb が冗長になるのを避けるため。
@@ -273,16 +275,16 @@ Header 内部で `useLocation()` + `useLang()` を呼び、 `computeActiveNav(pa
 
 shell が直接消費するキーを `app/lib/i18n/resources/{ja,en}.ts` に追加する:
 
-- `common.*`: appName / siteName / loading / error / close
+- `common.*`: siteName / loading / error / close / detail
 - `nav.*`: top / search / submit / news
 - `breadcrumb.*`: home / databases
 - `auth.*`: login / logout / loggingIn
 - `switchLang.*`: toEn / toJa
-- `notificationBar.*`: close
-- `newsAside.*`: heading / viewAll
+- `notificationBar.*`: close / important
+- `newsAside.*`: heading / viewAll / empty
 - `translationUnavailable.*`: title / description / switchToJa
 - `footer.*`: orgFullName / orgSubtitle / operatedBy / termsOfUse / privacy / accessibility
-- `a11y.*`: skipToContent / breadcrumbNav / mainNav
+- `a11y.*`: skipToContent / breadcrumbNav / mainNav / languageSwitcher / notificationBar
 
 ja と en でキーセットは完全一致させる (`docs/i18n.md §7.1` PBT で担保)。
 

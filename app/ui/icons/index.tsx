@@ -26,18 +26,6 @@ export const ChevronDownIcon = ({ size = 14, title, ...rest }: IconProps) => (
   </svg>
 )
 
-export const ChevronLeftIcon = ({ size = 14, title, ...rest }: IconProps) => (
-  <svg {...baseProps(size, title)} {...rest}>
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-)
-
-export const ChevronRightIcon = ({ size = 14, title, ...rest }: IconProps) => (
-  <svg {...baseProps(size, title)} {...rest}>
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-)
-
 export const CloseIcon = ({ size = 14, title, ...rest }: IconProps) => (
   <svg {...baseProps(size, title)} {...rest}>
     <line x1="6" y1="6" x2="18" y2="18" />

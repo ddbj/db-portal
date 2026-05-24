@@ -3,36 +3,34 @@ import { render, screen, waitFor } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
 import { I18nextProvider } from "react-i18next"
 import { createRoutesStub } from "react-router"
-import { afterEach, describe, expect, test, vi } from "vitest"
+import { describe, expect, test } from "vitest"
 
 import type { NewsList } from "~/lib/api/news"
-import type * as I18nModule from "~/lib/i18n"
-import { createI18nInstance, useLang } from "~/lib/i18n"
+import { createI18nInstance } from "~/lib/i18n"
 import { createQueryClient } from "~/lib/query/client"
 import { NewsAside } from "~/shell/news-aside"
 
 import { server } from "../mocks/server"
 
-vi.mock("~/lib/i18n", async () => {
-  const actual = await vi.importActual<typeof I18nModule>("~/lib/i18n")
-  return { ...actual, useLang: vi.fn(() => "ja" as const) }
-})
-
-afterEach(() => {
-  vi.mocked(useLang).mockReturnValue("ja")
-})
-
 const renderAside = (lang: "ja" | "en" = "ja") => {
-  vi.mocked(useLang).mockReturnValue(lang)
   const i18n = createI18nInstance(lang)
   const queryClient = createQueryClient()
   const Stub = createRoutesStub([
-    { path: "/*", Component: () => <NewsAside /> },
+    {
+      path: "/",
+      Component: () => <NewsAside />,
+    },
+    {
+      path: "/en",
+      handle: { lang: "en" as const },
+      Component: () => <NewsAside />,
+    },
   ])
+
   return render(
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
-        <Stub initialEntries={["/"]} />
+        <Stub initialEntries={[lang === "en" ? "/en" : "/"]} />
       </I18nextProvider>
     </QueryClientProvider>,
   )

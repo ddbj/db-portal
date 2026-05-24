@@ -7,19 +7,19 @@ describe("determineLang", () => {
     expect(determineLang([])).toBe("ja")
   })
 
-  test("determineLang_noLangMatch_returnsJa", () => {
-    expect(determineLang([{ data: { other: "x" } }, { data: null }])).toBe("ja")
+  test("determineLang_noLangHandle_returnsJa", () => {
+    expect(determineLang([{ handle: { other: "x" } }, { handle: null }])).toBe("ja")
   })
 
-  test("determineLang_anyEnMatch_returnsEn", () => {
-    expect(determineLang([{ data: { something: "y" } }, { data: { lang: "en" } }])).toBe("en")
+  test("determineLang_anyEnHandle_returnsEn", () => {
+    expect(determineLang([{ handle: { something: "y" } }, { handle: { lang: "en" } }])).toBe("en")
   })
 
-  test("determineLang_jaMatch_returnsJa", () => {
-    expect(determineLang([{ data: { lang: "ja" } }])).toBe("ja")
+  test("determineLang_jaHandle_returnsJa", () => {
+    expect(determineLang([{ handle: { lang: "ja" } }])).toBe("ja")
   })
 
-  test("determineLang_dataUndefined_returnsJa", () => {
-    expect(determineLang([{ data: undefined }])).toBe("ja")
+  test("determineLang_handleUndefined_returnsJa", () => {
+    expect(determineLang([{ handle: undefined }])).toBe("ja")
   })
 })

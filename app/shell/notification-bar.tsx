@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 
-import { fetchNews, type NewsItem } from "~/lib/api/news"
-import { useLang, useT } from "~/lib/i18n"
+import { fetchNews, type NewsItem, newsItemTitle } from "~/lib/api/news"
+import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
 
 const STORAGE_KEY = "dbPortal.notificationBar.dismissed"
@@ -30,15 +30,6 @@ const writeDismissed = (ids: readonly string[]): void => {
 }
 
 const isAnnouncement = (n: NewsItem): boolean => n.category === "announcement"
-
-const formatDate = (iso: string): string => {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}/${m}/${day}`
-}
 
 export const NotificationBar = () => {
   const t = useT()
@@ -75,7 +66,11 @@ export const NotificationBar = () => {
   }
 
   return (
-    <div className="bg-surface-subtle border-y border-border-soft">
+    <section
+      role="region"
+      aria-label={t("a11y.notificationBar")}
+      className="bg-surface-subtle border-y border-border-soft"
+    >
       <div className="max-w-content-max mx-auto px-page-gutter py-2 flex items-center gap-3 text-fs-body-sm">
         <Tag kind="status" tone="critical" size="sm">
           {t("notificationBar.important")}
@@ -84,7 +79,7 @@ export const NotificationBar = () => {
           {formatDate(visible.publishedAt)}
         </span>
         <span className="text-ink font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-          {visible.title[lang] || visible.title.ja}
+          {newsItemTitle(visible, lang)}
         </span>
         {visible.url !== undefined && (
           <TextLink href={visible.url} external>
@@ -95,6 +90,6 @@ export const NotificationBar = () => {
           <CloseIcon size={14} />
         </IconButton>
       </div>
-    </div>
+    </section>
   )
 }

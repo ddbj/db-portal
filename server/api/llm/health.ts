@@ -1,11 +1,9 @@
 import type { Request, Response } from "express"
 
+import type { LlmHealth } from "../../../app/schemas/api-bff/llm"
 import type { ServerEnv } from "../../lib/env"
 
-export type LlmHealth =
-  | { status: "unset" }
-  | { status: "ok"; model: string }
-  | { status: "unreachable"; reason: string }
+export type { LlmHealth } from "../../../app/schemas/api-bff/llm"
 
 export const buildHealth = (env: ServerEnv): LlmHealth =>
   env.DB_PORTAL_LLM_BASE_URL

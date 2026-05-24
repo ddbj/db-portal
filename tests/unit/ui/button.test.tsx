@@ -11,9 +11,11 @@ describe("Button", () => {
   })
 
   test("Button_kindLink_rendersWithoutSizePadding", () => {
-    render(<Button kind="link" size="lg">link text</Button>)
+    render(<Button kind="link">link text</Button>)
     const button = screen.getByRole("button", { name: "link text" })
     expect(button.className).toContain("text-brand")
+    expect(button.className).not.toContain("px-3")
+    expect(button.className).not.toContain("px-4.5")
     expect(button.className).not.toContain("px-5.5")
   })
 
