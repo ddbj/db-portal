@@ -1,0 +1,35 @@
+# React Router
+.react-router/
+build/
+
+# Dependencies
+node_modules/
+
+# dotenv
+.env
+.env.*
+!env.dev
+!env.staging
+!env.production
+
+# Logs
+*.log
+
+# TypeScript / ESLint cache
+*.tsbuildinfo
+.eslintcache
+
+# Vite
+vite.config.ts.timestamp-*
+.vite/
+
+# Playwright
+playwright-report/
+test-results/
+tests/e2e/.auth/
+
+# News mirror runtime cache (regenerated from ddbj/www)
+data/
+
+# OS / editor noise
+.DS_Store

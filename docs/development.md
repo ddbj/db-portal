@@ -58,7 +58,7 @@ docker compose up -d --build
 |---|---|---|---|
 | `DB_PORTAL_PREFIX` | `db-portal-dev` | `db-portal-staging` | `db-portal-prod` |
 | `DB_PORTAL_ENV` | `dev` | `staging` | `production` |
-| `DB_PORTAL_APP_COMMAND` | `npm run dev` | `node ./build/server/index.js` | `node ./build/server/index.js` |
+| `DB_PORTAL_APP_COMMAND` | `npm run dev` | `npm start` | `npm start` |
 | `DB_PORTAL_APP_PORT` | `3000` | `3100` | `3200` |
 | `DB_PORTAL_PORTAL_ORIGIN` | `http://localhost:3000` | `https://portal-staging.ddbj.nig.ac.jp` | `https://portal.ddbj.nig.ac.jp` |
 | `DB_PORTAL_LOG_LEVEL` | `debug` | `info` | `warn` |
@@ -99,15 +99,8 @@ docker compose exec app npm run test:unit
 docker compose exec app npm run test:pbt
 docker compose exec app npm test -- --watch
 
-# Coverage (html report)
-docker compose exec app npm run test:coverage
-
-# E2E (Playwright)
-docker compose exec app npm run test:e2e:local    # dev サーバ対象
-docker compose exec app npm run test:e2e:staging  # staging URL 対象
-
-# Mutation testing (リリース前のみ手動)
-docker compose exec app npm run test:mutation
+# E2E (Playwright、staging URL に対して実行)
+docker compose exec app npm run test:e2e
 
 # Build
 docker compose exec app npm run build
@@ -247,7 +240,7 @@ docker compose exec app npm test
 docker compose exec app npm run validate:content
 docker compose exec app npm run build
 docker compose exec app npm run gen:api-types  # diff check は CI 側
-docker compose exec app npm run test:e2e:staging  # CI staging deploy 後
+docker compose exec app npm run test:e2e  # CI staging deploy 後
 ```
 
 PR を出す前にこれらが pass することを確認する。

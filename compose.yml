@@ -1,0 +1,56 @@
+services:
+  app:
+    container_name: ${DB_PORTAL_PREFIX}-app
+    image: ${DB_PORTAL_PREFIX}-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app:rw
+      - app-node_modules:/app/node_modules:rw
+      - news-cache:${DB_PORTAL_NEWS_CACHE_DIR:-/var/cache/db-portal/news}:rw
+    ports:
+      - "${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
+    environment:
+      - TZ=${TZ:-Asia/Tokyo}
+      - NODE_ENV=${NODE_ENV:-development}
+      - HOST=0.0.0.0
+      - PORT=${DB_PORTAL_APP_INTERNAL_PORT}
+      - DB_PORTAL_ENV=${DB_PORTAL_ENV}
+      - DB_PORTAL_APP_INTERNAL_PORT=${DB_PORTAL_APP_INTERNAL_PORT}
+      - DB_PORTAL_PORTAL_ORIGIN=${DB_PORTAL_PORTAL_ORIGIN}
+      - DB_PORTAL_LOG_LEVEL=${DB_PORTAL_LOG_LEVEL:-info}
+      - DB_PORTAL_DEFAULT_LANG=${DB_PORTAL_DEFAULT_LANG:-ja}
+      - DB_PORTAL_SEARCH_API_URL=${DB_PORTAL_SEARCH_API_URL}
+      - DB_PORTAL_SEARCH_API_TIMEOUT_MS=${DB_PORTAL_SEARCH_API_TIMEOUT_MS:-10000}
+      - DB_PORTAL_OPENAPI_URL=${DB_PORTAL_OPENAPI_URL}
+      - DB_PORTAL_KEYCLOAK_REALM_URL=${DB_PORTAL_KEYCLOAK_REALM_URL}
+      - DB_PORTAL_KEYCLOAK_CLIENT_ID=${DB_PORTAL_KEYCLOAK_CLIENT_ID}
+      - DB_PORTAL_LLM_BASE_URL=${DB_PORTAL_LLM_BASE_URL:-}
+      - DB_PORTAL_LLM_API_KEY=${DB_PORTAL_LLM_API_KEY:-}
+      - DB_PORTAL_LLM_MODEL=${DB_PORTAL_LLM_MODEL:-Qwen/Qwen2.5-32B-Instruct-AWQ}
+      - DB_PORTAL_LLM_TIMEOUT_MS=${DB_PORTAL_LLM_TIMEOUT_MS:-60000}
+      - DB_PORTAL_NEWS_MIRROR_REPO=${DB_PORTAL_NEWS_MIRROR_REPO:-ddbj/www}
+      - DB_PORTAL_NEWS_MIRROR_BRANCH=${DB_PORTAL_NEWS_MIRROR_BRANCH:-main}
+      - DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS=${DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS:-1800}
+      - DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN=${DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN:-}
+      - DB_PORTAL_NEWS_CACHE_DIR=${DB_PORTAL_NEWS_CACHE_DIR:-/var/cache/db-portal/news}
+      - VITE_DB_PORTAL_SEARCH_API_URL=${DB_PORTAL_SEARCH_API_URL}
+      - VITE_DB_PORTAL_KEYCLOAK_REALM_URL=${DB_PORTAL_KEYCLOAK_REALM_URL}
+      - VITE_DB_PORTAL_KEYCLOAK_CLIENT_ID=${DB_PORTAL_KEYCLOAK_CLIENT_ID}
+      - VITE_DB_PORTAL_PORTAL_ORIGIN=${DB_PORTAL_PORTAL_ORIGIN}
+      - VITE_DB_PORTAL_DEFAULT_LANG=${DB_PORTAL_DEFAULT_LANG:-ja}
+    working_dir: /app
+    command: ${DB_PORTAL_APP_COMMAND}
+    init: true
+    networks: [db-portal-network]
+
+volumes:
+  app-node_modules:
+    name: ${DB_PORTAL_PREFIX}-node_modules
+  news-cache:
+    name: ${DB_PORTAL_PREFIX}-news-cache
+
+networks:
+  db-portal-network:
+    name: ${DB_PORTAL_PREFIX}-network

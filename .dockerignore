@@ -1,0 +1,19 @@
+# Ignore everything by default
+*
+
+# Whitelist what the image needs at build time
+!.npmrc
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.ts
+!react-router.config.ts
+!eslint.config.ts
+!stryker.conf.json
+!app/
+!server/
+!tests/
+!docs/
+!scripts/
+!README.md
+!LICENSE

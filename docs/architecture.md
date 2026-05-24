@@ -50,8 +50,7 @@ db-portal/
 ├── tsconfig.json
 ├── vite.config.ts
 ├── react-router.config.ts
-├── eslint.config.ts
-└── stryker.conf.json
+└── eslint.config.ts
 ```
 
 `app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は §4 と §6。
@@ -67,7 +66,7 @@ db-portal/
 | features/X | ✓ | × | ✓ | ✓ | ✓ | ✓ | ✓ |
 | shell | × | × | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ui | × | × | × | ✓ | × | × | × |
-| lib | × | × | × | × | ✓ | × | × |
+| lib | × | × | × | × | ✓ | ✓ | × |
 | schemas | × | × | × | × | × | ✓ | × |
 | content | × | × | × | ✓ | ✓ | ✓ | ✓ |
 | routes | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -86,7 +85,7 @@ db-portal/
 | zone | 役割 | 上位 zone への依存 |
 |---|---|---|
 | `schemas` | Zod による型 + runtime validation | 持たない (純粋型定義) |
-| `lib` | 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client) | 持たない |
+| `lib` | 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client) | `schemas` のみ (content loader が DatabaseContent を parse するなど、runtime validation を担う lib は schema に依存する) |
 | `ui` | Tailwind primitive | 持たない (`@theme` token のみ参照) |
 | `content` | `*.content.ts` collection | `ui` のリッチコンポーネント (Callout / Section …) を JSX で使う |
 | `shell` | Header / Footer / NavBar / Breadcrumb (画面横断 chrome) | `ui` / `lib` / `schemas` / `content` |
@@ -244,7 +243,6 @@ vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/ll
 | Unit | `tests/unit/` | コンポーネント / 関数 / `createRoutesStub` での loader 統合。HTTP は msw |
 | PBT | `tests/pbt/` | 純粋ロジックの不変量 (submit step / AST round-trip / URL serialize / i18n キー整合) |
 | E2E | `tests/e2e/` | Playwright で staging URL に対して実行 |
-| Mutation | (Stryker) | リリース前のみ手動、`app/schemas/` + `app/features/*/flow-rules` を対象 |
 
 Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 / コンポーネント / Zod schema は mock しない。詳細な方針は `tests/` 配下の README とテストごとの設計に従う。
 
