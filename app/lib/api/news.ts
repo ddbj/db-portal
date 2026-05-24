@@ -41,12 +41,13 @@ export type FetchNewsOptions = {
 }
 
 export const fetchNews = async (options: FetchNewsOptions = {}): Promise<NewsList> => {
-  const response = await fetch(joinUrl(options.baseUrl, NEWS_PATH), {
+  const init: RequestInit = {
     method: "GET",
     headers: { Accept: "application/json", ...options.headers },
     credentials: options.baseUrl ? "same-origin" : "include",
-    signal: options.signal ?? null,
-  })
+  }
+  if (options.signal) init.signal = options.signal
+  const response = await fetch(joinUrl(options.baseUrl, NEWS_PATH), init)
   if (!response.ok) throw await toAPIError(response)
 
   return NewsList.parse(await response.json())

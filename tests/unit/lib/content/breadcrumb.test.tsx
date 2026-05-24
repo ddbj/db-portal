@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest"
 
 import type { BreadcrumbOptions } from "~/lib/content/breadcrumb"
 import { useBreadcrumb } from "~/lib/content/breadcrumb"
-import { initI18n } from "~/lib/i18n"
+import { createI18nInstance } from "~/lib/i18n"
 
 type BreadcrumbProbeProps = {
   resolvers?: BreadcrumbOptions["resolvers"]
@@ -24,7 +24,7 @@ const BreadcrumbProbe = ({ resolvers }: BreadcrumbProbeProps) => {
 }
 
 const renderWithI18n = (ui: React.ReactNode) => {
-  const i18n = initI18n("ja")
+  const i18n = createI18nInstance("ja")
 
   return render(<I18nextProvider i18n={i18n}>{ui}</I18nextProvider>)
 }

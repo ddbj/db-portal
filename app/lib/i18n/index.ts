@@ -1,31 +1,24 @@
-import i18n from "i18next"
+import { createInstance, type i18n as I18nInstance } from "i18next"
 import { initReactI18next } from "react-i18next"
 
 import { en } from "./resources/en"
 import { ja } from "./resources/ja"
+import type { Lang } from "./use-lang"
 
-let initialized = false
-
-export const initI18n = (lng: "ja" | "en"): typeof i18n => {
-  if (!initialized) {
-    i18n.use(initReactI18next).init({
-      resources: {
-        ja: { translation: ja },
-        en: { translation: en },
-      },
-      lng,
-      fallbackLng: "ja",
-      interpolation: { escapeValue: false },
-    })
-    initialized = true
-  } else if (i18n.language !== lng) {
-    void i18n.changeLanguage(lng)
-  }
-
-  return i18n
+export const createI18nInstance = (lng: Lang): I18nInstance => {
+  const instance = createInstance()
+  instance.use(initReactI18next).init({
+    resources: {
+      ja: { translation: ja },
+      en: { translation: en },
+    },
+    lng,
+    fallbackLng: "ja",
+    interpolation: { escapeValue: false },
+  })
+  return instance
 }
 
-export { i18n }
 export { flattenKeys } from "./flatten-keys"
 export { en } from "./resources/en"
 export { ja, type Resources } from "./resources/ja"

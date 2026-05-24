@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import { I18nextProvider } from "react-i18next"
 import { describe, expect, test } from "vitest"
 
-import { initI18n } from "~/lib/i18n"
+import { createI18nInstance } from "~/lib/i18n"
 import { useT } from "~/lib/i18n/use-t"
 
 const Probe = ({ k }: { k: string }) => {
@@ -12,7 +12,7 @@ const Probe = ({ k }: { k: string }) => {
 }
 
 const renderProbe = (lang: "ja" | "en", k: string) => {
-  const i18n = initI18n(lang)
+  const i18n = createI18nInstance(lang)
 
   return render(<I18nextProvider i18n={i18n}><Probe k={k} /></I18nextProvider>)
 }

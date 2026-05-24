@@ -143,9 +143,32 @@ export default tseslint.config(
   },
 
   {
-    files: ["app/{features,routes,shell,content}/**/*.{ts,tsx}"],
+    files: ["app/{features,routes,content}/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": ["error", HEX_LITERAL_RULE, ARBITRARY_CLASSNAME_RULE],
+      "react/forbid-elements": ["error", {
+        forbid: [
+          { element: "button", message: "生 <button> 禁止。 ~/ui の <Button> / <IconButton> を使う。" },
+          { element: "a", message: "生 <a> 禁止。 ~/ui の <TextLink> または react-router の <Link> を使う。" },
+          { element: "input", message: "生 <input> 禁止。 ~/ui の <FmtRadio> / <FmtCheck> / <SearchBox> / <FacetRow> 等の primitive を使う。" },
+          { element: "select", message: "生 <select> 禁止。 ~/ui の <NativeSelect> を使う。" },
+          { element: "textarea", message: "生 <textarea> 禁止。 form primitive を ~/ui に追加してから使う。" },
+        ],
+      }],
+    },
+  },
+
+  {
+    files: ["app/shell/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": ["error", HEX_LITERAL_RULE],
+    },
+  },
+
+  {
+    files: ["app/routes/_design/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": "off",
     },
   },
 

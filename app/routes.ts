@@ -1,5 +1,19 @@
 import { index, layout, route, type RouteConfig } from "@react-router/dev/routes"
 
+const isDesignPreviewEnabled =
+  process.env.NODE_ENV !== "production"
+  || process.env.DB_PORTAL_ENABLE_DESIGN_PREVIEW === "true"
+
+const designRoutes = isDesignPreviewEnabled
+  ? [
+    route("_design", "routes/_design/layout.tsx", [
+      index("routes/_design/index.tsx"),
+      route("tokens", "routes/_design/tokens.tsx"),
+      route("primitives", "routes/_design/primitives.tsx"),
+    ]),
+  ]
+  : []
+
 export default [
   index("routes/top/route.tsx"),
   route("search", "routes/search/route.tsx"),
@@ -20,4 +34,5 @@ export default [
     route("news", "routes/news/route.tsx", { id: "news#en" }),
     route("databases/:slug", "routes/databases/$slug.tsx", { id: "databases/:slug#en" }),
   ]),
+  ...designRoutes,
 ] satisfies RouteConfig

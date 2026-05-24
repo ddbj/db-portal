@@ -14,10 +14,11 @@ import {
   useRouteError,
 } from "react-router"
 
-import { initI18n } from "~/lib/i18n"
+import { createI18nInstance } from "~/lib/i18n"
 import { useLang } from "~/lib/i18n/use-lang"
 import { useT } from "~/lib/i18n/use-t"
 import { createQueryClient } from "~/lib/query/client"
+import { ShellLayout } from "~/shell"
 
 export const meta = () => [
   { title: "DB Portal" },
@@ -46,12 +47,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 const AppShell = () => {
   const lang = useLang()
   const queryClient = useMemo(createQueryClient, [])
-  const i18nInstance = useMemo(() => initI18n(lang), [lang])
+  const i18nInstance = useMemo(() => createI18nInstance(lang), [lang])
 
   return (
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18nInstance}>
-        <Outlet />
+        <ShellLayout>
+          <Outlet />
+        </ShellLayout>
       </I18nextProvider>
     </QueryClientProvider>
   )
@@ -61,9 +64,8 @@ const App = () => <AppShell />
 
 export default App
 
-export const ErrorBoundary = () => {
+const ErrorBoundaryContent = () => {
   const error = useRouteError()
-  initI18n("ja")
   const t = useT()
   const message = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`
@@ -73,5 +75,14 @@ export const ErrorBoundary = () => {
     <main className="mx-auto max-w-content-max px-page-gutter py-section-md">
       <h1 className="text-fs-h1 font-bold text-ink">{message}</h1>
     </main>
+  )
+}
+
+export const ErrorBoundary = () => {
+  const i18nInstance = useMemo(() => createI18nInstance("ja"), [])
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <ErrorBoundaryContent />
+    </I18nextProvider>
   )
 }

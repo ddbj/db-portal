@@ -100,7 +100,8 @@ db-portal/
 ESLint が次の 2 系統で逸脱を検出する。
 
 - 生 hex literal 禁止: `app/{features,routes,shell,content}/` 配下で `#[0-9A-Fa-f]{3,8}` を含む文字列リテラルを `no-restricted-syntax` で弾く。`app/ui/` のみ除外
-- arbitrary Tailwind value 禁止: `app/{features,routes,shell,content}/` 配下で `className` 内の `bg-[#...]` / `text-[14.5px]` / `p-[3px]` を弾く
+- arbitrary Tailwind value 禁止: `app/{features,routes,content}/` 配下で `className` 内の `bg-[#...]` / `text-[14.5px]` / `p-[3px]` を弾く。`app/ui/` と `app/shell/` は除外 (chrome / primitive 設計上の細部値を許容)
+- `app/routes/_design/` (開発時のみ生成される token / primitive 視覚確認 route) は `no-restricted-syntax` 全体から除外 (token 一覧表示のために hex 文字列を意図的に保持する)
 
 色や spacing を直接書きたくなったら、まず `app/styles/tailwind.css` の `@theme` block にトークンとして追加する。utility class (`bg-brand` / `text-ink` / `p-section-md`) を経由して参照する。
 
@@ -265,4 +266,6 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `i18n.md` | URL prefix 戦略、`useLang`、リソース運用、翻訳なし fallback |
 | `auth.md` | BFF + HttpOnly cookie、session store、OIDC PKCE、`useAuth` / `RequireAuth` |
 | `content-system.md` | `*.content.ts` collection、loader、breadcrumb 自動生成、TSX fragment スコープ |
+| `ui-primitives.md` | `app/ui/` 22 primitive の Props / variant / accessibility / token 参照規約 |
+| `shell.md` | Header / Footer / NotificationBar / NewsAside / Breadcrumb / TranslationUnavailable / ShellLayout |
 | `development.md` | Docker Compose 起動、env 切替、よく使うコマンド |

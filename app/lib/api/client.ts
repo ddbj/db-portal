@@ -68,11 +68,12 @@ export const apiGet = async <P extends keyof paths & string>(
   options: GetOptions<P>,
 ): Promise<ResponseBody<GetOp<P>>> => {
   const url = `${joinUrl(options.baseUrl, path)}${encodeQuery(options.query as Record<string, unknown> | undefined)}`
-  const response = await fetch(url, {
+  const init: RequestInit = {
     method: "GET",
     headers: { Accept: "application/json", ...options.headers },
-    signal: options.signal ?? null,
-  })
+  }
+  if (options.signal) init.signal = options.signal
+  const response = await fetch(url, init)
   if (!response.ok) throw await toAPIError(response)
 
   return consumeJsonBody<ResponseBody<GetOp<P>>>(response)
@@ -84,7 +85,7 @@ export const apiPost = async <P extends keyof paths & string>(
   options: PostOptions<P>,
 ): Promise<ResponseBody<PostOp<P>>> => {
   const url = `${joinUrl(options.baseUrl, path)}${encodeQuery(options.query as Record<string, unknown> | undefined)}`
-  const response = await fetch(url, {
+  const init: RequestInit = {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -92,8 +93,9 @@ export const apiPost = async <P extends keyof paths & string>(
       ...options.headers,
     },
     body: JSON.stringify(body),
-    signal: options.signal ?? null,
-  })
+  }
+  if (options.signal) init.signal = options.signal
+  const response = await fetch(url, init)
   if (!response.ok) throw await toAPIError(response)
 
   return consumeJsonBody<ResponseBody<PostOp<P>>>(response)
