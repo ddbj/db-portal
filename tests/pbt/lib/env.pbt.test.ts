@@ -36,7 +36,17 @@ test.prop({ raw: fc.oneof(fc.constant(""), fc.constant(undefined)) })(
   },
 )
 
-test.prop({ origin: fc.string().filter((s) => !s.startsWith("http")) })(
+const isParsableUrl = (s: string): boolean => {
+  try {
+    new URL(s)
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+test.prop({ origin: fc.string().filter((s) => !isParsableUrl(s)) })(
   "parseServerEnv_nonUrlOrigin_throws",
   ({ origin }) => {
     expect(() =>
