@@ -19,6 +19,35 @@ export const en: Resources = {
     home: "Home",
     databases: "Databases",
   },
+  top: {
+    hero: {
+      placeholder: "Search by keyword, accession, or organism",
+      submit: "Search",
+      examplesLabel: "Examples",
+      examples: ["cancer", "Homo sapiens", "PRJDB*"],
+      advancedLink: "Open the query builder",
+      a11y: { input: "Search keywords" },
+    },
+    serviceGrid: { heading: "What you can do in DDBJ Portal" },
+    popularResources: {
+      heading: "Popular Resources",
+      groupDdbj: "DDBJ",
+      groupDbcls: "DBCLS",
+    },
+  },
+  databases: {
+    overviewHeading: "Overview",
+    relatedHeading: "Related databases",
+    externalLinksHeading: "External links",
+    lastUpdatedLabel: "Last updated",
+    notFoundTitle: "Database not found",
+    notFoundDescription: "No content was registered for the requested slug.",
+    backToTop: "Back to home",
+  },
+  db: {
+    bioproject: { title: "BioProject" },
+    biosample: { title: "BioSample" },
+  },
   auth: {
     login: "Sign in",
     logout: "Sign out",

@@ -1,15 +1,39 @@
 import { Link } from "react-router"
 
-import { type BreadcrumbOptions, useBreadcrumb } from "~/lib/content/breadcrumb"
-import { useT } from "~/lib/i18n"
+import {
+  type BreadcrumbItem,
+  type BreadcrumbOptions,
+  type BreadcrumbResolver,
+  useBreadcrumb,
+} from "~/lib/content/breadcrumb"
+import { getDatabaseBySlug } from "~/lib/content/loader"
+import { type Lang, useLang, useT } from "~/lib/i18n"
 
 type BreadcrumbProps = {
   resolvers?: BreadcrumbOptions["resolvers"]
 }
 
-export const Breadcrumb = ({ resolvers }: BreadcrumbProps) => {
+const homeHrefFor = (lang: Lang): string => (lang === "en" ? "/en" : "/")
+
+export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
+  const lang = useLang()
   const t = useT()
-  const items = useBreadcrumb(resolvers === undefined ? {} : { resolvers })
+  const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
+    const slug = params.slug
+    if (slug === undefined) return null
+    const db = getDatabaseBySlug(slug)
+    if (db === undefined) return null
+
+    return { label: db.title[lang], href: pathname }
+  }
+  const mergedResolvers = { "database-content": databaseResolver, ...(resolvers ?? {}) }
+  const raw = useBreadcrumb({ resolvers: mergedResolvers })
+  if (raw.length === 0) return null
+
+  const items: BreadcrumbItem[] = [
+    { label: t("breadcrumb.home"), href: homeHrefFor(lang) },
+    ...raw,
+  ]
 
   if (items.length <= 1) return null
 

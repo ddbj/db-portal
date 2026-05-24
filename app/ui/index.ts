@@ -20,6 +20,7 @@ export {
   UserIcon,
 } from "./icons"
 export { Label } from "./label"
+export { LinkCard, type LinkCardProps } from "./link-card"
 export { Modal, ModalBody, ModalFooter, ModalHeader } from "./modal"
 export { ModalPreview, PreviewCard } from "./modal-preview"
 export { NativeSelect, type NativeSelectOption } from "./native-select"

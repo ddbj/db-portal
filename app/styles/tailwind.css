@@ -45,13 +45,16 @@
   --font-serif: "Noto Serif JP", "Source Serif 4", Georgia, serif;
   --font-mono:  "IBM Plex Mono", ui-monospace, monospace;
 
-  --text-fs-h1:      28px;
-  --text-fs-h2:      18px;
-  --text-fs-h3:      14px;
-  --text-fs-body:    14px;
-  --text-fs-body-sm: 13px;
-  --text-fs-label:   12px;
-  --text-fs-micro:   11px;
+  --text-fs-h1:         28px;
+  --text-fs-h2:         18px;
+  --text-fs-h3:         14px;
+  --text-fs-body:       14px;
+  --text-fs-body-sm:    13px;
+  --text-fs-label:      12px;
+  --text-fs-micro:      11px;
+  --text-fs-card-title: 17px;
+
+  --tracking-label: 0.06em;
 
   --spacing-section-lg:  48px;
   --spacing-section-md:  32px;

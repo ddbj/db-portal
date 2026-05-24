@@ -1,7 +1,7 @@
 import type { FileEntry, FileEntryChip, FlowStep, GroupType, Service, Submission } from "~/schemas/submit"
 import { PreviewCard } from "~/ui"
 
-import { SOURCE_OF_SERVICE } from "../external-links"
+import { getSubmitMeta } from "../external-links"
 import { deriveFlowSteps } from "../flow-rules"
 
 type PreviewCardsProps = {
@@ -52,7 +52,7 @@ export const PreviewCards = ({
   const allSteps: FlowStep[] = deriveFlowSteps(patched)
   const steps = allSteps
     .filter((s) => s.scope.entryIds.includes(entryId))
-    .filter((s) => SOURCE_OF_SERVICE[s.service] !== null)
+    .filter((s) => (getSubmitMeta(s.service)?.source ?? null) !== null)
 
   if (steps.length === 0) {
     return null
@@ -61,7 +61,7 @@ export const PreviewCards = ({
   return (
     <div className="flex flex-col gap-2">
       {steps.map((step) => {
-        const source = SOURCE_OF_SERVICE[step.service]
+        const source = getSubmitMeta(step.service)?.source ?? null
         if (source === null) return null
         const active = !step.notes.some((n) => n.kind === "warning" || n.kind === "error")
         return (

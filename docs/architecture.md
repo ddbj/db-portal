@@ -28,7 +28,7 @@ db-portal/
 │   ├── shell/                   Header / Footer / NotificationBar / NewsAside / Breadcrumb
 │   ├── ui/                      Tailwind primitives (Button / Card / Tag / Callout / Modal …)
 │   ├── lib/                     純粋ユーティリティ (api / i18n / auth client / content / query)
-│   ├── content/                 *.content.ts (型安全コンテンツ collection)
+│   ├── content/                 *.content.tsx (型安全コンテンツ collection)
 │   ├── schemas/                 Zod schemas (submit vocab / FlowStep / News / DatabaseContent …)
 │   └── styles/                  Tailwind v4 entry + @theme block
 ├── server/                      BFF / Node 専用コード (browser に出さない)
@@ -87,7 +87,7 @@ db-portal/
 | `schemas` | Zod による型 + runtime validation | 持たない (純粋型定義) |
 | `lib` | 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client) | `schemas` のみ (content loader が DatabaseContent を parse するなど、runtime validation を担う lib は schema に依存する) |
 | `ui` | Tailwind primitive | 持たない (`@theme` token のみ参照) |
-| `content` | `*.content.ts` collection | `ui` のリッチコンポーネント (Callout / Section …) を JSX で使う |
+| `content` | `*.content.tsx` collection | `ui` のリッチコンポーネント (Callout / Section …) を JSX で使う |
 | `shell` | Header / Footer / NavBar / Breadcrumb (画面横断 chrome) | `ui` / `lib` / `schemas` / `content` |
 | `features` | 画面ごとの状態管理・reducer・modal などのロジック | `shell` / `ui` / `lib` / `schemas` / `content` |
 | `routes` | RR v7 framework mode の route component (loader / action / 描画) | 全 zone (薄く配線するだけ) |
@@ -144,7 +144,7 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 ### 6.1 ビルド時に確定するもの
 
 - API 型 (`app/lib/api/openapi-types.ts`): `npm run gen:api-types` で staging openapi.json から生成。git commit 対象。詳細 `api-types.md`
-- コンテンツ collection (`app/content/**/*.content.ts`): `import.meta.glob` で列挙、Zod schema で eager validate。1 件でも parse 失敗すれば build が落ちる。詳細 `content-system.md`
+- コンテンツ collection (`app/content/**/*.content.tsx`): `import.meta.glob` で列挙、Zod schema で eager validate。1 件でも parse 失敗すれば build が落ちる。詳細 `content-system.md`
 - i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`): 静的 import。`ja` と `en` でキーセットが乖離した場合は PBT (`tests/pbt/`) で検出。詳細 `i18n.md`
 - Tailwind utility class: `@theme` block + JSX を Vite が走査して必要な class のみを出力
 
@@ -265,7 +265,7 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `api-types.md` | ddbj-search-api との型連携、`ParseNode` alias、生成・diff 運用 |
 | `i18n.md` | URL prefix 戦略、`useLang`、リソース運用、翻訳なし fallback |
 | `auth.md` | BFF + HttpOnly cookie、session store、OIDC PKCE、`useAuth` / `RequireAuth` |
-| `content-system.md` | `*.content.ts` collection、loader、breadcrumb 自動生成、TSX fragment スコープ |
+| `content-system.md` | `*.content.tsx` collection、loader、breadcrumb 自動生成、TSX fragment スコープ |
 | `ui-primitives.md` | `app/ui/` 22 primitive の Props / variant / accessibility / token 参照規約 |
 | `shell.md` | Header / Footer / NotificationBar / NewsAside / Breadcrumb / TranslationUnavailable / ShellLayout |
 | `development.md` | Docker Compose 起動、env 切替、よく使うコマンド |

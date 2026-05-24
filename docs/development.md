@@ -122,7 +122,7 @@ docker compose exec app npm run validate:content
 | `app/` / `server/` の TS / TSX | RR v7 dev server が HMR で即反映 |
 | `app/styles/tailwind.css` | Tailwind v4 plugin が即反映 |
 | `app/lib/api/openapi-types.ts` | 手動で `gen:api-types` 再実行 |
-| `app/content/**/*.content.ts` | 起動時 eager validate のため、追加・削除は server 再起動 |
+| `app/content/**/*.content.tsx` | 起動時 eager validate のため、追加・削除は server 再起動 |
 | `package.json` | `docker compose exec app npm install` で再 install |
 | `Dockerfile` / `compose.yml` | `docker compose down -v && docker compose up -d --build` |
 | `env.*` | `.env` を再 cp してから `docker compose down -v && up -d --build` |
@@ -177,7 +177,7 @@ CI では PR / push のたびに `npm run gen:api-types && git diff --exit-code`
 
 ## 9. Content の lastUpdated 運用
 
-`*.content.ts` の `meta.lastUpdated` は **手書き** する。
+`*.content.tsx` の `meta.lastUpdated` は **手書き** する。
 
 ```ts
 meta: {
@@ -253,4 +253,4 @@ PR を出す前にこれらが pass することを確認する。
 | `api-types.md` | `gen:api-types` の運用詳細、CI diff check |
 | `i18n.md` | リソース / URL 切替 |
 | `auth.md` | Keycloak realm / client の設定 |
-| `content-system.md` | `*.content.ts` 追加時の検証フロー |
+| `content-system.md` | `*.content.tsx` 追加時の検証フロー |

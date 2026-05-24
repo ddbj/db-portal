@@ -83,11 +83,18 @@ describe("getDatabaseBySlug / listDatabases / validateAllDatabases", () => {
     expect(getDatabaseBySlug("nope")).toBeUndefined()
   })
 
-  test("listDatabases_emptyCollection_returnsEmptyArray", () => {
-    expect(listDatabases()).toEqual([])
+  test("getDatabaseBySlug_bioproject_returnsContent", () => {
+    const db = getDatabaseBySlug("bioproject")
+    expect(db?.slug).toBe("bioproject")
+    expect(db?.title.ja).toBe("BioProject")
   })
 
-  test("validateAllDatabases_emptyCollection_returnsOk", () => {
+  test("listDatabases_includesBioprojectAndBiosample", () => {
+    const slugs = listDatabases().map((d) => d.slug).sort()
+    expect(slugs).toEqual(["biosample", "bioproject"].sort())
+  })
+
+  test("validateAllDatabases_returnsOk", () => {
     const result = validateAllDatabases()
     expect(result.ok).toBe(true)
   })

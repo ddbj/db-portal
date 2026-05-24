@@ -1,9 +1,18 @@
+import { HeroSection, PopularResources, ServiceGrid } from "~/features/top"
+import { NewsAside } from "~/shell"
+
 const TopRoute = () => (
-  <div className="mx-auto max-w-content-max px-page-gutter py-section-md">
-    <h1 className="text-fs-h1 font-bold text-ink">DB Portal</h1>
-    <p className="mt-section-sm text-fs-body text-ink-mid">
-      DDBJ の登録・検索サービスへの統合ポータル。
-    </p>
+  <div className="px-page-gutter">
+    <div className="max-w-content-max mx-auto py-section-md grid gap-section-md lg:grid-cols-[1fr_var(--spacing-right-pane)]">
+      <main className="flex flex-col gap-section-md min-w-0">
+        <HeroSection />
+        <ServiceGrid />
+        <PopularResources />
+      </main>
+      <aside className="lg:sticky lg:top-section-sm self-start">
+        <NewsAside />
+      </aside>
+    </div>
   </div>
 )
 

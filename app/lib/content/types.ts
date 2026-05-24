@@ -1,6 +1,7 @@
 import type { z } from "zod"
 
 import type { DatabaseContent } from "~/schemas/content/database-content"
+import type { ServiceContent } from "~/schemas/content/service-content"
 
 export type Collection<T> = {
   filepath: string
@@ -17,3 +18,4 @@ export type ValidationResult<T> =
   | { ok: false; errors: ValidationFailure[] }
 
 export type DatabaseCollection = Collection<DatabaseContent>
+export type ServiceCollection = Collection<ServiceContent>

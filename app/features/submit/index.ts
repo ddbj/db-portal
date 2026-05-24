@@ -7,12 +7,7 @@ export { RowSetTag } from "./components/row-set-tag"
 export { StepBadge } from "./components/step-badge"
 export { TagProgress } from "./components/tag-progress"
 export { WarnDashedButton } from "./components/warn-dashed-button"
-export type { ExternalLink } from "./external-links"
-export {
-  ACCESSION_PLACEHOLDERS,
-  EXTERNAL_LINKS,
-  SOURCE_OF_SERVICE,
-} from "./external-links"
+export { getSubmitMeta, type ServiceSource, type SubmitMeta } from "./external-links"
 export { FlowEmptyState } from "./flow-cards/flow-empty-state"
 export { FlowStepCard } from "./flow-cards/flow-step-card"
 export { FlowStepCards } from "./flow-cards/flow-step-cards"

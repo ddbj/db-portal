@@ -5,7 +5,7 @@ import { AccessionCode } from "../components/accession-code"
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
 import { StepBadge } from "../components/step-badge"
-import { ACCESSION_PLACEHOLDERS, EXTERNAL_LINKS, SOURCE_OF_SERVICE } from "../external-links"
+import { getSubmitMeta } from "../external-links"
 import { stepBadgeColor } from "../flow-rules"
 
 type FlowStepCardProps = {
@@ -47,9 +47,10 @@ export const FlowStepCard = ({
   const pending = step.notes.some((n) => n.kind === "warning" || n.kind === "error")
   const scopeGroups = groups.filter((g) => step.scope.groupIds.includes(g.id))
   const scopeEntries = entries.filter((e) => step.scope.entryIds.includes(e.id))
-  const accession = ACCESSION_PLACEHOLDERS[step.service] ?? []
-  const externalLink = EXTERNAL_LINKS[step.service]
-  const source = SOURCE_OF_SERVICE[step.service]
+  const meta = getSubmitMeta(step.service)
+  const accession = meta?.accessionPlaceholders ?? []
+  const externalUrl = meta?.externalUrl
+  const source = meta?.source ?? null
 
   return (
     <li
@@ -109,9 +110,9 @@ export const FlowStepCard = ({
           })}
         </ul>
       )}
-      {externalLink !== undefined && (
+      {externalUrl !== undefined && (
         <div>
-          <ExternalLinkButton url={externalLink.url} label={externalCtaLabel} />
+          <ExternalLinkButton url={externalUrl} label={externalCtaLabel} />
         </div>
       )}
     </li>

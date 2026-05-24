@@ -17,6 +17,39 @@ export type Resources = {
     home: string
     databases: string
   }
+  top: {
+    hero: {
+      placeholder: string
+      submit: string
+      examplesLabel: string
+      examples: readonly string[]
+      advancedLink: string
+      a11y: {
+        input: string
+      }
+    }
+    serviceGrid: {
+      heading: string
+    }
+    popularResources: {
+      heading: string
+      groupDdbj: string
+      groupDbcls: string
+    }
+  }
+  databases: {
+    overviewHeading: string
+    relatedHeading: string
+    externalLinksHeading: string
+    lastUpdatedLabel: string
+    notFoundTitle: string
+    notFoundDescription: string
+    backToTop: string
+  }
+  db: {
+    bioproject: { title: string }
+    biosample: { title: string }
+  }
   auth: {
     login: string
     logout: string
@@ -525,6 +558,35 @@ export const ja: Resources = {
   breadcrumb: {
     home: "ホーム",
     databases: "データベース",
+  },
+  top: {
+    hero: {
+      placeholder: "キーワード、 accession、 学名で検索",
+      submit: "検索",
+      examplesLabel: "例",
+      examples: ["cancer", "Homo sapiens", "PRJDB*"],
+      advancedLink: "クエリビルダーで詳細条件を組む",
+      a11y: { input: "検索キーワード" },
+    },
+    serviceGrid: { heading: "DDBJ ポータルでできること" },
+    popularResources: {
+      heading: "Popular Resources",
+      groupDdbj: "DDBJ",
+      groupDbcls: "DBCLS",
+    },
+  },
+  databases: {
+    overviewHeading: "概要",
+    relatedHeading: "関連データベース",
+    externalLinksHeading: "外部リンク",
+    lastUpdatedLabel: "最終更新",
+    notFoundTitle: "データベースが見つかりません",
+    notFoundDescription: "指定された slug に対応するコンテンツがありません。",
+    backToTop: "トップへ戻る",
+  },
+  db: {
+    bioproject: { title: "BioProject" },
+    biosample: { title: "BioSample" },
   },
   auth: {
     login: "ログイン",

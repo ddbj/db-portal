@@ -2,24 +2,47 @@ import { fileURLToPath } from "node:url"
 
 import { createServer } from "vite"
 
+type ValidateResult = {
+  ok: boolean
+  errors?: { filepath: string; error: unknown }[]
+}
+
+type LoaderModule = {
+  validateAllDatabases: () => ValidateResult
+  validateAllServices: () => ValidateResult
+}
+
 const main = async (): Promise<void> => {
   const vite = await createServer({
     server: { middlewareMode: true },
     appType: "custom",
   })
+  let hasFailure = false
   try {
     const mod = (await vite.ssrLoadModule(
       fileURLToPath(new URL("../app/lib/content/loader.ts", import.meta.url)),
-    )) as { validateAllDatabases: () => { ok: boolean; errors?: { filepath: string; error: unknown }[] } }
-    const result = mod.validateAllDatabases()
-    if (!result.ok) {
-      for (const e of result.errors ?? []) {
-        console.error("Content validation failed", e.filepath, e.error)
+    )) as LoaderModule
+
+    const databaseResult = mod.validateAllDatabases()
+    if (!databaseResult.ok) {
+      hasFailure = true
+      for (const e of databaseResult.errors ?? []) {
+        console.error("Database content validation failed", e.filepath, e.error)
       }
-      process.exit(1)
+    }
+
+    const serviceResult = mod.validateAllServices()
+    if (!serviceResult.ok) {
+      hasFailure = true
+      for (const e of serviceResult.errors ?? []) {
+        console.error("Service content validation failed", e.filepath, e.error)
+      }
     }
   } finally {
     await vite.close()
+  }
+  if (hasFailure) {
+    process.exit(1)
   }
 }
 

@@ -387,3 +387,111 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `event: error` で `{ code, message }` を受信
   - toast 表示 + 入力欄に元の input を戻す
   - state が `error` に遷移
+
+
+## Top Domain
+
+### S-TOP-01: ja トップ訪問で hero + tile + aside が表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を訪問
+- **期待**:
+  - Header active = top
+  - Hero に `<SearchBox size="lg">` + example chip 3 件 + 「クエリビルダーで詳細条件を組む →」 link
+  - ServiceGrid に primary-service の Service tile 6 件
+  - PopularResources に DDBJ 7 件 / DBCLS 5 件
+  - 右 aside に NewsAside (8 件、 sticky)
+  - Breadcrumb は描画されない (`useBreadcrumb` が 0 件)
+
+### S-TOP-02: en トップ訪問で en リソース表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/en` を訪問
+- **期待**:
+  - `<html lang="en">`
+  - hero / tile / Popular Resources / NewsAside すべて en の文言
+  - Service tile internal link が `/en/search` `/en/submit` に向く
+  - Popular Resource の `/databases/bioproject` link が `/en/databases/bioproject` に向く
+
+### S-TOP-03: hero 検索で /search/results に遷移
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を訪問
+  2. SearchBox に `cancer` と入力
+  3. submit
+- **期待**:
+  - `/search/results?q=cancer` に遷移
+  - 検索結果が表示される (cross-DB)
+  - ja URL を維持
+
+### E-TOP-01: News mirror 未準備での top render
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. News cache が空 (mirror 起動前) の状態で `/` を訪問
+- **期待**:
+  - NewsAside が loading (skeleton 相当) または empty 状態で表示される
+  - 他の section (Hero / ServiceGrid / PopularResources) は通常通り render される
+  - エラーバナーは出さない
+
+## Content (Databases) Domain
+
+### S-CONTENT-01: /databases/bioproject ja 表示と breadcrumb
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/databases/bioproject` を訪問
+- **期待**:
+  - `<h1>BioProject</h1>` + description
+  - body[ja] (Section + Callout + 各種 section)
+  - Breadcrumb `ホーム > データベース > BioProject`
+  - Related databases section に `BioSample` / `DRA` の TextLink
+  - External links section に NCBI / EBI / DDBJ 公式
+  - 最終更新日 (例 "2026/05/25")
+
+### S-CONTENT-02: /en/databases/bioproject en 表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/en/databases/bioproject` を訪問
+- **期待**:
+  - `<h1>BioProject</h1>` + en description
+  - body[en] (Section + Callout)
+  - Breadcrumb `Home > Databases > BioProject`
+  - Related databases に BioSample / DRA (en title でも内容は同)
+  - 最終更新日 (en locale 表示、 例 "May 25, 2026")
+  - TranslationUnavailable バナー無し (handle.i18n.en === "complete")
+
+### S-CONTENT-03: /databases/biosample ja 表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/databases/biosample` を訪問
+- **期待**:
+  - `<h1>BioSample</h1>` + body[ja]
+  - SAMD アクセッション説明
+  - Related databases に BioProject / DRA
+  - External links に NCBI BioSample / EBI BioSamples
+
+### E-CONTENT-01: 未知 slug で 404
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/databases/unknown-slug` を訪問
+- **期待**:
+  - HTTP 404
+  - ErrorBoundary が "404 Not Found" を表示
+
+### E-CONTENT-02: 翻訳未完成 page で TranslationUnavailable
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. 仮に handle.i18n.en = "missing" な database page を `/en/databases/<slug>` で訪問
+- **期待**:
+  - TranslationUnavailable バナーが Header と main の間に出る
+  - "Switch to Japanese version" link で `/databases/<slug>` に遷移
+  - URL は en のまま (リダイレクトしない)
+
