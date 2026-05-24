@@ -226,3 +226,164 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - テーブルに 100 行が描画 (横スクロール許容、 modal は最後の 1 行のみ open)
   - 100 行の Step プレビュー (BS / BP / DRA) が表示される
   - 入力中の体感に大きな遅延がない (60fps 維持目標、 リリース時点では性能チューニングしないため目視評価)
+
+## News Domain
+
+### S-NEWS-01: /news で一覧表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/news` を開く
+- **期待**:
+  - 「お知らせ・ニュース」 ページタイトルが表示
+  - 一覧が date 降順で表示
+  - サイドバーに 種別 / 年 / サービス の facet group
+
+### S-NEWS-02: facet で絞り込み、 URL に反映
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/news` を開く
+  2. 種別 facet で `リリース` を選択
+  3. 年 facet で `2024` を選択
+- **期待**:
+  - URL が `/news?category=release&year=2024` に更新 (params alphabet sort)
+  - 一覧が release かつ 2024 年の item に絞り込まれる
+  - AppliedFilters に 2 chip 表示
+
+### S-NEWS-03: NotificationBar に announcement が表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を開く
+- **期待**:
+  - 全 page 上部に NotificationBar が表示
+  - `category === "announcement"` かつ `retireTime > now` の最新 1 件のみ表示
+  - 「閉じる」 で次の候補に遷移、 sessionStorage に dismissed id 保存
+
+### S-NEWS-04: トップ右ペインに 8 件 + 「すべて見る」
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を開く
+- **期待**:
+  - 右ペインに news 上位 8 件 (date 降順)
+  - 「すべて見る」 リンクで `/news` に遷移
+
+### E-NEWS-01: GitHub API 障害時の挙動
+
+- **ペルソナ**: P-OPS
+- **手順**:
+  1. GitHub API を遮断した状態で server を起動
+  2. `/api/news` を叩く
+- **期待**:
+  - disk cache が空でも 200 で空配列を返す
+  - disk cache がある状態なら cache から応答
+
+### E-NEWS-02: 不正 front matter で起動時に検出
+
+- **ペルソナ**: P-OPS
+- **手順**:
+  1. `date` field が欠落した markdown を含む状態で mirror polling 実行
+- **期待**:
+  - 該当 item は `toNewsItem` で undefined になり skip
+  - log に warn `news_mirror_failed` 等で記録される
+
+## Auth Domain
+
+### S-AUTH-01: 未認証で Header に「ログイン」 button
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を開く
+- **期待**:
+  - `/api/me` が 401
+  - Header 右に「ログイン」 button (`buildLoginUrl(currentPath)` を href)
+
+### S-AUTH-02: Keycloak 経由でログイン完了 → user 名表示
+
+- **ペルソナ**: P-USER
+- **手順**:
+  1. `/databases/bioproject` で「ログイン」 click
+  2. Keycloak で `ts-db-portal-dev` を入力
+  3. portal に戻ってくる
+- **期待**:
+  - `/api/auth/login` → Keycloak authorization URL に 302
+  - `/api/auth/callback` で state 検証 + code → token 交換成功
+  - `Set-Cookie: sid=...; HttpOnly; SameSite=Lax`
+  - returnTo `/databases/bioproject` に遷移
+  - Header 右に user 名 + ログアウト
+
+### S-AUTH-03: ログアウトで session 削除
+
+- **ペルソナ**: P-USER (login 済)
+- **手順**:
+  1. Header の「ログアウト」 click
+- **期待**:
+  - `/api/auth/logout` → Keycloak `end_session_endpoint` に 302 (`id_token_hint` 付き)
+  - Keycloak が session を切り `/api/auth/logout-callback` に戻す
+  - session 削除 + `Set-Cookie: sid=; Max-Age=0`
+  - returnTo へ 302
+  - Header に「ログイン」 が再表示
+
+### E-AUTH-01: callback で state 不一致
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. 攻撃者が用意した `/api/auth/callback?code=x&state=evil` を被害者に踏ませる
+- **期待**:
+  - pendingLogins に `evil` state が存在せず 400 `invalid_state`
+  - cookie 発行されない
+
+### E-AUTH-02: token refresh 失敗で 401
+
+- **ペルソナ**: P-USER
+- **手順**:
+  1. login 済の状態で Keycloak の refresh 拒否を発生させる
+  2. `/api/me` を呼ぶ
+- **期待**:
+  - background refresh が失敗
+  - session 削除、 401 を返す
+  - Header が「ログイン」 に戻る
+
+## LLM Domain
+
+### S-LLM-01: AI 検索アシスタントで proposal 受信
+
+- **ペルソナ**: P-USER
+- **手順**:
+  1. `/search` を開く (LLM available 環境)
+  2. AI アシスタント textarea に「human breast cancer rna-seq from 2023」 と入力
+  3. 「生成」 click
+- **期待**:
+  - SSE で `event: message` が streaming token として流れる
+  - `event: done` で final JSON が届く
+  - Apply button で Advanced builder state に反映される
+
+### S-LLM-02: /api/llm/health が ready で表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. LLM 設定済環境で `/search` を開く
+- **期待**:
+  - `/api/llm/health` が `{ status: "ok", model: ... }`
+  - SearchAssistant が表示される
+
+### E-LLM-01: vLLM 停止状態で UI 非表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. vLLM を停止した状態で `/api/llm/health` を叩く
+- **期待**:
+  - `{ status: "unreachable", reason: ... }`
+  - SearchAssistant が render されない (機能の存在自体を隠す)
+
+### E-LLM-02: SSE 切断で toast + 入力欄復元
+
+- **ペルソナ**: P-USER
+- **手順**:
+  1. アシスタント生成中に vLLM 切断
+- **期待**:
+  - `event: error` で `{ code, message }` を受信
+  - toast 表示 + 入力欄に元の input を戻す
+  - state が `error` に遷移
