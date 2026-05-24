@@ -3,6 +3,7 @@ import type { FileEntry, FileGroup, Submission } from "../../../../../app/schema
 export const mkEntry = (id: string, overrides: Partial<FileEntry> = {}): FileEntry => ({
   id,
   buttonType: "sequence-read",
+  filename: "",
   organism: "eukaryote",
   access: "open",
   dataForm: "raw",

@@ -109,6 +109,7 @@ export const arbChipTag = fc.record({
 
 type EntryShape = {
   buttonType: ButtonType
+  filename: string
   organism: Organism
   access: Access
   dataForm: DataForm
@@ -126,6 +127,7 @@ const arbSubmissionShape: fc.Arbitrary<SubmissionShape> = fc.record({
   entries: fc.array(
     fc.record({
       buttonType: arbButtonType,
+      filename: fc.string({ minLength: 0, maxLength: 24 }),
       organism: arbOrganism,
       access: arbAccess,
       dataForm: arbDataForm,
@@ -156,6 +158,7 @@ export const arbSubmission: fc.Arbitrary<Submission> = arbSubmissionShape.map(
       return {
         id: entryIdOf(i),
         buttonType: e.buttonType,
+        filename: e.filename,
         organism: e.organism,
         access: e.access,
         dataForm: e.dataForm,

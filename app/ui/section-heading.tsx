@@ -3,7 +3,8 @@ import { createElement } from "react"
 
 type SectionHeadingProps = {
   children: ReactNode
-  count?: number
+  count?: number | undefined
+  countSuffix?: string
   action?: ReactNode
   as?: "h2" | "h3"
   id?: string
@@ -12,6 +13,7 @@ type SectionHeadingProps = {
 export const SectionHeading = ({
   children,
   count,
+  countSuffix,
   action,
   as = "h2",
   id,
@@ -28,7 +30,9 @@ export const SectionHeading = ({
         children,
       )}
       {count !== undefined && (
-        <span className="text-[12.5px] text-ink-soft">{count} 件</span>
+        <span className="text-[12.5px] text-ink-soft">
+          {count}{countSuffix === undefined || countSuffix === "" ? "" : ` ${countSuffix}`}
+        </span>
       )}
     </div>
     {action}

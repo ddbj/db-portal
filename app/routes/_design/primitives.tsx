@@ -113,7 +113,7 @@ const ChipGallery = () => (
 
 const HeadingGallery = () => (
   <Block title="Headings & Labels">
-    <SectionHeading count={755} action={<TextLink to="#">すべて見る →</TextLink>}>
+    <SectionHeading count={755} countSuffix="件" action={<TextLink to="#">すべて見る →</TextLink>}>
       SectionHeading (3px brand bar, with count + action)
     </SectionHeading>
     <SidebarHeading action={<TextLink to="#">編集</TextLink>}>

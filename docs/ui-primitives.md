@@ -225,6 +225,7 @@ main-column の H2。**3px brand 左バー付き**。
 type SectionHeadingProps = {
   children: ReactNode
   count?: number
+  countSuffix?: string
   action?: ReactNode
   as?: "h2" | "h3"
   id?: string
@@ -239,7 +240,7 @@ text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tig
 
 container は `flex items-baseline justify-between gap-3 mb-3 flex-wrap`、内側に `flex items-baseline gap-2.5 min-w-0` の wrapper を置いて heading + `count` を、`action` を右に出す。
 
-`count` は `text-[12.5px] text-ink-soft` で「n 件」表示。
+`count` は `text-[12.5px] text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、 en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
 
 ### 6.2 SidebarHeading
 
