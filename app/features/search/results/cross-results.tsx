@@ -37,7 +37,11 @@ const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lan
   const hits = entry.hits ?? []
 
   return (
-    <article className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3 relative">
+    <article
+      data-testid="db-card"
+      data-db={db}
+      className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3 relative"
+    >
       <TextLink to={href}>
         {t("search.results.cross.viewAll")} →
       </TextLink>

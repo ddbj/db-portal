@@ -290,3 +290,4 @@ GitHub API rate limit:
 | `shell.md §5` | NewsAside の表示仕様 |
 | `i18n.md §2` | route id 二重宣言 + handle で lang 決定 |
 | `api-types.md §2.2` | `app/lib/api/news.ts` (client wrapper) の位置付け |
+| `operations.md §3.1` | mirror 障害時の切り分け / disk cache 破損対応 / GitHub PAT rotation |

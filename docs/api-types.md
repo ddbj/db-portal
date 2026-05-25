@@ -45,11 +45,9 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 | 状況 | 実行者 | 何が起きるか |
 |---|---|---|
 | Developer が手元で API 仕様変更を反映 | `npm run gen:api-types` を手動実行 | `openapi-types.ts` が更新され、`tsc` で型エラーが顕在化 |
-| CI (PR / push) | `npm run gen:api-types && git diff --exit-code` | API spec と生成物が乖離していたら CI fail |
-| Production リリース直前 | production env で再実行し diff 確認 | staging と production の API spec 差を検知 |
-| Nightly | production の openapi.json を fetch して diff 検知 | 差分があれば issue を自動起票 (CI/CD は別途) |
+| Production リリース直前 | production env で `npm run gen:api-types` を再実行し diff 確認 | staging と production の API spec 差を検知 |
 
-開発者の手元では基本 staging URL で生成する。production リリース直前にだけ production URL でも生成して diff がないことを確認する。
+開発者の手元では基本 staging URL で生成する。production リリース直前にだけ production URL でも生成して diff がないことを確認する (`deployment.md §6.2`)。
 
 ## 3. ParseNode alias
 
@@ -192,22 +190,19 @@ TanStack Query 側では `APIError` の status を見て 5xx だけ retry (`app/
 
 複雑な operation (path parameter / multipart 等) が増えた場合、`openapi-fetch` のような外部 wrapper への乗り換えを検討する余地はある。判断は実装中に operation 数と複雑度を見て行う。
 
-## 6. CI での差分検知
+## 6. 差分検知の運用
 
-### 6.1 PR / push 時
+API 仕様変更を取りこぼさないため、開発者は次の手順を踏む:
 
-```yaml
-- run: npm run gen:api-types
-- run: git diff --exit-code app/lib/api/openapi-types.ts
+```bash
+# staging openapi.json から再生成
+docker compose exec app npm run gen:api-types
+git diff app/lib/api/openapi-types.ts
 ```
 
-API 仕様が変わったのに生成物を更新せず PR を出した場合に CI で fail する。
+差分があれば、 関連 type を消費しているコード (`app/lib/api/` / `app/features/search/` 等) を更新してから commit する。 production リリース直前には `deployment.md §6.2` の手順で production URL での差分も確認する。
 
-### 6.2 Nightly
-
-production の `openapi.json` を fetch して、staging 由来の `openapi-types.ts` と diff を取る。差があれば issue を自動起票する。
-
-実装の詳細 (workflow ファイル) は CI/CD 設計の別 SSOT に従う。
+自動化 (CI での `git diff --exit-code` / nightly での production fetch + issue 起票) はリリース後に再評価する。
 
 ## 7. 静的検証のスコープ
 
@@ -217,10 +212,10 @@ production の `openapi.json` を fetch して、staging 由来の `openapi-type
 |---|---|
 | `tsc --noEmit --strict` | 生成型と portal コードの整合 |
 | `npm run lint` | `lib` zone 制約 (他 zone を import していないか) |
-| Unit test (`tests/unit/lib/api/`) | `ParseNode` の discriminator narrowing が期待通り |
-| PBT (`tests/pbt/search/`) | AST round-trip 不変量 (`/db-portal/serialize` ↔ `/db-portal/parse` で構造が保存される) |
+| Unit test (`tests/unit/lib/api/`) | API client wrapper の挙動 (`encode-query` / `APIError` 等) |
+| PBT (`tests/pbt/features/search/`) | AST round-trip / URL serialize 不変量 (`ast-roundtrip` / `url-symmetry` / `merge-laws` / `advanced-reducer`) |
 
-PBT の round-trip は staging API への E2E ではなく、msw で `/db-portal/serialize` と `/db-portal/parse` をモックして PBT で AST 生成器を回すこともできる。実 API での round-trip 検証は E2E (`tests/e2e/`) に分離する。
+round-trip の PBT は msw で `/db-portal/serialize` と `/db-portal/parse` をモックして AST 生成器を回す。実 API での round-trip 検証は E2E (`tests/e2e/`) に分離する。
 
 ## 8. ddbj-search-api 側の前提
 
@@ -233,7 +228,7 @@ portal は次の前提のもとで動く。これらは ddbj-search-api リポ�
 - `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
 - discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
 
-API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型が更新される。CI の diff check で更新漏れを検知する。
+API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型を更新する。 開発者が手動で diff を確認してから commit する (§6)。
 
 ## 9. 関連 docs
 

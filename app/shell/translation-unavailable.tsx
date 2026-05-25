@@ -32,6 +32,7 @@ export const TranslationUnavailable = () => {
     <div
       role="status"
       aria-live="polite"
+      data-testid="translation-unavailable"
       className="bg-surface-subtle border-y border-border-soft"
     >
       <div className="max-w-content-max mx-auto px-page-gutter py-3 flex items-start gap-3 text-fs-body-sm">

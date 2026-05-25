@@ -9,6 +9,18 @@ export const en: Resources = {
     detail: "Details",
     countSuffix: "items",
   },
+  errors: {
+    notFound: {
+      title: "Page not found",
+      description: "The page you requested could not be found. Please check the URL.",
+      backToTop: "Back to top",
+    },
+    generic: {
+      title: "Something went wrong",
+      description: "Please wait a moment and try again.",
+      backToTop: "Back to top",
+    },
+  },
   nav: {
     top: "Top",
     search: "Search",

@@ -7,16 +7,18 @@ import { I18nextProvider } from "react-i18next"
 import {
   isRouteErrorResponse,
   Links,
+  type LoaderFunctionArgs,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
   useRouteError,
+  useRouteLoaderData,
 } from "react-router"
 
+import { ErrorPage } from "~/features/errors"
 import { createI18nInstance } from "~/lib/i18n"
 import { useLang } from "~/lib/i18n/use-lang"
-import { useT } from "~/lib/i18n/use-t"
 import { createQueryClient } from "~/lib/query/client"
 import { ShellLayout } from "~/shell"
 
@@ -26,8 +28,19 @@ export const meta = () => [
   { charSet: "utf-8" },
 ]
 
+export const loader = ({ context }: LoaderFunctionArgs) => ({
+  cspNonce: context.cspNonce,
+})
+
+const useCspNonce = (): string | undefined => {
+  const data = useRouteLoaderData("root") as { cspNonce?: string } | undefined
+
+  return data?.cspNonce
+}
+
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const lang = useLang()
+  const nonce = useCspNonce()
 
   return (
     <html lang={lang}>
@@ -37,8 +50,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </head>
       <body>
         {children}
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   )
@@ -66,23 +79,24 @@ export default App
 
 const ErrorBoundaryContent = () => {
   const error = useRouteError()
-  const t = useT()
-  const message = isRouteErrorResponse(error)
-    ? `${error.status} ${error.statusText}`
-    : t("common.error")
+  const lang = useLang()
+  const kind = isRouteErrorResponse(error) && error.status === 404 ? "not-found" : "generic"
 
-  return (
-    <main className="mx-auto max-w-content-max px-page-gutter py-section-md">
-      <h1 className="text-fs-h1 font-bold text-ink">{message}</h1>
-    </main>
-  )
+  return <ErrorPage kind={kind} lang={lang} />
 }
 
 export const ErrorBoundary = () => {
-  const i18nInstance = useMemo(() => createI18nInstance("ja"), [])
+  const lang = useLang()
+  const queryClient = useMemo(createQueryClient, [])
+  const i18nInstance = useMemo(() => createI18nInstance(lang), [lang])
+
   return (
-    <I18nextProvider i18n={i18nInstance}>
-      <ErrorBoundaryContent />
-    </I18nextProvider>
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18nInstance}>
+        <ShellLayout>
+          <ErrorBoundaryContent />
+        </ShellLayout>
+      </I18nextProvider>
+    </QueryClientProvider>
   )
 }

@@ -24,6 +24,7 @@ export const ServerEnv = z.object({
   DB_PORTAL_OPENAPI_URL: z.string().url(),
   DB_PORTAL_KEYCLOAK_REALM_URL: z.string().url(),
   DB_PORTAL_KEYCLOAK_CLIENT_ID: z.string().min(1),
+  DB_PORTAL_AUTH_SESSION_TTL_SECONDS: numberFromString(1800),
   DB_PORTAL_LLM_BASE_URL: optionalString,
   DB_PORTAL_LLM_API_KEY: optionalString,
   DB_PORTAL_LLM_MODEL: z.string().default("Qwen/Qwen2.5-32B-Instruct-AWQ"),

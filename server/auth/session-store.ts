@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { parseServerEnv } from "../lib/env"
+
 export const SessionEntry = z.object({
   tokens: z.object({
     accessToken: z.string().min(1),
@@ -22,11 +24,14 @@ export const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 
 export type Clock = () => number
 
-export const createSessionStore = (clock: Clock = Date.now) => {
+export const createSessionStore = (
+  clock: Clock = Date.now,
+  ttlMs: number = SESSION_TTL_MS,
+) => {
   const store = new Map<string, SessionEntry>()
 
   const set = (sid: string, entry: SessionEntry): void => {
-    store.set(sid, { ...entry, expiresAt: clock() + SESSION_TTL_MS })
+    store.set(sid, { ...entry, expiresAt: clock() + ttlMs })
   }
 
   const get = (sid: string): SessionEntry | undefined => {
@@ -36,7 +41,7 @@ export const createSessionStore = (clock: Clock = Date.now) => {
 
       return undefined
     }
-    const refreshed = { ...e, expiresAt: clock() + SESSION_TTL_MS }
+    const refreshed = { ...e, expiresAt: clock() + ttlMs }
     store.set(sid, refreshed)
 
     return refreshed
@@ -58,6 +63,10 @@ export const createSessionStore = (clock: Clock = Date.now) => {
 
 export type SessionStore = ReturnType<typeof createSessionStore>
 
-export const sessionStore: SessionStore = createSessionStore()
+const env = parseServerEnv()
+export const sessionStore: SessionStore = createSessionStore(
+  Date.now,
+  env.DB_PORTAL_AUTH_SESSION_TTL_SECONDS * 1000,
+)
 const cleanupTimer = setInterval(() => sessionStore.cleanup(), CLEANUP_INTERVAL_MS)
 cleanupTimer.unref?.()

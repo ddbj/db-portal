@@ -258,7 +258,63 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 
 詳細な token 値と primitive 仕様はコード (`app/styles/tailwind.css` と `app/ui/`) を一次情報とする。
 
-## 10. 関連 docs
+## 10. 非機能要件
+
+### 10.1 セキュリティ headers
+
+`server/lib/security.ts` が全 HTTP レスポンスに次の headers を付与する (Express middleware として `server/index.ts` で mount):
+
+| Header | 値 | 適用範囲 |
+|---|---|---|
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | 全 response |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | production のみ (`DB_PORTAL_ENV=production`) |
+| `X-Frame-Options` | `DENY` | 全 response |
+| `X-Content-Type-Options` | `nosniff` | 全 response |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | 全 response |
+
+CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID()` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、 `<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、 `'unsafe-inline'` は付けない。
+
+`style-src` に `'unsafe-inline'` を残しているのは、 Tailwind v4 の inject や React の `style={...}` prop に対応するため。 script より影響範囲が小さく、 portal は外部 stylesheet を読まないので妥当と判断する。
+
+### 10.2 sitemap.xml / robots.txt
+
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、 `/search`、 `/submit`、 `/news`) を ja / en の両方で列挙する `<urlset>` を返す。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、 `<changefreq>` / `<priority>` は省略 (Google が無視するため)
+- `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。 dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
+
+### 10.3 404 ページ
+
+URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、 `app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、 main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
+
+404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は production では出さない (`DB_PORTAL_ENV` で分岐)。
+
+### 10.4 アクセシビリティ
+
+- WCAG AA 相当の色コントラスト (token 段階で確認、 `app/routes/_design/` で視覚チェック可)
+- フォーカスリングを全インタラクティブ要素に明示 (`app/ui/` primitive 内で `ring-focus` token を必ず適用)
+- キーボード操作で全画面到達可能 (modal は focus trap)
+- `<html lang>` を `useLang()` で動的に出力 (i18n.md §3)
+
+axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、 人手レビュー優先)。 unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
+
+### 10.5 性能目標
+
+| 指標 | 目標 |
+|---|---|
+| LCP (top / search 結果) | < 2.5 s |
+| TTFB (SSR) | < 600 ms |
+| 検索 API → 結果描画 | < 2 s (95 percentile) |
+
+達成手段:
+
+- Vite code splitting (`splitVendorChunkPlugin` 自動適用)
+- Tailwind v4 の CSS optimization
+- Noto Sans JP Variable の self-host + `font-display: swap`
+- 画像 lazy loading (`<img loading="lazy">`)
+- TanStack Query の `staleTime` 調整 (`/api/me` 5 分、 `/api/news` 5 分)
+
+計測は Playwright e2e で `page.evaluate(() => performance.getEntriesByType("navigation"))` を取得し、 staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
+
+## 11. 関連 docs
 
 | ファイル | 内容 |
 |---|---|
@@ -269,3 +325,6 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `ui-primitives.md` | `app/ui/` 22 primitive の Props / variant / accessibility / token 参照規約 |
 | `shell.md` | Header / Footer / NotificationBar / NewsAside / Breadcrumb / TranslationUnavailable / ShellLayout |
 | `development.md` | Docker Compose 起動、env 切替、よく使うコマンド |
+| `deployment.md` | production / staging deploy 手順、podman + NIG override、rollback |
+| `keycloak-setup.md` | Keycloak realm / client / redirect URI / PKCE / token 寿命の管理画面側設定 |
+| `operations.md` | 監視 / log の読み方 / トラブルシューティング / secret rotation |

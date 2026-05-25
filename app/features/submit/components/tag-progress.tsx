@@ -23,7 +23,7 @@ export const TagProgress = ({
   const containerColor = isComplete ? "bg-ok-bg text-ok-fg" : "bg-warn-bg text-warn-fg"
 
   return (
-    <div className={`flex flex-col gap-2 px-3.5 py-2.5 rounded-card ${containerColor}`}>
+    <div data-testid="tag-progress" className={`flex flex-col gap-2 px-3.5 py-2.5 rounded-card ${containerColor}`}>
       <div className="flex items-center gap-3 flex-wrap">
         <Label as="span">{heading}</Label>
         <span className="font-mono text-fs-micro font-bold">{countLabel}</span>

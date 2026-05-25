@@ -300,3 +300,4 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL=` (空) で起動し、 「LLM 未設�
 | `architecture.md §7` | LLM データフロー全体図 |
 | `search.md` | AI 検索アシスタントの UI 仕様 |
 | `auth.md §8` | trust proxy の安全性前提 (rate limit の IP 取得と共通) |
+| `operations.md §3.2 / §3.3` | vLLM unreachable 時の切り分け、 rate limit 誤発火対応 |

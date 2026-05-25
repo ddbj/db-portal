@@ -34,7 +34,7 @@ export const NewsAside = () => {
   const items = (query.data ?? []).slice(0, NEWS_LIMIT)
 
   return (
-    <aside className="w-right-pane sticky top-4 text-fs-body-sm">
+    <aside data-testid="news-aside" className="w-right-pane sticky top-4 text-fs-body-sm">
       <SectionHeading
         as="h2"
         action={

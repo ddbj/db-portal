@@ -71,7 +71,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   }
 
   return (
-    <section className="flex flex-col gap-3">
+    <section data-testid="search-assistant" className="flex flex-col gap-3">
       <div>
         <h3 className="text-fs-h3 font-bold text-ink m-0">{t("search.assistant.heading")}</h3>
         <p className="text-fs-body-sm text-ink-mid m-0 mt-1">{t("search.assistant.description")}</p>
@@ -120,7 +120,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
           </span>
         </div>
         {stream.proposal && (
-          <div className="border-t border-border-soft p-3 flex flex-col gap-2">
+          <div data-testid="search-assistant-proposal" className="border-t border-border-soft p-3 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
               <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>

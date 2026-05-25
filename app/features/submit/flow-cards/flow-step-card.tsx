@@ -54,6 +54,8 @@ export const FlowStepCard = ({
 
   return (
     <li
+      data-testid="flow-step"
+      data-service={step.service}
       className={cn(
         "border bg-surface rounded-card p-4 shadow-card flex flex-col gap-3",
         borderColorFor(step),

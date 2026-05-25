@@ -53,50 +53,56 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
         applied={applied}
         onClearAll={() => dispatch({ type: "clear" })}
       />
-      <FacetGroup label={t("search.facets.organism")} showMore>
-        {FACET_ORGANISMS.map((organism) => (
-          <FacetRow
-            key={organism}
-            type="checkbox"
-            name="organism"
-            label={organism}
-            defaultChecked={state.organisms.includes(organism)}
-            onChange={() => dispatch({ type: "toggleOrganism", value: organism })}
-          />
-        ))}
-      </FacetGroup>
+      <div data-testid="facet-organism">
+        <FacetGroup label={t("search.facets.organism")} showMore>
+          {FACET_ORGANISMS.map((organism) => (
+            <FacetRow
+              key={organism}
+              type="checkbox"
+              name="organism"
+              label={organism}
+              defaultChecked={state.organisms.includes(organism)}
+              onChange={() => dispatch({ type: "toggleOrganism", value: organism })}
+            />
+          ))}
+        </FacetGroup>
+      </div>
       {perDbFacetsVisible && (
         <>
-          <FacetGroup
-            label={t("search.facets.studyType")}
-            appliedCount={state.studyType ? 1 : 0}
-            {...(state.studyType
-              ? { onClear: () => dispatch({ type: "setStudyType", value: null }) }
-              : {})}
-          >
-            {FACET_STUDY_TYPES.map((studyType) => (
-              <FacetRow
-                key={studyType}
-                type="radio"
-                name="studyType"
-                label={studyType}
-                defaultChecked={state.studyType === studyType}
-                onChange={() => dispatch({ type: "setStudyType", value: studyType })}
-              />
-            ))}
-          </FacetGroup>
-          <FacetGroup label={t("search.facets.submitter")} showMore>
-            {FACET_SUBMITTERS.map((submitter) => (
-              <FacetRow
-                key={submitter}
-                type="checkbox"
-                name="submitter"
-                label={submitter}
-                defaultChecked={state.submitters.includes(submitter)}
-                onChange={() => dispatch({ type: "toggleSubmitter", value: submitter })}
-              />
-            ))}
-          </FacetGroup>
+          <div data-testid="facet-studyType">
+            <FacetGroup
+              label={t("search.facets.studyType")}
+              appliedCount={state.studyType ? 1 : 0}
+              {...(state.studyType
+                ? { onClear: () => dispatch({ type: "setStudyType", value: null }) }
+                : {})}
+            >
+              {FACET_STUDY_TYPES.map((studyType) => (
+                <FacetRow
+                  key={studyType}
+                  type="radio"
+                  name="studyType"
+                  label={studyType}
+                  defaultChecked={state.studyType === studyType}
+                  onChange={() => dispatch({ type: "setStudyType", value: studyType })}
+                />
+              ))}
+            </FacetGroup>
+          </div>
+          <div data-testid="facet-submitter">
+            <FacetGroup label={t("search.facets.submitter")} showMore>
+              {FACET_SUBMITTERS.map((submitter) => (
+                <FacetRow
+                  key={submitter}
+                  type="checkbox"
+                  name="submitter"
+                  label={submitter}
+                  defaultChecked={state.submitters.includes(submitter)}
+                  onChange={() => dispatch({ type: "toggleSubmitter", value: submitter })}
+                />
+              ))}
+            </FacetGroup>
+          </div>
         </>
       )}
       <DateFacet

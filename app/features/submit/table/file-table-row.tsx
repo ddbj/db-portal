@@ -64,6 +64,8 @@ export const FileTableRow = ({
 
   return (
     <tr
+      data-testid="file-row"
+      data-entry-id={entry.id}
       className={editing ? "bg-brand-softer outline outline-1 outline-brand" : undefined}
     >
       <td className="px-3 py-3 align-top">

@@ -548,3 +548,6 @@ Login / Logout のリダイレクトで `returnTo` を保持する際、現在 U
 | `architecture.md §7.3` | 認証データフロー全体図 |
 | `i18n.md §6` | リダイレクト時の言語維持 (`getCounterpartUrl` ヘルパで login/logout の returnTo を計算) |
 | `development.md` | Keycloak realm / client の起動方法、env 切替 |
+| `keycloak-setup.md` | Keycloak 管理画面側の realm / client / redirect URI / PKCE / token 寿命設定手順 |
+| `operations.md §3.4` | 認証関連のトラブルシューティング (state 不一致 / refresh 失敗 / redirect ループ) |
+| `operations.md §4` | secret rotation (本書の public client + e2e user password 等) |

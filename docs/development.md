@@ -70,7 +70,7 @@ docker compose up -d --build
 | `DB_PORTAL_LLM_API_KEY` | (空) | staging key | `CHANGE_ME` |
 | `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` | (空) | staging PAT | `CHANGE_ME` |
 
-Production の secret は `CHANGE_ME` プレースホルダのまま git に commit される。実値は deploy 時に `.env.production.local` などで上書きする (詳細は CI/CD docs)。
+Production の secret は `CHANGE_ME` プレースホルダのまま git に commit される。実値は deploy 時に `.env.production.local` などで上書きする (詳細は `deployment.md §5`)。
 
 ### 3.3 Secret の扱い
 
@@ -173,7 +173,7 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-CI では PR / push のたびに `npm run gen:api-types && git diff --exit-code` が回り、生成物の更新漏れを検知する (詳細は `api-types.md §6`)。
+staging / production の openapi.json と portal 側生成物 (`app/lib/api/openapi-types.ts`) の差分検知は手動運用 (`api-types.md §6`)。
 
 ## 9. Content の lastUpdated 運用
 
@@ -229,28 +229,35 @@ Vite の HMR が外部 IP からの WebSocket 接続を許容できていない�
 
 `DB_PORTAL_PORTAL_ORIGIN` と Keycloak client の `Valid Redirect URIs` が一致していない可能性。`auth.md §11` の env 設定と Keycloak 管理コンソールの設定を突き合わせる。
 
-## 12. CI コマンドとの対応
+## 12. PR を出す前のチェック
 
-CI が回すコマンドはローカルでも同じ:
+CI (`.github/workflows/ci.yml`) は次の 3 つを Docker Compose 内で回す。 PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
 
 ```bash
 docker compose exec app npm run typecheck
 docker compose exec app npm run lint
 docker compose exec app npm test
-docker compose exec app npm run validate:content
-docker compose exec app npm run build
-docker compose exec app npm run gen:api-types  # diff check は CI 側
-docker compose exec app npm run test:e2e  # CI staging deploy 後
 ```
 
-PR を出す前にこれらが pass することを確認する。
+加えて、 リリース直前 / 大きい変更時には以下も手元で確認する (CI 自動化はリリース後に再評価):
+
+```bash
+docker compose exec app npm run validate:content
+docker compose exec app npm run build
+docker compose exec app npm run check:last-updated
+docker compose exec app npm run gen:api-types  # 差分があれば commit
+docker compose exec app npm run test:e2e       # staging URL に対して
+```
 
 ## 13. 関連 docs
 
 | docs | 関連箇所 |
 |---|---|
-| `architecture.md` | ディレクトリ構造、zones、SSR/CSR、build vs runtime |
-| `api-types.md` | `gen:api-types` の運用詳細、CI diff check |
+| `architecture.md` | ディレクトリ構造、zones、SSR/CSR、build vs runtime、非機能要件 (CSP / sitemap / 404) |
+| `api-types.md` | `gen:api-types` の運用詳細、差分検知 |
 | `i18n.md` | リソース / URL 切替 |
-| `auth.md` | Keycloak realm / client の設定 |
+| `auth.md` | Keycloak realm / client の設定 (portal 側実装) |
+| `keycloak-setup.md` | Keycloak 管理画面側の設定手順 |
 | `content-system.md` | `*.content.tsx` 追加時の検証フロー |
+| `deployment.md` | staging / production deploy 手順 (手動運用) |
+| `operations.md` | production 運用 (監視 / log / トラブルシューティング / secret rotation) |

@@ -7,6 +7,18 @@ export type Resources = {
     detail: string
     countSuffix: string
   }
+  errors: {
+    notFound: {
+      title: string
+      description: string
+      backToTop: string
+    }
+    generic: {
+      title: string
+      description: string
+      backToTop: string
+    }
+  }
   nav: {
     top: string
     search: string
@@ -548,6 +560,18 @@ export const ja: Resources = {
     close: "閉じる",
     detail: "詳細",
     countSuffix: "件",
+  },
+  errors: {
+    notFound: {
+      title: "ページが見つかりません",
+      description: "お探しのページは見つかりませんでした。 URL に誤りがないかご確認ください。",
+      backToTop: "トップへ戻る",
+    },
+    generic: {
+      title: "エラーが発生しました",
+      description: "しばらく時間をおいてから再度お試しください。",
+      backToTop: "トップへ戻る",
+    },
   },
   nav: {
     top: "トップ",

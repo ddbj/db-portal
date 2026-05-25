@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bring up dev container
+        run: |
+          cp env.dev .env
+          docker compose up -d --build
+          docker compose exec -T app npm install
+
+      - name: Typecheck
+        run: docker compose exec -T app npm run typecheck
+
+      - name: Lint
+        run: docker compose exec -T app npm run lint
+
+      - name: Unit + PBT
+        run: docker compose exec -T app npm test -- --run

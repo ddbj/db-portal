@@ -90,6 +90,8 @@ export default tseslint.config(
           { target: "./app/features/submit", from: "./app/features", except: ["./submit"] },
           { target: "./app/features/news", from: "./app/features", except: ["./news"] },
           { target: "./app/features/auth", from: "./app/features", except: ["./auth"] },
+          { target: "./app/features/top", from: "./app/features", except: ["./top"] },
+          { target: "./app/features/errors", from: "./app/features", except: ["./errors"] },
 
           { target: "./app/shell", from: "./app/features" },
 

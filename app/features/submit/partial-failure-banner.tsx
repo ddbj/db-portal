@@ -21,26 +21,28 @@ export const PartialFailureBanner = ({
 }: PartialFailureBannerProps) => {
   if (validations.length === 0) return null
   return (
-    <Callout tone="warn" role="alert">
-      <p className="font-semibold m-0">{headingText}</p>
-      <ul className="mt-2 flex flex-col gap-1 m-0 list-disc list-inside p-0">
-        {validations.map((v, i) => {
-          const idx = rowIndexOf(v.entryId)
-          return (
-            <li key={`${v.entryId}-${v.kind}-${i}`}>
-              <span className="text-fs-body-sm">{validationLabel(v)}</span>
-              {idx >= 0 && (
-                <>
-                  {" "}
-                  <Button kind="link" onClick={() => onJumpToRow(v.entryId)}>
-                    {rowLabel(idx + 1)}
-                  </Button>
-                </>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    </Callout>
+    <div data-testid="partial-failure-banner">
+      <Callout tone="warn" role="alert">
+        <p className="font-semibold m-0">{headingText}</p>
+        <ul className="mt-2 flex flex-col gap-1 m-0 list-disc list-inside p-0">
+          {validations.map((v, i) => {
+            const idx = rowIndexOf(v.entryId)
+            return (
+              <li key={`${v.entryId}-${v.kind}-${i}`}>
+                <span className="text-fs-body-sm">{validationLabel(v)}</span>
+                {idx >= 0 && (
+                  <>
+                    {" "}
+                    <Button kind="link" onClick={() => onJumpToRow(v.entryId)}>
+                      {rowLabel(idx + 1)}
+                    </Button>
+                  </>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      </Callout>
+    </div>
   )
 }
