@@ -5,11 +5,8 @@ export {
   type ParseOutcome,
 } from "./assistant/parse"
 export {
-  ADVANCED_FIELDS,
-  ADVANCED_OPS,
   type AssistantPromptInput,
   buildAssistantMessages,
-  COMBINATORS,
 } from "./assistant/prompt"
 export { makeHandleSearchAssistant } from "./assistant/route"
 export {
@@ -23,10 +20,10 @@ export {
   type LlmClientOverrides,
 } from "./client"
 export {
-  getCurrentHealth,
+  getActiveHealth,
   type HealthMonitor,
   type LlmHealth,
-  setCurrentHealth,
+  setActiveHealth,
   startHealthMonitor,
 } from "./health"
 export {

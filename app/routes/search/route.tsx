@@ -17,6 +17,7 @@ import {
   SyncStatusChip,
   useDebouncedSerialize,
 } from "~/features/search"
+import { searchApiBaseUrl } from "~/lib/api"
 import { useLang, useT } from "~/lib/i18n"
 import {
   Button,
@@ -31,8 +32,6 @@ export const handle = {
   i18n: { en: "complete" },
 } as const
 
-const SEARCH_API_BASE_URL = (import.meta.env.VITE_DB_PORTAL_SEARCH_API_URL ?? "") as string
-
 const SearchRoute = () => {
   const t = useT()
   const lang = useLang()
@@ -46,7 +45,7 @@ const SearchRoute = () => {
     let combined = advancedAst
     if (qInput.trim().length > 0) {
       try {
-        const parsed = await parseDslToAst(qInput, { baseUrl: SEARCH_API_BASE_URL })
+        const parsed = await parseDslToAst(qInput, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
         navigate(buildResultsHref({ q: qInput }, lang))
@@ -60,7 +59,7 @@ const SearchRoute = () => {
       return
     }
     try {
-      const dsl = await serializeAstToDsl(combined, { baseUrl: SEARCH_API_BASE_URL })
+      const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
       navigate(buildResultsHref({ q: dsl }, lang))
     } catch {
       // serialize 失敗時はとりあえず simple query だけで遷移
@@ -102,7 +101,7 @@ const SearchRoute = () => {
         <SearchAssistant
           advancedState={advancedState}
           dispatch={dispatch}
-          baseUrl={SEARCH_API_BASE_URL}
+          baseUrl={searchApiBaseUrl}
         />
       </Section>
       <Section padY="md">

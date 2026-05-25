@@ -26,7 +26,7 @@ export const makeHandleSearchAssistant = (
   const client = overrides?.client ?? createLlmClient(env)
 
   return async (req: Request, res: Response): Promise<void> => {
-    if (!client.available) {
+    if (!client.isAvailable) {
       res.status(503).json({ error: "llm_unset" })
 
       return

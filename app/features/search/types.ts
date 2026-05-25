@@ -1,3 +1,5 @@
+import { ADVANCED_FIELDS, type AdvancedField } from "~/schemas/api-bff/llm"
+
 export const DB_SLUGS = ["trad", "sra", "bioproject", "biosample", "jga", "gea", "metabobank", "taxonomy"] as const
 
 export type DbSlug = typeof DB_SLUGS[number]
@@ -30,17 +32,12 @@ export const sortKeyToApiSort = (key: SortKey): ApiSortValue | undefined => {
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "failed"
 
-export const ADVANCED_FIELDS = [
-  "organism",
-  "identifier",
-  "title",
-  "description",
-  "date_published",
-  "date_modified",
-  "date_created",
-] as const
-
-export type AdvancedField = typeof ADVANCED_FIELDS[number]
+export {
+  ADVANCED_FIELDS,
+  ADVANCED_OPS,
+  type AdvancedField,
+  type AdvancedOp,
+} from "~/schemas/api-bff/llm"
 
 export const isAdvancedField = (value: string): value is AdvancedField =>
   (ADVANCED_FIELDS as readonly string[]).includes(value)
@@ -53,9 +50,5 @@ export const DATE_FIELDS: readonly AdvancedField[] = [
 
 export const isDateField = (value: AdvancedField): boolean =>
   DATE_FIELDS.includes(value)
-
-export const ADVANCED_OPS = ["eq", "contains", "wildcard", "between"] as const
-
-export type AdvancedOp = typeof ADVANCED_OPS[number]
 
 export type AdvancedCombinator = "AND" | "OR" | "NOT"

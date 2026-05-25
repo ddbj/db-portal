@@ -1,7 +1,7 @@
 import type { ServerEnv } from "../lib/env"
 
 export type LlmClient = {
-  available: boolean
+  isAvailable: boolean
   baseUrl: string | undefined
   model: string
   apiKey: string | undefined
@@ -14,7 +14,7 @@ export type LlmClientOverrides = {
 }
 
 export const createLlmClient = (env: ServerEnv, overrides: LlmClientOverrides = {}): LlmClient => ({
-  available: Boolean(env.DB_PORTAL_LLM_BASE_URL),
+  isAvailable: Boolean(env.DB_PORTAL_LLM_BASE_URL),
   baseUrl: env.DB_PORTAL_LLM_BASE_URL,
   model: env.DB_PORTAL_LLM_MODEL,
   apiKey: env.DB_PORTAL_LLM_API_KEY,

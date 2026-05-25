@@ -1,6 +1,8 @@
 import { apiGet, apiPost, type ApiRequestOptions } from "./client"
 import type { paths } from "./openapi-types"
 
+export const searchApiBaseUrl = (import.meta.env.VITE_DB_PORTAL_SEARCH_API_URL ?? "") as string
+
 type CrossSearchQuery = NonNullable<paths["/db-portal/cross-search"]["get"]["parameters"]["query"]>
 type DbSearchQuery = NonNullable<paths["/db-portal/search"]["get"]["parameters"]["query"]>
 type ParseQuery = paths["/db-portal/parse"]["get"]["parameters"]["query"]

@@ -26,6 +26,7 @@ import {
   toAdvanced,
   useDebouncedSerialize,
 } from "~/features/search"
+import { searchApiBaseUrl } from "~/lib/api"
 import { useLang, useT } from "~/lib/i18n"
 import {
   Button,
@@ -45,8 +46,6 @@ export const handle = {
   lang: undefined,
   i18n: { en: "complete" },
 } as const
-
-const SEARCH_API_BASE_URL = (import.meta.env.VITE_DB_PORTAL_SEARCH_API_URL ?? "") as string
 
 const SearchResultsRoute = () => {
   const data = useLoaderData<typeof loader>()
@@ -219,7 +218,7 @@ const SearchResultsRoute = () => {
                       <SearchAssistant
                         advancedState={advancedState}
                         dispatch={dispatchAdvanced}
-                        baseUrl={SEARCH_API_BASE_URL}
+                        baseUrl={searchApiBaseUrl}
                       />
                     </aside>
                   </div>

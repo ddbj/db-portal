@@ -1,8 +1,8 @@
 import type { Request, Response } from "express"
 
-import { getCurrentHealth } from "../../llm/health"
+import { getActiveHealth } from "../../llm/health"
 
 export const handleLlmHealth = (_req: Request, res: Response): void => {
   res.setHeader("Cache-Control", "no-store")
-  res.status(200).json(getCurrentHealth())
+  res.status(200).json(getActiveHealth())
 }

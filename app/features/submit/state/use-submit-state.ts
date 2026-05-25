@@ -31,7 +31,7 @@ export const useSubmitState = (
   startWith: UIState = initialState,
 ): { state: UIState; actions: SubmitDispatch } => {
   const [state, dispatch] = useReducer(submitReducer, startWith)
-  const newIdRef = useRef<() => string>(undefined as unknown as () => string)
+  const newIdRef = useRef<(() => string) | undefined>(undefined)
   if (newIdRef.current === undefined) {
     newIdRef.current = buildIdGenerator()
   }

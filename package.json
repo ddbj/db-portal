@@ -26,12 +26,12 @@
     "cookie": "^1.0.2",
     "express": "^4.21.2",
     "i18next": "^26.0.6",
-    "isbot": "^5.1.36",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^17.0.4",
     "react-router": "^7.14.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "isbot": "^5"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

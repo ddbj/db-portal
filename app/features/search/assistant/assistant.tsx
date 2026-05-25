@@ -55,8 +55,8 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   const headingId = useId()
   if (!availability.ready) return null
 
-  const examples = t("search.assistant.examples", { returnObjects: true }) as unknown as readonly string[]
-  const examplesList: readonly string[] = Array.isArray(examples) ? examples : []
+  const rawExamples = t("search.assistant.examples", { returnObjects: true })
+  const examplesList: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
 
   const handleApply = () => {
     if (!stream.proposal) return

@@ -19,15 +19,13 @@ export const loader = ({ params }: LoaderFunctionArgs): { slug: string } => {
 }
 
 const formatDate = (iso: string, lang: Lang): string => {
-  try {
-    return new Date(iso).toLocaleDateString(lang === "en" ? "en-US" : "ja-JP", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  } catch {
-    return iso
-  }
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleDateString(lang === "en" ? "en-US" : "ja-JP", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
 }
 
 const DatabaseSlugRoute = () => {

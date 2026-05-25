@@ -1,19 +1,9 @@
-import { z } from "zod"
+import {
+  type AssistantProposal,
+  AssistantProposalSchema,
+} from "../../../app/schemas/api-bff/llm"
 
-import { ADVANCED_FIELDS, ADVANCED_OPS, COMBINATORS } from "./prompt"
-
-const AssistantConditionSchema = z.object({
-  field: z.enum(ADVANCED_FIELDS),
-  op: z.enum(ADVANCED_OPS),
-  value: z.string().min(1),
-})
-
-export const AssistantProposalSchema = z.object({
-  combinator: z.enum(COMBINATORS),
-  conditions: z.array(AssistantConditionSchema).min(1),
-})
-
-export type AssistantProposal = z.infer<typeof AssistantProposalSchema>
+export { type AssistantProposal, AssistantProposalSchema }
 
 const extractJson = (text: string): string | undefined => {
   const trimmed = text.trim()

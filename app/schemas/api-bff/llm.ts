@@ -7,15 +7,35 @@ export const LlmHealth = z.discriminatedUnion("status", [
 ])
 export type LlmHealth = z.infer<typeof LlmHealth>
 
-export const AssistantConditionWire = z.object({
-  field: z.string().min(1),
-  op: z.string().min(1),
+export const ADVANCED_FIELDS = [
+  "organism",
+  "identifier",
+  "title",
+  "description",
+  "date_published",
+  "date_modified",
+  "date_created",
+] as const
+
+export type AdvancedField = typeof ADVANCED_FIELDS[number]
+
+export const ADVANCED_OPS = ["eq", "contains", "wildcard", "between"] as const
+
+export type AdvancedOp = typeof ADVANCED_OPS[number]
+
+export const ASSISTANT_COMBINATORS = ["AND", "OR"] as const
+
+export type AssistantCombinator = typeof ASSISTANT_COMBINATORS[number]
+
+export const AssistantConditionSchema = z.object({
+  field: z.enum(ADVANCED_FIELDS),
+  op: z.enum(ADVANCED_OPS),
   value: z.string().min(1),
 })
-export type AssistantConditionWire = z.infer<typeof AssistantConditionWire>
+export type AssistantCondition = z.infer<typeof AssistantConditionSchema>
 
-export const AssistantProposalWire = z.object({
-  combinator: z.enum(["AND", "OR"]),
-  conditions: z.array(AssistantConditionWire).min(1),
+export const AssistantProposalSchema = z.object({
+  combinator: z.enum(ASSISTANT_COMBINATORS),
+  conditions: z.array(AssistantConditionSchema).min(1),
 })
-export type AssistantProposalWire = z.infer<typeof AssistantProposalWire>
+export type AssistantProposal = z.infer<typeof AssistantProposalSchema>

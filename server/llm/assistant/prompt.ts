@@ -1,18 +1,9 @@
+import {
+  ADVANCED_FIELDS,
+  ADVANCED_OPS,
+  ASSISTANT_COMBINATORS,
+} from "../../../app/schemas/api-bff/llm"
 import type { ChatMessage } from "../client"
-
-const ADVANCED_FIELDS = [
-  "organism",
-  "identifier",
-  "title",
-  "description",
-  "date_published",
-  "date_modified",
-  "date_created",
-] as const
-
-const ADVANCED_OPS = ["eq", "contains", "wildcard", "between"] as const
-
-const COMBINATORS = ["AND", "OR"] as const
 
 const FEW_SHOT_EXAMPLES: { user: string; assistant: string }[] = [
   {
@@ -66,7 +57,7 @@ Output ONLY a single JSON object that matches this schema. Do not include any co
 Rules:
 - field MUST be one of the listed identifiers (no synonyms, no invented names).
 - op MUST be one of the listed operators.
-- combinator MUST be ${COMBINATORS.map((c) => `"${c}"`).join(" or ")}.
+- combinator MUST be ${ASSISTANT_COMBINATORS.map((c) => `"${c}"`).join(" or ")}.
 - "between" op uses value formatted as "<from>..<to>" (ISO 8601 dates, inclusive).
 - "wildcard" op may use "*" as a glob.
 - Map organism mentions to the binomial Latin name when possible (e.g. "human" -> "Homo sapiens").
@@ -87,4 +78,3 @@ export const buildAssistantMessages = ({ userInput }: AssistantPromptInput): Cha
   return messages
 }
 
-export { ADVANCED_FIELDS, ADVANCED_OPS, COMBINATORS }

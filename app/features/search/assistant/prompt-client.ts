@@ -1,25 +1,11 @@
 import { useCallback, useRef, useState } from "react"
-import { z } from "zod"
 
 import { buildRequestInit, joinUrl } from "~/lib/api"
+import { type AssistantProposal, AssistantProposalSchema } from "~/schemas/api-bff/llm"
 
-import { ADVANCED_FIELDS, ADVANCED_OPS } from "../types"
+export type { AssistantCondition, AssistantProposal } from "~/schemas/api-bff/llm"
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
-
-const AssistantConditionSchema = z.object({
-  field: z.enum(ADVANCED_FIELDS),
-  op: z.enum(ADVANCED_OPS),
-  value: z.string().min(1),
-})
-
-const AssistantProposalSchema = z.object({
-  combinator: z.enum(["AND", "OR"]),
-  conditions: z.array(AssistantConditionSchema).min(1),
-})
-
-export type AssistantCondition = z.infer<typeof AssistantConditionSchema>
-export type AssistantProposal = z.infer<typeof AssistantProposalSchema>
 
 export type AssistantState = "idle" | "streaming" | "done" | "error"
 

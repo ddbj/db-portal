@@ -7,12 +7,12 @@ export type { LlmHealth } from "../../app/schemas/api-bff/llm"
 const HEALTH_CHECK_INTERVAL_MS = 5 * 60_000
 const INITIAL_DELAY_MS = 5_000
 
-let current: LlmHealth = { status: "unset" }
+let active: LlmHealth = { status: "unset" }
 
-export const getCurrentHealth = (): LlmHealth => current
+export const getActiveHealth = (): LlmHealth => active
 
-export const setCurrentHealth = (next: LlmHealth): void => {
-  current = next
+export const setActiveHealth = (next: LlmHealth): void => {
+  active = next
 }
 
 export type HealthMonitor = {
@@ -21,7 +21,7 @@ export type HealthMonitor = {
 }
 
 const evaluate = async (client: LlmClient): Promise<LlmHealth> => {
-  if (!client.available) return { status: "unset" }
+  if (!client.isAvailable) return { status: "unset" }
   const result = await callVllmModels(client)
   if (result.ok) return { status: "ok", model: client.model }
 
@@ -34,16 +34,16 @@ export const startHealthMonitor = (client: LlmClient, logger: Logger): HealthMon
 
   const tick = async (): Promise<void> => {
     const next = await evaluate(client)
-    if (next.status !== current.status) {
-      logger.info("llm_health_transition", { from: current.status, to: next.status })
+    if (next.status !== active.status) {
+      logger.info("llm_health_transition", { from: active.status, to: next.status })
     }
-    setCurrentHealth(next)
+    setActiveHealth(next)
   }
 
   const start = (): void => {
     if (pollTimer) return
-    if (!client.available) {
-      setCurrentHealth({ status: "unset" })
+    if (!client.isAvailable) {
+      setActiveHealth({ status: "unset" })
 
       return
     }

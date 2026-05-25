@@ -6,7 +6,6 @@ export {
   encodeQuery,
   joinUrl,
   type Paths,
-  requestCredentials,
 } from "./client"
 export {
   APIError,
@@ -39,6 +38,7 @@ export {
   type DbSearchResponse,
   parseQuery,
   type ParseResponse,
+  searchApiBaseUrl,
   serializeAst,
   type SerializeResponse,
 } from "./search"

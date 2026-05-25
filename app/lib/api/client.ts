@@ -16,7 +16,7 @@ export type ApiRequestOptions = {
   headers?: HeadersInit
 }
 
-export const requestCredentials = (baseUrl: string | undefined): RequestCredentials =>
+const requestCredentials = (baseUrl: string | undefined): RequestCredentials =>
   baseUrl ? "same-origin" : "include"
 
 export type BuildInitOptions = {

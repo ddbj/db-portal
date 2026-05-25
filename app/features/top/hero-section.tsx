@@ -19,9 +19,8 @@ export const HeroSection = () => {
   const lang = useLang()
   const navigate = useNavigate()
   const [value, setValue] = useState("")
-  // i18next の returnObjects は any 風の戻り値で型情報を持たないため double cast で受ける。
-  // 値の shape は resources/ja.ts / en.ts の Resources 型で `readonly string[]` が保証される。
-  const examples = t("top.hero.examples", { returnObjects: true }) as unknown as readonly string[]
+  const rawExamples = t("top.hero.examples", { returnObjects: true })
+  const examples: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
 
   const handleSubmit = (next: string): void => {
     void navigate(buildResultsHref(next, lang))
