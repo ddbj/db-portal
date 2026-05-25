@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("Search Domain", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-SEARCH-01: トップ → /search → 検索実行", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("link", { name: "検索" }).first().click()
@@ -97,6 +91,8 @@ test.describe("Search Domain", () => {
     )
     await page.goto("/search")
 
-    await expect(page.getByTestId("search-assistant")).toHaveCount(0)
+    await expect(
+      page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i }),
+    ).toHaveCount(0)
   })
 })

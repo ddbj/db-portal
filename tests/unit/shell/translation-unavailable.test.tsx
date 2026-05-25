@@ -1,14 +1,14 @@
-import { render, screen } from "@testing-library/react"
-import { I18nextProvider } from "react-i18next"
-import { createRoutesStub } from "react-router"
+import { screen } from "@testing-library/react"
+import type { createRoutesStub } from "react-router"
 import { describe, expect, test } from "vitest"
 
-import { createI18nInstance } from "~/lib/i18n"
 import { TranslationUnavailable } from "~/shell/translation-unavailable"
 
-const withEnHandle = (
-  routes: Parameters<typeof createRoutesStub>[0],
-): Parameters<typeof createRoutesStub>[0] =>
+import { renderWithStub } from "../_helpers/render"
+
+type Routes = Parameters<typeof createRoutesStub>[0]
+
+const withEnHandle = (routes: Routes): Routes =>
   routes.map((r) => {
     const existing = (typeof r.handle === "object" && r.handle !== null)
       ? r.handle as Record<string, unknown>
@@ -19,18 +19,15 @@ const withEnHandle = (
 
 const renderAt = (
   lang: "ja" | "en",
-  routes: Parameters<typeof createRoutesStub>[0],
+  routes: Routes,
   initial: string,
-) => {
-  const i18n = createI18nInstance(lang)
-  const Stub = createRoutesStub(lang === "en" ? withEnHandle(routes) : routes)
-
-  return render(
-    <I18nextProvider i18n={i18n}>
-      <Stub initialEntries={[initial]} />
-    </I18nextProvider>,
-  )
-}
+) =>
+  renderWithStub({
+    routes: lang === "en" ? withEnHandle(routes) : routes,
+    initialEntries: [initial],
+    lang,
+    withQuery: false,
+  })
 
 describe("TranslationUnavailable", () => {
   test("TranslationUnavailable_jaLang_doesNotRender", () => {

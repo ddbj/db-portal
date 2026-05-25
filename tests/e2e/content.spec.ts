@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("Content (Databases) Domain", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-CONTENT-01: /databases/bioproject ja 表示と breadcrumb", async ({ page }) => {
     await page.goto("/databases/bioproject")
 
@@ -39,10 +33,5 @@ test.describe("Content (Databases) Domain", () => {
     expect(response?.status()).toBe(404)
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/ページが見つかりません|not found/i)
     await expect(page.getByRole("link", { name: /トップへ戻る|back to top/i })).toBeVisible()
-  })
-
-  test.skip("E-CONTENT-02: 翻訳未完成 page で TranslationUnavailable", async () => {
-    // 現状の content collection に handle.i18n.en = "missing" の fixture が無い
-    // 翻訳未完成 page が追加された段階で active 化する
   })
 })

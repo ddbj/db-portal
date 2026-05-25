@@ -1,4 +1,4 @@
-import type { FileEntry, FileGroup, Submission } from "../../../../../app/schemas/submit"
+import type { FileEntry, FileGroup, FlowStep, Submission } from "../../../../../app/schemas/submit"
 
 export const mkEntry = (id: string, overrides: Partial<FileEntry> = {}): FileEntry => ({
   id,
@@ -24,5 +24,14 @@ export const mkSubmission = (overrides: Partial<Submission> = {}): Submission =>
   fileEntries: [],
   fileGroups: [],
   notes: "",
+  ...overrides,
+})
+
+export const mkStep = (
+  overrides: Partial<FlowStep> & Pick<FlowStep, "service">,
+): FlowStep => ({
+  id: `${overrides.service}:test`,
+  scope: { groupIds: [], entryIds: ["e"] },
+  notes: [],
   ...overrides,
 })

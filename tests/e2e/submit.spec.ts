@@ -1,10 +1,7 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("Submit Domain", () => {
   test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
     await page.goto("/submit")
   })
 
@@ -79,10 +76,6 @@ test.describe("Submit Domain", () => {
     await page.getByRole("dialog").getByRole("button", { name: /保存/ }).click()
 
     await expect(page.getByTestId("partial-failure-banner")).toBeVisible()
-  })
-
-  test.skip("E-SUBMIT-02: GroupType 不整合で警告 (現状 UI から再現不可)", async () => {
-    // reducer-level の不整合シナリオで、通常 UI からは到達不能。unit テスト側で吸収
   })
 
   test("E-SUBMIT-03: 100 行追加で UI が応答する", async ({ page }) => {

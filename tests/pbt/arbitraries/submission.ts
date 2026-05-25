@@ -1,124 +1,44 @@
 import { fc } from "@fast-check/vitest"
 
-import type {
+import {
   Access,
+  ALLOWED_CHIP_VALUES,
   ButtonType,
-  ChipAxis,
+  type ChipAxis,
   DataForm,
-  FileEntry,
-  FileGroup,
+  type FileEntry,
+  type FileGroup,
   GroupType,
   Organism,
-  Submission,
+  type Submission,
 } from "../../../app/schemas/submit"
 
-const buttonTypes: readonly ButtonType[] = [
-  "sequence-read",
-  "assembled",
-  "gene-annotation",
-  "variation",
-  "phenotype",
-  "microarray-expression",
-  "rna-seq-matrix",
-  "mass-spec",
-  "spatial-tx",
-]
+export const arbButtonType = fc.constantFrom(...ButtonType.options)
+const arbGroupType = fc.constantFrom(...GroupType.options)
+const arbOrganism = fc.constantFrom(...Organism.options)
+const arbAccess = fc.constantFrom(...Access.options)
+const arbDataForm = fc.constantFrom(...DataForm.options)
 
-const groupTypes: readonly GroupType[] = [
-  "single",
-  "pair-end",
-  "10x",
-  "multiplex",
-  "two-color",
-  "mage-tab",
-  "hybrid",
-  "imaging-ms",
-  "variation-with-reference",
-  "mag-sag-chain",
-  "jga-dataset",
-  "pacbio-hdf5",
-  "assembly-annotation",
-]
+const allowedChipPairs: readonly { axis: ChipAxis; value: string }[] = Object.entries(
+  ALLOWED_CHIP_VALUES,
+).flatMap(([axis, values]) =>
+  values.map((value) => ({ axis: axis as ChipAxis, value })),
+)
 
-const organisms: readonly Organism[] = [
-  "human",
-  "human-microbiome",
-  "eukaryote",
-  "prokaryote",
-  "virus",
-  "metagenome",
-  "organelle-plasmid",
-]
-
-const accesses: readonly Access[] = ["open", "restricted"]
-
-const dataForms: readonly DataForm[] = [
-  "raw",
-  "assembled",
-  "analysis-output",
-  "matrix",
-  "annotation",
-  "mass-spec",
-  "phenotype",
-]
-
-const chipAxes: readonly ChipAxis[] = [
-  "assembly-form",
-  "provenance",
-  "variation-form",
-  "host-pathogen",
-  "haplotype-mode",
-  "functional-genomics",
-  "mass-spec-domain",
-  "spatial-platform",
-  "tpa-subtype",
-  "mag-sag-chain",
-]
-
-const chipValues: readonly string[] = [
-  "third-party",
-  "phased",
-  "raw",
-  "primary",
-  "binned",
-  "mag",
-  "sag",
-  "hybrid",
-  "proteomics",
-  "metabolomics",
-  "rna-seq",
-  "chip-seq",
-  "visium",
-  "stereo-seq",
-  "per-sample",
-  "aggregate",
-  "tpa",
-]
-
-export const arbButtonType = fc.constantFrom(...buttonTypes)
-export const arbGroupType = fc.constantFrom(...groupTypes)
-export const arbOrganism = fc.constantFrom(...organisms)
-export const arbAccess = fc.constantFrom(...accesses)
-export const arbDataForm = fc.constantFrom(...dataForms)
-export const arbChipAxis = fc.constantFrom(...chipAxes)
-
-export const arbChipTag = fc.record({
-  axis: arbChipAxis,
-  value: fc.constantFrom(...chipValues),
-})
+const arbChipTag = fc.constantFrom(...allowedChipPairs)
 
 type EntryShape = {
-  buttonType: ButtonType
+  buttonType: typeof ButtonType._type
   filename: string
-  organism: Organism
-  access: Access
-  dataForm: DataForm
+  organism: typeof Organism._type
+  access: typeof Access._type
+  dataForm: typeof DataForm._type
   groupIdx: number
-  chipTags: { axis: ChipAxis; value: string }[]
+  chipTags: { axis: typeof ChipAxis._type; value: string }[]
 }
 
 type SubmissionShape = {
-  groupTypes: GroupType[]
+  groupTypes: (typeof GroupType._type)[]
   entries: EntryShape[]
 }
 

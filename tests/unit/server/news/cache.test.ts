@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -43,6 +43,15 @@ const makeItems = (): NewsList => [
     db: ["ddbj"],
     rawTags: { ja: ["重要"], en: ["Announcement"] },
   },
+  {
+    id: "d-2024-en-only",
+    source: "ddbj",
+    category: "announcement",
+    publishedAt: "2024-03-10T00:00:00+09:00",
+    title: { ja: "", en: "D 2024 (en only)" },
+    db: ["ddbj"],
+    rawTags: { ja: [], en: ["Announcement"] },
+  },
 ]
 
 const withTempDir = async <T>(fn: (dir: string) => Promise<T>): Promise<T> => {
@@ -55,7 +64,7 @@ const withTempDir = async <T>(fn: (dir: string) => Promise<T>): Promise<T> => {
 }
 
 describe("createCacheStore", () => {
-  test("filter by category", async () => {
+  test("cacheList_categoryFilter_returnsOnlyMatchingItems", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
       await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
@@ -65,15 +74,19 @@ describe("createCacheStore", () => {
     })
   })
 
-  test("filter by year", async () => {
+  test("cacheList_yearFilter_returnsItemsPublishedInThatYear", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
       await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
-      expect(cache.list({ year: [2024] }).map((n) => n.id)).toEqual(["a-2024", "c-2024"])
+      expect(cache.list({ year: [2024] }).map((n) => n.id)).toEqual([
+        "a-2024",
+        "d-2024-en-only",
+        "c-2024",
+      ])
     })
   })
 
-  test("filter by service", async () => {
+  test("cacheList_serviceFilter_returnsItemsTaggedWithThatService", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
       await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
@@ -81,26 +94,35 @@ describe("createCacheStore", () => {
     })
   })
 
-  test("filter by lang skips items without translation", async () => {
+  test("cacheList_enLang_skipsItemsWithoutEnTitle", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
       await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const enOnly = cache.list({ lang: "en" })
-      expect(enOnly.map((n) => n.id)).toEqual(["a-2024", "c-2024"])
+      expect(enOnly.map((n) => n.id)).toEqual(["a-2024", "d-2024-en-only", "c-2024"])
     })
   })
 
-  test("persists to disk and reloads", async () => {
+  test("cacheList_jaLang_skipsItemsWithoutJaTitle", async () => {
+    await withTempDir(async (dir) => {
+      const cache = createCacheStore(dir, silentLogger)
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      const jaOnly = cache.list({ lang: "ja" })
+      expect(jaOnly.map((n) => n.id)).toEqual(["a-2024", "c-2024", "b-2023"])
+    })
+  })
+
+  test("cache_writeThenReload_recoversAllItemsFromDisk", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
       await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const loaded = await loadCacheFromDisk(dir, silentLogger)
       expect(loaded.source).toBe("disk")
-      expect(loaded.state.items).toHaveLength(3)
+      expect(loaded.state.items).toHaveLength(4)
     })
   })
 
-  test("returns empty cache on schema mismatch", async () => {
+  test("loadCacheFromDisk_schemaVersionMismatch_returnsEmptyCache", async () => {
     await withTempDir(async (dir) => {
       await mkdir(dir, { recursive: true })
       await writeFile(path.join(dir, "news.json"), JSON.stringify({ schemaVersion: 99 }), "utf8")
@@ -110,7 +132,7 @@ describe("createCacheStore", () => {
     })
   })
 
-  test("returns empty cache when file is corrupt", async () => {
+  test("loadCacheFromDisk_corruptJson_returnsEmptyCache", async () => {
     await withTempDir(async (dir) => {
       await mkdir(dir, { recursive: true })
       await writeFile(path.join(dir, "news.json"), "not json", "utf8")
@@ -119,20 +141,10 @@ describe("createCacheStore", () => {
     })
   })
 
-  test("returns empty cache when file does not exist", async () => {
+  test("loadCacheFromDisk_missingFile_returnsEmptyCache", async () => {
     await withTempDir(async (dir) => {
       const loaded = await loadCacheFromDisk(dir, silentLogger)
       expect(loaded.source).toBe("empty")
-    })
-  })
-
-  // 使わない import を避けるためのダミー (readFile を import している意図を示す)
-  test("file contents are JSON", async () => {
-    await withTempDir(async (dir) => {
-      const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
-      const raw = await readFile(path.join(dir, "news.json"), "utf8")
-      expect(() => JSON.parse(raw)).not.toThrow()
     })
   })
 })

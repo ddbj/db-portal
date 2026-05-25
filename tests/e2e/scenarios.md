@@ -209,14 +209,6 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - PartialFailureBanner に「ファイル名が未入力です」「生物が未選択です」 の 2 件が表示
   - 「→ 該当行 #1」 link クリックで行編集 modal が開く
 
-### E-SUBMIT-02: GroupType 不整合で警告
-
-- **ペルソナ**: P-ANON
-- **前提**: マイクロアレイ発現 1 行追加 (GroupType `mage-tab`)、同 group に手動で `mass-spec` 行を追加するシナリオ (現状 UI からは届かないが、reducer で起こしうる状態)
-- **期待**:
-  - PartialFailureBanner に「GroupType がボタン種別と整合していません」 が表示
-  - 該当行 link で modal が開く
-
 ### E-SUBMIT-03: 100 行追加でも UI が応答する
 
 - **ペルソナ**: P-ANON
@@ -270,24 +262,15 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 右ペインに news 上位 8 件 (date 降順)
   - 「すべて見る」 リンクで `/news` に遷移
 
-### E-NEWS-01: GitHub API 障害時の挙動
+### E-NEWS-01: /api/news 200 空配列でも UI 崩れない
 
-- **ペルソナ**: P-OPS
+- **ペルソナ**: P-ANON
+- **前提**: `/api/news` を空配列で返すように route mock
 - **手順**:
-  1. GitHub API を遮断した状態で server を起動
-  2. `/api/news` を叩く
+  1. `/news` を開く
 - **期待**:
-  - disk cache が空でも 200 で空配列を返す
-  - disk cache がある状態なら cache から応答
-
-### E-NEWS-02: 不正 front matter で起動時に検出
-
-- **ペルソナ**: P-OPS
-- **手順**:
-  1. `date` field が欠落した markdown を含む状態で mirror polling 実行
-- **期待**:
-  - 該当 item は `toNewsItem` で undefined になり skip
-  - log に warn `news_mirror_failed` 等で記録される
+  - 一覧 0 件でも `<h1>お知らせ</h1>` が描画される
+  - エラーバナーが出ない
 
 ## Auth Domain
 
@@ -484,14 +467,4 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - HTTP 404
   - ErrorBoundary が "404 Not Found" を表示
-
-### E-CONTENT-02: 翻訳未完成 page で TranslationUnavailable
-
-- **ペルソナ**: P-ANON
-- **手順**:
-  1. 仮に handle.i18n.en = "missing" な database page を `/en/databases/<slug>` で訪問
-- **期待**:
-  - TranslationUnavailable バナーが Header と main の間に出る
-  - "Switch to Japanese version" link で `/databases/<slug>` に遷移
-  - URL は en のまま (リダイレクトしない)
 

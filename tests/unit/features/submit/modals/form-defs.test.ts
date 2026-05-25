@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import { ROW_FORM_DEFS } from "../../../../../app/features/submit/modals/form-defs"
-import { ButtonType } from "../../../../../app/schemas/submit"
+import { ALLOWED_CHIP_VALUES, ButtonType } from "../../../../../app/schemas/submit"
 
 describe("ROW_FORM_DEFS", () => {
   test("formDefs_coverAllButtonTypes", () => {
@@ -35,5 +35,22 @@ describe("ROW_FORM_DEFS", () => {
         expect(new Set(values).size).toBe(values.length)
       }
     }
+  })
+
+  test("formDefs_chipAddEffectsAreInAllowedChipValues", () => {
+    const violations: string[] = []
+    for (const bt of ButtonType.options) {
+      const def = ROW_FORM_DEFS[bt]!
+      for (const group of def.groups) {
+        for (const opt of group.options) {
+          const chipAdd = opt.effect.chipAdd
+          if (chipAdd === undefined) continue
+          if (!ALLOWED_CHIP_VALUES[chipAdd.axis].includes(chipAdd.value)) {
+            violations.push(`${bt}/${group.id}/${opt.value} -> ${chipAdd.axis}:${chipAdd.value}`)
+          }
+        }
+      }
+    }
+    expect(violations).toEqual([])
   })
 })

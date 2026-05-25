@@ -25,7 +25,7 @@ describe("TextInput", () => {
   test("TextInput_mono_addsFontMonoClass", () => {
     render(<TextInput ariaLabel="dsl" mono />)
     const input = screen.getByRole("textbox", { name: "dsl" })
-    expect(input.className).toContain("font-mono")
+    expect(input).toHaveClass("font-mono")
   })
 
   test("TextInput_typeNotSpecified_defaultsToText", () => {

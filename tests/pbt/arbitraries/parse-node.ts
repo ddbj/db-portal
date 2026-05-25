@@ -8,11 +8,13 @@ const arbDateField = fc.constantFrom("date_published", "date_modified", "date_cr
 
 const arbValue = fc.string({ minLength: 1, maxLength: 12 }).filter((s) => !/[\s:()[\]"{}^~*?/]/.test(s))
 
-const arbDate = fc.tuple(
-  fc.integer({ min: 2000, max: 2030 }),
-  fc.integer({ min: 1, max: 12 }),
-  fc.integer({ min: 1, max: 28 }),
-).map(([y, m, d]) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`)
+const arbDate = fc
+  .date({
+    min: new Date("2000-01-01T00:00:00Z"),
+    max: new Date("2030-12-31T23:59:59Z"),
+    noInvalidDate: true,
+  })
+  .map((d) => d.toISOString().slice(0, 10))
 
 const arbLeafValue: fc.Arbitrary<ParseNode> = fc.tuple(
   arbField,

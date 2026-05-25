@@ -16,7 +16,7 @@ const arbSafeText = fc.array(arbSafeWord, { minLength: 1, maxLength: 6 })
 
 describe("redactUserInput PBT", () => {
   test.prop([arbEmail, arbSafeText, arbSafeText])(
-    "any email embedded in text is replaced with placeholder",
+    "redactionCoverage_emailInText_alwaysReplacedAndOriginalRemoved",
     (email, before, after) => {
       const input = `${before} ${email} ${after}`
       const output = redactUserInput(input)
@@ -26,14 +26,14 @@ describe("redactUserInput PBT", () => {
   )
 
   test.prop([arbSafeText])(
-    "safe text without PII is unchanged",
+    "redactionCoverage_piiFreeText_isUnchanged",
     (text) => {
       expect(redactUserInput(text)).toBe(text)
     },
   )
 
   test.prop([arbSafeText])(
-    "redaction is idempotent on already-redacted input",
+    "redactionCoverage_alreadyRedacted_isIdempotent",
     (text) => {
       const once = redactUserInput(text)
       expect(redactUserInput(once)).toBe(once)

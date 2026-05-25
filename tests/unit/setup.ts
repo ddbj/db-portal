@@ -5,5 +5,13 @@ import { afterAll, afterEach, beforeAll } from "vitest"
 import { server } from "./mocks/server"
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }))
-afterEach(() => server.resetHandlers())
+
+afterEach(() => {
+  server.resetHandlers()
+  if (typeof window !== "undefined") {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+  }
+})
+
 afterAll(() => server.close())

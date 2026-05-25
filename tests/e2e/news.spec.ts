@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("News Domain", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-NEWS-01: /news で一覧表示と facet group", async ({ page }) => {
     await page.goto("/news")
 
@@ -36,14 +30,14 @@ test.describe("News Domain", () => {
   test("S-NEWS-03: NotificationBar に announcement が表示", async ({ page }) => {
     await page.goto("/")
 
-    const bar = page.getByTestId("notification-bar")
+    const bar = page.getByRole("region", { name: /重要なお知らせ|Important notice/i })
     await expect(bar).toBeVisible({ timeout: 10_000 })
   })
 
   test("S-NEWS-04: トップ右ペイン 8 件 + すべて見る", async ({ page }) => {
     await page.goto("/")
 
-    const aside = page.getByTestId("news-aside")
+    const aside = page.getByRole("complementary", { name: /お知らせ|Announcements/i })
     await expect(aside).toBeVisible()
     await expect(aside.getByRole("link", { name: /すべて見る|see all/i })).toBeVisible()
   })
@@ -61,9 +55,5 @@ test.describe("News Domain", () => {
     await expect(
       page.getByRole("heading", { name: /お知らせ|news/i, level: 1 }).first(),
     ).toBeVisible()
-  })
-
-  test.skip("E-NEWS-02: 不正 front matter (server 側起動時挙動、e2e では再現困難)", async () => {
-    // server 側の起動時挙動。unit (server/news/mirror.test.ts) で吸収
   })
 })

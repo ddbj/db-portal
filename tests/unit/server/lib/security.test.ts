@@ -68,11 +68,25 @@ describe("securityHeaders", () => {
     expect(a.locals.cspNonce).not.toBe(b.locals.cspNonce)
   })
 
-  test("securityHeaders_csp_doesNotContainUnsafeInlineForScript", () => {
+  test("securityHeaders_csp_scriptSrcOmitsUnsafeInlineAndUnsafeEval", () => {
     const res = runMiddleware("production")
     const csp = res.headers["Content-Security-Policy"] ?? ""
     const scriptSrc = csp.split(";").find((p) => p.trim().startsWith("script-src"))
     expect(scriptSrc).toBeDefined()
     expect(scriptSrc).not.toContain("'unsafe-inline'")
+    expect(scriptSrc).not.toContain("'unsafe-eval'")
+  })
+
+  test.each([
+    ["base-uri", "'self'"],
+    ["form-action", "'self'"],
+    ["frame-ancestors", "'none'"],
+    ["default-src", "'self'"],
+  ])("securityHeaders_csp_directive_%s_isRestrictedTo_%s", (directive, expectedToken) => {
+    const res = runMiddleware("production")
+    const csp = res.headers["Content-Security-Policy"] ?? ""
+    const part = csp.split(";").find((p) => p.trim().startsWith(directive))
+    expect(part).toBeDefined()
+    expect(part).toContain(expectedToken)
   })
 })

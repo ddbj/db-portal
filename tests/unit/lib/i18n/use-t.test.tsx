@@ -18,18 +18,18 @@ const renderProbe = (lang: "ja" | "en", k: string) => {
 }
 
 describe("useT", () => {
-  test("useT_jaKey_resolvesToJa", () => {
-    renderProbe("ja", "common.siteName")
-    expect(screen.getByTestId("t")).toHaveTextContent("DDBJ 刷新 (仮)")
+  test.each([
+    ["ja" as const, "breadcrumb.home", "ホーム"],
+    ["en" as const, "breadcrumb.home", "Home"],
+    ["ja" as const, "breadcrumb.databases", "データベース"],
+    ["en" as const, "breadcrumb.databases", "Databases"],
+  ])("useT_%s_%s_resolvesToLocale", (lang, key, expected) => {
+    renderProbe(lang, key)
+    expect(screen.getByTestId("t")).toHaveTextContent(expected)
   })
 
-  test("useT_enKey_resolvesToEn", () => {
-    renderProbe("en", "common.siteName")
-    expect(screen.getByTestId("t")).toHaveTextContent("DDBJ 刷新 (仮)")
-  })
-
-  test("useT_breadcrumbKey_resolvesPerLang", () => {
-    renderProbe("ja", "breadcrumb.databases")
-    expect(screen.getByTestId("t")).toHaveTextContent("データベース")
+  test("useT_missingKey_returnsKeyAsFallback", () => {
+    renderProbe("ja", "definitely.not.a.real.key")
+    expect(screen.getByTestId("t")).toHaveTextContent("definitely.not.a.real.key")
   })
 })

@@ -24,8 +24,8 @@ const arbEntry: fc.Arbitrary<SessionEntry> = fc.record({
 })
 
 describe("sessionStore PBT", () => {
-  test.prop([arbEntry, fc.integer({ min: 0, max: SESSION_TTL_MS - 1 })])(
-    "get within TTL returns the entry",
+  test.prop([arbEntry, fc.integer({ min: 0, max: SESSION_TTL_MS })])(
+    "sessionStorePbt_advanceWithinOrAtTTL_getReturnsEntry",
     (entry, advanceBy) => {
       let now = 1_000
       const store = createSessionStore(() => now)
@@ -37,7 +37,7 @@ describe("sessionStore PBT", () => {
   )
 
   test.prop([arbEntry, fc.integer({ min: SESSION_TTL_MS + 1, max: SESSION_TTL_MS * 4 })])(
-    "get after TTL returns undefined",
+    "sessionStorePbt_advancePastTTL_getReturnsUndefined",
     (entry, advanceBy) => {
       let now = 1_000
       const store = createSessionStore(() => now)
@@ -48,7 +48,7 @@ describe("sessionStore PBT", () => {
   )
 
   test.prop([arbEntry])(
-    "remove makes subsequent get undefined",
+    "sessionStorePbt_remove_getReturnsUndefined",
     (entry) => {
       const store = createSessionStore(() => 1_000)
       store.set("sid", entry)

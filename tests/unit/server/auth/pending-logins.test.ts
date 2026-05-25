@@ -5,8 +5,8 @@ import {
   PENDING_TTL_MS,
 } from "../../../../server/auth/pending-logins"
 
-describe("pendingLogins", () => {
-  test("take consumes the entry exactly once", () => {
+describe("pendingLoginStore", () => {
+  test("pendingLogins_takeTwice_secondCallReturnsUndefined", () => {
     const now = 1_000
     const store = createPendingLoginStore(() => now)
     store.put({ codeVerifier: "v", state: "s", returnTo: "/", createdAt: now })
@@ -14,7 +14,7 @@ describe("pendingLogins", () => {
     expect(store.take("s")).toBeUndefined()
   })
 
-  test("take returns undefined after TTL", () => {
+  test("pendingLogins_pastTTL_takeReturnsUndefined", () => {
     let now = 1_000
     const store = createPendingLoginStore(() => now)
     store.put({ codeVerifier: "v", state: "s", returnTo: "/", createdAt: now })
@@ -22,7 +22,24 @@ describe("pendingLogins", () => {
     expect(store.take("s")).toBeUndefined()
   })
 
-  test("cleanup drops expired entries", () => {
+  test("pendingLogins_exactlyAtTTL_isStillValid", () => {
+    let now = 1_000
+    const store = createPendingLoginStore(() => now)
+    store.put({ codeVerifier: "v", state: "s", returnTo: "/", createdAt: now })
+    // predicate is `clock() - createdAt > PENDING_TTL_MS`; equal is still valid
+    now += PENDING_TTL_MS
+    expect(store.take("s")?.state).toBe("s")
+  })
+
+  test("pendingLogins_oneMillisecondPastTTL_takeReturnsUndefined", () => {
+    let now = 1_000
+    const store = createPendingLoginStore(() => now)
+    store.put({ codeVerifier: "v", state: "s", returnTo: "/", createdAt: now })
+    now += PENDING_TTL_MS + 1
+    expect(store.take("s")).toBeUndefined()
+  })
+
+  test("pendingLogins_cleanup_dropsExpiredButKeepsFresh", () => {
     let now = 1_000
     const store = createPendingLoginStore(() => now)
     store.put({ codeVerifier: "v", state: "old", returnTo: "/", createdAt: now })

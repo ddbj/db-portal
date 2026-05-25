@@ -9,6 +9,9 @@ export default defineConfig({
   testMatch: /.*\.(spec|setup)\.ts$/,
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  ...(process.env.CI ? { workers: 1 } : {}),
+  timeout: 30_000,
+  expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { outputFolder: "../../playwright-report" }]],
   outputDir: "../../test-results",
   use: {

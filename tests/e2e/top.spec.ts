@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("Top Domain", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-TOP-01: ja トップで hero / service tile / news aside / breadcrumb なし", async ({ page }) => {
     await page.goto("/")
 

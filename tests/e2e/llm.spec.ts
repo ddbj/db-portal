@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("LLM Domain (anonymous)", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-LLM-02: /api/llm/health が ok のとき assistant が表示", async ({ page }) => {
     const healthResponse = await page.request.get("/api/llm/health")
     const health = (await healthResponse.json()) as { status: string }
@@ -14,9 +8,9 @@ test.describe("LLM Domain (anonymous)", () => {
     await page.goto("/search")
 
     if (health.status === "ok") {
-      await expect(page.getByTestId("search-assistant")).toBeVisible()
+      await expect(page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })).toBeVisible()
     } else {
-      await expect(page.getByTestId("search-assistant")).toHaveCount(0)
+      await expect(page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })).toHaveCount(0)
     }
   })
 
@@ -30,7 +24,7 @@ test.describe("LLM Domain (anonymous)", () => {
     )
     await page.goto("/search")
 
-    await expect(page.getByTestId("search-assistant")).toHaveCount(0)
+    await expect(page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })).toHaveCount(0)
   })
 
   test("E-LLM-02: SSE 切断で error event を観測", async ({ page }) => {
@@ -57,7 +51,7 @@ test.describe("LLM Domain (anonymous)", () => {
     )
     await page.goto("/search")
 
-    const assistant = page.getByTestId("search-assistant")
+    const assistant = page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })
     if (await assistant.isVisible().catch(() => false)) {
       await assistant.getByRole("textbox").fill("breast cancer rna-seq")
       await assistant.getByRole("button", { name: /生成|generate/i }).click()

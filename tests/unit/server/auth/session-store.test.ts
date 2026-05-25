@@ -21,7 +21,7 @@ const baseEntry = {
 }
 
 describe("sessionStore", () => {
-  test("get returns the entry within TTL", () => {
+  test("sessionStore_withinTTL_getReturnsEntry", () => {
     let now = 1_000
     const store = createSessionStore(() => now)
     store.set("sid", baseEntry)
@@ -29,7 +29,7 @@ describe("sessionStore", () => {
     expect(store.get("sid")?.userInfo.sub).toBe("user-1")
   })
 
-  test("get returns undefined after TTL", () => {
+  test("sessionStore_pastTTL_getReturnsUndefined", () => {
     let now = 1_000
     const store = createSessionStore(() => now)
     store.set("sid", baseEntry)
@@ -37,7 +37,24 @@ describe("sessionStore", () => {
     expect(store.get("sid")).toBeUndefined()
   })
 
-  test("get extends TTL (sliding expiration)", () => {
+  test("sessionStore_exactlyAtExpiresAt_isStillValid", () => {
+    let now = 1_000
+    const store = createSessionStore(() => now)
+    store.set("sid", baseEntry)
+    // entry.expiresAt = 1_000 + SESSION_TTL_MS; predicate is `expiresAt < now`
+    now += SESSION_TTL_MS
+    expect(store.get("sid")?.userInfo.sub).toBe("user-1")
+  })
+
+  test("sessionStore_oneMillisecondPastExpiresAt_isExpired", () => {
+    let now = 1_000
+    const store = createSessionStore(() => now)
+    store.set("sid", baseEntry)
+    now += SESSION_TTL_MS + 1
+    expect(store.get("sid")).toBeUndefined()
+  })
+
+  test("sessionStore_repeatedGet_slidesExpiration", () => {
     let now = 1_000
     const store = createSessionStore(() => now)
     store.set("sid", baseEntry)
@@ -47,14 +64,14 @@ describe("sessionStore", () => {
     expect(store.get("sid")).toBeDefined()
   })
 
-  test("remove drops the entry", () => {
+  test("sessionStore_remove_dropsEntry", () => {
     const store = createSessionStore(() => 1_000)
     store.set("sid", baseEntry)
     store.remove("sid")
     expect(store.get("sid")).toBeUndefined()
   })
 
-  test("cleanup removes expired entries", () => {
+  test("sessionStore_cleanup_dropsExpiredEntries", () => {
     let now = 1_000
     const store = createSessionStore(() => now)
     store.set("sid", baseEntry)

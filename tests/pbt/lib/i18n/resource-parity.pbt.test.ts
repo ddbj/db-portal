@@ -51,4 +51,36 @@ describe("i18n resource parity", () => {
       expectNonEmptyLeaf(lookupValue(en, key))
     },
   )
+
+  // ja value にひらがな・カタカナ・漢字が含まれているのに en value と完全一致 = 翻訳忘れ。
+  // 記号・固有名詞・URL・コード片など日本語文字を含まないキーは翻訳不要とみなして exempt する。
+  const containsJapanese = (value: string): boolean => /[ぁ-んァ-ヶ一-龯]/.test(value)
+
+  // 意図的に ja / en で同一文字列を用いるキー。
+  // - common.siteName: ja/en で同一のブランド表記
+  // - switchLang.toJa / toEn: language switcher は対象言語そのものを表示する仕様
+  const intentionalDuplicates = new Set<string>([
+    "common.siteName",
+    "switchLang.toJa",
+    "switchLang.toEn",
+  ])
+
+  const jaJapaneseLeaves = jaKeys.filter((key) => {
+    if (intentionalDuplicates.has(key)) return false
+    const jaValue = lookupValue(ja, key)
+    return typeof jaValue === "string" && containsJapanese(jaValue)
+  })
+
+  test("i18n_translatableLeaves_existInResource", () => {
+    expect(jaJapaneseLeaves.length).toBeGreaterThan(0)
+  })
+
+  test.prop([fc.constantFrom(...jaJapaneseLeaves)], { numRuns: 200 })(
+    "i18n_anyTranslatableKey_jaAndEnLiteralsDiffer",
+    (key) => {
+      const jaValue = lookupValue(ja, key)
+      const enValue = lookupValue(en, key)
+      expect(jaValue).not.toBe(enValue)
+    },
+  )
 })

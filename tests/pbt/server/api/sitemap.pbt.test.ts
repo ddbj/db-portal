@@ -13,7 +13,7 @@ const ORIGIN = "https://portal.example.test"
 
 describe("buildSitemapEntries PBT", () => {
   test.prop([arbSlugSet])(
-    "url count equals 2 times (static paths + unique slugs)",
+    "buildSitemapEntries_anySlugSet_urlCountIsTwiceStaticPlusSlugs",
     (slugs) => {
       const urls = buildSitemapEntries(ORIGIN, slugs)
       expect(urls.length).toBe((STATIC_PATH_COUNT + slugs.length) * 2)
@@ -21,7 +21,7 @@ describe("buildSitemapEntries PBT", () => {
   )
 
   test.prop([arbSlugSet])(
-    "every url is prefixed with origin",
+    "buildSitemapEntries_anySlugSet_everyUrlStartsWithOrigin",
     (slugs) => {
       const urls = buildSitemapEntries(ORIGIN, slugs)
       for (const url of urls) {
@@ -31,7 +31,7 @@ describe("buildSitemapEntries PBT", () => {
   )
 
   test.prop([arbSlugSet])(
-    "every slug yields exactly two database urls (ja and en)",
+    "buildSitemapEntries_eachSlug_yieldsJaAndEnDatabasesUrls",
     (slugs) => {
       const urls = buildSitemapEntries(ORIGIN, slugs)
       for (const slug of slugs) {
@@ -42,7 +42,7 @@ describe("buildSitemapEntries PBT", () => {
   )
 
   test.prop([arbSlugSet])(
-    "rendered xml contains exactly one <loc> per generated url",
+    "renderSitemapXml_anyUrlList_locCountMatchesUrlCount",
     (slugs) => {
       const urls = buildSitemapEntries(ORIGIN, slugs)
       const xml = renderSitemapXml(urls)

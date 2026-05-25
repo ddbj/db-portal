@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
 import type { ReactNode } from "react"
 import { MemoryRouter } from "react-router"
@@ -7,28 +6,14 @@ import { describe, expect, test } from "vitest"
 
 import { RequireAuth } from "~/lib/auth/require-auth"
 
+import { renderWithQueryClient } from "../../_helpers/render"
 import { server } from "../../mocks/server"
 
-const newQc = (): QueryClient =>
-  new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
-
-const renderInRouter = (children: ReactNode, entry = "/protected") => {
-  const qc = newQc()
-
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[entry]}>{children}</MemoryRouter>
-    </QueryClientProvider>,
-  )
-}
+const renderInRouter = (children: ReactNode, entry = "/protected") =>
+  renderWithQueryClient(<MemoryRouter initialEntries={[entry]}>{children}</MemoryRouter>)
 
 describe("RequireAuth", () => {
   test("requireAuth_unauthenticated_doesNotRenderChildren", async () => {
-    server.use(
-      http.get("/api/me", () =>
-        new HttpResponse(null, { status: 401 }),
-      ),
-    )
     renderInRouter(
       <RequireAuth><div data-testid="protected">SECRET</div></RequireAuth>,
     )
@@ -39,7 +24,7 @@ describe("RequireAuth", () => {
 
   test("requireAuth_authenticated_rendersChildren", async () => {
     server.use(
-      http.get("/api/me", () =>
+      http.get("*/api/me", () =>
         HttpResponse.json({ user: { sub: "u1", name: "T", email: "t@example.test" } }),
       ),
     )
@@ -53,7 +38,7 @@ describe("RequireAuth", () => {
 
   test("requireAuth_loading_rendersFallback", () => {
     server.use(
-      http.get("/api/me", async () => {
+      http.get("*/api/me", async () => {
         await new Promise((r) => setTimeout(r, 200))
 
         return new HttpResponse(null, { status: 401 })
@@ -70,7 +55,7 @@ describe("RequireAuth", () => {
 
   test("requireAuth_loadingWithoutFallback_rendersNothing", () => {
     server.use(
-      http.get("/api/me", async () => {
+      http.get("*/api/me", async () => {
         await new Promise((r) => setTimeout(r, 200))
 
         return new HttpResponse(null, { status: 401 })

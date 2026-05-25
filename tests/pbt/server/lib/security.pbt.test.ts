@@ -36,7 +36,7 @@ const runOnce = (env: Env): RecordedRes => {
 
 describe("securityHeaders PBT", () => {
   test.prop([arbEnv])(
-    "nonce is always a non-empty string",
+    "securityHeaders_anyEnv_nonceIsNonEmptyString",
     (env) => {
       const res = runOnce(env)
       const nonce = res.locals.cspNonce
@@ -46,7 +46,7 @@ describe("securityHeaders PBT", () => {
   )
 
   test.prop([arbEnv, fc.integer({ min: 2, max: 20 })])(
-    "n invocations produce n unique nonces",
+    "securityHeaders_repeatedInvocations_nonceIsUniqueAcrossCalls",
     (env, n) => {
       const nonces = new Set<string>()
       for (let i = 0; i < n; i++) {
@@ -58,7 +58,7 @@ describe("securityHeaders PBT", () => {
   )
 
   test.prop([arbEnv])(
-    "basic headers are always present",
+    "securityHeaders_anyEnv_basicHeadersArePresent",
     (env) => {
       const res = runOnce(env)
       expect(res.headers["X-Frame-Options"]).toBe("DENY")

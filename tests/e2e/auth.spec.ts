@@ -1,12 +1,6 @@
-import { expect, test } from "@playwright/test"
-
-import { clearBrowserState } from "./helpers"
+import { expect, test } from "./helpers"
 
 test.describe("Auth Domain (anonymous)", () => {
-  test.beforeEach(async ({ page }) => {
-    await clearBrowserState(page)
-  })
-
   test("S-AUTH-01: 未認証で /api/me 401 + Header にログインボタン", async ({ page }) => {
     const meResponse = await page.request.get("/api/me")
     expect(meResponse.status()).toBe(401)

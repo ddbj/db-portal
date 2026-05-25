@@ -3,14 +3,14 @@ import { describe, expect, test } from "vitest"
 import { createRateLimiter } from "../../../../server/llm/rate-limit"
 
 describe("rateLimiter", () => {
-  test("allows under per-IP limit", () => {
+  test("rateLimiter_underPerIpLimit_allowsRequest", () => {
     const limiter = createRateLimiter({ perIpPerMin: 3, perSessionPerMin: 100 }, () => 0)
     expect(limiter.check("1.1.1.1", undefined).ok).toBe(true)
     expect(limiter.check("1.1.1.1", undefined).ok).toBe(true)
     expect(limiter.check("1.1.1.1", undefined).ok).toBe(true)
   })
 
-  test("rejects when per-IP exceeds", () => {
+  test("rateLimiter_perIpExceeded_returnsIpBlock", () => {
     const limiter = createRateLimiter({ perIpPerMin: 2, perSessionPerMin: 100 }, () => 0)
     limiter.check("1.1.1.1", undefined)
     limiter.check("1.1.1.1", undefined)
@@ -19,7 +19,7 @@ describe("rateLimiter", () => {
     expect(decision.axis).toBe("ip")
   })
 
-  test("rejects when per-session exceeds", () => {
+  test("rateLimiter_perSessionExceeded_returnsSessionBlock", () => {
     const limiter = createRateLimiter({ perIpPerMin: 100, perSessionPerMin: 1 }, () => 0)
     limiter.check("1.1.1.1", "s")
     const decision = limiter.check("1.1.1.1", "s")
@@ -27,16 +27,32 @@ describe("rateLimiter", () => {
     expect(decision.axis).toBe("session")
   })
 
-  test("window resets after 60 seconds", () => {
+  test("rateLimiter_oneMillisecondBeforeWindowEnd_stillBlocked", () => {
+    // predicate is `nowMs - startMs >= 60_000`; just before that, window is still active
     let now = 0
     const limiter = createRateLimiter({ perIpPerMin: 1, perSessionPerMin: 100 }, () => now)
     limiter.check("1.1.1.1", undefined)
+    now = 59_999
     expect(limiter.check("1.1.1.1", undefined).ok).toBe(false)
-    now += 60_001
+  })
+
+  test("rateLimiter_exactlyAtWindowEnd_resetsAndAllows", () => {
+    let now = 0
+    const limiter = createRateLimiter({ perIpPerMin: 1, perSessionPerMin: 100 }, () => now)
+    limiter.check("1.1.1.1", undefined)
+    now = 60_000
     expect(limiter.check("1.1.1.1", undefined).ok).toBe(true)
   })
 
-  test("retryAfter is positive when blocked", () => {
+  test("rateLimiter_pastTwoWindows_resetsAndAllows", () => {
+    let now = 0
+    const limiter = createRateLimiter({ perIpPerMin: 1, perSessionPerMin: 100 }, () => now)
+    limiter.check("1.1.1.1", undefined)
+    now = 120_001
+    expect(limiter.check("1.1.1.1", undefined).ok).toBe(true)
+  })
+
+  test("rateLimiter_blocked_retryAfterIsPositive", () => {
     let now = 0
     const limiter = createRateLimiter({ perIpPerMin: 1, perSessionPerMin: 100 }, () => now)
     limiter.check("1.1.1.1", undefined)

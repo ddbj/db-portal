@@ -1,40 +1,22 @@
-import { QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
-import { I18nextProvider } from "react-i18next"
-import { createRoutesStub } from "react-router"
 import { describe, expect, test } from "vitest"
 
 import type { NewsList } from "~/lib/api/news"
-import { createI18nInstance } from "~/lib/i18n"
-import { createQueryClient } from "~/lib/query/client"
 import { NewsAside } from "~/shell/news-aside"
 
+import { renderWithStub } from "../_helpers/render"
 import { server } from "../mocks/server"
 
-const renderAside = (lang: "ja" | "en" = "ja") => {
-  const i18n = createI18nInstance(lang)
-  const queryClient = createQueryClient()
-  const Stub = createRoutesStub([
-    {
-      path: "/",
-      Component: () => <NewsAside />,
-    },
-    {
-      path: "/en",
-      handle: { lang: "en" as const },
-      Component: () => <NewsAside />,
-    },
-  ])
-
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <I18nextProvider i18n={i18n}>
-        <Stub initialEntries={[lang === "en" ? "/en" : "/"]} />
-      </I18nextProvider>
-    </QueryClientProvider>,
-  )
-}
+const renderAside = (lang: "ja" | "en" = "ja") =>
+  renderWithStub({
+    routes: [
+      { path: "/", Component: () => <NewsAside /> },
+      { path: "/en", handle: { lang: "en" as const }, Component: () => <NewsAside /> },
+    ],
+    initialEntries: [lang === "en" ? "/en" : "/"],
+    lang,
+  })
 
 const makeNews = (count: number): NewsList =>
   Array.from({ length: count }, (_, i) => ({

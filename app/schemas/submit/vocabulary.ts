@@ -92,3 +92,19 @@ export const TYPICAL_GROUP_TYPE_FOR_BUTTON: Readonly<Record<ButtonType, GroupTyp
   "mass-spec": "single",
   "spatial-tx": "single",
 }
+
+export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
+  "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
+  "provenance": ["third-party"],
+  "variation-form": ["per-sample", "aggregate"],
+  "host-pathogen": ["clinical"],
+  "haplotype-mode": [],
+  "functional-genomics": ["rna-seq"],
+  "mass-spec-domain": ["proteomics", "metabolomics"],
+  "spatial-platform": ["visium", "stereo-seq"],
+  "tpa-subtype": ["tpa"],
+  "mag-sag-chain": [],
+}
+
+export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>
+  ALLOWED_CHIP_VALUES[axis].includes(value)

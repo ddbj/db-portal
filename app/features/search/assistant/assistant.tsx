@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
 import { Button, Chip, Label, Tag, TextArea } from "~/ui"
@@ -52,6 +52,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   const t = useT()
   const [input, setInput] = useState("")
   const stream = useAssistantStream(baseUrl)
+  const headingId = useId()
   if (!availability.ready) return null
 
   const examples = t("search.assistant.examples", { returnObjects: true }) as unknown as readonly string[]
@@ -71,9 +72,9 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   }
 
   return (
-    <section data-testid="search-assistant" className="flex flex-col gap-3">
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div>
-        <h3 className="text-fs-h3 font-bold text-ink m-0">{t("search.assistant.heading")}</h3>
+        <h3 id={headingId} className="text-fs-h3 font-bold text-ink m-0">{t("search.assistant.heading")}</h3>
         <p className="text-fs-body-sm text-ink-mid m-0 mt-1">{t("search.assistant.description")}</p>
       </div>
       <div className="rounded-card border border-border-soft bg-surface flex flex-col">
@@ -120,7 +121,10 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
           </span>
         </div>
         {stream.proposal && (
-          <div data-testid="search-assistant-proposal" className="border-t border-border-soft p-3 flex flex-col gap-2">
+          <section
+            aria-label={t("search.assistant.proposalLabel")}
+            className="border-t border-border-soft p-3 flex flex-col gap-2"
+          >
             <div className="flex items-center gap-2">
               <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
               <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
@@ -144,7 +148,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
                 {t("search.assistant.apply")}
               </Button>
             </div>
-          </div>
+          </section>
         )}
       </div>
     </section>

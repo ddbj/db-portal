@@ -1,12 +1,10 @@
-import type { Page } from "@playwright/test"
+import { type Page,test as base } from "@playwright/test"
 
 import { TEST_USER } from "./fixtures/users"
 
-export type ScenarioContext = {
-  page: Page
-}
+export { expect } from "@playwright/test"
 
-export const clearBrowserState = async (page: Page): Promise<void> => {
+const clearBrowserState = async (page: Page): Promise<void> => {
   await page.context().clearCookies()
   try {
     await page.evaluate(() => {
@@ -14,9 +12,18 @@ export const clearBrowserState = async (page: Page): Promise<void> => {
       sessionStorage.clear()
     })
   } catch {
-    // page may have navigated to a state without a window (e.g. before goto)
+    // page may not yet have a window context (e.g. before first goto)
   }
 }
+
+export const test = base.extend({
+  page: async ({ page }, use) => {
+    await clearBrowserState(page)
+    // `use` is the Playwright fixture-supply callback, not a React Hook.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(page)
+  },
+})
 
 export const getTestUserPassword = (): string => {
   const password = process.env[TEST_USER.passwordEnv]

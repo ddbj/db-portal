@@ -39,61 +39,87 @@ const validPayload = (overrides: Record<string, unknown> = {}): Record<string, u
 })
 
 describe("extractUserInfo", () => {
-  test("ExtractUserInfo_validPayload_returnsUserInfo", () => {
+  test("extractUserInfo_validPayload_returnsUserInfo", () => {
     const idToken = buildIdToken(validPayload())
     const info = extractUserInfo(idToken, validation(1_500))
     expect(info).toEqual({ sub: "user-1", name: "User One", email: "user@example.com" })
   })
 
-  test("ExtractUserInfo_audAsArray_acceptsWhenClientIncluded", () => {
+  test("extractUserInfo_audAsArray_acceptsWhenClientIncluded", () => {
     const idToken = buildIdToken(validPayload({ aud: ["another-client", CLIENT_ID] }))
     const info = extractUserInfo(idToken, validation(1_500))
     expect(info.sub).toBe("user-1")
   })
 
-  test("ExtractUserInfo_issMismatch_throwsValidationError", () => {
+  test("extractUserInfo_issMismatch_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ iss: "https://attacker.example/realms/master" }))
     expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(IdTokenValidationError)
   })
 
-  test("ExtractUserInfo_audMismatch_throwsValidationError", () => {
+  test("extractUserInfo_audMismatch_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ aud: "other-client" }))
     expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(IdTokenValidationError)
   })
 
-  test("ExtractUserInfo_expExpired_throwsValidationError", () => {
+  test("extractUserInfo_expExpired_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ exp: 1_500 }))
     expect(() => extractUserInfo(idToken, validation(2_000))).toThrow(/expired/)
   })
 
-  test("ExtractUserInfo_iatInFuture_throwsValidationError", () => {
+  test("extractUserInfo_expEqualsNow_throwsValidationError", () => {
+    // predicate is `parsed.exp <= nowSeconds`; equal is treated as expired
+    const idToken = buildIdToken(validPayload({ exp: 1_500 }))
+    expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(/expired/)
+  })
+
+  test("extractUserInfo_expOneSecondAfterNow_accepts", () => {
+    const idToken = buildIdToken(validPayload({ exp: 1_501 }))
+    const info = extractUserInfo(idToken, validation(1_500))
+    expect(info.sub).toBe("user-1")
+  })
+
+  test("extractUserInfo_iatInFuture_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ iat: 5_000 }))
     expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(/iat/)
   })
 
-  test("ExtractUserInfo_iatWithinClockSkew_accepts", () => {
+  test("extractUserInfo_iatWithinClockSkew_accepts", () => {
     const idToken = buildIdToken(validPayload({ iat: 1_530 }))
     const info = extractUserInfo(idToken, { ...validation(1_500), clockSkewSeconds: 60 })
     expect(info.sub).toBe("user-1")
   })
 
-  test("ExtractUserInfo_notJwt_throwsValidationError", () => {
+  test("extractUserInfo_iatAtClockSkewBoundary_accepts", () => {
+    // predicate is `iat > nowSeconds + clockSkew`; equal stays valid
+    const idToken = buildIdToken(validPayload({ iat: 1_560 }))
+    const info = extractUserInfo(idToken, { ...validation(1_500), clockSkewSeconds: 60 })
+    expect(info.sub).toBe("user-1")
+  })
+
+  test("extractUserInfo_iatBeyondClockSkew_throwsValidationError", () => {
+    const idToken = buildIdToken(validPayload({ iat: 1_561 }))
+    expect(() =>
+      extractUserInfo(idToken, { ...validation(1_500), clockSkewSeconds: 60 }),
+    ).toThrow(/iat/)
+  })
+
+  test("extractUserInfo_notJwt_throwsValidationError", () => {
     expect(() => extractUserInfo("not-a-jwt", validation(1_500))).toThrow(IdTokenValidationError)
   })
 
-  test("ExtractUserInfo_missingSub_throwsValidationError", () => {
+  test("extractUserInfo_missingSub_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ sub: undefined }))
     expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(IdTokenValidationError)
   })
 
-  test("ExtractUserInfo_fallsBackToPreferredUsernameWhenNoName", () => {
+  test("extractUserInfo_noName_fallsBackToPreferredUsername", () => {
     const payload = validPayload({ name: undefined, preferred_username: "user.one" })
     const idToken = buildIdToken(payload)
     const info = extractUserInfo(idToken, validation(1_500))
     expect(info.name).toBe("user.one")
   })
 
-  test("ExtractUserInfo_fallsBackToCombinedNameWhenNoNameOrPreferred", () => {
+  test("extractUserInfo_noNameOrPreferred_fallsBackToCombinedName", () => {
     const payload = validPayload({
       name: undefined,
       preferred_username: undefined,

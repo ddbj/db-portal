@@ -77,7 +77,6 @@ export const NotificationBar = () => {
     <section
       role="region"
       aria-label={t("a11y.notificationBar")}
-      data-testid="notification-bar"
       className="bg-surface-subtle border-y border-border-soft"
     >
       <div className="max-w-content-max mx-auto px-page-gutter py-2 flex items-center gap-3 text-fs-body-sm">

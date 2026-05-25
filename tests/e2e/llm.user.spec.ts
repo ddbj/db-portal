@@ -10,7 +10,7 @@ test.describe("LLM Domain (authenticated)", () => {
 
     await page.goto("/search")
 
-    const assistant = page.getByTestId("search-assistant")
+    const assistant = page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })
     await assistant.getByRole("textbox").fill("human breast cancer rna-seq from 2023")
     const responsePromise = page.waitForResponse(
       (r) => r.url().includes("/api/llm/search-assistant") && r.status() === 200,
@@ -18,8 +18,8 @@ test.describe("LLM Domain (authenticated)", () => {
     await assistant.getByRole("button", { name: /生成|generate/i }).click()
     await responsePromise
 
-    await expect(assistant.getByTestId("search-assistant-proposal")).toBeVisible({
-      timeout: 60_000,
-    })
+    await expect(
+      assistant.getByRole("region", { name: /提案|Proposal/i }),
+    ).toBeVisible({ timeout: 60_000 })
   })
 })

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { useId } from "react"
 
 import type { NewsItem } from "~/lib/api/news"
 import { fetchNews, newsItemTitle } from "~/lib/api/news"
@@ -24,6 +25,7 @@ export const NewsAside = () => {
   const t = useT()
   const lang = useLang()
   const newsListHref = lang === "en" ? "/en/news" : "/news"
+  const headingId = useId()
 
   const query = useQuery({
     queryKey: ["news"],
@@ -34,9 +36,10 @@ export const NewsAside = () => {
   const items = (query.data ?? []).slice(0, NEWS_LIMIT)
 
   return (
-    <aside data-testid="news-aside" className="w-full text-fs-body-sm">
+    <aside aria-labelledby={headingId} className="w-full text-fs-body-sm">
       <SectionHeading
         as="h2"
+        id={headingId}
         action={
           <TextLink to={newsListHref}>
             {t("newsAside.viewAll")} →

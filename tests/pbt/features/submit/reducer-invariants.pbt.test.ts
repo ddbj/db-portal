@@ -4,20 +4,7 @@ import { expect } from "vitest"
 import { initialState, submitReducer } from "../../../../app/features/submit/state/reducer"
 import type { Action, UIState } from "../../../../app/features/submit/state/types"
 import type { ButtonType } from "../../../../app/schemas/submit"
-
-const buttonTypes: readonly ButtonType[] = [
-  "sequence-read",
-  "assembled",
-  "gene-annotation",
-  "variation",
-  "phenotype",
-  "microarray-expression",
-  "rna-seq-matrix",
-  "mass-spec",
-  "spatial-tx",
-]
-
-const arbButtonType = fc.constantFrom(...buttonTypes)
+import { arbButtonType } from "../../arbitraries/submission"
 
 const applySequence = (actions: readonly Action[]): UIState => {
   let state: UIState = initialState

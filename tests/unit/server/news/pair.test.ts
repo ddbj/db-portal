@@ -1,26 +1,12 @@
 import { describe, expect, test } from "vitest"
 
-import { dbclsDateFromSlug, type SourceNormalizeConfig } from "../../../../server/news/normalize"
 import {
   dbclsSlugStripper,
   ddbjSlugStripper,
   pairToNewsItems,
   parseRawArticle,
 } from "../../../../server/news/pair"
-
-const ddbjCfg: SourceNormalizeConfig = {
-  source: "ddbj",
-  urlBuilder: (lang, slug) =>
-    lang === "ja"
-      ? `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html`
-      : `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html`,
-}
-
-const dbclsCfg: SourceNormalizeConfig = {
-  source: "dbcls",
-  urlBuilder: (lang, slug) => `https://dbcls.rois.ac.jp/${lang}/${slug}.html`,
-  publishedAtFromSlug: dbclsDateFromSlug,
-}
+import { dbclsCfg, ddbjCfg } from "./_fixtures"
 
 describe("ddbjSlugStripper", () => {
   test.each([
@@ -68,7 +54,7 @@ const fmEn = [
 ].join("\n")
 
 describe("pairToNewsItems (ddbj)", () => {
-  test("pairs same slug across ja and en", () => {
+  test("pairToNewsItems_ddbjMatchingSlugs_joinsIntoOneItem", () => {
     const ja = new Map()
     const en = new Map()
     const jaParsed = parseRawArticle("ddbj", "ja", "2024-01-02.md", fmJa, ddbjSlugStripper)
@@ -81,7 +67,7 @@ describe("pairToNewsItems (ddbj)", () => {
     expect(items[0]?.title).toEqual({ ja: "JA タイトル", en: "EN title" })
   })
 
-  test("ja only and en only become separate items", () => {
+  test("pairToNewsItems_ddbjIndependentSlugs_remainSeparate", () => {
     const ja = new Map()
     const en = new Map()
     const jaParsed = parseRawArticle("ddbj", "ja", "ja-only.md", fmJa, ddbjSlugStripper)
@@ -92,7 +78,7 @@ describe("pairToNewsItems (ddbj)", () => {
     expect(items).toHaveLength(2)
   })
 
-  test("returns sorted by date desc", () => {
+  test("pairToNewsItems_ddbjMultipleItems_sortedDateDesc", () => {
     const olderFm = fmJa.replace("2024-01-02", "2023-01-01")
     const ja = new Map()
     const older = parseRawArticle("ddbj", "ja", "2023-01-01.md", olderFm, ddbjSlugStripper)
@@ -117,7 +103,7 @@ describe("pairToNewsItems (dbcls)", () => {
     "body",
   ].join("\n")
 
-  test("uses slug for publishedAt when fm has no date", () => {
+  test("pairToNewsItems_dbclsMissingDate_usesSlugForPublishedAt", () => {
     const ja = new Map()
     const parsed = parseRawArticle("dbcls", "ja", "2026-05-01-post1.md", dbclsFm, dbclsSlugStripper)
     if (parsed) ja.set(parsed.slug, parsed)
@@ -127,7 +113,7 @@ describe("pairToNewsItems (dbcls)", () => {
     expect(items[0]?.publishedAt).toBe("2026-05-01T00:00:00+09:00")
   })
 
-  test("skips files without dbcls slug pattern", () => {
+  test("parseRawArticle_dbclsNoSlugMatch_returnsUndefined", () => {
     expect(parseRawArticle("dbcls", "ja", "template.md", dbclsFm, dbclsSlugStripper)).toBeUndefined()
   })
 })

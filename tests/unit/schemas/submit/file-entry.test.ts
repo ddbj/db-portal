@@ -51,6 +51,24 @@ describe("FileEntry", () => {
     ).toThrow()
   })
 
+  test("FileEntry_chipValueNotInAllowedSetForAxis_throws", () => {
+    expect(() =>
+      FileEntry.parse({
+        ...validEntry,
+        chipTags: [{ axis: "provenance", value: "first-party" }],
+      }),
+    ).toThrow()
+  })
+
+  test("FileEntry_chipForAxisWithoutAllowedValues_throws", () => {
+    expect(() =>
+      FileEntry.parse({
+        ...validEntry,
+        chipTags: [{ axis: "haplotype-mode", value: "phased" }],
+      }),
+    ).toThrow()
+  })
+
   test("FileEntry_groupIdEmpty_throws", () => {
     expect(() => FileEntry.parse({ ...validEntry, groupId: "" })).toThrow()
   })

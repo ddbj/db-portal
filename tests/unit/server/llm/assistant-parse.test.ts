@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest"
 import { parseAssistantOutput } from "../../../../server/llm/assistant/parse"
 
 describe("parseAssistantOutput", () => {
-  test("accepts valid JSON proposal", () => {
+  test("parseAssistantOutput_validJsonProposal_returnsParsedProposal", () => {
     const raw = JSON.stringify({
       combinator: "AND",
       conditions: [{ field: "organism", op: "eq", value: "Homo sapiens" }],
@@ -13,25 +13,25 @@ describe("parseAssistantOutput", () => {
     expect(outcome.proposal.conditions[0]?.value).toBe("Homo sapiens")
   })
 
-  test("extracts JSON embedded inside prose", () => {
+  test("parseAssistantOutput_jsonEmbeddedInProse_extractsAndParses", () => {
     const raw = "Sure, here you go: {\"combinator\":\"OR\",\"conditions\":[{\"field\":\"identifier\",\"op\":\"wildcard\",\"value\":\"PRJ*\"}]} thanks"
     const outcome = parseAssistantOutput(raw)
     expect(outcome.ok).toBe(true)
   })
 
-  test("returns no_json when nothing parseable", () => {
+  test("parseAssistantOutput_plainText_returnsNoJsonCode", () => {
     const outcome = parseAssistantOutput("just text, no json")
     if (outcome.ok) throw new Error("expected failure")
     expect(outcome.code).toBe("no_json")
   })
 
-  test("returns invalid_json on broken JSON", () => {
+  test("parseAssistantOutput_brokenJson_returnsInvalidJsonCode", () => {
     const outcome = parseAssistantOutput("{ not valid json")
     if (outcome.ok) throw new Error("expected failure")
     expect(outcome.code).toBe("invalid_json")
   })
 
-  test("returns schema_violation when field is unknown", () => {
+  test("parseAssistantOutput_unknownField_returnsSchemaViolation", () => {
     const raw = JSON.stringify({
       combinator: "AND",
       conditions: [{ field: "bogus", op: "eq", value: "x" }],
@@ -41,7 +41,7 @@ describe("parseAssistantOutput", () => {
     expect(outcome.code).toBe("schema_violation")
   })
 
-  test("requires at least one condition", () => {
+  test("parseAssistantOutput_emptyConditions_isRejected", () => {
     const raw = JSON.stringify({ combinator: "AND", conditions: [] })
     const outcome = parseAssistantOutput(raw)
     expect(outcome.ok).toBe(false)

@@ -1,27 +1,12 @@
 import { describe, expect, test } from "vitest"
 
 import {
-  dbclsDateFromSlug,
   parseFrontMatter,
   type RawArticle,
-  type SourceNormalizeConfig,
   tagsToCategory,
   toNewsItem,
 } from "../../../../server/news/normalize"
-
-const ddbjCfg: SourceNormalizeConfig = {
-  source: "ddbj",
-  urlBuilder: (lang, slug) =>
-    lang === "ja"
-      ? `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html`
-      : `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html`,
-}
-
-const dbclsCfg: SourceNormalizeConfig = {
-  source: "dbcls",
-  urlBuilder: (lang, slug) => `https://dbcls.rois.ac.jp/${lang}/${slug}.html`,
-  publishedAtFromSlug: dbclsDateFromSlug,
-}
+import { dbclsCfg, ddbjCfg } from "./_fixtures"
 
 const buildMarkdown = (frontMatter: string, body = "<p>body</p>"): string =>
   `---\n${frontMatter}\n---\n${body}`
@@ -44,13 +29,13 @@ describe("tagsToCategory", () => {
     expect(tagsToCategory(tags)).toBe(expected)
   })
 
-  test("first matching enum wins", () => {
+  test("tagsToCategory_multipleMatches_returnsFirstEnumInOrder", () => {
     expect(tagsToCategory(["メンテナンス", "重要"])).toBe("maintenance")
   })
 })
 
 describe("parseFrontMatter", () => {
-  test("parses scalar and array keys", () => {
+  test("parseFrontMatter_scalarAndArrayValues_extractsBoth", () => {
     const md = buildMarkdown([
       "layout: simple",
       "title: 'タイトル'",
@@ -71,11 +56,11 @@ describe("parseFrontMatter", () => {
     expect(parsed?.body).toBe("<p>body</p>")
   })
 
-  test("returns undefined when front matter is missing", () => {
+  test("parseFrontMatter_missingFrontMatter_returnsUndefined", () => {
     expect(parseFrontMatter("body without front matter")).toBeUndefined()
   })
 
-  test("handles quoted and unquoted values", () => {
+  test("parseFrontMatter_quotedValue_unwrapsQuotes", () => {
     const md = buildMarkdown([
       "title: \"Quoted title\"",
       "category: news",
@@ -110,7 +95,7 @@ describe("toNewsItem", () => {
     },
   }
 
-  test("pairs ja and en into NewsItem with source-prefixed id", () => {
+  test("toNewsItem_jaAndEn_buildsSourcePrefixedIdAndPairedTitle", () => {
     const item = toNewsItem(ddbjCfg, ja, en)
     expect(item?.id).toBe("ddbj-2024-01-02")
     expect(item?.title).toEqual({ ja: "ja タイトル", en: "EN title" })
@@ -120,23 +105,23 @@ describe("toNewsItem", () => {
     expect(item?.retireTime).toBe("2024-02-02T00:00:00+09:00")
   })
 
-  test("returns undefined when both articles are missing", () => {
+  test("toNewsItem_bothMissing_returnsUndefined", () => {
     expect(toNewsItem(ddbjCfg, undefined, undefined)).toBeUndefined()
   })
 
-  test("returns undefined when date is missing and no fallback", () => {
+  test("toNewsItem_missingDateAndNoFallback_returnsUndefined", () => {
     const broken: RawArticle = { ...ja, fm: { title: "x" } }
     expect(toNewsItem(ddbjCfg, broken, undefined)).toBeUndefined()
   })
 
-  test("ja-only article keeps en title empty", () => {
+  test("toNewsItem_jaOnly_enTitleIsEmpty", () => {
     const item = toNewsItem(ddbjCfg, ja, undefined)
     expect(item?.title.ja).toBe("ja タイトル")
     expect(item?.title.en).toBe("")
     expect(item?.url?.en).toBeUndefined()
   })
 
-  test("dbcls derives publishedAt from slug when fm.date is missing", () => {
+  test("toNewsItem_dbclsMissingDate_derivesPublishedAtFromSlug", () => {
     const dbclsJa: RawArticle = {
       source: "dbcls",
       lang: "ja",
@@ -148,7 +133,7 @@ describe("toNewsItem", () => {
     expect(item?.publishedAt).toBe("2026-05-01T00:00:00+09:00")
   })
 
-  test("published: false drops the item", () => {
+  test("toNewsItem_publishedFalse_returnsUndefined", () => {
     const drafted: RawArticle = {
       source: "dbcls",
       lang: "ja",
