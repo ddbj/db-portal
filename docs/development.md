@@ -32,7 +32,7 @@ docker compose exec app npm run gen:api-types
 curl -s http://localhost:3000 | head -20
 ```
 
-`compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、 `docker compose up` だけで dev サーバが起動する。
+`compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、`docker compose up` だけで dev サーバが起動する。
 
 ## 3. 環境ファイル
 
@@ -231,7 +231,7 @@ Vite の HMR が外部 IP からの WebSocket 接続を許容できていない�
 
 ## 12. PR を出す前のチェック
 
-CI (`.github/workflows/ci.yml`) は次の 3 つを Docker Compose 内で回す。 PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
+CI (`.github/workflows/ci.yml`) は次の 3 つを Docker Compose 内で回す。PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
 
 ```bash
 docker compose exec app npm run typecheck
@@ -239,7 +239,7 @@ docker compose exec app npm run lint
 docker compose exec app npm test
 ```
 
-加えて、 リリース直前 / 大きい変更時には以下も手元で確認する (CI 自動化はリリース後に再評価):
+加えて、リリース直前 / 大きい変更時には以下も手元で確認する (CI 自動化はリリース後に再評価):
 
 ```bash
 docker compose exec app npm run validate:content

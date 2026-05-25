@@ -252,7 +252,7 @@ if (!serviceResult.ok) {
 
 ### 4.3 ビルド時検証
 
-`npm run build` も `validate:content` を前段に持つため、 CI でも build 失敗として検知できる。これにより「production で初めて気付く」事故を防ぐ。
+`npm run build` も `validate:content` を前段に持つため、CI でも build 失敗として検知できる。これにより「production で初めて気付く」事故を防ぐ。
 
 ### 4.4 fail-fast の保証範囲
 
@@ -329,7 +329,7 @@ const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
 
 ### 5.4 表示しないケース
 
-`useBreadcrumb()` が 0-1 件 (= top のみ) を返した場合、 何も render しない (`null`)。 top page (`/` / `/en`) で breadcrumb が冗長になるのを避けるため。
+`useBreadcrumb()` が 0-1 件 (= top のみ) を返した場合、何も render しない (`null`)。top page (`/` / `/en`) で breadcrumb が冗長になるのを避けるため。
 
 ### 5.5 利点
 

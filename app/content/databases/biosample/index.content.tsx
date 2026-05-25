@@ -14,17 +14,17 @@ export default {
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">BioSample とは</h2>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
-            BioSample は、 DDBJ の一次データベース (DRA / DDBJ Annotated / GEA など) に登録された実験データの
+            BioSample は、DDBJ の一次データベース (DRA / DDBJ Annotated / GEA など) に登録された実験データの
             出典となる生物学的試料の情報をまとめるデータベースです。
-            細胞株、 組織の生検試料、 生物個体、 環境試料 (土壌・水・空気など) が代表的な例です。
+            細胞株、組織の生検試料、生物個体、環境試料 (土壌・水・空気など) が代表的な例です。
           </p>
         </section>
         <Callout tone="info">
-          BioSample の登録は、 シーケンスデータや発現量データの登録と同時に進めることが多くなります。
+          BioSample の登録は、シーケンスデータや発現量データの登録と同時に進めることが多くなります。
           {" "}
           <TextLink to="/submit">登録ナビ</TextLink>
           {" "}
-          で実験データの種別を選ぶと、 BioSample を含む登録経路が自動で組み立てられます。
+          で実験データの種別を選ぶと、BioSample を含む登録経路が自動で組み立てられます。
         </Callout>
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">アクセッション番号と package</h2>
@@ -34,15 +34,15 @@ export default {
             <code className="font-mono text-ink">SAMD</code>
             {" "}
             から始まるアクセッション番号を発行します。
-            登録時には、 試料の種別に応じた INSDC 共通の package (例: Human / Microbe / Environmental) を選び、
+            登録時には、試料の種別に応じた INSDC 共通の package (例: Human / Microbe / Environmental) を選び、
             必要な属性を入力します。
           </p>
         </section>
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">国際的な共有</h2>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
-            登録された BioSample は、 DDBJ・EBI・NCBI の各 BioSample データベース間で双方向に共有されます。
-            つまり一度 DDBJ に登録した試料情報は、 他センターの一次データベースからも参照可能です。
+            登録された BioSample は、DDBJ・EBI・NCBI の各 BioSample データベース間で双方向に共有されます。
+            つまり一度 DDBJ に登録した試料情報は、他センターの一次データベースからも参照可能です。
           </p>
         </section>
       </div>

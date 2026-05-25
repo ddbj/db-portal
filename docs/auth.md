@@ -278,7 +278,7 @@ Refresh が失敗したら session を破棄して 401 を返す。
 4. BFF が `sid` から session を削除し `Set-Cookie: sid=; Max-Age=0` を返す
 5. ホームへ 302
 
-`end_session_endpoint` を叩く際は `id_token_hint` (= session entry に保存しておいた `id_token`) を付ける。 これにより Keycloak 側で「どの session を切るか」 が一意に決まり、 confirm 画面を経由せず即座に session が破棄される。 `client_id` も同時に付ける (Keycloak ≥ 18 で要件強化されたケースへの保険)。
+`end_session_endpoint` を叩く際は `id_token_hint` (= session entry に保存しておいた `id_token`) を付ける。これにより Keycloak 側で「どの session を切るか」 が一意に決まり、confirm 画面を経由せず即座に session が破棄される。`client_id` も同時に付ける (Keycloak ≥ 18 で要件強化されたケースへの保険)。
 
 ### 6.6 endpoint 配置の境界
 
@@ -288,15 +288,15 @@ Refresh が失敗したら session を破棄して 401 を返す。
 | `/api/auth/callback` | Express handler | state 検証 + code → token 交換 + session set + Set-Cookie + 302 returnTo |
 | `/api/auth/logout` | Express handler | session entry の id_token を取り `end_session_endpoint` へ 302 |
 | `/api/auth/logout-callback` | Express handler | session 削除 + Set-Cookie clear + 302 returnTo |
-| `/auth/callback`, `/auth/silent-callback`, `/auth/logout-callback` | RR route (薄い page) | 万一 BFF を素通りした場合や OIDC IdP 側で旧 redirect_uri が設定されていた場合の fallback。 通常は 302 で抜けるので render されない |
+| `/auth/callback`, `/auth/silent-callback`, `/auth/logout-callback` | RR route (薄い page) | 万一 BFF を素通りした場合や OIDC IdP 側で旧 redirect_uri が設定されていた場合の fallback。通常は 302 で抜けるので render されない |
 
-Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。 `*` ワイルドカードはリリース時点で禁止 (rewrite-plan §3.11)。
+Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。`*` ワイルドカードはリリース時点で禁止 (rewrite-plan §3.11)。
 
 Express handler で完結させる利点:
 
-- callback 処理 (state 検証 / code 交換 / cookie 発行) は server 専用、 zones 上 `app → server` 直接 import を避けるため Express で処理してから redirect する
+- callback 処理 (state 検証 / code 交換 / cookie 発行) は server 専用、zones 上 `app → server` 直接 import を避けるため Express で処理してから redirect する
 - RR route 側 (loader / component) を OIDC 詳細から完全に切り離す
-- Keycloak から見ると redirect_uri が `/api/auth/callback` で固定、 RR の routing 変更に影響を受けない
+- Keycloak から見ると redirect_uri が `/api/auth/callback` で固定、RR の routing 変更に影響を受けない
 
 ### 6.7 Pending login store
 
@@ -334,9 +334,9 @@ setInterval(() => {
 }, CLEANUP_INTERVAL_MS).unref?.()
 ```
 
-`takePendingLogin` は **一度取ったら必ず削除** する (replay 攻撃で同じ code を 2 回交換することを防ぐ)。 TTL 内に callback が来なければ entry は次の cleanup で破棄される。
+`takePendingLogin` は **一度取ったら必ず削除** する (replay 攻撃で同じ code を 2 回交換することを防ぐ)。TTL 内に callback が来なければ entry は次の cleanup で破棄される。
 
-Multi-instance への拡張: session store と同じ (`§5.4`)。 リリース時点は 1 instance 想定で in-memory のみ。 redis 化が必要になったら interface を抽象化する余地を持つ。
+Multi-instance への拡張: session store と同じ (`§5.4`)。リリース時点は 1 instance 想定で in-memory のみ。redis 化が必要になったら interface を抽象化する余地を持つ。
 
 ### 6.8 State CSRF と returnTo の二重防御
 
@@ -346,35 +346,35 @@ OIDC `state` parameter は authorization request と callback の対応を結ぶ
 
 1. login 時に `crypto.randomBytes(16)` から base64url で `state` を生成し pending store に積む
 2. Keycloak が callback で `state` を echo back
-3. server は受け取った `state` を pending store から `take` する (1 回限り、 TTL 10 分)
+3. server は受け取った `state` を pending store から `take` する (1 回限り、TTL 10 分)
 4. take 失敗 (存在しない / 期限切れ / 二度取り) は 400 `invalid_state` を返して終了
 
 これにより:
 
-- 攻撃者が用意した callback URL を被害者に踏ませても、 pending store に存在しない state なので拒否される
+- 攻撃者が用意した callback URL を被害者に踏ませても、pending store に存在しない state なので拒否される
 - 同じ code を 2 回交換できない (replay)
 
 #### returnTo
 
-login / logout の `return_to` query は内部 navigation 用。 ユーザーが任意の URL を入れられるので、 二重に検証する:
+login / logout の `return_to` query は内部 navigation 用。ユーザーが任意の URL を入れられるので、二重に検証する:
 
 | 層 | 検証内容 |
 |---|---|
-| `app/lib/auth/login-url.ts` の `buildLoginUrl` (client / loader 両用) | `/` 始まり + `//` / `/\` 不可、 違反は `/` に正規化 |
-| `server/auth/routes.ts` の handler | 同条件 + URL parse で host / scheme が portal origin と一致するか再判定、 違反は `/` に正規化 |
+| `app/lib/auth/login-url.ts` の `buildLoginUrl` (client / loader 両用) | `/` 始まり + `//` / `/\` 不可、違反は `/` に正規化 |
+| `server/auth/routes.ts` の handler | 同条件 + URL parse で host / scheme が portal origin と一致するか再判定、違反は `/` に正規化 |
 
-server 側の再検証は「クライアント側 helper を経由しない直叩き」 (例: 攻撃者が手書きで `/api/auth/login?return_to=//evil` を組む) を遮断するために必須。 lib 側の防御は UX 上「自分の意図しない URL に飛んでしまう」 のを防ぐ。 両層で同じ条件を適用する (二重防御)。
+server 側の再検証は「クライアント側 helper を経由しない直叩き」 (例: 攻撃者が手書きで `/api/auth/login?return_to=//evil` を組む) を遮断するために必須。lib 側の防御は UX 上「自分の意図しない URL に飛んでしまう」 のを防ぐ。両層で同じ条件を適用する (二重防御)。
 
 ### 6.9 Client route page (`routes/auth/*.tsx`)
 
-`app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は薄い fallback page として置く。 通常フローでは BFF が 302 で抜けるため画面は表示されない。 表示されるのは次のいずれか:
+`app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は薄い fallback page として置く。通常フローでは BFF が 302 で抜けるため画面は表示されない。表示されるのは次のいずれか:
 
-- Keycloak client config が旧 redirect_uri (`/auth/callback`) を保持しており、 BFF を素通りした
-- BFF handler が 5xx で returnTo 302 まで到達せず、 RR が `/auth/callback` 自体を render した
+- Keycloak client config が旧 redirect_uri (`/auth/callback`) を保持しており、BFF を素通りした
+- BFF handler が 5xx で returnTo 302 まで到達せず、RR が `/auth/callback` 自体を render した
 
-これらの fallback page は単に「サインイン処理中」 / 「サインアウトしました」 を表示し、 ホームへの link を置く。 loader は持たない (`app → server` zones を尊重)。 i18n key `auth.callback.title` / `auth.logoutCallback.title` を引いて表示する。
+これらの fallback page は単に「サインイン処理中」 / 「サインアウトしました」 を表示し、ホームへの link を置く。loader は持たない (`app → server` zones を尊重)。i18n key `auth.callback.title` / `auth.logoutCallback.title` を引いて表示する。
 
-silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。 BFF refresh を採用しているので機能としては不要だが、 既存仕様との互換のため空 page を残す (`<div />`)。
+silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。BFF refresh を採用しているので機能としては不要だが、既存仕様との互換のため空 page を残す (`<div />`)。
 
 ## 7. `/api/me` 仕様
 
@@ -424,7 +424,7 @@ export const useAuth = (): AuthState => {
 
 ### 8.2 SSR 経由の userInfo
 
-route loader からも user 情報を取る場合は `loadAuth(request)` を使う。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、 200 なら `UserInfo`、 401 なら `null` を返す。5xx は `Error` を throw する。
+route loader からも user 情報を取る場合は `loadAuth(request)` を使う。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、200 なら `UserInfo`、401 なら `null` を返す。5xx は `Error` を throw する。
 
 ```ts
 // app/lib/auth/ssr-loader.ts (抜粋)
@@ -454,7 +454,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 }
 ```
 
-`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、 `app → server` 直接 import を避ける (`architecture.md §4`)。`UserInfo` を loader データに乗せておけば、 SSR 初期描画時に Header のユーザー名表示が即座に解決する。
+`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md §4`)。`UserInfo` を loader データに乗せておけば、SSR 初期描画時に Header のユーザー名表示が即座に解決する。
 
 #### Cookie 転送の安全性前提
 
@@ -478,9 +478,9 @@ export const RequireAuth = ({ children, fallback }: RequireAuthProps) => {
 }
 ```
 
-URL の組み立ては `app/lib/auth/login-url.ts` の `buildLoginUrl(returnTo?)` / `buildLogoutUrl(returnTo?)` に集約する。`returnTo` を渡すと `?return_to=<URL-encoded>` を付け、 省略すれば endpoint のみを返す。Header の Login / Logout リンクからも同じ helper を使う。
+URL の組み立ては `app/lib/auth/login-url.ts` の `buildLoginUrl(returnTo?)` / `buildLogoutUrl(returnTo?)` に集約する。`returnTo` を渡すと `?return_to=<URL-encoded>` を付け、省略すれば endpoint のみを返す。Header の Login / Logout リンクからも同じ helper を使う。
 
-`returnTo` は **同一 origin の絶対パス (`/` 始まり、 `//` でない、 `/\\` でない)** のみ受理する。それ以外 (`//evil.test/`、 `https://evil/`、 空文字、 相対パス等) は `/` に正規化される。lib 側の防御に加えて、 BFF (`server/auth/`) で `return_to` を消費するときも同じ条件で再検証すること (二重防御)。
+`returnTo` は **同一 origin の絶対パス (`/` 始まり、`//` でない、`/\\` でない)** のみ受理する。それ以外 (`//evil.test/`、`https://evil/`、空文字、相対パス等) は `/` に正規化される。lib 側の防御に加えて、BFF (`server/auth/`) で `return_to` を消費するときも同じ条件で再検証すること (二重防御)。
 
 ### 9.2 使い方
 

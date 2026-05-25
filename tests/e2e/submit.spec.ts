@@ -82,7 +82,7 @@ test.describe("Submit Domain", () => {
   })
 
   test.skip("E-SUBMIT-02: GroupType 不整合で警告 (現状 UI から再現不可)", async () => {
-    // reducer-level の不整合シナリオで、 通常 UI からは到達不能。 unit テスト側で吸収
+    // reducer-level の不整合シナリオで、通常 UI からは到達不能。unit テスト側で吸収
   })
 
   test("E-SUBMIT-03: 100 行追加で UI が応答する", async ({ page }) => {

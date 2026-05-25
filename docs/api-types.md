@@ -133,7 +133,7 @@ env の全体方針は `development.md` を参照。
 
 ### 5.1 fetch wrapper
 
-`app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、 client.ts が直接 env を参照しない)。
+`app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、client.ts が直接 env を参照しない)。
 
 ```ts
 // app/lib/api/client.ts (抜粋)
@@ -149,7 +149,7 @@ export const apiPost = async <P extends keyof paths & string>(
 ): Promise<<推論 ResponseBody>> => { /* fetch + APIError throw */ }
 ```
 
-`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、 query parameter (q / topHits / db / page / perPage / cursor / sort / keywordOperator) を `options.query` で渡す。
+`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (q / topHits / db / page / perPage / cursor / sort / keywordOperator) を `options.query` で渡す。
 
 呼び出し側は `app/lib/api/search.ts` の thin wrapper を使う:
 
@@ -162,11 +162,11 @@ const parsed = await parseQuery({ q: "cancer AND organism:Homo sapiens" }, { bas
 const serialized = await serializeAst({ ast: parsed.ast }, { baseUrl })
 ```
 
-`apiGet` / `apiPost` を直接呼んでも型補完は効くが、 path string の typo を防ぐため通常は `search.ts` の wrapper を経由する。
+`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は `search.ts` の wrapper を経由する。
 
 ### 5.2 query 文字列の組み立て
 
-`encodeQuery(query?)` が `Record<string, unknown>` を `?key=value&key=value` 形に変換する (`undefined` / `null` を skip、 配列は repeated key)。`apiGet` / `apiPost` の内部で使い、 直接呼ぶ機会は少ないが、 URL を組み立てて external link を作る場合などに利用可能。
+`encodeQuery(query?)` が `Record<string, unknown>` を `?key=value&key=value` 形に変換する (`undefined` / `null` を skip、配列は repeated key)。`apiGet` / `apiPost` の内部で使い、直接呼ぶ機会は少ないが、URL を組み立てて external link を作る場合などに利用可能。
 
 ### 5.3 errors と APIError
 
@@ -182,7 +182,7 @@ export class APIError extends Error {
 }
 ```
 
-`Content-Type: application/problem+json` のレスポンスは body の `type` / `title` / `status` / `detail` / `instance` を抽出する。それ以外 (text / 空 body) は `response.statusText` を title に、 status code を status に格納。`isAPIError(value)` の type guard で `instanceof APIError` を扱う。
+`Content-Type: application/problem+json` のレスポンスは body の `type` / `title` / `status` / `detail` / `instance` を抽出する。それ以外 (text / 空 body) は `response.statusText` を title に、status code を status に格納。`isAPIError(value)` の type guard で `instanceof APIError` を扱う。
 
 TanStack Query 側では `APIError` の status を見て 5xx だけ retry (`app/lib/query/client.ts` の `shouldRetry`)。
 
@@ -200,7 +200,7 @@ docker compose exec app npm run gen:api-types
 git diff app/lib/api/openapi-types.ts
 ```
 
-差分があれば、 関連 type を消費しているコード (`app/lib/api/` / `app/features/search/` 等) を更新してから commit する。 production リリース直前には `deployment.md §6.2` の手順で production URL での差分も確認する。
+差分があれば、関連 type を消費しているコード (`app/lib/api/` / `app/features/search/` 等) を更新してから commit する。production リリース直前には `deployment.md §6.2` の手順で production URL での差分も確認する。
 
 自動化 (CI での `git diff --exit-code` / nightly での production fetch + issue 起票) はリリース後に再評価する。
 
@@ -228,7 +228,7 @@ portal は次の前提のもとで動く。これらは ddbj-search-api リポ�
 - `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
 - discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
 
-API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型を更新する。 開発者が手動で diff を確認してから commit する (§6)。
+API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型を更新する。開発者が手動で diff を確認してから commit する (§6)。
 
 ## 9. 関連 docs
 

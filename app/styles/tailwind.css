@@ -88,7 +88,7 @@
   border-radius: 3px;
 }
 
-/* テキスト入力系は form 側で focus 表現を担い、自身は outline を出さない。 */
+/* テキスト入力系は form 側で focus 表現を担い、自身は outline を出さない。*/
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {

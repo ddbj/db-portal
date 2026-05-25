@@ -227,7 +227,7 @@ export const createNewsMirror = (env: ServerEnv, logger: Logger): {
   const cache = createCacheStore(env.DB_PORTAL_NEWS_CACHE_DIR, logger)
   const configs = sourceConfigs(env)
   const pollers = configs.map((cfg) =>
-    createSourcePoller(cache, cfg, buildClient(cfg, env.DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN, logger), logger)
+    createSourcePoller(cache, cfg, buildClient(cfg, env.DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN, logger), logger),
   )
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let initialTimer: ReturnType<typeof setTimeout> | null = null

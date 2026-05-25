@@ -96,7 +96,7 @@ export const bilingualRoutes = (entries: readonly BilingualEntry[]): RouteConfig
 
 ### 3.1 id 命名規則
 
-en 側の id は `<base-id>.en` 形式 (例: `search-results.en`)。base id は entry で手書きで指定する (URL path のセグメントを `-` で繋ぐ慣習: `search/results` → `search-results`)。 自動生成だと URL 構造の変更で id が予期せず変わるため明示する。
+en 側の id は `<base-id>.en` 形式 (例: `search-results.en`)。base id は entry で手書きで指定する (URL path のセグメントを `-` で繋ぐ慣習: `search/results` → `search-results`)。自動生成だと URL 構造の変更で id が予期せず変わるため明示する。
 
 ja default 側は id を指定しない (RR は file path から自動生成)。
 

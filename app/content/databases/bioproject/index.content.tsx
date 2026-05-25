@@ -5,7 +5,7 @@ export default {
   slug: "bioproject",
   title: { ja: "BioProject", en: "BioProject" },
   description: {
-    ja: "研究プロジェクトと、 そのプロジェクトに由来する試料・配列データを束ねるメタデータデータベース。",
+    ja: "研究プロジェクトと、そのプロジェクトに由来する試料・配列データを束ねるメタデータデータベース。",
     en: "Metadata database that groups research projects together with the samples and sequence data derived from them.",
   },
   body: {
@@ -14,8 +14,8 @@ export default {
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">BioProject とは</h2>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
-            BioProject は、 研究プロジェクト単位でデータをまとめるためのメタデータデータベースです。
-            個々の配列データや試料情報は、 対応する BioProject アクセッション番号を参照することで、
+            BioProject は、研究プロジェクト単位でデータをまとめるためのメタデータデータベースです。
+            個々の配列データや試料情報は、対応する BioProject アクセッション番号を参照することで、
             プロジェクトという 1 つの単位として横断的に把握できます。
           </p>
         </section>
@@ -24,23 +24,23 @@ export default {
           {" "}
           <TextLink to="/submit">登録ナビ</TextLink>
           {" "}
-          から、 登録対象のファイル種別に合わせた手順を確認できます。
+          から、登録対象のファイル種別に合わせた手順を確認できます。
         </Callout>
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">アクセッション番号</h2>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
-            DDBJ BioProject では、 登録された各プロジェクトに対して
+            DDBJ BioProject では、登録された各プロジェクトに対して
             {" "}
             <code className="font-mono text-ink">PRJDB</code>
             {" "}
             から始まるアクセッション番号を発行します。
-            複数のプロジェクトを束ねる Umbrella BioProject は同形式の番号を持ち、 公開のみ受け付けます。
+            複数のプロジェクトを束ねる Umbrella BioProject は同形式の番号を持ち、公開のみ受け付けます。
           </p>
         </section>
         <section>
           <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">国際的な共有</h2>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
-            公開された BioProject のメタデータは、 INSDC (International Nucleotide Sequence Database
+            公開された BioProject のメタデータは、INSDC (International Nucleotide Sequence Database
             Collaboration) のメンバーである EBI および NCBI と継続的に交換されます。
             ポータルの横断検索からは DDBJ で公開された情報を参照できます。
           </p>

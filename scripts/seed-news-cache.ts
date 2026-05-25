@@ -62,7 +62,7 @@ const parseArgs = (argv: readonly string[]): CliArgs => {
         usage()
     }
   }
-  if (!outFile) usage()
+  if (outFile === undefined) return usage()
   const sources: SourceArgs[] = []
   if (ddbjDir) sources.push({ source: "ddbj", dir: ddbjDir, sha: ddbjSha })
   if (dbclsDir) sources.push({ source: "dbcls", dir: dbclsDir, sha: dbclsSha })
@@ -71,7 +71,7 @@ const parseArgs = (argv: readonly string[]): CliArgs => {
     process.exit(1)
   }
 
-  return { outFile: outFile!, sources }
+  return { outFile, sources }
 }
 
 const sourceConfig = (source: NewsSource): GitHubSourceConfig =>

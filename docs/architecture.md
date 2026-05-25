@@ -120,7 +120,7 @@ React Router v7 framework mode (`react-router.config.ts` で `{ ssr: true }`) �
 - Server route handler 経由 (`POST /api/*`): client / server 両方から呼べる正規 API
 - `server/` 内部関数: server adapter から組み立てる内部実装、`app/` からは触れない
 
-Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/api/...", url))` を使い、 zone 境界を物理的に守る。
+Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/api/...", url))` を使い、zone 境界を物理的に守る。
 
 ## 5. BFF と client の責務分離
 
@@ -272,29 +272,29 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `X-Content-Type-Options` | `nosniff` | 全 response |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | 全 response |
 
-CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID()` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、 `<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、 `'unsafe-inline'` は付けない。
+CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID()` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、`<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
 
-`style-src` に `'unsafe-inline'` を残しているのは、 Tailwind v4 の inject や React の `style={...}` prop に対応するため。 script より影響範囲が小さく、 portal は外部 stylesheet を読まないので妥当と判断する。
+`style-src` に `'unsafe-inline'` を残しているのは、Tailwind v4 の inject や React の `style={...}` prop に対応するため。script より影響範囲が小さく、portal は外部 stylesheet を読まないので妥当と判断する。
 
 ### 10.2 sitemap.xml / robots.txt
 
-- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、 `/search`、 `/submit`、 `/news`) を ja / en の両方で列挙する `<urlset>` を返す。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、 `<changefreq>` / `<priority>` は省略 (Google が無視するため)
-- `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。 dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、`/search`、`/submit`、`/news`) を ja / en の両方で列挙する `<urlset>` を返す。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、`<changefreq>` / `<priority>` は省略 (Google が無視するため)
+- `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
 
 ### 10.3 404 ページ
 
-URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、 `app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、 main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
+URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、`app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
 
 404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は production では出さない (`DB_PORTAL_ENV` で分岐)。
 
 ### 10.4 アクセシビリティ
 
-- WCAG AA 相当の色コントラスト (token 段階で確認、 `app/routes/_design/` で視覚チェック可)
+- WCAG AA 相当の色コントラスト (token 段階で確認、`app/routes/_design/` で視覚チェック可)
 - フォーカスリングを全インタラクティブ要素に明示 (`app/ui/` primitive 内で `ring-focus` token を必ず適用)
 - キーボード操作で全画面到達可能 (modal は focus trap)
 - `<html lang>` を `useLang()` で動的に出力 (i18n.md §3)
 
-axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、 人手レビュー優先)。 unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
+axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、人手レビュー優先)。unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
 
 ### 10.5 性能目標
 
@@ -310,9 +310,9 @@ axe-core の e2e 統合はリリース時点で未採用 (false positive 多発�
 - Tailwind v4 の CSS optimization
 - Noto Sans JP Variable の self-host + `font-display: swap`
 - 画像 lazy loading (`<img loading="lazy">`)
-- TanStack Query の `staleTime` 調整 (`/api/me` 5 分、 `/api/news` 5 分)
+- TanStack Query の `staleTime` 調整 (`/api/me` 5 分、`/api/news` 5 分)
 
-計測は Playwright e2e で `page.evaluate(() => performance.getEntriesByType("navigation"))` を取得し、 staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
+計測は Playwright e2e で `page.evaluate(() => performance.getEntriesByType("navigation"))` を取得し、staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
 
 ## 11. 関連 docs
 

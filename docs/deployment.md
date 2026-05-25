@@ -58,7 +58,7 @@ Express の `trust proxy` は `loopback` を設定済 (`server/index.ts`)。許�
 
 ### 4.1 compose.yml (共通)
 
-`compose.yml` 1 本で dev / staging / production を扱う。`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めるので、 同一ホスト上で 3 環境が並列に動いても衝突しない。
+`compose.yml` 1 本で dev / staging / production を扱う。`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めるので、同一ホスト上で 3 環境が並列に動いても衝突しない。
 
 主要 service 定義 (詳細は `compose.yml`):
 
@@ -89,7 +89,7 @@ NIG の podman 環境では rootless 運用のため override が必要:
 ```yaml
 services:
   app:
-    userns_mode: keep-id        # host UID と一致させ、 mounted volume の所有権をそろえる
+    userns_mode: keep-id        # host UID と一致させ、mounted volume の所有権をそろえる
     security_opt:
       - label=disable           # SELinux label を無効化 (NIG ホストの設定に合わせる)
 ```
@@ -114,11 +114,11 @@ services:
 | `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` | staging PAT | `CHANGE_ME` → 上書き |
 | `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | 1800 | 1800 |
 
-env 設計の上位方針は `env-policy.md`、 dev / staging / production の env 値全体は `env.{dev,staging,production}` を直接参照。
+env 設計の上位方針は `env-policy.md`、dev / staging / production の env 値全体は `env.{dev,staging,production}` を直接参照。
 
 ## 5. Secret 管理
 
-production の `env.production` は `CHANGE_ME` プレースホルダのまま commit する。実値は deploy 先 host で `.env.production.local` に書き、起動時に上書き (compose は `.env` を読むため、 deploy script で `.env.production.local` を `.env` に merge する形)。
+production の `env.production` は `CHANGE_ME` プレースホルダのまま commit する。実値は deploy 先 host で `.env.production.local` に書き、起動時に上書き (compose は `.env` を読むため、deploy script で `.env.production.local` を `.env` に merge する形)。
 
 | Secret | 開発 | staging | production |
 |---|---|---|---|
@@ -152,19 +152,19 @@ cat env.production /etc/db-portal/.env.production.local > .env
 - `npm run lint`
 - `npm test -- --run` (unit + PBT)
 
-deploy / e2e / openapi 差分検知は CI から自動実行しない (本書 §7 / §8 の手動手順)。これらを CI 化する判断はリリース後に再評価する。
+deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行しない。staging / production の deploy は本書 §7 / §8 の手動手順で行う。e2e は staging へ手動 trigger (`tests/e2e/notes.md §1`)、openapi 差分検知は本書 §6.2、`lastUpdated` の整合チェックは `npm run check:last-updated` をリリース前に手動で叩く。これらを CI 化する追加 workflow (staging-deploy / production-deploy / nightly / 性能ゲート) は採用しない方針。
 
 ### 6.1 health check で確認する endpoint
 
 deploy 後 / 定期監視で叩く 3 endpoint:
 
-- `GET /api/me` → 401 (cookie なしのため、 ステータスコードが届けば server 起動済)
-- `GET /api/news` → 200 (空配列も OK、 server 起動済 + mirror 初回 fetch 中の可能性)
-- `GET /api/llm/health` → 200 (`status` は `ok` / `unreachable` / `unset` のいずれか、 staging / production では `ok` か `unreachable` を許容)
+- `GET /api/me` → 401 (cookie なしのため、ステータスコードが届けば server 起動済)
+- `GET /api/news` → 200 (空配列も OK、server 起動済 + mirror 初回 fetch 中の可能性)
+- `GET /api/llm/health` → 200 (`status` は `ok` / `unreachable` / `unset` のいずれか、staging / production では `ok` か `unreachable` を許容)
 
 ### 6.2 openapi.json 差分検知 (手動 / リリース直前)
 
-production の `openapi.json` と portal が知っている型 (`app/lib/api/openapi-types.ts`) の差分は、 リリース直前に手動で確認する:
+production の `openapi.json` と portal が知っている型 (`app/lib/api/openapi-types.ts`) の差分は、リリース直前に手動で確認する:
 
 ```bash
 cp env.production .env
@@ -230,7 +230,7 @@ curl -fs https://portal.ddbj.nig.ac.jp/sitemap.xml | head -3
 curl -fs https://portal.ddbj.nig.ac.jp/robots.txt
 ```
 
-リバースプロキシ (NIG infra 側) で `portal.ddbj.nig.ac.jp` → `http://<host>:3200` を設定。HSTS は server 側でも返すが、 リバースプロキシでも有効化することを推奨。
+リバースプロキシ (NIG infra 側) で `portal.ddbj.nig.ac.jp` → `http://<host>:3200` を設定。HSTS は server 側でも返すが、リバースプロキシでも有効化することを推奨。
 
 ## 8. Rollback 手順
 
@@ -256,11 +256,11 @@ podman-compose -f compose.yml -f compose.podman.yml up -d
 # 4. smoke test (§7.2 の 3 endpoint + sitemap / robots)
 ```
 
-staging は main 追従なので、 問題のある commit を `git revert` して main に push し、 §7.1 を再度実行して戻す。 host 上で直接 `git checkout <prev-commit>` で戻すこともできるが、 main との差分が温存されるので **revert + push** を推奨。
+staging は main 追従なので、問題のある commit を `git revert` して main に push し、§7.1 を再度実行して戻す。host 上で直接 `git checkout <prev-commit>` で戻すこともできるが、main との差分が温存されるので **revert + push** を推奨。
 
 ### 8.1 schema migration / DB
 
-session store は in-memory なので、 deploy / rollback で消失する (ユーザは再ログイン)。 News disk cache (`/var/cache/db-portal/news`) は schema バージョンを内部に持ち、 起動時に互換チェックが入る (`news-policy.md`)。schema 互換性が壊れる変更は別 release note に明記する。
+session store は in-memory なので、deploy / rollback で消失する (ユーザは再ログイン)。News disk cache (`/var/cache/db-portal/news`) は schema バージョンを内部に持ち、起動時に互換チェックが入る (`news-policy.md`)。schema 互換性が壊れる変更は別 release note に明記する。
 
 ## 9. Health check
 
@@ -272,7 +272,7 @@ session store は in-memory なので、 deploy / rollback で消失する (ユ�
 | `GET /api/news` | 200 JSON array (空可) | mirror 起動 + cache 応答 |
 | `GET /api/llm/health` | 200 `{status: "ok" \| "unreachable" \| "unset"}` | vLLM 接続性 |
 
-`/api/llm/health` の `status` フィールドの解釈は `llm.md §3.2`。 production / staging では `unset` は出ない設計 (env に LLM URL が設定されているため)。
+`/api/llm/health` の `status` フィールドの解釈は `llm.md §3.2`。production / staging では `unset` は出ない設計 (env に LLM URL が設定されているため)。
 
 ## 10. 関連 docs
 

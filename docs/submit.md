@@ -279,9 +279,9 @@ FlowStep { id, service, scope { groupIds[], entryIds[] }, notes[] }
 
 ### §4.2 責務の分け方
 
-**テーブル列 (3 軸 + 補助列)** は全 service 共通の最も粗い分類。`buttonType` (種別、行追加時固定) + `organism` (生物) + `access` (公開区分) の 3 軸を selector で見せ、 `filename` (識別用) と「データ詳細」 chip cell (modal trigger) を補助列として並べる。 列を増やすと table が横に広がり、利用者が「何を入れるべきか」分からない列が増えるため、 dataForm / chipTags / groupType は行詳細 modal に降ろす。
+**テーブル列 (3 軸 + 補助列)** は全 service 共通の最も粗い分類。`buttonType` (種別、行追加時固定) + `organism` (生物) + `access` (公開区分) の 3 軸を selector で見せ、`filename` (識別用) と「データ詳細」 chip cell (modal trigger) を補助列として並べる。列を増やすと table が横に広がり、利用者が「何を入れるべきか」分からない列が増えるため、dataForm / chipTags / groupType は行詳細 modal に降ろす。
 
-**行詳細 modal (Cross-DB Tag 細部)** は「サービス step 関数の分岐に効くが、列にすると table が肥大化する」軸。`dataForm` / `chipTags` / `FileGroup.groupType` を ButtonType ごとの Q&A 形式で編集する (§11)。 chip は `{axis, value}` の組で表現するので、軸が増えても UI 形は同じ。
+**行詳細 modal (Cross-DB Tag 細部)** は「サービス step 関数の分岐に効くが、列にすると table が肥大化する」軸。`dataForm` / `chipTags` / `FileGroup.groupType` を ButtonType ごとの Q&A 形式で編集する (§11)。chip は `{axis, value}` の組で表現するので、軸が増えても UI 形は同じ。
 
 **Step カード pulldown (Intra-DB Tag)** は特定 service の controlled vocabulary。BS package 一覧、DRA Library Strategy 一覧など。submit ナビが導出した Step カード内に並ぶ。
 
@@ -528,7 +528,7 @@ emerald (DDBJ 通常) は「そのまま進めて OK」のサイン、amber (外
 
 ### §9.2 9 ボタン (`FileTypeGrid`)
 
-`FileTypeGrid` は `ButtonType.options` を駆動源とする 3 × 3 grid。 grid 内の 1 ボタン (`FileTypeButton`) は次の要素を持つ:
+`FileTypeGrid` は `ButtonType.options` を駆動源とする 3 × 3 grid。grid 内の 1 ボタン (`FileTypeButton`) は次の要素を持つ:
 
 - 種別 icon (`app/features/submit/components/file-type-icon.tsx`、`ButtonType` 値ごとに固有 SVG path、装飾 `aria-hidden`)
 - 種別 label (i18n `submit.buttons.{buttonType}.label`)
@@ -557,7 +557,7 @@ id は client mount 後に `crypto.randomUUID()` で採番する。SSR レンダ
 - 種別ボタン 1 件の icon = 18px、label = `text-fs-body` weight 600、ext = mono `text-fs-micro`
 - ボタン全体 padding `px-4 py-3`、border `border-soft`、radius `rounded-button`
 - 行高 (table row) は最小 56px (`min-h-[3.5rem]` を `<tr>` 子セルに付与)
-- Step カード = `rounded-card` + `shadow-card`、 内部 padding `p-4`
+- Step カード = `rounded-card` + `shadow-card`、内部 padding `p-4`
 - Modal = `Modal` primitive (width 820、`docs/ui-primitives.md §11`)
 
 色は `@theme` トークン経由 (`bg-surface` / `text-ink` / `border-border-soft` 等)、生 hex / arbitrary value は features 配下で禁止 (`architecture.md §3.3`)。
@@ -581,16 +581,16 @@ id は client mount 後に `crypto.randomUUID()` で採番する。SSR レンダ
 
 `buttonType` は行追加時に固定し変更不可 (誤った種別を選んだ場合は行削除 + 別ボタンで作り直す)。これにより `TYPICAL_DATA_FORM_FOR_BUTTON` / `TYPICAL_GROUP_TYPE_FOR_BUTTON` の default 整合が崩れない。
 
-`organism` / `filename` 未設定は `state="warn"` を `NativeSelect` / `TextInput` に渡す。 visual には warn 色 + 「未設定」 inline message で表現。
+`organism` / `filename` 未設定は `state="warn"` を `NativeSelect` / `TextInput` に渡す。visual には warn 色 + 「未設定」 inline message で表現。
 
 ### §10.2 「データ詳細」 chip cell
 
 ButtonType ごとの controlled vocabulary (`dataForm` + `chipTags` + `FileGroup.groupType`) を 1 click で編集する trigger。表示は 2 形態:
 
 - **未設定** (chipTags が空かつ groupType が default): `WarnDashedButton` (label `submit.table.detailUnset` = `"+ 設定"`、warn 配色 + dashed border)
-- **設定済み** (chipTags が ≥ 1 件、または groupType が default 以外): `RowSetTag` (brand-soft 背景 + brand-light/50 border + check icon + 短文サマリ、サマリは `summarizeRowDetail({entry, group})` が生成する 1-2 句、 例 `"pair-end · GEA"` / `"third-party"` / `"phenotype + spatial"`)
+- **設定済み** (chipTags が ≥ 1 件、または groupType が default 以外): `RowSetTag` (brand-soft 背景 + brand-light/50 border + check icon + 短文サマリ、サマリは `summarizeRowDetail({entry, group})` が生成する 1-2 句、例 `"pair-end · GEA"` / `"third-party"` / `"phenotype + spatial"`)
 
-click で `dispatch({ type: "OPEN_EDIT_ROW", entryId })` を発火し、 row editing modal を open する (§11)。
+click で `dispatch({ type: "OPEN_EDIT_ROW", entryId })` を発火し、row editing modal を open する (§11)。
 
 ### §10.3 「データ詳細」 サマリのテキスト生成
 
@@ -601,11 +601,11 @@ click で `dispatch({ type: "OPEN_EDIT_ROW", entryId })` を発火し、 row edi
 3. 上記が 0 件で `entry.dataForm` が default と異なるなら dataForm i18n label のみを返す
 4. それも 0 件なら空文字 (= `WarnDashedButton` 表示分岐に倒れる)
 
-サマリは表示専用で機械処理しない (PBT は通さない、 unit test で代表シナリオを検査)。
+サマリは表示専用で機械処理しない (PBT は通さない、unit test で代表シナリオを検査)。
 
 ### §10.4 空状態 (initial)
 
-`fileEntries.length === 0` のとき、テーブル本体は `Label "NO FILES"` + 案内文 (`submit.table.empty`) を中央寄せで出す。 9 ボタン grid は常に表示。
+`fileEntries.length === 0` のとき、テーブル本体は `Label "NO FILES"` + 案内文 (`submit.table.empty`) を中央寄せで出す。9 ボタン grid は常に表示。
 
 ### §10.5 行削除
 
@@ -615,27 +615,27 @@ click で `dispatch({ type: "OPEN_EDIT_ROW", entryId })` を発火し、 row edi
 
 - `FileGroup.memberFileIds` から entry id を除外
 - `memberFileIds` が空になった group も削除
-- group が削除されると `FileEntry.groupId` が孤立する他行が出るので、 reducer は孤立 entry の `groupId` を新規の単独 group に再割当する (整合維持)
+- group が削除されると `FileEntry.groupId` が孤立する他行が出るので、reducer は孤立 entry の `groupId` を新規の単独 group に再割当する (整合維持)
 
 ### §10.6 同 group への 2 件目追加
 
-1 つの `FileGroup` に複数 entry を載せる UX (pair-end の R1 + R2 等) は、 既存行の「+ ペアファイルを追加」 link (RowSetTag 設定済み時に表示) を起点とする:
+1 つの `FileGroup` に複数 entry を載せる UX (pair-end の R1 + R2 等) は、既存行の「+ ペアファイルを追加」 link (RowSetTag 設定済み時に表示) を起点とする:
 
 1. RowSetTag 内 link click で `dispatch({ type: "ADD_TO_GROUP", groupId, buttonType })`
-2. reducer は新 FileEntry を作り、 同 groupId に紐付ける
+2. reducer は新 FileEntry を作り、同 groupId に紐付ける
 3. 編集 modal を同 group の 2 件目について open
 
 これは row 編集 modal の §11.3 「Q1: リードの構成」 が `pair-end` / `10x` 等を選択して保存した直後に自動で行われる動作と等価。
 
 ### §10.7 大量行レイアウト
 
-100 行以上の行を持つテーブルでも、 デフォルト DOM レンダリング (`<table>` + n `<tr>`) を維持する。 virtualization (`react-window` 等) は導入しない。 visual には `<tbody>` の overflow を作らず、 ページ全体スクロールで読み下す。
+100 行以上の行を持つテーブルでも、デフォルト DOM レンダリング (`<table>` + n `<tr>`) を維持する。virtualization (`react-window` 等) は導入しない。visual には `<tbody>` の overflow を作らず、ページ全体スクロールで読み下す。
 
 ---
 
 ## §11 Modal UX
 
-各 `ButtonType` 専用の編集 modal を実装する。 modal は ButtonType の数だけ存在し (9 種)、 `ModalRouter` が `state.editing` を見て対応 modal を render する。
+各 `ButtonType` 専用の編集 modal を実装する。modal は ButtonType の数だけ存在し (9 種)、`ModalRouter` が `state.editing` を見て対応 modal を render する。
 
 ### §11.1 共通形
 
@@ -675,50 +675,50 @@ modal は次の 3 つを編集する:
 2. `FileEntry.dataForm` (default 維持 / override の選択)
 3. `FileEntry.chipTags` (ButtonType 固有の chip 軸を 1-2 件)
 
-`organism` / `access` / `filename` は **modal の中では編集しない** (テーブル列で扱う、 modal は per-row の詳細編集に集中する)。
+`organism` / `access` / `filename` は **modal の中では編集しない** (テーブル列で扱う、modal は per-row の詳細編集に集中する)。
 
-「保存」 click で `dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })` を発火、 patch は modal が組み立てた `{ groupType, dataForm, chipTags }` partial。 reducer は対応 entry / group を immutable に置換する。
+「保存」 click で `dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })` を発火、patch は modal が組み立てた `{ groupType, dataForm, chipTags }` partial。reducer は対応 entry / group を immutable に置換する。
 
-「キャンセル」 click で `dispatch({ type: "CLOSE_MODAL" })`、 編集中 draft は破棄。
+「キャンセル」 click で `dispatch({ type: "CLOSE_MODAL" })`、編集中 draft は破棄。
 
 ### §11.3 ButtonType ごとの FormGroup 構成
 
-各 modal の質問項目は ButtonType に依存する。 質問本数は 1-3 件で、 wizard (multi-step) には倒さず single page で並べる (利用者がプレビューを見ながら同時に決められる UX)。
+各 modal の質問項目は ButtonType に依存する。質問本数は 1-3 件で、wizard (multi-step) には倒さず single page で並べる (利用者がプレビューを見ながら同時に決められる UX)。
 
 | ButtonType | FormGroup 1 | FormGroup 2 | FormGroup 3 |
 |---|---|---|---|
 | `sequence-read` | リードの構成 (`single-end` / `pair-end` / `10x` / `multiplex` / `pacbio-hdf5`、`GroupType` に直結) | 解析済データの登録 (`yes` / `no`、`yes` で `GroupType` を `mage-tab` 等に展開 + chipTag `functional-genomics` 設定) | hybrid assembly か (`FmtCheck`、`GroupType` を `hybrid` に切替) |
-| `assembled` | アセンブリ形 (`assembled` / `hybrid` / `mag-sag-chain`、`assembly-form` chip + `GroupType`) | アノテーションも同時 (`FmtCheck` で `assembly-annotation` group に展開) | provenance (`first-party` / `third-party`、 chip 設定) |
-| `gene-annotation` | アノテーション対象 (`assembly-pair` / `standalone`、 chip 設定) | provenance (`first-party` / `third-party`) | — |
-| `variation` | 変異形 (`per-sample` / `aggregate`、 chip `variation-form`) | reference 参照 (`yes` / `no`、 chip `variation-with-reference` + GroupType) | — |
-| `phenotype` | 表現型タイプ (`clinical` / `model-organism`、 chip 設定) | data-form 詳細 (`raw` / `summary`) | — |
-| `microarray-expression` | プラットフォーム (`single-color` / `two-color`、 GroupType `mage-tab` / `two-color`) | MAGE-TAB 同梱 (always `mage-tab`) | — |
-| `rna-seq-matrix` | データ形 (`raw-counts` / `normalized` / `tpm`、 `dataForm` 切替) | MAGE-TAB 同梱 | — |
-| `mass-spec` | 領域 (`proteomics` / `metabolomics`、 chip `mass-spec-domain`) | 取得方法 (`shotgun` / `targeted` / `imaging`、 `imaging` で GroupType `imaging-ms`) | — |
-| `spatial-tx` | プラットフォーム (`visium` / `stereo-seq` / `slide-seq`、 chip `spatial-platform`) | 解析段階 (`raw` / `analysis-output`、 `dataForm` 切替) | — |
+| `assembled` | アセンブリ形 (`assembled` / `hybrid` / `mag-sag-chain`、`assembly-form` chip + `GroupType`) | アノテーションも同時 (`FmtCheck` で `assembly-annotation` group に展開) | provenance (`first-party` / `third-party`、chip 設定) |
+| `gene-annotation` | アノテーション対象 (`assembly-pair` / `standalone`、chip 設定) | provenance (`first-party` / `third-party`) | — |
+| `variation` | 変異形 (`per-sample` / `aggregate`、chip `variation-form`) | reference 参照 (`yes` / `no`、chip `variation-with-reference` + GroupType) | — |
+| `phenotype` | 表現型タイプ (`clinical` / `model-organism`、chip 設定) | data-form 詳細 (`raw` / `summary`) | — |
+| `microarray-expression` | プラットフォーム (`single-color` / `two-color`、GroupType `mage-tab` / `two-color`) | MAGE-TAB 同梱 (always `mage-tab`) | — |
+| `rna-seq-matrix` | データ形 (`raw-counts` / `normalized` / `tpm`、`dataForm` 切替) | MAGE-TAB 同梱 | — |
+| `mass-spec` | 領域 (`proteomics` / `metabolomics`、chip `mass-spec-domain`) | 取得方法 (`shotgun` / `targeted` / `imaging`、`imaging` で GroupType `imaging-ms`) | — |
+| `spatial-tx` | プラットフォーム (`visium` / `stereo-seq` / `slide-seq`、chip `spatial-platform`) | 解析段階 (`raw` / `analysis-output`、`dataForm` 切替) | — |
 
-質問本数の最終形は ButtonType ごとに 1-3 件で固定する。 wizard 化はリリース時点では採用しない (single page で完結する想定で primitive を組む)。
+質問本数の最終形は ButtonType ごとに 1-3 件で固定する。wizard 化はリリース時点では採用しない (single page で完結する想定で primitive を組む)。
 
 ### §11.4 ModalPreview の組み立て
 
-右 44% の `ModalPreview` には、 「今の draft が保存されたら出る FlowStep を 3-4 枚」 をプレビュー表示する:
+右 44% の `ModalPreview` には、「今の draft が保存されたら出る FlowStep を 3-4 枚」 をプレビュー表示する:
 
 1. modal が編集中の `{groupType, dataForm, chipTags}` を仮 patch として `entry` に当てた `Submission` を組む (元 state は変更しない)
 2. `deriveFlowSteps(patchedSubmission)` を呼ぶ
-3. 結果のうち、 patch 対象 entry の id を `scope.entryIds` に含む step だけを抽出
-4. 各 step を `PreviewCard` (source = serviceToSource(service)、 db = service code、 title = i18n `submit.preview.{service}.title`、 body = i18n `submit.preview.{service}.body`) で出す
+3. 結果のうち、patch 対象 entry の id を `scope.entryIds` に含む step だけを抽出
+4. 各 step を `PreviewCard` (source = serviceToSource(service)、db = service code、title = i18n `submit.preview.{service}.title`、body = i18n `submit.preview.{service}.body`) で出す
 
-これにより利用者は「保存したら BioSample + DRA + GEA が組まれる」 のような予測を modal の右側でリアルタイムに見られる。 preview の `active` は `step.notes` に warning / error が無いとき `true`、 ある時 `false` (`opacity-50`) にして visual に「未確定」 を示す。
+これにより利用者は「保存したら BioSample + DRA + GEA が組まれる」 のような予測を modal の右側でリアルタイムに見られる。preview の `active` は `step.notes` に warning / error が無いとき `true`、ある時 `false` (`opacity-50`) にして visual に「未確定」 を示す。
 
 ### §11.5 ModalFooter status と保存可否
 
-`status` には「必須項目はすべて入力済み」 / 「{n} 項目が未入力」 をテキストで出す。 必須項目は ButtonType ごとに 1 つ目の FormGroup 回答 (groupType に直結) のみ。 default が必ず選択されているので「必須未入力」 状態は実質起きないが、 利用者が FmtRadio を明示変更したとき以外は default のまま「入力済み」 と扱う。
+`status` には「必須項目はすべて入力済み」 / 「{n} 項目が未入力」 をテキストで出す。必須項目は ButtonType ごとに 1 つ目の FormGroup 回答 (groupType に直結) のみ。default が必ず選択されているので「必須未入力」 状態は実質起きないが、利用者が FmtRadio を明示変更したとき以外は default のまま「入力済み」 と扱う。
 
-保存ボタンは常に enable (default 値で保存可)、 visual に保存を妨げる disabled 状態を出さない。
+保存ボタンは常に enable (default 値で保存可)、visual に保存を妨げる disabled 状態を出さない。
 
 ### §11.6 confirm-delete modal
 
-行削除確認は `ModalRouter` が `state.editing.kind === "confirm-delete"` のときに render する小型 modal (width 480)。 内容は「この行を削除すると、 関連 Step が変更されます。 削除しますか?」 と「キャンセル」 + danger「削除」 button。 危険操作は `Button kind="danger"` で表現。
+行削除確認は `ModalRouter` が `state.editing.kind === "confirm-delete"` のときに render する小型 modal (width 480)。内容は「この行を削除すると、関連 Step が変更されます。削除しますか?」 と「キャンセル」 + danger「削除」 button。危険操作は `Button kind="danger"` で表現。
 
 ### §11.7 ModalRouter
 
@@ -738,19 +738,19 @@ function ModalRouter({state, dispatch}) {
 }
 ```
 
-`MODAL_BY_BUTTON_TYPE` は `ButtonType` 全 9 種の値を key に持つ `Record<ButtonType, ComponentType>`。 値の漏れがあれば TypeScript exhaustiveness で検出される。
+`MODAL_BY_BUTTON_TYPE` は `ButtonType` 全 9 種の値を key に持つ `Record<ButtonType, ComponentType>`。値の漏れがあれば TypeScript exhaustiveness で検出される。
 
 ### §11.8 focus / 復元
 
 `Modal` primitive の自前 focus trap (`docs/ui-primitives.md §11.1`) が open 時に dialog 内最初の focusable に focus 移動、close 時に trigger 要素 (= テーブル行の RowSetTag / WarnDashedButton) に focus 復元する。
 
-ESC で `CLOSE_MODAL`、 overlay click で同じく `CLOSE_MODAL`。 dialog 内部 click は overlay click から守られる (`stopPropagation`)。
+ESC で `CLOSE_MODAL`、overlay click で同じく `CLOSE_MODAL`。dialog 内部 click は overlay click から守られる (`stopPropagation`)。
 
 ---
 
 ## §12 動的 FlowStep カード描画
 
-下段の「登録フロー」 section が `selectSteps(state)` で `FlowStep[]` を取得し、 並んだ card で表示する。 `selectSteps` は `app/features/submit/state/selectors.ts` の純粋関数で、 内部で `deriveFlowSteps(state.submission)` を呼ぶ。
+下段の「登録フロー」 section が `selectSteps(state)` で `FlowStep[]` を取得し、並んだ card で表示する。`selectSteps` は `app/features/submit/state/selectors.ts` の純粋関数で、内部で `deriveFlowSteps(state.submission)` を呼ぶ。
 
 ### §12.1 FlowStepCards
 
@@ -768,7 +768,7 @@ function FlowStepCards({state}) {
 }
 ```
 
-`<ol>` 要素で順序を表現し、 アクセシビリティ的に「順序ある手順」 を screen reader へ伝える。
+`<ol>` 要素で順序を表現し、アクセシビリティ的に「順序ある手順」 を screen reader へ伝える。
 
 ### §12.2 FlowStepCard
 
@@ -797,30 +797,30 @@ function FlowStepCards({state}) {
 
 ### §12.3 StepBadge
 
-ステップ番号 (1, 2, 3, …) を円 (28 × 28) で表示。 確定 / pending で配色を切替:
+ステップ番号 (1, 2, 3, …) を円 (28 × 28) で表示。確定 / pending で配色を切替:
 
 - 確定 (`step.notes` に kind=info のみ): `bg-brand-soft text-brand-deep border-brand-light`
 - pending (`step.notes` に kind=warning または error が含まれる): `bg-warn-bg text-warn-fg border-warn-border` (dashed)
 
-`step.notes` の warning / error 有無は `flow-rules/service-badge.ts` の `stepBadgeColor(step)` と整合する。`StepBadge` は service badge color (emerald / amber / rose) とは異なる、 「ステップ進捗」 軸の表現。
+`step.notes` の warning / error 有無は `flow-rules/service-badge.ts` の `stepBadgeColor(step)` と整合する。`StepBadge` は service badge color (emerald / amber / rose) とは異なる、「ステップ進捗」 軸の表現。
 
 ### §12.4 ServiceBadge
 
-step header に並ぶ `Tag kind="source" name="DDBJ" | "DBCLS"`。`serviceToSource(step.service)` で `Service` → `"DDBJ" | "DBCLS"` の純粋写像を引く (DDBJ 内部 service は全て `"DDBJ"`、 外部誘導 service `dbcls` のみ `"DBCLS"`、 残り外部 `humandbs` / `jpost` / `eva` / `dgva` は `"DDBJ"` を出さず Tag を hide する代わりに ExternalLinkButton のラベルに含める)。
+step header に並ぶ `Tag kind="source" name="DDBJ" | "DBCLS"`。`serviceToSource(step.service)` で `Service` → `"DDBJ" | "DBCLS"` の純粋写像を引く (DDBJ 内部 service は全て `"DDBJ"`、外部誘導 service `dbcls` のみ `"DBCLS"`、残り外部 `humandbs` / `jpost` / `eva` / `dgva` は `"DDBJ"` を出さず Tag を hide する代わりに ExternalLinkButton のラベルに含める)。
 
-ServiceBadge の色 (`emerald` / `amber` / `rose`) は visual には Tag 自体ではなく、 FlowStepCard 外周 border 色 (1px) で表現する:
+ServiceBadge の色 (`emerald` / `amber` / `rose`) は visual には Tag 自体ではなく、FlowStepCard 外周 border 色 (1px) で表現する:
 
 - emerald: `border-ok-border`
 - amber: `border-warn-border`
 - rose: `border-critical-border`
 
-これにより「card の border 色 = service の状態色」、 source pill = 「どこの DB か」 が分離される。
+これにより「card の border 色 = service の状態色」、source pill = 「どこの DB か」 が分離される。
 
 ### §12.5 AccessionPlaceholder
 
-発行される accession の placeholder テキスト (`PRJDB######`, `SAMD######`, `DRR######`, `DRX######` 等) を mono inline code で並べる。 アクセシビリティのため `<span className="font-mono ...">` で出し、 placeholder 性質を伝える hint をその前に `Label` で出す (`submit.flow.accessionLabel` = `"発行 accession (例)"`).
+発行される accession の placeholder テキスト (`PRJDB######`, `SAMD######`, `DRR######`, `DRX######` 等) を mono inline code で並べる。アクセシビリティのため `<span className="font-mono ...">` で出し、placeholder 性質を伝える hint をその前に `Label` で出す (`submit.flow.accessionLabel` = `"発行 accession (例)"`).
 
-具体 placeholder 値は `app/features/submit/components/accession-placeholder.ts` の `ACCESSION_PLACEHOLDERS: Record<Service, string[]>` で持つ (例 `bioproject: ["PRJDB######"]`, `dra: ["DRR######", "DRX######"]`)。 i18n しない (accession code は機械フォーマットなので)。
+具体 placeholder 値は `app/features/submit/components/accession-placeholder.ts` の `ACCESSION_PLACEHOLDERS: Record<Service, string[]>` で持つ (例 `bioproject: ["PRJDB######"]`, `dra: ["DRR######", "DRX######"]`)。i18n しない (accession code は機械フォーマットなので)。
 
 ### §12.6 FilesBlock
 
@@ -836,11 +836,11 @@ step が対象とする FileGroup を「1/n」 表記の mini card 列で並べ�
 └────────────────────────────────────────────────────────────┘
 ```
 
-`scope.groupIds` を iterate して、 各 group の `memberFileIds` から FileEntry を引き、 `filename` を表示する。 filename が空の entry は `<filename 未設定>` (i18n `submit.flow.filenameMissing`) を表示し、 visual に warn 色で示す。 group 数 ≥ 5 のときは初期 4 件 + `+ 残り {n} 件を表示` リンク (`Button kind="link"` でクリック展開)。
+`scope.groupIds` を iterate して、各 group の `memberFileIds` から FileEntry を引き、`filename` を表示する。filename が空の entry は `<filename 未設定>` (i18n `submit.flow.filenameMissing`) を表示し、visual に warn 色で示す。group 数 ≥ 5 のときは初期 4 件 + `+ 残り {n} 件を表示` リンク (`Button kind="link"` でクリック展開)。
 
 ### §12.7 ExternalLinkButton
 
-step ごとの外部誘導 URL を `Button kind="secondary"` で出す。 URL は `app/features/submit/external-links.ts` の `EXTERNAL_LINKS: Record<Service, string>` で hardcode 管理する (将来 content collection に移行する設計余地はあるが、 リリース時点は hardcode で十分):
+step ごとの外部誘導 URL を `Button kind="secondary"` で出す。URL は `app/features/submit/external-links.ts` の `EXTERNAL_LINKS: Record<Service, string>` で hardcode 管理する (将来 content collection に移行する設計余地はあるが、リリース時点は hardcode で十分):
 
 | service | 誘導 URL (例) | label |
 |---|---|---|
@@ -851,7 +851,7 @@ step ごとの外部誘導 URL を `Button kind="secondary"` で出す。 URL �
 | `gea` | `https://www.ddbj.nig.ac.jp/gea/submission.html` | `submit.flow.gea.cta` |
 | (以下同様) | … | … |
 
-button は外部 link を扱う `Button` ではなく、 内部に `<a target="_blank" rel="noopener noreferrer">` を embed しない。 visual には外向き矢印 `↗` (`ExternalIcon`) を label の末尾に置き、 click は `window.open(url, "_blank", "noopener,noreferrer")` を `Button` の `onClick` で発火する (`Button` primitive は `<button>` 要素なので、 a-href 経由でなく onClick で同等動作)。
+button は外部 link を扱う `Button` ではなく、内部に `<a target="_blank" rel="noopener noreferrer">` を embed しない。visual には外向き矢印 `↗` (`ExternalIcon`) を label の末尾に置き、click は `window.open(url, "_blank", "noopener,noreferrer")` を `Button` の `onClick` で発火する (`Button` primitive は `<button>` 要素なので、a-href 経由でなく onClick で同等動作)。
 
 ### §12.8 Notes 表示
 
@@ -861,7 +861,7 @@ button は外部 link を扱う `Button` ではなく、 内部に `<a target="_
 - kind=warning: `Callout tone="warn"` で囲む
 - kind=error: `Callout tone="warn"` + `role="alert"` (緊急性表現)
 
-`messageKey` は i18n リソースキー (例 `submit.dra.intro` / `submit.jga.dbclsApplicationRequired`)、 ja / en で必ず存在する (PBT 担保)。
+`messageKey` は i18n リソースキー (例 `submit.dra.intro` / `submit.jga.dbclsApplicationRequired`)、ja / en で必ず存在する (PBT 担保)。
 
 ### §12.9 TagProgress
 
@@ -875,13 +875,13 @@ button は外部 link を扱う `Button` ではなく、 内部に `<a target="_
 └──────────────────────────────────────────────────────────────┘
 ```
 
-n / total = chipTags が ≥ 1 件 (もしくは groupType が default 以外) の行数 / 全行数。 100% で完了サイン (`ok-bg + ok-fg + check icon`)、 < 100% で進捗 (`warn-bg + warn-fg + clock icon`)。
+n / total = chipTags が ≥ 1 件 (もしくは groupType が default 以外) の行数 / 全行数。100% で完了サイン (`ok-bg + ok-fg + check icon`)、< 100% で進捗 (`warn-bg + warn-fg + clock icon`)。
 
-`TagProgress` は `app/features/submit/components/tag-progress.tsx` の画面固有 component。 内部で `Label` / `Tag` を使う。
+`TagProgress` は `app/features/submit/components/tag-progress.tsx` の画面固有 component。内部で `Label` / `Tag` を使う。
 
 ### §12.10 PartialFailureBanner
 
-`selectValidations(state)` が non-empty を返す場合、 section 末尾に表示する警告バナー:
+`selectValidations(state)` が non-empty を返す場合、section 末尾に表示する警告バナー:
 
 ```
 ┌ Callout tone="warn" role="alert" ───────────────────────────┐
@@ -893,20 +893,20 @@ n / total = chipTags が ≥ 1 件 (もしくは groupType が default 以外) �
 └──────────────────────────────────────────────────────────────┘
 ```
 
-validation 検査軸 (`selectValidations` の責務、 純粋関数):
+validation 検査軸 (`selectValidations` の責務、純粋関数):
 
-- `missing-organism`: FileEntry.organism が空 (`organism` を要素 enum と整合させているため Zod parse は通るが、 UI 上「未設定」 として `""` を一時保持する設計を許容する)
+- `missing-organism`: FileEntry.organism が空 (`organism` を要素 enum と整合させているため Zod parse は通るが、UI 上「未設定」 として `""` を一時保持する設計を許容する)
 - `missing-filename`: FileEntry.filename が空白文字列
-- `inconsistent-group-type`: `FileGroup.groupType` が、 entry の `buttonType` と互換しない (例 `mage-tab` group に `mass-spec` ButtonType の entry が混入)
-- `dangling-group-id`: FileEntry.groupId が submission.fileGroups にない (UI バグ検知、 reducer 不変量で起きないはずだが安全網)
+- `inconsistent-group-type`: `FileGroup.groupType` が、entry の `buttonType` と互換しない (例 `mage-tab` group に `mass-spec` ButtonType の entry が混入)
+- `dangling-group-id`: FileEntry.groupId が submission.fileGroups にない (UI バグ検知、reducer 不変量で起きないはずだが安全網)
 
-各 validation は i18n key (`submit.validations.{kind}`) + 該当 row index list を含む。 click で row scroll into view + 編集 modal を open する。
+各 validation は i18n key (`submit.validations.{kind}`) + 該当 row index list を含む。click で row scroll into view + 編集 modal を open する。
 
 ---
 
 ## §13 状態管理
 
-UI 状態は `app/features/submit/state/` の reducer + selectors で管理する。 純粋関数で組み、 副作用は持たない。
+UI 状態は `app/features/submit/state/` の reducer + selectors で管理する。純粋関数で組み、副作用は持たない。
 
 ### §13.1 UIState
 
@@ -922,7 +922,7 @@ type UIState = {
 }
 ```
 
-`submission` は `app/schemas/submit/Submission` の値 (UI 上で一時的に `organism === ""` 等を保持するため、 reducer 内では `Submission` schema を緩く扱う—Zod parse は loader 境界でしかしない)。
+`submission` は `app/schemas/submit/Submission` の値 (UI 上で一時的に `organism === ""` 等を保持するため、reducer 内では `Submission` schema を緩く扱う—Zod parse は loader 境界でしかしない)。
 
 ### §13.2 Action 一覧
 
@@ -938,13 +938,13 @@ type Action =
   | { type: "CLOSE_MODAL" }
 ```
 
-`RowEditPatch` は `{ groupType?: GroupType; dataForm?: DataForm; chipTags?: FileEntryChip[] }`。 modal が組み立てて dispatch する。
+`RowEditPatch` は `{ groupType?: GroupType; dataForm?: DataForm; chipTags?: FileEntryChip[] }`。modal が組み立てて dispatch する。
 
-reducer は immutable update を維持し、 id は client mount 後にしか生成しない (SSR mismatch 回避)。
+reducer は immutable update を維持し、id は client mount 後にしか生成しない (SSR mismatch 回避)。
 
 ### §13.3 不変量
 
-任意の action sequence に対し、 reducer は次を満たす:
+任意の action sequence に対し、reducer は次を満たす:
 
 1. **id 一意性**: `submission.fileEntries` と `submission.fileGroups` の id 集合内で各々 unique
 2. **groupId 参照**: 各 `FileEntry.groupId` が `submission.fileGroups` 内に存在する (孤立しない)
@@ -962,13 +962,13 @@ selectValidations(state): Validation[]    // 未設定セル / 不整合 検出
 selectRowDetailSummary(state, entryId): string  // RowSetTag のサマリテキスト
 ```
 
-selectors は memoize しない (デフォルトで純粋関数として呼び、 React の reconciliation で不要な再計算を抑える方針)。
+selectors は memoize しない (デフォルトで純粋関数として呼び、React の reconciliation で不要な再計算を抑える方針)。
 
 ---
 
 ## §14 i18n リソース構造
 
-`app/lib/i18n/resources/{ja,en}.ts` の `Resources.submit` 配下に次を追加する。 ja / en 両方で完全一致が PBT で担保される (`tests/pbt/lib/i18n/resource-parity.pbt.test.ts`)。
+`app/lib/i18n/resources/{ja,en}.ts` の `Resources.submit` 配下に次を追加する。ja / en 両方で完全一致が PBT で担保される (`tests/pbt/lib/i18n/resource-parity.pbt.test.ts`)。
 
 ```ts
 submit: {
@@ -1070,8 +1070,8 @@ submit: {
 ## §15 zones / 制約
 
 - `app/features/submit/state/` は `app/shell/` / `app/features/{search,news,auth}/` を import しない (zones)
-- `app/features/submit/` 内では生 button / a / input / select / textarea を書かない (`react/forbid-elements` lint)。 全て `app/ui/` primitive 経由
+- `app/features/submit/` 内では生 button / a / input / select / textarea を書かない (`react/forbid-elements` lint)。全て `app/ui/` primitive 経由
 - 生 hex / arbitrary Tailwind value は `app/features/submit/` で禁止 (`docs/architecture.md §3.3`)
-- 新 primitive 追加は `.claude/docs/design/INDEX.md §6` の逆流手順を経由する (`docs/ui-primitives.md §2`)
+- 新 primitive 追加は `docs/ui-primitives.md §2` の手順を経由する
 
-リリース時点で submit features は外部 API を呼ばない (navigator のみ)。 将来 draft 永続化 / Repository API 連携を入れる場合は `app/features/submit/api/` を新設する余地を残すが、 本リリースでは作らない。
+リリース時点で submit features は外部 API を呼ばない (navigator のみ)。将来 draft 永続化 / Repository API 連携を入れる場合は `app/features/submit/api/` を新設する余地を残すが、本リリースでは作らない。

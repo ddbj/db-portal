@@ -31,7 +31,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. `/` を開く
   2. ヘッダーの「検索」 ナビをクリック → `/search` 遷移
-  3. 検索ボックスに `cancer` と入力し、 検索ボタンをクリック
+  3. 検索ボックスに `cancer` と入力し、検索ボタンをクリック
 - **期待**:
   - URL が `/search/results?q=cancer` に変わる
   - ページタイトル「データベース横断検索」 が表示される
@@ -65,12 +65,12 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/search` を開く
 - **手順**:
-  1. 「+ 条件を追加」 → field=organism、 op==、 value="Homo sapiens" を入力
-  2. 「+ 条件を追加」 → field=date_published、 from=2022-01-01、 to=2024-12-31
+  1. 「+ 条件を追加」 → field=organism、op==、value="Homo sapiens" を入力
+  2. 「+ 条件を追加」 → field=date_published、from=2022-01-01、to=2024-12-31
   3. 「この条件で検索」 button をクリック
 - **期待**:
   - 検索条件が `mergeAstAnd` で AND 結合される
-  - `/search/results?q=...` に遷移し、 `?q=` に `organism:"Homo sapiens" AND date_published:[2022-01-01 TO 2024-12-31]` 相当の DSL が乗る
+  - `/search/results?q=...` に遷移し、`?q=` に `organism:"Homo sapiens" AND date_published:[2022-01-01 TO 2024-12-31]` 相当の DSL が乗る
   - debounce 700 ms 以内に Query Preview に DSL が更新表示される
 
 ### S-SEARCH-05: Sidebar facet → URL `?q=` 更新
@@ -98,7 +98,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 
 - **ペルソナ**: P-ANON
 - **手順**:
-  1. `/search/results?q=organism%3A%5B%5B` (`organism:[[` の URL 化、 invalid)
+  1. `/search/results?q=organism%3A%5B%5B` (`organism:[[` の URL 化、invalid)
 - **期待**:
   - ErrorBoundary か Callout で「URL のクエリを解析できませんでした」 が表示される
   - 「クエリビルダーで編集」 link で `/search` に戻れる
@@ -146,9 +146,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. `配列リード` ボタンをクリック
   2. 開いた modal で「保存」 をクリック
-  3. テーブル行で生物 selector を `eukaryote` に変更、 ファイル名に `read-001_R1.fastq.gz` を入力
+  3. テーブル行で生物 selector を `eukaryote` に変更、ファイル名に `read-001_R1.fastq.gz` を入力
 - **期待**:
-  - テーブルに 1 行が追加され、 ファイル名・生物・公開区分 (default `open`) が反映
+  - テーブルに 1 行が追加され、ファイル名・生物・公開区分 (default `open`) が反映
   - 登録フロー section に `BioProject` `BioSample` `DRA` の Step カードが順に表示
   - 各 Step カードに service tag (DDBJ) と placeholder accession (例 `PRJDB######`) と外部誘導 button が表示
 
@@ -158,19 +158,19 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **前提**: `/submit` 初期表示
 - **手順**:
   1. `配列リード` × 2 / `組み立て済み配列` / `変異情報` / `表現型データ` の 5 ボタンを順次クリックして 5 行追加
-  2. 各行の生物 selector を `Homo sapiens` / `eukaryote` のいずれかに設定、 ファイル名を入力
-  3. 各行の `+ 設定` (または `pair-end · ...` chip) をクリックして modal を開き、 保存
+  2. 各行の生物 selector を `Homo sapiens` / `eukaryote` のいずれかに設定、ファイル名を入力
+  3. 各行の `+ 設定` (または `pair-end · ...` chip) をクリックして modal を開き、保存
 - **期待**:
   - テーブルに 5 行
   - 登録フロー section に `Umbrella BioProject` / `BioProject` (organism 別に複数) / `BioSample` (organism 別) / `DRA` / `DDBJ Mass` / その他必要な Step が並ぶ
-  - TagProgress が「3-5 / 5」 を表示し、 進捗バーが進む
+  - TagProgress が「3-5 / 5」 を表示し、進捗バーが進む
 
 ### S-SUBMIT-04: open / restricted の分岐
 
 - **ペルソナ**: P-ANON
 - **手順**:
   1. `配列リード` を 2 件追加
-  2. 1 件目の生物を `human` / 公開区分を `restricted`、 2 件目を `eukaryote` / `open` に設定
+  2. 1 件目の生物を `human` / 公開区分を `restricted`、2 件目を `eukaryote` / `open` に設定
 - **期待**:
   - 登録フロー に `JGA` Step (restricted human) と `DRA` Step (open eukaryote) が両方表示
   - JGA Step に DBCLS 申請依頼の warning note (`submit.jga.dbclsApplicationRequired`) が出る
@@ -178,7 +178,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-05: 行詳細 modal 編集で Step が再生成
 
 - **ペルソナ**: P-ANON
-- **前提**: 配列リード 1 行追加済 (生物 `eukaryote`、 ファイル名入力済)
+- **前提**: 配列リード 1 行追加済 (生物 `eukaryote`、ファイル名入力済)
 - **手順**:
   1. テーブルの該当行で `+ 設定` をクリック → modal が open
   2. 「リードの構成は?」 で `pair-end FASTQ` を選択
@@ -212,7 +212,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### E-SUBMIT-02: GroupType 不整合で警告
 
 - **ペルソナ**: P-ANON
-- **前提**: マイクロアレイ発現 1 行追加 (GroupType `mage-tab`)、 同 group に手動で `mass-spec` 行を追加するシナリオ (現状 UI からは届かないが、 reducer で起こしうる状態)
+- **前提**: マイクロアレイ発現 1 行追加 (GroupType `mage-tab`)、同 group に手動で `mass-spec` 行を追加するシナリオ (現状 UI からは届かないが、reducer で起こしうる状態)
 - **期待**:
   - PartialFailureBanner に「GroupType がボタン種別と整合していません」 が表示
   - 該当行 link で modal が開く
@@ -223,9 +223,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. `配列リード` ボタンを 100 回連続クリック
 - **期待**:
-  - テーブルに 100 行が描画 (横スクロール許容、 modal は最後の 1 行のみ open)
+  - テーブルに 100 行が描画 (横スクロール許容、modal は最後の 1 行のみ open)
   - 100 行の Step プレビュー (BS / BP / DRA) が表示される
-  - 入力中の体感に大きな遅延がない (60fps 維持目標、 リリース時点では性能チューニングしないため目視評価)
+  - 入力中の体感に大きな遅延がない (60fps 維持目標、リリース時点では性能チューニングしないため目視評価)
 
 ## News Domain
 
@@ -239,7 +239,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 一覧が date 降順で表示
   - サイドバーに 種別 / 年 / サービス の facet group
 
-### S-NEWS-02: facet で絞り込み、 URL に反映
+### S-NEWS-02: facet で絞り込み、URL に反映
 
 - **ペルソナ**: P-ANON
 - **手順**:
@@ -259,7 +259,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - 全 page 上部に NotificationBar が表示
   - `category === "announcement"` かつ `retireTime > now` の最新 1 件のみ表示
-  - 「閉じる」 で次の候補に遷移、 sessionStorage に dismissed id 保存
+  - 「閉じる」 で次の候補に遷移、sessionStorage に dismissed id 保存
 
 ### S-NEWS-04: トップ右ペインに 8 件 + 「すべて見る」
 
@@ -343,7 +343,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   2. `/api/me` を呼ぶ
 - **期待**:
   - background refresh が失敗
-  - session 削除、 401 を返す
+  - session 削除、401 を返す
   - Header が「ログイン」 に戻る
 
 ## LLM Domain
@@ -401,7 +401,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - Hero に `<SearchBox size="lg">` + example chip 3 件 + 「クエリビルダーで詳細条件を組む →」 link
   - ServiceGrid に primary-service の Service tile 6 件
   - PopularResources に DDBJ 7 件 / DBCLS 5 件
-  - 右 aside に NewsAside (8 件、 sticky)
+  - 右 aside に NewsAside (8 件、sticky)
   - Breadcrumb は描画されない (`useBreadcrumb` が 0 件)
 
 ### S-TOP-02: en トップ訪問で en リソース表示
@@ -462,7 +462,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - body[en] (Section + Callout)
   - Breadcrumb `Home > Databases > BioProject`
   - Related databases に BioSample / DRA (en title でも内容は同)
-  - 最終更新日 (en locale 表示、 例 "May 25, 2026")
+  - 最終更新日 (en locale 表示、例 "May 25, 2026")
   - TranslationUnavailable バナー無し (handle.i18n.en === "complete")
 
 ### S-CONTENT-03: /databases/biosample ja 表示

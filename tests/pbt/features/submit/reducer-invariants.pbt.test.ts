@@ -82,7 +82,7 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
       const id = knownEntryIds[idx]!
       acts.push({ type: "REMOVE_ROW", entryId: id })
       knownEntryIds = knownEntryIds.filter((x) => x !== id)
-      // 削除で empty group になった場合は reducer 側で group も削除される。 arb 側では追跡せず、 ADD_TO_GROUP は不存在 group を指す可能性を許容 (reducer は no-op)
+      // 削除で empty group になった場合は reducer 側で group も削除される。arb 側では追跡せず、ADD_TO_GROUP は不存在 group を指す可能性を許容 (reducer は no-op)
     } else {
       acts.push({ type: "CLOSE_MODAL" })
     }
@@ -110,7 +110,7 @@ test.prop([arbActionSequence], { numRuns: 200 })(
     const state = applySequence(actions)
     const groupIds = new Set(state.submission.fileGroups.map((g) => g.id))
     for (const entry of state.submission.fileEntries) {
-      // 本テストの arb はすべて既存 group / 新規 group を指す ADD_ROW / ADD_TO_GROUP しか発火しないので、 entry.groupId は必ず submission.fileGroups に存在する
+      // 本テストの arb はすべて既存 group / 新規 group を指す ADD_ROW / ADD_TO_GROUP しか発火しないので、entry.groupId は必ず submission.fileGroups に存在する
       expect(groupIds.has(entry.groupId)).toBe(true)
       // 双方向: 参照先 group の memberFileIds に entry が含まれる
       const matching = state.submission.fileGroups.find((g) => g.id === entry.groupId)

@@ -2,7 +2,7 @@
 
 `/` (ja) と `/en` (en) で表示されるトップページの仕様。`app/routes/top/route.tsx` が SSOT。
 
-トップは「DDBJ ポータルへの入口」として、検索ボックスを実質的なヒーローに据え、サービス一覧と最新ニュースへの導線を 2-col grid で構成する。`.claude/docs/design/screens/01-top.notes.md` のスクショと一致した実装を保つ。
+トップは「DDBJ ポータルへの入口」として、検索ボックスを実質的なヒーローに据え、サービス一覧と最新ニュースへの導線を 2-col grid で構成する。
 
 ## 1. 全体構成
 
@@ -82,7 +82,7 @@ export default TopRoute
 | `top.hero.examples` | (3 件配列) | (3 件配列) |
 | `top.hero.a11y.input` | "検索キーワード" | "Search keywords" |
 
-Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。 Header の wordmark + Footer の組織情報がブランド表示を担う。
+Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。Header の wordmark + Footer の組織情報がブランド表示を担う。
 
 ## 4. Service tiles
 
@@ -101,7 +101,7 @@ Hero に独立した heading は置かない (SearchBox 自体が page の入口
 | `statistics` | 統計 / Statistics | external | https://www.ddbj.nig.ac.jp/statistics/index.html |
 | `activity` | 活動報告 / Activities | external | https://www.ddbj.nig.ac.jp/activities/index.html |
 
-Card 全体をクリッカブルにするため、 `app/ui/link-card.tsx` の `LinkCard` primitive を使う。 `LinkCard` は internal リンクなら `react-router` の `<Link>`、 external リンクなら `<a target="_blank" rel="noopener noreferrer">` を内部で組み立てる (`app/ui/` zone なので生 `<a>` 使用が許容される)。 features 側の `ServiceCard` (`app/features/top/service-card.tsx`) は `link.kind` を見て internal なら `lang` prefix を補った to を、 external なら href をそのまま `LinkCard` に渡す。
+Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `LinkCard` primitive を使う。`LinkCard` は internal リンクなら `react-router` の `<Link>`、external リンクなら `<a target="_blank" rel="noopener noreferrer">` を内部で組み立てる (`app/ui/` zone なので生 `<a>` 使用が許容される)。features 側の `ServiceCard` (`app/features/top/service-card.tsx`) は `link.kind` を見て internal なら `lang` prefix を補った to を、external なら href をそのまま `LinkCard` に渡す。
 
 ### 4.2 グリッドと card design
 
@@ -208,4 +208,3 @@ Card 全体をクリッカブルにするため、 `app/ui/link-card.tsx` の `L
 | `shell.md §5` / `§8.3` | NewsAside の仕様とトップ embed 特例 |
 | `search.md` | hero 検索ボックス submit 後の `/search/results` の挙動 |
 | `news.md` | NewsAside / NotificationBar が消費する `/api/news` |
-| `.claude/docs/design/screens/01-top.notes.md` | スクショと使用 primitive の対応 |

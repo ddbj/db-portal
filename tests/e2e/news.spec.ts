@@ -16,7 +16,7 @@ test.describe("News Domain", () => {
     await expect(page.getByRole("complementary").first()).toBeVisible()
   })
 
-  test("S-NEWS-02: facet で絞り込み、 URL に反映", async ({ page }) => {
+  test("S-NEWS-02: facet で絞り込み、URL に反映", async ({ page }) => {
     await page.goto("/news")
 
     await page
@@ -63,7 +63,7 @@ test.describe("News Domain", () => {
     ).toBeVisible()
   })
 
-  test.skip("E-NEWS-02: 不正 front matter (server 側起動時挙動、 e2e では再現困難)", async () => {
-    // server 側の起動時挙動。 unit (server/news/mirror.test.ts) で吸収
+  test.skip("E-NEWS-02: 不正 front matter (server 側起動時挙動、e2e では再現困難)", async () => {
+    // server 側の起動時挙動。unit (server/news/mirror.test.ts) で吸収
   })
 })

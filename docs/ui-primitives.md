@@ -240,7 +240,7 @@ text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tig
 
 container は `flex items-baseline justify-between gap-3 mb-3 flex-wrap`、内側に `flex items-baseline gap-2.5 min-w-0` の wrapper を置いて heading + `count` を、`action` を右に出す。
 
-`count` は `text-[12.5px] text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、 en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
+`count` は `text-[12.5px] text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
 
 ### 6.2 SidebarHeading
 
@@ -350,7 +350,7 @@ state:
 - default: `border border-border-soft bg-surface text-ink`
 - warn: `border border-warn-border bg-warn-bg`、空 value 時 `text-ink-soft`
 
-共通: `w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button outline-none cursor-pointer font-sans`。chevron は `absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`、 親に `relative` を付ける。
+共通: `w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button outline-none cursor-pointer font-sans`。chevron は `absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`、親に `relative` を付ける。
 
 ### 7.4 FormGroup
 
@@ -657,7 +657,7 @@ type PaginationProps = {
 }
 ```
 
-active button: `border-brand bg-brand text-white`、 inactive: `border-border-soft bg-surface text-ink`、 disabled: `text-ink-soft cursor-not-allowed opacity-55`。`aria-current="page"` を current に付与、 前 / 次 button に `aria-label="前のページ" / "次のページ"`。
+active button: `border-brand bg-brand text-white`、inactive: `border-border-soft bg-surface text-ink`、disabled: `text-ink-soft cursor-not-allowed opacity-55`。`aria-current="page"` を current に付与、前 / 次 button に `aria-label="前のページ" / "次のページ"`。
 
 primitive はミニマル実装。`<<` / `>>` の chunk skip や URL query 連動は features 側で必要に応じて wrap する。
 
@@ -682,7 +682,7 @@ class: `text-brand font-semibold no-underline hover:underline`。
 primitive 内で direct 値を書くケース:
 
 - 1px / 0.5px / 18px などの hairline、`@theme` で予約してない細部値 — `app/ui/` のみ許容
-- `style={{ color, fontSize, maxWidth }}` で動的に渡される値 — `Label` の source 色や `SearchBox` の幅など、 token 化しても消費側で逃げ道が要るケース
+- `style={{ color, fontSize, maxWidth }}` で動的に渡される値 — `Label` の source 色や `SearchBox` の幅など、token 化しても消費側で逃げ道が要るケース
 
 ## 15. ESLint による物理強制
 
@@ -696,7 +696,7 @@ no-restricted-syntax:
 react/forbid-elements:
   - button / a / input / select / textarea (primitive 経由を強制)
 
-// app/shell/**/*.{ts,tsx} に対して (chrome レベル、 arbitrary value 許容、 生 hex のみ禁止)
+// app/shell/**/*.{ts,tsx} に対して (chrome レベル、arbitrary value 許容、生 hex のみ禁止)
 no-restricted-syntax:
   - Literal[value=/^#[0-9A-Fa-f]{3,8}$/]
 ```

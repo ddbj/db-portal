@@ -563,7 +563,7 @@ export const ja: Resources = {
   errors: {
     notFound: {
       title: "ページが見つかりません",
-      description: "お探しのページは見つかりませんでした。 URL に誤りがないかご確認ください。",
+      description: "お探しのページは見つかりませんでした。URL に誤りがないかご確認ください。",
       backToTop: "トップへ戻る",
     },
     generic: {
@@ -583,7 +583,7 @@ export const ja: Resources = {
   },
   top: {
     hero: {
-      placeholder: "キーワード、 accession、 学名で検索",
+      placeholder: "キーワード、accession、学名で検索",
       submit: "検索",
       examplesLabel: "例",
       examples: ["cancer", "Homo sapiens", "PRJDB*"],
@@ -627,7 +627,7 @@ export const ja: Resources = {
   },
   news: {
     pageTitle: "お知らせ・ニュース",
-    pageDescription: "DDBJ センターからのお知らせ、 リリースノート、 メンテナンス情報をまとめて確認できます。",
+    pageDescription: "DDBJ センターからのお知らせ、リリースノート、メンテナンス情報をまとめて確認できます。",
     toolbar: {
       count: "全 {{count}} 件",
       sort: "並び順",
