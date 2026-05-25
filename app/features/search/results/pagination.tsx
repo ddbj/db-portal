@@ -17,6 +17,9 @@ export const ResultsPagination = ({ page, totalPages, onPageChange }: ResultsPag
       totalPages={totalPages}
       onPageChange={onPageChange}
       ariaLabel={t("a11y.paginationNav")}
+      prevLabel={t("a11y.paginationPrev")}
+      nextLabel={t("a11y.paginationNext")}
+      jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
     />
   )
 }

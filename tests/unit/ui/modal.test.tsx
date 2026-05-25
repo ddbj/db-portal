@@ -50,6 +50,25 @@ describe("Modal", () => {
     expect(dialog).toHaveAttribute("aria-labelledby", "modal-title")
   })
 
+  test("Modal_headerAsH3_rendersAsH3", () => {
+    render(
+      <Modal open onClose={() => undefined} ariaLabelledby="t">
+        <ModalHeader title="dialog" titleId="t" as="h3" onClose={() => undefined} />
+      </Modal>,
+    )
+    const heading = screen.getByRole("heading", { level: 3, name: "dialog" })
+    expect(heading).toHaveAttribute("id", "t")
+  })
+
+  test("Modal_headerAsDefault_rendersAsH2", () => {
+    render(
+      <Modal open onClose={() => undefined} ariaLabelledby="t">
+        <ModalHeader title="dialog" titleId="t" onClose={() => undefined} />
+      </Modal>,
+    )
+    expect(screen.getByRole("heading", { level: 2, name: "dialog" })).toBeInTheDocument()
+  })
+
   test("Modal_closed_doesNotRender", () => {
     render(<Harness />)
     expect(screen.queryByRole("dialog")).toBeNull()

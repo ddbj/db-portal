@@ -33,7 +33,7 @@ export const loader = ({ context }: LoaderFunctionArgs) => ({
 })
 
 const useCspNonce = (): string | undefined => {
-  const data = useRouteLoaderData("root") as { cspNonce?: string } | undefined
+  const data = useRouteLoaderData<typeof loader>("root")
 
   return data?.cspNonce
 }

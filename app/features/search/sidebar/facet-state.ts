@@ -43,7 +43,7 @@ export type DatePublishedFilter = {
   to: string
 }
 
-export type FacetState = {
+export type SearchFacetState = {
   organisms: string[]
   submitters: string[]
   studyType: string | null
@@ -51,7 +51,7 @@ export type FacetState = {
   datePublished: DatePublishedFilter
 }
 
-export type FacetAction =
+export type SearchFacetAction =
   | { type: "toggleOrganism"; value: string }
   | { type: "toggleSubmitter"; value: string }
   | { type: "setStudyType"; value: string | null }
@@ -60,9 +60,9 @@ export type FacetAction =
   | { type: "setDateFrom"; value: string }
   | { type: "setDateTo"; value: string }
   | { type: "clear" }
-  | { type: "replace"; state: FacetState }
+  | { type: "replace"; state: SearchFacetState }
 
-export const createInitialFacetState = (): FacetState => ({
+export const createInitialSearchFacetState = (): SearchFacetState => ({
   organisms: [],
   submitters: [],
   studyType: null,
@@ -79,7 +79,7 @@ const toggle = (values: string[], value: string): string[] => {
   return next
 }
 
-export const facetReducer = (state: FacetState, action: FacetAction): FacetState => {
+export const searchFacetReducer = (state: SearchFacetState, action: SearchFacetAction): SearchFacetState => {
   switch (action.type) {
     case "toggleOrganism":
       return { ...state, organisms: toggle(state.organisms, action.value) }
@@ -109,7 +109,7 @@ export const facetReducer = (state: FacetState, action: FacetAction): FacetState
         datePublished: { ...state.datePublished, active: "all", to: action.value },
       }
     case "clear":
-      return createInitialFacetState()
+      return createInitialSearchFacetState()
     case "replace":
       return action.state
   }

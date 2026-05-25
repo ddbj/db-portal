@@ -15,7 +15,7 @@ export const ErrorPage = ({ kind, lang }: ErrorPageProps) => {
   const ns = kind === "not-found" ? "errors.notFound" : "errors.generic"
 
   return (
-    <div role="alert" aria-live="polite">
+    <div role="alert" aria-live="assertive">
       <PageTitle
         title={t(`${ns}.title`)}
         subtitle={t(`${ns}.description`)}

@@ -8,13 +8,13 @@ import {
   FACET_ORGANISMS,
   FACET_STUDY_TYPES,
   FACET_SUBMITTERS,
-  type FacetAction,
-  type FacetState,
+  type SearchFacetAction,
+  type SearchFacetState,
 } from "./facet-state"
 
 export type FacetPanelProps = {
-  state: FacetState
-  dispatch: Dispatch<FacetAction>
+  state: SearchFacetState
+  dispatch: Dispatch<SearchFacetAction>
   db: DbSlug | null
 }
 

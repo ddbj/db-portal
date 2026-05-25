@@ -102,6 +102,12 @@ a[aria-disabled="true"] {
   opacity: 0.55;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-ink-soft);
+  opacity: 1;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

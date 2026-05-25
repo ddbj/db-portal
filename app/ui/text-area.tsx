@@ -6,9 +6,10 @@ type TextAreaState = "default" | "warn"
 
 type TextAreaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
-  "className" | "aria-label"
+  "className" | "aria-label" | "aria-describedby" | "aria-invalid"
 > & {
   ariaLabel: string
+  ariaDescribedby?: string
   state?: TextAreaState
   mono?: boolean
   width?: number
@@ -16,6 +17,7 @@ type TextAreaProps = Omit<
 
 export const TextArea = ({
   ariaLabel,
+  ariaDescribedby,
   state = "default",
   mono = false,
   width,
@@ -30,6 +32,8 @@ export const TextArea = ({
       {...rest}
       rows={rows}
       aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      aria-invalid={isWarn || undefined}
       style={wrapperStyle}
       className={cn(
         "block w-full text-fs-body py-2 px-3 rounded-button font-sans resize-none",

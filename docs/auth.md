@@ -243,9 +243,25 @@ export function buildAuthorizeUrl(returnTo: string): { url: string; state: strin
 1. Browser が `/auth/callback?code=...&state=...` を踏む
 2. BFF が `state` から `code_verifier` と `returnTo` を取り出す
 3. Keycloak の `token_endpoint` に `code` + `code_verifier` を POST して `access_token` / `refresh_token` / `id_token` を得る
-4. `id_token` の sub / name / email を userInfo として抽出
-5. `sid` を発行し session store に `set`、`Set-Cookie: sid=...` を返す
-6. `returnTo` (もしくは `/`) へ 302
+4. `id_token` の `iss` / `aud` / `exp` / `iat` を payload 側で検証 (詳細は `§6.3.1`)
+5. `id_token` の sub / name / email を userInfo として抽出
+6. `sid` を発行し session store に `set`、`Set-Cookie: sid=...` を返す
+7. `returnTo` (もしくは `/`) へ 302
+
+#### 6.3.1 id_token の検証
+
+`id_token` は **token endpoint から direct (BFF ↔ Keycloak、TLS 直接通信)** で受け取る。OIDC Core §3.1.3.7-6 のとおり direct from token endpoint で受信した場合の signature 検証は TLS server validation で代替可能で、`server/auth/oidc.ts` の `callTokenEndpoint` は TLS による issuer validation を信頼する前提に立つ。
+
+ただし防御層として payload 側でも次を必ず検証する (BFF が signature を再検証しない代わりに、issuer / audience / 有効期限の論理整合は portal 側で保つ):
+
+| 項目 | 検証 | 失敗時 |
+|---|---|---|
+| `iss` | `DB_PORTAL_KEYCLOAK_REALM_URL` と完全一致 | 例外 throw → callback handler で 400 `invalid_id_token` |
+| `aud` | `DB_PORTAL_KEYCLOAK_CLIENT_ID` を含む (`string` or `string[]`) | 同上 |
+| `exp` | 現在時刻より未来 (clock skew は無視せず 0 秒) | 同上 |
+| `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
+
+将来的に upstream の信頼境界が変わる (例: 第三者の cache CDN を経由する) 場合に備えて、`extractUserInfo()` の Zod schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、`jose` 等で JWKS 署名再検証を加えられる構造に保つ。
 
 ### 6.4 Refresh
 

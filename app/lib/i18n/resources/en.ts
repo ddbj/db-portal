@@ -134,6 +134,9 @@ export const en: Resources = {
     languageSwitcher: "Language switcher",
     notificationBar: "Important notice",
     paginationNav: "Pagination",
+    paginationPrev: "Previous page",
+    paginationNext: "Next page",
+    paginationJumpToLast: "Jump to page {{n}}",
   },
   submit: {
     pageTitle: "Submission navigator",
@@ -640,6 +643,7 @@ export const en: Resources = {
       facetGroup: "Facet",
       removeFilter: "Remove filter",
       queryPreview: "Query preview",
+      resultsRegion: "Search results",
       assistantInput: "AI search assistant input",
       assistantStop: "Stop generating suggestions",
     },

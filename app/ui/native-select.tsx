@@ -9,9 +9,10 @@ export type NativeSelectOption = string | { value: string; label: string }
 
 type NativeSelectProps = Omit<
   SelectHTMLAttributes<HTMLSelectElement>,
-  "className" | "aria-label"
+  "className" | "aria-label" | "aria-describedby" | "aria-invalid"
 > & {
   ariaLabel: string
+  ariaDescribedby?: string
   options: readonly NativeSelectOption[]
   width?: number
   state?: NativeSelectState
@@ -19,6 +20,7 @@ type NativeSelectProps = Omit<
 
 export const NativeSelect = ({
   ariaLabel,
+  ariaDescribedby,
   options,
   width,
   state = "default",
@@ -37,6 +39,8 @@ export const NativeSelect = ({
         value={value}
         defaultValue={defaultValue}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedby}
+        aria-invalid={isWarn || undefined}
         className={cn(
           "w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button cursor-pointer font-sans",
           isWarn

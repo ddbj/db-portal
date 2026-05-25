@@ -1,21 +1,25 @@
 import { useCallback, useRef, useState } from "react"
+import { z } from "zod"
 
 import { buildRequestInit, joinUrl } from "~/lib/api"
 
-import type { AdvancedField, AdvancedOp } from "../types"
+import { ADVANCED_FIELDS, ADVANCED_OPS } from "../types"
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
 
-export type AssistantCondition = {
-  field: AdvancedField
-  op: AdvancedOp
-  value: string
-}
+const AssistantConditionSchema = z.object({
+  field: z.enum(ADVANCED_FIELDS),
+  op: z.enum(ADVANCED_OPS),
+  value: z.string().min(1),
+})
 
-export type AssistantProposal = {
-  combinator: "AND" | "OR"
-  conditions: AssistantCondition[]
-}
+const AssistantProposalSchema = z.object({
+  combinator: z.enum(["AND", "OR"]),
+  conditions: z.array(AssistantConditionSchema).min(1),
+})
+
+export type AssistantCondition = z.infer<typeof AssistantConditionSchema>
+export type AssistantProposal = z.infer<typeof AssistantProposalSchema>
 
 export type AssistantState = "idle" | "streaming" | "done" | "error"
 
@@ -89,12 +93,20 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
         buffer = buffer.slice(eventBoundary + 2)
         for (const item of parseSseEvents(ready)) {
           if (item.event === "done") {
+            let raw: unknown
             try {
-              setProposal(JSON.parse(item.data) as AssistantProposal)
+              raw = JSON.parse(item.data)
             } catch {
-              // server 側で正しい JSON を保証する
+              setState("error")
+              continue
             }
-            setState("done")
+            const parsed = AssistantProposalSchema.safeParse(raw)
+            if (parsed.success) {
+              setProposal(parsed.data)
+              setState("done")
+            } else {
+              setState("error")
+            }
           }
           if (item.event === "error") setState("error")
         }

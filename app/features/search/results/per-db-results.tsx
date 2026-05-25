@@ -71,7 +71,11 @@ export const PerDbResults = ({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-fs-body-sm text-ink-mid m-0">
+        <p
+          className="text-fs-body-sm text-ink-mid m-0"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {response.total === 0
             ? t("search.results.perDb.empty")
             : t("search.results.perDb.rangeSummary", {
@@ -117,7 +121,7 @@ export const PerDbResults = ({
         </div>
       </div>
       {response.total === 0
-        ? <Callout tone="info">{t("search.results.perDb.empty")}</Callout>
+        ? <Callout tone="info" role="status">{t("search.results.perDb.empty")}</Callout>
         : (
           <ul className="list-none p-0 m-0 flex flex-col gap-3">
             {response.hits.map((hit) => (

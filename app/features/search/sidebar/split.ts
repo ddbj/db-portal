@@ -2,7 +2,7 @@ import type { ParseNode } from "~/lib/api"
 
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
-import { createInitialFacetState, type FacetState } from "./facet-state"
+import { createInitialSearchFacetState, type SearchFacetState } from "./facet-state"
 
 const ORGANISM_FIELD = "organism"
 const SUBMITTER_FIELD = "organization_name"
@@ -91,7 +91,7 @@ const tryClassify = (node: ParseNode, classification: SplitClassification): bool
 }
 
 export type SplitResult = {
-  sidebar: FacetState
+  sidebar: SearchFacetState
   rest: ParseNode
 }
 
@@ -106,7 +106,7 @@ export const splitForSidebar = (ast: ParseNode): SplitResult => {
     remaining.push(ast)
   }
 
-  const sidebar: FacetState = createInitialFacetState()
+  const sidebar: SearchFacetState = createInitialSearchFacetState()
   sidebar.organisms = classification.organisms
   sidebar.submitters = classification.submitters
   sidebar.studyType = classification.studyType

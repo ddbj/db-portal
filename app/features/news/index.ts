@@ -1,10 +1,10 @@
 export { FacetPanel } from "./facet-panel"
 export {
   clearFacet,
-  emptyFacetState,
-  type FacetState,
-  parseFacetState,
-  serializeFacetState,
+  emptyNewsFacetState,
+  type NewsFacetState,
+  parseNewsFacetState,
+  serializeNewsFacetState,
   setPage,
   setSort,
   toggleCategory,

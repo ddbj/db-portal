@@ -139,6 +139,7 @@ type ModalHeaderProps = {
   description?: ReactNode
   onClose: () => void
   closeLabel?: string
+  as?: "h2" | "h3"
 }
 
 export const ModalHeader = ({
@@ -149,6 +150,7 @@ export const ModalHeader = ({
   description,
   onClose,
   closeLabel = "閉じる",
+  as: TitleTag = "h2",
 }: ModalHeaderProps) => (
   <div className="px-5 pt-4 pb-3.5 border-b border-border-soft flex items-start gap-3">
     <div className="flex-1 min-w-0">
@@ -165,12 +167,12 @@ export const ModalHeader = ({
           )}
         </div>
       )}
-      <h2
+      <TitleTag
         id={titleId}
         className="text-fs-h2 font-bold text-ink m-0 tracking-tight"
       >
         {title}
-      </h2>
+      </TitleTag>
       {description !== undefined && (
         <p className="text-[12.5px] text-ink-mid mt-1 leading-relaxed">
           {description}

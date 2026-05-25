@@ -4,7 +4,7 @@ import type { Lang } from "~/lib/i18n/use-lang"
 import { NativeSelect, Pagination } from "~/ui"
 
 import {
-  type FacetState,
+  type NewsFacetState,
   setPage,
   setSort,
 } from "./facet-url-state"
@@ -12,8 +12,8 @@ import { NewsRow } from "./news-row"
 
 export type NewsListProps = {
   lang: Lang
-  facet: FacetState
-  onChange: (next: FacetState) => void
+  facet: NewsFacetState
+  onChange: (next: NewsFacetState) => void
   loading: boolean
   error: boolean
   total: number
@@ -43,7 +43,7 @@ export const NewsList = ({
           ariaLabel={t("news.toolbar.sort")}
           value={facet.sort}
           onChange={(event) =>
-            onChange(setSort(facet, event.currentTarget.value as FacetState["sort"]))}
+            onChange(setSort(facet, event.currentTarget.value as NewsFacetState["sort"]))}
           options={[
             { value: "newest", label: t("news.toolbar.sortNewest") },
             { value: "oldest", label: t("news.toolbar.sortOldest") },
@@ -76,6 +76,10 @@ export const NewsList = ({
             page={facet.page}
             totalPages={totalPages}
             onPageChange={(page) => onChange(setPage(facet, page))}
+            ariaLabel={t("a11y.paginationNav")}
+            prevLabel={t("a11y.paginationPrev")}
+            nextLabel={t("a11y.paginationNext")}
+            jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
           />
         </footer>
       )}

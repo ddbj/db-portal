@@ -27,6 +27,18 @@ describe("Button", () => {
     expect(button).toHaveAttribute("aria-disabled", "true")
   })
 
+  test("Button_disabled_doesNotInvokeOnClick", () => {
+    const onClick = vi.fn()
+    render(<Button disabled onClick={onClick}>無効</Button>)
+    fireEvent.click(screen.getByRole("button", { name: "無効" }))
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  test("Button_typeSubmit_isApplied", () => {
+    render(<Button type="submit">submit</Button>)
+    expect(screen.getByRole("button", { name: "submit" })).toHaveAttribute("type", "submit")
+  })
+
   test("Button_onClick_isInvoked", () => {
     const onClick = vi.fn()
     render(<Button onClick={onClick}>click</Button>)

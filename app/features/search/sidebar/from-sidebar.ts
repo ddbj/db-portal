@@ -5,7 +5,7 @@ import { canonicalizeAst } from "../ast/canonicalize"
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
 import type { DbSlug } from "../types"
-import type { DatePublishedFilter, FacetState } from "./facet-state"
+import type { DatePublishedFilter, SearchFacetState } from "./facet-state"
 
 const SUBMITTER_FIELD = "organization_name"
 const STUDY_TYPE_FIELD = "library_strategy"
@@ -89,7 +89,7 @@ const studyTypeToAst = (value: string | null): ParseNode | null => {
 }
 
 export const fromSidebar = (
-  state: FacetState,
+  state: SearchFacetState,
   options: FromSidebarOptions = {},
   now: Date = new Date(),
 ): ParseNode => {

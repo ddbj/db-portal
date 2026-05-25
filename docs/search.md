@@ -401,6 +401,17 @@ Tier 1 必須 field (identifier / type) は API 契約で常に非空。portal �
 
 `hardLimitReached === true` のとき件数の横に `<Tag>` 「上位 10000 件まで」 を出す (API 仕様、ES / Solr のハードリミット表示)。
 
+### 7.4 結果領域の a11y
+
+検索結果の更新は URL 駆動で起きる (search box submit / facet 操作 / pagination / sort)。screen reader user 向けに次を満たす:
+
+- main 結果 wrapper (cross-DB / per-DB 共通) に `role="region"` + `aria-label={t("search.a11y.resultsRegion")}` を付ける
+- 件数表示 (ResultsToolbar の左、`<total> 件中 <start>-<end>`) に `aria-live="polite"` + `aria-atomic="true"` を付け、loader 完了で更新されたタイミングで件数が announce される
+- 「結果なし」 / parse error / cross / db error の `Callout` には `aria-live="polite"` を付け、結果領域内の状態変化を伝える
+- 「同期中」 / 「同期失敗」 を表す `SyncStatusChip` は `role="status"` (= 暗黙の `aria-live="polite"`) を付与
+
+assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更新では使わない (キーストロークごとに発火する debounce sync が SR を邪魔するため)。重大エラーの限定箇所のみ assertive に倒す。
+
 ## 8. AI 検索アシスタント
 
 ### 8.1 LLM availability

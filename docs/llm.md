@@ -195,6 +195,8 @@ const sessionMap = new Map<string, Window>()
 
 cleanup は 5 分間隔 (session store と同じ間隔)、古い window を破棄する。
 
+sliding window への移行条件: (a) 境界 burst による誤閾値超過の運用報告が発生する、または (b) multi-instance 化に伴い rate-limit state を共有 store (redis 等) に移すタイミング。固定 window の境界 burst (1 分の境界で最大 2x まで通り得る) を許容できるのは **1 instance 構成のリリース期間** に限った前提で、`§5.4` (auth.md) の multi-instance 拡張と同じトリガで再設計する。
+
 ### 6.3 超過時の応答
 
 ```

@@ -19,12 +19,12 @@ describe("Pagination", () => {
 
   test("Pagination_firstPage_prevDisabled", () => {
     render(<Pagination page={1} totalPages={10} onPageChange={() => undefined} />)
-    expect(screen.getByRole("button", { name: "前のページ" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled()
   })
 
   test("Pagination_lastPage_nextDisabled", () => {
     render(<Pagination page={10} totalPages={10} onPageChange={() => undefined} />)
-    expect(screen.getByRole("button", { name: "次のページ" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled()
   })
 
   test("Pagination_clickNumber_callsOnPageChange", () => {
@@ -37,7 +37,7 @@ describe("Pagination", () => {
   test("Pagination_manyPages_showsLastJump", () => {
     render(<Pagination page={2} totalPages={50} onPageChange={() => undefined} />)
     expect(screen.getByText("…")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "50 ページ目" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Jump to page 50" })).toBeInTheDocument()
   })
 
   test("Pagination_currentAtEnd_doesNotShowLastJump", () => {

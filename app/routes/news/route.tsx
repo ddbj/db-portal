@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from "react-router"
 
 import {
   FacetPanel,
-  type FacetState,
+  type NewsFacetState,
   NewsList,
-  parseFacetState,
-  serializeFacetState,
+  parseNewsFacetState,
+  serializeNewsFacetState,
   useNewsList,
 } from "~/features/news"
 import { useLang, useT } from "~/lib/i18n"
@@ -17,12 +17,12 @@ const NewsRoute = () => {
   const lang = useLang()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const facet = parseFacetState(searchParams.toString())
+  const facet = parseNewsFacetState(searchParams.toString())
   const result = useNewsList(lang, facet)
 
   const handleChange = useCallback(
-    (next: FacetState) => {
-      const qs = serializeFacetState(next)
+    (next: NewsFacetState) => {
+      const qs = serializeNewsFacetState(next)
       const pathname = lang === "en" ? "/en/news" : "/news"
       void navigate(`${pathname}${qs}`, { replace: true })
     },

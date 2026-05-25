@@ -1,6 +1,17 @@
 import type { Response } from "express"
+import { z } from "zod"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
+
+const VllmStreamChunkSchema = z.object({
+  choices: z.array(
+    z.object({
+      delta: z.object({
+        content: z.string().optional(),
+      }).optional(),
+    }),
+  ).optional(),
+}).passthrough()
 
 export type SseStream = {
   start: () => void
@@ -100,15 +111,16 @@ export const readVllmStream = async (
           if (!line.startsWith(SSE_DATA_PREFIX)) continue
           const data = line.slice(SSE_DATA_PREFIX.length).trim()
           if (data === "" || data === "[DONE]") continue
+          let raw: unknown
           try {
-            const json = JSON.parse(data) as {
-              choices?: { delta?: { content?: string } }[]
-            }
-            const content = json.choices?.[0]?.delta?.content
-            if (typeof content === "string" && content.length > 0) onDelta(content)
+            raw = JSON.parse(data)
           } catch {
-            // 無効な JSON は無視 (vLLM がコメント行等を送る可能性に備える)
+            continue
           }
+          const parsed = VllmStreamChunkSchema.safeParse(raw)
+          if (!parsed.success) continue
+          const content = parsed.data.choices?.[0]?.delta?.content
+          if (typeof content === "string" && content.length > 0) onDelta(content)
         }
       }
     }

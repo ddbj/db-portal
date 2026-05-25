@@ -50,16 +50,16 @@ export {
   ResultsPagination,
 } from "./results"
 export {
-  createInitialFacetState,
+  createInitialSearchFacetState,
   FACET_ORGANISMS,
   FACET_STUDY_TYPES,
   FACET_SUBMITTERS,
-  type FacetAction,
   FacetPanel,
-  facetReducer,
-  type FacetState,
   fromSidebar,
   type FromSidebarOptions,
+  type SearchFacetAction,
+  searchFacetReducer,
+  type SearchFacetState,
   splitForSidebar,
   type SplitResult,
 } from "./sidebar"

@@ -36,6 +36,10 @@ const TokenResponseSchema = z.object({
 })
 
 const IdTokenPayloadSchema = z.object({
+  iss: z.string().min(1),
+  aud: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
+  exp: z.number().int().positive(),
+  iat: z.number().int().positive(),
   sub: z.string().min(1),
   name: z.string().min(1).optional(),
   preferred_username: z.string().min(1).optional(),
@@ -43,6 +47,22 @@ const IdTokenPayloadSchema = z.object({
   family_name: z.string().min(1).optional(),
   email: z.string().email().optional(),
 })
+
+export class IdTokenValidationError extends Error {
+  readonly reason: string
+  constructor(reason: string) {
+    super(`id_token validation failed: ${reason}`)
+    this.name = "IdTokenValidationError"
+    this.reason = reason
+  }
+}
+
+export type IdTokenValidation = {
+  issuer: string
+  audience: string
+  clockSkewSeconds?: number
+  now?: () => number
+}
 
 const base64UrlEncode = (buffer: Buffer): string =>
   buffer
@@ -155,14 +175,38 @@ export const buildLogoutUrl = (
   return url.toString()
 }
 
-export const extractUserInfo = (idToken: string): UserInfo => {
+export const extractUserInfo = (idToken: string, validation: IdTokenValidation): UserInfo => {
   const segments = idToken.split(".")
   const payloadSegment = segments[1]
   if (segments.length !== 3 || !payloadSegment) {
-    throw new Error("id_token is not a JWT")
+    throw new IdTokenValidationError("not a JWT")
   }
-  const payload = JSON.parse(base64UrlDecodeToString(payloadSegment)) as unknown
-  const parsed = IdTokenPayloadSchema.parse(payload)
+  let raw: unknown
+  try {
+    raw = JSON.parse(base64UrlDecodeToString(payloadSegment))
+  } catch {
+    throw new IdTokenValidationError("payload is not valid JSON")
+  }
+  const parsedResult = IdTokenPayloadSchema.safeParse(raw)
+  if (!parsedResult.success) {
+    throw new IdTokenValidationError(`payload schema mismatch: ${parsedResult.error.message}`)
+  }
+  const parsed = parsedResult.data
+  if (parsed.iss !== validation.issuer) {
+    throw new IdTokenValidationError("iss mismatch")
+  }
+  const audiences = Array.isArray(parsed.aud) ? parsed.aud : [parsed.aud]
+  if (!audiences.includes(validation.audience)) {
+    throw new IdTokenValidationError("aud mismatch")
+  }
+  const nowSeconds = Math.floor((validation.now?.() ?? Date.now()) / 1000)
+  const clockSkew = validation.clockSkewSeconds ?? 60
+  if (parsed.exp <= nowSeconds) {
+    throw new IdTokenValidationError("token expired")
+  }
+  if (parsed.iat > nowSeconds + clockSkew) {
+    throw new IdTokenValidationError("iat is in the future")
+  }
   const combinedName = [parsed.given_name, parsed.family_name]
     .filter((v): v is string => Boolean(v))
     .join(" ")

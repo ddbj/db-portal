@@ -136,6 +136,9 @@ export type Resources = {
     languageSwitcher: string
     notificationBar: string
     paginationNav: string
+    paginationPrev: string
+    paginationNext: string
+    paginationJumpToLast: string
   }
   submit: {
     pageTitle: string
@@ -545,6 +548,7 @@ export type Resources = {
       facetGroup: string
       removeFilter: string
       queryPreview: string
+      resultsRegion: string
       assistantInput: string
       assistantStop: string
     }
@@ -685,6 +689,9 @@ export const ja: Resources = {
     languageSwitcher: "言語切替",
     notificationBar: "重要なお知らせ",
     paginationNav: "ページネーション",
+    paginationPrev: "前のページ",
+    paginationNext: "次のページ",
+    paginationJumpToLast: "{{n}} ページ目へ",
   },
   submit: {
     pageTitle: "登録ナビゲーション",
@@ -1191,6 +1198,7 @@ export const ja: Resources = {
       facetGroup: "ファセット",
       removeFilter: "フィルタを解除",
       queryPreview: "クエリプレビュー",
+      resultsRegion: "検索結果",
       assistantInput: "AI 検索アシスタントへの入力",
       assistantStop: "提案の生成を停止",
     },

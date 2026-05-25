@@ -54,8 +54,8 @@ export const DATE_FIELDS: readonly AdvancedField[] = [
 export const isDateField = (value: AdvancedField): boolean =>
   DATE_FIELDS.includes(value)
 
-export type AdvancedOp = "eq" | "contains" | "wildcard" | "between"
+export const ADVANCED_OPS = ["eq", "contains", "wildcard", "between"] as const
 
-export const ADVANCED_OPS: readonly AdvancedOp[] = ["eq", "contains", "wildcard", "between"]
+export type AdvancedOp = typeof ADVANCED_OPS[number]
 
 export type AdvancedCombinator = "AND" | "OR" | "NOT"

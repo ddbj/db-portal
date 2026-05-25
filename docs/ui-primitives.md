@@ -287,6 +287,19 @@ class: `font-mono font-bold uppercase tracking-[0.08em] text-ink-mid`。`color` 
 
 ## 7. Forms
 
+### 7.0 Error state と SR 連携
+
+入力 primitive (`Button` を除く form control: TextInput / TextArea / NativeSelect / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**。
+
+- `aria-invalid` は **state ベース** で primitive 側が自動付与する (`state="warn"` のとき `aria-invalid="true"`、default のとき false / 未設定)
+- `aria-describedby` は consumer 側 (`FormGroup` の `errorId` / `hintId` など) が渡せるよう prop を開ける
+- error message を表示する側 (`FormGroup` の hint 領域や Callout) は **必ず id を持ち**、その id を input の `aria-describedby` に流す
+- placeholder は色情報のみで状態を示さない (placeholder text を error message として使わない)
+
+`FormGroup` 自身は `<fieldset>` + `<legend>` で実装し、`num` + `label` を `<legend>` 内に置く。これにより radio / checkbox 群が単一の質問グループとして screen reader に announce される。1 input (TextInput 等) を子に持つ場合も `<fieldset>` で囲んで問題ない。
+
+placeholder の色は global stylesheet (`app/styles/tailwind.css`) で `::placeholder { color: var(--color-ink-soft) }` を一括指定し、surface (white) 上でコントラスト比 4.5:1 を満たす。
+
 ### 7.1 Button
 
 5 種類 × 3 サイズの汎用ボタン。
@@ -332,7 +345,48 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"
 
 class: `p-0 bg-transparent border-0 text-ink-mid cursor-pointer rounded-button inline-flex items-center justify-center` + `style={{ width: size, height: size }}` (default 26px)。
 
-### 7.3 NativeSelect
+mobile touch target: WCAG 2.2 AA は最小 24×24px、AAA enhanced は 44×44px を推奨する。default size 26px は AA を満たすが、touch 主体の文脈 (mobile-first な画面、tap 連打が想定される UI) では consumer 側で `size={44}` を渡す。primitive 側の default を 44 に上げると desktop で密度が落ちるため、judgement は consumer に委ねる。
+
+### 7.3 TextInput
+
+汎用 text input。`<input type="text">` 系の thin wrapper。
+
+```ts
+type TextInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "className" | "aria-label"> & {
+  ariaLabel: string
+  ariaDescribedby?: string
+  state?: "default" | "warn"
+  mono?: boolean
+  width?: number
+}
+```
+
+state:
+
+- default: `border border-border-soft bg-surface text-ink`、`aria-invalid` 未設定
+- warn: `border border-warn-border bg-warn-bg text-ink`、`aria-invalid="true"` を自動付与
+
+`ariaDescribedby` を渡すと `aria-describedby` 属性に流す (`FormGroup` の hint / error 領域 id と紐付ける)。`mono` で `font-mono tracking-[0.02em]` を加える (DSL 入力など)。
+
+class 共通: `text-fs-body py-2 px-3 rounded-button font-sans`。
+
+### 7.4 TextArea
+
+複数行入力。`TextInput` と同じ prop / state policy。
+
+```ts
+type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "aria-label"> & {
+  ariaLabel: string
+  ariaDescribedby?: string
+  state?: "default" | "warn"
+  mono?: boolean
+  width?: number
+}
+```
+
+class 共通: `block w-full text-fs-body py-2 px-3 rounded-button font-sans resize-none`。default `rows={3}`。
+
+### 7.5 NativeSelect
 
 OS native `<select>` のスタイル付きラッパー。`appearance: none` で chevron は自前 SVG。
 
@@ -352,16 +406,17 @@ state:
 
 共通: `w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button outline-none cursor-pointer font-sans`。chevron は `absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`、親に `relative` を付ける。
 
-### 7.4 FormGroup
+### 7.6 FormGroup
 
-Modal 内の質問グループ。番号 + ラベル + 回答群を縦に並べる。
+Modal 内の質問グループ。番号 + ラベル + 回答群を縦に並べる。`<fieldset>` + `<legend>` で質問群を semantic に閉じる。
 
 ```ts
 type FormGroupProps = {
   num: string
-  label: string
+  label: ReactNode
   optional?: boolean
-  hint?: string
+  hint?: ReactNode
+  hintId?: string
   children: ReactNode
 }
 ```
@@ -369,18 +424,22 @@ type FormGroupProps = {
 骨格:
 
 ```
-<div className="mb-5">
-  <div className="flex items-baseline gap-2 mb-2">
+<fieldset className="mb-5 border-0 p-0 m-0" aria-describedby={hintId}>
+  <legend className="flex items-baseline gap-2 mb-2 flex-wrap p-0">
     <span className="font-mono text-fs-micro font-bold text-brand-deep tracking-[0.04em] shrink-0">{num}</span>
     <span className="text-fs-body font-bold text-ink">{label}</span>
-    {optional && <Tag>任意</Tag>}
-    {hint && <span className="text-[11.5px] text-ink-mid">{hint}</span>}
-  </div>
+    {optional && <Tag size="sm">任意</Tag>}
+    {hint !== undefined && (
+      <span id={hintId} className="text-[11.5px] text-ink-mid">{hint}</span>
+    )}
+  </legend>
   <div className="flex flex-col gap-1">{children}</div>
-</div>
+</fieldset>
 ```
 
-### 7.5 FmtRadio / FmtCheck
+`hintId` を渡すと hint span に `id` を付け、`<fieldset aria-describedby>` で legend と hint を関連付ける。子の input primitive (TextInput / TextArea / NativeSelect) には `ariaDescribedby={hintId}` を流して読み上げ順を揃える。
+
+### 7.7 FmtRadio / FmtCheck
 
 Modal 内の radio / checkbox card。checked 時に `brand-softer` 背景 + `brand-light/50` border。
 

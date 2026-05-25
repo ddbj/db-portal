@@ -4,11 +4,11 @@ import { useMemo } from "react"
 import { fetchNews, type NewsItem, type NewsList } from "~/lib/api"
 import type { Lang } from "~/lib/i18n/use-lang"
 
-import { type FacetState } from "./facet-url-state"
+import { type NewsFacetState } from "./facet-url-state"
 
 const PAGE_SIZE = 20
 
-const sortItems = (items: NewsList, sort: FacetState["sort"]): NewsList => {
+const sortItems = (items: NewsList, sort: NewsFacetState["sort"]): NewsList => {
   const sorted = [...items]
   sorted.sort((a, b) =>
     sort === "newest"
@@ -19,7 +19,7 @@ const sortItems = (items: NewsList, sort: FacetState["sort"]): NewsList => {
   return sorted
 }
 
-const applyFilter = (items: NewsList, lang: Lang, facet: FacetState): NewsList =>
+const applyFilter = (items: NewsList, lang: Lang, facet: NewsFacetState): NewsList =>
   items.filter((item) => {
     const title = item.title[lang]
     if (!title || title.trim() === "") return false
@@ -76,7 +76,7 @@ export type UseNewsListResult = {
 
 export const NEWS_PAGE_SIZE = PAGE_SIZE
 
-export const useNewsList = (lang: Lang, facet: FacetState): UseNewsListResult => {
+export const useNewsList = (lang: Lang, facet: NewsFacetState): UseNewsListResult => {
   const query = useQuery({
     queryKey: ["news"],
     queryFn: () => fetchNews(),

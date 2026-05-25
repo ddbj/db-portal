@@ -1,42 +1,31 @@
 import { useEffect, useMemo, useReducer, useState } from "react"
-import { Link, type LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router"
+import { Link, useLoaderData, useNavigate } from "react-router"
 
 import {
   AdvancedBuilder,
   advancedReducer,
   buildResultsHref,
   buildSearchHref,
-  createInitialFacetState,
+  createInitialSearchFacetState,
   createInitialState,
   CrossResults,
-  type DbSlug,
   DEFAULT_PAGE,
   ExamplesChip,
   FacetPanel,
-  facetReducer,
   fromAdvanced,
   fromSidebar,
   mergeAstAnd,
   PerDbResults,
   type PerPageValue,
   QueryPreview,
-  readSearchParams,
   SearchAssistant,
+  searchFacetReducer,
   type SortKey,
-  sortKeyToApiSort,
   splitForSidebar,
   SyncStatusChip,
   toAdvanced,
   useDebouncedSerialize,
 } from "~/features/search"
-import {
-  crossSearch,
-  type CrossSearchResponse,
-  dbSearch,
-  type DbSearchResponse,
-  type ParseNode,
-  parseQuery,
-} from "~/lib/api"
 import { useLang, useT } from "~/lib/i18n"
 import {
   Button,
@@ -48,72 +37,19 @@ import {
   SidebarHeading,
 } from "~/ui"
 
+import { loader } from "./loader"
+
+export { loader }
+
 export const handle = {
   lang: undefined,
   i18n: { en: "complete" },
 } as const
 
-type LoaderData = {
-  q: string
-  db: DbSlug | null
-  page: number
-  perPage: PerPageValue
-  sort: SortKey
-  cross: CrossSearchResponse | null
-  perDb: DbSearchResponse | null
-  ast: ParseNode | null
-  errorKey: "parse" | "cross" | "db" | null
-}
-
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {
-  const url = new URL(request.url)
-  const params = readSearchParams(url.searchParams)
-  const envBaseUrl = process.env.DB_PORTAL_SEARCH_API_URL
-  const options = envBaseUrl ? { baseUrl: envBaseUrl } : {}
-  if (params.q === "") {
-    return { ...params, cross: null, perDb: null, ast: null, errorKey: null }
-  }
-  let ast: ParseNode | null = null
-  try {
-    const parsed = await parseQuery({ q: params.q }, options)
-    ast = parsed.ast
-  } catch {
-    return { ...params, cross: null, perDb: null, ast: null, errorKey: "parse" }
-  }
-  try {
-    if (params.db === null) {
-      const cross = await crossSearch({ q: params.q, topHits: 5 }, options)
-
-      return { ...params, cross, perDb: null, ast, errorKey: null }
-    }
-    const apiSort = sortKeyToApiSort(params.sort)
-    const perDb = await dbSearch(
-      {
-        q: params.q,
-        db: params.db,
-        page: params.page,
-        perPage: params.perPage,
-        ...(apiSort ? { sort: apiSort } : {}),
-      },
-      options,
-    )
-
-    return { ...params, cross: null, perDb, ast, errorKey: null }
-  } catch {
-    return {
-      ...params,
-      cross: null,
-      perDb: null,
-      ast,
-      errorKey: params.db === null ? "cross" : "db",
-    }
-  }
-}
-
 const SEARCH_API_BASE_URL = (import.meta.env.VITE_DB_PORTAL_SEARCH_API_URL ?? "") as string
 
 const SearchResultsRoute = () => {
-  const data = useLoaderData() as LoaderData
+  const data = useLoaderData<typeof loader>()
   const t = useT()
   const lang = useLang()
   const navigate = useNavigate()
@@ -125,7 +61,7 @@ const SearchResultsRoute = () => {
 
   const { advancedInit, facetInit } = useMemo(() => {
     if (!data.ast) {
-      return { advancedInit: createInitialState(), facetInit: createInitialFacetState() }
+      return { advancedInit: createInitialState(), facetInit: createInitialSearchFacetState() }
     }
     const split = splitForSidebar(data.ast)
 
@@ -136,7 +72,7 @@ const SearchResultsRoute = () => {
   }, [data.ast])
 
   const [advancedState, dispatchAdvanced] = useReducer(advancedReducer, advancedInit)
-  const [facetState, dispatchFacet] = useReducer(facetReducer, facetInit)
+  const [facetState, dispatchFacet] = useReducer(searchFacetReducer, facetInit)
 
   useEffect(() => {
     dispatchAdvanced({ type: "replaceRoot", root: advancedInit.root })
@@ -233,7 +169,7 @@ const SearchResultsRoute = () => {
         : data.errorKey
           ? (
             <Section padY="md">
-              <Callout tone="warn">
+              <Callout tone="warn" role="status">
                 {data.errorKey === "parse"
                   ? t("search.errors.parseFailure")
                   : data.errorKey === "cross"
@@ -252,7 +188,7 @@ const SearchResultsRoute = () => {
               <Section padY="md">
                 <div className="grid gap-8 md:grid-cols-[var(--spacing-sidebar)_1fr]">
                   <FacetPanel state={facetState} dispatch={dispatchFacet} db={null} />
-                  <div>
+                  <div role="region" aria-label={t("search.a11y.resultsRegion")}>
                     <SectionHeading>{t("search.results.cross.heading")}</SectionHeading>
                     <CrossResults q={data.q} response={data.cross} lang={lang} />
                   </div>
@@ -264,17 +200,19 @@ const SearchResultsRoute = () => {
                 <Section padY="md">
                   <div className="grid gap-8 md:grid-cols-[var(--spacing-sidebar)_1fr_var(--spacing-right-pane)]">
                     <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} />
-                    <PerDbResults
-                      db={data.db}
-                      response={data.perDb}
-                      lang={lang}
-                      page={data.page}
-                      perPage={data.perPage}
-                      sort={data.sort}
-                      onPageChange={handlePageChange}
-                      onPerPageChange={handlePerPageChange}
-                      onSortChange={handleSortChange}
-                    />
+                    <div role="region" aria-label={t("search.a11y.resultsRegion")}>
+                      <PerDbResults
+                        db={data.db}
+                        response={data.perDb}
+                        lang={lang}
+                        page={data.page}
+                        perPage={data.perPage}
+                        sort={data.sort}
+                        onPageChange={handlePageChange}
+                        onPerPageChange={handlePerPageChange}
+                        onSortChange={handleSortChange}
+                      />
+                    </div>
                     <aside className="flex flex-col gap-4">
                       <SidebarHeading>{t("search.builder.heading")}</SidebarHeading>
                       <AdvancedBuilder state={advancedState} dispatch={dispatchAdvanced} />

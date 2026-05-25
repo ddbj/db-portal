@@ -12,6 +12,7 @@ import {
   extractUserInfo,
   generatePkce,
   generateState,
+  IdTokenValidationError,
   type OidcConfig,
 } from "./oidc"
 import { pendingLogins } from "./pending-logins"
@@ -65,7 +66,10 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
     }
     try {
       const tokens = await exchangeCodeForTokens(config, code, pending.codeVerifier)
-      const userInfo = extractUserInfo(tokens.idToken)
+      const userInfo = extractUserInfo(tokens.idToken, {
+        issuer: env.DB_PORTAL_KEYCLOAK_REALM_URL,
+        audience: env.DB_PORTAL_KEYCLOAK_CLIENT_ID,
+      })
       const sid = crypto.randomUUID()
       sessionStore.set(sid, {
         tokens: {
@@ -81,6 +85,12 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
       logger.info("auth_login_success", { sub: userInfo.sub })
       res.redirect(302, normalizeReturnTo(pending.returnTo))
     } catch (error) {
+      if (error instanceof IdTokenValidationError) {
+        logger.warn("auth_callback_invalid_id_token", { reason: error.reason })
+        sendError(res, 400, "invalid_id_token")
+
+        return
+      }
       logger.error("auth_callback_failed", {
         message: error instanceof Error ? error.message : String(error),
       })

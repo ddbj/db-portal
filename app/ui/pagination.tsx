@@ -8,6 +8,7 @@ type PaginationProps = {
   ariaLabel?: string
   prevLabel?: string
   nextLabel?: string
+  jumpToLastLabel?: (n: number) => string
 }
 
 const btnClass = (isActive: boolean, isDisabled: boolean): string =>
@@ -39,9 +40,10 @@ export const Pagination = ({
   totalPages,
   onPageChange,
   maxNumbers = 5,
-  ariaLabel = "ページネーション",
-  prevLabel = "前のページ",
-  nextLabel = "次のページ",
+  ariaLabel = "Pagination",
+  prevLabel = "Previous page",
+  nextLabel = "Next page",
+  jumpToLastLabel = (n) => `Jump to page ${n}`,
 }: PaginationProps) => {
   if (totalPages <= 0) return null
 
@@ -82,7 +84,7 @@ export const Pagination = ({
           <button
             type="button"
             onClick={() => onPageChange(totalPages)}
-            aria-label={`${totalPages} ページ目`}
+            aria-label={jumpToLastLabel(totalPages)}
             className={btnClass(false, false)}
           >
             {totalPages}

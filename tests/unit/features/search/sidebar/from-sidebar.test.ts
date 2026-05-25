@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { createInitialFacetState, fromSidebar, isIdentityAst } from "~/features/search"
+import { createInitialSearchFacetState, fromSidebar, isIdentityAst } from "~/features/search"
 import type { ParseNode } from "~/lib/api"
 
 type EqNode = { op: "eq"; field: string; value: string }
@@ -27,30 +27,30 @@ const expectBetween = (node: ParseNode): BetweenNode => {
 
 describe("fromSidebar", () => {
   test("emptyState_returnsIdentity", () => {
-    expect(isIdentityAst(fromSidebar(createInitialFacetState()))).toBe(true)
+    expect(isIdentityAst(fromSidebar(createInitialSearchFacetState()))).toBe(true)
   })
 
   test("singleOrganism_returnsLeafValue", () => {
-    const state = { ...createInitialFacetState(), organisms: ["Homo sapiens"] }
+    const state = { ...createInitialSearchFacetState(), organisms: ["Homo sapiens"] }
     const ast = expectEq(fromSidebar(state))
     expect(ast.field).toBe("organism")
     expect(ast.value).toBe("Homo sapiens")
   })
 
   test("multipleOrganisms_returnsOrOfEq", () => {
-    const state = { ...createInitialFacetState(), organisms: ["Homo sapiens", "Mus musculus"] }
+    const state = { ...createInitialSearchFacetState(), organisms: ["Homo sapiens", "Mus musculus"] }
     const ast = expectOr(fromSidebar(state))
     expect(ast.rules.length).toBe(2)
   })
 
   test("submittersOmittedInCrossMode", () => {
-    const state = { ...createInitialFacetState(), submitters: ["RIKEN"] }
+    const state = { ...createInitialSearchFacetState(), submitters: ["RIKEN"] }
     const ast = fromSidebar(state, { db: null })
     expect(isIdentityAst(ast)).toBe(true)
   })
 
   test("submittersIncludedInPerDbMode", () => {
-    const state = { ...createInitialFacetState(), submitters: ["RIKEN"] }
+    const state = { ...createInitialSearchFacetState(), submitters: ["RIKEN"] }
     const ast = fromSidebar(state, { db: "bioproject" })
     expect(ast.op).toBe("eq")
   })
@@ -58,7 +58,7 @@ describe("fromSidebar", () => {
   test("dateRange_preset1y_emitsBetween", () => {
     const now = new Date("2024-06-01T00:00:00Z")
     const state = {
-      ...createInitialFacetState(),
+      ...createInitialSearchFacetState(),
       datePublished: { active: "1y" as const, from: "", to: "" },
     }
     const ast = expectBetween(fromSidebar(state, {}, now))
@@ -69,7 +69,7 @@ describe("fromSidebar", () => {
 
   test("explicitFromTo_overridesPresetAll", () => {
     const state = {
-      ...createInitialFacetState(),
+      ...createInitialSearchFacetState(),
       datePublished: { active: "all" as const, from: "2020-01-01", to: "2024-12-31" },
     }
     const ast = expectBetween(fromSidebar(state))

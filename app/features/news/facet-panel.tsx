@@ -5,8 +5,8 @@ import { AppliedFilters, FacetGroup, FacetRow, SidebarHeading } from "~/ui"
 
 import {
   clearFacet,
-  emptyFacetState,
-  type FacetState,
+  emptyNewsFacetState,
+  type NewsFacetState,
   toggleCategory,
   toggleService,
   toggleYear,
@@ -24,9 +24,9 @@ const categoryLabelKey = (category: NewsCategory): CategoryLabelKey =>
   `news.category.${category}` as CategoryLabelKey
 
 type FacetPanelProps = {
-  facet: FacetState
+  facet: NewsFacetState
   options: NewsFacetOptions
-  onChange: (next: FacetState) => void
+  onChange: (next: NewsFacetState) => void
 }
 
 export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
@@ -61,7 +61,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
         <AppliedFilters
           applied={applied}
           onClearAll={() =>
-            onChange({ ...emptyFacetState(), sort: facet.sort })}
+            onChange({ ...emptyNewsFacetState(), sort: facet.sort })}
         />
       )}
       <FacetGroup

@@ -1,6 +1,6 @@
 import { NewsCategory } from "~/lib/api"
 
-export type FacetState = {
+export type NewsFacetState = {
   category: readonly NewsCategory[]
   year: readonly number[]
   service: readonly string[]
@@ -8,7 +8,7 @@ export type FacetState = {
   sort: "newest" | "oldest"
 }
 
-const SORT_VALUES: readonly FacetState["sort"][] = ["newest", "oldest"]
+const SORT_VALUES: readonly NewsFacetState["sort"][] = ["newest", "oldest"]
 
 const isNewsCategory = (value: string): value is NewsCategory =>
   (NewsCategory.options as readonly string[]).includes(value)
@@ -22,11 +22,11 @@ const splitList = (value: string | null | undefined): string[] => {
     .filter((entry) => entry.length > 0)
 }
 
-export const parseFacetState = (search: string): FacetState => {
+export const parseNewsFacetState = (search: string): NewsFacetState => {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
   const sortRaw = params.get("sort")
-  const sort: FacetState["sort"] = SORT_VALUES.includes(sortRaw as FacetState["sort"])
-    ? (sortRaw as FacetState["sort"])
+  const sort: NewsFacetState["sort"] = SORT_VALUES.includes(sortRaw as NewsFacetState["sort"])
+    ? (sortRaw as NewsFacetState["sort"])
     : "newest"
   const page = Math.max(1, Number(params.get("page") ?? "1") || 1)
 
@@ -41,7 +41,7 @@ export const parseFacetState = (search: string): FacetState => {
   }
 }
 
-export const serializeFacetState = (state: FacetState): string => {
+export const serializeNewsFacetState = (state: NewsFacetState): string => {
   const params = new URLSearchParams()
   if (state.category.length > 0) {
     params.set("category", [...state.category].sort().join(","))
@@ -59,7 +59,7 @@ export const serializeFacetState = (state: FacetState): string => {
   return qs ? `?${qs}` : ""
 }
 
-export const toggleCategory = (state: FacetState, category: NewsCategory): FacetState => ({
+export const toggleCategory = (state: NewsFacetState, category: NewsCategory): NewsFacetState => ({
   ...state,
   category: state.category.includes(category)
     ? state.category.filter((c) => c !== category)
@@ -67,7 +67,7 @@ export const toggleCategory = (state: FacetState, category: NewsCategory): Facet
   page: 1,
 })
 
-export const toggleYear = (state: FacetState, year: number): FacetState => ({
+export const toggleYear = (state: NewsFacetState, year: number): NewsFacetState => ({
   ...state,
   year: state.year.includes(year)
     ? state.year.filter((y) => y !== year)
@@ -75,7 +75,7 @@ export const toggleYear = (state: FacetState, year: number): FacetState => ({
   page: 1,
 })
 
-export const toggleService = (state: FacetState, service: string): FacetState => ({
+export const toggleService = (state: NewsFacetState, service: string): NewsFacetState => ({
   ...state,
   service: state.service.includes(service)
     ? state.service.filter((s) => s !== service)
@@ -83,25 +83,25 @@ export const toggleService = (state: FacetState, service: string): FacetState =>
   page: 1,
 })
 
-export const setSort = (state: FacetState, sort: FacetState["sort"]): FacetState => ({
+export const setSort = (state: NewsFacetState, sort: NewsFacetState["sort"]): NewsFacetState => ({
   ...state,
   sort,
   page: 1,
 })
 
-export const setPage = (state: FacetState, page: number): FacetState => ({
+export const setPage = (state: NewsFacetState, page: number): NewsFacetState => ({
   ...state,
   page: Math.max(1, page),
 })
 
-export const clearFacet = (state: FacetState, kind: "category" | "year" | "service"): FacetState => {
+export const clearFacet = (state: NewsFacetState, kind: "category" | "year" | "service"): NewsFacetState => {
   if (kind === "category") return { ...state, category: [], page: 1 }
   if (kind === "year") return { ...state, year: [], page: 1 }
 
   return { ...state, service: [], page: 1 }
 }
 
-export const emptyFacetState = (): FacetState => ({
+export const emptyNewsFacetState = (): NewsFacetState => ({
   category: [],
   year: [],
   service: [],
