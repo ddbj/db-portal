@@ -15,10 +15,10 @@ export const llmAvailabilityFromHealth = (health: LlmHealth | undefined | null):
   switch (health.status) {
     case "ok":
       return { ready: true, health }
+    case "unreachable":
+      return { ready: true, reason: health.reason, health }
     case "unset":
       return { ready: false, reason: "unset", health }
-    case "unreachable":
-      return { ready: false, reason: health.reason, health }
   }
 }
 

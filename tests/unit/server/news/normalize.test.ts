@@ -1,11 +1,27 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  dbclsDateFromSlug,
   parseFrontMatter,
   type RawArticle,
+  type SourceNormalizeConfig,
   tagsToCategory,
   toNewsItem,
 } from "../../../../server/news/normalize"
+
+const ddbjCfg: SourceNormalizeConfig = {
+  source: "ddbj",
+  urlBuilder: (lang, slug) =>
+    lang === "ja"
+      ? `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html`
+      : `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html`,
+}
+
+const dbclsCfg: SourceNormalizeConfig = {
+  source: "dbcls",
+  urlBuilder: (lang, slug) => `https://dbcls.rois.ac.jp/${lang}/${slug}.html`,
+  publishedAtFromSlug: dbclsDateFromSlug,
+}
 
 const buildMarkdown = (frontMatter: string, body = "<p>body</p>"): string =>
   `---\n${frontMatter}\n---\n${body}`
@@ -71,6 +87,7 @@ describe("parseFrontMatter", () => {
 
 describe("toNewsItem", () => {
   const ja: RawArticle = {
+    source: "ddbj",
     lang: "ja",
     slug: "2024-01-02",
     fm: {
@@ -82,6 +99,7 @@ describe("toNewsItem", () => {
     },
   }
   const en: RawArticle = {
+    source: "ddbj",
     lang: "en",
     slug: "2024-01-02",
     fm: {
@@ -92,9 +110,9 @@ describe("toNewsItem", () => {
     },
   }
 
-  test("pairs ja and en into NewsItem with shared id", () => {
-    const item = toNewsItem(ja, en)
-    expect(item?.id).toBe("2024-01-02")
+  test("pairs ja and en into NewsItem with source-prefixed id", () => {
+    const item = toNewsItem(ddbjCfg, ja, en)
+    expect(item?.id).toBe("ddbj-2024-01-02")
     expect(item?.title).toEqual({ ja: "ja タイトル", en: "EN title" })
     expect(item?.category).toBe("release")
     expect(item?.url?.ja).toContain("/news/ja/2024-01-02.html")
@@ -103,18 +121,40 @@ describe("toNewsItem", () => {
   })
 
   test("returns undefined when both articles are missing", () => {
-    expect(toNewsItem(undefined, undefined)).toBeUndefined()
+    expect(toNewsItem(ddbjCfg, undefined, undefined)).toBeUndefined()
   })
 
-  test("returns undefined when date is missing", () => {
+  test("returns undefined when date is missing and no fallback", () => {
     const broken: RawArticle = { ...ja, fm: { title: "x" } }
-    expect(toNewsItem(broken, undefined)).toBeUndefined()
+    expect(toNewsItem(ddbjCfg, broken, undefined)).toBeUndefined()
   })
 
   test("ja-only article keeps en title empty", () => {
-    const item = toNewsItem(ja, undefined)
+    const item = toNewsItem(ddbjCfg, ja, undefined)
     expect(item?.title.ja).toBe("ja タイトル")
     expect(item?.title.en).toBe("")
     expect(item?.url?.en).toBeUndefined()
+  })
+
+  test("dbcls derives publishedAt from slug when fm.date is missing", () => {
+    const dbclsJa: RawArticle = {
+      source: "dbcls",
+      lang: "ja",
+      slug: "2026-05-01-post1",
+      fm: { title: "DBCLS post" },
+    }
+    const item = toNewsItem(dbclsCfg, dbclsJa, undefined)
+    expect(item?.id).toBe("dbcls-2026-05-01-post1")
+    expect(item?.publishedAt).toBe("2026-05-01T00:00:00+09:00")
+  })
+
+  test("published: false drops the item", () => {
+    const drafted: RawArticle = {
+      source: "dbcls",
+      lang: "ja",
+      slug: "2026-05-02-post1",
+      fm: { title: "draft", published: "false" },
+    }
+    expect(toNewsItem(dbclsCfg, drafted, undefined)).toBeUndefined()
   })
 })

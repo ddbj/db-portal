@@ -4,8 +4,8 @@ export default {
   id: "bioproject",
   title: { ja: "BioProject", en: "BioProject" },
   description: {
-    ja: "研究プロジェクトと、そこから生じる試料や配列データを束ねるメタデータ DB。",
-    en: "Metadata database that groups research projects and the samples or sequence data derived from them.",
+    ja: "研究プロジェクトのメタデータ",
+    en: "Research project metadata",
   },
   link: { kind: "internal", to: "/databases/bioproject" },
   top: { category: "popular-ddbj", order: 1, monogram: "BP" },

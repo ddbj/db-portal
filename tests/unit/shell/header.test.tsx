@@ -37,12 +37,6 @@ const renderHeader = (path: string) => {
 }
 
 describe("Header", () => {
-  test("Header_jaRoot_topIsActive", () => {
-    renderHeader("/")
-    const top = screen.getByRole("link", { name: "トップ" })
-    expect(top).toHaveAttribute("aria-current", "page")
-  })
-
   test("Header_searchPath_searchIsActive", () => {
     renderHeader("/search")
     const search = screen.getByRole("link", { name: "検索" })
@@ -57,20 +51,28 @@ describe("Header", () => {
 
   test("Header_enRoot_navHrefsArePrefixed", () => {
     renderHeader("/en")
-    const top = screen.getByRole("link", { name: "Top" })
     const search = screen.getByRole("link", { name: "Search" })
-    expect(top).toHaveAttribute("href", "/en")
+    const submit = screen.getByRole("link", { name: "Submit" })
     expect(search).toHaveAttribute("href", "/en/search")
+    expect(submit).toHaveAttribute("href", "/en/submit")
+  })
+
+  test("Header_aboutUs_isExternalLink", () => {
+    renderHeader("/")
+    const about = screen.getByRole("link", { name: /About us/ })
+    expect(about).toHaveAttribute("href", "https://bsi.rois.ac.jp")
+    expect(about).toHaveAttribute("target", "_blank")
+    expect(about).toHaveAttribute("rel", "noopener noreferrer")
   })
 })
 
 describe("computeActiveNav", () => {
-  test("computeActiveNav_jaRoot_returnsTop", () => {
-    expect(computeActiveNav("/", "ja")).toBe("top")
+  test("computeActiveNav_jaRoot_returnsNull", () => {
+    expect(computeActiveNav("/", "ja")).toBe(null)
   })
 
-  test("computeActiveNav_enRoot_returnsTop", () => {
-    expect(computeActiveNav("/en", "en")).toBe("top")
+  test("computeActiveNav_enRoot_returnsNull", () => {
+    expect(computeActiveNav("/en", "en")).toBe(null)
   })
 
   test("computeActiveNav_searchResultsJa_returnsSearch", () => {

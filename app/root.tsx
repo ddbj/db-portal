@@ -23,7 +23,7 @@ import { createQueryClient } from "~/lib/query/client"
 import { ShellLayout } from "~/shell"
 
 export const meta = () => [
-  { title: "DB Portal" },
+  { title: "DDBJ 刷新 (仮)" },
   { name: "viewport", content: "width=device-width, initial-scale=1" },
   { charSet: "utf-8" },
 ]

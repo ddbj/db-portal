@@ -58,7 +58,7 @@ describe("createCacheStore", () => {
   test("filter by category", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const released = cache.list({ category: ["release"] })
       expect(released).toHaveLength(1)
       expect(released[0]?.id).toBe("a-2024")
@@ -68,7 +68,7 @@ describe("createCacheStore", () => {
   test("filter by year", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       expect(cache.list({ year: [2024] }).map((n) => n.id)).toEqual(["a-2024", "c-2024"])
     })
   })
@@ -76,7 +76,7 @@ describe("createCacheStore", () => {
   test("filter by service", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       expect(cache.list({ service: ["dra"] }).map((n) => n.id)).toEqual(["a-2024"])
     })
   })
@@ -84,7 +84,7 @@ describe("createCacheStore", () => {
   test("filter by lang skips items without translation", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const enOnly = cache.list({ lang: "en" })
       expect(enOnly.map((n) => n.id)).toEqual(["a-2024", "c-2024"])
     })
@@ -93,7 +93,7 @@ describe("createCacheStore", () => {
   test("persists to disk and reloads", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const loaded = await loadCacheFromDisk(dir, silentLogger)
       expect(loaded.source).toBe("disk")
       expect(loaded.state.items).toHaveLength(3)
@@ -130,7 +130,7 @@ describe("createCacheStore", () => {
   test("file contents are JSON", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItems(makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
       const raw = await readFile(path.join(dir, "news.json"), "utf8")
       expect(() => JSON.parse(raw)).not.toThrow()
     })

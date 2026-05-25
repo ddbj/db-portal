@@ -2,18 +2,24 @@ import { HeroSection, PopularResources, ServiceGrid } from "~/features/top"
 import { NewsAside } from "~/shell"
 
 const TopRoute = () => (
-  <div className="px-page-gutter">
-    <div className="max-w-content-max mx-auto py-section-md grid gap-section-md lg:grid-cols-[1fr_var(--spacing-right-pane)]">
-      <main className="flex flex-col gap-section-md min-w-0">
+  <>
+    <section className="px-page-gutter pt-hero-top pb-hero-bottom">
+      <div className="max-w-hero-max mx-auto">
         <HeroSection />
-        <ServiceGrid />
-        <PopularResources />
-      </main>
-      <aside className="lg:sticky lg:top-section-sm self-start">
-        <NewsAside />
-      </aside>
-    </div>
-  </div>
+      </div>
+    </section>
+    <section className="px-page-gutter pb-section-lg">
+      <div className="max-w-content-max mx-auto grid gap-section-md md:grid-cols-[2fr_1fr]">
+        <main className="flex flex-col gap-section-md min-w-0">
+          <ServiceGrid />
+          <PopularResources />
+        </main>
+        <aside className="md:sticky md:top-section-sm self-start min-w-0">
+          <NewsAside />
+        </aside>
+      </div>
+    </section>
+  </>
 )
 
 export default TopRoute

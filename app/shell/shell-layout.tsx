@@ -3,7 +3,6 @@ import type { ReactNode } from "react"
 import { Page } from "~/ui"
 
 import { Breadcrumb } from "./breadcrumb"
-import { Footer } from "./footer"
 import { Header } from "./header"
 import { NotificationBar } from "./notification-bar"
 import { SkipLink } from "./skip-link"
@@ -21,6 +20,5 @@ export const ShellLayout = ({ children }: ShellLayoutProps) => (
     <TranslationUnavailable />
     <Breadcrumb />
     <main id="main" className="min-h-[60vh]">{children}</main>
-    <Footer />
   </Page>
 )

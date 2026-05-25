@@ -1,32 +1,48 @@
-import type { NewsItem } from "../../app/schemas/api-bff/news"
-import type { ParsedMarkdown, RawArticle } from "./normalize"
+import type { NewsItem, NewsSource } from "../../app/schemas/api-bff/news"
+import type { ParsedMarkdown, RawArticle, SourceNormalizeConfig } from "./normalize"
 import { parseFrontMatter, toNewsItem } from "./normalize"
 
-export const slugFromFilename = (lang: "ja" | "en", filename: string): string => {
-  const withoutExt = filename.replace(/\.md$/, "")
-  if (lang === "en") return withoutExt.replace(/-e$/, "")
+export type SlugStripper = (lang: "ja" | "en", filename: string) => string | undefined
 
-  return withoutExt
+export type SourceParseConfig = SourceNormalizeConfig & {
+  slugFromFilename: SlugStripper
+}
+
+export const ddbjSlugStripper: SlugStripper = (lang, filename) => {
+  const noExt = filename.replace(/\.md$/i, "")
+  if (!noExt) return undefined
+  if (lang === "en") return noExt.replace(/-e$/, "")
+
+  return noExt
+}
+
+const DBCLS_FILENAME_RE = /^(\d{4}-\d{2}-\d{2}-post\d+)\.md$/i
+
+export const dbclsSlugStripper: SlugStripper = (_lang, filename) => {
+  const m = filename.match(DBCLS_FILENAME_RE)
+
+  return m?.[1] ?? undefined
 }
 
 export type LangRawMap = Map<string, RawArticle>
 
 export const parseRawArticle = (
+  source: NewsSource,
   lang: "ja" | "en",
   filename: string,
   markdown: string,
+  slugStripper: SlugStripper,
 ): RawArticle | undefined => {
+  const slug = slugStripper(lang, filename)
+  if (!slug) return undefined
   const parsed: ParsedMarkdown | undefined = parseFrontMatter(markdown)
   if (!parsed) return undefined
 
-  return {
-    lang,
-    slug: slugFromFilename(lang, filename),
-    fm: parsed.fm,
-  }
+  return { source, lang, slug, fm: parsed.fm }
 }
 
 export const pairToNewsItems = (
+  cfg: SourceNormalizeConfig,
   ja: LangRawMap,
   en: LangRawMap,
 ): NewsItem[] => {
@@ -35,7 +51,7 @@ export const pairToNewsItems = (
   for (const slug of en.keys()) slugs.add(slug)
   const items: NewsItem[] = []
   for (const slug of slugs) {
-    const item = toNewsItem(ja.get(slug), en.get(slug))
+    const item = toNewsItem(cfg, ja.get(slug), en.get(slug))
     if (item) items.push(item)
   }
   items.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))

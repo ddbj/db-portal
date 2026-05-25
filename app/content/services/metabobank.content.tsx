@@ -4,8 +4,8 @@ export default {
   id: "metabobank",
   title: { ja: "MetaboBank", en: "MetaboBank" },
   description: {
-    ja: "メタボロームの質量分析データを蓄積する DDBJ センターの公開アーカイブ。",
-    en: "DDBJ Center's public archive for metabolome mass-spec data.",
+    ja: "メタボローム データアーカイブ",
+    en: "Metabolome data archive",
   },
   link: { kind: "external", href: "https://mb2.ddbj.nig.ac.jp/" },
   top: { category: "popular-ddbj", order: 7, monogram: "MB" },

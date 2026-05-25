@@ -34,7 +34,7 @@ export const NewsAside = () => {
   const items = (query.data ?? []).slice(0, NEWS_LIMIT)
 
   return (
-    <aside data-testid="news-aside" className="w-right-pane sticky top-4 text-fs-body-sm">
+    <aside data-testid="news-aside" className="w-full text-fs-body-sm">
       <SectionHeading
         as="h2"
         action={
@@ -58,7 +58,7 @@ export const NewsAside = () => {
           <li key={n.id} className="border-b border-border-soft pb-3 last:border-b-0">
             <div className="flex items-center gap-2 mb-1 text-fs-label">
               <span className="font-mono text-ink-soft">{formatDate(n.publishedAt)}</span>
-              <Tag kind="source" name="DDBJ" size="sm" />
+              <Tag kind="source" name={n.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
               <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
             </div>
             <TextLink to={newsHref(n.id, lang)} weight="bold">

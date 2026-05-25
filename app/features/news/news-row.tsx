@@ -47,7 +47,7 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
         </div>
       </div>
       <div className="flex items-center gap-1 flex-wrap shrink-0 max-w-right-pane">
-        <Tag kind="source" name="DDBJ" size="sm" />
+        <Tag kind="source" name={item.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
         {item.db.map((db) => (
           <Tag key={db} kind="tag" size="sm">{db}</Tag>
         ))}

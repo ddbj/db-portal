@@ -4,8 +4,8 @@ export default {
   id: "dra",
   title: { ja: "DRA", en: "DRA" },
   description: {
-    ja: "Sequence Read Archive。NGS のシーケンスリードを公開アーカイブとして提供する。",
-    en: "DDBJ Sequence Read Archive for publishing NGS reads.",
+    ja: "DDBJ Sequence Read Archive",
+    en: "DDBJ Sequence Read Archive",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/dra/index.html" },
   top: { category: "popular-ddbj", order: 3, monogram: "DR" },

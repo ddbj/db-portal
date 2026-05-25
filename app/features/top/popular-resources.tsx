@@ -17,7 +17,12 @@ const GroupLabel = ({ tone, children }: { tone: "ddbj" | "dbcls"; children: stri
         tone === "ddbj" ? "bg-src-ddbj" : "bg-src-dbcls",
       )}
     />
-    <span className="text-fs-label font-bold tracking-label uppercase text-brand">
+    <span
+      className={cn(
+        "text-fs-label font-bold tracking-label uppercase",
+        tone === "ddbj" ? "text-src-ddbj" : "text-src-dbcls",
+      )}
+    >
       {children}
     </span>
   </div>
@@ -36,7 +41,7 @@ export const PopularResources = ({ lang: explicitLang }: PopularResourcesProps =
       <div className="flex flex-col gap-section-md">
         <div>
           <GroupLabel tone="ddbj">{t("top.popularResources.groupDdbj")}</GroupLabel>
-          <ul className="list-none p-0 m-0 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <ul className="list-none p-0 m-0 grid sm:grid-cols-2 lg:grid-cols-3 gap-2 auto-rows-fr">
             {ddbjServices.map((service) => (
               <li key={service.id} className="m-0">
                 <ResourceCard service={service} lang={lang} />
@@ -46,7 +51,7 @@ export const PopularResources = ({ lang: explicitLang }: PopularResourcesProps =
         </div>
         <div>
           <GroupLabel tone="dbcls">{t("top.popularResources.groupDbcls")}</GroupLabel>
-          <ul className="list-none p-0 m-0 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <ul className="list-none p-0 m-0 grid sm:grid-cols-2 lg:grid-cols-3 gap-2 auto-rows-fr">
             {dbclsServices.map((service) => (
               <li key={service.id} className="m-0">
                 <ResourceCard service={service} lang={lang} />

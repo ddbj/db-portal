@@ -20,9 +20,9 @@ describe("llmAvailabilityFromHealth", () => {
     expect(result.reason).toBe("unset")
   })
 
-  test("statusUnreachable_notReadyWithReason", () => {
+  test("statusUnreachable_readyWithReason", () => {
     const result = llmAvailabilityFromHealth({ status: "unreachable", reason: "timeout" })
-    expect(result.ready).toBe(false)
+    expect(result.ready).toBe(true)
     expect(result.reason).toBe("timeout")
   })
 })

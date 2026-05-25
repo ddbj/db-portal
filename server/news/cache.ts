@@ -1,17 +1,26 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 
-import type { NewsCache, NewsCategory, NewsItem, NewsList } from "../../app/schemas/api-bff/news"
+import type {
+  NewsCache,
+  NewsCategory,
+  NewsItem,
+  NewsList,
+  NewsSource,
+} from "../../app/schemas/api-bff/news"
 import { NewsCache as NewsCacheSchema } from "../../app/schemas/api-bff/news"
 import type { Logger } from "../lib/log"
 
 const CACHE_FILE = "news.json"
-const SCHEMA_VERSION = 1 as const
+const SCHEMA_VERSION = 2 as const
+
+export type LangSha = { ja: string | null; en: string | null }
+
+const emptyLangSha = (): LangSha => ({ ja: null, en: null })
 
 const emptyState = (): NewsCache => ({
   schemaVersion: SCHEMA_VERSION,
-  source: "ddbj",
-  lastCommitSha: { ja: null, en: null },
+  lastCommitSha: {},
   lastFetchedAt: new Date().toISOString(),
   items: [],
 })
@@ -68,14 +77,20 @@ export const persistCacheToDisk = async (
 
 export type CacheStore = {
   getState: () => NewsCache
-  replaceItems: (items: NewsList, lastCommitSha: NewsCache["lastCommitSha"]) => Promise<void>
-  updateCommitSha: (lastCommitSha: NewsCache["lastCommitSha"]) => Promise<void>
+  getCommitShaForSource: (source: NewsSource) => LangSha
+  replaceItemsForSource: (
+    source: NewsSource,
+    items: NewsList,
+    lastCommitSha: LangSha,
+  ) => Promise<void>
+  updateCommitShaForSource: (source: NewsSource, lastCommitSha: LangSha) => Promise<void>
   list: (filter?: NewsFilter) => NewsList
   initFromDisk: () => Promise<void>
 }
 
 export type NewsFilter = {
   lang?: "ja" | "en"
+  source?: readonly NewsSource[]
   category?: readonly NewsCategory[]
   year?: readonly number[]
   service?: readonly string[]
@@ -86,6 +101,9 @@ const matchesFilter = (item: NewsItem, filter: NewsFilter | undefined): boolean 
   if (filter.lang) {
     const title = item.title[filter.lang]
     if (!title || title.trim() === "") return false
+  }
+  if (filter.source && filter.source.length > 0) {
+    if (!filter.source.includes(item.source)) return false
   }
   if (filter.category && filter.category.length > 0) {
     if (!filter.category.includes(item.category)) return false
@@ -101,6 +119,19 @@ const matchesFilter = (item: NewsItem, filter: NewsFilter | undefined): boolean 
   return true
 }
 
+const sortItemsByDateDesc = (items: NewsList): NewsList =>
+  [...items].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+
+const mergeItemsBySource = (
+  state: NewsCache,
+  source: NewsSource,
+  next: NewsList,
+): NewsList => {
+  const kept = state.items.filter((item) => item.source !== source)
+
+  return sortItemsByDateDesc([...kept, ...next])
+}
+
 export const createCacheStore = (cacheDir: string, logger: Logger): CacheStore => {
   let state: NewsCache = emptyState()
 
@@ -113,24 +144,32 @@ export const createCacheStore = (cacheDir: string, logger: Logger): CacheStore =
     })
   }
 
-  const replaceItems = async (
+  const getCommitShaForSource = (source: NewsSource): LangSha =>
+    state.lastCommitSha[source] ?? emptyLangSha()
+
+  const replaceItemsForSource = async (
+    source: NewsSource,
     items: NewsList,
-    lastCommitSha: NewsCache["lastCommitSha"],
+    lastCommitSha: LangSha,
   ): Promise<void> => {
     state = {
       schemaVersion: SCHEMA_VERSION,
-      source: "ddbj",
-      lastCommitSha,
+      lastCommitSha: { ...state.lastCommitSha, [source]: lastCommitSha },
       lastFetchedAt: new Date().toISOString(),
-      items,
+      items: mergeItemsBySource(state, source, items),
     }
     await persistCacheToDisk(cacheDir, state, logger)
   }
 
-  const updateCommitSha = async (
-    lastCommitSha: NewsCache["lastCommitSha"],
+  const updateCommitShaForSource = async (
+    source: NewsSource,
+    lastCommitSha: LangSha,
   ): Promise<void> => {
-    state = { ...state, lastCommitSha, lastFetchedAt: new Date().toISOString() }
+    state = {
+      ...state,
+      lastCommitSha: { ...state.lastCommitSha, [source]: lastCommitSha },
+      lastFetchedAt: new Date().toISOString(),
+    }
     await persistCacheToDisk(cacheDir, state, logger)
   }
 
@@ -139,8 +178,9 @@ export const createCacheStore = (cacheDir: string, logger: Logger): CacheStore =
 
   return {
     getState: () => state,
-    replaceItems,
-    updateCommitSha,
+    getCommitShaForSource,
+    replaceItemsForSource,
+    updateCommitShaForSource,
     list,
     initFromDisk,
   }

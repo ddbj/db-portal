@@ -9,6 +9,9 @@ export const NewsCategory = z.enum([
 ])
 export type NewsCategory = z.infer<typeof NewsCategory>
 
+export const NewsSource = z.enum(["ddbj", "dbcls"])
+export type NewsSource = z.infer<typeof NewsSource>
+
 const langString = z.object({
   ja: z.string(),
   en: z.string(),
@@ -26,7 +29,7 @@ const langRawTags = z.object({
 
 export const NewsItem = z.object({
   id: z.string().min(1),
-  source: z.literal("ddbj"),
+  source: NewsSource,
   category: NewsCategory,
   publishedAt: z.string().datetime({ offset: true }),
   retireTime: z.string().datetime({ offset: true }).optional(),
@@ -41,13 +44,14 @@ export type NewsItem = z.infer<typeof NewsItem>
 export const NewsList = z.array(NewsItem)
 export type NewsList = z.infer<typeof NewsList>
 
+const LangSha = z.object({
+  ja: z.string().nullable(),
+  en: z.string().nullable(),
+})
+
 export const NewsCache = z.object({
-  schemaVersion: z.literal(1),
-  source: z.literal("ddbj"),
-  lastCommitSha: z.object({
-    ja: z.string().nullable(),
-    en: z.string().nullable(),
-  }),
+  schemaVersion: z.literal(2),
+  lastCommitSha: z.record(NewsSource, LangSha),
   lastFetchedAt: z.string().datetime({ offset: true }),
   items: NewsList,
 })

@@ -7,9 +7,9 @@ import { Chip, SearchBox, TextLink } from "~/ui"
 const buildResultsHref = (q: string, lang: Lang): string => {
   const prefix = lang === "en" ? "/en" : ""
   const trimmed = q.trim()
-  if (trimmed === "") return `${prefix}/search/results`
-
-  return `${prefix}/search/results?q=${encodeURIComponent(trimmed)}`
+  return trimmed === ""
+    ? `${prefix}/search/results`
+    : `${prefix}/search/results?q=${encodeURIComponent(trimmed)}`
 }
 
 const buildSearchHref = (lang: Lang): string => (lang === "en" ? "/en/search" : "/search")
@@ -26,10 +26,11 @@ export const HeroSection = () => {
   }
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-4 items-center w-full">
       <SearchBox
         size="lg"
         value={value}
+        maxWidth={820}
         placeholder={t("top.hero.placeholder")}
         ariaLabel={t("top.hero.a11y.input")}
         submitLabel={t("top.hero.submit")}
@@ -40,29 +41,22 @@ export const HeroSection = () => {
           handleSubmit(next)
         }}
       />
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-fs-label text-ink-soft font-semibold">
-          {t("top.hero.examplesLabel")}
-        </span>
+      <div className="flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">
+        <span className="text-ink-mid">{t("top.hero.examplesLabel")}:</span>
         <ul className="list-none p-0 m-0 flex items-center gap-2 flex-wrap">
           {examples.map((example) => (
             <li key={example} className="m-0">
               <Chip
                 as="button"
                 kind="example"
-                onClick={() => {
-                  setValue(example)
-                  handleSubmit(example)
-                }}
+                onClick={() => setValue(example)}
               >
                 {example}
               </Chip>
             </li>
           ))}
         </ul>
-        <span className="ml-auto">
-          <TextLink to={buildSearchHref(lang)}>{t("top.hero.advancedLink")} →</TextLink>
-        </span>
+        <TextLink to={buildSearchHref(lang)}>{t("top.hero.advancedLink")} →</TextLink>
       </div>
     </section>
   )

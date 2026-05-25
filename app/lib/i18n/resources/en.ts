@@ -2,7 +2,7 @@ import type { Resources } from "./ja"
 
 export const en: Resources = {
   common: {
-    siteName: "DDBJ Portal",
+    siteName: "DDBJ 刷新 (仮)",
     loading: "Loading",
     error: "Error",
     close: "Close",
@@ -22,10 +22,9 @@ export const en: Resources = {
     },
   },
   nav: {
-    top: "Top",
     search: "Search",
     submit: "Submit",
-    news: "News",
+    about: "About us",
   },
   breadcrumb: {
     home: "Home",
@@ -40,7 +39,7 @@ export const en: Resources = {
       advancedLink: "Open the query builder",
       a11y: { input: "Search keywords" },
     },
-    serviceGrid: { heading: "What you can do in DDBJ Portal" },
+    serviceGrid: { heading: "Services" },
     popularResources: {
       heading: "Popular Resources",
       groupDdbj: "DDBJ",

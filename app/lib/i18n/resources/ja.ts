@@ -20,10 +20,9 @@ export type Resources = {
     }
   }
   nav: {
-    top: string
     search: string
     submit: string
-    news: string
+    about: string
   }
   breadcrumb: {
     home: string
@@ -554,7 +553,7 @@ export type Resources = {
 
 export const ja: Resources = {
   common: {
-    siteName: "DDBJ ポータル",
+    siteName: "DDBJ 刷新 (仮)",
     loading: "読み込み中",
     error: "エラー",
     close: "閉じる",
@@ -574,10 +573,9 @@ export const ja: Resources = {
     },
   },
   nav: {
-    top: "トップ",
     search: "検索",
     submit: "登録",
-    news: "ニュース",
+    about: "About us",
   },
   breadcrumb: {
     home: "ホーム",
@@ -592,7 +590,7 @@ export const ja: Resources = {
       advancedLink: "クエリビルダーで詳細条件を組む",
       a11y: { input: "検索キーワード" },
     },
-    serviceGrid: { heading: "DDBJ ポータルでできること" },
+    serviceGrid: { heading: "サービス" },
     popularResources: {
       heading: "Popular Resources",
       groupDdbj: "DDBJ",

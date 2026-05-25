@@ -27,7 +27,7 @@ export const ResourceCard = ({ service, lang }: ResourceCardProps) => {
   const title = service.title[lang]
   const description = service.description[lang]
   const inner = (
-    <div className="flex items-start gap-3 p-3">
+    <div className="flex items-center gap-3 p-3 h-full">
       <div
         className={cn(
           "w-9 h-9 rounded-card shrink-0 flex items-center justify-center font-bold text-fs-body-sm tracking-tight",
@@ -39,7 +39,7 @@ export const ResourceCard = ({ service, lang }: ResourceCardProps) => {
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-ink font-semibold text-fs-body-sm leading-tight m-0">{title}</div>
-        <p className="text-ink-soft text-fs-label leading-relaxed m-0 mt-1 line-clamp-2">
+        <p className="text-ink-soft text-fs-label leading-relaxed m-0 mt-1 line-clamp-2 min-h-10">
           {description}
         </p>
       </div>
@@ -47,6 +47,6 @@ export const ResourceCard = ({ service, lang }: ResourceCardProps) => {
   )
 
   return link.kind === "internal"
-    ? <LinkCard to={`${prefixForLang(lang)}${link.to}`}>{inner}</LinkCard>
-    : <LinkCard external href={link.href}>{inner}</LinkCard>
+    ? <LinkCard to={`${prefixForLang(lang)}${link.to}`} className="h-full">{inner}</LinkCard>
+    : <LinkCard external href={link.href} className="h-full">{inner}</LinkCard>
 }

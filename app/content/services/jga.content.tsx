@@ -4,8 +4,8 @@ export default {
   id: "jga",
   title: { ja: "JGA", en: "JGA" },
   description: {
-    ja: "Japanese Genotype-phenotype Archive。ヒト由来の制限公開データを扱う。利用には DBCLS への申請が必要。",
-    en: "Japanese Genotype-phenotype Archive for controlled-access human data. Requires a prior DBCLS application.",
+    ja: "Japanese Genotype-phenotype Archive",
+    en: "Japanese Genotype-phenotype Archive",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/jga/index.html" },
   top: { category: "popular-ddbj", order: 6, monogram: "JG" },

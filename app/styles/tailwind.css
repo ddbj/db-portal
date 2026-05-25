@@ -59,8 +59,11 @@
   --spacing-section-lg:  48px;
   --spacing-section-md:  32px;
   --spacing-section-sm:  16px;
+  --spacing-hero-top:    64px;
+  --spacing-hero-bottom: 72px;
   --spacing-page-gutter: 32px;
   --spacing-content-max: 1180px;
+  --spacing-hero-max:    820px;
   --spacing-sidebar:     220px;
   --spacing-right-pane:  280px;
   --spacing-news-date:   84px;
@@ -83,6 +86,14 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/* テキスト入力系は form 側で focus 表現を担い、自身は outline を出さない。 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-radius: 0;
 }
 
 button[aria-disabled="true"],

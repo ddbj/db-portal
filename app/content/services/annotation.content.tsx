@@ -4,8 +4,8 @@ export default {
   id: "annotation",
   title: { ja: "DDBJ Annotated", en: "DDBJ Annotated" },
   description: {
-    ja: "アノテーション (GFF / GTF / EMBL) を含む配列レコードを国際塩基配列 DB に登録する。",
-    en: "Submit annotated sequence records (GFF / GTF / EMBL) to the international nucleotide sequence database.",
+    ja: "アノテーション付き塩基配列",
+    en: "Annotated nucleotide sequences",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/ddbj/index.html" },
   top: { category: "popular-ddbj", order: 4, monogram: "DA" },

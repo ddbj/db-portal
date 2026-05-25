@@ -1,4 +1,8 @@
-import type { NewsCategory, NewsItem } from "../../app/schemas/api-bff/news"
+import type {
+  NewsCategory,
+  NewsItem,
+  NewsSource,
+} from "../../app/schemas/api-bff/news"
 import { NewsCategory as NewsCategoryEnum } from "../../app/schemas/api-bff/news"
 
 export { NewsCategory } from "../../app/schemas/api-bff/news"
@@ -8,7 +12,7 @@ const DEFAULT_CATEGORY: NewsCategory = "news"
 const CATEGORY_PATTERNS: { category: Exclude<NewsCategory, "news">; patterns: RegExp[] }[] = [
   {
     category: "announcement",
-    patterns: [/重要/, /^announcement$/i, /^notice$/i],
+    patterns: [/重要/, /^announcement$/i, /^notice$/i, /^public_relations$/i],
   },
   {
     category: "release",
@@ -16,7 +20,7 @@ const CATEGORY_PATTERNS: { category: Exclude<NewsCategory, "news">; patterns: Re
   },
   {
     category: "maintenance",
-    patterns: [/メンテナンス/, /^maintenance$/i, /障害/, /復旧/, /^incident$/i],
+    patterns: [/メンテナンス/, /^maintenance$/i, /障害/, /復旧/, /^incident$/i, /^services$/i],
   },
   {
     category: "event",
@@ -47,6 +51,7 @@ export type FrontMatter = {
   db?: string[]
   tags?: string[]
   lang?: string
+  published?: string
 }
 
 export type ParsedMarkdown = {
@@ -65,7 +70,9 @@ const stripQuotes = (raw: string): string => {
   return raw
 }
 
-const ARRAY_KEYS = new Set(["db", "tags"])
+const ARRAY_KEYS = new Set(["db", "tags", "category"])
+const KV_RE = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/
+const ARRAY_ITEM_RE = /^\s+-\s+(.+)$/
 
 export const parseFrontMatter = (markdown: string): ParsedMarkdown | undefined => {
   if (!markdown.startsWith("---")) return undefined
@@ -79,14 +86,14 @@ export const parseFrontMatter = (markdown: string): ParsedMarkdown | undefined =
   for (const rawLine of header) {
     const line = rawLine.replace(/\r$/, "")
     if (line.trim() === "") continue
-    const arrayMatch = /^\s+-\s+(.+)$/.exec(line)
+    const arrayMatch = ARRAY_ITEM_RE.exec(line)
     if (arrayMatch && openArrayKey) {
       const value = stripQuotes((arrayMatch[1] ?? "").trim())
       const arr = fm[openArrayKey as keyof FrontMatter] as string[] | undefined
       if (arr) arr.push(value)
       continue
     }
-    const kvMatch = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(line)
+    const kvMatch = KV_RE.exec(line)
     if (!kvMatch) continue
     const key = kvMatch[1] ?? ""
     if (key === "") continue
@@ -105,12 +112,8 @@ export const parseFrontMatter = (markdown: string): ParsedMarkdown | undefined =
   return { fm, body }
 }
 
-const ddbjNewsUrl = (lang: "ja" | "en", slug: string): string =>
-  lang === "ja"
-    ? `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html`
-    : `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html`
-
 export type RawArticle = {
+  source: NewsSource
   lang: "ja" | "en"
   slug: string
   fm: FrontMatter
@@ -142,16 +145,58 @@ const toIsoDatetime = (value: string | undefined): string | undefined => {
   return new Date(trimmed).toISOString()
 }
 
+const pad2 = (n: number): string => String(n).padStart(2, "0")
+const DBCLS_SLUG_RE = /^(\d{4})-(\d{2})-(\d{2})-post(\d+)$/i
+
+export const dbclsDateFromSlug = (slug: string): string | undefined => {
+  const m = DBCLS_SLUG_RE.exec(slug)
+  if (!m) return undefined
+  const [, y, mo, d, nStr] = m
+  if (!y || !mo || !d || !nStr) return undefined
+  const seq = Math.max(parseInt(nStr, 10) - 1, 0)
+  const hours = Math.min(Math.floor(seq / 3600), 23)
+  const minutes = Math.floor((seq % 3600) / 60)
+  const seconds = seq % 60
+  const jstIso = `${y}-${mo}-${d}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}+09:00`
+  if (!isIsoDatetime(jstIso)) return undefined
+
+  return jstIso
+}
+
+const isPublishedFalse = (value: string | undefined): boolean => {
+  if (value === undefined) return false
+
+  return value.trim().toLowerCase() === "false"
+}
+
+export type SourceUrlBuilder = (lang: "ja" | "en", slug: string) => string
+
+export type SourceNormalizeConfig = {
+  source: NewsSource
+  urlBuilder: SourceUrlBuilder
+  publishedAtFromSlug?: (slug: string) => string | undefined
+}
+
+const itemId = (source: NewsSource, slug: string): string => `${source}-${slug}`
+
 export const toNewsItem = (
+  cfg: SourceNormalizeConfig,
   ja: RawArticle | undefined,
   en: RawArticle | undefined,
 ): NewsItem | undefined => {
   const primary = ja ?? en
   if (!primary) return undefined
+  const jaUnpublished = ja !== undefined && isPublishedFalse(ja.fm.published)
+  const enUnpublished = en !== undefined && isPublishedFalse(en.fm.published)
+  if (
+    (ja === undefined || jaUnpublished)
+    && (en === undefined || enUnpublished)
+  ) return undefined
   const slug = primary.slug
   const publishedAt = toIsoDatetime(primary.fm.date)
     ?? toIsoDatetime(en?.fm.date)
     ?? toIsoDatetime(ja?.fm.date)
+    ?? cfg.publishedAtFromSlug?.(slug)
   if (!publishedAt) return undefined
   const retireTime = toIsoDatetime(primary.fm.retire_time)
     ?? toIsoDatetime(en?.fm.retire_time)
@@ -160,14 +205,14 @@ export const toNewsItem = (
   const enTags = en?.fm.tags ?? []
   const category = tagsToCategory([...jaTags, ...enTags])
   const url = {
-    ja: ja ? ddbjNewsUrl("ja", slug) : undefined,
-    en: en ? ddbjNewsUrl("en", slug) : undefined,
+    ja: ja ? cfg.urlBuilder("ja", slug) : undefined,
+    en: en ? cfg.urlBuilder("en", slug) : undefined,
   }
   const db = sanitizeDb(primary.fm.db?.length ? primary.fm.db : en?.fm.db ?? ja?.fm.db)
 
   return {
-    id: slug,
-    source: "ddbj",
+    id: itemId(cfg.source, slug),
+    source: cfg.source,
     category,
     publishedAt,
     ...(retireTime ? { retireTime } : {}),

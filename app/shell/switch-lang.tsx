@@ -1,14 +1,24 @@
 import { Link, useLocation } from "react-router"
 
 import { getCounterpartUrl, type Lang, useLang, useT } from "~/lib/i18n"
-import { GlobeIcon } from "~/ui"
+import { cn, GlobeIcon } from "~/ui"
+
+const LangPill = ({ code, active }: { code: "JA" | "EN"; active: boolean }) => (
+  <span
+    className={cn(
+      "text-[13.5px] leading-none",
+      active ? "text-ink font-bold" : "text-ink-mid font-normal",
+    )}
+  >
+    {code}
+  </span>
+)
 
 export const SwitchLang = () => {
   const lang = useLang()
   const { pathname } = useLocation()
   const t = useT()
   const target: Lang = lang === "ja" ? "en" : "ja"
-  const key = target === "en" ? "switchLang.toEn" : "switchLang.toJa"
   const href = getCounterpartUrl(pathname, target)
 
   return (
@@ -16,10 +26,13 @@ export const SwitchLang = () => {
       to={href}
       hrefLang={target}
       lang={target}
-      className="inline-flex items-center gap-1 text-fs-body-sm font-semibold text-ink-mid no-underline hover:underline"
+      aria-label={t("a11y.languageSwitcher")}
+      className="inline-flex items-center gap-1.5 no-underline"
     >
-      <GlobeIcon size={14} title={t("a11y.languageSwitcher")} />
-      {t(key)}
+      <GlobeIcon size={16} className="text-ink-mid" />
+      <LangPill code="JA" active={lang === "ja"} />
+      <span aria-hidden className="text-ink-softer">/</span>
+      <LangPill code="EN" active={lang === "en"} />
     </Link>
   )
 }

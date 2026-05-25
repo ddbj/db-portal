@@ -30,8 +30,17 @@ export {
   toNewsItem,
 } from "./normalize"
 export {
+  dbclsSlugStripper,
+  ddbjSlugStripper,
   type LangRawMap,
   pairToNewsItems,
   parseRawArticle,
-  slugFromFilename,
+  type SlugStripper,
+  type SourceParseConfig,
 } from "./pair"
+export {
+  dbclsConfig,
+  ddbjConfig,
+  type GitHubSourceConfig,
+  knownSources,
+} from "./sources"

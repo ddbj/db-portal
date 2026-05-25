@@ -1,5 +1,4 @@
 export { Breadcrumb } from "./breadcrumb"
-export { Footer } from "./footer"
 export { computeActiveNav, Header, type NavId } from "./header"
 export { LoginButton } from "./login-button"
 export { NewsAside } from "./news-aside"
