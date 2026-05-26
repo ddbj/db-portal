@@ -117,6 +117,32 @@ export type RawArticle = {
   lang: "ja" | "en"
   slug: string
   fm: FrontMatter
+  body: string
+}
+
+const SUMMARY_LIMIT = 180
+
+export const extractSummary = (body: string): string | undefined => {
+  const trimmed = body.replace(/^\s+/, "")
+  if (trimmed === "") return undefined
+  const firstBlock = trimmed.split(/\n\s*\n/, 1)[0] ?? ""
+  const cleaned = firstBlock
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/_([^_]+)_/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  if (cleaned === "") return undefined
+  if (cleaned.length <= SUMMARY_LIMIT) return cleaned
+
+  return `${cleaned.slice(0, SUMMARY_LIMIT)}…`
 }
 
 const sanitizeDb = (db: readonly string[] | undefined): string[] => {
@@ -209,6 +235,14 @@ export const toNewsItem = (
     en: en ? cfg.urlBuilder("en", slug) : undefined,
   }
   const db = sanitizeDb(primary.fm.db?.length ? primary.fm.db : en?.fm.db ?? ja?.fm.db)
+  const summaryJa = ja ? extractSummary(ja.body) : undefined
+  const summaryEn = en ? extractSummary(en.body) : undefined
+  const summary = summaryJa !== undefined || summaryEn !== undefined
+    ? {
+      ja: summaryJa ?? "",
+      en: summaryEn ?? "",
+    }
+    : undefined
 
   return {
     id: itemId(cfg.source, slug),
@@ -220,6 +254,7 @@ export const toNewsItem = (
       ja: ja?.fm.title?.trim() ?? "",
       en: en?.fm.title?.trim() ?? "",
     },
+    ...(summary ? { summary } : {}),
     ...(url.ja || url.en ? { url } : {}),
     db,
     rawTags: { ja: jaTags, en: enTags },

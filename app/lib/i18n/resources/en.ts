@@ -562,6 +562,11 @@ export const en: Resources = {
       perPage: {
         label: "Per page",
       },
+      card: {
+        sequenceLength: "Length",
+        publication: "Publications",
+        sameAs: "Cross-refs",
+      },
     },
     facets: {
       heading: "Filters",

@@ -82,6 +82,7 @@ describe("toNewsItem", () => {
       db: ["ddbj"],
       tags: ["リリース"],
     },
+    body: "",
   }
   const en: RawArticle = {
     source: "ddbj",
@@ -93,6 +94,7 @@ describe("toNewsItem", () => {
       db: ["ddbj"],
       tags: ["Release"],
     },
+    body: "",
   }
 
   test("toNewsItem_jaAndEn_buildsSourcePrefixedIdAndPairedTitle", () => {
@@ -127,6 +129,7 @@ describe("toNewsItem", () => {
       lang: "ja",
       slug: "2026-05-01-post1",
       fm: { title: "DBCLS post" },
+      body: "",
     }
     const item = toNewsItem(dbclsCfg, dbclsJa, undefined)
     expect(item?.id).toBe("dbcls-2026-05-01-post1")
@@ -139,6 +142,7 @@ describe("toNewsItem", () => {
       lang: "ja",
       slug: "2026-05-02-post1",
       fm: { title: "draft", published: "false" },
+      body: "",
     }
     expect(toNewsItem(dbclsCfg, drafted, undefined)).toBeUndefined()
   })

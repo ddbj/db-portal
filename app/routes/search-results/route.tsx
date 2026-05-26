@@ -2,8 +2,8 @@ import { useEffect, useMemo, useReducer, useState } from "react"
 import { useLoaderData, useNavigate } from "react-router"
 
 import {
-  AdvancedBuilder,
   advancedReducer,
+  BuilderSummaryPanel,
   buildResultsHref,
   buildSearchHref,
   createInitialSearchFacetState,
@@ -167,7 +167,8 @@ const SearchResultsRoute = () => {
     <>
       <Section padTop="mid" padBottom="tight">
         <SearchBox
-          size="lg"
+          size="md"
+          maxWidth={1180}
           value={qInput}
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
@@ -178,7 +179,7 @@ const SearchResultsRoute = () => {
           onScopeChange={handleScopeChange}
           onSubmit={handleSubmitFromBox}
         />
-        {data.q && (
+        {data.q && data.db === null && (
           <div className="mt-2.5">
             <QueryPreview dsl={data.q} onClear={handleClear} onEdit={handleEditInBuilder} />
           </div>
@@ -240,8 +241,13 @@ const SearchResultsRoute = () => {
                       />
                     </div>
                     <aside className="flex flex-col gap-5">
-                      <SidebarHeading>{t("search.builder.heading")}</SidebarHeading>
-                      <AdvancedBuilder state={advancedState} dispatch={dispatchAdvanced} />
+                      <SidebarHeading>{t("search.preview.label")}</SidebarHeading>
+                      <BuilderSummaryPanel
+                        dsl={sync.dsl ?? data.q}
+                        onClear={handleClear}
+                        onEdit={handleEditInBuilder}
+                      />
+                      <SidebarHeading>{t("search.assistant.heading")}</SidebarHeading>
                       <SearchAssistant
                         advancedState={advancedState}
                         dispatch={dispatchAdvanced}

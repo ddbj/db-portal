@@ -34,7 +34,7 @@ const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lan
   if (!isDbSlug(entry.db)) return null
   const db: DbSlug = entry.db
   const href = buildResultsHref({ q, db }, lang)
-  const hits = entry.hits ?? []
+  const hits = (entry.hits ?? []).slice(0, 5)
 
   return (
     <article
@@ -71,23 +71,28 @@ const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lan
             </p>
           )
           : (
-            <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-1.5">
+            <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-2">
               {hits.map((hit) => (
-                <li key={hit.identifier} className="flex flex-wrap items-baseline gap-2">
+                <li
+                  key={hit.identifier}
+                  className="grid grid-cols-[90px_1fr] gap-x-3"
+                >
                   <span className="font-mono text-fs-label text-brand-deep">{hit.identifier}</span>
-                  <Link
-                    to={`https://ddbj.nig.ac.jp/search/entry/${db}/${encodeURIComponent(hit.identifier)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-fs-label text-ink no-underline hover:underline"
-                  >
-                    {hit.title ?? hit.identifier}
-                  </Link>
-                  {hit.datePublished && (
-                    <span className="font-mono text-fs-micro text-ink-soft">
-                      {formatHitDate(hit.datePublished)}
-                    </span>
-                  )}
+                  <div className="min-w-0">
+                    <Link
+                      to={`https://ddbj.nig.ac.jp/search/entry/${db}/${encodeURIComponent(hit.identifier)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-fs-label text-ink no-underline hover:underline line-clamp-2"
+                    >
+                      {hit.title ?? hit.identifier}
+                    </Link>
+                    {hit.datePublished && (
+                      <div className="font-mono text-fs-micro text-ink-soft mt-0.5">
+                        {formatHitDate(hit.datePublished)}
+                      </div>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -98,7 +103,7 @@ const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lan
 }
 
 export const CrossResults = ({ q, response, lang }: CrossResultsProps) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {response.databases.map((entry) => (
       <DbResultCard key={entry.db} entry={entry} q={q} lang={lang} />
     ))}

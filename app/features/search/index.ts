@@ -36,7 +36,7 @@ export {
   isIdentityAst,
   mergeAstAnd,
 } from "./ast"
-export { ExamplesChip, QueryPreview } from "./components"
+export { BuilderSummaryPanel, ExamplesChip, QueryPreview } from "./components"
 export {
   DEBOUNCE_MS,
   type DebouncedSerializeResult,

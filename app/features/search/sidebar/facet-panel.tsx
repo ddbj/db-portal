@@ -53,6 +53,39 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
         applied={applied}
         onClearAll={() => dispatch({ type: "clear" })}
       />
+      {perDbFacetsVisible && (
+        <div data-testid="facet-studyType">
+          <FacetGroup
+            label={t("search.facets.studyType")}
+            appliedCount={state.studyType ? 1 : 0}
+            {...(state.studyType
+              ? { onClear: () => dispatch({ type: "setStudyType", value: null }) }
+              : {})}
+          >
+            {FACET_STUDY_TYPES.map((studyType) => (
+              <FacetRow
+                key={studyType}
+                type="radio"
+                name="studyType"
+                label={studyType}
+                defaultChecked={state.studyType === studyType}
+                onChange={() => dispatch({ type: "setStudyType", value: studyType })}
+              />
+            ))}
+          </FacetGroup>
+        </div>
+      )}
+      <DateFacet
+        label={t("search.facets.datePublished")}
+        active={state.datePublished.active}
+        appliedCount={state.datePublished.active === "all" && state.datePublished.from === "" && state.datePublished.to === "" ? 0 : 1}
+        onClear={() => dispatch({ type: "setDateRange", active: "all" })}
+        onRangeChange={(key) => dispatch({ type: "setDateRange", active: key })}
+        from={state.datePublished.from}
+        to={state.datePublished.to}
+        onFromChange={(value) => dispatch({ type: "setDateFrom", value })}
+        onToChange={(value) => dispatch({ type: "setDateTo", value })}
+      />
       <div data-testid="facet-organism">
         <FacetGroup label={t("search.facets.organism")} showMore>
           {FACET_ORGANISMS.map((organism) => (
@@ -68,54 +101,21 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
         </FacetGroup>
       </div>
       {perDbFacetsVisible && (
-        <>
-          <div data-testid="facet-studyType">
-            <FacetGroup
-              label={t("search.facets.studyType")}
-              appliedCount={state.studyType ? 1 : 0}
-              {...(state.studyType
-                ? { onClear: () => dispatch({ type: "setStudyType", value: null }) }
-                : {})}
-            >
-              {FACET_STUDY_TYPES.map((studyType) => (
-                <FacetRow
-                  key={studyType}
-                  type="radio"
-                  name="studyType"
-                  label={studyType}
-                  defaultChecked={state.studyType === studyType}
-                  onChange={() => dispatch({ type: "setStudyType", value: studyType })}
-                />
-              ))}
-            </FacetGroup>
-          </div>
-          <div data-testid="facet-submitter">
-            <FacetGroup label={t("search.facets.submitter")} showMore>
-              {FACET_SUBMITTERS.map((submitter) => (
-                <FacetRow
-                  key={submitter}
-                  type="checkbox"
-                  name="submitter"
-                  label={submitter}
-                  defaultChecked={state.submitters.includes(submitter)}
-                  onChange={() => dispatch({ type: "toggleSubmitter", value: submitter })}
-                />
-              ))}
-            </FacetGroup>
-          </div>
-        </>
+        <div data-testid="facet-submitter">
+          <FacetGroup label={t("search.facets.submitter")} showMore>
+            {FACET_SUBMITTERS.map((submitter) => (
+              <FacetRow
+                key={submitter}
+                type="checkbox"
+                name="submitter"
+                label={submitter}
+                defaultChecked={state.submitters.includes(submitter)}
+                onChange={() => dispatch({ type: "toggleSubmitter", value: submitter })}
+              />
+            ))}
+          </FacetGroup>
+        </div>
       )}
-      <DateFacet
-        label={t("search.facets.datePublished")}
-        active={state.datePublished.active}
-        appliedCount={state.datePublished.active === "all" && state.datePublished.from === "" && state.datePublished.to === "" ? 0 : 1}
-        onClear={() => dispatch({ type: "setDateRange", active: "all" })}
-        onRangeChange={(key) => dispatch({ type: "setDateRange", active: key })}
-        from={state.datePublished.from}
-        to={state.datePublished.to}
-        onFromChange={(value) => dispatch({ type: "setDateFrom", value })}
-        onToChange={(value) => dispatch({ type: "setDateTo", value })}
-      />
     </aside>
   )
 }

@@ -73,6 +73,7 @@ const cacheMapsForSource = (
           lang: "ja",
           ...(item.retireTime ? { retire_time: item.retireTime } : {}),
         },
+        body: "",
       })
     }
     if (item.title.en) {
@@ -88,6 +89,7 @@ const cacheMapsForSource = (
           lang: "en",
           ...(item.retireTime ? { retire_time: item.retireTime } : {}),
         },
+        body: "",
       })
     }
   }

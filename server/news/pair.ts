@@ -38,7 +38,7 @@ export const parseRawArticle = (
   const parsed: ParsedMarkdown | undefined = parseFrontMatter(markdown)
   if (!parsed) return undefined
 
-  return { source, lang, slug, fm: parsed.fm }
+  return { source, lang, slug, fm: parsed.fm, body: parsed.body }
 }
 
 export const pairToNewsItems = (

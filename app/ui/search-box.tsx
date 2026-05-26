@@ -23,10 +23,10 @@ type SearchBoxProps = {
 
 const sizeClass = {
   md: {
-    input: "py-2.75 text-[15px]",
-    scope: "py-2.5 text-[14px]",
-    button: "px-6.5 text-[14.5px]",
-    icon: 15,
+    input: "py-2 text-[14.5px]",
+    scope: "py-1.5 text-[13.5px]",
+    button: "px-6 text-[14px]",
+    icon: 14,
   },
   lg: {
     input: "py-3.25 text-[16px]",
@@ -56,6 +56,9 @@ export const SearchBox = ({
   const [scopeValue, setScopeValue] = useState(scope)
   const [scopeOpen, setScopeOpen] = useState(false)
 
+  useEffect(() => {
+    if (value !== undefined) setQuery(value)
+  }, [value])
   useEffect(() => {
     setScopeValue(scope)
   }, [scope])
@@ -115,7 +118,7 @@ export const SearchBox = ({
                 aria-controls={listboxId}
                 aria-label={scopeAriaLabel}
                 className={cn(
-                  "flex items-center gap-2 px-4 text-ink font-bold border-r border-border-soft cursor-pointer min-w-[200px] hover:bg-surface-subtle",
+                  "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft cursor-pointer min-w-[140px] hover:bg-surface-subtle",
                   cls.scope,
                 )}
               >
@@ -126,7 +129,7 @@ export const SearchBox = ({
             : (
               <div
                 className={cn(
-                  "flex items-center gap-2 px-4 text-ink font-bold border-r border-border-soft min-w-[200px]",
+                  "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft min-w-[140px]",
                   cls.scope,
                 )}
                 aria-label={scopeAriaLabel}
@@ -142,8 +145,7 @@ export const SearchBox = ({
           )}
           <input
             type="text"
-            value={value === undefined ? query : value}
-            defaultValue={value === undefined ? undefined : undefined}
+            value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
             aria-label={ariaLabel}

@@ -92,6 +92,7 @@ const SearchRoute = () => {
       <Section padTop="none" padBottom="tight">
         <SearchBox
           size="md"
+          maxWidth={1180}
           value={qInput}
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
@@ -137,16 +138,18 @@ const SearchRoute = () => {
           <QueryPreview dsl={sync.dsl} />
         </Section>
       )}
-      <Section padTop="md" padBottom="lg">
-        <div className="flex justify-end gap-2.5">
-          <Button kind="secondary" onClick={handleClear}>
-            {t("search.actions.clear")}
-          </Button>
-          <Button kind="primary" onClick={() => void runSearch()}>
-            {t("search.actions.submit")}
-          </Button>
-        </div>
-      </Section>
+      {advancedState.root.children.length > 0 && (
+        <Section padTop="md" padBottom="lg">
+          <div className="flex justify-end gap-2.5">
+            <Button kind="secondary" onClick={handleClear}>
+              {t("search.actions.clear")}
+            </Button>
+            <Button kind="primary" onClick={() => void runSearch()}>
+              {t("search.actions.submit")}
+            </Button>
+          </div>
+        </Section>
+      )}
     </>
   )
 }

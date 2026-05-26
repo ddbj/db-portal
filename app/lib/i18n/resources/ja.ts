@@ -472,6 +472,11 @@ export type Resources = {
       perPage: {
         label: string
       }
+      card: {
+        sequenceLength: string
+        publication: string
+        sameAs: string
+      }
     }
     facets: {
       heading: string
@@ -1118,6 +1123,11 @@ export const ja: Resources = {
       },
       perPage: {
         label: "1 ページあたり",
+      },
+      card: {
+        sequenceLength: "塩基数",
+        publication: "論文",
+        sameAs: "関連 ID",
       },
     },
     facets: {
