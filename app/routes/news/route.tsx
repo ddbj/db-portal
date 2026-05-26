@@ -30,12 +30,9 @@ const NewsRoute = () => {
   )
 
   return (
-    <main className="mx-auto max-w-content-max">
-      <PageTitle
-        title={t("news.pageTitle")}
-        subtitle={t("news.pageDescription")}
-      />
-      <Section>
+    <>
+      <PageTitle title={t("news.pageTitle")} />
+      <Section padTop="snug" padBottom="lg">
         <div className="flex gap-8 items-start">
           <FacetPanel facet={facet} options={result.options} onChange={handleChange} />
           <NewsList
@@ -50,7 +47,7 @@ const NewsRoute = () => {
           />
         </div>
       </Section>
-    </main>
+    </>
   )
 }
 

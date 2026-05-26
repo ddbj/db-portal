@@ -24,15 +24,14 @@ export const FileTypeButton = ({
     onClick={onClick}
     title={hint}
     aria-label={`${label} (${ext})`}
+    className="w-full justify-start gap-2.5 text-left"
   >
-    <span className="flex items-center gap-3 w-full">
-      <span className="text-brand-deep shrink-0">
-        <FileTypeIcon buttonType={buttonType} size={20} />
-      </span>
-      <span className="flex flex-col items-start min-w-0">
-        <span className="text-fs-body font-semibold">{label}</span>
-        <span className="font-mono text-fs-micro text-ink-mid">{ext}</span>
-      </span>
+    <span className="text-brand-deep shrink-0 inline-flex items-center">
+      <FileTypeIcon buttonType={buttonType} size={20} />
     </span>
+    <span className="flex-1 text-fs-body-md font-semibold text-ink overflow-hidden text-ellipsis whitespace-nowrap">
+      {label}
+    </span>
+    <span className="font-mono text-fs-micro text-ink-soft shrink-0">{ext}</span>
   </Button>
 )

@@ -11,7 +11,7 @@ type FileTypeGridProps = {
 }
 
 export const FileTypeGrid = ({ onClick, getLabel, getExt, getHint }: FileTypeGridProps) => (
-  <div className="grid grid-cols-3 gap-3">
+  <div className="grid grid-cols-3 gap-2">
     {ButtonTypeEnum.options.map((bt) => (
       <FileTypeButton
         key={bt}

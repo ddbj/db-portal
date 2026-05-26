@@ -38,7 +38,7 @@ export type TagProps =
 
 const sizeClass: Record<TagSize, string> = {
   sm: "px-2 py-px text-fs-micro",
-  md: "px-2.5 py-0.5 text-[11.5px]",
+  md: "px-[9px] py-0.5 text-[11.5px]",
 }
 
 const sourceClass: Record<SourceName, string> = {
@@ -54,7 +54,7 @@ const statusClass: Record<StatusTone, string> = {
 }
 
 const baseClass =
-  "inline-flex items-center rounded-tag font-bold tracking-[0.04em] whitespace-nowrap leading-tight"
+  "inline-flex items-center rounded-tag font-bold tracking-[0.04em] whitespace-nowrap leading-[1.4]"
 
 export const Tag = (props: TagProps) => {
   const { size = "sm", mono = false } = props

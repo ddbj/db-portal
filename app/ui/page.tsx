@@ -5,7 +5,7 @@ type PageProps = {
 }
 
 export const Page = ({ children }: PageProps) => (
-  <div className="min-h-full w-full bg-surface text-ink font-sans text-fs-body leading-relaxed">
+  <div className="min-h-full w-full bg-surface text-ink font-sans text-fs-body leading-[1.55]">
     {children}
   </div>
 )

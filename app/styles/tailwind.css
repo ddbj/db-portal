@@ -41,6 +41,13 @@
   --color-src-dbcls-soft:   #DFEBFB;
   --color-src-dbcls-border: #7DAAE8;
 
+  /* Per-card accent rotation for Popular Resources monograms. */
+  --color-src-ddbj-warm:   #C26416;
+  --color-src-ddbj-mid:    #A85825;
+  --color-src-ddbj-deep:   #8E4516;
+  --color-src-dbcls-warm:  #1F6FB4;
+  --color-src-dbcls-mid:   #1B5990;
+
   --font-sans:  "Noto Sans JP Variable", "Public Sans", "Helvetica Neue", system-ui, sans-serif;
   --font-serif: "Noto Serif JP", "Source Serif 4", Georgia, serif;
   --font-mono:  "IBM Plex Mono", ui-monospace, monospace;
@@ -48,30 +55,62 @@
   --text-fs-h1:         28px;
   --text-fs-h2:         18px;
   --text-fs-h3:         14px;
+  --text-fs-subtitle:   14.5px;
   --text-fs-body:       14px;
+  --text-fs-body-md:    13.5px;
   --text-fs-body-sm:    13px;
+  --text-fs-meta:       12.5px;
   --text-fs-label:      12px;
+  --text-fs-tag-md:     11.5px;
   --text-fs-micro:      11px;
   --text-fs-card-title: 17px;
 
-  --tracking-label: 0.06em;
+  --tracking-label:    0.06em;
+  --tracking-eyebrow:  0.1em;
+  --tracking-h3:       0.01em;
+  --tracking-h2-sub:   0.005em;
+  --tracking-h1:      -0.015em;
+  --tracking-monogram:-0.02em;
+  --tracking-tag-sm:   0.04em;
+  --tracking-meta:     0.02em;
 
-  --spacing-section-lg:  48px;
-  --spacing-section-md:  32px;
-  --spacing-section-sm:  16px;
-  --spacing-hero-top:    64px;
-  --spacing-hero-bottom: 72px;
-  --spacing-page-gutter: 32px;
+  --leading-h2:    1.2;
+  --leading-h1:    1.25;
+  --leading-tag:   1.4;
+  --leading-title: 1.45;
+  --leading-tile:  1.5;
+  --leading-body:  1.55;
+  --leading-prose: 1.6;
+  --leading-loose: 1.7;
+
+  --spacing-section-tight:  4px;
+  --spacing-section-snug:   8px;
+  --spacing-section-sm:    16px;
+  --spacing-section-mid:   24px;
+  --spacing-section-block: 28px;
+  --spacing-section-md:    32px;
+  --spacing-section-loose: 36px;
+  --spacing-section-lg:    48px;
+  --spacing-hero-top:      74px;
+  --spacing-hero-bottom:   83px;
+  --spacing-hero-row-gap:  41px;
+  --spacing-hero-x:        37px;
+  --spacing-hero-gap:      18px;
+  --spacing-page-bottom:   55px;
+  --spacing-page-gutter:   32px;
   --spacing-content-max: 1180px;
   --spacing-hero-max:    820px;
   --spacing-sidebar:     220px;
   --spacing-right-pane:  280px;
   --spacing-news-date:   84px;
 
-  --radius-card:   10px;
-  --radius-button:  6px;
-  --radius-tag:     4px;
-  --radius-pill: 9999px;
+  --radius-card:     10px;
+  --radius-button:    6px;
+  --radius-tag:       4px;
+  --radius-monogram:  8px;
+  --radius-tile:     12px;
+  --radius-dot:       2px;
+  --radius-pill:   9999px;
 
   --shadow-card:       0 1px 2px rgba(26, 23, 38, 0.04);
   --shadow-card-hover: 0 4px 16px -4px rgba(80, 46, 107, 0.12);

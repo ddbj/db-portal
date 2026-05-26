@@ -30,14 +30,14 @@ const makeNews = (count: number): NewsList =>
   }))
 
 describe("NewsAside", () => {
-  test("NewsAside_top8_areShown_evenWhenMoreAvailable", async () => {
+  test("NewsAside_top5_areShown_evenWhenMoreAvailable", async () => {
     server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(12))))
     renderAside()
     await waitFor(() => {
       expect(screen.getByText("お知らせ 1")).toBeInTheDocument()
     })
-    expect(screen.getByText("お知らせ 8")).toBeInTheDocument()
-    expect(screen.queryByText("お知らせ 9")).toBeNull()
+    expect(screen.getByText("お知らせ 5")).toBeInTheDocument()
+    expect(screen.queryByText("お知らせ 6")).toBeNull()
   })
 
   test("NewsAside_empty_showsEmptyMessage", async () => {

@@ -148,7 +148,7 @@ export const SearchBox = ({
             placeholder={placeholder}
             aria-label={ariaLabel}
             className={cn(
-              "flex-1 min-w-0 border-0 bg-transparent text-ink font-sans caret-ink",
+              "flex-1 min-w-0 border-0 bg-transparent text-ink font-sans caret-ink leading-tight",
               cls.input,
             )}
           />
@@ -156,7 +156,7 @@ export const SearchBox = ({
         <button
           type="submit"
           className={cn(
-            "bg-brand text-white border-0 font-bold cursor-pointer hover:bg-brand-deep",
+            "bg-brand text-white border-0 font-bold cursor-pointer hover:bg-brand-deep leading-none",
             cls.button,
           )}
         >

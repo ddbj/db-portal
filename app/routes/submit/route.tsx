@@ -66,8 +66,8 @@ const SubmitRoute = () => {
 
   return (
     <>
-      <PageTitle title={t("submit.pageTitle")} subtitle={t("submit.pageSubtitle")} />
-      <Section padY="md">
+      <PageTitle title={t("submit.pageTitle")} />
+      <Section padTop="snug" padBottom="mid">
         <SectionHeading>{t("submit.sections.table")}</SectionHeading>
         <p className="text-fs-body-sm text-ink-mid mt-0 mb-4 leading-relaxed">
           {t("submit.table.headingDescription")}
@@ -110,7 +110,7 @@ const SubmitRoute = () => {
           onRequestDelete={actions.openConfirmDelete}
         />
       </Section>
-      <Section padY="md">
+      <Section padTop="snug" padBottom="lg">
         <SectionHeading
           count={steps.length > 0 ? steps.length : undefined}
           countSuffix={t("common.countSuffix")}

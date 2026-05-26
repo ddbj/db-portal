@@ -88,10 +88,10 @@ const SearchRoute = () => {
 
   return (
     <>
-      <PageTitle title={t("search.pageTitle")} subtitle={t("search.pageSubtitle")} />
-      <Section padY="sm">
+      <PageTitle title={t("search.pageTitle")} />
+      <Section padTop="none" padBottom="tight">
         <SearchBox
-          size="lg"
+          size="md"
           value={qInput}
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
@@ -108,23 +108,23 @@ const SearchRoute = () => {
             void runSearch()
           }}
         />
-        <div className="mt-2 text-fs-label text-ink-soft flex flex-wrap items-center gap-3">
+        <div className="mt-2.5 text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-hero-gap gap-y-1">
           <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>
           <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
           <span>{t("search.syntax.advancedHint")}</span>
         </div>
       </Section>
-      <Section padY="sm">
+      <Section padTop="block" padBottom="tight">
         <ExamplesChip onPick={setQInput} />
       </Section>
-      <Section padY="md">
+      <Section padTop="loose" padBottom="tight">
         <SearchAssistant
           advancedState={advancedState}
           dispatch={dispatch}
           baseUrl={searchApiBaseUrl}
         />
       </Section>
-      <Section padY="md">
+      <Section padTop="loose" padBottom="tight">
         <SectionHeading
           action={<SyncStatusChip status={sync.status} onRetry={sync.retry} />}
         >
@@ -133,16 +133,16 @@ const SearchRoute = () => {
         <AdvancedBuilder state={advancedState} dispatch={dispatch} />
       </Section>
       {sync.dsl && (
-        <Section padY="sm">
+        <Section padTop="block" padBottom="tight">
           <QueryPreview dsl={sync.dsl} />
         </Section>
       )}
-      <Section padY="lg">
-        <div className="flex justify-end gap-2">
+      <Section padTop="md" padBottom="lg">
+        <div className="flex justify-end gap-2.5">
           <Button kind="secondary" onClick={handleClear}>
             {t("search.actions.clear")}
           </Button>
-          <Button kind="primary" size="lg" onClick={() => void runSearch()}>
+          <Button kind="primary" onClick={() => void runSearch()}>
             {t("search.actions.submit")}
           </Button>
         </div>

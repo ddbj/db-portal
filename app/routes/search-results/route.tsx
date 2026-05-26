@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from "react"
-import { Link, useLoaderData, useNavigate } from "react-router"
+import { useLoaderData, useNavigate } from "react-router"
 
 import {
   AdvancedBuilder,
@@ -37,10 +37,8 @@ import {
 import {
   Button,
   Callout,
-  PageTitle,
   SearchBox,
   Section,
-  SectionHeading,
   SidebarHeading,
 } from "~/ui"
 
@@ -167,8 +165,7 @@ const SearchResultsRoute = () => {
 
   return (
     <>
-      <PageTitle title={t("search.pageTitle")} />
-      <Section padY="sm">
+      <Section padTop="mid" padBottom="tight">
         <SearchBox
           size="lg"
           value={qInput}
@@ -182,7 +179,7 @@ const SearchResultsRoute = () => {
           onSubmit={handleSubmitFromBox}
         />
         {data.q && (
-          <div className="mt-2">
+          <div className="mt-2.5">
             <QueryPreview dsl={data.q} onClear={handleClear} onEdit={handleEditInBuilder} />
           </div>
         )}
@@ -192,13 +189,13 @@ const SearchResultsRoute = () => {
       </Section>
       {data.q === ""
         ? (
-          <Section padY="md">
+          <Section padTop="block" padBottom="lg">
             <ExamplesChip onPick={(item) => navigate(buildResultsHref({ q: item }, lang))} />
           </Section>
         )
         : data.errorKey
           ? (
-            <Section padY="md">
+            <Section padTop="block" padBottom="lg">
               <Callout tone="warn" role="status">
                 {data.errorKey === "parse"
                   ? t("search.errors.parseFailure")
@@ -215,11 +212,10 @@ const SearchResultsRoute = () => {
           )
           : data.cross
             ? (
-              <Section padY="md">
-                <div className="grid gap-8 md:grid-cols-[var(--spacing-sidebar)_1fr]">
+              <Section padTop="block" padBottom="lg">
+                <div className="grid gap-6 md:grid-cols-[var(--spacing-sidebar)_1fr]">
                   <FacetPanel state={facetState} dispatch={dispatchFacet} db={null} />
                   <div role="region" aria-label={t("search.a11y.resultsRegion")}>
-                    <SectionHeading>{t("search.results.cross.heading")}</SectionHeading>
                     <CrossResults q={data.q} response={data.cross} lang={lang} />
                   </div>
                 </div>
@@ -227,8 +223,8 @@ const SearchResultsRoute = () => {
             )
             : data.perDb && data.db
               ? (
-                <Section padY="md">
-                  <div className="grid gap-8 md:grid-cols-[var(--spacing-sidebar)_1fr_var(--spacing-right-pane)]">
+                <Section padTop="block" padBottom="lg">
+                  <div className="grid gap-6 md:grid-cols-[var(--spacing-sidebar)_1fr_var(--spacing-right-pane)]">
                     <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} />
                     <div role="region" aria-label={t("search.a11y.resultsRegion")}>
                       <PerDbResults
@@ -243,7 +239,7 @@ const SearchResultsRoute = () => {
                         onSortChange={handleSortChange}
                       />
                     </div>
-                    <aside className="flex flex-col gap-4">
+                    <aside className="flex flex-col gap-5">
                       <SidebarHeading>{t("search.builder.heading")}</SidebarHeading>
                       <AdvancedBuilder state={advancedState} dispatch={dispatchAdvanced} />
                       <SearchAssistant
@@ -256,16 +252,6 @@ const SearchResultsRoute = () => {
                 </Section>
               )
               : null}
-      <Section padY="md">
-        <div className="flex justify-end">
-          <Link
-            to={buildSearchHref(lang)}
-            className="text-fs-body-sm text-brand no-underline hover:underline"
-          >
-            {t("search.preview.edit")}
-          </Link>
-        </div>
-      </Section>
     </>
   )
 }

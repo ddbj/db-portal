@@ -41,6 +41,7 @@ describe("Tag", () => {
 
   test("Tag_sizeMd_appliesMdPadding", () => {
     render(<Tag size="md">md</Tag>)
-    expect(screen.getByText("md")).toHaveClass("px-2.5")
+    const node = screen.getByText("md")
+    expect(node.className).toContain("px-[9px]")
   })
 })

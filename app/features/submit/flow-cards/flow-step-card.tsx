@@ -6,7 +6,6 @@ import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
 import { StepBadge } from "../components/step-badge"
 import { getSubmitMeta } from "../external-links"
-import { stepBadgeColor } from "../flow-rules"
 
 type FlowStepCardProps = {
   step: FlowStep
@@ -21,13 +20,6 @@ type FlowStepCardProps = {
   noteKindLabel: (kind: "warning" | "error") => string
   externalCtaLabel: string
   sourceTagLabel: (source: "DDBJ" | "DBCLS") => string
-}
-
-const borderColorFor = (step: FlowStep): string => {
-  const color = stepBadgeColor(step)
-  if (color === "rose") return "border-critical-border"
-  if (color === "amber") return "border-warn-border"
-  return "border-border-soft"
 }
 
 export const FlowStepCard = ({
@@ -57,32 +49,37 @@ export const FlowStepCard = ({
       data-testid="flow-step"
       data-service={step.service}
       className={cn(
-        "border bg-surface rounded-card p-4 shadow-card flex flex-col gap-3",
-        borderColorFor(step),
+        "border rounded-card flex flex-col gap-3",
+        pending
+          ? "bg-surface-subtle border-dashed border-border-soft"
+          : "bg-surface border-border-soft shadow-card",
       )}
+      style={{ padding: "20px 22px" }}
     >
       <header className="flex items-center gap-3 flex-wrap">
         <StepBadge index={index} pending={pending} />
-        {source !== null && (
-          <Tag kind="source" name={source}>{sourceTagLabel(source)}</Tag>
-        )}
-        <h3 className="text-fs-h3 font-bold text-ink m-0 flex-1 min-w-0">
+        <h3 className="text-fs-card-title font-bold text-ink m-0 flex-1 min-w-0">
           {serviceTitle}
         </h3>
         {pending && (
           <Tag kind="status" tone="warning">{noteKindLabel("warning")}</Tag>
         )}
+        {source !== null && (
+          <Tag kind="source" name={source}>{sourceTagLabel(source)}</Tag>
+        )}
       </header>
-      <p className="text-fs-body-sm text-ink-mid m-0 leading-relaxed">
-        {serviceDescription}
-      </p>
-      {accession.length > 0 && (
+      {!pending && (
+        <p className="text-fs-body-md text-ink-mid m-0 leading-loose">
+          {serviceDescription}
+        </p>
+      )}
+      {!pending && accession.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <Label as="span">{accessionLabel}</Label>
           <AccessionCode codes={accession} />
         </div>
       )}
-      {(scopeGroups.length > 0 || scopeEntries.length > 0) && (
+      {!pending && (scopeGroups.length > 0 || scopeEntries.length > 0) && (
         <FilesBlock
           groups={scopeGroups}
           entries={scopeEntries}
@@ -112,7 +109,7 @@ export const FlowStepCard = ({
           })}
         </ul>
       )}
-      {externalUrl !== undefined && (
+      {!pending && externalUrl !== undefined && (
         <div>
           <ExternalLinkButton url={externalUrl} label={externalCtaLabel} />
         </div>

@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
+import { useLocation } from "react-router"
 
 import { fetchNews, type NewsItem, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
+
+const isTopPath = (pathname: string): boolean =>
+  pathname === "/" || pathname === "/en" || pathname === "/en/"
 
 const STORAGE_KEY = "dbPortal.notificationBar.dismissed"
 
@@ -39,6 +43,7 @@ const isActiveAnnouncement = (n: NewsItem, now: number): boolean => {
 export const NotificationBar = () => {
   const t = useT()
   const lang = useLang()
+  const { pathname } = useLocation()
   const [dismissed, setDismissed] = useState<readonly string[]>([])
   const [hydrated, setHydrated] = useState(false)
 
@@ -53,6 +58,7 @@ export const NotificationBar = () => {
     staleTime: 5 * 60_000,
   })
 
+  if (!isTopPath(pathname)) return null
   if (query.isError || !query.data) return null
 
   const now = Date.now()

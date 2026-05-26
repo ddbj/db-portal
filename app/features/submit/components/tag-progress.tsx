@@ -1,4 +1,4 @@
-import { Label } from "~/ui"
+import { cn } from "~/ui"
 
 type TagProgressProps = {
   configured: number
@@ -20,15 +20,25 @@ export const TagProgress = ({
   const percent = total === 0 ? 100 : Math.round((configured / total) * 100)
   const isComplete = total > 0 && configured === total
   const barColor = isComplete ? "bg-ok-fg" : "bg-brand"
-  const containerColor = isComplete ? "bg-ok-bg text-ok-fg" : "bg-warn-bg text-warn-fg"
+  const container = isComplete
+    ? "bg-ok-bg border-ok-border text-ok-fg"
+    : "bg-surface border-border-soft text-ink-mid"
+  const descriptionColor = isComplete ? "text-ok-fg" : "text-ink-mid"
 
   return (
-    <div data-testid="tag-progress" className={`flex flex-col gap-2 px-3.5 py-2.5 rounded-card ${containerColor}`}>
+    <div
+      data-testid="tag-progress"
+      className={cn(
+        "flex flex-col gap-2 border rounded-card",
+        container,
+      )}
+      style={{ padding: "14px 16px 12px" }}
+    >
       <div className="flex items-center gap-3 flex-wrap">
-        <Label as="span">{heading}</Label>
-        <span className="font-mono text-fs-micro font-bold">{countLabel}</span>
+        <span className="text-fs-meta font-semibold text-ink-mid">{heading}</span>
+        <span className="font-mono text-fs-label text-ink-mid font-semibold">{countLabel}</span>
         <div
-          className="flex-1 h-1.5 bg-surface-subtle rounded-pill overflow-hidden"
+          className="flex-1 h-1.5 bg-border-soft rounded-pill overflow-hidden"
           style={{ minWidth: 160 }}
           role="progressbar"
           aria-label={heading}
@@ -42,9 +52,11 @@ export const TagProgress = ({
             style={{ width: `${percent}%`, transition: "width 200ms" }}
           />
         </div>
-        <span className="font-mono text-fs-micro font-bold w-10 text-right">{percent}%</span>
+        <span className="font-mono text-fs-label text-ink-mid font-semibold min-w-9 text-right">
+          {percent}%
+        </span>
       </div>
-      <p className="text-fs-micro text-ink-mid m-0 leading-relaxed">
+      <p className={cn("text-fs-meta m-0 leading-body", descriptionColor)}>
         {isComplete ? completeText : remainingText}
       </p>
     </div>

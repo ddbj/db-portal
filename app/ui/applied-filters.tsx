@@ -20,7 +20,7 @@ export const AppliedFilters = ({
   if (applied.length === 0) return null
 
   return (
-    <div className="mb-4 pb-4 border-b border-border-soft">
+    <div className="mb-[18px] pb-4 border-b border-border-soft">
       <div className="flex items-center justify-between mb-2.5">
         <Label>適用中 · {applied.length}</Label>
         {onClearAll && (
@@ -37,12 +37,12 @@ export const AppliedFilters = ({
         {applied.map((f, i) => (
           <li
             key={`${f.label}:${f.value}:${i}`}
-            className="inline-flex items-stretch text-fs-label leading-tight border border-border-soft rounded-button overflow-hidden bg-surface"
+            className="inline-flex items-stretch text-fs-label leading-[1.4] border border-border-soft rounded-button overflow-hidden bg-surface"
           >
-            <span className="px-2 py-0.5 bg-brand-soft text-brand-deep font-semibold text-fs-micro inline-flex items-center border-r border-border-soft whitespace-nowrap">
+            <span className="px-2 py-[3px] bg-brand-soft text-brand-deep font-semibold text-fs-micro inline-flex items-center border-r border-border-soft whitespace-nowrap">
               {f.label}
             </span>
-            <span className="px-2 py-0.5 text-ink flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap inline-flex items-center">
+            <span className="px-2 py-[3px] text-ink flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap inline-flex items-center">
               {f.value}
             </span>
             {f.onClear && (

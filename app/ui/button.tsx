@@ -11,12 +11,14 @@ type ButtonHtmlBase = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className">
 type SizedButtonProps = ButtonHtmlBase & {
   kind?: SizedButtonKind
   size?: ButtonSize
+  className?: string
   children: ReactNode
 }
 
 type LinkButtonProps = ButtonHtmlBase & {
   kind: "link"
   size?: never
+  className?: string
   children: ReactNode
 }
 
@@ -39,6 +41,7 @@ const kindClass: Record<ButtonKind, string> = {
 export const Button = ({
   kind = "primary",
   size,
+  className,
   disabled,
   type = "button",
   children,
@@ -53,10 +56,11 @@ export const Button = ({
       disabled={disabled || undefined}
       aria-disabled={disabled || undefined}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer",
+        "inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer leading-none",
         sizedClass,
         kindClass[kind],
         disabled && "cursor-not-allowed opacity-55",
+        className,
       )}
     >
       {children}

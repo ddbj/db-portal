@@ -28,7 +28,7 @@ export const SectionHeading = ({
           {
             id,
             className:
-              "text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tight",
+              "text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-[1.2]",
           },
           children,
         )}

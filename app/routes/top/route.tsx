@@ -3,18 +3,20 @@ import { NewsAside } from "~/shell"
 
 const TopRoute = () => (
   <>
-    <section className="px-page-gutter pt-hero-top pb-hero-bottom">
+    <section className="px-hero-x pt-hero-top pb-hero-bottom">
       <div className="max-w-hero-max mx-auto">
         <HeroSection />
       </div>
     </section>
-    <section className="px-page-gutter pb-section-lg">
-      <div className="max-w-content-max mx-auto grid gap-section-md md:grid-cols-[2fr_1fr]">
-        <main className="flex flex-col gap-section-md min-w-0">
+    <section className="px-hero-x pb-page-bottom">
+      <div className="max-w-content-max mx-auto grid gap-hero-row-gap md:grid-cols-[2fr_1fr]">
+        <main className="min-w-0">
           <ServiceGrid />
-          <PopularResources />
+          <div className="mt-hero-row-gap">
+            <PopularResources />
+          </div>
         </main>
-        <aside className="md:sticky md:top-section-sm self-start min-w-0">
+        <aside className="min-w-0">
           <NewsAside />
         </aside>
       </div>
