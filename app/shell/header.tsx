@@ -48,7 +48,7 @@ export const Header = ({ active }: HeaderProps) => {
 
   return (
     <header className="border-b border-border-soft bg-surface">
-      <div className="px-page-gutter py-3 flex items-center gap-6">
+      <div className="px-page-gutter py-2 flex items-center gap-6">
         <Link
           to={buildHomeHref(lang)}
           className="text-[17px] font-bold text-ink no-underline tracking-tight leading-tight"
@@ -62,7 +62,7 @@ export const Header = ({ active }: HeaderProps) => {
           {NAV_ITEMS.map((item) => {
             const isActive = item.kind === "internal" && resolvedActive === item.id
             const className = cn(
-              "px-3.5 py-1.5 text-[14.5px] rounded-button no-underline inline-flex items-center gap-1.5",
+              "px-3.5 py-1 text-[14.5px] rounded-button no-underline inline-flex items-center gap-1.5",
               isActive
                 ? "text-brand font-bold"
                 : "text-ink-mid font-medium hover:text-ink",

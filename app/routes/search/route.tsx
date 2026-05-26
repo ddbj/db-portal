@@ -1,4 +1,4 @@
-import { useReducer, useState } from "react"
+import { useMemo, useReducer, useState } from "react"
 import { useNavigate } from "react-router"
 
 import {
@@ -19,6 +19,7 @@ import {
 } from "~/features/search"
 import { searchApiBaseUrl } from "~/lib/api"
 import { useLang, useT } from "~/lib/i18n"
+import { SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
 import {
   Button,
   PageTitle,
@@ -37,9 +38,21 @@ const SearchRoute = () => {
   const lang = useLang()
   const navigate = useNavigate()
   const [qInput, setQInput] = useState("")
+  const [scope, setScope] = useState<ScopeKey>("all")
   const [advancedState, dispatch] = useReducer(advancedReducer, undefined, createInitialState)
   const advancedAst = fromAdvanced(advancedState)
   const sync = useDebouncedSerialize(advancedAst)
+  const scopeOptions = useMemo(
+    () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
+    [t],
+  )
+  const scopeLabel = t(`search.scope.${scope}`)
+  const labelToKey = useMemo(() => {
+    const map = new Map<string, ScopeKey>()
+    SCOPE_KEYS.forEach((key) => map.set(t(`search.scope.${key}`), key))
+    return map
+  }, [t])
+  const db = scopeKeyToDbSlug(scope)
 
   const runSearch = async () => {
     let combined = advancedAst
@@ -48,27 +61,28 @@ const SearchRoute = () => {
         const parsed = await parseDslToAst(qInput, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
-        navigate(buildResultsHref({ q: qInput }, lang))
+        navigate(buildResultsHref({ q: qInput, db }, lang))
 
         return
       }
     }
     if (isIdentityAst(combined)) {
-      navigate(buildResultsHref({}, lang))
+      navigate(buildResultsHref({ db }, lang))
 
       return
     }
     try {
       const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
-      navigate(buildResultsHref({ q: dsl }, lang))
+      navigate(buildResultsHref({ q: dsl, db }, lang))
     } catch {
       // serialize 失敗時はとりあえず simple query だけで遷移
-      navigate(buildResultsHref({ q: qInput }, lang))
+      navigate(buildResultsHref({ q: qInput, db }, lang))
     }
   }
 
   const handleClear = () => {
     setQInput("")
+    setScope("all")
     dispatch({ type: "clear" })
   }
 
@@ -82,11 +96,17 @@ const SearchRoute = () => {
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
           submitLabel={t("search.a11y.submit")}
+          scope={scopeLabel}
+          scopeOptions={scopeOptions}
+          scopeAriaLabel={t("search.a11y.scope")}
+          onScopeChange={(label) => {
+            const key = labelToKey.get(label)
+            if (key !== undefined) setScope(key)
+          }}
           onSubmit={(value) => {
             setQInput(value)
             void runSearch()
           }}
-          showScope={false}
         />
         <div className="mt-2 text-fs-label text-ink-soft flex flex-wrap items-center gap-3">
           <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>

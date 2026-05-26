@@ -29,6 +29,12 @@ import {
 import { searchApiBaseUrl } from "~/lib/api"
 import { useLang, useT } from "~/lib/i18n"
 import {
+  dbSlugToScopeKey,
+  SCOPE_KEYS,
+  type ScopeKey,
+  scopeKeyToDbSlug,
+} from "~/lib/search-scope"
+import {
   Button,
   Callout,
   PageTitle,
@@ -134,7 +140,29 @@ const SearchResultsRoute = () => {
   }
   const handleSubmitFromBox = (value: string) => {
     setQInput(value)
-    navigate(buildResultsHref({ q: value }, lang))
+    navigate(buildResultsHref({ q: value, db: data.db }, lang))
+  }
+  const scopeOptions = useMemo(
+    () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
+    [t],
+  )
+  const scopeLabel = t(`search.scope.${dbSlugToScopeKey(data.db)}`)
+  const labelToKey = useMemo(() => {
+    const map = new Map<string, ScopeKey>()
+    SCOPE_KEYS.forEach((key) => map.set(t(`search.scope.${key}`), key))
+    return map
+  }, [t])
+  const handleScopeChange = (label: string) => {
+    const key = labelToKey.get(label)
+    if (key === undefined) return
+    const nextDb = scopeKeyToDbSlug(key)
+    if (nextDb === data.db) return
+    navigate(
+      buildResultsHref(
+        { q: data.q, db: nextDb, page: DEFAULT_PAGE, perPage: data.perPage, sort: data.sort },
+        lang,
+      ),
+    )
   }
 
   return (
@@ -147,7 +175,10 @@ const SearchResultsRoute = () => {
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
           submitLabel={t("search.a11y.submit")}
-          showScope={false}
+          scope={scopeLabel}
+          scopeOptions={scopeOptions}
+          scopeAriaLabel={t("search.a11y.scope")}
+          onScopeChange={handleScopeChange}
           onSubmit={handleSubmitFromBox}
         />
         {data.q && (

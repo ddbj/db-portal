@@ -11,7 +11,7 @@
 │ <main>                                                              │
 │   Hero section                                                      │
 │   ┌──────────────────────────────────────────────────┐              │
-│   │ <SearchBox size="lg" showScope={false}>          │              │
+│   │ <SearchBox size="lg" scope="全データベース">     │              │
 │   │ [example chip] [example chip] [example chip]     │              │
 │   │ [→ クエリビルダーで詳細条件 を組む TextLink ]    │              │
 │   └──────────────────────────────────────────────────┘              │
@@ -61,15 +61,17 @@ export default TopRoute
 
 ### 3.1 構成
 
-- `SearchBox` (`size="lg"`, `showScope={false}`, `showSearchIcon`, `maxWidth=820`)
+- `SearchBox` (`size="lg"`, `showSearchIcon`, `maxWidth=820`, scope selector あり)
+- scope の選択肢は `app/lib/search-scope.ts` の `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")
 - 下に example chip 列 (3 件): クリックで `q` に投入、submit と等価 (UX 試行で 3 件固定)
 - 右端に `<TextLink to="/search">` で「クエリビルダーで詳細条件を組む →」 リンク
 
 ### 3.2 onSubmit の挙動
 
-- 入力値 `q` を受け、`/search/results?q=<encoded>` (ja) / `/en/search/results?q=<encoded>` (en) に navigate する
+- 入力値 `q` と scope を受け、`/search/results?q=<encoded>` (ja) / `/en/search/results?q=<encoded>` (en) に navigate する
+- scope が `"all"` 以外なら `db=<slug>` を URL に付加 (`scopeKeyToDbSlug` で変換)
 - DSL parse / serialize は `/search` ルート側でのみ実行する (top の hero は simple query を URL に渡すだけ)
-- 空入力で submit された場合は `/search/results` (q 無し) に遷移、`/search/results` 側が「examples を提案」表示
+- 空入力で submit された場合は `/search/results` (q 無し、scope に応じた `db` のみ) に遷移、`/search/results` 側が「examples を提案」表示
 
 ### 3.3 i18n キー
 
@@ -81,6 +83,7 @@ export default TopRoute
 | `top.hero.examplesLabel` | "例" | "Examples" |
 | `top.hero.examples` | (3 件配列) | (3 件配列) |
 | `top.hero.a11y.input` | "検索キーワード" | "Search keywords" |
+| `top.hero.a11y.scope` | "検索対象データベース" | "Database scope" |
 
 Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。Header の wordmark + Footer の組織情報がブランド表示を担う。
 

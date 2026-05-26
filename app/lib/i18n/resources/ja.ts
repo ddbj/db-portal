@@ -37,6 +37,7 @@ export type Resources = {
       advancedLink: string
       a11y: {
         input: string
+        scope: string
       }
     }
     serviceGrid: {
@@ -542,6 +543,7 @@ export type Resources = {
     a11y: {
       input: string
       submit: string
+      scope: string
       builderConditions: string
       fieldSelector: string
       opSelector: string
@@ -592,7 +594,7 @@ export const ja: Resources = {
       examplesLabel: "例",
       examples: ["cancer", "Homo sapiens", "PRJDB*"],
       advancedLink: "クエリビルダーで詳細条件を組む",
-      a11y: { input: "検索キーワード" },
+      a11y: { input: "検索キーワード", scope: "検索対象データベース" },
     },
     serviceGrid: { heading: "サービス" },
     popularResources: {
@@ -1192,6 +1194,7 @@ export const ja: Resources = {
     a11y: {
       input: "検索キーワード",
       submit: "検索を実行",
+      scope: "検索対象データベース",
       builderConditions: "クエリビルダーの条件一覧",
       fieldSelector: "検索フィールド",
       opSelector: "演算子",

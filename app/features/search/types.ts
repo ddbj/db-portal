@@ -1,11 +1,7 @@
+import { DB_SLUGS, type DbSlug, isDbSlug } from "~/lib/search-scope"
 import { ADVANCED_FIELDS, type AdvancedField } from "~/schemas/api-bff/llm"
 
-export const DB_SLUGS = ["trad", "sra", "bioproject", "biosample", "jga", "gea", "metabobank", "taxonomy"] as const
-
-export type DbSlug = typeof DB_SLUGS[number]
-
-export const isDbSlug = (value: string): value is DbSlug =>
-  (DB_SLUGS as readonly string[]).includes(value)
+export { DB_SLUGS, type DbSlug, isDbSlug }
 
 export const PER_PAGE_VALUES = [20, 50, 100] as const
 

@@ -224,6 +224,7 @@ main-column の H2。**3px brand 左バー付き**。
 ```ts
 type SectionHeadingProps = {
   children: ReactNode
+  subtitle?: ReactNode
   count?: number
   countSuffix?: string
   action?: ReactNode
@@ -238,7 +239,9 @@ class 骨格 (heading 部):
 text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tight
 ```
 
-container は `flex items-baseline justify-between gap-3 mb-3 flex-wrap`、内側に `flex items-baseline gap-2.5 min-w-0` の wrapper を置いて heading + `count` を、`action` を右に出す。
+container は `flex flex-col gap-1.5 mb-3`、heading 行は `flex items-baseline justify-between gap-3 flex-wrap`、内側に `flex items-baseline gap-2.5 min-w-0` の wrapper を置いて heading + `count` を、`action` を右に出す。
+
+`subtitle` が渡されたときは heading 行の直下に `<p className="text-fs-body-sm text-ink-mid m-0 pl-2.5">{subtitle}</p>` として描画する (左 padding は heading のバー位置に揃える)。AI 検索アシスタント等、heading + 説明文の組合せで使う。
 
 `count` は `text-[12.5px] text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
 

@@ -5,7 +5,7 @@ import { useT } from "~/lib/i18n"
 import { UserIcon } from "~/ui"
 
 const ANCHOR_BUTTON_CLASS =
-  "inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-semibold text-ink no-underline border border-transparent rounded-button hover:border-border-soft"
+  "inline-flex items-center gap-1.5 px-3 py-1 text-[14px] font-semibold text-ink no-underline border border-transparent rounded-button hover:border-border-soft"
 
 export const LoginButton = () => {
   const auth = useAuth()
@@ -17,7 +17,7 @@ export const LoginButton = () => {
       <span
         role="status"
         aria-live="polite"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[14px] text-ink-soft border border-transparent rounded-button"
+        className="inline-flex items-center gap-1.5 px-3 py-1 text-[14px] text-ink-soft border border-transparent rounded-button"
       >
         {t("auth.loggingIn")}
       </span>

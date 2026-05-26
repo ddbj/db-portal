@@ -1,15 +1,19 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 
 import { type Lang, useLang, useT } from "~/lib/i18n"
+import { SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
 import { Chip, SearchBox, TextLink } from "~/ui"
 
-const buildResultsHref = (q: string, lang: Lang): string => {
+const buildResultsHref = (q: string, scope: ScopeKey, lang: Lang): string => {
   const prefix = lang === "en" ? "/en" : ""
+  const params = new URLSearchParams()
   const trimmed = q.trim()
-  return trimmed === ""
-    ? `${prefix}/search/results`
-    : `${prefix}/search/results?q=${encodeURIComponent(trimmed)}`
+  if (trimmed !== "") params.set("q", trimmed)
+  const db = scopeKeyToDbSlug(scope)
+  if (db !== null) params.set("db", db)
+  const search = params.toString()
+  return `${prefix}/search/results${search === "" ? "" : `?${search}`}`
 }
 
 const buildSearchHref = (lang: Lang): string => (lang === "en" ? "/en/search" : "/search")
@@ -19,12 +23,19 @@ export const HeroSection = () => {
   const lang = useLang()
   const navigate = useNavigate()
   const [value, setValue] = useState("")
+  const [scope, setScope] = useState<ScopeKey>("all")
   const rawExamples = t("top.hero.examples", { returnObjects: true })
   const examples: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
-
-  const handleSubmit = (next: string): void => {
-    void navigate(buildResultsHref(next, lang))
-  }
+  const scopeOptions = useMemo(
+    () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
+    [t],
+  )
+  const scopeLabel = t(`search.scope.${scope}`)
+  const labelToKey = useMemo(() => {
+    const map = new Map<string, ScopeKey>()
+    SCOPE_KEYS.forEach((key) => map.set(t(`search.scope.${key}`), key))
+    return map
+  }, [t])
 
   return (
     <section className="flex flex-col gap-4 items-center w-full">
@@ -35,11 +46,17 @@ export const HeroSection = () => {
         placeholder={t("top.hero.placeholder")}
         ariaLabel={t("top.hero.a11y.input")}
         submitLabel={t("top.hero.submit")}
-        showScope={false}
+        scope={scopeLabel}
+        scopeOptions={scopeOptions}
+        scopeAriaLabel={t("top.hero.a11y.scope")}
+        onScopeChange={(label) => {
+          const key = labelToKey.get(label)
+          if (key !== undefined) setScope(key)
+        }}
         showSearchIcon
         onSubmit={(next) => {
           setValue(next)
-          handleSubmit(next)
+          void navigate(buildResultsHref(next, scope, lang))
         }}
       />
       <div className="flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">

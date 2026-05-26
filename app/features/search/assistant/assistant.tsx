@@ -1,7 +1,7 @@
 import { useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, Chip, Label, Tag, TextArea } from "~/ui"
+import { Button, Chip, Label, SectionHeading, Tag, TextArea } from "~/ui"
 
 import {
   type AdvancedAction,
@@ -73,10 +73,9 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <div>
-        <h3 id={headingId} className="text-fs-h3 font-bold text-ink m-0">{t("search.assistant.heading")}</h3>
-        <p className="text-fs-body-sm text-ink-mid m-0 mt-1">{t("search.assistant.description")}</p>
-      </div>
+      <SectionHeading id={headingId} subtitle={t("search.assistant.description")}>
+        {t("search.assistant.heading")}
+      </SectionHeading>
       <div className="rounded-card border border-border-soft bg-surface flex flex-col">
         <div className="p-3">
           <TextArea

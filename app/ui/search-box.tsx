@@ -55,6 +55,10 @@ export const SearchBox = ({
   const [query, setQuery] = useState(value ?? defaultValue)
   const [scopeValue, setScopeValue] = useState(scope)
   const [scopeOpen, setScopeOpen] = useState(false)
+
+  useEffect(() => {
+    setScopeValue(scope)
+  }, [scope])
   const cls = sizeClass[size]
   const style: CSSProperties = { maxWidth }
   const wrapperRef = useRef<HTMLDivElement | null>(null)

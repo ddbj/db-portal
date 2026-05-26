@@ -37,7 +37,7 @@ export const en: Resources = {
       examplesLabel: "Examples",
       examples: ["cancer", "Homo sapiens", "PRJDB*"],
       advancedLink: "Open the query builder",
-      a11y: { input: "Search keywords" },
+      a11y: { input: "Search keywords", scope: "Database scope" },
     },
     serviceGrid: { heading: "Services" },
     popularResources: {
@@ -637,6 +637,7 @@ export const en: Resources = {
     a11y: {
       input: "Search keywords",
       submit: "Run search",
+      scope: "Database scope",
       builderConditions: "Query builder conditions",
       fieldSelector: "Search field",
       opSelector: "Operator",
