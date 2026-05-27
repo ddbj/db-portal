@@ -713,6 +713,8 @@ type PreviewCardProps = {
 }
 ```
 
+`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。`bg-surface-subtle` + 左境界 `border-l border-border-soft` で本体と分離する。`PreviewCard` は `active === false` のとき `opacity-50` で副カード扱いに落とす。
+
 ## 12. Pagination
 
 数字ボタン横並び + 前 / 次 / ellipsis。
