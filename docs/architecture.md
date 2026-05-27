@@ -4,9 +4,7 @@ DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最
 
 ## プロジェクトの位置付け
 
-DDBJ の登録・検索サービスへの統合ポータル。**DDBJ Record (v3) schema には依存しない**。登録ナビは「登録経路の知識ベース」 であって登録メタデータではなく、Record 完成後に必要なら adapter を後付けする (`decisions.md`)。
-
-ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリース時点では含めない。コンテンツ機構 (`*.content.tsx` collection、`frontend.md`) は段階移行できるよう最初から設計する (`decisions.md`)。
+DDBJ の登録・検索サービスへの統合ポータル。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
 
 次の機能領域を 1 リポジトリで提供する。
 
@@ -123,7 +121,6 @@ en 表示時に対応キーが en リソースに存在しない page では、r
 - loader 内 throw は React Router の error boundary に流れる。404 は `throw new Response("Not Found", { status: 404 })` 形式
 - root loader は cookie / Accept-Language / `?lang=` から lang を解決し loaderData に乗せる (`i18n.md`)
 - `/api/set-lang` は唯一の action 持ち resource route。lang cookie 更新後 303 redirect で Referer に戻す
-- リリース時点で他に本番ロジックの action は無い (state 永続化 / mutation 系は後送り phase)
 - RR v7 framework mode は `loader` 1 つで SSR / CSR を兼ねる。`clientLoader` を別宣言しない (loader を 1 本化することで挙動の予測可能性を保つ)
 
 ## import 境界
@@ -365,7 +362,7 @@ URL に該当 route が無い場合 / loader が `throw new Response(null, { sta
 - キーボード操作で全画面到達可能 (modal は focus trap)
 - `<html lang>` を `useLang` で動的に出力 (`i18n.md`)
 
-axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、人手レビュー優先)。unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
+axe 系の e2e 統合は採用していない (false positive 多発リスクを避け、人手レビュー優先)。primitive 単位の検査は unit test (`vitest-axe`) で扱う。
 
 ### 性能目標
 

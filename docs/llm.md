@@ -1,6 +1,6 @@
 # LLM Integration
 
-DDBJ ポータルの LLM 機能は **自前 vLLM (Qwen 32B AWQ @ L40S) を BFF が proxy する** 構造で動く。ブラウザは vLLM の URL や API key を一切知らず、BFF が「到達確認 (health) + SSE pass-through + rate limit + PII redaction」 を担う。未設定 / 未到達のとき UI 側で AI 補助機能を非表示にする。
+DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LLM_MODEL` で指定する model) を BFF が proxy する** 構造で動く。ブラウザは vLLM の URL や API key を一切知らず、BFF が「到達確認 (health) + SSE pass-through + rate limit + PII redaction」 を担う。未設定 / 未到達のとき UI 側で AI 補助機能を非表示にする。
 
 データフロー全体図は `architecture.md`、検索アシスタント UI は `search.md` を参照。
 
@@ -8,15 +8,15 @@ DDBJ ポータルの LLM 機能は **自前 vLLM (Qwen 32B AWQ @ L40S) を BFF �
 
 | 項目 | 値 |
 |---|---|
-| LLM backend | vLLM (OpenAI compatible API)、model `Qwen/Qwen2.5-32B-Instruct-AWQ` |
+| LLM backend | vLLM (OpenAI compatible API) |
 | 接続 | server-side only (browser ↛ vLLM) |
 | 健全性判定 | `/api/llm/health` で `unset` / `ok` / `unreachable` の 3 状態 |
 | streaming | SSE pass-through (`event: message` / `event: done` / `event: error`)、15 秒間隔 heartbeat |
-| rate limit | per-IP 60 req/min + per-session 30 req/min |
+| rate limit | per-IP 60 req/min + per-session 30 req/min (env で上書き可) |
 | 入出力 redaction | log は email / phone / クレジットカード / API key 風 token を `[REDACTED]` 化 |
 | 未設定時 | env が空なら BFF は常に `{status: "unset"}`、UI は AI 補助機能を hide |
 | 未到達時 | health check が連続失敗で `{status: "unreachable", reason}`、UI は hide |
-| 用途 (リリース版) | AI 検索アシスタント (`/api/llm/search-assistant`) 1 機能 |
+| 用途 | AI 検索アシスタント (`/api/llm/search-assistant`) |
 
 ## データフロー
 
@@ -30,7 +30,7 @@ DDBJ ポータルの LLM 機能は **自前 vLLM (Qwen 32B AWQ @ L40S) を BFF �
    │ redaction (log のみ、prompt はそのまま vLLM へ)
    │ prompt 構築 (system + few-shot + user input)
    ▼
-[vLLM (Qwen 32B AWQ @ L40S)]
+[vLLM]
    │ /v1/chat/completions (stream=true)
    ▼
 [BFF]
@@ -53,7 +53,7 @@ Cache-Control: no-store
 
 Response (200):
   { "status": "unset" }
-  { "status": "ok", "model": "Qwen/Qwen2.5-32B-Instruct-AWQ" }
+  { "status": "ok", "model": "<DB_PORTAL_LLM_MODEL>" }
   { "status": "unreachable", "reason": "<short string>" }
 ```
 
@@ -120,7 +120,7 @@ health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保�
 
 `code` は portal 内で意味付けされた短い識別子 (`upstream-status` / `upstream-disconnect` / `parse-failed` / `timeout` 等)。`message` は human readable な短文。
 
-## 検索アシスタント (リリース版唯一の機能)
+## 検索アシスタント
 
 ### API
 
@@ -185,9 +185,9 @@ client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStr
 
 ### アルゴリズム
 
-固定 window で 1 分粒度のカウンタを in-memory Map (per-IP / per-session それぞれ 1 個) に持つ。sliding window でなく単純化 (window 境界で 2 倍まで流れ得るが、リリース時点はこの精度で十分)。cleanup は 5 分間隔 (session store と同じ間隔) で、古い window を破棄する。
+固定 window で 1 分粒度のカウンタを in-memory Map (per-IP / per-session それぞれ 1 個) に持つ。sliding window でなく単純化 (window 境界で 2 倍まで流れ得る精度を許容)。cleanup は 5 分間隔 (session store と同じ間隔) で、古い window を破棄する。
 
-sliding window への移行条件: (a) 境界 burst による誤閾値超過の運用報告が発生する、または (b) multi-instance 化に伴い rate-limit state を共有 store (redis 等) に移すタイミング。固定 window の境界 burst (1 分の境界で最大 2x まで通り得る) を許容できるのは **1 instance 構成のリリース期間** に限った前提で、`auth.md` の multi-instance 拡張と同じトリガで再設計する。
+固定 window の境界 burst (1 分の境界で最大 2x まで通り得る) は 1 instance 構成 + in-memory store の前提下で許容している。`auth.md` の session store 抽象と同じ拡張トリガ (multi-instance 化 / redis 化) で rate-limit state も共有 store に乗せる場合は sliding window への移行を併せて検討する。
 
 ### 超過時の応答
 
@@ -234,14 +234,14 @@ PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で次の不変量�
 
 | 変数 | デフォルト | 用途 |
 |---|---|---|
-| `DB_PORTAL_LLM_BASE_URL` | (空) | vLLM の base URL (例 `http://l40s-03:3200`)。空ならアシスタント機能を完全停止 |
+| `DB_PORTAL_LLM_BASE_URL` | (空) | vLLM の base URL。空ならアシスタント機能を完全停止 |
 | `DB_PORTAL_LLM_API_KEY` | (空) | vLLM の Bearer token (vLLM 側で `--api-key` を設定している場合に使う) |
-| `DB_PORTAL_LLM_MODEL` | `Qwen/Qwen2.5-32B-Instruct-AWQ` | model name (vLLM `--served-model-name` と一致) |
+| `DB_PORTAL_LLM_MODEL` | (env で指定) | model name (vLLM `--served-model-name` と一致) |
 | `DB_PORTAL_LLM_TIMEOUT_MS` | `60000` | upstream timeout (cold start や大きい prompt のため長め) |
 | `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` | `60` | per-IP rate limit (req / 分) |
 | `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` | `30` | per-session rate limit (req / 分) |
 
-dev 環境では `DB_PORTAL_LLM_BASE_URL=` (空) で起動し、「LLM 未設定で AI 補助が消える状態」 の挙動確認に使う。staging / production では実環境の vLLM URL + API key を設定する。
+dev 環境では `DB_PORTAL_LLM_BASE_URL` を空にすると「LLM 未設定で AI 補助が消える状態」、dummy URL にすると「unreachable」 状態の挙動確認に使える。staging / production では実環境の vLLM URL + API key を設定する。
 
 ## テスト
 
@@ -265,13 +265,7 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL=` (空) で起動し、「LLM 未設定
 | `tests/pbt/server/llm/assistant-parse.pbt.test.ts` | 任意の不正 JSON を入れても parse 関数が throw せず error event を返す |
 | `tests/pbt/server/llm/rate-limit-monotone.pbt.test.ts` | 任意の request 列で window 内 count が単調増加、window 跨ぎで reset |
 
-## 将来拡張余地
+## 追加機能の組み入れ方
 
-リリース版は AI 検索アシスタント 1 機能のみ。将来追加余地:
-
-- Submit ナビでの自然文 → ButtonType 選定 (`/api/llm/submit-assistant`)
-- Tool calling (関数呼び出し) で portal 内 API を LLM が叩く
-- Vision (画像入力)
-
-これらは BFF interface (`/api/llm/*`) を追加し、vLLM の対応モデル / vLLM の `--enable-auto-tool-choice` などを設定すれば拡張可能。prompt は機能ごとに `server/llm/<feature>/prompt.ts` を分けて持つ。
+LLM を使う新機能は BFF interface (`/api/llm/<feature>`) を追加し、prompt は機能ごとに `server/llm/<feature>/prompt.ts` を分けて持つ。tool calling / vision など vLLM 側の機能拡張は server flag (`--enable-auto-tool-choice` 等) で有効化する。
 

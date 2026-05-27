@@ -37,7 +37,7 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 | Developer が手元で API 仕様変更を反映 | `npm run gen:api-types` を手動実行 | `openapi-types.ts` が更新され、`tsc` で型エラーが顕在化 |
 | Production リリース直前 | production env で `npm run gen:api-types` を再実行し diff 確認 | staging と production の API spec 差を検知 |
 
-開発者の手元では基本 staging URL で生成する。production リリース直前にだけ production URL でも生成して diff がないことを確認する (`deployment.md`)。
+開発者の手元では基本 dev / staging env で生成する。production リリース直前にだけ production env でも生成して diff がないことを確認する (`deployment.md`)。
 
 ## ParseNode alias の役割
 
@@ -65,12 +65,12 @@ UI コードでは `ParseNode` だけを import する。serialize 呼び出し�
 
 ## 環境変数による URL 切替
 
-| env | `DB_PORTAL_OPENAPI_URL` | `DB_PORTAL_SEARCH_API_URL` |
-|---|---|---|
-| dev / staging | `https://ddbj-staging.nig.ac.jp/search/api/openapi.json` | `https://ddbj-staging.nig.ac.jp/search/api` |
-| production | `https://ddbj.nig.ac.jp/search/api/openapi.json` | `https://ddbj.nig.ac.jp/search/api` |
+| 変数 | 用途 |
+|---|---|
+| `DB_PORTAL_OPENAPI_URL` | `openapi-typescript` の生成元 (`openapi.json` の URL) |
+| `DB_PORTAL_SEARCH_API_URL` | runtime の検索 API base URL |
 
-開発と staging は同じ URL を共有する。Production リリース直前にだけ production URL で `gen:api-types` を回し、staging との型差分を確認する。env の全体方針は `development.md` を参照。
+dev / staging は同じ openapi 配置 (staging API) を共有する。Production リリース直前にだけ production URL で `gen:api-types` を回し、staging との型差分を確認する。env の全体方針は `development.md` を参照。
 
 ## operation 型補完の運用
 
@@ -114,8 +114,6 @@ git diff app/lib/api/openapi-types.ts
 ```
 
 差分があれば、関連 type を消費しているコード (`app/lib/api/` / `app/features/search/` 等) を更新してから commit する。production リリース直前には `deployment.md` の手順で production URL での差分も確認する。
-
-自動化 (CI での `git diff --exit-code` / nightly での production fetch + issue 起票) はリリース後に再評価する。
 
 ## 静的検証のスコープ
 

@@ -328,8 +328,8 @@ selectors (`selectSteps` / `selectValidations` / `selectRowDetailSummary`) は m
 
 ---
 
-## リリーススコープと制約
+## 範囲と制約
 
-- submit features は外部 API を呼ばない (navigator のみ)。 将来 draft 永続化 / Repository API 連携を入れる場合は `app/features/submit/api/` を新設する余地を残すが、本リリースでは作らない
-- zones / lint 制約 (生 hex 禁止、`react/forbid-elements` で生 button / input / select / textarea 禁止、生 hex / arbitrary value 禁止) は `architecture.md` に従う
+- submit features は外部 API を呼ばない (navigator のみ、現状 `app/features/submit/api/` は存在しない)
+- zones / lint 制約 (生 hex 禁止、`react/forbid-elements` で生 button / input / select / textarea 禁止、arbitrary value 禁止) は `architecture.md` に従う
 - 新 primitive 追加は `docs/frontend.md` の「UI primitives」 の手順を経由する

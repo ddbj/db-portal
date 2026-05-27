@@ -2,7 +2,7 @@
 
 DDBJ の登録・検索サービスへの統合ポータル。検索 (横断 / DB 指定 + Advanced builder + Sidebar facet)、登録ナビゲーション (テーブル + 動的 FlowStep カード)、ニュース、DDBJ Account (Keycloak) 連携、AI 検索アシスタント (LLM)、日本語 / 英語の i18n を 1 リポジトリで提供する。
 
-最終的に ddbj.nig.ac.jp 全ページの移行を見据えるが、リリース時点のスコープは上記 6 機能。他ページは既存サイトに残し、コンテンツ機構 (`*.content.tsx` collection) で段階移行できる土台を最初から組む。
+他コンテンツの段階移行に備え、コンテンツ機構 (`*.content.tsx` collection) を最初から組んでいる。
 
 ## 技術スタック
 
@@ -71,7 +71,7 @@ docker compose exec app npm run check:last-updated
 
 **運用**
 
-- [deployment.md](docs/deployment.md) — staging / production deploy / 監視 / トラブルシュート / secret rotation
+- [deployment.md](docs/deployment.md) — 環境構成 / 起動アーキ / log event / 監視 / トラブルシュート軸 / secret rotation
 
 ## 参考
 

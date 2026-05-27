@@ -2,8 +2,6 @@
 
 db-portal の設計判断ログ。「なぜこの設計か」 を後から辿れるよう、各決定について **採用した方針 + 不採用にした代替案 + 理由** を記録する。実装の細部は `architecture.md` と各論 docs を参照。
 
-判断の前提軸: **コスト最小化ではなく「正しい設計」 を優先する** (べき論)。
-
 ---
 
 ## アプリケーション基盤
@@ -17,8 +15,8 @@ db-portal の設計判断ログ。「なぜこの設計か」 を後から辿れ
 ### リポジトリは 1 つのまま
 
 - 採用: monorepo / モジュール分離は **内部 import 境界 (ESLint zones)** で表現
-- 不採用: リリース前の物理分割 (`packages/*` への分解)
-- 理由: portal は単一プロダクトであり、リリース前の物理分割は YAGNI。`architecture.md` の zones 表で論理境界を強制すれば 1 リポジトリで十分管理できる。リリース後に分割の必要性が出たら再評価
+- 不採用: 物理分割 (`packages/*` への分解)
+- 理由: portal は単一プロダクトで、`architecture.md` の zones 表で論理境界を強制すれば 1 リポジトリで十分管理できる
 
 ### ディレクトリ構造は `app/{routes,features,shell,ui,lib,schemas,content}` + `server/`
 
@@ -64,12 +62,6 @@ db-portal の設計判断ログ。「なぜこの設計か」 を後から辿れ
 
 XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM proxy / Search API serialize で既設層なので、session 機能追加コストが小さい。
 
-### リリース時点はログインボタンのみで専用機能なし
-
-- 採用: 認証はログインボタン + `/api/me` 取得のみ。private accession 検索などのログイン必須機能は持たない
-- 不採用: リリースに submit draft 永続化 / private accession 検索を含める
-- 理由: スコープを最小化し、Keycloak 連携の動作確認だけを優先する。ログイン後専用機能はリリース後の追加
-
 ## i18n
 
 ### URL から lang を排除し Cookie で管理する
@@ -104,7 +96,7 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 - 採用: `.github/workflows/ci.yml` で 3 コマンドのみ Docker 内実行。e2e / staging deploy / openapi 差分検知 / 性能ゲートは CI 化しない
 - 不採用: staging-deploy / production-deploy / nightly / 性能ゲートを GitHub Actions 上で自動化
-- 理由: CI に乗せると失敗時の対応コストが膨らむ。手動運用で十分回せる規模 (`deployment.md`)
+- 理由: CI に乗せると失敗時の対応コストが膨らむ。手動運用で回せる規模 (`deployment.md`)
 
 ### 環境変数は `DB_PORTAL_` prefix、`env.{dev,staging,production}` を `.env` に cp
 
@@ -128,13 +120,13 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 比較した代替案:
 
-| 方式 | 型安全 | リッチ表現 | i18n diff の読みやすさ | 将来の CMS 化 |
+| 方式 | 型安全 | リッチ表現 | i18n diff の読みやすさ | CMS 化への移行余地 |
 |---|---|---|---|---|
 | `*.content.tsx` (採用) | ◎ Zod schema | ◎ JSX | ◎ 同一ファイルに `{ja, en}` 並走 | ○ loader を差し替えるだけ |
 | Markdown frontmatter + MDX | △ frontmatter schema 検証は別途 | ◎ | △ 別ファイル管理になりがち | ○ |
 | Headless CMS | △ 型は別途 codegen | ○ | △ | ◎ |
 
-リリース時点でコンテンツ数が限られているため、CMS 化のコストは見合わない。`*.content.tsx` collection で出発し、将来必要なら loader を差し替える余地を持つ。
+`*.content.tsx` collection で出発し、loader を差し替えれば CMS 化への移行余地を残す形にしてある。
 
 ### breadcrumb は schema から除外し、 route handle + i18n リソースで自動生成
 
@@ -142,28 +134,3 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 - 不採用: content の Zod schema に `breadcrumb` field を持たせる
 - 理由: breadcrumb は content の本質的な属性ではなく、URL 構造から導出される表示要素。route handle に置く方が DRY (`frontend.md`)
 
-### DDBJ Record (v3) schema には依存しない
-
-- 採用: 登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現
-- 不採用: DDBJ Record の spec が固まるのを待ってから adapter 設計
-- 理由: Record は別プロジェクトで未確定。登録メタデータと「登録経路ナビ」 は別物。Record 完成後に必要なら adapter を後付けできる
-
-## プロジェクト範囲
-
-### ddbj.nig.ac.jp 全ページ移行は最終ゴール、 リリースには含めない
-
-- 採用: 今リリースは検索 + 登録ナビ + News + LLM + 認証 + i18n のスコープ。ddbj.nig.ac.jp の他ページは段階移行
-- 不採用: 全ページを 1 リリースで移行
-- 理由: スコープが膨らみすぎる。コンテンツ機構 (`*.content.tsx` collection) は全ページ移行を見据えて設計し、 段階移行できる土台だけ最初から組む
-
-### ローカル LLM (vLLM + Qwen 32B AWQ @ L40S) は継続、 外部 API へのスイッチを目的としない
-
-- 採用: 自前 vLLM を運用継続、 BFF (`server/llm/`) で抽象化、 障害時は UI 側で hide
-- 不採用: OpenAI / Anthropic / Cohere などの外部 API
-- 理由: コスト 0 / データを外に出さない方針。BFF 抽象化はテスタビリティ目的であり、外部 API への切替は目的ではない (`llm.md`)
-
-### 旧実装 (`v0.poc-final` tag) は参照素材、 コードを 1 行も持ち込まない
-
-- 採用: `~/db-portal-prev-impl/` を local clone、 grep / Read で参照のみ
-- 不採用: ファイル copy / 関数 copy / 型 copy / fixture 流用
-- 理由: 参照と流用の境界は「キーボードで打ち直すかどうか」。ファイル ↔ クリップボードで運ばれた瞬間にアウト

@@ -28,11 +28,11 @@ docker compose exec app npm install
 # API 型生成 (staging openapi.json から)
 docker compose exec app npm run gen:api-types
 
-# dev サーバが起動していることを確認
+# dev サーバが起動していることを確認 (env.dev の DB_PORTAL_APP_PORT で listen)
 curl -s http://localhost:3000 | head -20
 ```
 
-`compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、`docker compose up` だけで dev サーバが起動する。
+`compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、`docker compose up` だけで dev サーバが起動する。dev は `http://localhost:3000` (`env.dev` の `DB_PORTAL_PORTAL_ORIGIN`)。
 
 ## 環境ファイル
 
@@ -54,28 +54,25 @@ docker compose up -d --build
 
 ### 環境ごとの差
 
-| 変数 | dev | staging | production |
-|---|---|---|---|
-| `DB_PORTAL_PREFIX` | `db-portal-dev` | `db-portal-staging` | `db-portal-prod` |
-| `DB_PORTAL_ENV` | `dev` | `staging` | `production` |
-| `DB_PORTAL_APP_COMMAND` | `npm run dev` | `npm start` | `npm start` |
-| `DB_PORTAL_APP_PORT` | `3000` | `3100` | `3200` |
-| `DB_PORTAL_PORTAL_ORIGIN` | `http://localhost:3000` | `https://portal-staging.ddbj.nig.ac.jp` | `https://portal.ddbj.nig.ac.jp` |
-| `DB_PORTAL_LOG_LEVEL` | `debug` | `info` | `warn` |
-| `DB_PORTAL_SEARCH_API_URL` | staging | staging | production |
-| `DB_PORTAL_OPENAPI_URL` | staging | staging | production |
-| `DB_PORTAL_KEYCLOAK_REALM_URL` | staging | staging | production |
-| `DB_PORTAL_KEYCLOAK_CLIENT_ID` | `db-portal-dev` | `db-portal-staging` | `db-portal` |
-| `DB_PORTAL_LLM_BASE_URL` | (空、UI hide) | `http://l40s-03:3200` | `http://l40s-03:3200` |
-| `DB_PORTAL_LLM_API_KEY` | (空) | staging key | `CHANGE_ME` |
+各環境で値が変わる env 変数の一覧 (一部):
 
-Production の secret は `CHANGE_ME` プレースホルダのまま git に commit される。実値は deploy 時に `.env.production.local` などで上書きする (詳細は `deployment.md`)。News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`decisions.md`)。
+- `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV`: 環境識別子 (compose の container_name / image / volume / network 名に展開される)
+- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev`、staging / production は `npm start`
+- `DB_PORTAL_APP_PORT`: host 側 listen port (環境ごとに異なる)
+- `DB_PORTAL_PORTAL_ORIGIN`: portal 自身の origin (redirect_uri 計算 / `<base>` 等の起点)
+- `DB_PORTAL_LOG_LEVEL`: `debug` / `info` / `warn` から選ぶ
+- `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_OPENAPI_URL`: ddbj-search-api の base / openapi.json 配置先
+- `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID`: Keycloak realm / client (`auth.md`)
+- `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY`: vLLM 接続先 (`llm.md`)。空文字なら AI 補助機能を hide
+
+実値は `env.dev` / `env.staging` / `env.production` を直接参照する (root に commit 済)。env の compose 内マッピングは `compose.yml`、設計根拠は `decisions.md`。
 
 ### Secret の扱い
 
 - `.gitignore` に `.env.*.local` を含める
-- `DB_PORTAL_LLM_API_KEY` は production deploy 時に上書きする
+- production の secret は `env.production` で `CHANGE_ME` プレースホルダとして commit され、実値は deploy 時に `.env.production.local` から merge して上書き (詳細は `deployment.md`)
 - 開発者は staging key を使う、production key は触らない
+- News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`decisions.md`)
 
 ## よく使うコマンド
 
@@ -184,13 +181,14 @@ staging / production の openapi.json と portal 側生成物 (`app/lib/api/open
 
 ## Debug 用 URL (dev サーバ起動後)
 
-| URL | 期待 |
+dev origin (`env.dev` の `DB_PORTAL_PORTAL_ORIGIN`) を起点に:
+
+| Path | 期待 |
 |---|---|
-| `http://localhost:3000` | トップページ (placeholder でも 200) |
-| `http://localhost:3000/en` | 英語版トップ |
-| `http://localhost:3000/api/me` | 401 (Cookie なし) |
-| `http://localhost:3000/api/news` | `[]` (空配列、News mirror 未稼働 / 初期化中) |
-| `http://localhost:3000/api/llm/health` | `{"status":"unset"}` (dev で `DB_PORTAL_LLM_BASE_URL` 空のため) |
+| `/` | トップページ (placeholder でも 200) |
+| `/api/me` | 401 (Cookie なし) |
+| `/api/news` | `[]` (空配列、News mirror 未稼働 / 初期化中) |
+| `/api/llm/health` | `DB_PORTAL_LLM_BASE_URL` が空なら `{"status":"unset"}`、dummy URL が入っていれば `{"status":"unreachable", ...}` |
 
 ## Troubleshooting
 
@@ -231,7 +229,7 @@ docker compose exec app npm run lint
 docker compose exec app npm test
 ```
 
-加えて、リリース直前 / 大きい変更時には以下も手元で確認する (CI 自動化はリリース後に再評価):
+加えて、リリース直前 / 大きい変更時には以下も手元で確認する:
 
 ```bash
 docker compose exec app npm run validate:content

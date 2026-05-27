@@ -148,7 +148,7 @@ Advanced builder の UI は state を受け取り、再帰的に ConditionRow / 
 
 入力は `app/ui/` primitive 経由 (NativeSelect / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
 
-UI 上の最大ネスト深さは制約しないが、設計目安 4 段。4 段を超える木の表示崩れは保留 (UX 試行で確認)。
+UI 上の最大ネスト深さは制約しないが、設計目安 4 段。
 
 ## Sidebar facet
 
@@ -193,7 +193,7 @@ Sidebar は state から `app/ui/` の FacetGroup / FacetRow / DateFacet を ren
 - FacetGroup studyType: per-DB のみ
 - DateFacet: 「すべて / 1 年 / 5 年 / 10 年」 segmented + FROM/TO date input
 
-facet 候補値 (organism / submitter 等の選択肢) は **本書段階では hardcoded 静的リスト** (API の aggregations endpoint 実装は本リリース範囲外、候補値は固定 12 organism / 主要 submitter で用意)。
+facet 候補値 (organism / submitter 等の選択肢) は **hardcoded 静的リスト** (固定 12 organism / 主要 submitter)。API の aggregations endpoint は portal 側から呼ばない。
 
 ## AST merge
 

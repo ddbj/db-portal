@@ -158,7 +158,7 @@ Tailwind v4 は `@theme` 宣言から utility class を自動生成する (`--co
 
 ### 視覚確認
 
-dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` の staging) で `/_design` route を生成する。`routes/_design/primitives.tsx` で全 primitive を variant × size × state すべて並べ、`routes/_design/tokens.tsx` で全 token を一覧表示する。production build では `app/routes.ts` で除外し 404 にする。
+dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した env) で `/_design` route を生成する。`routes/_design/primitives.tsx` で全 primitive を variant × size × state すべて並べ、`routes/_design/tokens.tsx` で全 token を一覧表示する。production build では `app/routes.ts` で除外し 404 にする。
 
 ## Shell
 
@@ -238,7 +238,7 @@ returnTo はクライアントから渡す。`buildLoginUrl` / `buildLogoutUrl` 
                                                                    [運営組織] [利用規約] [プライバシー] [アクセシビリティ]
 ```
 
-リンク先は i18n リソース駆動。staging / production で `https://www.ddbj.nig.ac.jp/...` に向ける。
+リンク先は i18n リソース駆動 (DDBJ 既存サイトの各 page へ向ける)。
 
 ### NotificationBar
 
@@ -431,7 +431,7 @@ Hero に独立した heading は置かない (SearchBox 自体が page の入口
 
 `app/content/services/` collection の `top.category === "primary-service"` を `top.order` 昇順で取得する (本書「Content system」)。
 
-リリース時点で 6 件:
+現状 6 件:
 
 | id | 表示 | link.kind | link target |
 |---|---|---|---|
@@ -448,7 +448,7 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 - `grid-cols-2 gap-3`
 - 各 card: 56×56 icon (`surface-subtle` bg, brand fg) + title (17px bold) + description (13px ink-soft)
-- icon は `app/ui/icons/` の汎用 icon を流用する。Service ごとの専用 icon はリリース時点では汎用 icon (`SearchIcon` / `UserIcon` / `GlobeIcon` / `ExternalIcon` 等) で代替する
+- icon は `app/ui/icons/` の汎用 icon を流用する (`SearchIcon` / `UserIcon` / `GlobeIcon` / `ExternalIcon` 等)。Service 専用 icon は持たない
 - 外部リンク card には右上に `ExternalIcon` (12px) を visual hint として表示
 
 ### Popular Resources
@@ -457,7 +457,7 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 `app/content/services/` collection の `top.category === "popular-ddbj"` / `top.category === "popular-dbcls"` を `top.order` 昇順で取得する。
 
-リリース時点の構成 (DDBJ × 7 / DBCLS × 5):
+現状の構成 (DDBJ × 7 / DBCLS × 5):
 
 | group | id | monogram | link | 備考 |
 |---|---|---|---|---|
@@ -497,14 +497,14 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 ### NewsAside / NotificationBar
 
-トップは右ペインで `app/shell/news-aside.tsx` を消費する。詳細仕様 (取得 / 表示 / 空・loading) は本書「Shell」の「NewsAside」を参照。トップ以外で NewsAside を使う場面はリリース時点で無い (`ShellLayout` は NewsAside を持たない)。
+トップは右ペインで `app/shell/news-aside.tsx` を消費する。詳細仕様 (取得 / 表示 / 空・loading) は本書「Shell」の「NewsAside」を参照。NewsAside はトップ専用で、`ShellLayout` には含めない (route 側で explicit に呼ぶ)。
 
 NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有のロジックは無く、仕様詳細は本書「Shell」の「NotificationBar」を参照。
 
 ### SSR / hydration
 
 - TopRoute は loader を持たない (Service tiles / Popular Resources は collection 起動時 load、News は TanStack Query)
-- SSR では News fetch を `useQuery` の `prefetch` で行わない。TanStack Query の hydration はリリース時点で採用しないため、初回 client mount で fetch する
+- SSR では News fetch を `useQuery` の `prefetch` で行わない (TanStack Query の hydration は採用していない)。初回 client mount で fetch する
 - 結果として SSR では `NewsAside` が loading / empty 状態でレンダリングされ、hydration 後に実データに置き換わる (initial paint で skeleton 相当の表示)
 
 ## Content system
@@ -589,7 +589,7 @@ Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、
 | `popular-ddbj` | `order` + `monogram` (2-3 文字大文字英数) | Popular Resources DDBJ 群 |
 | `popular-dbcls` | `order` + `monogram` | Popular Resources DBCLS 群 |
 
-`order` は各カテゴリ内の表示順。`monogram` は "BP" / "BS" / "DR" / "TGV" のような 2-3 文字。`primary-service` には monogram を要求しない (Service icon を別途持つため)。`order` の重複は手動管理 (loader 側 PBT 余地あり、リリース時点では未導入)。
+`order` は各カテゴリ内の表示順。`monogram` は "BP" / "BS" / "DR" / "TGV" のような 2-3 文字。`primary-service` には monogram を要求しない (Service icon を別途持つため)。`order` の重複は手動管理。
 
 #### SubmitUsage
 
@@ -699,7 +699,7 @@ en だけ書かれていない場合、Zod schema が `body.en` を必須にし�
 
 #### 翻訳完了 flag
 
-route 単位の翻訳完了状態を `handle.i18n.en` (`"complete"` / `"missing"` / `"partial"`) で持つ。dynamic ルート (`databases/$slug` 等) で content の en が個別に欠落する場合は、route 側の handle を `"partial"` に下げる運用、または content 側の `body.en` をスタブで埋める運用の二択。リリース時点は前者を採用 (route handle はコンテンツ全体の最大値を表す)。
+route 単位の翻訳完了状態を `handle.i18n.en` (`"complete"` / `"missing"` / `"partial"`) で持つ。dynamic ルート (`databases/$slug` 等) で content の en が個別に欠落する場合は、route 側の handle を `"partial"` に下げる運用 (route handle はコンテンツ全体の最大値を表す)。
 
 ### Build と runtime の境界
 

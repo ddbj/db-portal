@@ -29,14 +29,9 @@ OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
    └─ proxy 時に Authorization: Bearer <accessToken> を背面で付与
    ▼
 [Keycloak (DDBJ Account)]
-   https://idp[-staging].ddbj.nig.ac.jp/realms/master
 ```
 
-## リリース時の機能範囲
-
-リリース時点では **ログインボタンのみ**。ログイン後の限定機能は持たせない。ただし token の取扱い方式は後から差し替えるコストが大きいので最初から正しい形で固める。
-
-### 持つもの
+## 機能範囲
 
 - OIDC Authorization Code Flow + PKCE (BFF が code → token 交換)
 - In-memory session store (TTL 付き)
@@ -44,14 +39,9 @@ OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
 - ログイン / ログアウト UI (BFF endpoint への遷移)
 - Header にユーザー名表示 (`GET /api/me`)
 - Token refresh は BFF が背面で実行
-- `useAuth` hook + `<RequireAuth>` wrapper (将来「ログイン後限定機能」を増やしやすい構造)
+- `useAuth` hook + `<RequireAuth>` wrapper を構造として提供
 
-### 持たないもの
-
-- 登録ドラフトの永続化
-- Private accession 検索
-- お気に入り検索クエリ保存
-- Mutation 系 API (mutation がない期間は CSRF 攻撃面が薄い、mutation を追加するときに CSRF token / Origin check を導入する)
+mutation 系 API を portal に追加するときは CSRF token / Origin check を同時に導入する (現状は mutation が無いので攻撃面が薄い)。
 
 ## Cookie 仕様
 
@@ -93,9 +83,9 @@ OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
 
 session entry 全体を log に出すケースは作らない。debug 用に log するなら `sub` と `name` だけに絞る。
 
-### Multi-instance への拡張
+### Session store の interface
 
-本リリースは 1 instance 想定で in-memory のみ。将来複数 instance に展開する場合は `DB_PORTAL_SESSION_STORE=memory|redis` env で切替可能にする (interface 抽象は最初から作る、redis 実装は別途)。
+`DB_PORTAL_SESSION_STORE=memory|redis` env で memory / redis 実装を切替可能な interface を持つ (現状の実装は in-memory)。
 
 ## OIDC Authorization Code Flow + PKCE
 
@@ -135,7 +125,7 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 | `exp` | 現在時刻より未来 (clock skew は 0 秒) | 同上 |
 | `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
 
-将来 upstream の信頼境界が変わる (第三者の cache CDN を経由する 等) 場合に備え、payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、JWKS 署名再検証を後から差し込める構造に保つ。
+payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、JWKS 署名再検証を後から差し込める構造に保つ (upstream の信頼境界が変わって token endpoint からの direct 受信が成り立たなくなった場合への備え)。
 
 ### Refresh
 
@@ -252,7 +242,7 @@ route loader からも user 情報を取れるよう、`loadAuth(request)` helpe
 
 ## `<RequireAuth>` wrapper と URL helper
 
-`<RequireAuth>` は children を `useAuth` の状態で出し分け、`unauthenticated` なら `buildLoginUrl(location.pathname + location.search)` に navigate する。リリース時はこの wrapper を使う route が無いが、構造として最初から用意する。
+`<RequireAuth>` は children を `useAuth` の状態で出し分け、`unauthenticated` なら `buildLoginUrl(location.pathname + location.search)` に navigate する。
 
 URL の組み立ては `app/lib/auth/login-url.ts` の `buildLoginUrl` / `buildLogoutUrl` に集約し、Header の Login / Logout link からも同じ helper を使う。`returnTo` は **同一 origin の絶対パス (`/` 始まり、`//` でない、`/\\` でない)** のみ受理し、それ以外は `/` に正規化する。
 
@@ -264,9 +254,10 @@ Login / Logout のリダイレクトで `returnTo` を保持する際、現在 U
 
 | 変数 | 用途 |
 |---|---|
-| `DB_PORTAL_KEYCLOAK_REALM_URL` | Keycloak realm URL (`https://idp[-staging].ddbj.nig.ac.jp/realms/master`) |
-| `DB_PORTAL_KEYCLOAK_CLIENT_ID` | クライアント ID (`db-portal-dev` / `db-portal-staging` / `db-portal`) |
+| `DB_PORTAL_KEYCLOAK_REALM_URL` | Keycloak realm URL (env ごとに staging realm / production realm を指す) |
+| `DB_PORTAL_KEYCLOAK_CLIENT_ID` | クライアント ID (env ごとに dev / staging / production の client を指す) |
 | `DB_PORTAL_PORTAL_ORIGIN` | redirect_uri 計算に使う portal origin |
+| `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | session store の sliding TTL (秒)。Keycloak `Client Session Idle` と揃える |
 
 クライアントシークレットは PKCE で不要 (`public` client 設定)。Keycloak client は `access type: public`、PKCE 強制で運用する。
 
@@ -274,25 +265,16 @@ Login / Logout のリダイレクトで `returnTo` を保持する際、現在 U
 
 ## Keycloak 管理画面側の設定
 
-Keycloak 管理コンソール側の client 設定 SSOT。portal 側の実装挙動は本書上方の各節を参照。
+Keycloak 管理コンソール側の client 設定の規約。具体的な realm URL / client ID / redirect URI / Web Origins / Token 寿命の数値は env / Keycloak 側の設定が SSOT。
 
-### 環境ごとの realm / client
+### realm / client の構成
 
-| 環境 | realm URL | client ID | client 種別 |
-|---|---|---|---|
-| dev | `https://idp-staging.ddbj.nig.ac.jp/realms/master` | `db-portal-dev` | public + PKCE |
-| staging | `https://idp-staging.ddbj.nig.ac.jp/realms/master` | `db-portal-staging` | public + PKCE |
-| production | `https://idp.ddbj.nig.ac.jp/realms/master` | `db-portal` | public + PKCE |
-
-dev と staging は同じ realm を共有し、client を別にする (テストユーザーを切り分けるため)。production は別 realm。
+dev / staging は同じ realm を共有し、client を env 別に分ける (テストユーザーを切り分けるため)。production は別 realm。client は env ごとに `DB_PORTAL_KEYCLOAK_CLIENT_ID` で識別され、いずれも `access type: public` + PKCE 強制。
 
 ### Client 設定値
 
-production client `db-portal` の設定。staging / dev は redirect URI 部分のみ origin を差し替える。
-
 | 項目 | 値 | 説明 |
 |---|---|---|
-| Client ID | `db-portal` | コード側の `DB_PORTAL_KEYCLOAK_CLIENT_ID` と一致 |
 | Client Protocol | `openid-connect` | OIDC |
 | Access Type | `public` | client secret を保持しない (PKCE で代替) |
 | Standard Flow Enabled | ON | Authorization Code Flow |
@@ -301,41 +283,34 @@ production client `db-portal` の設定。staging / dev は redirect URI 部分�
 | Service Accounts Enabled | OFF | 不要 |
 | Authorization Enabled | OFF | 不要 |
 | PKCE Code Challenge Method | `S256` | SHA-256 強制 |
-| Valid Redirect URIs | `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback`<br>`<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` | ワイルドカード `*` 禁止 |
+| Valid Redirect URIs | `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback`<br>`<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` | ワイルドカード `*` 禁止、env ごとに完全一致登録 |
 | Valid Post Logout Redirect URIs | `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` | logout 後の戻り先 |
 | Web Origins | `<DB_PORTAL_PORTAL_ORIGIN>` | CORS 用 (BFF 経由のみなので限定) |
 | Front Channel Logout | OFF | BFF が `end_session_endpoint` を直叩きする |
 | Backchannel Logout URL | (空) | 不要 |
 
+各 env の実 origin / realm URL / client ID は git 管理外運用メモを参照する。
+
 ### PKCE の強制
 
-Access Type `public` + Standard Flow + `Proof Key for Code Exchange Code Challenge Method = S256` を組み合わせて、PKCE なしの code 交換を拒否する設定にする。Keycloak 管理コンソールの client 設定 → "Advanced Settings" → "Proof Key for Code Exchange Code Challenge Method" を `S256` に。
+Access Type `public` + Standard Flow + `Proof Key for Code Exchange Code Challenge Method = S256` を組み合わせて、PKCE なしの code 交換を拒否する設定にする。
 
 portal 側 BFF は常に `code_verifier` を送出するので、Keycloak 側で強制しても挙動は変わらないが、設定ミスや別 client による悪用を防ぐ層として強制する。
 
-### Token 寿命
+### Token 寿命の規約
 
-| 項目 | 値 | 補足 |
+| 項目 | 規約 | 補足 |
 |---|---|---|
 | Access Token Lifespan | 5 分 | BFF が refresh を背面で実行するため短くて OK |
-| Client Session Idle | 30 分 | BFF session TTL と揃える |
+| Client Session Idle | portal の `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` と揃える | BFF session TTL と短い方で実効 TTL が決まる |
 | Client Session Max | 12 時間 | refresh の最長寿命 |
-| SSO Session Idle | 30 分 | Keycloak realm 全体の idle |
-| SSO Session Max | 12 時間 | Keycloak realm 全体の max |
+| SSO Session Idle / Max | Client Session と同水準 | realm 全体の idle / max |
 
 Access Token を短くする理由: BFF が `expiresAt - 30 秒` のタイミングで refresh する。AT が短い分だけ漏洩リスクが減る。Refresh Token は HttpOnly cookie とは別経路 (server in-memory) で保持されるため、client が直接触れない。
 
 ### Redirect URI の運用
 
-リリース時点で **ワイルドカード `*` を全廃** する。各環境は実 origin を完全一致で登録する。
-
-| 環境 | Valid Redirect URIs |
-|---|---|
-| dev | `http://localhost:3000/api/auth/callback`<br>`http://localhost:3000/api/auth/logout-callback` |
-| staging | `https://portal-staging.ddbj.nig.ac.jp/api/auth/callback`<br>`https://portal-staging.ddbj.nig.ac.jp/api/auth/logout-callback` |
-| production | `https://portal.ddbj.nig.ac.jp/api/auth/callback`<br>`https://portal.ddbj.nig.ac.jp/api/auth/logout-callback` |
-
-production client の redirect URI に staging origin を含めない (逆も同様)。production の `code` が staging に流れて悪用されることを防ぐ。
+ワイルドカード `*` は禁止。各環境は実 origin (`<DB_PORTAL_PORTAL_ORIGIN>`) を完全一致で登録する。production client の redirect URI に staging origin を含めない (逆も同様、production の `code` が staging に流れて悪用されることを防ぐ)。
 
 ### Scope 設定
 
@@ -347,54 +322,15 @@ portal が要求する scope:
 | `profile` | `name` |
 | `email` | `email` |
 
-`offline_access` は要求しない (BFF 内のみで refresh、client 側で長期保管しない)。
-
-Keycloak realm の "Client Scopes" で `openid` / `profile` / `email` を `db-portal` client の "Default Client Scopes" に紐づける。
+`offline_access` は要求しない (BFF 内のみで refresh、client 側で長期保管しない)。Keycloak realm の "Client Scopes" で 3 scope を client の "Default Client Scopes" に紐づける。
 
 ### Web Origins / CORS
 
 portal は BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には portal 自身の origin のみを登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない。
 
-| 環境 | Web Origins |
-|---|---|
-| dev | `http://localhost:3000` |
-| staging | `https://portal-staging.ddbj.nig.ac.jp` |
-| production | `https://portal.ddbj.nig.ac.jp` |
-
 ### e2e テスト用ユーザー
 
-staging realm に portal e2e 用テストユーザーを作成する:
-
-| Username | Email | 用途 |
-|---|---|---|
-| `ts-db-portal-dev` | (dev / staging 共用、staging realm) | Playwright e2e で `S-AUTH-02` 等 |
-
-password はリリースマネージャの作業環境で `DB_PORTAL_E2E_USER_PASSWORD` env として保持し、`npm run test:e2e` を回すときに渡す。production realm にはテストユーザーを作らない。
-
-### 初回登録手順 (production)
-
-1. Keycloak 管理コンソール `https://idp.ddbj.nig.ac.jp` にログイン
-2. realm `master` に切り替え
-3. Clients → Create
-   - Client ID: `db-portal`
-   - Client Protocol: `openid-connect`
-4. Settings タブ:
-   - Access Type: `public`
-   - Standard Flow Enabled: ON
-   - Direct Access Grants Enabled: OFF
-   - Implicit Flow Enabled: OFF
-   - Valid Redirect URIs / Valid Post Logout Redirect URIs / Web Origins: 上の表参照
-5. Advanced Settings タブ:
-   - Proof Key for Code Exchange Code Challenge Method: `S256`
-   - Access Token Lifespan: 5 minutes
-   - Client Session Idle: 30 minutes
-   - Client Session Max: 12 hours
-6. Client Scopes タブ:
-   - Default Client Scopes: `openid`, `profile`, `email`
-   - Optional Client Scopes: (空)
-7. Save
-
-設定完了後、portal の `/api/auth/login?return_to=/` を踏んでログインフローが正常完了することを確認する。
+staging realm に portal e2e 用テストユーザーを 1 件作成し、`DB_PORTAL_E2E_USER_PASSWORD` env として password をリリースマネージャの作業環境で保持する。`npm run test:e2e` を回すときに渡す。production realm にはテストユーザーを作らない。
 
 ### 設定変更時のチェックリスト
 
