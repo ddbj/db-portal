@@ -14,6 +14,7 @@ import {
   FormGroup,
   IconButton,
   Label,
+  LinkCard,
   Modal,
   ModalBody,
   ModalFooter,
@@ -29,9 +30,19 @@ import {
   SidebarGroupLabel,
   SidebarHeading,
   Tag,
+  TextArea,
+  TextInput,
   TextLink,
 } from "~/ui"
-import { CloseIcon, GlobeIcon, SearchIcon } from "~/ui"
+import {
+  ChevronDownIcon,
+  CloseIcon,
+  ExternalIcon,
+  GlobeIcon,
+  InfoIcon,
+  SearchIcon,
+  UserIcon,
+} from "~/ui"
 
 const Block = ({ title, children }: { title: string; children: ReactNode }) => (
   <Section padY="sm">
@@ -129,6 +140,15 @@ const HeadingGallery = () => (
 
 const FormsGallery = () => (
   <Block title="Forms">
+    <Row label="TextInput default">
+      <TextInput ariaLabel="account-id" placeholder="DRA000001" />
+    </Row>
+    <Row label="TextInput warn + mono">
+      <TextInput ariaLabel="dsl-input" mono state="warn" defaultValue="organism:" />
+    </Row>
+    <Row label="TextArea default">
+      <TextArea ariaLabel="description" placeholder="自由記述..." />
+    </Row>
     <Row label="NativeSelect default">
       <NativeSelect
         ariaLabel="field"
@@ -155,6 +175,40 @@ const FormsGallery = () => (
       <FmtCheck label="hybrid assembly" defaultChecked />
       <FmtCheck label="raw signal" />
     </FormGroup>
+  </Block>
+)
+
+const CardGallery = () => (
+  <Block title="LinkCard">
+    <Row label="internal">
+      <LinkCard to="#">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <div className="w-12 h-12 rounded-card bg-surface-subtle border border-border-soft inline-flex items-center justify-center text-brand">
+            <SearchIcon size={22} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-fs-body font-bold text-ink">内部リンクカード</div>
+            <div className="text-fs-body-sm text-ink-mid">RR の Link 経由で navigate</div>
+          </div>
+        </div>
+      </LinkCard>
+    </Row>
+    <Row label="external">
+      <LinkCard external href="https://www.ddbj.nig.ac.jp">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <div className="w-12 h-12 rounded-card bg-surface-subtle border border-border-soft inline-flex items-center justify-center text-brand">
+            <GlobeIcon size={22} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-fs-body font-bold text-ink inline-flex items-center gap-1.5">
+              外部リンクカード
+              <ExternalIcon size={12} aria-hidden />
+            </div>
+            <div className="text-fs-body-sm text-ink-mid">target=_blank で別タブ</div>
+          </div>
+        </div>
+      </LinkCard>
+    </Row>
   </Block>
 )
 
@@ -289,10 +343,34 @@ const TextLinkGallery = () => (
         DDBJ 本体サイト
       </TextLink>
     </Row>
-    <Row label="icons">
+    <Row label="weight=normal">
+      <TextLink to="#" weight="normal">細字リンク</TextLink>
+    </Row>
+    <Row label="weight=bold">
+      <TextLink to="#" weight="bold">太字リンク</TextLink>
+    </Row>
+  </Block>
+)
+
+const IconGallery = () => (
+  <Block title="Icons">
+    <Row label="機能アイコン">
+      <ChevronDownIcon size={16} title="開閉" />
+      <CloseIcon size={16} title="閉じる" />
       <SearchIcon size={16} title="検索" />
       <GlobeIcon size={16} title="言語切替" />
-      <CloseIcon size={16} title="閉じる" />
+      <UserIcon size={16} title="ユーザー" />
+      <ExternalIcon size={12} title="外部リンク" />
+      <InfoIcon size={16} title="情報" />
+    </Row>
+    <Row label="size=24 (拡大表示)">
+      <ChevronDownIcon size={24} />
+      <CloseIcon size={24} />
+      <SearchIcon size={24} />
+      <GlobeIcon size={24} />
+      <UserIcon size={24} />
+      <ExternalIcon size={24} />
+      <InfoIcon size={24} />
     </Row>
   </Block>
 )
@@ -310,7 +388,9 @@ const DesignPrimitives = () => (
     <ModalDemo />
     <PaginationGallery />
     <SearchBoxGallery />
+    <CardGallery />
     <TextLinkGallery />
+    <IconGallery />
   </div>
 )
 

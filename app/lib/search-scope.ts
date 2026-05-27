@@ -26,3 +26,17 @@ export const scopeKeyToDbSlug = (key: ScopeKey): DbSlug | null =>
 
 export const dbSlugToScopeKey = (db: DbSlug | null): ScopeKey =>
   db === null ? "all" : db
+
+export const PER_PAGE_VALUES = [20, 50, 100] as const
+
+export type PerPageValue = typeof PER_PAGE_VALUES[number]
+
+export const isPerPageValue = (value: number): value is PerPageValue =>
+  (PER_PAGE_VALUES as readonly number[]).includes(value)
+
+export const SORT_KEYS = ["relevance", "date_desc", "date_asc"] as const
+
+export type SortKey = typeof SORT_KEYS[number]
+
+export const isSortKey = (value: string): value is SortKey =>
+  (SORT_KEYS as readonly string[]).includes(value)

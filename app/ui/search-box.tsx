@@ -5,7 +5,7 @@ import { cn } from "./cn"
 import { ChevronDownIcon, SearchIcon } from "./icons"
 
 type SearchBoxProps = {
-  value?: string
+  value?: string | undefined
   defaultValue?: string
   placeholder?: string
   scope?: string

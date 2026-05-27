@@ -1,26 +1,14 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 
-import { type Lang, useLang, useT } from "~/lib/i18n"
+import { useLang, useT } from "~/lib/i18n"
 import {
-  type DbSlug,
   SCOPE_KEYS,
   type ScopeKey,
   scopeKeyToDbSlug,
 } from "~/lib/search-scope"
+import { buildResultsHref, buildSearchHref } from "~/lib/search-url"
 import { Chip, SearchBox, TextLink } from "~/ui"
-
-const buildResultsHref = (q: string, db: DbSlug | null, lang: Lang): string => {
-  const prefix = lang === "en" ? "/en" : ""
-  const params = new URLSearchParams()
-  const trimmed = q.trim()
-  if (trimmed !== "") params.set("q", trimmed)
-  if (db) params.set("db", db)
-  const search = params.toString()
-  return `${prefix}/search/results${search === "" ? "" : `?${search}`}`
-}
-
-const buildSearchHref = (lang: Lang): string => (lang === "en" ? "/en/search" : "/search")
 
 export const HeroSection = () => {
   const t = useT()
@@ -60,7 +48,10 @@ export const HeroSection = () => {
         }}
         onSubmit={(next) => {
           setValue(next)
-          void navigate(buildResultsHref(next, scopeKeyToDbSlug(scope), lang))
+          void navigate(buildResultsHref(
+            { q: next.trim(), db: scopeKeyToDbSlug(scope) },
+            lang,
+          ))
         }}
       />
       <div className="mt-4 flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">

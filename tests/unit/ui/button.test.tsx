@@ -56,4 +56,58 @@ describe("Button", () => {
     rerender(<Button kind="ghost">x</Button>)
     expect(screen.getByRole("button")).toHaveClass("text-brand-deep")
   })
+
+  test("Button_block_appliesFullWidthLeftAlign", () => {
+    render(<Button block>full</Button>)
+    expect(screen.getByRole("button", { name: "full" }))
+      .toHaveClass("w-full", "justify-start", "text-left")
+  })
+
+  test("Button_blockDefaultFalse_doesNotApplyFullWidth", () => {
+    render(<Button>x</Button>)
+    expect(screen.getByRole("button", { name: "x" }))
+      .not.toHaveClass("w-full")
+  })
+
+  test("Button_sizeSm_appliesSmPaddingAndFontTokens", () => {
+    render(<Button size="sm">sm</Button>)
+    expect(screen.getByRole("button", { name: "sm" }))
+      .toHaveClass("px-3", "py-1.5", "text-fs-body-sm")
+  })
+
+  test("Button_sizeMd_appliesMdPaddingAndFontTokens", () => {
+    render(<Button size="md">md</Button>)
+    expect(screen.getByRole("button", { name: "md" }))
+      .toHaveClass("px-4", "py-2", "text-fs-body")
+  })
+
+  test("Button_sizeLg_appliesLgPaddingAndFontTokens", () => {
+    render(<Button size="lg">lg</Button>)
+    expect(screen.getByRole("button", { name: "lg" }))
+      .toHaveClass("px-6", "py-3", "text-fs-body")
+  })
+
+  test("Button_sizeDefault_appliesMdPaddingTokens", () => {
+    render(<Button>default</Button>)
+    expect(screen.getByRole("button", { name: "default" }))
+      .toHaveClass("px-4", "py-2")
+  })
+
+  test("Button_kindLink_appliesLinkSpecificClasses", () => {
+    render(<Button kind="link">go</Button>)
+    const button = screen.getByRole("button", { name: "go" })
+    expect(button).toHaveClass("p-0", "rounded-none", "font-semibold", "text-brand")
+  })
+
+  test("Button_disabled_appliesOpacityAndCursor", () => {
+    render(<Button disabled>x</Button>)
+    expect(screen.getByRole("button", { name: "x" }))
+      .toHaveClass("opacity-55", "cursor-not-allowed")
+  })
+
+  test("Button_enabled_doesNotApplyDisabledClasses", () => {
+    render(<Button>x</Button>)
+    expect(screen.getByRole("button", { name: "x" }))
+      .not.toHaveClass("opacity-55")
+  })
 })

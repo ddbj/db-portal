@@ -21,10 +21,10 @@ export const FileTypeButton = ({
   <Button
     kind="secondary"
     size="md"
+    block
     onClick={onClick}
     title={hint}
     aria-label={`${label} (${ext})`}
-    className="w-full justify-start gap-2.5 text-left"
   >
     <span className="text-brand-deep shrink-0 inline-flex items-center">
       <FileTypeIcon buttonType={buttonType} size={20} />

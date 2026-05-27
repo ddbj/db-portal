@@ -1,21 +1,27 @@
-import { DB_SLUGS, type DbSlug, isDbSlug } from "~/lib/search-scope"
+import {
+  DB_SLUGS,
+  type DbSlug,
+  isDbSlug,
+  isPerPageValue,
+  isSortKey,
+  PER_PAGE_VALUES,
+  type PerPageValue,
+  SORT_KEYS,
+  type SortKey,
+} from "~/lib/search-scope"
 import { ADVANCED_FIELDS, type AdvancedField } from "~/schemas/api-bff/llm"
 
-export { DB_SLUGS, type DbSlug, isDbSlug }
-
-export const PER_PAGE_VALUES = [20, 50, 100] as const
-
-export type PerPageValue = typeof PER_PAGE_VALUES[number]
-
-export const isPerPageValue = (value: number): value is PerPageValue =>
-  (PER_PAGE_VALUES as readonly number[]).includes(value)
-
-export const SORT_KEYS = ["relevance", "date_desc", "date_asc"] as const
-
-export type SortKey = typeof SORT_KEYS[number]
-
-export const isSortKey = (value: string): value is SortKey =>
-  (SORT_KEYS as readonly string[]).includes(value)
+export {
+  DB_SLUGS,
+  type DbSlug,
+  isDbSlug,
+  isPerPageValue,
+  isSortKey,
+  PER_PAGE_VALUES,
+  type PerPageValue,
+  SORT_KEYS,
+  type SortKey,
+}
 
 export type ApiSortValue = "datePublished:asc" | "datePublished:desc"
 

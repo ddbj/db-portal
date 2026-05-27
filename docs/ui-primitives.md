@@ -69,6 +69,8 @@ app/ui/
 ├── button.tsx                  Button
 ├── icon-button.tsx             IconButton
 ├── native-select.tsx           NativeSelect
+├── text-input.tsx              TextInput
+├── text-area.tsx               TextArea
 ├── form-group.tsx              FormGroup
 ├── fmt-radio.tsx               FmtRadio
 ├── fmt-check.tsx               FmtCheck
@@ -82,8 +84,9 @@ app/ui/
 ├── modal.tsx                   Modal + ModalHeader + ModalBody + ModalFooter
 ├── modal-preview.tsx           ModalPreview + PreviewCard
 ├── pagination.tsx              Pagination
+├── link-card.tsx               LinkCard
 ├── text-link.tsx               TextLink (内部 link / 外部 link)
-└── icons/                      機能アイコン (chevron / close / search / globe / user)
+└── icons/                      機能アイコン (chevron / close / search / globe / user / external / info)
     └── index.tsx
 ```
 
@@ -203,24 +206,39 @@ class 骨格:
 ページ内 section の垂直リズム + 中央寄せ + 横余白を担う wrapper。
 
 ```ts
+type SectionPad = "none" | "sm" | "mid" | "block" | "md" | "lg"
+
 type SectionProps = {
   children: ReactNode
-  padY?: "lg" | "md" | "sm"
+  padTop?: SectionPad
+  padBottom?: SectionPad
+  padY?: "sm" | "md" | "lg"
   maxWidth?: number
 }
 ```
 
-`padY` マッピング: `lg → py-section-lg` (48px) / `md → py-section-md` (32px) / `sm → py-section-sm` (16px)。
+`SectionPad` → spacing token マッピング (`app/styles/tailwind.css` の `@theme` block が SSOT):
+
+| key | utility | 主用途 |
+|---|---|---|
+| `none` | `pt-0` / `pb-0` | 隣接 section との直結 |
+| `sm` | `pt-section-sm` / `pb-section-sm` | 行間レベルの狭い区切り |
+| `mid` | `pt-section-mid` / `pb-section-mid` | 標準より少し詰めたい |
+| `block` | `pt-section-block` / `pb-section-block` | ニュース 1 列カード等のブロック |
+| `md` | `pt-section-md` / `pb-section-md` | 標準 (default) |
+| `lg` | `pt-section-lg` / `pb-section-lg` | hero / 大見出し |
+
+`padY` を渡すと上下同値、`padTop` / `padBottom` を個別指定すると上下を非対称に組める (例: hero 直下の section で `padTop="none"` だけ消す)。default は `padY` が未指定なら `md`、`padTop` / `padBottom` がそれぞれ未指定なら `padY` 由来値にフォールバックする。
 
 class 骨格:
 
 ```
-<section className="px-page-gutter [py-section-*]">
+<section className="px-page-gutter [pt-* pb-*]">
   <div className="max-w-content-max mx-auto">{children}</div>
 </section>
 ```
 
-`maxWidth` を渡したときだけ `style={{ maxWidth }}` で上書きする。
+`maxWidth` を渡したときだけ内側 div に `style={{ maxWidth }}` で上書きする。
 
 ## 6. Headings & Labels
 
@@ -315,13 +333,25 @@ placeholder の色は global stylesheet (`app/styles/tailwind.css`) で `::place
 5 種類 × 3 サイズの汎用ボタン。
 
 ```ts
-type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
-  kind?: "primary" | "secondary" | "danger" | "ghost" | "link"
+type SizedButtonKind = "primary" | "secondary" | "danger" | "ghost"
+type SizedButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
+  kind?: SizedButtonKind
   size?: "sm" | "md" | "lg"
+  block?: boolean
   disabled?: boolean
   children: ReactNode
 }
+type LinkButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
+  kind: "link"
+  size?: never
+  block?: never
+  disabled?: boolean
+  children: ReactNode
+}
+type ButtonProps = SizedButtonProps | LinkButtonProps
 ```
+
+`block` を渡すと `w-full justify-start text-left` が加わり、grid cell や stacked layout の中で全幅ボタンとして並べられる (`FileTypeGrid` での grid cell が代表例)。`kind="link"` には `block` を渡せない (link は padding 0 で全幅化する意味が無いため型レベルで禁止)。
 
 | kind | bg | color | border |
 |---|---|---|---|
@@ -401,9 +431,15 @@ class 共通: `block w-full text-fs-body py-2 px-3 rounded-button font-sans resi
 OS native `<select>` のスタイル付きラッパー。`appearance: none` で chevron は自前 SVG。
 
 ```ts
-type NativeSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "className" | "aria-label"> & {
+export type NativeSelectOption = string | { value: string; label: string }
+
+type NativeSelectProps = Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "className" | "aria-label" | "aria-describedby" | "aria-invalid"
+> & {
   ariaLabel: string
-  options: string[]
+  ariaDescribedby?: string
+  options: readonly NativeSelectOption[]
   width?: number
   state?: "default" | "warn"
 }
@@ -411,10 +447,12 @@ type NativeSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "classNam
 
 state:
 
-- default: `border border-border-soft bg-surface text-ink`
-- warn: `border border-warn-border bg-warn-bg`、空 value 時 `text-ink-soft`
+- default: `border border-border-soft bg-surface text-ink`、`aria-invalid` 未設定
+- warn: `border border-warn-border bg-warn-bg`、空 value 時 `text-ink-soft`、`aria-invalid="true"` を自動付与
 
-共通: `w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button outline-none cursor-pointer font-sans`。chevron は `absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`、親に `relative` を付ける。
+共通: `w-full appearance-none text-fs-body py-2 pl-3 pr-8 rounded-button cursor-pointer font-sans`。chevron は `absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-ink-mid`、親に `relative inline-block` を付ける (`width` 未指定時は `width: "auto"`)。
+
+`options` は文字列配列でも、`{ value, label }` の object 配列でもよい (label と value を分けたいときに後者を使う)。`ariaDescribedby` を渡すと `aria-describedby` 属性に流す (`FormGroup` の hint / error 領域 id と紐付ける)。
 
 ### 7.6 FormGroup
 
@@ -456,10 +494,12 @@ Modal 内の radio / checkbox card。checked 時に `brand-softer` 背景 + `bra
 ```ts
 type FmtRadioProps = {
   name: string
-  label: string
-  sub?: string
-  checked?: boolean
+  label: ReactNode
+  sub?: ReactNode
   value?: string
+  checked?: boolean
+  defaultChecked?: boolean
+  onChange?: ChangeEventHandler<HTMLInputElement>
 }
 
 type FmtCheckProps = Omit<FmtRadioProps, "name"> & { name?: string }
@@ -544,14 +584,15 @@ type ChipProps =
 適用中の filter chip 一覧を sidebar TOP に並べる。
 
 ```ts
-type AppliedFilter = { label: string; value: string; onClear?: () => void }
+export type AppliedFilter = { label: string; value: string; onClear?: () => void }
 type AppliedFiltersProps = {
-  applied: AppliedFilter[]
+  applied: readonly AppliedFilter[]
   onClearAll?: () => void
+  clearAllLabel?: string
 }
 ```
 
-`applied` が空なら何も render しない。
+`applied` が空なら何も render しない。`clearAllLabel` の default は `"すべて解除"` (i18n を流したいときは consumer 側で渡す)。
 
 ### 9.2 FacetGroup
 
@@ -564,9 +605,12 @@ type FacetGroupProps = {
   onClear?: () => void
   showMore?: boolean
   showMoreLabel?: string
+  onShowMore?: () => void
   children: ReactNode
 }
 ```
+
+`showMoreLabel` の default は `"+ さらに表示"`。`appliedCount > 0 && onClear` を渡したとき右上に「解除」 link が出る。
 
 ### 9.3 FacetRow
 
@@ -576,18 +620,20 @@ facet 内の 1 行。checkbox or radio。
 type FacetRowProps = {
   type?: "checkbox" | "radio"
   name?: string
-  label: string
+  label: ReactNode
   count?: string | number
   defaultChecked?: boolean
+  checked?: boolean
   swatch?: string
   mono?: boolean
   compact?: boolean
-  sub?: string
-  onChange?: (checked: boolean) => void
+  sub?: ReactNode
+  value?: string
+  onChange?: ChangeEventHandler<HTMLInputElement>
 }
 ```
 
-`swatch` は左端の色付き 8×8 box (source 色等を表示)。`mono` で label を mono フォントに切替。
+`swatch` は左端の色付き 8×8 box (source 色等を表示)。`mono` で label を mono フォントに切替。`compact` を渡すと縦 padding が `py-0.5` に縮む (sidebar 密度を上げたい時)。`checked` (controlled) と `defaultChecked` (uncontrolled) のどちらかで初期 / 制御状態を渡す。`onChange` は native input change event をそのまま受ける。
 
 ### 9.4 DateFacet
 
@@ -618,6 +664,7 @@ inline notice。3 tone (info / warn / ok)、icon なし。
 type CalloutProps = {
   children: ReactNode
   tone?: "info" | "warn" | "ok"
+  role?: "status" | "alert" | "note"
 }
 ```
 
@@ -627,7 +674,9 @@ type CalloutProps = {
 | warn | `warn-bg` | `warn-border` | `warn-fg` |
 | ok | `ok-bg` | `ok-border` | `ok-fg` |
 
-class: `mt-3 px-3.5 py-2.5 border rounded-card text-fs-body-sm leading-relaxed`。
+class: `px-3.5 py-2.5 border rounded-card text-fs-body-sm leading-relaxed`。consumer 側で垂直リズムを制御するため上下 margin は持たない。
+
+`role` を渡したときは `<div role={role}>` (`"status" | "alert" | "note"`) で出力する。送信失敗の警告等で SR に即座にアナウンスしたい場面では `role="alert"`、操作完了 / 状態変化の通知では `role="status"` を渡す (装飾のみなら未指定)。
 
 ## 11. Modal
 
@@ -641,6 +690,9 @@ type ModalProps = {
   onClose: () => void
   width?: number
   ariaLabelledby: string
+  ariaDescribedby?: string
+  closeOnOverlay?: boolean
+  closeOnEscape?: boolean
   children: ReactNode
 }
 ```
@@ -648,10 +700,12 @@ type ModalProps = {
 挙動:
 
 - `open=false` のとき何も render しない (mount 状態は親が制御)
-- Esc キーで `onClose` 発火
-- overlay click で `onClose` 発火 (dialog 内部 click は `stopPropagation`)
+- Esc キーで `onClose` 発火 (`closeOnEscape={false}` で無効化)
+- overlay click で `onClose` 発火 (dialog 内部 click は伝播停止扱い、pointerdown / click を組合せて drag-out closure を防ぐ。`closeOnOverlay={false}` で無効化)
 - focus trap: open 時に dialog 内最初の focusable に focus 移動、Tab / Shift+Tab で dialog 内を循環、close 時に trigger 要素に focus 復元
-- `role="dialog"` + `aria-modal="true"` + `aria-labelledby={ariaLabelledby}`
+- `role="dialog"` + `aria-modal="true"` + `aria-labelledby={ariaLabelledby}` + `aria-describedby={ariaDescribedby}` (渡された場合)
+- `width` の default は 820、`maxWidth` は `calc(100% - 64px)` で viewport を超えないようにする
+- open 時に `document.body.style.overflow = "hidden"` で背景スクロールを抑止し、close 時に復元する
 
 focus trap は外部 dependency を増やさず自前実装する (focus 候補は `:not([disabled]):not([aria-hidden])` の `button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])`、Tab で末尾→先頭・Shift+Tab で先頭→末尾を巻き戻す)。
 
@@ -661,14 +715,16 @@ focus trap は外部 dependency を増やさず自前実装する (focus 候補�
 type ModalHeaderProps = {
   eyebrowTag?: ReactNode
   eyebrowMeta?: ReactNode
-  title: string
+  title: ReactNode
   titleId: string
-  description?: string
+  description?: ReactNode
   onClose: () => void
+  closeLabel?: string
+  as?: "h2" | "h3"
 }
 ```
 
-`titleId` は `Modal` の `ariaLabelledby` に渡す id と一致させる。
+`titleId` は `Modal` の `ariaLabelledby` に渡す id と一致させる。`as` の default は `"h2"`、`closeLabel` の default は `"閉じる"` (X icon button の `aria-label`)。
 
 ### 11.3 ModalBody
 
@@ -680,7 +736,7 @@ type ModalBodyProps = {
 }
 ```
 
-`cols === 2` のとき `flex` + `min-h-[460px]`。
+`cols === 2` のとき `flex` を付け、`style={{ minHeight }}` で最小高さを与える (default 460)。
 
 ### 11.4 ModalFooter
 
@@ -699,7 +755,7 @@ class: `px-5 py-3 border-t border-border-soft bg-surface-subtle flex justify-bet
 
 ```ts
 type ModalPreviewProps = {
-  label: string
+  label: ReactNode
   children: ReactNode
   footnote?: ReactNode
 }
@@ -707,13 +763,13 @@ type ModalPreviewProps = {
 type PreviewCardProps = {
   source: "DDBJ" | "DBCLS"
   db: string
-  title: string
-  body: string
+  title: ReactNode
+  body: ReactNode
   active?: boolean
 }
 ```
 
-`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。`bg-surface-subtle` + 左境界 `border-l border-border-soft` で本体と分離する。`PreviewCard` は `active === false` のとき `opacity-50` で副カード扱いに落とす。
+`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。`bg-surface-subtle` + 左境界 `border-l border-border-soft` で本体と分離する。`PreviewCard` の `active` default は `true`、`active === false` のとき `opacity-50` で副カード扱いに落とす。
 
 ## 12. Pagination
 
@@ -725,28 +781,55 @@ type PaginationProps = {
   totalPages: number
   onPageChange: (page: number) => void
   maxNumbers?: number
+  ariaLabel?: string
+  prevLabel?: string
+  nextLabel?: string
+  jumpToLastLabel?: (n: number) => string
 }
 ```
 
-active button: `border-brand bg-brand text-white`、inactive: `border-border-soft bg-surface text-ink`、disabled: `text-ink-soft cursor-not-allowed opacity-55`。`aria-current="page"` を current に付与、前 / 次 button に `aria-label="前のページ" / "次のページ"`。
+active button: `border-brand bg-brand text-white`、inactive: `border-border-soft bg-surface text-ink`、disabled: `text-ink-soft cursor-not-allowed opacity-55`。`aria-current="page"` を current に付与、前 / 次 button に `aria-label={prevLabel}` / `aria-label={nextLabel}` を流す。`maxNumbers` を超えるとき末尾ジャンプ (`…` + `totalPages` button) を出し、その button の `aria-label` には `jumpToLastLabel(totalPages)` を渡す。
+
+label 系の default は英語 (`"Pagination"` / `"Previous page"` / `"Next page"` / `"Jump to page n"`)。日本語表示する画面では consumer 側で i18n を経由して上書きする (`a11y.paginationNav` / `paginationPrev` / `paginationNext` / `paginationJumpToLast`)。
 
 primitive はミニマル実装。`<<` / `>>` の chunk skip や URL query 連動は features 側で必要に応じて wrap する。
 
-## 13. TextLink
+## 13. LinkCard
+
+カード全体が 1 つの link として振る舞う wrapper。内部 link (RR `<Link>` 経由) と外部 link (`<a target="_blank">`) を一本化する。カード内コンテンツ (icon + title + description 等) は consumer 側で組み立てて children に渡す。
+
+```ts
+type LinkCardBase = {
+  children: ReactNode
+}
+
+type LinkCardProps =
+  | (LinkCardBase & { to: To; external?: false; href?: never })
+  | (LinkCardBase & { href: string; external: true; to?: never })
+```
+
+class: `block bg-surface border border-border-soft rounded-card text-ink no-underline hover:shadow-card-hover transition-shadow`。`shadow-card-hover` は hover で立ち上げる影。外部 link は `target="_blank" rel="noopener noreferrer"` を自動付与する (sr-only な「(external link)」 ラベルは持たない: カード内側に視覚 indicator を置くのが consumer 側の責務 — `ExternalIcon` 等を children 内に配置する)。
+
+## 14. TextLink
 
 内部 link (React Router `<Link>` 経由) と外部 link (`<a target="_blank">`) を一本化した primitive。
 
 ```ts
+type TextLinkBase = {
+  children: ReactNode
+  weight?: "normal" | "semibold" | "bold"
+}
+
 type TextLinkProps =
-  | { to: To; external?: false; children: ReactNode }
-  | { href: string; external: true; children: ReactNode }
+  | (TextLinkBase & { to: To; external?: false; href?: never })
+  | (TextLinkBase & { href: string; external: true; to?: never })
 ```
 
-外部 link は `target="_blank" rel="noopener noreferrer"` + `aria-label` に「(external link)」 を含める。視覚 indicator として右に小さい外向き矢印 icon を出す。
+外部 link は `target="_blank" rel="noopener noreferrer"` + 末尾に `<ExternalIcon size={12} aria-hidden />` + sr-only な `<span>(external link)</span>` を添えて SR に外部 link であることを伝える。
 
-class: `text-brand font-semibold no-underline hover:underline`。
+class: `text-brand no-underline hover:underline inline-flex items-center gap-1` + `weight` 由来の `font-normal` / `font-semibold` / `font-bold` (default `semibold`)。
 
-## 14. デザイントークン参照
+## 15. デザイントークン参照
 
 token 値の SSOT は `app/styles/tailwind.css` の `@theme` block。Tailwind v4 が `@theme` 宣言から utility class を自動生成する (`--color-brand` → `bg-brand` / `text-brand` / `border-brand`、`--spacing-section-md` → `p-section-md` / `m-section-md`、`--text-fs-h2` → `text-fs-h2`、`--tracking-tag` → `tracking-tag`、`--leading-snug` → `leading-snug`、`--radius-card` → `rounded-card`、`--shadow-card` → `shadow-card`)。
 
@@ -755,10 +838,19 @@ token の使い分けは `app/styles/tailwind.css` のコメントに添える (
 primitive 内で arbitrary value を書くケース (`app/ui/` のみ許容):
 
 - 1px / 3px などの hairline・accent ライン (`border-l-[3px]` 等) で、token 化する価値が薄い細部値
-- `max-w-[1100px]` のような 1 箇所限定 layout 値
+- 1 箇所限定の layout 値: 例
+  - `PageTitle` subtitle の `max-w-[1100px]` (`content-max` 1180 より 80px 短く、行長を抑える意図)
+  - `SearchBox` scope の `min-w-[140px]` / listbox の `min-w-[220px]` (dropdown 内に閉じた layout)
+  - `ModalPreview` の `flex-[0_0_44%]` (2-col modal 右 pane)
 - `style={{ color, fontSize, maxWidth }}` で動的に渡される値 (`Label` の source 色、`SearchBox` の `maxWidth` 等)
 
-## 15. ESLint による物理強制
+`app/shell/` でも次は許容 (`@theme` で表現しづらい単位):
+
+- vh / rem 単位: `min-h-[60vh]` (main の最小高さ) / `max-w-[10rem]` (LoginButton username 表示の上限)
+
+「複数箇所で同じ値が出てきた」 「サイズ感を全体で揃えたい」 と感じたら `@theme` に token を追加して移行する。逆に「ここでしか使わないが、現場の文脈で 1180 だと余りすぎる」 のような judgement は token 化せず arbitrary で残す。
+
+## 16. ESLint による物理強制
 
 `eslint.config.ts` の以下が逸脱を検出する。
 
@@ -777,11 +869,11 @@ no-restricted-syntax:
 
 primitive 自体 (`app/ui/`) と chrome (`app/shell/`) は arbitrary value から除外する。`app/ui/` は 3px brand bar や 9999 px radius のような細部値、`app/shell/` は `min-h-[60vh]` / `max-w-[10rem]` のような token 化に向かない単位 (vh / rem) を許容する。両 zone とも生 hex は禁止 (token を経由しない色を防ぐ)。
 
-## 16. 視覚確認
+## 17. 視覚確認
 
-dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` の staging) で `/_design` route を生成する。`routes/_design/primitives.tsx` で 22 primitive を variant × size × state すべて並べ、`routes/_design/tokens.tsx` で全 token を一覧表示する。production build では `app/routes.ts` で除外し 404 にする。
+dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` の staging) で `/_design` route を生成する。`routes/_design/primitives.tsx` で全 primitive を variant × size × state すべて並べ、`routes/_design/tokens.tsx` で全 token を一覧表示する。production build では `app/routes.ts` で除外し 404 にする。
 
-## 17. 関連 docs
+## 18. 関連 docs
 
 | docs | 関連箇所 |
 |---|---|

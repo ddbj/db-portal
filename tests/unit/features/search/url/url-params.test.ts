@@ -60,6 +60,44 @@ describe("url-params", () => {
     expect(href.startsWith("/en/search/results?")).toBe(true)
   })
 
+  test("buildResultsHref_jaQueryOnly_buildsRootPathWithQ", () => {
+    expect(buildResultsHref({ q: "cancer" }, "ja")).toBe("/search/results?q=cancer")
+  })
+
+  test("buildResultsHref_emptyQuery_omitsQParam", () => {
+    expect(buildResultsHref({ q: "" }, "ja")).toBe("/search/results")
+  })
+
+  test("buildResultsHref_dbOnly_omitsQAndKeepsDb", () => {
+    expect(buildResultsHref({ db: "bioproject" }, "ja"))
+      .toBe("/search/results?db=bioproject")
+  })
+
+  test("buildResultsHref_dbNull_omitsDbParam", () => {
+    expect(buildResultsHref({ q: "x", db: null }, "ja"))
+      .toBe("/search/results?q=x")
+  })
+
+  test("buildResultsHref_qAndDb_includesBoth", () => {
+    expect(buildResultsHref({ q: "cancer", db: "sra" }, "en"))
+      .toBe("/en/search/results?q=cancer&db=sra")
+  })
+
+  test("buildResultsHref_emptyState_returnsBasePath", () => {
+    expect(buildResultsHref({}, "ja")).toBe("/search/results")
+    expect(buildResultsHref({}, "en")).toBe("/en/search/results")
+  })
+
+  test("buildResultsHref_pageNonDefault_includesPage", () => {
+    expect(buildResultsHref({ q: "x", page: 3 }, "ja"))
+      .toBe("/search/results?q=x&page=3")
+  })
+
+  test("buildResultsHref_pageDefault_omitsPage", () => {
+    expect(buildResultsHref({ q: "x", page: DEFAULT_PAGE }, "ja"))
+      .toBe("/search/results?q=x")
+  })
+
   test("buildSearchHref_baseForJa", () => {
     expect(buildSearchHref("ja")).toBe("/search")
     expect(buildSearchHref("en")).toBe("/en/search")
