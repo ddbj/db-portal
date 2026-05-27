@@ -46,9 +46,7 @@ import {
 
 const Block = ({ title, children }: { title: string; children: ReactNode }) => (
   <Section padY="sm">
-    <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3 pl-2.5 border-l-[3px] border-brand">
-      {title}
-    </h2>
+    <SectionHeading>{title}</SectionHeading>
     <div className="space-y-3">{children}</div>
   </Section>
 )
@@ -74,9 +72,17 @@ const ButtonGallery = () => (
       <Button kind="link">link</Button>
       <Button kind="link" disabled>disabled</Button>
     </Row>
-    <Row label="IconButton">
-      <IconButton ariaLabel="閉じる">
+    <Row label="block (w-full)">
+      <div className="w-80">
+        <Button block kind="secondary">block secondary</Button>
+      </div>
+    </Row>
+    <Row label="IconButton size">
+      <IconButton ariaLabel="閉じる (default 26)">
         <CloseIcon size={14} />
+      </IconButton>
+      <IconButton ariaLabel="閉じる (size 44 touch target)" size={44}>
+        <CloseIcon size={18} />
       </IconButton>
       <IconButton ariaLabel="閉じる (disabled)" disabled>
         <CloseIcon size={14} />
@@ -87,10 +93,10 @@ const ButtonGallery = () => (
 
 const TagGallery = () => (
   <Block title="Tag">
-    <Row label="kind=tag">
-      <Tag>biosample</Tag>
-      <Tag size="md">biosample</Tag>
-      <Tag mono>WGS</Tag>
+    <Row label="kind=tag (size)">
+      <Tag size="sm">biosample (sm)</Tag>
+      <Tag size="md">biosample (md)</Tag>
+      <Tag size="sm" mono>WGS (mono)</Tag>
     </Row>
     <Row label="kind=brand">
       <Tag kind="brand">提案</Tag>
@@ -99,12 +105,17 @@ const TagGallery = () => (
     <Row label="kind=source">
       <Tag kind="source" name="DDBJ" />
       <Tag kind="source" name="DBCLS" />
+      <Tag kind="source" name="DDBJ" size="md" />
     </Row>
-    <Row label="kind=status">
+    <Row label="kind=status (tone)">
       <Tag kind="status" tone="critical">重要</Tag>
       <Tag kind="status" tone="warning">未設定</Tag>
       <Tag kind="status" tone="success">完了</Tag>
       <Tag kind="status" tone="info">情報</Tag>
+    </Row>
+    <Row label="kind=status (size md)">
+      <Tag kind="status" tone="critical" size="md">重要 (md)</Tag>
+      <Tag kind="status" tone="warning" size="md" mono>WARN (mono)</Tag>
     </Row>
   </Block>
 )
@@ -124,16 +135,29 @@ const ChipGallery = () => (
 
 const HeadingGallery = () => (
   <Block title="Headings & Labels">
+    <SectionHeading>SectionHeading (default, no count, no action)</SectionHeading>
+    <SectionHeading
+      subtitle="AI 検索アシスタント — heading の直下に説明文を添えたいときの subtitle prop"
+      action={<TextLink to="#">編集</TextLink>}
+    >
+      SectionHeading with subtitle + action
+    </SectionHeading>
     <SectionHeading count={755} countSuffix="件" action={<TextLink to="#">すべて見る →</TextLink>}>
       SectionHeading (3px brand bar, with count + action)
     </SectionHeading>
+    <SidebarHeading>SidebarHeading (bar 無し、action なし)</SidebarHeading>
     <SidebarHeading action={<TextLink to="#">編集</TextLink>}>
-      SidebarHeading (bar 無し)
+      SidebarHeading with action
     </SidebarHeading>
     <SidebarGroupLabel>SIDEBAR GROUP LABEL</SidebarGroupLabel>
+    <SidebarGroupLabel action={<TextLink to="#">解除</TextLink>}>
+      WITH ACTION
+    </SidebarGroupLabel>
     <Row label="Label">
       <Label>WHERE</Label>
       <Label as="div">NO CONDITIONS</Label>
+      <Label color="var(--color-src-ddbj)">DDBJ-COLORED</Label>
+      <Label size={14}>SIZE 14</Label>
     </Row>
   </Block>
 )
@@ -143,11 +167,20 @@ const FormsGallery = () => (
     <Row label="TextInput default">
       <TextInput ariaLabel="account-id" placeholder="DRA000001" />
     </Row>
+    <Row label="TextInput mono (default state)">
+      <TextInput ariaLabel="dsl-input-mono" mono defaultValue="organism:Homo sapiens" />
+    </Row>
+    <Row label="TextInput warn">
+      <TextInput ariaLabel="dsl-input-warn" state="warn" defaultValue="invalid value" />
+    </Row>
     <Row label="TextInput warn + mono">
-      <TextInput ariaLabel="dsl-input" mono state="warn" defaultValue="organism:" />
+      <TextInput ariaLabel="dsl-input-warn-mono" mono state="warn" defaultValue="organism:" />
     </Row>
     <Row label="TextArea default">
       <TextArea ariaLabel="description" placeholder="自由記述..." />
+    </Row>
+    <Row label="TextArea warn">
+      <TextArea ariaLabel="description-warn" state="warn" defaultValue="error" />
     </Row>
     <Row label="NativeSelect default">
       <NativeSelect
@@ -166,14 +199,14 @@ const FormsGallery = () => (
         width={200}
       />
     </Row>
-    <FormGroup num="1." label="ライブラリ構造">
-      <FmtRadio name="lib" label="pair-end" defaultChecked />
-      <FmtRadio name="lib" label="single-end" sub="補足説明" />
-      <FmtRadio name="lib" label="10x Genomics" />
+    <FormGroup num="1." label="ライブラリ構造" hint="単独 radio (sub なし vs sub あり)">
+      <FmtRadio name="lib" label="pair-end (checked + sub なし)" defaultChecked />
+      <FmtRadio name="lib" label="single-end" sub="補足説明 (unchecked + sub)" />
+      <FmtRadio name="lib" label="10x Genomics (unchecked + sub なし)" />
     </FormGroup>
     <FormGroup num="2." label="オプション" optional hint="複数選択可">
-      <FmtCheck label="hybrid assembly" defaultChecked />
-      <FmtCheck label="raw signal" />
+      <FmtCheck label="hybrid assembly (checked + sub なし)" defaultChecked />
+      <FmtCheck label="raw signal" sub="生波形を残す (unchecked + sub)" />
     </FormGroup>
   </Block>
 )
@@ -222,16 +255,28 @@ const FacetGallery = () => (
         ]}
         onClearAll={() => undefined}
       />
-      <FacetGroup label="生物種" showMore onShowMore={() => undefined}>
+      <FacetGroup label="生物種 (checkbox + showMore)" showMore onShowMore={() => undefined}>
         <FacetRow label="Homo sapiens" count={1234} defaultChecked />
         <FacetRow label="Mus musculus" count={567} />
         <FacetRow label="Escherichia coli" count={89} />
       </FacetGroup>
-      <FacetGroup label="ソース" appliedCount={1} onClear={() => undefined}>
+      <FacetGroup label="ソース (swatch + appliedCount)" appliedCount={1} onClear={() => undefined}>
         <FacetRow label="DDBJ" swatch="var(--color-src-ddbj)" count={42} defaultChecked />
         <FacetRow label="DBCLS" swatch="var(--color-src-dbcls)" count={18} />
       </FacetGroup>
+      <FacetGroup label="DB タイプ (radio)">
+        <FacetRow type="radio" name="db-type" label="BioProject" count={120} defaultChecked />
+        <FacetRow type="radio" name="db-type" label="BioSample" count={84} />
+      </FacetGroup>
+      <FacetGroup label="library (compact + mono + sub)">
+        <FacetRow label="WGS" mono compact sub="全ゲノム" count={42} />
+        <FacetRow label="RNA-Seq" mono compact sub="トランスクリプトーム" count={31} />
+      </FacetGroup>
+      <DateFacet appliedCount={0} />
       <DateFacet active="1y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet active="5y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet active="10y" appliedCount={1} onClear={() => undefined} />
+      <AppliedFilters applied={[]} />
     </Block>
   </div>
 )
@@ -241,22 +286,32 @@ const CalloutGallery = () => (
     <Callout tone="info">info: 通知メッセージ</Callout>
     <Callout tone="warn">warn: 注意メッセージ</Callout>
     <Callout tone="ok">ok: 成功メッセージ</Callout>
+    <Callout tone="warn" role="alert">warn + role=alert: SR に即時アナウンス</Callout>
+    <Callout tone="ok" role="status">ok + role=status: 状態変化を SR に通知</Callout>
   </Block>
 )
 
 const ModalDemo = () => {
-  const [open, setOpen] = useState(false)
+  const [openTwo, setOpenTwo] = useState(false)
+  const [openOne, setOpenOne] = useState(false)
+  const [openLocked, setOpenLocked] = useState(false)
   return (
     <Block title="Modal">
-      <Row label="trigger">
-        <Button onClick={() => setOpen(true)}>Modal を開く</Button>
+      <Row label="cols=2 (eyebrowTag + eyebrowMeta + description + ModalPreview)">
+        <Button onClick={() => setOpenTwo(true)}>2-col modal を開く</Button>
       </Row>
-      <Modal open={open} onClose={() => setOpen(false)} ariaLabelledby="design-modal-title">
+      <Row label="cols=1 (minimal、ModalPreview なし)">
+        <Button kind="secondary" onClick={() => setOpenOne(true)}>1-col modal を開く</Button>
+      </Row>
+      <Row label="closeOnOverlay/Escape=false (確認ダイアログ)">
+        <Button kind="danger" onClick={() => setOpenLocked(true)}>確認ダイアログを開く</Button>
+      </Row>
+      <Modal open={openTwo} onClose={() => setOpenTwo(false)} ariaLabelledby="design-modal-2-title">
         <ModalHeader
           title="データ詳細を入力"
-          titleId="design-modal-title"
+          titleId="design-modal-2-title"
           description="登録対象に応じて必要な項目を入力します。"
-          onClose={() => setOpen(false)}
+          onClose={() => setOpenTwo(false)}
           eyebrowTag={<Tag size="sm">配列リード</Tag>}
           eyebrowMeta="sample.fq.gz · 2.4 GB"
         />
@@ -287,11 +342,72 @@ const ModalDemo = () => {
           status="未保存"
           actions={
             <>
-              <Button kind="secondary" size="sm" onClick={() => setOpen(false)}>
+              <Button kind="secondary" size="sm" onClick={() => setOpenTwo(false)}>
                 キャンセル
               </Button>
-              <Button kind="primary" size="sm" onClick={() => setOpen(false)}>
+              <Button kind="primary" size="sm" onClick={() => setOpenTwo(false)}>
                 保存
+              </Button>
+            </>
+          }
+        />
+      </Modal>
+      <Modal
+        open={openOne}
+        onClose={() => setOpenOne(false)}
+        ariaLabelledby="design-modal-1-title"
+        width={520}
+      >
+        <ModalHeader
+          title="セクション名 (h3)"
+          titleId="design-modal-1-title"
+          onClose={() => setOpenOne(false)}
+          as="h3"
+        />
+        <ModalBody>
+          <p className="px-5 py-4 text-fs-body text-ink m-0 leading-relaxed">
+            cols=1 (default) + as=h3 の組合せ。eyebrow / description / ModalPreview なしの最小構成。
+          </p>
+        </ModalBody>
+        <ModalFooter
+          actions={
+            <Button kind="primary" size="sm" onClick={() => setOpenOne(false)}>
+              閉じる
+            </Button>
+          }
+        />
+      </Modal>
+      <Modal
+        open={openLocked}
+        onClose={() => setOpenLocked(false)}
+        ariaLabelledby="design-modal-locked-title"
+        ariaDescribedby="design-modal-locked-desc"
+        width={420}
+        closeOnOverlay={false}
+        closeOnEscape={false}
+      >
+        <ModalHeader
+          title="削除しますか?"
+          titleId="design-modal-locked-title"
+          onClose={() => setOpenLocked(false)}
+          closeLabel="キャンセル"
+        />
+        <ModalBody>
+          <p
+            id="design-modal-locked-desc"
+            className="px-5 py-4 text-fs-body text-ink m-0 leading-relaxed"
+          >
+            overlay click / Esc では閉じない。明示的なボタン操作のみ受け付ける。
+          </p>
+        </ModalBody>
+        <ModalFooter
+          actions={
+            <>
+              <Button kind="secondary" size="sm" onClick={() => setOpenLocked(false)}>
+                キャンセル
+              </Button>
+              <Button kind="danger" size="sm" onClick={() => setOpenLocked(false)}>
+                削除する
               </Button>
             </>
           }
@@ -305,11 +421,17 @@ const PaginationGallery = () => {
   const [page, setPage] = useState(3)
   return (
     <Block title="Pagination">
-      <Row label="page=3 / 50">
+      <Row label="page=3 / 50 (中間、ellipsis + 末尾ジャンプ)">
         <Pagination page={page} totalPages={50} onPageChange={setPage} />
       </Row>
-      <Row label="page=1 / 3 (short)">
+      <Row label="page=1 / 3 (short、前ボタン disabled)">
         <Pagination page={1} totalPages={3} onPageChange={() => undefined} />
+      </Row>
+      <Row label="page=1 / 1 (前後とも disabled)">
+        <Pagination page={1} totalPages={1} onPageChange={() => undefined} />
+      </Row>
+      <Row label="page=50 / 50 (末尾、次ボタン disabled)">
+        <Pagination page={50} totalPages={50} onPageChange={() => undefined} />
       </Row>
     </Block>
   )
@@ -317,19 +439,39 @@ const PaginationGallery = () => {
 
 const SearchBoxGallery = () => (
   <Block title="SearchBox">
-    <SearchBox
-      size="lg"
-      showSearchIcon
-      showScope={false}
-      maxWidth={820}
-      onSubmit={() => undefined}
-    />
-    <SearchBox
-      size="md"
-      showScope
-      scopeOptions={["全データベース", "BioProject", "BioSample"]}
-      onSubmit={() => undefined}
-    />
+    <Row label="lg + showScope=false (TOP hero)">
+      <SearchBox
+        size="lg"
+        showSearchIcon
+        showScope={false}
+        maxWidth={820}
+        onSubmit={() => undefined}
+      />
+    </Row>
+    <Row label="lg + showScope (lg + scope)">
+      <SearchBox
+        size="lg"
+        showScope
+        scopeOptions={["全データベース", "BioProject", "BioSample"]}
+        maxWidth={820}
+        onSubmit={() => undefined}
+      />
+    </Row>
+    <Row label="md + showScope (form 統一 30px)">
+      <SearchBox
+        size="md"
+        showScope
+        scopeOptions={["全データベース", "BioProject", "BioSample"]}
+        onSubmit={() => undefined}
+      />
+    </Row>
+    <Row label="md + showScope=false">
+      <SearchBox
+        size="md"
+        showScope={false}
+        onSubmit={() => undefined}
+      />
+    </Row>
   </Block>
 )
 

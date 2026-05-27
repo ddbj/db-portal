@@ -20,7 +20,7 @@ describe("TextLink", () => {
     expect(link).not.toHaveAttribute("target")
   })
 
-  test("TextLink_external_setsTargetAndRel", () => {
+  test("TextLink_external_setsTargetAndRelAndSrLabelAndIcon", () => {
     renderTextLink(
       <TextLink href="https://example.com" external>
         ext
@@ -29,14 +29,29 @@ describe("TextLink", () => {
     const link = screen.getByRole("link", { name: /ext/ })
     expect(link).toHaveAttribute("target", "_blank")
     expect(link).toHaveAttribute("rel", "noopener noreferrer")
+    expect(screen.getByText(/external link/)).toHaveClass("sr-only")
+    expect(link.querySelector("svg")).not.toBeNull()
   })
 
-  test("TextLink_external_hasExternalLinkSrLabel", () => {
-    renderTextLink(
-      <TextLink href="https://example.com" external>
-        ext
-      </TextLink>,
-    )
-    expect(screen.getByText(/external link/)).toBeInTheDocument()
+  test("TextLink_weightNormal_appliesFontNormal", () => {
+    renderTextLink(<TextLink to="/news" weight="normal">news</TextLink>)
+    const link = screen.getByRole("link", { name: /news/ })
+    expect(link).toHaveClass("font-normal")
+    expect(link).not.toHaveClass("font-semibold")
+    expect(link).not.toHaveClass("font-bold")
   })
+
+  test("TextLink_weightBold_appliesFontBold", () => {
+    renderTextLink(<TextLink to="/news" weight="bold">news</TextLink>)
+    const link = screen.getByRole("link", { name: /news/ })
+    expect(link).toHaveClass("font-bold")
+    expect(link).not.toHaveClass("font-normal")
+  })
+
+  test("TextLink_weightDefault_appliesFontSemibold", () => {
+    renderTextLink(<TextLink to="/news">news</TextLink>)
+    const link = screen.getByRole("link", { name: /news/ })
+    expect(link).toHaveClass("font-semibold")
+  })
+
 })

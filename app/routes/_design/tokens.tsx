@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { PageTitle, Section } from "~/ui"
+import { PageTitle, Section, SectionHeading } from "~/ui"
 
 type Swatch = { name: string; cls: string; hex: string }
 
@@ -19,20 +19,43 @@ const INK_SWATCHES: readonly Swatch[] = [
   { name: "ink-softer", cls: "bg-ink-softer", hex: "#9C99A6" },
 ]
 
+const SURFACE_SWATCHES: readonly Swatch[] = [
+  { name: "surface", cls: "bg-surface", hex: "#FFFFFF" },
+  { name: "surface-subtle", cls: "bg-surface-subtle", hex: "#FAFAFC" },
+]
+
+const BORDER_SWATCHES: readonly Swatch[] = [
+  { name: "border-soft", cls: "bg-border-soft", hex: "#DAD6E0" },
+  { name: "border-strong", cls: "bg-border-strong", hex: "#1A1726" },
+]
+
+const ACCENT_SWATCHES: readonly Swatch[] = [
+  { name: "red", cls: "bg-red", hex: "#B73B2C" },
+  { name: "focus", cls: "bg-focus", hex: "#FFCC33" },
+]
+
 const STATUS_SWATCHES: readonly Swatch[] = [
   { name: "warn-bg", cls: "bg-warn-bg", hex: "#FCF7E3" },
   { name: "warn-fg", cls: "bg-warn-fg", hex: "#705800" },
+  { name: "warn-border", cls: "bg-warn-border", hex: "#E3C65F" },
   { name: "ok-bg", cls: "bg-ok-bg", hex: "#F1F8F3" },
   { name: "ok-fg", cls: "bg-ok-fg", hex: "#1F5430" },
+  { name: "ok-border", cls: "bg-ok-border", hex: "#BFD9C7" },
   { name: "critical-bg", cls: "bg-critical-bg", hex: "#FCE8E5" },
   { name: "critical-fg", cls: "bg-critical-fg", hex: "#B73B2C" },
+  { name: "critical-border", cls: "bg-critical-border", hex: "#F0BBB2" },
 ]
 
 const SOURCE_SWATCHES: readonly Swatch[] = [
   { name: "src-ddbj", cls: "bg-src-ddbj", hex: "#A56712" },
   { name: "src-ddbj-soft", cls: "bg-src-ddbj-soft", hex: "#FBEFDF" },
+  { name: "src-ddbj-warm", cls: "bg-src-ddbj-warm", hex: "#C26416" },
+  { name: "src-ddbj-mid", cls: "bg-src-ddbj-mid", hex: "#A85825" },
+  { name: "src-ddbj-deep", cls: "bg-src-ddbj-deep", hex: "#8E4516" },
   { name: "src-dbcls", cls: "bg-src-dbcls", hex: "#004098" },
   { name: "src-dbcls-soft", cls: "bg-src-dbcls-soft", hex: "#DFEBFB" },
+  { name: "src-dbcls-warm", cls: "bg-src-dbcls-warm", hex: "#1F6FB4" },
+  { name: "src-dbcls-mid", cls: "bg-src-dbcls-mid", hex: "#1B5990" },
 ]
 
 type TypeFamily = { name: string; cls: string; sample: string }
@@ -131,6 +154,14 @@ const SPACINGS: readonly SpacingItem[] = [
   { name: "section-mid", cls: "w-section-mid", px: "24px" },
   { name: "section-sm", cls: "w-section-sm", px: "16px" },
   { name: "page-gutter", cls: "w-page-gutter", px: "32px" },
+]
+
+type LayoutSpacingItem = { name: string; px: string; use: string }
+
+const LAYOUT_SPACINGS: readonly LayoutSpacingItem[] = [
+  { name: "content-max", px: "1180px", use: "page content の中央寄せ最大幅" },
+  { name: "sidebar", px: "220px", use: "search results / news の sidebar 固定幅" },
+  { name: "right-pane", px: "280px", use: "search per-DB result の right pane / news row 右端 tag 領域" },
 ]
 
 type RadiusItem = { name: string; cls: string; px: string }
@@ -257,9 +288,19 @@ const ShadowDemo = () => (
 )
 
 const SectionTitle = ({ children }: { children: ReactNode }) => (
-  <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3 pl-2.5 border-l-[3px] border-brand">
-    {children}
-  </h2>
+  <SectionHeading>{children}</SectionHeading>
+)
+
+const LayoutSpacingDemo = () => (
+  <ul className="list-none p-0 space-y-2 text-fs-body-sm">
+    {LAYOUT_SPACINGS.map((s) => (
+      <li key={s.name} className="flex items-baseline gap-3 flex-wrap">
+        <span className="font-mono w-32 text-ink-mid">{s.name}</span>
+        <span className="font-mono text-ink-soft w-20 shrink-0">{s.px}</span>
+        <span className="text-ink-mid">{s.use}</span>
+      </li>
+    ))}
+  </ul>
 )
 
 const DesignTokens = () => (
@@ -272,6 +313,18 @@ const DesignTokens = () => (
     <Section padY="sm">
       <SectionTitle>Ink</SectionTitle>
       <SwatchGrid swatches={INK_SWATCHES} />
+    </Section>
+    <Section padY="sm">
+      <SectionTitle>Surface</SectionTitle>
+      <SwatchGrid swatches={SURFACE_SWATCHES} />
+    </Section>
+    <Section padY="sm">
+      <SectionTitle>Border</SectionTitle>
+      <SwatchGrid swatches={BORDER_SWATCHES} />
+    </Section>
+    <Section padY="sm">
+      <SectionTitle>Accent</SectionTitle>
+      <SwatchGrid swatches={ACCENT_SWATCHES} />
     </Section>
     <Section padY="sm">
       <SectionTitle>Status</SectionTitle>
@@ -300,6 +353,10 @@ const DesignTokens = () => (
     <Section padY="sm">
       <SectionTitle>Spacing</SectionTitle>
       <SpacingDemo />
+    </Section>
+    <Section padY="sm">
+      <SectionTitle>Layout spacing</SectionTitle>
+      <LayoutSpacingDemo />
     </Section>
     <Section padY="sm">
       <SectionTitle>Radius</SectionTitle>

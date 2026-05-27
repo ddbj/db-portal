@@ -4,13 +4,14 @@ import { describe, expect, test } from "vitest"
 
 import { LoginButton } from "~/shell/login-button"
 
-import { renderWithStub } from "../_helpers/render"
+import { createNoRetryClient, renderWithStub } from "../_helpers/render"
 import { server } from "../mocks/server"
 
 const renderLoginButton = (path = "/search") =>
   renderWithStub({
     routes: [{ path: "/*", Component: () => <LoginButton /> }],
     initialEntries: [path],
+    queryClient: createNoRetryClient(),
   })
 
 describe("LoginButton", () => {
@@ -46,5 +47,14 @@ describe("LoginButton", () => {
         "/api/auth/login?return_to=%2F",
       )
     })
+  })
+
+  test("LoginButton_authPending_showsLoadingStatusWithAriaLive", async () => {
+    server.use(http.get("*/api/me", () => new Promise<Response>(() => undefined)))
+    renderLoginButton("/")
+    const status = await screen.findByRole("status")
+    expect(status).toHaveTextContent("認証中…")
+    expect(status).toHaveAttribute("aria-live", "polite")
+    expect(screen.queryByRole("link", { name: /ログイン/ })).toBeNull()
   })
 })

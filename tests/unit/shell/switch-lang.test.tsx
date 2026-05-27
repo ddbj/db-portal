@@ -41,4 +41,36 @@ describe("SwitchLang", () => {
     const link = screen.getByRole("link")
     expect(link).toHaveAttribute("href", "/news")
   })
+
+  test("SwitchLang_linkHasAriaLabelForLanguageSwitcher", () => {
+    renderAt("/search")
+    const link = screen.getByRole("link", { name: "言語切替" })
+    expect(link).toHaveAttribute("hrefLang", "en")
+    expect(link).toHaveAttribute("lang", "en")
+  })
+
+  test("SwitchLang_enPath_hrefLangPointsToJa", () => {
+    renderAt("/en/news")
+    const link = screen.getByRole("link", { name: "Language switcher" })
+    expect(link).toHaveAttribute("hrefLang", "ja")
+    expect(link).toHaveAttribute("lang", "ja")
+  })
+
+  test("SwitchLang_jaActive_jaPillIsBoldEnPillIsNotBold", () => {
+    renderAt("/search")
+    const jaPill = screen.getByText("JA")
+    const enPill = screen.getByText("EN")
+    expect(jaPill).toHaveClass("font-bold", "text-ink")
+    expect(enPill).toHaveClass("font-normal", "text-ink-mid")
+    expect(jaPill).not.toHaveClass("font-normal")
+    expect(enPill).not.toHaveClass("font-bold")
+  })
+
+  test("SwitchLang_enActive_enPillIsBoldJaPillIsNotBold", () => {
+    renderAt("/en/news")
+    const jaPill = screen.getByText("JA")
+    const enPill = screen.getByText("EN")
+    expect(enPill).toHaveClass("font-bold", "text-ink")
+    expect(jaPill).toHaveClass("font-normal", "text-ink-mid")
+  })
 })

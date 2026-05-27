@@ -359,7 +359,7 @@ type ButtonProps = SizedButtonProps | LinkButtonProps
 | secondary | `surface` | `ink` | `1px border-soft` |
 | danger | `surface` | `red` | `1px red` |
 | ghost | `transparent` | `brand-deep` | 0 |
-| link | `transparent` | `brand` | 0, `padding: 0`, `weight 600` |
+| link | `transparent` | `brand` | 0, `padding: 0`, `font-semibold` |
 
 size (`NativeSelect` / `TextInput` / `TextArea` と high さを揃えた、整数 px の Tailwind 標準スケール):
 

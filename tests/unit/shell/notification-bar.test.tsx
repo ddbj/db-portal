@@ -1,21 +1,23 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, screen, waitFor } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
 import { describe, expect, test } from "vitest"
 
 import type { NewsList } from "~/lib/api/news"
 import { NotificationBar } from "~/shell/notification-bar"
 
-import { renderWithStub } from "../_helpers/render"
+import { createNoRetryClient, renderWithStub } from "../_helpers/render"
 import { server } from "../mocks/server"
 
-const renderBar = (lang: "ja" | "en" = "ja") =>
+const renderBar = (lang: "ja" | "en" = "ja", path?: string) =>
   renderWithStub({
     routes: [
       { path: "/", Component: () => <NotificationBar /> },
+      { path: "/search", Component: () => <NotificationBar /> },
       { path: "/en", handle: { lang: "en" as const }, Component: () => <NotificationBar /> },
     ],
-    initialEntries: [lang === "en" ? "/en" : "/"],
+    initialEntries: [path ?? (lang === "en" ? "/en" : "/")],
     lang,
+    queryClient: createNoRetryClient(),
   })
 
 const announcementList: NewsList = [
@@ -111,5 +113,59 @@ describe("NotificationBar", () => {
     await waitFor(() => {
       expect(screen.getByText("Announcement 2")).toBeInTheDocument()
     })
+  })
+
+  test("NotificationBar_apiError_rendersNothing", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(
+      { error: "boom" },
+      { status: 500 },
+    )))
+    const { container } = renderBar()
+    await waitFor(() => {
+      expect(container.textContent).toBe("")
+    })
+    expect(screen.queryByRole("region")).toBeNull()
+  })
+
+  test("NotificationBar_expiredFeatured_isFilteredOut", async () => {
+    const expired: NewsList = [
+      {
+        id: "expired-1",
+        source: "ddbj",
+        category: "announcement",
+        featured: true,
+        publishedAt: "2026-05-23T12:00:00Z",
+        retireTime: "2026-05-24T12:00:00Z",
+        title: { ja: "期限切れ", en: "Expired" },
+        db: [],
+        rawTags: { ja: ["お知らせ"], en: ["Announcement"] },
+      },
+    ]
+    server.use(http.get("*/api/news", () => HttpResponse.json(expired)))
+    const { container } = renderBar()
+    await waitFor(() => {
+      expect(container.textContent).toBe("")
+    })
+  })
+
+  test("NotificationBar_nonFeaturedItem_isFilteredOut", async () => {
+    server.use(http.get("*/api/news", () =>
+      HttpResponse.json([announcementList[2]])),
+    )
+    const { container } = renderBar()
+    await waitFor(() => {
+      expect(container.textContent).toBe("")
+    })
+    expect(screen.queryByText("リリース")).toBeNull()
+  })
+
+  test("NotificationBar_nonTopPath_rendersNothing", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(announcementList)))
+    const { container } = renderBar("ja", "/search")
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(container.textContent).toBe("")
+    expect(screen.queryByRole("region")).toBeNull()
   })
 })

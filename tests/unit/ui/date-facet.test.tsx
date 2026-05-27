@@ -4,18 +4,12 @@ import { describe, expect, test, vi } from "vitest"
 import { DateFacet } from "~/ui/date-facet"
 
 describe("DateFacet", () => {
-  test("DateFacet_default_rendersFourSegmentedRanges", () => {
-    render(<DateFacet />)
-    expect(screen.getByRole("button", { name: "すべて" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "1年" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "5年" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "10年" })).toBeInTheDocument()
-  })
-
   test("DateFacet_activeRange_setsAriaPressedTrue", () => {
     render(<DateFacet active="5y" />)
     expect(screen.getByRole("button", { name: "5年" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("button", { name: "1年" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "すべて" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "10年" })).toBeInTheDocument()
   })
 
   test("DateFacet_activeRange_appliesBrandSoftPalette", () => {
@@ -71,5 +65,40 @@ describe("DateFacet", () => {
   test("DateFacet_appliedCountZero_doesNotRenderClearButton", () => {
     render(<DateFacet appliedCount={0} onClear={() => undefined} />)
     expect(screen.queryByRole("button", { name: "解除" })).toBeNull()
+  })
+
+  test("DateFacet_onToChange_invokedWithValue", () => {
+    const onToChange = vi.fn()
+    render(<DateFacet onToChange={onToChange} />)
+    fireEvent.change(screen.getByLabelText("終了日"), { target: { value: "2025-12-31" } })
+    expect(onToChange).toHaveBeenCalledWith("2025-12-31")
+  })
+
+  test("DateFacet_activeAll_setsAllAriaPressedTrue", () => {
+    render(<DateFacet active="all" />)
+    expect(screen.getByRole("button", { name: "すべて" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "1年" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "5年" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "10年" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  test("DateFacet_active10y_setsOnly10yAriaPressedTrue", () => {
+    render(<DateFacet active="10y" />)
+    expect(screen.getByRole("button", { name: "10年" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "すべて" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  test("DateFacet_onRangeChangeAll_invokedWithAll", () => {
+    const onRangeChange = vi.fn()
+    render(<DateFacet active="1y" onRangeChange={onRangeChange} />)
+    fireEvent.click(screen.getByRole("button", { name: "すべて" }))
+    expect(onRangeChange).toHaveBeenCalledWith("all")
+  })
+
+  test("DateFacet_onRangeChange10y_invokedWith10y", () => {
+    const onRangeChange = vi.fn()
+    render(<DateFacet onRangeChange={onRangeChange} />)
+    fireEvent.click(screen.getByRole("button", { name: "10年" }))
+    expect(onRangeChange).toHaveBeenCalledWith("10y")
   })
 })

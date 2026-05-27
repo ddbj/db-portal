@@ -157,7 +157,7 @@ export default tseslint.config(
   },
 
   {
-    files: ["app/shell/**/*.{ts,tsx}"],
+    files: ["app/{ui,shell}/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": ["error", HEX_LITERAL_RULE],
     },

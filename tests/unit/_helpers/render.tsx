@@ -50,3 +50,6 @@ export const renderWithQueryClient = (
   }),
 ): RenderResult =>
   render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+
+export const createNoRetryClient = (): QueryClient =>
+  new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })

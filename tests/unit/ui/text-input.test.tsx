@@ -37,4 +37,21 @@ describe("TextInput", () => {
     render(<TextInput ariaLabel="empty" value="" readOnly />)
     expect(screen.getByRole("textbox", { name: "empty" })).toHaveValue("")
   })
+
+  test("TextInput_warnAndMono_appliesBothBorderAndMonoFont", () => {
+    render(<TextInput ariaLabel="dsl-warn" state="warn" mono />)
+    const input = screen.getByRole("textbox", { name: "dsl-warn" })
+    expect(input).toHaveAttribute("aria-invalid", "true")
+    expect(input).toHaveClass("font-mono")
+    expect(input).toHaveClass("border-warn-border")
+    expect(input).toHaveClass("bg-warn-bg")
+  })
+
+  test("TextInput_default_appliesNeutralBorderPalette", () => {
+    render(<TextInput ariaLabel="x" />)
+    const input = screen.getByRole("textbox", { name: "x" })
+    expect(input).toHaveClass("border-border-soft")
+    expect(input).toHaveClass("bg-surface")
+    expect(input).not.toHaveClass("border-warn-border")
+  })
 })

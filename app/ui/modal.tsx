@@ -169,7 +169,7 @@ export const ModalHeader = ({
       )}
       <TitleTag
         id={titleId}
-        className="text-fs-h2 font-bold text-ink m-0 tracking-tight"
+        className="text-fs-h2 font-bold text-ink m-0 leading-tight"
       >
         {title}
       </TitleTag>

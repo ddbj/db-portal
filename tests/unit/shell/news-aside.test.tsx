@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest"
 import type { NewsList } from "~/lib/api/news"
 import { NewsAside } from "~/shell/news-aside"
 
-import { renderWithStub } from "../_helpers/render"
+import { createNoRetryClient, renderWithStub } from "../_helpers/render"
 import { server } from "../mocks/server"
 
 const renderAside = (lang: "ja" | "en" = "ja") =>
@@ -16,6 +16,7 @@ const renderAside = (lang: "ja" | "en" = "ja") =>
     ],
     initialEntries: [lang === "en" ? "/en" : "/"],
     lang,
+    queryClient: createNoRetryClient(),
   })
 
 const makeNews = (count: number): NewsList =>
@@ -63,5 +64,45 @@ describe("NewsAside", () => {
     await waitFor(() => screen.getByText("Announcement 1"))
     const headingLink = screen.getAllByRole("link", { name: /View all/ })[0]
     expect(headingLink).toHaveAttribute("href", "/en/news")
+  })
+
+  test("NewsAside_apiError_showsEmptyMessage", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(
+      { error: "boom" },
+      { status: 500 },
+    )))
+    renderAside()
+    await waitFor(() => {
+      expect(screen.getByText("新着のお知らせはありません")).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("status")).toBeNull()
+  })
+
+  test("NewsAside_pendingFetch_showsLoadingStatus", async () => {
+    server.use(http.get("*/api/news", () => new Promise<Response>(() => undefined)))
+    renderAside()
+    const status = await screen.findByRole("status")
+    expect(status).toHaveTextContent("読み込み中")
+    expect(screen.queryByText("お知らせ 1")).toBeNull()
+  })
+
+  test("NewsAside_singleItem_hasNoBottomBorder", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(1))))
+    const { container } = renderAside()
+    await waitFor(() => screen.getByText("お知らせ 1"))
+    const items = container.querySelectorAll("aside ul > li")
+    expect(items).toHaveLength(1)
+    expect(items[0]).not.toHaveClass("border-b")
+  })
+
+  test("NewsAside_multipleItems_lastHasNoBottomBorder", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(3))))
+    const { container } = renderAside()
+    await waitFor(() => screen.getByText("お知らせ 3"))
+    const items = container.querySelectorAll("aside ul > li")
+    expect(items).toHaveLength(3)
+    expect(items[0]).toHaveClass("border-b")
+    expect(items[1]).toHaveClass("border-b")
+    expect(items[2]).not.toHaveClass("border-b")
   })
 })

@@ -51,48 +51,29 @@ describe("Breadcrumb", () => {
     expect(container.querySelector("nav")).toBeNull()
   })
 
-  test("Breadcrumb_databasesPath_rendersHomeAndCurrent", () => {
+  test("Breadcrumb_databasesPath_rendersHomeLinkAndCurrentMarker", () => {
     renderBreadcrumb(["/databases"], "ja")
-    const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
-    expect(nav).toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "パンくずリスト" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
-    expect(screen.getByText("データベース")).toHaveAttribute("aria-current", "page")
-  })
-
-  test("Breadcrumb_databasesPath_separatorBetweenItems", () => {
-    const { container } = renderBreadcrumb(["/databases"], "ja")
-    const separators = container.querySelectorAll("span[aria-hidden='true']")
-    expect(separators.length).toBeGreaterThan(0)
-  })
-
-  test("Breadcrumb_homeLink_appliesIntermediateStyle", () => {
-    renderBreadcrumb(["/databases"], "ja")
-    const homeLink = screen.getByRole("link", { name: "ホーム" })
-    expect(homeLink).toHaveClass("text-ink-mid", "no-underline", "hover:underline")
-  })
-
-  test("Breadcrumb_currentItem_isMarkedAriaCurrentPage", () => {
-    renderBreadcrumb(["/databases"], "ja")
     const current = screen.getByText("データベース")
     expect(current).toHaveAttribute("aria-current", "page")
-    expect(current).toHaveClass("text-ink", "font-semibold")
+    expect(current.tagName).toBe("SPAN")
+    expect(screen.queryByRole("link", { name: "データベース" })).toBeNull()
+  })
+
+  test("Breadcrumb_databasesPath_separatorMatchesItemCountMinusOne", () => {
+    const { container } = renderBreadcrumb(["/databases"], "ja")
+    const items = container.querySelectorAll("ol > li")
+    const separators = container.querySelectorAll("ol > li > span[aria-hidden='true']")
+    expect(separators).toHaveLength(items.length - 1)
+    separators.forEach((sep) => {
+      expect(sep).toHaveTextContent("›")
+    })
   })
 
   test("Breadcrumb_enLang_homeHrefIsEn", () => {
     renderBreadcrumb(["/en/databases"], "en")
     expect(screen.getByRole("link", { name: /Home/i })).toHaveAttribute("href", "/en")
-  })
-
-  test("Breadcrumb_nav_isWrappedWithMaxContentAndPadding", () => {
-    const { container } = renderBreadcrumb(["/databases"], "ja")
-    const nav = container.querySelector("nav")
-    expect(nav).toHaveClass("max-w-content-max", "mx-auto", "px-page-gutter", "py-3")
-  })
-
-  test("Breadcrumb_listItems_renderedAsOl", () => {
-    const { container } = renderBreadcrumb(["/databases"], "ja")
-    const ol = container.querySelector("ol")
-    expect(ol).toHaveClass("flex", "items-center", "gap-1.5", "list-none", "text-fs-body-sm")
   })
 
   test("Breadcrumb_unknownDatabaseSlug_resolverReturnsNull", () => {
