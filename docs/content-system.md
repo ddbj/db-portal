@@ -76,6 +76,9 @@ const ExternalLink = z.object({
   href: z.string.url,
 })
 
+export const DatabaseSlug = z.enum(["bioproject", "biosample"])
+export type DatabaseSlug = z.infer<typeof DatabaseSlug>
+
 export const DatabaseContent = z.object({
   slug: z.string.regex(/^[a-z0-9-]+$/),
   title: Bilingual,
@@ -83,7 +86,7 @@ export const DatabaseContent = z.object({
   body: BilingualBody,
   meta: z.object({
     lastUpdated: z.string.datetime,
-    relatedDbs: z.array(z.string).default([]),
+    relatedDbs: z.array(DatabaseSlug).default([]),
     externalLinks: z.array(ExternalLink).default([]),
   }),
 })
@@ -94,7 +97,7 @@ export const DatabaseContent = z.object({
 - `body.ja` / `body.en` は `ReactNode` (Zod では `z.custom<ReactNode>` で素通し)。Zod は構造検証しない (TSX は JSX runtime によって解釈される)
 - `title` / `description` は string で `min(1)` 検証する
 - `meta.lastUpdated` は ISO 8601 文字列 (`z.string.datetime`)。手書きで運用する (`development.md` の content 更新フロー)
-- `meta.relatedDbs` は他 DB slug の配列。リリース時点では string で受け、relate 先 DB の存在は route hierarchy で検出 (404 で発覚)
+- `meta.relatedDbs` は他 DB slug の配列。`DatabaseSlug` enum で実装済み slug union に narrow するため、未知 / タイポは build 時 (`validate:content`) と TypeScript の `satisfies DatabaseContent` で弾かれる。新規 DB を `app/content/databases/` に追加する時は `DatabaseSlug` enum にも追記する
 - `meta.externalLinks` は表示用の外部リンク集 (INSDC / EBI / NCBI 等への参照)
 - **Breadcrumb はここに書かない** (route handle + i18n で自動生成)
 
@@ -394,7 +397,7 @@ export default {
   },
   meta: {
     lastUpdated: "2026-05-25T00:00:00Z",
-    relatedDbs: ["biosample", "dra"],
+    relatedDbs: ["biosample"],
     externalLinks: [
       { label: { ja: "NCBI BioProject", en: "NCBI BioProject" }, href: "https://www.ncbi.nlm.nih.gov/bioproject/" },
       { label: { ja: "EBI BioStudies", en: "EBI BioStudies" }, href: "https://www.ebi.ac.uk/biostudies/" },

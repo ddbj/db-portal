@@ -16,6 +16,9 @@ const ExternalLink = z.object({
   href: z.string().url(),
 })
 
+export const DatabaseSlug = z.enum(["bioproject", "biosample"])
+export type DatabaseSlug = z.infer<typeof DatabaseSlug>
+
 export const DatabaseContent = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   title: Bilingual,
@@ -23,7 +26,7 @@ export const DatabaseContent = z.object({
   body: BilingualBody,
   meta: z.object({
     lastUpdated: z.string().datetime(),
-    relatedDbs: z.array(z.string()).default([]),
+    relatedDbs: z.array(DatabaseSlug).default([]),
     externalLinks: z.array(ExternalLink).default([]),
   }),
 })

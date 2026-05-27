@@ -89,7 +89,7 @@ export default {
   },
   meta: {
     lastUpdated: "2026-05-25T00:00:00Z",
-    relatedDbs: ["bioproject", "dra"],
+    relatedDbs: ["bioproject"],
     externalLinks: [
       { label: { ja: "NCBI BioSample", en: "NCBI BioSample" }, href: "https://www.ncbi.nlm.nih.gov/biosample" },
       { label: { ja: "EBI BioSamples", en: "EBI BioSamples" }, href: "https://www.ebi.ac.uk/biosamples/" },

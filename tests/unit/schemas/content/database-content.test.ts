@@ -53,4 +53,21 @@ describe("DatabaseContent", () => {
       DatabaseContent.parse({ ...validBase, meta: { ...validBase.meta, lastUpdated: "2026-05-21" } }),
     ).toThrow()
   })
+
+  test("DatabaseContent_relatedDbsWithUnknownSlug_throws", () => {
+    expect(() =>
+      DatabaseContent.parse({
+        ...validBase,
+        meta: { ...validBase.meta, relatedDbs: ["bioproject", "dra"] },
+      }),
+    ).toThrow()
+  })
+
+  test("DatabaseContent_relatedDbsEmpty_parses", () => {
+    const parsed = DatabaseContent.parse({
+      ...validBase,
+      meta: { ...validBase.meta, relatedDbs: [] },
+    })
+    expect(parsed.meta.relatedDbs).toEqual([])
+  })
 })
