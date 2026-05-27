@@ -2,9 +2,13 @@
 
 DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `content-system.md` / `development.md`) はここから参照される。
 
-## 1. プロジェクトの位置付け
+## プロジェクトの位置付け
 
-DDBJ の登録・検索サービスへの統合ポータル。次の機能領域を 1 リポジトリで提供する。
+DDBJ の登録・検索サービスへの統合ポータル。**DDBJ Record (v3) schema には依存しない**。登録ナビは「登録経路の知識ベース」 であって登録メタデータではなく、Record 完成後に必要なら adapter を後付けする (`decisions.md`)。
+
+ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリース時点では含めない。コンテンツ機構 (`*.content.tsx` collection、`content-system.md`) は段階移行できるよう最初から設計する (`decisions.md`)。
+
+次の機能領域を 1 リポジトリで提供する。
 
 | 機能 | URL | 概要 |
 |---|---|---|
@@ -13,10 +17,10 @@ DDBJ の登録・検索サービスへの統合ポータル。次の機能領域
 | 登録ナビゲーション | `/submit` | テーブル + per-cell tag + 動的 FlowStep カードによる登録経路ナビ |
 | ニュース | `/news` | ddbj/www の `_news/` を mirror し、カテゴリ facet で閲覧 |
 | データベース解説 | `/databases/:slug` | コンテンツ collection から各 DB の説明を生成 |
-| 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない (§5) |
+| 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない  |
 | 英語版 | `/en/...` | URL prefix によるロケール切替 (詳細 `i18n.md`) |
 
-## 2. ディレクトリ構造
+## ディレクトリ構造
 
 ```
 db-portal/
@@ -53,11 +57,13 @@ db-portal/
 └── eslint.config.ts
 ```
 
-`app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は §4 と §6。
+`app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は本書の SSR/CSR、build/runtime のセクションで扱う。
 
-## 3. import 境界
+リポジトリは 1 つのまま運用する。module 境界は内部 import 制約で表現し、物理分割 (`packages/*` への分解) は採用しない (`decisions.md`)。
 
-### 3.1 zones 表
+## import 境界
+
+### zones 表
 
 各ディレクトリの import 可否を定義する。`eslint-plugin-import` の `no-restricted-paths` で物理強制される。
 
@@ -80,7 +86,7 @@ db-portal/
 
 `app/schemas` だけが `app` と `server` の共用境界。Zod schema は型と runtime validation を兼ねるので、BFF 側のレスポンス整形と client 側の表示で同じ schema を共有する。
 
-### 3.2 zones の意図
+### zones の意図
 
 | zone | 役割 | 上位 zone への依存 |
 |---|---|---|
@@ -95,7 +101,7 @@ db-portal/
 
 `features` 同士の直接 import は禁止する。features を跨ぐ共通ロジックは `lib` か `schemas` に降ろし、UI 共通は `ui` か `shell` に降ろす。これにより 1 feature の変更が他 feature へ波及しない。
 
-### 3.3 デザイントークンの物理強制
+### デザイントークンの物理強制
 
 ESLint が次の 2 系統で逸脱を検出する。
 
@@ -105,7 +111,7 @@ ESLint が次の 2 系統で逸脱を検出する。
 
 色や spacing を直接書きたくなったら、まず `app/styles/tailwind.css` の `@theme` block にトークンとして追加する。utility class (`bg-brand` / `text-ink` / `p-section-md`) を経由して参照する。
 
-## 4. SSR と CSR の境界
+## SSR と CSR の境界
 
 React Router v7 framework mode (`react-router.config.ts` で `{ ssr: true }`) を使う。
 
@@ -122,7 +128,7 @@ React Router v7 framework mode (`react-router.config.ts` で `{ ssr: true }`) �
 
 Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/api/...", url))` を使い、zone 境界を物理的に守る。
 
-## 5. BFF と client の責務分離
+## BFF と client の責務分離
 
 `server/` 配下が BFF (Backend for Frontend) として次の責務を持つ。client (`app/`) はこれらに依存して動く。
 
@@ -135,40 +141,40 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 
 外部 API (Search / vLLM / Keycloak / GitHub) に client が直接アクセスすることはない。これにより:
 
-- secret (LLM API key / Keycloak client secret / GitHub PAT) が client bundle に embed されない
+- secret (LLM API key / Keycloak client secret) が client bundle に embed されない
 - ddbj-search-api / vLLM が CORS を緩める必要がない
 - 障害時 fallback (LLM 未到達なら UI を hide する) を BFF の health 判定で集約できる
 
-## 6. ビルド時と runtime の境界
+## ビルド時と runtime の境界
 
-### 6.1 ビルド時に確定するもの
+### ビルド時に確定するもの
 
 - API 型 (`app/lib/api/openapi-types.ts`): `npm run gen:api-types` で staging openapi.json から生成。git commit 対象。詳細 `api-types.md`
 - コンテンツ collection (`app/content/**/*.content.tsx`): `import.meta.glob` で列挙、Zod schema で eager validate。1 件でも parse 失敗すれば build が落ちる。詳細 `content-system.md`
 - i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`): 静的 import。`ja` と `en` でキーセットが乖離した場合は PBT (`tests/pbt/`) で検出。詳細 `i18n.md`
 - Tailwind utility class: `@theme` block + JSX を Vite が走査して必要な class のみを出力
 
-### 6.2 Runtime に決まるもの
+### Runtime に決まるもの
 
 - 環境変数 (`DB_PORTAL_*`): `server/lib/env.ts` の Zod schema で起動時に validate。違反すれば server を起動しない
 - BFF session store: in-memory Map に sid → session entry。プロセス再起動で揮発
 - News mirror cache: disk persist (`DB_PORTAL_NEWS_CACHE_DIR`)、起動時に再 load し即応答可能
 - LLM health 状態: `/api/llm/health` の結果を server memory に保持
 
-### 6.3 client bundle と server bundle の分離
+### client bundle と server bundle の分離
 
 | 変数 | 接頭辞 | アクセス方法 | 何に使えるか |
 |---|---|---|---|
 | Server | `DB_PORTAL_*` | `process.env.DB_PORTAL_*` (server-only) | secret 含めて全て可 |
 | Client | `VITE_DB_PORTAL_*` | `import.meta.env.VITE_DB_PORTAL_*` | secret は絶対に含めない |
 
-`compose.yml` で `VITE_DB_PORTAL_*` を `DB_PORTAL_*` から派生させ、`DB_PORTAL_LLM_API_KEY` や `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` は `VITE_` 側に出さない。secret を browser に流出させない最後の防壁となる。
+`compose.yml` で `VITE_DB_PORTAL_*` を `DB_PORTAL_*` から派生させ、`DB_PORTAL_LLM_API_KEY` などの secret は `VITE_` 側に出さない。secret を browser に流出させない最後の防壁となる。
 
-## 7. データフローの 4 経路
+## データフローの 4 経路
 
 ポータル内で発生する主要な情報の流れ。
 
-### 7.1 検索
+### 検索
 
 ```
 [Browser]
@@ -188,9 +194,9 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
   検索結果取得 (TanStack Query + ddbj-search-api /db-portal/{cross-search,search})
 ```
 
-AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT とする。詳細 `api-types.md §3`。
+AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT とする。詳細 `api-types.md`。
 
-### 7.2 登録ナビゲーション
+### 登録ナビゲーション
 
 ```
 [Browser]
@@ -205,7 +211,7 @@ AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT と�
 
 `app/schemas/submit/` が controlled vocabulary と Submission 型の SSOT。サービス step 関数の不変量は `tests/pbt/submit/` で固定する。
 
-### 7.3 認証
+### 認証
 
 ```
 [Browser] cookie (sid, HttpOnly, SameSite=Lax, Secure)
@@ -222,11 +228,11 @@ AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT と�
 
 詳細 `auth.md`。
 
-### 7.4 LLM
+### LLM
 
 ```
 [Browser]
-  useLlmAvailability() → BFF /api/llm/health の結果で UI を hide/show
+  useLlmAvailability → BFF /api/llm/health の結果で UI を hide/show
         │
         ▼ available 時
   POST /api/llm/* (SSE)
@@ -237,7 +243,7 @@ AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT と�
 
 vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/llm/health` が `{status:"unset"}` を返し、UI 側で AI アシスタント機能を非表示にする。
 
-## 8. テストの位置付け
+## テストの位置付け
 
 | 種別 | 配置 | 役割 |
 |---|---|---|
@@ -247,20 +253,20 @@ vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/ll
 
 Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 / コンポーネント / Zod schema は mock しない。詳細な方針は `tests/` 配下の README とテストごとの設計に従う。
 
-## 9. デザインシステム
+## デザインシステム
 
 `app/styles/tailwind.css` の `@theme` block がデザイントークンの SSOT (色 / spacing / font / radius / shadow)。`app/ui/` の primitive はこの token を utility class 経由で参照する。
 
 - token utility class: `bg-brand` / `text-ink` / `border-border-soft` / `p-section-md` / `rounded-card` …
-- 生 hex literal / arbitrary value は ESLint で物理禁止 (§3.3)
+- 生 hex literal / arbitrary value は ESLint で物理禁止 
 - primitive 一覧 (Button / IconButton / NativeSelect / FormGroup / Tag / Chip / Callout / Modal / Pagination …) は `app/ui/` に集約、`features` / `shell` / `routes` / `content` は primitive を消費する
 - 新 primitive が必要な場合、`features` 内で独自実装せず `app/ui/` に追加する (zones で物理強制)
 
 詳細な token 値と primitive 仕様はコード (`app/styles/tailwind.css` と `app/ui/`) を一次情報とする。
 
-## 10. 非機能要件
+## 非機能要件
 
-### 10.1 セキュリティ headers
+### セキュリティ headers
 
 `server/lib/security.ts` が全 HTTP レスポンスに次の headers を付与する (Express middleware として `server/index.ts` で mount):
 
@@ -272,31 +278,31 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `X-Content-Type-Options` | `nosniff` | 全 response |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | 全 response |
 
-CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID()` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、`<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
+CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、`<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
 
 `style-src` に `'unsafe-inline'` を残しているのは、Tailwind v4 の inject や React の `style={...}` prop に対応するため。script より影響範囲が小さく、portal は外部 stylesheet を読まないので妥当と判断する。
 
-### 10.2 sitemap.xml / robots.txt
+### sitemap.xml / robots.txt
 
 - `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、`/search`、`/submit`、`/news`) を ja / en の両方で列挙する `<urlset>` を返す。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、`<changefreq>` / `<priority>` は省略 (Google が無視するため)
 - `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
 
-### 10.3 404 ページ
+### 404 ページ
 
 URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、`app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
 
 404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は production では出さない (`DB_PORTAL_ENV` で分岐)。
 
-### 10.4 アクセシビリティ
+### アクセシビリティ
 
 - WCAG AA 相当の色コントラスト (token 段階で確認、`app/routes/_design/` で視覚チェック可)
 - フォーカスリングを全インタラクティブ要素に明示 (`app/ui/` primitive 内で `ring-focus` token を必ず適用)
 - キーボード操作で全画面到達可能 (modal は focus trap)
-- `<html lang>` を `useLang()` で動的に出力 (i18n.md §3)
+- `<html lang>` を `useLang` で動的に出力 (i18n.md)
 
 axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、人手レビュー優先)。unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
 
-### 10.5 性能目標
+### 性能目標
 
 | 指標 | 目標 |
 |---|---|
@@ -312,19 +318,5 @@ axe-core の e2e 統合はリリース時点で未採用 (false positive 多発�
 - 画像 lazy loading (`<img loading="lazy">`)
 - TanStack Query の `staleTime` 調整 (`/api/me` 5 分、`/api/news` 5 分)
 
-計測は Playwright e2e で `page.evaluate(() => performance.getEntriesByType("navigation"))` を取得し、staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
+計測は Playwright e2e で `page.evaluate( => performance.getEntriesByType("navigation"))` を取得し、staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
 
-## 11. 関連 docs
-
-| ファイル | 内容 |
-|---|---|
-| `api-types.md` | ddbj-search-api との型連携、`ParseNode` alias、生成・diff 運用 |
-| `i18n.md` | URL prefix 戦略、`useLang`、リソース運用、翻訳なし fallback |
-| `auth.md` | BFF + HttpOnly cookie、session store、OIDC PKCE、`useAuth` / `RequireAuth` |
-| `content-system.md` | `*.content.tsx` collection、loader、breadcrumb 自動生成、TSX fragment スコープ |
-| `ui-primitives.md` | `app/ui/` 22 primitive の Props / variant / accessibility / token 参照規約 |
-| `shell.md` | Header / Footer / NotificationBar / NewsAside / Breadcrumb / TranslationUnavailable / ShellLayout |
-| `development.md` | Docker Compose 起動、env 切替、よく使うコマンド |
-| `deployment.md` | production / staging deploy 手順、podman + NIG override、rollback |
-| `keycloak-setup.md` | Keycloak realm / client / redirect URI / PKCE / token 寿命の管理画面側設定 |
-| `operations.md` | 監視 / log の読み方 / トラブルシューティング / secret rotation |

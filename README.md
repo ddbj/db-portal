@@ -46,25 +46,43 @@ docker compose exec app npm run check:last-updated
 
 ## ドキュメント
 
-| ファイル | 内容 |
-|---|---|
-| [architecture.md](docs/architecture.md) | 全体構造 / zones / SSR / BFF / 非機能要件 (CSP / sitemap / 404) |
-| [development.md](docs/development.md) | dev 環境セットアップ / env 切替 / よく使うコマンド |
-| [api-types.md](docs/api-types.md) | ddbj-search-api 連携 / `gen:api-types` 運用 |
-| [i18n.md](docs/i18n.md) | URL prefix 戦略 / リソース運用 / 翻訳なし fallback |
-| [routes.md](docs/routes.md) | 全 URL 一覧 / `bilingualRoutes` helper / route handle |
-| [content-system.md](docs/content-system.md) | `*.content.tsx` collection / loader / breadcrumb 自動生成 |
-| [ui-primitives.md](docs/ui-primitives.md) | `app/ui/` の primitive 一覧 / Props / a11y |
-| [shell.md](docs/shell.md) | Header / Footer / NotificationBar / NewsAside / Breadcrumb |
-| [top.md](docs/top.md) | トップページの hero + service grid + news aside |
-| [search.md](docs/search.md) | 検索 UI / Advanced builder / Sidebar facet / AI アシスタント |
-| [submit.md](docs/submit.md) | 登録ナビゲーション / controlled vocab / FlowStep |
-| [news.md](docs/news.md) | ddbj/www mirror + cache + NotificationBar 振り分け |
-| [auth.md](docs/auth.md) | BFF + HttpOnly cookie / OIDC PKCE / session store |
-| [llm.md](docs/llm.md) | vLLM BFF / SSE / health 判定 / rate limit |
-| [deployment.md](docs/deployment.md) | staging / production deploy / podman + NIG / rollback |
-| [keycloak-setup.md](docs/keycloak-setup.md) | Keycloak 管理画面側の realm / client / redirect URI 設定 |
-| [operations.md](docs/operations.md) | 監視 / log / トラブルシューティング / secret rotation |
+**まず読む**
+
+- [architecture.md](docs/architecture.md) — 全体構造 / zones / SSR / BFF / 非機能要件 (CSP / sitemap / 404)
+- [development.md](docs/development.md) — dev 環境セットアップ / env 切替 / よく使うコマンド
+- [decisions.md](docs/decisions.md) — 主要な設計判断 (ADR、採用 / 不採用の理由)
+
+**アプリ基盤 (横断的な仕組み)**
+
+- [routes.md](docs/routes.md) — 全 URL 一覧 / `bilingualRoutes` / route handle
+- [i18n.md](docs/i18n.md) — URL 戦略 / リソース運用 / 翻訳なし fallback
+- [content-system.md](docs/content-system.md) — `*.content.tsx` collection / loader / breadcrumb 自動生成
+- [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / `gen:api-types` 運用
+- [ui-primitives.md](docs/ui-primitives.md) — `app/ui/` の primitive 設計原則
+- [testing.md](docs/testing.md) — unit / PBT / e2e / mock のルール
+
+**機能ごとの仕様**
+
+- [shell.md](docs/shell.md) — Header / Footer / NotificationBar / NewsAside / Breadcrumb
+- [top.md](docs/top.md) — トップページの hero + service grid + news aside
+- [search.md](docs/search.md) — 検索 UI / Advanced builder / Sidebar facet / AI アシスタント
+- [submit.md](docs/submit.md) — 登録ナビゲーション / controlled vocab / FlowStep
+- [news.md](docs/news.md) — ddbj/www mirror + cache + NotificationBar 振り分け
+- [auth.md](docs/auth.md) — BFF + HttpOnly cookie / OIDC PKCE / session store
+- [llm.md](docs/llm.md) — vLLM BFF / SSE / health 判定 / rate limit
+
+**運用**
+
+- [deployment.md](docs/deployment.md) — staging / production deploy / podman + NIG / rollback
+- [keycloak-setup.md](docs/keycloak-setup.md) — Keycloak 管理画面側の realm / client / redirect URI 設定
+- [operations.md](docs/operations.md) — 監視 / log / トラブルシューティング / secret rotation
+
+## 参考
+
+- 既存サイト: https://ddbj.nig.ac.jp
+- 検索 UI 参考: https://www.ncbi.nlm.nih.gov/ (NCBI Entrez)
+- デザイン参考: https://bsi.rois.ac.jp (BSI)
+- 登録関連コンテンツの元ネタ: [ddbj/www](https://github.com/ddbj/www) (Jekyll サイト)
 
 ## ライセンス
 

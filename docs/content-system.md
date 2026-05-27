@@ -2,25 +2,17 @@
 
 データベース解説、サービス紹介、各種ガイドのコンテンツを TypeScript ファイル (`*.content.tsx`) として書く collection 方式を採用する。`architecture.md` の zones に従い、コンテンツは `app/content/` に集約する。
 
-## 1. 方針
+## 方針
 
 - コンテンツは **`*.content.tsx`** ファイルとして書く。Markdown 直書きは採用しない
 - 長文の本文 (`body.ja` / `body.en`) は **TSX fragment 直書き**。リッチ表現 (Callout / Section / Table / TextLink) は `app/ui/` の primitive を JSX で使う
 - Frontmatter 相当のメタ (title / slug / description / 関連 DB / 外部リンク / サービス分類) は **Zod schema で型検証**。ビルド時に壊れていれば即エラー
-- Breadcrumb は content 側に書かず、**route handle + i18n リソースで自動生成** する (§5)
+- Breadcrumb は content 側に書かず、**route handle + i18n リソースで自動生成** する 
 - 翻訳は同一ファイル内 `{ ja, en }` 並びで持ち、diff が読みやすい形を取る
 
-### 1.1 採用理由
+代替案 (Markdown / MDX / Headless CMS) との比較と却下理由は `decisions.md` の「コンテンツは `*.content.tsx`」 を参照。
 
-| 方式 | 型安全 | リッチ表現 | i18n diff の読みやすさ | 将来の CMS 化 |
-|---|---|---|---|---|
-| `*.content.tsx` (採用) | ◎ Zod schema | ◎ JSX | ◎ 同一ファイルに `{ja, en}` 並走 | ○ loader を差し替えるだけ |
-| Markdown frontmatter + MDX | △ frontmatter schema 検証は別途 | ◎ | △ 別ファイル管理になりがち | ○ |
-| Headless CMS | △ 型は別途 codegen | ○ | △ | ◎ |
-
-リリース時点でコンテンツ数が限られているため、CMS 化のコストは見合わない。`*.content.tsx` collection で出発し、将来必要なら loader を差し替える余地を持つ。
-
-## 2. ディレクトリ構造
+## ディレクトリ構造
 
 ```
 app/content/
@@ -58,11 +50,11 @@ app/lib/content/
 └── index.ts                        re-export
 ```
 
-zone 関係は `architecture.md §3.1` を参照。`content` は `ui` / `lib` / `schemas` / `content` を import 可、`features` / `shell` への import は禁止 (ESLint `no-restricted-paths` で物理強制)。
+zone 関係は `architecture.md` を参照。`content` は `ui` / `lib` / `schemas` / `content` を import 可、`features` / `shell` への import は禁止 (ESLint `no-restricted-paths` で物理強制)。
 
-## 3. Schemas
+## Schemas
 
-### 3.1 DatabaseContent
+### DatabaseContent
 
 ```ts
 // app/schemas/content/database-content.ts
@@ -70,28 +62,28 @@ import type { ReactNode } from "react"
 import { z } from "zod"
 
 const Bilingual = z.object({
-  ja: z.string().min(1),
-  en: z.string().min(1),
+  ja: z.string.min(1),
+  en: z.string.min(1),
 })
 
 const BilingualBody = z.object({
-  ja: z.custom<ReactNode>(),
-  en: z.custom<ReactNode>(),
+  ja: z.custom<ReactNode>,
+  en: z.custom<ReactNode>,
 })
 
 const ExternalLink = z.object({
   label: Bilingual,
-  href: z.string().url(),
+  href: z.string.url,
 })
 
 export const DatabaseContent = z.object({
-  slug: z.string().regex(/^[a-z0-9-]+$/),
+  slug: z.string.regex(/^[a-z0-9-]+$/),
   title: Bilingual,
   description: Bilingual,
   body: BilingualBody,
   meta: z.object({
-    lastUpdated: z.string().datetime(),
-    relatedDbs: z.array(z.string()).default([]),
+    lastUpdated: z.string.datetime,
+    relatedDbs: z.array(z.string).default([]),
     externalLinks: z.array(ExternalLink).default([]),
   }),
 })
@@ -99,14 +91,14 @@ export const DatabaseContent = z.object({
 
 設計判断:
 
-- `body.ja` / `body.en` は `ReactNode` (Zod では `z.custom<ReactNode>()` で素通し)。Zod は構造検証しない (TSX は JSX runtime によって解釈される)
+- `body.ja` / `body.en` は `ReactNode` (Zod では `z.custom<ReactNode>` で素通し)。Zod は構造検証しない (TSX は JSX runtime によって解釈される)
 - `title` / `description` は string で `min(1)` 検証する
-- `meta.lastUpdated` は ISO 8601 文字列 (`z.string().datetime()`)。手書きで運用する (`development.md` の content 更新フロー)
+- `meta.lastUpdated` は ISO 8601 文字列 (`z.string.datetime`)。手書きで運用する (`development.md` の content 更新フロー)
 - `meta.relatedDbs` は他 DB slug の配列。リリース時点では string で受け、relate 先 DB の存在は route hierarchy で検出 (404 で発覚)
 - `meta.externalLinks` は表示用の外部リンク集 (INSDC / EBI / NCBI 等への参照)
-- **Breadcrumb はここに書かない** (§5 参照、route handle + i18n で自動生成)
+- **Breadcrumb はここに書かない** (route handle + i18n で自動生成)
 
-### 3.2 ServiceContent
+### ServiceContent
 
 サービス情報 (検索 / 登録 / 各種 DB / 外部サービス) を 1 collection に集約する。トップページの Service tiles / Popular Resources と submit feature の外部 CTA リンクが同じ source を共用する。
 
@@ -117,46 +109,46 @@ import { z } from "zod"
 import { Service as SubmitService } from "~/schemas/submit"
 
 const Bilingual = z.object({
-  ja: z.string().min(1),
-  en: z.string().min(1),
+  ja: z.string.min(1),
+  en: z.string.min(1),
 })
 
 const ServiceLink = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("internal"), to: z.string().startsWith("/") }),
-  z.object({ kind: z.literal("external"), href: z.string().url() }),
+  z.object({ kind: z.literal("internal"), to: z.string.startsWith("/") }),
+  z.object({ kind: z.literal("external"), href: z.string.url }),
 ])
 
 const TopUsage = z.discriminatedUnion("category", [
   z.object({
     category: z.literal("primary-service"),
-    order: z.number().int().nonnegative(),
+    order: z.number.int.nonnegative,
   }),
   z.object({
     category: z.literal("popular-ddbj"),
-    order: z.number().int().nonnegative(),
-    monogram: z.string().regex(/^[A-Z][A-Z0-9]{1,2}$/),
+    order: z.number.int.nonnegative,
+    monogram: z.string.regex(/^[A-Z][A-Z0-9]{1,2}$/),
   }),
   z.object({
     category: z.literal("popular-dbcls"),
-    order: z.number().int().nonnegative(),
-    monogram: z.string().regex(/^[A-Z][A-Z0-9]{1,2}$/),
+    order: z.number.int.nonnegative,
+    monogram: z.string.regex(/^[A-Z][A-Z0-9]{1,2}$/),
   }),
 ])
 
 const SubmitUsage = z.object({
   service: SubmitService,
-  externalUrl: z.string().url(),
-  source: z.enum(["DDBJ", "DBCLS"]).nullable(),
-  accessionPlaceholders: z.array(z.string()).default([]),
+  externalUrl: z.string.url,
+  source: z.enum(["DDBJ", "DBCLS"]).nullable,
+  accessionPlaceholders: z.array(z.string).default([]),
 })
 
 export const ServiceContent = z.object({
-  id: z.string().regex(/^[a-z0-9-]+$/),
+  id: z.string.regex(/^[a-z0-9-]+$/),
   title: Bilingual,
   description: Bilingual,
-  link: ServiceLink.optional(),
-  top: TopUsage.optional(),
-  submit: SubmitUsage.optional(),
+  link: ServiceLink.optional,
+  top: TopUsage.optional,
+  submit: SubmitUsage.optional,
 })
   .refine(
     (s) => s.top !== undefined || s.submit !== undefined,
@@ -182,24 +174,24 @@ export const ServiceContent = z.object({
 - `submit-only` の entry (humandbs / dbcls / jpost / eva / dgva 等) は `top` を持たず、`link` も持たない (submit 外部 CTA でだけ参照される)
 - `.refine` で「少なくとも 1 つの usage が必要」「top usage がある場合は link 必須」を担保
 
-### 3.3 Loader 出力型
+### Loader 出力型
 
 | 関数 | 返却 |
 |---|---|
 | `getDatabaseBySlug(slug)` | `DatabaseContent \| undefined` |
-| `listDatabases()` | `readonly DatabaseContent[]` |
-| `validateAllDatabases()` | `ValidationResult<DatabaseContent>` |
+| `listDatabases` | `readonly DatabaseContent[]` |
+| `validateAllDatabases` | `ValidationResult<DatabaseContent>` |
 | `getServiceById(id)` | `ServiceContent \| undefined` |
-| `listServices()` | `readonly ServiceContent[]` |
+| `listServices` | `readonly ServiceContent[]` |
 | `listServicesByTopCategory(category)` | `readonly ServiceContent[]` (`top.order` 昇順) |
 | `getServiceBySubmit(service)` | `ServiceContent \| undefined` (submit Service enum 値で逆引き) |
-| `validateAllServices()` | `ValidationResult<ServiceContent>` |
+| `validateAllServices` | `ValidationResult<ServiceContent>` |
 
 CLI (`scripts/validate-content.ts`) は両関数を順に呼び、どちらかが失敗すれば `process.exit(1)` する。
 
-## 4. Loader
+## Loader
 
-### 4.1 列挙と検証
+### 列挙と検証
 
 `import.meta.glob` で collection を eager load し、module top で Zod parse する。1 件でも parse 失敗があれば `loader.ts` 自体が `throw` する。
 
@@ -230,7 +222,7 @@ if (!serviceResult.ok) {
 
 `collectFromModules<S extends ZodTypeAny>(schema, modules)` は内部の純粋関数として export され、テスト fixture を直接渡せる (`tests/unit/lib/content/loader.test.ts`)。
 
-### 4.2 起動時 fail-fast
+### 起動時 fail-fast
 
 `server/index.ts` は zones の制約 (`server → app/lib` 禁止) で `loader.ts` を直接 import しない。代わりに、`npm run dev` / `npm run start` / `npm run build` の前段で `npm run validate:content` を必ず通すことで、collection 不整合を起動前に検出する。
 
@@ -246,34 +238,34 @@ if (!serviceResult.ok) {
 }
 ```
 
-`scripts/validate-content.ts` は Vite SSR の `ssrLoadModule` で `app/lib/content/loader.ts` を読み込み、`validateAllDatabases()` / `validateAllServices()` を呼んで失敗を stdout に出して `process.exit(1)` する。dev / staging / production すべてで同じ fail-fast が効く。
+`scripts/validate-content.ts` は Vite SSR の `ssrLoadModule` で `app/lib/content/loader.ts` を読み込み、`validateAllDatabases` / `validateAllServices` を呼んで失敗を stdout に出して `process.exit(1)` する。dev / staging / production すべてで同じ fail-fast が効く。
 
 エラーログには `filepath` と Zod issue の path / message が含まれる (`formatValidationErrors` が整形)。
 
-### 4.3 ビルド時検証
+### ビルド時検証
 
 `npm run build` も `validate:content` を前段に持つため、CI でも build 失敗として検知できる。これにより「production で初めて気付く」事故を防ぐ。
 
-### 4.4 fail-fast の保証範囲
+### fail-fast の保証範囲
 
 `loader.ts` の top-level `throw` は `loader.ts` が import された瞬間に発火する。app 側は SSR / CSR の各 entry が `loader.ts` を import するため起動時にも fail-fast が効くが、server プロセスを `node server/index.ts` のように直接起動した場合は破損 content が runtime まで検知されない。`npm run *` 経由で `validate:content` を必ず前置する運用が fail-fast の唯一の担保となる。
 
-## 5. Breadcrumb 自動生成
+## Breadcrumb 自動生成
 
-### 5.1 方針
+### 方針
 
-Content 側に breadcrumb を **書かない**。Route handle に i18n キー (または resolver 名) を持たせ、`useBreadcrumb` hook が `useMatches()` を走査して構築する。
+Content 側に breadcrumb を **書かない**。Route handle に i18n キー (または resolver 名) を持たせ、`useBreadcrumb` hook が `useMatches` を走査して構築する。
 
-### 5.2 Static / Dynamic ラベル
+### Static / Dynamic ラベル
 
 | handle | ラベル解決 | 用途 |
 |---|---|---|
 | `{ breadcrumbI18nKey: "breadcrumb.databases" }` | `t(key)` | 中間 segment (例: "データベース") |
 | `{ breadcrumbResolver: "database-content" }` | resolver `(input) => { label, href }` | 末尾 segment (例: BP の title を i18n から引く) |
 
-ja / en の table top は `breadcrumb.home` を `t()` で引き、自動先頭付与する (`app/shell/breadcrumb.tsx` が首尾を担う)。
+ja / en の table top は `breadcrumb.home` を `t` で引き、自動先頭付与する (`app/shell/breadcrumb.tsx` が首尾を担う)。
 
-### 5.3 useBreadcrumb hook
+### useBreadcrumb hook
 
 ロジックは `app/lib/content/breadcrumb.ts` の `useBreadcrumb(options?)` に集約する。`options.resolvers` は dynamic handle (動的ラベル) を解決する関数の辞書。`app/shell/breadcrumb.tsx` は hook の結果を render するだけの薄い UI 層となる。
 
@@ -289,8 +281,8 @@ export type BreadcrumbResolver = (input: {
 export const useBreadcrumb = (
   options: { resolvers?: Record<string, BreadcrumbResolver> } = {},
 ): BreadcrumbItem[] => {
-  const matches = useMatches()
-  const t = useT()
+  const matches = useMatches
+  const t = useT
   const resolvers = options.resolvers ?? {}
   const items: BreadcrumbItem[] = []
   for (const m of matches) {
@@ -321,27 +313,27 @@ import { getServiceById, listDatabases } from "~/lib/content/loader"
 import { useLang } from "~/lib/i18n"
 
 const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
-  const db = params.slug ? listDatabases().find((d) => d.slug === params.slug) : undefined
+  const db = params.slug ? listDatabases.find((d) => d.slug === params.slug) : undefined
   if (!db) return null
   return { label: db.title[lang], href: pathname }
 }
 ```
 
-### 5.4 表示しないケース
+### 表示しないケース
 
-`useBreadcrumb()` が 0-1 件 (= top のみ) を返した場合、何も render しない (`null`)。top page (`/` / `/en`) で breadcrumb が冗長になるのを避けるため。
+`useBreadcrumb` が 0-1 件 (= top のみ) を返した場合、何も render しない (`null`)。top page (`/` / `/en`) で breadcrumb が冗長になるのを避けるため。
 
-### 5.5 利点
+### 利点
 
 - Content (`*.content.tsx`) で breadcrumb を書く必要がない (二重ソースなし)
 - Route 構造を変えると breadcrumb も自動追従
 - i18n ラベルは locale ファイルに集約 (翻訳が一箇所に集まる)
 
-## 6. TSX fragment スコープ
+## TSX fragment スコープ
 
-### 6.1 Import 可能な範囲
+### Import 可能な範囲
 
-`content` zone は次を import できる (`architecture.md §3.1`):
+`content` zone は次を import できる (`architecture.md`):
 
 - `app/ui/` のリッチコンポーネント (Callout / Section / TextLink / Tag / SectionHeading 等)
 - `app/lib/` のヘルパ (URL 生成 / format 等)
@@ -350,7 +342,7 @@ const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
 
 `app/features/` / `app/shell/` への import は **禁止**。コンテンツは feature ロジックに依存させない (依存させると content の差し替えが feature 修正を巻き込む)。
 
-### 6.2 生 HTML 要素の制約
+### 生 HTML 要素の制約
 
 ESLint `react/forbid-elements` (`app/{features,routes,content}/**`) で次を禁止する:
 
@@ -364,7 +356,7 @@ ESLint `react/forbid-elements` (`app/{features,routes,content}/**`) で次を禁
 
 許容される構造タグ: `<p>` / `<div>` / `<ul>` / `<ol>` / `<li>` / `<dl>` / `<dt>` / `<dd>` / `<h2>` / `<h3>` / `<strong>` / `<em>` 等。生 hex / Tailwind arbitrary value は ESLint `no-restricted-syntax` で禁止される。
 
-### 6.3 書き方の例
+### 書き方の例
 
 ```tsx
 // app/content/databases/bioproject/index.content.tsx
@@ -411,7 +403,7 @@ export default {
 } satisfies DatabaseContent
 ```
 
-### 6.4 `satisfies` を使う理由
+### `satisfies` を使う理由
 
 `as DatabaseContent` (型 assertion) を使うと、誤ったプロパティ値でも型エラーが出ない。`satisfies` は型に従うことを宣言しつつ、本体の literal 型を保つ:
 
@@ -419,9 +411,9 @@ export default {
 - フィールドを誤った型で書いたら type error
 - 余計なフィールドを書いたら type error
 
-## 7. 翻訳運用
+## 翻訳運用
 
-### 7.1 ja / en 並走
+### ja / en 並走
 
 両言語を 1 ファイルに持つ:
 
@@ -434,16 +426,16 @@ body: {
 
 レビュー時に diff で両言語の差を確認できる。
 
-### 7.2 未翻訳の扱い
+### 未翻訳の扱い
 
 en だけ書かれていない場合、Zod schema が `body.en` を必須にしているため build 時に弾かれる。「en は後追い」を許容するために 2 つの選択肢がある:
 
 | 選択肢 | 採用 |
 |---|---|
 | en に「翻訳予定」のスタブを書く + route の `handle.i18n.en` を `"missing"` にして `<TranslationUnavailable />` を出す | ✓ 採用 |
-| schema で `body.en` を `optional()` にする | × (型上 en は必須として扱いたい、未提供は UI 側で明示) |
+| schema で `body.en` を `optional` にする | × (型上 en は必須として扱いたい、未提供は UI 側で明示) |
 
-`i18n.md §5` の `<TranslationUnavailable />` バナーと連動する。en スタブの典型例:
+`i18n.md` の `<TranslationUnavailable />` バナーと連動する。en スタブの典型例:
 
 ```tsx
 en: (
@@ -453,7 +445,7 @@ en: (
 ),
 ```
 
-### 7.3 翻訳完了 flag
+### 翻訳完了 flag
 
 route 単位の翻訳完了状態を `handle` に持たせる:
 
@@ -466,7 +458,7 @@ export const handle = {
 
 dynamic ルート (例: `databases/$slug`) で content の en が個別に欠落する場合は、route 側の handle を `"partial"` に下げる運用、または content 側の `body.en` をスタブで埋める運用の二択。リリース時点は前者を採用 (route handle はコンテンツ全体の最大値を表す)。
 
-## 8. Build と runtime の境界
+## Build と runtime の境界
 
 | フェーズ | 何が起きるか |
 |---|---|
@@ -476,32 +468,22 @@ dynamic ルート (例: `databases/$slug`) で content の en が個別に欠落
 
 Runtime には Zod parse の overhead がない (起動時に終わっている)。
 
-## 9. テスト
+## テスト
 
-### 9.1 Unit
+### Unit
 
 - `tests/unit/lib/content/loader.test.ts`: 不正な fixture を持つ collection で `validateAll*` が `errors` を返す、`getDatabaseBySlug` / `getServiceById` が存在しない id で `undefined` を返す
 - `tests/unit/content/databases/{bioproject,biosample}.test.tsx`: `DatabaseContent.parse(default)` が成功、`body.ja` / `body.en` が render 可能
 - `tests/unit/content/services/coverage.test.ts`: submit `Service` enum の全 14 件が submit usage 付きの service entry を持つ (= flow card で URL が落ちない不変量)
 
-### 9.2 PBT
+### PBT
 
 - `tests/pbt/schemas/content/database-content.pbt.test.ts`: 任意の有効な `DatabaseContent` 入力に対して Zod parse が成功
 - `tests/pbt/schemas/content/service-content.pbt.test.ts`: 任意の有効な `ServiceContent` 入力に対して Zod parse が成功、無効な組み合わせ (top も submit も無い / top あるのに link 無い) で必ず失敗
 
-### 9.3 E2E
+### E2E
 
 - `S-CONTENT-01`: `/databases/bioproject` を開いて、`<h1>` に "BioProject" が表示される、外部リンクが target を持つ、breadcrumb が `ホーム > データベース > BioProject` の順
 - `S-CONTENT-02`: `/en/databases/bioproject` で英語版が表示される
 - `E-CONTENT-01`: `/databases/unknown-slug` で 404 ページが表示される
 
-## 10. 関連 docs
-
-| docs | 関連箇所 |
-|---|---|
-| `architecture.md §3.1` | `content` zone の import 境界 |
-| `architecture.md §6.1` | Build 時に確定するもの |
-| `routes.md` | `/databases/:slug` の route handle / breadcrumb 連動 |
-| `top.md` | services collection の Service tile / Popular Resources 利用 |
-| `i18n.md §5` | `<TranslationUnavailable />` バナーとの連携 |
-| `development.md` | `lastUpdated` 手書き運用 |

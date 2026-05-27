@@ -4,9 +4,9 @@
 
 AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,serialize}` 仕様) を SSOT とする。本書は portal 側 UI 状態と API 呼び出し境界のみを扱う。
 
-## 1. 概念
+## 概念
 
-### 1.1 2 つの検索モード
+### 2 つの検索モード
 
 | モード | URL | 用途 |
 |---|---|---|
@@ -17,7 +17,7 @@ cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` 
 
 cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
 
-### 1.2 3 経路 UI と AST 正規化
+### 3 経路 UI と AST 正規化
 
 ユーザは検索条件を次の 3 経路で組み立てる。各経路は内部状態を持ち、「ParseNode (AST)」 に正規化される (`app/lib/api/search-types.ts` の `ParseNode` alias)。
 
@@ -29,9 +29,9 @@ cross-DB から per-DB への遷移はカードの「結果一覧」link、per-D
 
 3 経路の AST は `mergeAstAnd(simple, advanced, sidebar)` で **AND 結合** して 1 つの ParseNode に畳む。これを `/db-portal/serialize` に投げて DSL を得る。
 
-### 1.3 portal 側に thin serializer を持たない
+### portal 側に thin serializer を持たない
 
-AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由 (`architecture.md §7.1`):
+AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由 (`architecture.md`):
 
 - grammar の二重保守を排除する
 - precedence / quote / wildcard / range の規則を 1 箇所に集約する
@@ -39,15 +39,15 @@ AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委
 
 portal 側に残るのは UI 状態固有の変換 (`fromAdvanced` / `toAdvanced` / `fromSidebar` / `split` / `mergeAstAnd`) のみ。
 
-### 1.4 AI 検索アシスタントの位置付け
+### AI 検索アシスタントの位置付け
 
-AI 検索アシスタントは「自然言語入力 → Advanced builder の差分提案」 という UX を担う。`/api/llm/health` で LLM availability を判定し、status が `"ok"` 以外なら UI を物理的に出さない (`architecture.md §7.4`、LLM 未到達でもエラーバナーは出さない)。
+AI 検索アシスタントは「自然言語入力 → Advanced builder の差分提案」 という UX を担う。`/api/llm/health` で LLM availability を判定し、status が `"ok"` 以外なら UI を物理的に出さない (`architecture.md`、LLM 未到達でもエラーバナーは出さない)。
 
 server 側 SSE 実装と prompt 設計は本書のスコープ外 (`docs/llm.md` で扱う、本リリース時点では client 側 UI 配線のみ)。
 
-## 2. URL 設計
+## URL 設計
 
-### 2.1 URL = 検索状態の SSOT
+### URL = 検索状態の SSOT
 
 検索状態は **URL クエリパラメタが SSOT**。client state は URL から復元できる形に揃える。
 
@@ -59,14 +59,14 @@ server 側 SSE 実装と prompt 設計は本書のスコープ外 (`docs/llm.md`
 | `perPage` | `20` / `50` / `100` | × | 不在は 20 |
 | `sort` | `relevance` / `date_desc` / `date_asc` | × | 不在は `relevance` (API default) |
 
-### 2.2 URL 更新規則
+### URL 更新規則
 
 - Advanced builder / Sidebar facet の変更 → debounce 700 ms → `/db-portal/serialize` → `?q=` を `navigate(..., { replace: true })` で更新 (履歴を汚さない)
 - 検索ボタン / Enter → `navigate(...)` で push (履歴に積む、戻るボタンで前の検索に戻れる)
 - per-DB の `page` / `perPage` / `sort` 変更 → `?page=N` を replace
 - per-DB → cross-DB scope change → `?db=` を delete
 
-### 2.3 URL → state の復元
+### URL → state の復元
 
 `app/routes/search-results/route.tsx` の loader が `?q=` を読み、`GET /db-portal/parse` で AST 化する。AST を `splitForSidebar` で **「Sidebar facet で表現できる leaf」 と「残り (Advanced builder 側に倒す部分)」 の 2 つに分解** し、各 reducer の `init` 関数で state を再構築する。
 
@@ -74,20 +74,20 @@ server 側 SSE 実装と prompt 設計は本書のスコープ外 (`docs/llm.md`
 
 free_text node は Advanced builder には載せず (Simple query との混在を避ける)、SearchBox には URL `?q=` 文字列をそのまま表示する形に揃える。
 
-### 2.4 URL parse の失敗
+### URL parse の失敗
 
 `/db-portal/parse` が 400 (`invalid-dsl` 等) を返した場合、loader は throw する。route の ErrorBoundary が「URL のクエリを解析できません」 エラーバナーを表示し、「クリア」 button で `?q=` を削除した状態に戻す。
 
 API 接続失敗 (5xx / timeout) は `app/lib/query/client.ts` の TanStack Query retry policy で 2 回まで再試行され、それでも失敗すれば同様に ErrorBoundary に流れる。
 
-## 3. Advanced builder
+## Advanced builder
 
-### 3.1 状態
+### 状態
 
 `app/features/search/advanced/reducer.ts` で管理。
 
 ```ts
-type AdvancedNodeId = string  // crypto.randomUUID() 由来の安定 id
+type AdvancedNodeId = string  // crypto.randomUUID 由来の安定 id
 
 type AdvancedCombinator = "AND" | "OR" | "NOT"
 
@@ -130,7 +130,7 @@ type AdvancedState = {
 
 `combinator` (各 node が持つ「親の中での結合子」) が UI の `NativeSelect` で `WHERE / AND / OR / NOT` から選ばれる。root 直下の最初の node だけ `WHERE` 表示で値は `combinator = "AND"` 固定。
 
-### 3.2 reducer action
+### reducer action
 
 | action | payload | 効果 |
 |---|---|---|
@@ -148,7 +148,7 @@ type AdvancedState = {
 
 reducer は immer を使わず手で immutable 更新する (子配列の slice + spread)。
 
-### 3.3 不変量
+### 不変量
 
 PBT (`tests/pbt/features/search/advanced-reducer.pbt.test.ts`) で固定する:
 
@@ -157,7 +157,7 @@ PBT (`tests/pbt/features/search/advanced-reducer.pbt.test.ts`) で固定する:
 - group の `children.length >= 0`、中身は最大深さ N (UI 上 N=4 程度を想定、値域は制約しない)
 - `removeNode` で root 以外の任意 node を消すと、残った木が valid AdvancedState になる
 
-### 3.4 AST 変換
+### AST 変換
 
 #### `fromAdvanced(state)`
 
@@ -193,7 +193,7 @@ toAdvanced(ast: ParseNode): AdvancedState
 
 `canonicalize` は (a) 空 condition / 空 range を除去、(b) AND/OR の子 1 件は親に flatten、(c) 同 combinator の入れ子は flatten、の 3 操作。
 
-### 3.5 UI
+### UI
 
 `app/features/search/advanced/builder.tsx` が `AdvancedState` を受け取り、再帰的に `ConditionRow` / `GroupRow` を render する。
 
@@ -201,13 +201,13 @@ toAdvanced(ast: ParseNode): AdvancedState
 - GroupRow: 左 3 px brand バー + `Tag kind="brand"` "グループ" + innerCombinator selector + 内側の再帰描画 + × (`IconButton`)
 - 末尾: `Button` "+ 条件を追加" / "+ グループを追加"
 
-input は `~/ui` の primitive 経由。value 用 text input は `~/ui/native-select.tsx` の隣に追加する新 primitive `TextInput` で受ける (本書 §9 参照)。
+input は `~/ui` の primitive 経由。value 用 text input は `~/ui/native-select.tsx` の隣に追加する新 primitive `TextInput` で受ける (本書 参照)。
 
 UI 上の最大ネスト深さは制約しないが、設計目安 4 段。4 段を超える木が生成された場合の表示崩れは保留 (UX 試行で確認)。
 
-## 4. Sidebar facet
+## Sidebar facet
 
-### 4.1 状態
+### 状態
 
 `app/features/search/sidebar/facet-state.ts` で管理。
 
@@ -231,7 +231,7 @@ reducer action は `setOrganisms` / `toggleOrganism` / `setSubmitters` / `setStu
 
 cross-DB mode では `organisms` と `datePublished` のみが有効 (per-DB に依存しない 2 facet)。per-DB mode で残りの facet が enable される。
 
-### 4.2 AST 変換
+### AST 変換
 
 #### `fromSidebar(state, options)`
 
@@ -259,7 +259,7 @@ splitForSidebar(ast: ParseNode): { sidebar: FacetState; rest: ParseNode }
 - 抜き取れない leaf / BoolOp(OR/NOT) は `rest` に残す (= Advanced builder 側に倒す)
 - root 自体が単独 leaf でも対象なら抜き取る (rest は identityAst)
 
-### 4.3 UI
+### UI
 
 `app/features/search/sidebar/facet-panel.tsx` で `FacetState` から `~/ui` の `FacetGroup` / `FacetRow` / `DateFacet` を render する。
 
@@ -271,9 +271,9 @@ splitForSidebar(ast: ParseNode): { sidebar: FacetState; rest: ParseNode }
 
 facet 候補値 (organism / submitter 等の選択肢) は **本書段階では hardcoded 静的リスト** (API の aggregations endpoint 実装は本リリース範囲外、候補値は固定 12 organism / 主要 submitter で用意)。
 
-## 5. AST merge
+## AST merge
 
-### 5.1 mergeAstAnd
+### mergeAstAnd
 
 ```ts
 mergeAstAnd(...nodes: ParseNode[]): ParseNode
@@ -288,7 +288,7 @@ mergeAstAnd(...nodes: ParseNode[]): ParseNode
 - `nodes` が空、または全部 identityAst なら identityAst を返す
 - 単一の non-identity node はそのまま返す (BoolOp で包まない)
 
-### 5.2 identityAst
+### identityAst
 
 ```ts
 identityAst: ParseNode = { op: "AND", rules: [] }
@@ -296,21 +296,21 @@ identityAst: ParseNode = { op: "AND", rules: [] }
 
 「空 AST」 を表す。`mergeAstAnd` の単位元、reducer の初期値。
 
-### 5.3 PBT 不変量
+### PBT 不変量
 
 `tests/pbt/features/search/merge-laws.pbt.test.ts`:
 
 - **結合律**: `merge(merge(a, b), c) ≡ merge(a, merge(b, c))` (canonicalize 後の構造比較)
 - **単位元**: `merge(a, identityAst) ≡ a` / `merge(identityAst, a) ≡ a`
-- **空消滅**: `merge() ≡ identityAst`
+- **空消滅**: `merge ≡ identityAst`
 - **保存性**: `merge(a, b)` の rule 集合は `a` と `b` の rule 集合の和 (重複あり) に等しい
 - **平坦化**: `merge(...)` の結果が `BoolOp(AND, [...])` のとき、子要素に `BoolOp(AND, ...)` は現れない
 
 `merge` は **冪等ではない** (同じ node を 2 回渡すと重複した child を持つ AND node が生成される)。UI 側で重複を除去する場合は呼び出し側の責務 (Advanced / Sidebar / Simple の各経路で重複入力が起きないこと)。等価判定は構造比較 (`astEquals`、JSON.stringify では union 子の順序問題で false negative が出る)。
 
-## 6. /db-portal/serialize 呼び出し
+## /db-portal/serialize 呼び出し
 
-### 6.1 debounce 700 ms
+### debounce 700 ms
 
 `app/features/search/debounce/use-debounced-value.ts` で `useDebouncedValue<T>(value, ms)` を提供。700 ms 待って value を更新する standard pattern。
 
@@ -322,23 +322,23 @@ identityAst: ParseNode = { op: "AND", rules: [] }
 4. 成功で `navigate("/search/results?q=...", { replace: true })`
 5. 失敗で `syncStatus = "failed"`
 
-### 6.2 sync-status
+### sync-status
 
 `useDebouncedSerialize` が返す `status: SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) と `retry` 関数を、`app/features/search/sync-status.tsx` の `SyncStatusChip` component が表示用に消費する。
 
 `syncing` / `failed` のときだけ chip を表示する。`synced` は通常 invisible (idle と同じ扱い、sync 直後 1 秒だけ "synced" を表示するなどの動的演出はしない)。
 
-`failed` chip には「再試行」 link を添え、押下で `useDebouncedSerialize` の `retry()` を呼ぶ。
+`failed` chip には「再試行」 link を添え、押下で `useDebouncedSerialize` の `retry` を呼ぶ。
 
-### 6.3 失敗時の挙動
+### 失敗時の挙動
 
 - 表示中の検索結果は古い URL のまま (URL は書き換えない、古いままで使い続けられる)
 - 検索実行 button (`<Button>` の Submit) は別経路で `/db-portal/serialize` を直接呼ぶため、debounce 失敗で button が disable されることはない
 - 5xx は TanStack Query retry policy で 2 回まで自動再試行 (`app/lib/query/client.ts`)、それでも失敗で syncStatus = "failed"
 
-## 7. 検索結果 UI
+## 検索結果 UI
 
-### 7.1 cross-DB 結果 (`/search/results?q=...`)
+### cross-DB 結果 (`/search/results?q=...`)
 
 `app/features/search/results/cross-results.tsx`。
 
@@ -364,7 +364,7 @@ identityAst: ParseNode = { op: "AND", rules: [] }
 
 `DbPortalLightweightHit` の optional field (title / description / datePublished 等) が `null` / `undefined` のとき、該当行を非表示にする (skeleton / placeholder を出さない)。「title なしの hit」 は 1 行で accession だけ表示する。
 
-### 7.2 per-DB 結果 (`/search/results?q=...&db=<id>`)
+### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
 `app/features/search/results/per-db-results.tsx`。
 
@@ -393,7 +393,7 @@ Tier 1 必須 field (identifier / type) は API 契約で常に非空。portal �
 
 `~/ui/pagination.tsx` を使う。cursor mode (ES backed: sra / bioproject / biosample / jga / gea / metabobank) では `page` 値が `null` で返る可能性があるため、`page === null && hasNext` のとき次のページボタンだけ active にして、prev は disable / 数値ボタンは hide。Solr backed (trad / taxonomy) は通常の page-based pagination。
 
-### 7.3 ResultsToolbar
+### ResultsToolbar
 
 - 左: 件数 (`<total> 件中 <start>-<end>`)
 - 中: sort `<NativeSelect>` (`relevance` / `date_desc` / `date_asc`)
@@ -401,7 +401,7 @@ Tier 1 必須 field (identifier / type) は API 契約で常に非空。portal �
 
 `hardLimitReached === true` のとき件数の横に `<Tag>` 「上位 10000 件まで」 を出す (API 仕様、ES / Solr のハードリミット表示)。
 
-### 7.4 結果領域の a11y
+### 結果領域の a11y
 
 検索結果の更新は URL 駆動で起きる (search box submit / facet 操作 / pagination / sort)。screen reader user 向けに次を満たす:
 
@@ -412,21 +412,21 @@ Tier 1 必須 field (identifier / type) は API 契約で常に非空。portal �
 
 assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更新では使わない (キーストロークごとに発火する debounce sync が SR を邪魔するため)。重大エラーの限定箇所のみ assertive に倒す。
 
-## 8. AI 検索アシスタント
+## AI 検索アシスタント
 
-### 8.1 LLM availability
+### LLM availability
 
 `app/features/search/assistant/llm-availability.ts`:
 
 ```ts
-useLlmAvailability(): { ready: boolean; reason?: string }
+useLlmAvailability: { ready: boolean; reason?: string }
 ```
 
 `/api/llm/health` を `useQuery` で取得。`LlmHealth.status === "ok"` のとき `ready: true`、それ以外 (`"unset"` / `"unreachable"`) で `ready: false` + reason 文字列。
 
 queryKey は `["llm", "health"]`、staleTime は 5 分 (頻繁に poll しない)。
 
-### 8.2 表示条件
+### 表示条件
 
 `app/features/search/assistant/assistant.tsx` の component:
 
@@ -435,7 +435,7 @@ queryKey は `["llm", "health"]`、staleTime は 5 分 (頻繁に poll しない
 
 `/search` (検索ビルダ) と per-DB results (`/search/results?db=<id>`) で表示する。cross-DB results (`/search/results` で `db` 未指定) では表示しない (AI 提案は Advanced builder への差分提案であり、cross-DB の表示文脈ではユーザの操作対象がないため)。
 
-### 8.3 SSE 配線
+### SSE 配線
 
 `app/features/search/assistant/prompt-client.ts`:
 
@@ -446,8 +446,8 @@ type AssistantProposal = {
 }
 
 useAssistantStream(input: string): {
-  start: () => void
-  stop: () => void
+  start:  => void
+  stop:  => void
   state: "idle" | "streaming" | "done" | "error"
   proposal: AssistantProposal | null
 }
@@ -460,9 +460,9 @@ useAssistantStream(input: string): {
 - `event: done` → state = "done"
 - `event: error` → state = "error" + toast
 
-`AbortController` で `stop` 可能。client 側 fetch は wrapper として `buildRequestInit` を経由する (`app/lib/api/client.ts`)、ただし SSE のため `response.body.getReader()` で chunk を読む。
+`AbortController` で `stop` 可能。client 側 fetch は wrapper として `buildRequestInit` を経由する (`app/lib/api/client.ts`)、ただし SSE のため `response.body.getReader` で chunk を読む。
 
-### 8.4 提案の反映
+### 提案の反映
 
 `proposal.state === "done"` で「クエリビルダーに追加」 button を押下すると、`AdvancedState` の root に新 group を append する `applyProposal(state, proposal)` を呼ぶ:
 
@@ -476,7 +476,7 @@ applyProposal(state: AdvancedState, proposal: AssistantProposal): AdvancedState
 
 「やり直す」 button は textarea をクリアし proposal を `null` にする。
 
-## 9. portal が依存する `app/ui/` primitive
+## portal が依存する `app/ui/` primitive
 
 本書実装で消費する primitive。本リリース時点で `app/ui/` に存在する。
 
@@ -494,7 +494,7 @@ applyProposal(state: AdvancedState, proposal: AssistantProposal): AdvancedState
 | `TextLink` | 「結果一覧 →」 / 「すべて見る」 link |
 | `Callout` | エラーバナー |
 
-### 9.1 新規 primitive
+### 新規 primitive
 
 Advanced builder の value 入力で text input が必要。`app/ui/text-input.tsx` を新規追加し、`NativeSelect` と同じ tokens で実装する。
 
@@ -505,17 +505,7 @@ type TextInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "className" | 
 }
 ```
 
-`/_design/primitives` に variant 一覧を追加する (`docs/ui-primitives.md §15`)。
+`/_design/primitives` に variant 一覧を追加する (`docs/ui-primitives.md`)。
 
 date input も TextInput の variant (`type="date"`) で扱う。
 
-## 10. 関連 docs
-
-| docs | 関連箇所 |
-|---|---|
-| `architecture.md §7.1` | 検索データフロー全体像 |
-| `api-types.md §3` | `ParseNode` alias と Input / Output 切り替え |
-| `api-types.md §5` | `apiGet` / `apiPost` operation 型補完 |
-| `ui-primitives.md` | 本書で消費する primitive 仕様 |
-| `shell.md §2` | Header の `active="search"` 判定 |
-| `i18n.md §5` | 翻訳 fallback (TranslationUnavailable バナー) |

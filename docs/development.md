@@ -2,41 +2,41 @@
 
 開発環境のセットアップ、環境ファイル切替、よく使うコマンドをまとめる。本書は実装の起動手順 SSOT。詳細な API / コンテンツ / 認証の方針は他 docs を参照。
 
-## 1. 前提
+## 前提
 
 - 開発はすべて **Docker Compose 内で実行**。ホストに Node を直接入れない
 - 本番は podman + podman-compose (NIG インフラ)
 - 接続情報・credential は `.env` を通じて compose に流す。直接 export しない
 - Editor / IDE は host で動かす (LSP / 補完用に node_modules を host から見たい場合は volume mount で対応する形)
 
-## 2. 初回セットアップ
+## 初回セットアップ
 
 ```bash
-# 1. リポジトリ clone
+# リポジトリ clone
 git clone git@github.com:ddbj/db-portal ~/git/github.com/ddbj/db-portal
 cd ~/git/github.com/ddbj/db-portal
 
-# 2. 環境ファイルを .env にコピー
+# 環境ファイルを .env にコピー
 cp env.dev .env
 
-# 3. コンテナを build + 起動
+# コンテナを build + 起動
 docker compose up -d --build
 
-# 4. 依存関係のインストール (compose の volume に node_modules が乗る)
+# 依存関係のインストール (compose の volume に node_modules が乗る)
 docker compose exec app npm install
 
-# 5. API 型生成 (staging openapi.json から)
+# API 型生成 (staging openapi.json から)
 docker compose exec app npm run gen:api-types
 
-# 6. dev サーバが起動していることを確認
+# dev サーバが起動していることを確認
 curl -s http://localhost:3000 | head -20
 ```
 
 `compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、`docker compose up` だけで dev サーバが起動する。
 
-## 3. 環境ファイル
+## 環境ファイル
 
-### 3.1 切替方法
+### 切替方法
 
 ```bash
 # dev に切替
@@ -50,9 +50,9 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-`compose.yml` は `.env` の `DB_PORTAL_PREFIX` を `container_name` / `image` / `volume` / `network` 名に含めるので、dev / staging / production が同一ホストで並列に動いても衝突しない (env-policy 互換)。
+`compose.yml` は `.env` の `DB_PORTAL_PREFIX` を `container_name` / `image` / `volume` / `network` 名に含めるので、dev / staging / production が同一ホストで並列に動いても衝突しない (`decisions.md`)。
 
-### 3.2 環境ごとの差
+### 環境ごとの差
 
 | 変数 | dev | staging | production |
 |---|---|---|---|
@@ -68,17 +68,16 @@ docker compose up -d --build
 | `DB_PORTAL_KEYCLOAK_CLIENT_ID` | `db-portal-dev` | `db-portal-staging` | `db-portal` |
 | `DB_PORTAL_LLM_BASE_URL` | (空、UI hide) | `http://l40s-03:3200` | `http://l40s-03:3200` |
 | `DB_PORTAL_LLM_API_KEY` | (空) | staging key | `CHANGE_ME` |
-| `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` | (空) | staging PAT | `CHANGE_ME` |
 
-Production の secret は `CHANGE_ME` プレースホルダのまま git に commit される。実値は deploy 時に `.env.production.local` などで上書きする (詳細は `deployment.md §5`)。
+Production の secret は `CHANGE_ME` プレースホルダのまま git に commit される。実値は deploy 時に `.env.production.local` などで上書きする (詳細は `deployment.md`)。News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`decisions.md`)。
 
-### 3.3 Secret の扱い
+### Secret の扱い
 
 - `.gitignore` に `.env.*.local` を含める
-- `DB_PORTAL_LLM_API_KEY` と `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` は production deploy 時に上書きする
+- `DB_PORTAL_LLM_API_KEY` は production deploy 時に上書きする
 - 開発者は staging key を使う、production key は触らない
 
-## 4. よく使うコマンド
+## よく使うコマンド
 
 全コマンドは `docker compose exec app` 経由で実行する。
 
@@ -115,7 +114,7 @@ docker compose exec app npm run gen:api-types
 docker compose exec app npm run validate:content
 ```
 
-## 5. ファイル変更の反映
+## ファイル変更の反映
 
 | 変更箇所 | 反映方法 |
 |---|---|
@@ -129,7 +128,7 @@ docker compose exec app npm run validate:content
 
 `.env` の変更は compose の re-up が必要。`docker compose restart app` だけでは新 env が反映されない場合がある (compose の env 解釈タイミングに依存)。
 
-## 6. Container 内の env 検証
+## Container 内の env 検証
 
 ```bash
 docker compose exec app sh -c 'env | grep ^DB_PORTAL_ | sort'
@@ -138,7 +137,7 @@ docker compose exec app sh -c 'env | grep ^VITE_DB_PORTAL_ | sort'
 
 `DB_PORTAL_` prefix で grep して、`env.dev` などのファイルと一致することを確認する。Vite 用は `VITE_DB_PORTAL_` で別途確認 (secret が `VITE_` 側に漏れていないかも確認できる)。
 
-## 7. 新規依存追加
+## 新規依存追加
 
 ```bash
 # Production dep
@@ -154,7 +153,7 @@ git add package.json package-lock.json
 
 ホストの `npm install` は禁止 (node_modules のバージョン解決が host 環境に依存するため)。
 
-## 8. API 型の更新
+## API 型の更新
 
 ```bash
 # .env が dev / staging のとき (staging openapi.json から生成)
@@ -173,9 +172,9 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-staging / production の openapi.json と portal 側生成物 (`app/lib/api/openapi-types.ts`) の差分検知は手動運用 (`api-types.md §6`)。
+staging / production の openapi.json と portal 側生成物 (`app/lib/api/openapi-types.ts`) の差分検知は手動運用 (`api-types.md`)。
 
-## 9. Content の lastUpdated 運用
+## Content の lastUpdated 運用
 
 `*.content.tsx` の `meta.lastUpdated` は **手書き** する。
 
@@ -190,7 +189,7 @@ meta: {
 - CI で commit timestamp と `lastUpdated` を比較し、差分が 30 日以上なら warning を出す lint を持つ (実装は CI 設計の別 SSOT)
 - 完全自動化はしない (編集者の意図的更新を担保する)
 
-## 10. Debug 用 URL (dev サーバ起動後)
+## Debug 用 URL (dev サーバ起動後)
 
 | URL | 期待 |
 |---|---|
@@ -200,9 +199,9 @@ meta: {
 | `http://localhost:3000/api/news` | `[]` (空配列、News mirror 未稼働 / 初期化中) |
 | `http://localhost:3000/api/llm/health` | `{"status":"unset"}` (dev で `DB_PORTAL_LLM_BASE_URL` 空のため) |
 
-## 11. Troubleshooting
+## Troubleshooting
 
-### 11.1 `npm install` が遅い / 失敗する
+### `npm install` が遅い / 失敗する
 
 ```bash
 # node_modules volume を一旦削除
@@ -213,23 +212,23 @@ docker compose exec app npm install
 
 `docker compose down -v` で named volume (`${DB_PORTAL_PREFIX}-node_modules`) が削除される。これによりホスト環境を汚さずに node_modules を初期化できる。
 
-### 11.2 dev サーバが reload されない
+### dev サーバが reload されない
 
 Vite の HMR が外部 IP からの WebSocket 接続を許容できていない場合がある。`vite.config.ts` の `server.hmr.host` などを確認する。`compose.yml` の port mapping が `3000:3000` (両端同じ) であれば通常は問題ない。
 
-### 11.3 Lint で zones エラーが出る
+### Lint で zones エラーが出る
 
-`app/features/X` から `app/features/Y` を import している、または `app/lib` から `app/features` を import している可能性が高い。`architecture.md §3.1` の zones 表を再確認し、共通化が必要なら `lib` か `schemas` に降ろす。
+`app/features/X` から `app/features/Y` を import している、または `app/lib` から `app/features` を import している可能性が高い。`architecture.md` の zones 表を再確認し、共通化が必要なら `lib` か `schemas` に降ろす。
 
-### 11.4 `gen:api-types` が失敗する
+### `gen:api-types` が失敗する
 
-`DB_PORTAL_OPENAPI_URL` が container 内に届いていない可能性がある。`§6` の検証コマンドで確認する。Staging API が落ちている場合もある (`curl $DB_PORTAL_OPENAPI_URL` で疎通確認)。
+`DB_PORTAL_OPENAPI_URL` が container 内に届いていない可能性がある。 の検証コマンドで確認する。Staging API が落ちている場合もある (`curl $DB_PORTAL_OPENAPI_URL` で疎通確認)。
 
-### 11.5 Keycloak とのログインがリダイレクトループする
+### Keycloak とのログインがリダイレクトループする
 
-`DB_PORTAL_PORTAL_ORIGIN` と Keycloak client の `Valid Redirect URIs` が一致していない可能性。`auth.md §11` の env 設定と Keycloak 管理コンソールの設定を突き合わせる。
+`DB_PORTAL_PORTAL_ORIGIN` と Keycloak client の `Valid Redirect URIs` が一致していない可能性。`auth.md` の env 設定と Keycloak 管理コンソールの設定を突き合わせる。
 
-## 12. PR を出す前のチェック
+## PR を出す前のチェック
 
 CI (`.github/workflows/ci.yml`) は次の 3 つを Docker Compose 内で回す。PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
 
@@ -249,15 +248,3 @@ docker compose exec app npm run gen:api-types  # 差分があれば commit
 docker compose exec app npm run test:e2e       # staging URL に対して
 ```
 
-## 13. 関連 docs
-
-| docs | 関連箇所 |
-|---|---|
-| `architecture.md` | ディレクトリ構造、zones、SSR/CSR、build vs runtime、非機能要件 (CSP / sitemap / 404) |
-| `api-types.md` | `gen:api-types` の運用詳細、差分検知 |
-| `i18n.md` | リソース / URL 切替 |
-| `auth.md` | Keycloak realm / client の設定 (portal 側実装) |
-| `keycloak-setup.md` | Keycloak 管理画面側の設定手順 |
-| `content-system.md` | `*.content.tsx` 追加時の検証フロー |
-| `deployment.md` | staging / production deploy 手順 (手動運用) |
-| `operations.md` | production 運用 (監視 / log / トラブルシューティング / secret rotation) |

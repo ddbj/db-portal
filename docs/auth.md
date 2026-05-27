@@ -2,9 +2,9 @@
 
 DDBJ Account (Keycloak) との連携を、**BFF (Backend for Frontend) + HttpOnly cookie** pattern で実装する。JS は access token / refresh token に **一切触れない**。
 
-本書の責務分離図は `architecture.md §5` を参照。
+本書の責務分離図は `architecture.md` を参照。
 
-## 1. 方針
+## 方針
 
 OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
 
@@ -13,19 +13,11 @@ OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
 | Token 保管場所 | サーバ in-memory session store (Map) | localStorage / sessionStorage / JS から読める Cookie |
 | Browser ↔ Server の identity 受け渡し | HttpOnly cookie (`sid`) | JWT 本体を Cookie に入れる |
 | Token refresh | BFF が背面で実行 | 旧来の silent renew (iframe) |
-| User info の供給 | `GET /api/me` | `useUser()` が token をデコード |
+| User info の供給 | `GET /api/me` | `useUser` が token をデコード |
 
-### 1.1 採用理由
+代替案の比較と却下理由は `decisions.md` の「token storage は BFF + HttpOnly cookie」 を参照。
 
-| 方式 | XSS 耐性 | Tab 越え session | Safari ITP 影響 | 実装複雑度 |
-|---|---|---|---|---|
-| BFF + HttpOnly cookie (採用) | ◎ JS が token に触れない | ◎ | ◎ | △ BFF に session 層が必要 (LLM proxy / News mirror で BFF は既存) |
-| silent renew + sessionStorage | △ JS が触れる | × Tab 閉じで消える | × Keycloak iframe が 3rd-party cookie 制限で壊れる | ○ |
-| localStorage に JWT | × | ◎ | ◎ | ◎ |
-
-XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM proxy / Search API serialize でも使う既設層なので、session 機能の追加コストが小さい。
-
-## 2. データフロー全体図
+## データフロー全体図
 
 ```
 [Browser]  HttpOnly cookie (sid, SameSite=Lax, Secure, Path=/)
@@ -42,11 +34,11 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
    https://idp[-staging].ddbj.nig.ac.jp/realms/master
 ```
 
-## 3. リリース時の機能範囲
+## リリース時の機能範囲
 
 リリース時点では **ログインボタンのみ**。ログイン後の限定機能は持たせない。ただし token の取扱い方式は後から差し替えるコストが大きいので最初から正しい形で固める。
 
-### 3.1 持つもの
+### 持つもの
 
 - OIDC Authorization Code Flow + PKCE (BFF が code → token 交換)
 - In-memory session store (Map<sid, …>、TTL 付き)
@@ -54,21 +46,21 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 - ログイン / ログアウト UI (BFF endpoint への遷移)
 - Header にユーザー名表示 (`GET /api/me`)
 - Token refresh は BFF が背面で実行 (期限切れ前に Keycloak に refresh)
-- `useAuth()` hook + `<RequireAuth>` wrapper の API (将来「ログイン後限定機能」を増やしやすい構造)
+- `useAuth` hook + `<RequireAuth>` wrapper の API (将来「ログイン後限定機能」を増やしやすい構造)
 
-### 3.2 持たないもの
+### 持たないもの
 
 - 登録ドラフトの永続化
 - Private accession 検索
 - お気に入り検索クエリ保存
 - Mutation 系 API (mutation がない期間は CSRF 攻撃面が薄い、mutation を追加するときに CSRF token / Origin check を導入する)
 
-## 4. Cookie 仕様
+## Cookie 仕様
 
 | 属性 | 値 | 理由 |
 |---|---|---|
 | Name | `sid` | 短く、用途を明示 |
-| Value | 不透明な乱数 (`crypto.randomUUID()`) | session ID をクライアントに渡すだけで、token は含まない |
+| Value | 不透明な乱数 (`crypto.randomUUID`) | session ID をクライアントに渡すだけで、token は含まない |
 | HttpOnly | true | JS から読めない |
 | Secure | true (production), false 可 (dev http) | https 強制 |
 | SameSite | Lax | top-level navigation で送信、cross-site embed では送らない |
@@ -106,9 +98,9 @@ export function clearSidCookie(opts: { secure: boolean }): string {
 }
 ```
 
-## 5. Session store
+## Session store
 
-### 5.1 構造
+### 構造
 
 ```ts
 // server/auth/session-store.ts (抜粋)
@@ -116,63 +108,63 @@ import { z } from "zod"
 
 export const SessionEntry = z.object({
   tokens: z.object({
-    accessToken: z.string(),
-    refreshToken: z.string(),
-    expiresAt: z.number(),    // unix ms (access token expiry)
+    accessToken: z.string,
+    refreshToken: z.string,
+    expiresAt: z.number,    // unix ms (access token expiry)
   }),
   userInfo: z.object({
-    sub: z.string(),
-    name: z.string(),
-    email: z.string().email(),
+    sub: z.string,
+    name: z.string,
+    email: z.string.email,
   }),
-  expiresAt: z.number(),       // unix ms (session TTL、access のたびに延長)
+  expiresAt: z.number,       // unix ms (session TTL、access のたびに延長)
 })
 
 export type SessionEntry = z.infer<typeof SessionEntry>
 ```
 
-### 5.2 TTL / cleanup
+### TTL / cleanup
 
 | 項目 | 値 | 説明 |
 |---|---|---|
-| Session TTL | 30 分 (sliding) | `get()` のたびに `expiresAt` を 30 分延長 |
-| Cleanup interval | 5 分 | `setInterval` で起動、`expiresAt < Date.now()` を全削除 |
+| Session TTL | 30 分 (sliding) | `get` のたびに `expiresAt` を 30 分延長 |
+| Cleanup interval | 5 分 | `setInterval` で起動、`expiresAt < Date.now` を全削除 |
 
 ```ts
 const SESSION_TTL_MS = 30 * 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 
 class SessionStore {
-  private store = new Map<string, SessionEntry>()
+  private store = new Map<string, SessionEntry>
 
   set(sid: string, entry: SessionEntry): void {
-    this.store.set(sid, { ...entry, expiresAt: Date.now() + SESSION_TTL_MS })
+    this.store.set(sid, { ...entry, expiresAt: Date.now + SESSION_TTL_MS })
   }
   get(sid: string): SessionEntry | undefined {
     const e = this.store.get(sid)
-    if (!e || e.expiresAt < Date.now()) {
+    if (!e || e.expiresAt < Date.now) {
       this.store.delete(sid)
       return undefined
     }
-    e.expiresAt = Date.now() + SESSION_TTL_MS
+    e.expiresAt = Date.now + SESSION_TTL_MS
     return e
   }
   delete(sid: string): void {
     this.store.delete(sid)
   }
-  cleanup(): void {
-    const now = Date.now()
+  cleanup: void {
+    const now = Date.now
     for (const [sid, e] of this.store) {
       if (e.expiresAt < now) this.store.delete(sid)
     }
   }
 }
 
-export const sessionStore = new SessionStore()
-setInterval(() => sessionStore.cleanup(), CLEANUP_INTERVAL_MS).unref()
+export const sessionStore = new SessionStore
+setInterval( => sessionStore.cleanup, CLEANUP_INTERVAL_MS).unref
 ```
 
-### 5.3 Log redaction
+### Log redaction
 
 `server/lib/log.ts` の log helper で次のフィールドを `[REDACTED]` に置換する:
 
@@ -183,13 +175,13 @@ setInterval(() => sessionStore.cleanup(), CLEANUP_INTERVAL_MS).unref()
 
 session entry 全体を log に出すケースは作らない。debug 用に log するなら `sub` と `name` だけに絞る。
 
-### 5.4 Multi-instance への拡張
+### Multi-instance への拡張
 
 本リリースは 1 instance 想定で in-memory のみ。将来複数 instance に展開する場合は `DB_PORTAL_SESSION_STORE=memory|redis` env で切替可能にする構造を保つ (interface 抽象は最初から作る、redis 実装は別途)。
 
-## 6. OIDC Authorization Code Flow + PKCE
+## OIDC Authorization Code Flow + PKCE
 
-### 6.1 BFF endpoint 一覧
+### BFF endpoint 一覧
 
 | Method | Path | 役割 |
 |---|---|---|
@@ -200,7 +192,7 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 | GET | `/auth/logout-callback` | Keycloak からの redirect 受信、session 削除、cookie clear |
 | GET | `/api/me` | 現在の session の userInfo を返す。session なしなら 401 |
 
-### 6.2 Login
+### Login
 
 1. Browser が `/api/auth/login?return_to=/databases/bioproject` を踏む
 2. BFF が PKCE `code_verifier` を生成し、`state` と `code_verifier` を `nonce` 付きで temp store に保存
@@ -212,20 +204,20 @@ import { z } from "zod"
 import crypto from "node:crypto"
 
 const PendingLogin = z.object({
-  codeVerifier: z.string(),
-  state: z.string(),
-  returnTo: z.string(),
-  createdAt: z.number(),
+  codeVerifier: z.string,
+  state: z.string,
+  returnTo: z.string,
+  createdAt: z.number,
 })
 
 // (in-memory) Map<state, PendingLogin>、TTL 10 分
-const pendingLogins = new Map<string, z.infer<typeof PendingLogin>>()
+const pendingLogins = new Map<string, z.infer<typeof PendingLogin>>
 
 export function buildAuthorizeUrl(returnTo: string): { url: string; state: string } {
   const codeVerifier = base64UrlEncode(crypto.randomBytes(32))
-  const codeChallenge = base64UrlEncode(crypto.createHash("sha256").update(codeVerifier).digest())
+  const codeChallenge = base64UrlEncode(crypto.createHash("sha256").update(codeVerifier).digest)
   const state = base64UrlEncode(crypto.randomBytes(16))
-  pendingLogins.set(state, { codeVerifier, state, returnTo, createdAt: Date.now() })
+  pendingLogins.set(state, { codeVerifier, state, returnTo, createdAt: Date.now })
   const url = new URL(`${env.KEYCLOAK_REALM_URL}/protocol/openid-connect/auth`)
   url.searchParams.set("client_id", env.KEYCLOAK_CLIENT_ID)
   url.searchParams.set("redirect_uri", `${env.PORTAL_ORIGIN}/auth/callback`)
@@ -234,23 +226,23 @@ export function buildAuthorizeUrl(returnTo: string): { url: string; state: strin
   url.searchParams.set("state", state)
   url.searchParams.set("code_challenge", codeChallenge)
   url.searchParams.set("code_challenge_method", "S256")
-  return { url: url.toString(), state }
+  return { url: url.toString, state }
 }
 ```
 
-### 6.3 Callback
+### Callback
 
 1. Browser が `/auth/callback?code=...&state=...` を踏む
 2. BFF が `state` から `code_verifier` と `returnTo` を取り出す
 3. Keycloak の `token_endpoint` に `code` + `code_verifier` を POST して `access_token` / `refresh_token` / `id_token` を得る
-4. `id_token` の `iss` / `aud` / `exp` / `iat` を payload 側で検証 (詳細は `§6.3.1`)
+4. `id_token` の `iss` / `aud` / `exp` / `iat` を payload 側で検証 (詳細は )
 5. `id_token` の sub / name / email を userInfo として抽出
 6. `sid` を発行し session store に `set`、`Set-Cookie: sid=...` を返す
 7. `returnTo` (もしくは `/`) へ 302
 
-#### 6.3.1 id_token の検証
+#### id_token の検証
 
-`id_token` は **token endpoint から direct (BFF ↔ Keycloak、TLS 直接通信)** で受け取る。OIDC Core §3.1.3.7-6 のとおり direct from token endpoint で受信した場合の signature 検証は TLS server validation で代替可能で、`server/auth/oidc.ts` の `callTokenEndpoint` は TLS による issuer validation を信頼する前提に立つ。
+`id_token` は **token endpoint から direct (BFF ↔ Keycloak、TLS 直接通信)** で受け取る。OIDC Core-6 のとおり direct from token endpoint で受信した場合の signature 検証は TLS server validation で代替可能で、`server/auth/oidc.ts` の `callTokenEndpoint` は TLS による issuer validation を信頼する前提に立つ。
 
 ただし防御層として payload 側でも次を必ず検証する (BFF が signature を再検証しない代わりに、issuer / audience / 有効期限の論理整合は portal 側で保つ):
 
@@ -261,9 +253,9 @@ export function buildAuthorizeUrl(returnTo: string): { url: string; state: strin
 | `exp` | 現在時刻より未来 (clock skew は無視せず 0 秒) | 同上 |
 | `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
 
-将来的に upstream の信頼境界が変わる (例: 第三者の cache CDN を経由する) 場合に備えて、`extractUserInfo()` の Zod schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、`jose` 等で JWKS 署名再検証を加えられる構造に保つ。
+将来的に upstream の信頼境界が変わる (例: 第三者の cache CDN を経由する) 場合に備えて、`extractUserInfo` の Zod schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、`jose` 等で JWKS 署名再検証を加えられる構造に保つ。
 
-### 6.4 Refresh
+### Refresh
 
 `session_store.get(sid)` で得た entry の `tokens.expiresAt` が **残り 30 秒未満** なら、API proxy 直前に refresh を実行する。
 
@@ -271,14 +263,14 @@ export function buildAuthorizeUrl(returnTo: string): { url: string; state: strin
 // server/auth/oidc.ts (抜粋)
 export async function ensureFreshToken(entry: SessionEntry): Promise<string> {
   const REFRESH_MARGIN_MS = 30 * 1000
-  if (entry.tokens.expiresAt - Date.now() > REFRESH_MARGIN_MS) {
+  if (entry.tokens.expiresAt - Date.now > REFRESH_MARGIN_MS) {
     return entry.tokens.accessToken
   }
   const fresh = await refreshAtKeycloak(entry.tokens.refreshToken)
   entry.tokens = {
     accessToken: fresh.access_token,
     refreshToken: fresh.refresh_token,
-    expiresAt: Date.now() + fresh.expires_in * 1000,
+    expiresAt: Date.now + fresh.expires_in * 1000,
   }
   return entry.tokens.accessToken
 }
@@ -286,7 +278,7 @@ export async function ensureFreshToken(entry: SessionEntry): Promise<string> {
 
 Refresh が失敗したら session を破棄して 401 を返す。
 
-### 6.5 Logout
+### Logout
 
 1. Browser が `/api/auth/logout` を踏む
 2. BFF が Keycloak の `end_session_endpoint` へ 302 (`post_logout_redirect_uri=/auth/logout-callback`)
@@ -296,7 +288,7 @@ Refresh が失敗したら session を破棄して 401 を返す。
 
 `end_session_endpoint` を叩く際は `id_token_hint` (= session entry に保存しておいた `id_token`) を付ける。これにより Keycloak 側で「どの session を切るか」 が一意に決まり、confirm 画面を経由せず即座に session が破棄される。`client_id` も同時に付ける (Keycloak ≥ 18 で要件強化されたケースへの保険)。
 
-### 6.6 endpoint 配置の境界
+### endpoint 配置の境界
 
 | path | 種別 | 役割 |
 |---|---|---|
@@ -306,7 +298,7 @@ Refresh が失敗したら session を破棄して 401 を返す。
 | `/api/auth/logout-callback` | Express handler | session 削除 + Set-Cookie clear + 302 returnTo |
 | `/auth/callback`, `/auth/silent-callback`, `/auth/logout-callback` | RR route (薄い page) | 万一 BFF を素通りした場合や OIDC IdP 側で旧 redirect_uri が設定されていた場合の fallback。通常は 302 で抜けるので render されない |
 
-Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。`*` ワイルドカードはリリース時点で禁止 (rewrite-plan §3.11)。
+Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。`*` ワイルドカードは production で禁止 (`keycloak-setup.md`)。
 
 Express handler で完結させる利点:
 
@@ -314,7 +306,7 @@ Express handler で完結させる利点:
 - RR route 側 (loader / component) を OIDC 詳細から完全に切り離す
 - Keycloak から見ると redirect_uri が `/api/auth/callback` で固定、RR の routing 変更に影響を受けない
 
-### 6.7 Pending login store
+### Pending login store
 
 login flow 中の `state` / `code_verifier` / `returnTo` を server 側で `Map<state, PendingLogin>` に保持する。
 
@@ -330,7 +322,7 @@ type PendingLogin = {
 const TTL_MS = 10 * 60 * 1000      // 10 分
 const CLEANUP_INTERVAL_MS = 60_000  // 1 分
 
-const store = new Map<string, PendingLogin>()
+const store = new Map<string, PendingLogin>
 
 export const putPendingLogin = (entry: PendingLogin): void => {
   store.set(entry.state, entry)
@@ -340,21 +332,21 @@ export const takePendingLogin = (state: string): PendingLogin | undefined => {
   const entry = store.get(state)
   if (!entry) return undefined
   store.delete(entry.state)                                   // 1 回限り消費 (replay 防止)
-  if (Date.now() - entry.createdAt > TTL_MS) return undefined
+  if (Date.now - entry.createdAt > TTL_MS) return undefined
   return entry
 }
 
-setInterval(() => {
-  const now = Date.now()
+setInterval( => {
+  const now = Date.now
   for (const [k, v] of store) if (now - v.createdAt > TTL_MS) store.delete(k)
-}, CLEANUP_INTERVAL_MS).unref?.()
+}, CLEANUP_INTERVAL_MS).unref?.
 ```
 
 `takePendingLogin` は **一度取ったら必ず削除** する (replay 攻撃で同じ code を 2 回交換することを防ぐ)。TTL 内に callback が来なければ entry は次の cleanup で破棄される。
 
-Multi-instance への拡張: session store と同じ (`§5.4`)。リリース時点は 1 instance 想定で in-memory のみ。redis 化が必要になったら interface を抽象化する余地を持つ。
+Multi-instance への拡張: session store と同じ。リリース時点は 1 instance 想定で in-memory のみ。redis 化が必要になったら interface を抽象化する余地を持つ。
 
-### 6.8 State CSRF と returnTo の二重防御
+### State CSRF と returnTo の二重防御
 
 #### State CSRF
 
@@ -381,7 +373,7 @@ login / logout の `return_to` query は内部 navigation 用。ユーザーが�
 
 server 側の再検証は「クライアント側 helper を経由しない直叩き」 (例: 攻撃者が手書きで `/api/auth/login?return_to=//evil` を組む) を遮断するために必須。lib 側の防御は UX 上「自分の意図しない URL に飛んでしまう」 のを防ぐ。両層で同じ条件を適用する (二重防御)。
 
-### 6.9 Client route page (`routes/auth/*.tsx`)
+### Client route page (`routes/auth/*.tsx`)
 
 `app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は薄い fallback page として置く。通常フローでは BFF が 302 で抜けるため画面は表示されない。表示されるのは次のいずれか:
 
@@ -392,40 +384,40 @@ server 側の再検証は「クライアント側 helper を経由しない直�
 
 silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。BFF refresh を採用しているので機能としては不要だが、既存仕様との互換のため空 page を残す (`<div />`)。
 
-## 7. `/api/me` 仕様
+## `/api/me` 仕様
 
-### 7.1 Request
+### Request
 
 ```http
 GET /api/me HTTP/1.1
 Cookie: sid=<opaque>
 ```
 
-### 7.2 Response
+### Response
 
 | 状況 | Status | Body |
 |---|---|---|
 | Session あり (有効) | 200 | `{ "user": { "sub": "...", "name": "...", "email": "..." } }` |
 | Cookie なし / Session 期限切れ | 401 | `{ "error": "unauthorized" }` |
 
-### 7.3 Cache 制御
+### Cache 制御
 
 `Cache-Control: no-store` を付ける。Loader / Client query の cache は TanStack Query 側で `staleTime: 5 * 60_000` 程度を持たせる。
 
-## 8. `useAuth` hook
+## `useAuth` hook
 
-### 8.1 シグネチャ
+### シグネチャ
 
 ```ts
 // app/lib/auth/use-auth.ts (抜粋)
-export const useAuth = (): AuthState => {
+export const useAuth = : AuthState => {
   const q = useQuery({
     queryKey: ["me"],
-    queryFn: async () => {
+    queryFn: async  => {
       const res = await fetch("/api/me", { credentials: "include" })
       if (res.status === 401) return null
 
-      return MeResponse.parse(await res.json())
+      return MeResponse.parse(await res.json)
     },
     staleTime: 5 * 60_000,
   })
@@ -438,7 +430,7 @@ export const useAuth = (): AuthState => {
 
 `AuthState` / `UserInfo` / `MeResponse` は `app/lib/auth/types.ts` で Zod schema として定義する (`z.infer<typeof MeResponse>` で型を取り出す)。
 
-### 8.2 SSR 経由の userInfo
+### SSR 経由の userInfo
 
 route loader からも user 情報を取る場合は `loadAuth(request)` を使う。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、200 なら `UserInfo`、401 なら `null` を返す。5xx は `Error` を throw する。
 
@@ -452,7 +444,7 @@ export const loadAuth = async (request: Request): Promise<UserInfo | null> => {
   if (response.status === 401) return null
   if (!response.ok) throw new Error(`/api/me failed with status ${response.status}`)
 
-  return MeResponse.parse(await response.json()).user
+  return MeResponse.parse(await response.json).user
 }
 ```
 
@@ -470,21 +462,21 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 }
 ```
 
-`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md §4`)。`UserInfo` を loader データに乗せておけば、SSR 初期描画時に Header のユーザー名表示が即座に解決する。
+`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md`)。`UserInfo` を loader データに乗せておけば、SSR 初期描画時に Header のユーザー名表示が即座に解決する。
 
 #### Cookie 転送の安全性前提
 
 `loadAuth` は受け取った `Request` の `Cookie` ヘッダをそのまま `/api/me` に転送する。`request.url` は React Router の SSR runtime が **portal 自身の origin** を解決した URL である必要がある。リバースプロキシ越しに deploy する場合、Express の `trust proxy` 設定と `X-Forwarded-Host` の許可ホスト制限を BFF (`server/`) で必ず行うこと。攻撃者が `Host:` を任意 origin に書き換えられる構成では `sid` cookie が外部に流出する。
 
-## 9. `<RequireAuth>` wrapper と URL helper
+## `<RequireAuth>` wrapper と URL helper
 
-### 9.1 シグネチャ
+### シグネチャ
 
 ```tsx
 // app/lib/auth/require-auth.tsx (抜粋)
 export const RequireAuth = ({ children, fallback }: RequireAuthProps) => {
-  const auth = useAuth()
-  const location = useLocation()
+  const auth = useAuth
+  const location = useLocation
   if (auth.status === "loading") return fallback ?? null
   if (auth.status === "unauthenticated") {
     return <Navigate to={buildLoginUrl(location.pathname + location.search)} replace />
@@ -498,12 +490,12 @@ URL の組み立ては `app/lib/auth/login-url.ts` の `buildLoginUrl(returnTo?)
 
 `returnTo` は **同一 origin の絶対パス (`/` 始まり、`//` でない、`/\\` でない)** のみ受理する。それ以外 (`//evil.test/`、`https://evil/`、空文字、相対パス等) は `/` に正規化される。lib 側の防御に加えて、BFF (`server/auth/`) で `return_to` を消費するときも同じ条件で再検証すること (二重防御)。
 
-### 9.2 使い方
+### 使い方
 
 ログイン後限定機能を持つ route で children を包む。リリース時はこの wrapper を使う route がない (機能なし) が、構造として最初から用意する。
 
 ```tsx
-const FuturePrivateRoute = () => (
+const FuturePrivateRoute =  => (
   <RequireAuth>
     <PrivateContent />
   </RequireAuth>
@@ -520,13 +512,13 @@ import { buildLoginUrl, buildLogoutUrl } from "~/lib/auth"
 <Link to={buildLogoutUrl("/")}>Logout</Link>
 ```
 
-## 10. 言語の維持 (i18n との連携)
+## 言語の維持 (i18n との連携)
 
 Login / Logout のリダイレクトで `returnTo` を保持する際、現在 URL がそのまま使われるため言語 prefix は自然に維持される (`/en/databases/bioproject` で login すれば `/en/databases/bioproject` に戻る)。
 
 `/api/auth/login` / `/api/auth/logout` は言語非依存の path に置く (i18n の URL 戦略では `/en` prefix の対象外)。
 
-## 11. 環境変数
+## 環境変数
 
 | 変数 | 用途 |
 |---|---|
@@ -538,32 +530,21 @@ Login / Logout のリダイレクトで `returnTo` を保持する際、現在 U
 
 詳細な env 全体方針は `development.md` を参照。
 
-## 12. テスト
+## テスト
 
-### 12.1 Unit (msw でモック)
+### Unit
 
 - `tests/unit/lib/auth/use-auth.test.tsx`: `/api/me` のレスポンス 200 / 401 に対する hook 状態遷移
 - `tests/unit/lib/auth/require-auth.test.tsx`: unauthenticated 時に Login URL に redirect
 - `tests/unit/server/auth/session-store.test.ts`: TTL sliding / cleanup
 
-### 12.2 PBT
+### PBT
 
 - `tests/pbt/server/auth/session-store.pbt.test.ts`: 任意の `(sid, entry)` 列に対して `get` 後の `expiresAt` が `set` 時の `expiresAt` 以上、削除後の `get` が `undefined`
 
-### 12.3 E2E (Playwright on staging)
+### E2E
 
 - `S-AUTH-01`: 未認証で `/` を開く → ログインボタン表示 → click で Keycloak → credential 入力 → portal に戻る → Header にユーザー名表示
 - `S-AUTH-02`: ログイン状態でログアウト → Keycloak セッション切断 → portal に戻る → ログインボタン表示
 - `E-AUTH-01`: session 期限切れで `/api/me` が 401 → header が「ログイン」表示に戻る
 
-## 13. 関連 docs
-
-| docs | 関連箇所 |
-|---|---|
-| `architecture.md §5` | BFF 責務分離図 |
-| `architecture.md §7.3` | 認証データフロー全体図 |
-| `i18n.md §6` | リダイレクト時の言語維持 (`getCounterpartUrl` ヘルパで login/logout の returnTo を計算) |
-| `development.md` | Keycloak realm / client の起動方法、env 切替 |
-| `keycloak-setup.md` | Keycloak 管理画面側の realm / client / redirect URI / PKCE / token 寿命設定手順 |
-| `operations.md §3.4` | 認証関連のトラブルシューティング (state 不一致 / refresh 失敗 / redirect ループ) |
-| `operations.md §4` | secret rotation (本書の public client + e2e user password 等) |
