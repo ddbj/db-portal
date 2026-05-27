@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import {
   parseFrontMatter,
   type RawArticle,
+  stripHtmlTags,
   tagsToCategory,
   toNewsItem,
 } from "../../../../server/news/normalize"
@@ -13,24 +14,50 @@ const buildMarkdown = (frontMatter: string, body = "<p>body</p>"): string =>
 
 describe("tagsToCategory", () => {
   test.each([
-    [["重要"], "announcement"],
+    [["お知らせ"], "announcement"],
     [["Announcement"], "announcement"],
-    [["notice"], "announcement"],
-    [["リリース"], "release"],
-    [["Release"], "release"],
+    [["データ公開"], "data-release"],
+    [["Data Release"], "data-release"],
     [["メンテナンス"], "maintenance"],
-    [["障害"], "maintenance"],
-    [["復旧"], "maintenance"],
-    [["イベント"], "event"],
-    [["Workshop"], "event"],
-    [["お知らせ"], "news"],
-    [[], "news"],
-  ])("tagsToCategory(%j) → %s", (tags, expected) => {
-    expect(tagsToCategory(tags)).toBe(expected)
+    [["Maintenance"], "maintenance"],
+    [["未知"], "other"],
+    [[], "other"],
+  ])("tagsToCategory(ddbj, %j) → %s", (tags, expected) => {
+    expect(tagsToCategory("ddbj", tags)).toBe(expected)
+  })
+
+  test.each([
+    [["public_relations"], "announcement"],
+    [["events"], "event"],
+    [["registration"], "event"],
+    [["services"], "service"],
+    [["other"], "other"],
+    [["unknown"], "other"],
+  ])("tagsToCategory(dbcls, %j) → %s", (tags, expected) => {
+    expect(tagsToCategory("dbcls", tags)).toBe(expected)
   })
 
   test("tagsToCategory_multipleMatches_returnsFirstEnumInOrder", () => {
-    expect(tagsToCategory(["メンテナンス", "重要"])).toBe("maintenance")
+    expect(tagsToCategory("ddbj", ["メンテナンス", "お知らせ"])).toBe("maintenance")
+  })
+
+  test("tagsToCategory_ddbjVocabRejectedForDbcls", () => {
+    expect(tagsToCategory("dbcls", ["お知らせ"])).toBe("other")
+  })
+})
+
+describe("stripHtmlTags", () => {
+  test.each([
+    [
+      "<span class=\"red\">[復旧]</span> D-way で BioSample の登録ができない不具合",
+      "[復旧] D-way で BioSample の登録ができない不具合",
+    ],
+    ["plain text", "plain text"],
+    ["<b>bold</b> and <i>italic</i>", "bold and italic"],
+    ["  before\n\t<br/>after  ", "before after"],
+    ["", ""],
+  ])("stripHtmlTags(%j) → %j", (input, expected) => {
+    expect(stripHtmlTags(input)).toBe(expected)
   })
 })
 
@@ -80,7 +107,7 @@ describe("toNewsItem", () => {
       date: "2024-01-02T00:00:00+09:00",
       retire_time: "2024-02-02T00:00:00+09:00",
       db: ["ddbj"],
-      tags: ["リリース"],
+      tags: ["データ公開"],
     },
     body: "",
   }
@@ -92,7 +119,7 @@ describe("toNewsItem", () => {
       title: "EN title",
       date: "2024-01-02T00:00:00+09:00",
       db: ["ddbj"],
-      tags: ["Release"],
+      tags: ["Data Release"],
     },
     body: "",
   }
@@ -101,7 +128,8 @@ describe("toNewsItem", () => {
     const item = toNewsItem(ddbjCfg, ja, en)
     expect(item?.id).toBe("ddbj-2024-01-02")
     expect(item?.title).toEqual({ ja: "ja タイトル", en: "EN title" })
-    expect(item?.category).toBe("release")
+    expect(item?.category).toBe("data-release")
+    expect(item?.featured).toBe(false)
     expect(item?.url?.ja).toContain("/news/ja/2024-01-02.html")
     expect(item?.url?.en).toContain("/news/en/2024-01-02-e.html")
     expect(item?.retireTime).toBe("2024-02-02T00:00:00+09:00")

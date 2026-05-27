@@ -33,8 +33,8 @@ const writeDismissed = (ids: readonly string[]): void => {
   }
 }
 
-const isActiveAnnouncement = (n: NewsItem, now: number): boolean => {
-  if (n.category !== "announcement") return false
+const isActiveFeatured = (n: NewsItem, now: number): boolean => {
+  if (!n.featured) return false
   if (!n.retireTime) return true
 
   return Date.parse(n.retireTime) > now
@@ -62,11 +62,11 @@ export const NotificationBar = () => {
   if (query.isError || !query.data) return null
 
   const now = Date.now()
-  const announcements = query.data
-    .filter((n) => isActiveAnnouncement(n, now))
+  const featured = query.data
+    .filter((n) => isActiveFeatured(n, now))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
 
-  const visible = announcements.find(
+  const visible = featured.find(
     (n) => !hydrated || !dismissed.includes(n.id),
   )
   if (!visible) return null

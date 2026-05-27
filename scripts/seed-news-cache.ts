@@ -1,26 +1,29 @@
-import { execFileSync } from "node:child_process"
+import { execFile } from "node:child_process"
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
+import { promisify } from "node:util"
 
 import { NewsCache, type NewsList, type NewsSource } from "../app/schemas/api-bff/news"
+import { isFeaturedSlug, loadFeaturedWhitelist } from "../server/news/featured"
 import { type LangRawMap, pairToNewsItems, parseRawArticle } from "../server/news/pair"
-import { dbclsConfig, ddbjConfig, type GitHubSourceConfig } from "../server/news/sources"
+import { dbclsConfig, ddbjConfig, type RepoSourceConfig } from "../server/news/sources"
 
-type SourceArgs = {
+const execFileAsync = promisify(execFile)
+
+type SourceArg = {
   source: NewsSource
   dir: string
-  sha: string | null
 }
 
 type CliArgs = {
   outFile: string
-  sources: SourceArgs[]
+  sources: SourceArg[]
 }
 
 const usage = (): never => {
   console.error(
-    "usage: seed-news-cache.ts --out <cache.json> [--ddbj-source <dir>] [--ddbj-sha <sha>] [--dbcls-source <dir>] [--dbcls-sha <sha>]",
+    "usage: seed-news-cache.ts --out <cache.json> [--ddbj-source <dir>] [--dbcls-source <dir>]",
   )
   process.exit(1)
 }
@@ -28,9 +31,7 @@ const usage = (): never => {
 const parseArgs = (argv: readonly string[]): CliArgs => {
   let outFile: string | undefined
   let ddbjDir: string | undefined
-  let ddbjSha: string | null = null
   let dbclsDir: string | undefined
-  let dbclsSha: string | null = null
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i]
     const value = argv[i + 1]
@@ -45,16 +46,8 @@ const parseArgs = (argv: readonly string[]): CliArgs => {
         ddbjDir = v
         i++
         break
-      case "--ddbj-sha":
-        ddbjSha = v
-        i++
-        break
       case "--dbcls-source":
         dbclsDir = v
-        i++
-        break
-      case "--dbcls-sha":
-        dbclsSha = v
         i++
         break
       default:
@@ -63,9 +56,9 @@ const parseArgs = (argv: readonly string[]): CliArgs => {
     }
   }
   if (outFile === undefined) return usage()
-  const sources: SourceArgs[] = []
-  if (ddbjDir) sources.push({ source: "ddbj", dir: ddbjDir, sha: ddbjSha })
-  if (dbclsDir) sources.push({ source: "dbcls", dir: dbclsDir, sha: dbclsSha })
+  const sources: SourceArg[] = []
+  if (ddbjDir) sources.push({ source: "ddbj", dir: ddbjDir })
+  if (dbclsDir) sources.push({ source: "dbcls", dir: dbclsDir })
   if (sources.length === 0) {
     console.error("at least one of --ddbj-source or --dbcls-source is required")
     process.exit(1)
@@ -74,20 +67,21 @@ const parseArgs = (argv: readonly string[]): CliArgs => {
   return { outFile, sources }
 }
 
-const sourceConfig = (source: NewsSource): GitHubSourceConfig =>
-  source === "ddbj" ? ddbjConfig("ddbj/www", "main") : dbclsConfig("dbcls/website", "master")
+const buildConfig = (source: NewsSource, dir: string): RepoSourceConfig =>
+  source === "ddbj"
+    ? ddbjConfig("https://github.com/ddbj/www.git", "main", dir)
+    : dbclsConfig("https://github.com/dbcls/website.git", "master", dir)
 
 const collectFromDir = async (
-  cfg: GitHubSourceConfig,
-  dir: string,
+  cfg: RepoSourceConfig,
   lang: "ja" | "en",
 ): Promise<LangRawMap> => {
+  const dir = cfg.pathByLang[lang]
   const entries = await readdir(dir, { withFileTypes: true })
   const map: LangRawMap = new Map()
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".md")) continue
-    const filePath = path.join(dir, entry.name)
-    const raw = await readFile(filePath, "utf8")
+    const raw = await readFile(path.join(dir, entry.name), "utf8")
     const parsed = parseRawArticle(cfg.source, lang, entry.name, raw, cfg.slugFromFilename)
     if (parsed) map.set(parsed.slug, parsed)
   }
@@ -95,53 +89,64 @@ const collectFromDir = async (
   return map
 }
 
-const resolveSha = (cwd: string, repoPath: string): string | null => {
+const resolveHeadSha = async (cwd: string): Promise<string | null> => {
   try {
-    const out = execFileSync("git", ["log", "-1", "--format=%H", "--", repoPath], {
-      cwd,
-      encoding: "utf8",
-    })
+    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], { cwd })
 
-    return out.trim() || null
+    return stdout.trim() || null
   } catch {
     return null
   }
 }
 
-const collectForSource = async (
-  arg: SourceArgs,
-): Promise<{ items: NewsList; sha: { ja: string | null; en: string | null } }> => {
-  const cfg = sourceConfig(arg.source)
-  const jaDir = path.join(arg.dir, cfg.pathByLang.ja)
-  const enDir = path.join(arg.dir, cfg.pathByLang.en)
-  const [ja, en] = await Promise.all([
-    collectFromDir(cfg, jaDir, "ja"),
-    collectFromDir(cfg, enDir, "en"),
-  ])
-  const items = pairToNewsItems(cfg, ja, en) as NewsList
-  const sha = arg.sha
-    ?? resolveSha(arg.dir, cfg.pathByLang.ja)
-    ?? null
+const consoleLogger = {
+  debug: () => undefined,
+  info: (msg: string, ctx?: unknown) => console.log(`info ${msg}`, ctx ?? ""),
+  warn: (msg: string, ctx?: unknown) => console.warn(`warn ${msg}`, ctx ?? ""),
+  error: (msg: string, ctx?: unknown) => console.error(`error ${msg}`, ctx ?? ""),
+}
 
-  return { items, sha: { ja: sha, en: sha } }
+const collectForSource = async (
+  arg: SourceArg,
+  whitelistPath: string | undefined,
+): Promise<{ items: NewsList; sha: string | null }> => {
+  const cfg = buildConfig(arg.source, arg.dir)
+  const [ja, en, sha] = await Promise.all([
+    collectFromDir(cfg, "ja"),
+    collectFromDir(cfg, "en"),
+    resolveHeadSha(arg.dir),
+  ])
+  const whitelist = whitelistPath
+    ? await loadFeaturedWhitelist(whitelistPath, consoleLogger)
+    : { ja: new Set<string>(), en: new Set<string>() }
+  const items = pairToNewsItems(cfg, ja, en, (slug) =>
+    isFeaturedSlug(cfg.source, slug, whitelist)) as NewsList
+
+  return { items, sha }
 }
 
 const run = async (): Promise<void> => {
   const args = parseArgs(process.argv.slice(2))
   const items: NewsList = []
-  const lastCommitSha: Record<string, { ja: string | null; en: string | null }> = {}
+  const lastSyncSha: Record<string, string | null> = {}
+  const ddbjArg = args.sources.find((s) => s.source === "ddbj")
+  const whitelistPath = ddbjArg
+    ? path.join(ddbjArg.dir, "_data/global.yml")
+    : undefined
   for (const sourceArg of args.sources) {
-    const { items: srcItems, sha } = await collectForSource(sourceArg)
+    const wlPath = sourceArg.source === "ddbj" ? whitelistPath : undefined
+    const { items: srcItems, sha } = await collectForSource(sourceArg, wlPath)
     items.push(...srcItems)
-    lastCommitSha[sourceArg.source] = sha
+    lastSyncSha[sourceArg.source] = sha
+    const featuredCount = srcItems.filter((i) => i.featured).length
     console.log(
-      `  ${sourceArg.source}: ${srcItems.length} items (sha=${sha.ja ?? "null"})`,
+      `  ${sourceArg.source}: ${srcItems.length} items (featured=${featuredCount}, sha=${sha ?? "null"})`,
     )
   }
   items.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
   const cache = NewsCache.parse({
-    schemaVersion: 2,
-    lastCommitSha,
+    schemaVersion: 3,
+    lastSyncSha,
     lastFetchedAt: new Date().toISOString(),
     items,
   })

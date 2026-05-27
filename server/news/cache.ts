@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import path from "node:path"
 
 import type {
@@ -12,15 +12,11 @@ import { NewsCache as NewsCacheSchema } from "../../app/schemas/api-bff/news"
 import type { Logger } from "../lib/log"
 
 const CACHE_FILE = "news.json"
-const SCHEMA_VERSION = 2 as const
-
-export type LangSha = { ja: string | null; en: string | null }
-
-const emptyLangSha = (): LangSha => ({ ja: null, en: null })
+const SCHEMA_VERSION = 3 as const
 
 const emptyState = (): NewsCache => ({
   schemaVersion: SCHEMA_VERSION,
-  lastCommitSha: {},
+  lastSyncSha: {},
   lastFetchedAt: new Date().toISOString(),
   items: [],
 })
@@ -67,7 +63,6 @@ export const persistCacheToDisk = async (
     const file = cachePath(cacheDir)
     const tmp = `${file}.tmp`
     await writeFile(tmp, JSON.stringify(state, null, 2), "utf8")
-    const { rename } = await import("node:fs/promises")
     await rename(tmp, file)
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
@@ -77,13 +72,12 @@ export const persistCacheToDisk = async (
 
 export type CacheStore = {
   getState: () => NewsCache
-  getCommitShaForSource: (source: NewsSource) => LangSha
+  getSyncShaForSource: (source: NewsSource) => string | null
   replaceItemsForSource: (
     source: NewsSource,
     items: NewsList,
-    lastCommitSha: LangSha,
+    sha: string | null,
   ) => Promise<void>
-  updateCommitShaForSource: (source: NewsSource, lastCommitSha: LangSha) => Promise<void>
   list: (filter?: NewsFilter) => NewsList
   initFromDisk: () => Promise<void>
 }
@@ -144,31 +138,19 @@ export const createCacheStore = (cacheDir: string, logger: Logger): CacheStore =
     })
   }
 
-  const getCommitShaForSource = (source: NewsSource): LangSha =>
-    state.lastCommitSha[source] ?? emptyLangSha()
+  const getSyncShaForSource = (source: NewsSource): string | null =>
+    state.lastSyncSha[source] ?? null
 
   const replaceItemsForSource = async (
     source: NewsSource,
     items: NewsList,
-    lastCommitSha: LangSha,
+    sha: string | null,
   ): Promise<void> => {
     state = {
       schemaVersion: SCHEMA_VERSION,
-      lastCommitSha: { ...state.lastCommitSha, [source]: lastCommitSha },
+      lastSyncSha: { ...state.lastSyncSha, [source]: sha },
       lastFetchedAt: new Date().toISOString(),
       items: mergeItemsBySource(state, source, items),
-    }
-    await persistCacheToDisk(cacheDir, state, logger)
-  }
-
-  const updateCommitShaForSource = async (
-    source: NewsSource,
-    lastCommitSha: LangSha,
-  ): Promise<void> => {
-    state = {
-      ...state,
-      lastCommitSha: { ...state.lastCommitSha, [source]: lastCommitSha },
-      lastFetchedAt: new Date().toISOString(),
     }
     await persistCacheToDisk(cacheDir, state, logger)
   }
@@ -178,9 +160,8 @@ export const createCacheStore = (cacheDir: string, logger: Logger): CacheStore =
 
   return {
     getState: () => state,
-    getCommitShaForSource,
+    getSyncShaForSource,
     replaceItemsForSource,
-    updateCommitShaForSource,
     list,
     initFromDisk,
   }

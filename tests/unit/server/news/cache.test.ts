@@ -19,16 +19,18 @@ const makeItems = (): NewsList => [
   {
     id: "a-2024",
     source: "ddbj",
-    category: "release",
+    category: "data-release",
+    featured: false,
     publishedAt: "2024-05-01T00:00:00+09:00",
     title: { ja: "あ 2024", en: "A 2024" },
     db: ["ddbj", "dra"],
-    rawTags: { ja: ["リリース"], en: ["Release"] },
+    rawTags: { ja: ["データ公開"], en: ["Data Release"] },
   },
   {
     id: "b-2023",
     source: "ddbj",
     category: "maintenance",
+    featured: false,
     publishedAt: "2023-12-31T00:00:00+09:00",
     title: { ja: "い 2023", en: "" },
     db: ["jga"],
@@ -38,15 +40,17 @@ const makeItems = (): NewsList => [
     id: "c-2024",
     source: "ddbj",
     category: "announcement",
+    featured: true,
     publishedAt: "2024-01-15T00:00:00+09:00",
     title: { ja: "う 2024", en: "U 2024" },
     db: ["ddbj"],
-    rawTags: { ja: ["重要"], en: ["Announcement"] },
+    rawTags: { ja: ["お知らせ"], en: ["Announcement"] },
   },
   {
     id: "d-2024-en-only",
     source: "ddbj",
     category: "announcement",
+    featured: false,
     publishedAt: "2024-03-10T00:00:00+09:00",
     title: { ja: "", en: "D 2024 (en only)" },
     db: ["ddbj"],
@@ -67,8 +71,8 @@ describe("createCacheStore", () => {
   test("cacheList_categoryFilter_returnsOnlyMatchingItems", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
-      const released = cache.list({ category: ["release"] })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
+      const released = cache.list({ category: ["data-release"] })
       expect(released).toHaveLength(1)
       expect(released[0]?.id).toBe("a-2024")
     })
@@ -77,7 +81,7 @@ describe("createCacheStore", () => {
   test("cacheList_yearFilter_returnsItemsPublishedInThatYear", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       expect(cache.list({ year: [2024] }).map((n) => n.id)).toEqual([
         "a-2024",
         "d-2024-en-only",
@@ -89,7 +93,7 @@ describe("createCacheStore", () => {
   test("cacheList_serviceFilter_returnsItemsTaggedWithThatService", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       expect(cache.list({ service: ["dra"] }).map((n) => n.id)).toEqual(["a-2024"])
     })
   })
@@ -97,7 +101,7 @@ describe("createCacheStore", () => {
   test("cacheList_enLang_skipsItemsWithoutEnTitle", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       const enOnly = cache.list({ lang: "en" })
       expect(enOnly.map((n) => n.id)).toEqual(["a-2024", "d-2024-en-only", "c-2024"])
     })
@@ -106,7 +110,7 @@ describe("createCacheStore", () => {
   test("cacheList_jaLang_skipsItemsWithoutJaTitle", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       const jaOnly = cache.list({ lang: "ja" })
       expect(jaOnly.map((n) => n.id)).toEqual(["a-2024", "c-2024", "b-2023"])
     })
@@ -115,7 +119,7 @@ describe("createCacheStore", () => {
   test("cache_writeThenReload_recoversAllItemsFromDisk", async () => {
     await withTempDir(async (dir) => {
       const cache = createCacheStore(dir, silentLogger)
-      await cache.replaceItemsForSource("ddbj", makeItems(), { ja: "sha", en: "sha" })
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       const loaded = await loadCacheFromDisk(dir, silentLogger)
       expect(loaded.source).toBe("disk")
       expect(loaded.state.items).toHaveLength(4)

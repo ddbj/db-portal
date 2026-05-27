@@ -1,6 +1,6 @@
 # News
 
-`ddbj/www` と `dbcls/website` の 2 source を BFF が mirror し、全件 disk cache を保持する。ブラウザは BFF の `/api/news` だけを叩く。GitHub API は BFF が背面で扱い、portal が GitHub に対する rate limit や CORS を表に出さない。
+`ddbj/www` と `dbcls/website` の 2 source を BFF が mirror し、全件 disk cache を保持する。ブラウザは BFF の `/api/news` だけを叩く。BFF は upstream を git で local clone し、定期的に `git pull` で更新する (GitHub REST API は使わない)。portal が GitHub の rate limit や CORS を表に出さない。
 
 データフロー全体図は `architecture.md §7` を参照する。
 
@@ -9,15 +9,15 @@
 | 項目 | 値 |
 |---|---|
 | 取得対象 | `ddbj/www` の `_news/{ja,en}/*.md` + `dbcls/website` の `_posts/{ja,en}/*.md` |
-| 取得方式 | 全件 cache + GitHub Compare API で差分 file 取得 (source ごと独立) |
+| 取得方式 | git で repo を local に clone (`./repos/{ddbj-www, dbcls-website}/`)、ポーリング時に `git pull` で更新 (source ごと独立) |
 | ポーリング間隔 | 30 分 (`DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS=1800`) |
-| 起動時挙動 | disk cache を即 load → 5 秒後に初回 fetch → 以降ポーリング |
-| 変更検出 | GitHub Commits API で `_news/{ja,en}` の最新 commit SHA を取得し、前回値と比較 |
-| 差分時 fetch | Compare API で変更 file 一覧を取り、変更分だけ再 fetch (初回 / SHA 不明時は全件) |
+| 起動時挙動 | disk cache を即 load → 直後に initial sync (clone or pull) → 以降ポーリング |
+| 変更検出 | `git rev-parse HEAD` を pull の前後で比較。変化があれば全件再構築 (1000-2600 件規模で十分速い、partial update の追跡コストを避ける) |
 | cache 永続化 | `<DB_PORTAL_NEWS_CACHE_DIR>/news.json`、起動時に load して即応答可 |
 | schema migration | disk cache に `schemaVersion` を持たせ、不一致なら空 cache から再構築 |
 | ja/en pairing | slug でペアリング (`19961123` / `19961123-e` → 同一 NewsItem) |
-| 正規化 | front matter の `tags` を `NewsCategory` enum に写像、原 tag は `rawTags` で保持 |
+| 正規化 | front matter の `tags` を `NewsCategory` enum に写像 (source 別 mapping 表)、原 tag は `rawTags` で保持 |
+| featured | `ddbj/www/_data/global.yml` の `top_news.{ja,en}[].path` (slug whitelist) に一致した item は `featured=true`。NotificationBar 掲載対象 |
 | API | `GET /api/news?lang=&category=&year=&service=` で cache を filter して返す |
 
 ## 2. データモデル
@@ -26,17 +26,19 @@
 
 ```ts
 const NewsCategory = z.enum([
-  "announcement",  // 重要告知 → NotificationBar に出す
-  "release",       // リリースノート
-  "maintenance",   // メンテナンス告知
-  "event",         // イベント
-  "news",          // その他 (default fallback)
+  "announcement",   // 告知・お知らせ・プレスリリース
+  "data-release",   // データ公開・リリース
+  "maintenance",    // メンテナンス・障害
+  "event",          // イベント・募集
+  "service",        // サービス紹介・更新 (DBCLS 起点)
+  "other",          // その他 (default fallback)
 ])
 
 const NewsItem = z.object({
-  id: z.string().min(1),                  // slug、ja/en 共通の pairId として機能
+  id: z.string().min(1),                  // `${source}-${slug}` 形式、ja/en 共通の pairId として機能
   source: NewsSource,                     // "ddbj" | "dbcls"
   category: NewsCategory,                 // 正規化後 (UI の分配判定に使う)
+  featured: z.boolean().default(false),   // global.yml top_news に該当 → NotificationBar 表示対象
   publishedAt: z.string().datetime(),     // ISO 8601、front matter の `date`
   retireTime: z.string().datetime().optional(),  // NotificationBar 表示終了基準
   title: z.object({ ja: z.string(), en: z.string() }),
@@ -47,9 +49,8 @@ const NewsItem = z.object({
 })
 
 const NewsCache = z.object({
-  schemaVersion: z.literal(1),
-  source: NewsSource,                     // cache file は source ごとに 1 つ
-  lastCommitSha: z.record(z.enum(["ja", "en"]), z.string().nullable()),
+  schemaVersion: z.literal(3),
+  lastSyncSha: z.record(NewsSource, z.string().nullable()),  // git HEAD SHA (source ごと 1 値)
   lastFetchedAt: z.string().datetime(),
   items: z.array(NewsItem),
 })
@@ -99,30 +100,32 @@ url.en = https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/${postN}.html
 
 1. `server/news/cache.ts` が `<DB_PORTAL_NEWS_CACHE_DIR>/news.json` を読む
    - file が無い / `schemaVersion` 不一致 / parse 失敗のいずれも空 cache から start
-2. 即座に `/api/news` を応答可能 (GitHub API を待たない、cold start を遅らせない)
-3. `setTimeout(checkAndUpdate, 5_000)` で 5 秒後に最初の fetch を実行
-   - cold start に query を載せたくない / disk cache が空でも 5 秒で構築が走る、の両立
-4. 以降 `setInterval(checkAndUpdate, intervalMs)` で polling
+2. 即座に `/api/news` を応答可能 (initial sync を待たない、cold start を遅らせない)
+3. `server/news/git-sync.ts` で `./repos/{ddbj-www, dbcls-website}/` を確認:
+   - 存在しなければ `git clone --depth 1 --branch <branch> <url>`
+   - 存在すれば `git fetch --depth 1 origin <branch> && git reset --hard origin/<branch>`
+4. `git rev-parse HEAD` で HEAD SHA を取得、cache の `lastSyncSha[source]` と比較
+   - 一致なら no-op
+   - 不一致なら全件再構築 (§3.3)
+5. 以降 `setInterval(tickAll, intervalMs)` で polling
 
-### 3.2 差分検出 (checkAndUpdate)
+### 3.2 ポーリング (tickAll)
 
-GitHub Commits API で対象 path の最新 commit SHA を取得する:
+各 source に対し独立に:
 
-```
-GET /repos/{owner}/{repo}/commits?path=_news/ja&per_page=1&sha={branch}
-GET /repos/{owner}/{repo}/commits?path=_news/en&per_page=1&sha={branch}
-```
+1. `git fetch + reset --hard origin/<branch>`
+2. `git rev-parse HEAD` で新 SHA 取得
+3. SHA が `lastSyncSha[source]` と一致なら no-op、不一致なら全件再構築
 
-各レスポンス先頭の `sha` を `lastCommitSha.{ja,en}` と比較する。両方変わっていなければ何もしない。
+`git pull` (HTTPS) は GitHub の REST API rate limit と別枠で動作するため、認証なしでも 30 分間隔は余裕。pull 失敗 (network エラー / branch 不在 / 破損) は warn log にとどめ、既存 cache は維持する。
 
-### 3.3 差分 file 取得
+### 3.3 全件再構築
 
-ja / en どちらかでも SHA が変わっていた場合:
-
-- `lastCommitSha.{ja,en}` のどちらかが `null` (初回起動 + 空 cache) なら **全件取得** (`GET /repos/{owner}/{repo}/contents/${pathByLang[lang]}?ref={branch}` から file 一覧を取り、各 `download_url` から markdown を fetch)
-- そうでなければ `GET /repos/{owner}/{repo}/compare/{base}...{head}` で変更 file の一覧を取得し、変更 / 追加 / 削除された file だけ fetch / cache update
-
-`If-None-Match` (ETag) を file 単位で送ると変更されていない file は 304 で返る。これにより rate limit 消費を抑える。
+1. `repos/<src>/<pathByLang[lang]>` 配下の `*.md` を `fs.readdir` で列挙
+2. 各 markdown を `fs.readFile` → `parseRawArticle` で `RawArticle` に
+3. `pairToNewsItems` で ja/en pair → `NewsItem` の配列を作る
+4. ddbj source は `repos/ddbj-www/_data/global.yml` を `loadFeaturedWhitelist` で読み、`isFeaturedSlug` で各 NewsItem に `featured` フラグを付与 (DBCLS 側は常に false)
+5. `cache.replaceItemsForSource(source, items, newSha)` で in-memory + disk 両方を atomic 更新
 
 ### 3.4 正規化 (normalize)
 
@@ -132,32 +135,50 @@ ja / en どちらかでも SHA が変わっていた場合:
 - `date` → `publishedAt` (タイムゾーン情報込みで ISO 8601 にする)
 - `retire_time` → `retireTime`
 - `db` → `db` (文字列の正規化: 小文字化 + trim、`agd  ` のような余分な空白は除去)
-- `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像)
+- `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像、§4)
 - `lang` → 受信時に自明 (`_news/ja` か `_news/en` か、dbcls なら `_posts/ja` / `_posts/en`)
 
-front matter の `category:` field は source 側で portal の `NewsCategory` 分類とは別の意味で使われている (例: ddbj/www はほぼ "news" 固定)。portal の `category` は `tags` 配列からの写像 (§4) のみで決定する。
+front matter の `category:` field は source 側で Jekyll の layout 用に使われており、portal の `NewsCategory` 分類とは別物。portal の `category` は `tags` 配列からの写像 (§4) のみで決定する。
 
 ## 4. tag → NewsCategory 写像
 
-source 側の `tags:` は ja / en で語彙が異なり、同義語の揺れもある (`お知らせ` と `重要なお知らせ`、`Maintenance` と `Maintenance / Network`)。portal は次の表で `NewsCategory` に正規化する (`server/news/normalize.ts`、全 source 共通)。
+source ごとに語彙が異なる。portal は次の **source 別 mapping 表** で `NewsCategory` に正規化する (`server/news/normalize.ts` の `MAPPING`)。マッチは `tag.trim().toLowerCase()` 後の完全一致。
 
-| 含まれる tag (大文字小文字 / 前後 trim 後の部分一致) | category |
+### 4.1 ddbj/www (DDBJ)
+
+front matter の `tags` で使われている実値:
+
+| tag | category |
 |---|---|
-| `重要` / `Announcement` / `Notice` | `announcement` |
-| `リリース` / `Release` / `公開` | `release` |
-| `メンテナンス` / `Maintenance` / `障害` / `復旧` / `Incident` | `maintenance` |
-| `イベント` / `Event` / `セミナー` / `Workshop` | `event` |
-| 上記いずれもなし | `news` |
+| `お知らせ` / `Announcement` | `announcement` |
+| `データ公開` / `Data Release` | `data-release` |
+| `メンテナンス` / `Maintenance` | `maintenance` |
+| 上記いずれもなし / 未知 tag | `other` |
 
-写像は次の順で行う:
+> Note: DDBJ の Database 区分 (`BioProject`, `BioSample`, `DRA`, `GEA`, `JGA`, `AGD`, `MetaboBank`, `TogoVar`, `DTA` 等) は **`tags` ではなく front matter の `db` フィールド** に入っており、`NewsItem.db` にそのまま格納される。NewsCategory 体系とは独立した別軸 (facet の「サービス」 で使う)。
 
-1. ja / en の rawTags を 1 配列に結合
-2. 各 tag に対して上表の正規表現 (case-insensitive) を上から順に試す
-3. 最初にマッチした enum を採用、マッチが無ければ `news`
+### 4.2 dbcls/website (DBCLS)
 
-`retireTime` を過ぎた item の `category` は変えない (`announcement` のまま)。NotificationBar 側で `retireTime` を見て表示から外す (§7.1)。
+front matter の `tags` で使われている実値:
 
-写像ルールは `server/news/normalize.ts` の `tagsToCategory()` が一手に担う。source 側で新しい tag が追加されたら fallback の `news` に落ちる (UI を壊さない)。
+| tag | category |
+|---|---|
+| `public_relations` | `announcement` |
+| `events` | `event` |
+| `registration` | `event` |
+| `services` | `service` |
+| `other` | `other` |
+| 未知 tag | `other` |
+
+### 4.3 写像ルール
+
+1. ja / en の `rawTags` を 1 配列に結合
+2. 各 tag を `trim().toLowerCase()` で正規化し、source 別 mapping 表を引く
+3. 最初にマッチした enum を採用、マッチが無ければ `other` (default fallback)
+
+`retireTime` を過ぎた item の `category` は変えない。NotificationBar 側で `featured && retireTime > now` を見て表示から外す (§7.1)。
+
+source 側で新しい tag が追加されたら fallback の `other` に落ちる (UI を壊さない)。新 tag を category に取り込みたい場合は本表と `tests/unit/server/news/normalize.test.ts` の table を同時更新する。
 
 ## 5. facet 設計
 
@@ -165,7 +186,7 @@ source 側の `tags:` は ja / en で語彙が異なり、同義語の揺れも�
 
 | facet | 元 field | 値の集合 |
 |---|---|---|
-| 種別 (category) | `category` | `NewsCategory` enum 5 種、cache から実出現分のみ |
+| 種別 (category) | `category` | `NewsCategory` enum 6 種、cache から実出現分のみ |
 | ソース | `source` | `NewsSource` enum (`"ddbj"` / `"dbcls"`)、cache から実出現分のみ |
 | 年 | `publishedAt` の年 | cache から実出現分のみ、降順 |
 | サービス | `db` | `db` 配列の和集合、文字列 sort |
@@ -175,7 +196,7 @@ source 側の `tags:` は ja / en で語彙が異なり、同義語の揺れも�
 URL params との同期 (`facet-url-state.ts`):
 
 ```
-/news?category=announcement,release&year=2024,2025&service=bioproject,biosample
+/news?category=announcement,data-release&year=2024,2025&service=bioproject,biosample
 ```
 
 `,` separated。順序は alphabet sort で安定化 (URL diff が小さく保たれる)。
@@ -195,15 +216,17 @@ URL params との同期 (`facet-url-state.ts`):
 
 ## 7. UI 統合
 
-### 7.1 NotificationBar (全 page 上部)
+### 7.1 NotificationBar (top page 上部)
 
-`/api/news` の上位レスポンスから次の条件を満たす 1 件を表示する:
+`/api/news` のレスポンスから次の条件を満たす 1 件を表示する:
 
-- `category === "announcement"`
+- `featured === true` (= `global.yml` の `top_news` slug whitelist に該当)
 - `retireTime` が無いか、`retireTime > now`
 - sessionStorage `dbPortal.notificationBar.dismissed` (string id 配列) に含まれていない
 
 複数件が条件を満たす場合は `publishedAt` 降順で先頭。close button で次の候補へ、全て閉じれば bar 自体を hide する。仕様詳細は `shell.md §4`。
+
+「重要」 という言葉ではなく **`featured`** (= NotificationBar 掲載対象フラグ) と呼ぶ。category とは独立した軸であり、category が `announcement` であっても featured でなければ NotificationBar には出さない。逆に featured なら category を問わず出る (ddbj 側だけで運用、`global.yml` メンテナで決まる)。
 
 ### 7.2 NewsAside (top page 右ペイン)
 
@@ -215,8 +238,9 @@ URL params との同期 (`facet-url-state.ts`):
 
 ```
 app/features/news/
+├── category-label.ts    ← NewsCategory → i18n key の写像 (集約)
 ├── news-list.tsx        ← Toolbar + NewsList + Pagination の組立て
-├── news-row.tsx         ← 1 行 (date / title / 重要 tag / source / category Tag)
+├── news-row.tsx         ← 1 行 (date / title / featured バッジ / source / category Tag)
 ├── facet-panel.tsx      ← 4 グループ FacetGroup の配置
 ├── facet-item.tsx       ← 1 item のチェックボックス + count
 ├── applied-filters.tsx  ← 適用中 chip の表示と解除
@@ -231,13 +255,13 @@ pagination は `app/ui/pagination.tsx` を使い、1 page 20 件、URL に `?pag
 
 ## 8. cache の schema migration
 
-`NewsCache.schemaVersion` を `z.literal(1)` で固定する。schema を更新する際は次の運用を取る:
+`NewsCache.schemaVersion` を `z.literal(3)` で固定する。schema を更新する際は次の運用を取る:
 
-1. `app/schemas/api-bff/news.ts` の `schemaVersion` を `2` に上げ、新 field を追加
-2. server 起動時、disk cache が `schemaVersion: 1` (旧) なら parse 失敗 → 空 cache から再構築 (5 秒後 fetch で全件再取得)
+1. `app/schemas/api-bff/news.ts` の `schemaVersion` を `4` に上げ、新 field を追加
+2. server 起動時、disk cache が `schemaVersion: 3` (旧) なら `safeParse` 失敗 → 空 cache から再構築 (起動直後 initial sync で全件取得)
 3. 旧 file は上書き保存される (古い schema を後方互換で持たない、シンプル化優先)
 
-PBT (`tests/pbt/server/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file を渡しても、起動が成功し空 cache から復元される」 不変量を担保する。
+PBT (`tests/pbt/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file を渡しても、起動が成功し空 cache から復元される」 不変量を担保する。
 
 ## 9. 環境変数
 
@@ -245,47 +269,40 @@ PBT (`tests/pbt/server/news/cache-migration.pbt.test.ts`) で「任意の旧 cac
 
 | 変数 | デフォルト | 用途 |
 |---|---|---|
-| `DB_PORTAL_NEWS_MIRROR_DDBJ_REPO` | `ddbj/www` | ddbj source の取得対象 (owner/repo) |
+| `DB_PORTAL_NEWS_REPOS_DIR` | `./repos` | 各 source の clone 先ディレクトリのルート |
+| `DB_PORTAL_NEWS_DDBJ_REPO_URL` | `https://github.com/ddbj/www.git` | ddbj source の clone 元 URL |
 | `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` | `main` | ddbj source の branch |
-| `DB_PORTAL_NEWS_MIRROR_DBCLS_REPO` | `dbcls/website` | dbcls source の取得対象 (owner/repo) |
+| `DB_PORTAL_NEWS_DBCLS_REPO_URL` | `https://github.com/dbcls/website.git` | dbcls source の clone 元 URL |
 | `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` | `master` | dbcls source の branch |
 | `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` | `1800` (30 分) | 全 source 共通のポーリング間隔 |
-| `DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` | (空) | GitHub PAT (rate limit 緩和、staging / production で設定) |
-| `DB_PORTAL_NEWS_CACHE_DIR` | `/var/cache/db-portal/news` | disk cache 配置先 (source ごとに別 file) |
+| `DB_PORTAL_NEWS_CACHE_DIR` | `/var/cache/db-portal/news` | disk cache 配置先 |
 
-GitHub API rate limit:
-
-- 認証なし: 60 req/h/IP
-- PAT 認証: 5000 req/h
-
-通常運用では 30 分間隔 × 2 source × 2 path = 8 req/h で commit SHA check のみ。差分時の Compare API + file 単位 fetch を加味しても 100 req/h 程度。認証なしでも回るが、staging / production では rate limit の余裕を持つために PAT を推奨。
-
-### 9.1 secret の取扱い
-
-`DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` は server-only。`VITE_` 接頭辞は付けない (client bundle に漏らさない)。production env file には `CHANGE_ME` placeholder を置き、deploy 時に上書きする。
+git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要 (`DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` は廃止)。
 
 ## 10. テスト
 
-外部境界 (GitHub API / disk FS / 時刻) のみ mock する。内部関数 (normalize / cache filter / pair) は mock しない。
+外部境界 (git コマンド / disk FS / 時刻) のみ mock する。内部関数 (normalize / cache filter / pair / featured) は mock しない。
 
-### 10.1 unit (Vitest + msw)
+### 10.1 unit (Vitest)
 
 | ファイル | 内容 |
 |---|---|
-| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像、url 組み立て、retire_time 解析 |
-| `tests/unit/server/news/cache.test.ts` | disk load (file 不在 / 破損 / schema 不一致) → 空 cache、update で in-memory + disk 両方更新、filter (category / year / service / lang) |
+| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像 (source 別 mapping 表を table-driven で網羅)、url 組み立て、retire_time 解析 |
+| `tests/unit/server/news/cache.test.ts` | disk load (file 不在 / 破損 / schema 不一致) → 空 cache、update で in-memory + disk 両方更新、filter (category / year / service / lang)、v3 → v3 round trip |
 | `tests/unit/server/news/pair.test.ts` | ja のみ / en のみ / 両方ある場合の slug ペアリング |
-| `tests/unit/server/news/github-client.test.ts` | msw で Commits API / Compare API / Contents API のレスポンスを fixture 化、ETag handling |
-| `tests/unit/server/news/mirror.test.ts` | timer mock で 5 秒後 fetch → 30 分間隔、SHA 同一なら no-op |
+| `tests/unit/server/news/featured.test.ts` | `global.yml` parser: 正常 / 末尾空白 / 空 array / 不在 / malformed YAML / `path` が non-string / BOM 付きの 7 ケース |
+| `tests/unit/server/news/git-sync.test.ts` | 子プロセス起動 API を inject 可能にして mock、clone / pull / rev-parse の成功・失敗を網羅 |
+| `tests/unit/server/news/mirror.test.ts` | timer mock で initial sync → 30 分後 sync、SHA 同一なら no-op、SHA 変化で全件 rebuild |
 
 ### 10.2 PBT (fast-check)
 
 | ファイル | 内容 |
 |---|---|
-| `tests/pbt/server/news/normalize-mapping.pbt.test.ts` | 任意の tag 配列に対して `tagsToCategory()` が冪等 (`tagsToCategory(tags) === tagsToCategory([tagsToCategory(tags)])` 型の自己同型)、全 tag 出力が enum 5 種のいずれかに収まる |
-| `tests/pbt/server/news/pair-symmetry.pbt.test.ts` | 任意の `{ ja, en }` slug ペア生成器で、ペアリング後の item.id が ja / en どちらから入っても等しい |
-| `tests/pbt/server/news/sort-order.pbt.test.ts` | 任意の date 配列が降順 sort 後に「より新しい item が先」 を満たす |
-| `tests/pbt/server/news/cache-migration.pbt.test.ts` | 任意の旧 schema cache JSON (`schemaVersion: 0` 等) で起動が成功し、空 cache から復元される |
+| `tests/pbt/news/normalize.pbt.test.ts` | 任意の tag 配列に対して `tagsToCategory(source, tags)` が `NewsCategory.options` のいずれかを返す、mapping 表に列挙した tag は対応 category を返す、source ごとに mapping が独立している |
+| `tests/pbt/news/featured-symmetry.pbt.test.ts` | 任意の slug 集合と whitelist 集合の組合せで、`isFeaturedSlug` の結果が「whitelist に含まれる ⇔ true」 を満たす (DDBJ のみ、DBCLS は常に false) |
+| `tests/pbt/news/pair-symmetry.pbt.test.ts` | 任意の `{ ja, en }` slug ペア生成器で、ペアリング後の item.id が ja / en どちらから入っても等しい |
+| `tests/pbt/news/sort-order.pbt.test.ts` | 任意の date 配列が降順 sort 後に「より新しい item が先」 を満たす |
+| `tests/pbt/news/cache-migration.pbt.test.ts` | 任意の旧 schema cache JSON (`schemaVersion: 0` 等) で起動が成功し、空 cache から復元される |
 
 ### 10.3 E2E (Playwright on staging)
 
@@ -293,9 +310,9 @@ GitHub API rate limit:
 |---|---|
 | `S-NEWS-01` | `/news` を開き一覧表示、default で date 降順 |
 | `S-NEWS-02` | facet で category / year / service 絞り込み、URL に `?category=...` 反映 |
-| `S-NEWS-03` | NotificationBar に announcement category が表示、close で次の 1 件 |
+| `S-NEWS-03` | NotificationBar に featured 記事が表示、close で次の 1 件 |
 | `S-NEWS-04` | top page 右ペインに 8 件 + 「すべて見る」 リンク |
-| `E-NEWS-01` | GitHub API 障害時、disk cache から応答 |
+| `E-NEWS-01` | git pull 失敗時、disk cache から応答 (既存 cache 維持) |
 | `E-NEWS-02` | 不正 front matter (date が欠落 等) で起動時に該当 item を skip + log warn |
 
 ## 11. 関連 docs
@@ -308,4 +325,4 @@ GitHub API rate limit:
 | `shell.md §5` | NewsAside の表示仕様 |
 | `i18n.md §2` | route id 二重宣言 + handle で lang 決定 |
 | `api-types.md §2.2` | `app/lib/api/news.ts` (client wrapper) の位置付け |
-| `operations.md §3.1` | mirror 障害時の切り分け / disk cache 破損対応 / GitHub PAT rotation |
+| `operations.md §3.1` | mirror 障害時の切り分け / disk cache 破損対応 |

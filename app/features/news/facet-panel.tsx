@@ -1,5 +1,5 @@
 import { NewsCategory } from "~/lib/api"
-import { useT } from "~/lib/i18n"
+import { categoryLabelKey, useT } from "~/lib/i18n"
 import type { AppliedFilter } from "~/ui"
 import { AppliedFilters, FacetGroup, FacetRow, SidebarHeading } from "~/ui"
 
@@ -12,16 +12,6 @@ import {
   toggleYear,
 } from "./facet-url-state"
 import type { NewsFacetOptions } from "./use-news-list"
-
-type CategoryLabelKey =
-  | "news.category.announcement"
-  | "news.category.release"
-  | "news.category.maintenance"
-  | "news.category.event"
-  | "news.category.news"
-
-const categoryLabelKey = (category: NewsCategory): CategoryLabelKey =>
-  `news.category.${category}` as CategoryLabelKey
 
 type FacetPanelProps = {
   facet: NewsFacetState

@@ -25,6 +25,7 @@ export default tseslint.config(
       "build/",
       "node_modules/",
       "playwright-report/",
+      "repos/",
       "test-results/",
       "app/lib/api/openapi-types.ts",
     ],

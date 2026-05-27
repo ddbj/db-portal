@@ -2,10 +2,11 @@ import { z } from "zod"
 
 export const NewsCategory = z.enum([
   "announcement",
-  "release",
+  "data-release",
   "maintenance",
   "event",
-  "news",
+  "service",
+  "other",
 ])
 export type NewsCategory = z.infer<typeof NewsCategory>
 
@@ -31,6 +32,7 @@ export const NewsItem = z.object({
   id: z.string().min(1),
   source: NewsSource,
   category: NewsCategory,
+  featured: z.boolean().default(false),
   publishedAt: z.string().datetime({ offset: true }),
   retireTime: z.string().datetime({ offset: true }).optional(),
   title: langString,
@@ -44,14 +46,9 @@ export type NewsItem = z.infer<typeof NewsItem>
 export const NewsList = z.array(NewsItem)
 export type NewsList = z.infer<typeof NewsList>
 
-const LangSha = z.object({
-  ja: z.string().nullable(),
-  en: z.string().nullable(),
-})
-
 export const NewsCache = z.object({
-  schemaVersion: z.literal(2),
-  lastCommitSha: z.record(NewsSource, LangSha),
+  schemaVersion: z.literal(3),
+  lastSyncSha: z.record(NewsSource, z.string().nullable()),
   lastFetchedAt: z.string().datetime({ offset: true }),
   items: NewsList,
 })

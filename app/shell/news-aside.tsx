@@ -1,20 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 import { useId } from "react"
 
-import type { NewsItem } from "~/lib/api/news"
 import { fetchNews, newsItemSummary, newsItemTitle } from "~/lib/api/news"
-import { formatDate, type Lang, useLang, useT } from "~/lib/i18n"
+import { categoryLabelKey, formatDate, type Lang, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
-
-type CategoryLabelKey =
-  | "news.category.announcement"
-  | "news.category.release"
-  | "news.category.maintenance"
-  | "news.category.event"
-  | "news.category.news"
-
-const categoryLabelKey = (category: NewsItem["category"]): CategoryLabelKey =>
-  `news.category.${category}` as CategoryLabelKey
 
 const NEWS_LIMIT = 5
 

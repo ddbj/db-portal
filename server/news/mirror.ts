@@ -1,132 +1,25 @@
+import type { Dirent } from "node:fs"
+import { readdir, readFile } from "node:fs/promises"
+import path from "node:path"
+
 import type { NewsList, NewsSource } from "../../app/schemas/api-bff/news"
 import type { ServerEnv } from "../lib/env"
 import type { Logger } from "../lib/log"
+import { type CacheStore, createCacheStore } from "./cache"
 import {
-  type CacheStore,
-  createCacheStore,
-  type LangSha,
-} from "./cache"
+  emptyWhitelist,
+  type FeaturedWhitelist,
+  isFeaturedSlug,
+  loadFeaturedWhitelist,
+} from "./featured"
 import {
-  compareCommits,
-  fetchContents,
-  fetchLatestCommitSha,
-  fetchRawText,
-  type GitHubClientConfig,
-} from "./github-client"
+  defaultRunGit,
+  getHeadSha,
+  type RunGit,
+  syncRepo,
+} from "./git-sync"
 import { type LangRawMap, pairToNewsItems, parseRawArticle } from "./pair"
-import { dbclsConfig, ddbjConfig, type GitHubSourceConfig } from "./sources"
-
-const INITIAL_DELAY_MS = 5_000
-
-type Lang = "ja" | "en"
-
-const buildClient = (
-  cfg: GitHubSourceConfig,
-  token: string | undefined,
-  logger: Logger,
-): GitHubClientConfig => ({
-  repo: cfg.repo,
-  branch: cfg.branch,
-  token,
-  logger,
-})
-
-const collectAll = async (
-  client: GitHubClientConfig,
-  cfg: GitHubSourceConfig,
-  lang: Lang,
-): Promise<LangRawMap> => {
-  const entries = await fetchContents(client, cfg.pathByLang[lang])
-  const map: LangRawMap = new Map()
-  for (const entry of entries) {
-    if (!entry.name.endsWith(".md")) continue
-    if (!entry.download_url) continue
-    const raw = await fetchRawText(client, entry.download_url)
-    if (!raw) continue
-    const parsed = parseRawArticle(cfg.source, lang, entry.name, raw, cfg.slugFromFilename)
-    if (parsed) map.set(parsed.slug, parsed)
-  }
-
-  return map
-}
-
-const cacheMapsForSource = (
-  cache: CacheStore,
-  cfg: GitHubSourceConfig,
-): { ja: LangRawMap; en: LangRawMap } => {
-  const ja: LangRawMap = new Map()
-  const en: LangRawMap = new Map()
-  const idPrefix = `${cfg.source}-`
-  for (const item of cache.getState().items) {
-    if (item.source !== cfg.source) continue
-    const slug = item.id.startsWith(idPrefix) ? item.id.slice(idPrefix.length) : item.id
-    if (item.title.ja) {
-      ja.set(slug, {
-        source: cfg.source,
-        lang: "ja",
-        slug,
-        fm: {
-          title: item.title.ja,
-          date: item.publishedAt,
-          db: item.db,
-          tags: item.rawTags.ja,
-          lang: "ja",
-          ...(item.retireTime ? { retire_time: item.retireTime } : {}),
-        },
-        body: "",
-      })
-    }
-    if (item.title.en) {
-      en.set(slug, {
-        source: cfg.source,
-        lang: "en",
-        slug,
-        fm: {
-          title: item.title.en,
-          date: item.publishedAt,
-          db: item.db,
-          tags: item.rawTags.en,
-          lang: "en",
-          ...(item.retireTime ? { retire_time: item.retireTime } : {}),
-        },
-        body: "",
-      })
-    }
-  }
-
-  return { ja, en }
-}
-
-const applyChangedFiles = async (
-  client: GitHubClientConfig,
-  cache: CacheStore,
-  cfg: GitHubSourceConfig,
-  changedByLang: { ja: Set<string>; en: Set<string> },
-  lastCommitSha: LangSha,
-): Promise<void> => {
-  const current = cacheMapsForSource(cache, cfg)
-  for (const lang of ["ja", "en"] as const) {
-    if (changedByLang[lang].size === 0) continue
-    const dirEntries = await fetchContents(client, cfg.pathByLang[lang])
-    const byName = new Map(dirEntries.map((entry) => [entry.name, entry]))
-    for (const filename of changedByLang[lang]) {
-      const baseName = filename.split("/").pop()
-      if (!baseName || !baseName.endsWith(".md")) continue
-      const entry = byName.get(baseName)
-      if (!entry || !entry.download_url) {
-        const slug = cfg.slugFromFilename(lang, baseName)
-        if (slug) current[lang].delete(slug)
-        continue
-      }
-      const raw = await fetchRawText(client, entry.download_url)
-      if (!raw) continue
-      const parsed = parseRawArticle(cfg.source, lang, baseName, raw, cfg.slugFromFilename)
-      if (parsed) current[lang].set(parsed.slug, parsed)
-    }
-  }
-  const items: NewsList = pairToNewsItems(cfg, current.ja, current.en)
-  await cache.replaceItemsForSource(cfg.source, items, lastCommitSha)
-}
+import { dbclsConfig, ddbjConfig, type RepoSourceConfig } from "./sources"
 
 export type NewsMirror = {
   start: () => void
@@ -137,16 +30,72 @@ let activeCache: CacheStore | undefined
 
 export const getActiveNewsCache = (): CacheStore | undefined => activeCache
 
-export const sourceConfigs = (env: ServerEnv): GitHubSourceConfig[] => [
-  ddbjConfig(env.DB_PORTAL_NEWS_MIRROR_DDBJ_REPO, env.DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH),
-  dbclsConfig(env.DB_PORTAL_NEWS_MIRROR_DBCLS_REPO, env.DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH),
+export const sourceConfigs = (env: ServerEnv): RepoSourceConfig[] => [
+  ddbjConfig(
+    env.DB_PORTAL_NEWS_DDBJ_REPO_URL,
+    env.DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH,
+    path.join(env.DB_PORTAL_NEWS_REPOS_DIR, "ddbj-www"),
+  ),
+  dbclsConfig(
+    env.DB_PORTAL_NEWS_DBCLS_REPO_URL,
+    env.DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH,
+    path.join(env.DB_PORTAL_NEWS_REPOS_DIR, "dbcls-website"),
+  ),
 ]
+
+const collectAll = async (
+  cfg: RepoSourceConfig,
+  lang: "ja" | "en",
+  logger: Logger,
+): Promise<LangRawMap> => {
+  const dir = cfg.pathByLang[lang]
+  const map: LangRawMap = new Map()
+  let entries: Dirent[]
+  try {
+    entries = await readdir(dir, { withFileTypes: true })
+  } catch (error) {
+    logger.warn("news_dir_read_failed", {
+      source: cfg.source,
+      lang,
+      dir,
+      message: error instanceof Error ? error.message : String(error),
+    })
+
+    return map
+  }
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue
+    const raw = await readFile(path.join(dir, entry.name), "utf8")
+    const parsed = parseRawArticle(cfg.source, lang, entry.name, raw, cfg.slugFromFilename)
+    if (parsed) map.set(parsed.slug, parsed)
+  }
+
+  return map
+}
+
+const rebuildForSource = async (
+  cache: CacheStore,
+  cfg: RepoSourceConfig,
+  whitelist: FeaturedWhitelist,
+  sha: string,
+  logger: Logger,
+): Promise<void> => {
+  const [ja, en] = await Promise.all([
+    collectAll(cfg, "ja", logger),
+    collectAll(cfg, "en", logger),
+  ])
+  const items = pairToNewsItems(cfg, ja, en, (slug) =>
+    isFeaturedSlug(cfg.source, slug, whitelist))
+  await cache.replaceItemsForSource(cfg.source, items as NewsList, sha)
+  logger.info("news_mirror_full_refresh", { source: cfg.source, items: items.length })
+}
 
 const createSourcePoller = (
   cache: CacheStore,
-  cfg: GitHubSourceConfig,
-  client: GitHubClientConfig,
+  cfg: RepoSourceConfig,
+  runGit: RunGit,
   logger: Logger,
+  getWhitelist: () => Promise<FeaturedWhitelist>,
 ): (() => Promise<void>) => {
   let inflight = false
 
@@ -154,63 +103,29 @@ const createSourcePoller = (
     if (inflight) return
     inflight = true
     try {
-      const [latestJa, latestEn] = await Promise.all([
-        fetchLatestCommitSha(client, cfg.pathByLang.ja),
-        fetchLatestCommitSha(client, cfg.pathByLang.en),
-      ])
-      const previous = cache.getCommitShaForSource(cfg.source)
-      const newJa = latestJa ?? null
-      const newEn = latestEn ?? null
-      if (newJa === null && newEn === null) {
-        logger.debug("news_mirror_skip_no_remote_sha", { source: cfg.source })
+      const sync = await syncRepo(cfg.repoUrl, cfg.branch, cfg.localDir, runGit)
+      if (!sync.ok) {
+        logger.warn("news_git_sync_failed", {
+          source: cfg.source,
+          stderr: sync.stderr.slice(0, 200),
+        })
 
         return
       }
-      if (newJa === previous.ja && newEn === previous.en) {
-        logger.debug("news_mirror_no_change", { source: cfg.source, ja: newJa, en: newEn })
-        await cache.updateCommitShaForSource(cfg.source, { ja: newJa, en: newEn })
+      const newSha = await getHeadSha(cfg.localDir, runGit)
+      if (!newSha) {
+        logger.warn("news_git_head_unknown", { source: cfg.source })
 
         return
       }
-      if (previous.ja === null || previous.en === null) {
-        const [ja, en] = await Promise.all([
-          collectAll(client, cfg, "ja"),
-          collectAll(client, cfg, "en"),
-        ])
-        const items = pairToNewsItems(cfg, ja, en)
-        await cache.replaceItemsForSource(cfg.source, items, { ja: newJa, en: newEn })
-        logger.info("news_mirror_full_refresh", { source: cfg.source, items: items.length })
+      const previous = cache.getSyncShaForSource(cfg.source)
+      if (newSha === previous) {
+        logger.debug("news_mirror_no_change", { source: cfg.source, sha: newSha })
 
         return
       }
-      const changedByLang = { ja: new Set<string>(), en: new Set<string>() }
-      for (const lang of ["ja", "en"] as const) {
-        const base = previous[lang]
-        const head = lang === "ja" ? newJa : newEn
-        if (!base || !head || base === head) continue
-        const files = await compareCommits(client, base, head)
-        if (!files) {
-          const [ja, en] = await Promise.all([
-            collectAll(client, cfg, "ja"),
-            collectAll(client, cfg, "en"),
-          ])
-          const items = pairToNewsItems(cfg, ja, en)
-          await cache.replaceItemsForSource(cfg.source, items, { ja: newJa, en: newEn })
-          logger.info("news_mirror_compare_fallback", { source: cfg.source, items: items.length })
-
-          return
-        }
-        for (const file of files) {
-          if (!file.filename.startsWith(cfg.pathByLang[lang])) continue
-          changedByLang[lang].add(file.filename)
-        }
-      }
-      await applyChangedFiles(client, cache, cfg, changedByLang, { ja: newJa, en: newEn })
-      logger.info("news_mirror_partial_refresh", {
-        source: cfg.source,
-        jaChanged: changedByLang.ja.size,
-        enChanged: changedByLang.en.size,
-      })
+      const whitelist = await getWhitelist()
+      await rebuildForSource(cache, cfg, whitelist, newSha, logger)
     } catch (error) {
       logger.error("news_mirror_failed", {
         source: cfg.source,
@@ -228,11 +143,18 @@ export const createNewsMirror = (env: ServerEnv, logger: Logger): {
 } => {
   const cache = createCacheStore(env.DB_PORTAL_NEWS_CACHE_DIR, logger)
   const configs = sourceConfigs(env)
+  const ddbjGlobalYaml = configs.find((c) => c.source === "ddbj")?.globalYamlPath
+
+  const getWhitelist = async (): Promise<FeaturedWhitelist> => {
+    if (!ddbjGlobalYaml) return emptyWhitelist()
+
+    return loadFeaturedWhitelist(ddbjGlobalYaml, logger)
+  }
+
   const pollers = configs.map((cfg) =>
-    createSourcePoller(cache, cfg, buildClient(cfg, env.DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN, logger), logger),
-  )
+    createSourcePoller(cache, cfg, defaultRunGit, logger, getWhitelist))
+
   let pollTimer: ReturnType<typeof setInterval> | null = null
-  let initialTimer: ReturnType<typeof setTimeout> | null = null
 
   const tickAll = async (): Promise<void> => {
     for (const poll of pollers) {
@@ -245,21 +167,13 @@ export const createNewsMirror = (env: ServerEnv, logger: Logger): {
       if (pollTimer) return
       const intervalMs = env.DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS * 1000
       activeCache = cache
-      void cache.initFromDisk()
-      initialTimer = setTimeout(() => {
-        void tickAll()
-      }, INITIAL_DELAY_MS)
-      initialTimer.unref?.()
+      void cache.initFromDisk().then(() => tickAll())
       pollTimer = setInterval(() => {
         void tickAll()
       }, intervalMs)
       pollTimer.unref?.()
     },
     stop: () => {
-      if (initialTimer) {
-        clearTimeout(initialTimer)
-        initialTimer = null
-      }
       if (pollTimer) {
         clearInterval(pollTimer)
         pollTimer = null

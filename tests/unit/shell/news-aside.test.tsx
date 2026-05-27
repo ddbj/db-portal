@@ -22,7 +22,8 @@ const makeNews = (count: number): NewsList =>
   Array.from({ length: count }, (_, i) => ({
     id: `n-${i + 1}`,
     source: "ddbj" as const,
-    category: "release" as const,
+    category: "data-release" as const,
+    featured: false,
     publishedAt: `2026-05-${String(24 - i).padStart(2, "0")}T00:00:00Z`,
     title: { ja: `お知らせ ${i + 1}`, en: `Announcement ${i + 1}` },
     db: [],

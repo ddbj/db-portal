@@ -14,11 +14,11 @@ test.describe("News Domain", () => {
     await page.goto("/news")
 
     await page
-      .getByRole("checkbox", { name: /リリース|release/i })
+      .getByRole("checkbox", { name: /データ公開|data release/i })
       .first()
       .check()
 
-    await expect(page).toHaveURL(/category=release/, { timeout: 5_000 })
+    await expect(page).toHaveURL(/category=data-release/, { timeout: 5_000 })
 
     const yearFacet = page.getByRole("checkbox", { name: /2024/ }).first()
     if (await yearFacet.isVisible().catch(() => false)) {

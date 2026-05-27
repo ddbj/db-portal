@@ -45,13 +45,15 @@ export const pairToNewsItems = (
   cfg: SourceNormalizeConfig,
   ja: LangRawMap,
   en: LangRawMap,
+  isFeatured?: (slug: string) => boolean,
 ): NewsItem[] => {
   const slugs = new Set<string>()
   for (const slug of ja.keys()) slugs.add(slug)
   for (const slug of en.keys()) slugs.add(slug)
   const items: NewsItem[] = []
   for (const slug of slugs) {
-    const item = toNewsItem(cfg, ja.get(slug), en.get(slug))
+    const featured = isFeatured ? isFeatured(slug) : false
+    const item = toNewsItem(cfg, ja.get(slug), en.get(slug), featured)
     if (item) items.push(item)
   }
   items.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))

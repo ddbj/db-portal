@@ -7,34 +7,38 @@ import { NewsCategory as NewsCategoryEnum } from "../../app/schemas/api-bff/news
 
 export { NewsCategory } from "../../app/schemas/api-bff/news"
 
-const DEFAULT_CATEGORY: NewsCategory = "news"
+const DEFAULT_CATEGORY: NewsCategory = "other"
 
-const CATEGORY_PATTERNS: { category: Exclude<NewsCategory, "news">; patterns: RegExp[] }[] = [
-  {
-    category: "announcement",
-    patterns: [/重要/, /^announcement$/i, /^notice$/i, /^public_relations$/i],
+const MAPPING: Record<NewsSource, Readonly<Record<string, NewsCategory>>> = {
+  ddbj: {
+    "お知らせ": "announcement",
+    "announcement": "announcement",
+    "データ公開": "data-release",
+    "data release": "data-release",
+    "メンテナンス": "maintenance",
+    "maintenance": "maintenance",
   },
-  {
-    category: "release",
-    patterns: [/^リリース$/, /^release$/i, /^公開$/],
+  dbcls: {
+    "public_relations": "announcement",
+    "events": "event",
+    "registration": "event",
+    "services": "service",
+    "other": "other",
   },
-  {
-    category: "maintenance",
-    patterns: [/メンテナンス/, /^maintenance$/i, /障害/, /復旧/, /^incident$/i, /^services$/i],
-  },
-  {
-    category: "event",
-    patterns: [/^イベント$/, /^event$/i, /セミナー/, /^workshop$/i],
-  },
-]
+}
 
-export const tagsToCategory = (tags: readonly string[]): NewsCategory => {
+export const tagsToCategory = (
+  source: NewsSource,
+  tags: readonly string[],
+): NewsCategory => {
+  const table = MAPPING[source]
   for (const tag of tags) {
-    const trimmed = tag.trim()
-    if (trimmed === "") continue
-    for (const { category, patterns } of CATEGORY_PATTERNS) {
-      if (patterns.some((p) => p.test(trimmed))) return category
-    }
+    const key = tag.trim().toLowerCase()
+    if (key === "") continue
+    // Object.hasOwn avoids reaching prototype chain entries (e.g. "__proto__")
+    if (!Object.hasOwn(table, key)) continue
+    const found = table[key]
+    if (found !== undefined) return found
   }
 
   return DEFAULT_CATEGORY
@@ -121,6 +125,9 @@ export type RawArticle = {
 }
 
 const SUMMARY_LIMIT = 180
+
+export const stripHtmlTags = (value: string): string =>
+  value.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
 
 export const extractSummary = (body: string): string | undefined => {
   const trimmed = body.replace(/^\s+/, "")
@@ -209,6 +216,7 @@ export const toNewsItem = (
   cfg: SourceNormalizeConfig,
   ja: RawArticle | undefined,
   en: RawArticle | undefined,
+  featured = false,
 ): NewsItem | undefined => {
   const primary = ja ?? en
   if (!primary) return undefined
@@ -229,7 +237,7 @@ export const toNewsItem = (
     ?? toIsoDatetime(ja?.fm.retire_time)
   const jaTags = ja?.fm.tags ?? []
   const enTags = en?.fm.tags ?? []
-  const category = tagsToCategory([...jaTags, ...enTags])
+  const category = tagsToCategory(cfg.source, [...jaTags, ...enTags])
   const url = {
     ja: ja ? cfg.urlBuilder("ja", slug) : undefined,
     en: en ? cfg.urlBuilder("en", slug) : undefined,
@@ -248,11 +256,12 @@ export const toNewsItem = (
     id: itemId(cfg.source, slug),
     source: cfg.source,
     category,
+    featured,
     publishedAt,
     ...(retireTime ? { retireTime } : {}),
     title: {
-      ja: ja?.fm.title?.trim() ?? "",
-      en: en?.fm.title?.trim() ?? "",
+      ja: stripHtmlTags(ja?.fm.title ?? ""),
+      en: stripHtmlTags(en?.fm.title ?? ""),
     },
     ...(summary ? { summary } : {}),
     ...(url.ja || url.en ? { url } : {}),

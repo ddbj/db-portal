@@ -94,11 +94,12 @@ export const en: Resources = {
       service: "Service",
     },
     category: {
-      announcement: "Important",
-      release: "Release",
+      announcement: "Announcement",
+      "data-release": "Data Release",
       maintenance: "Maintenance",
-      event: "Event",
-      news: "News",
+      event: "Events",
+      service: "Service",
+      other: "Other",
     },
   },
   switchLang: {

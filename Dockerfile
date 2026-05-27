@@ -10,6 +10,7 @@ LABEL org.opencontainers.image.title="db-portal" \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       curl \
+      git \
       jq \
       less \
       vim-tiny && \

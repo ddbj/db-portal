@@ -1,3 +1,5 @@
+import path from "node:path"
+
 import type { NewsSource } from "../../app/schemas/api-bff/news"
 import { dbclsDateFromSlug } from "./normalize"
 import {
@@ -6,10 +8,12 @@ import {
   type SourceParseConfig,
 } from "./pair"
 
-export type GitHubSourceConfig = SourceParseConfig & {
-  repo: string
+export type RepoSourceConfig = SourceParseConfig & {
+  repoUrl: string
   branch: string
+  localDir: string
   pathByLang: { ja: string; en: string }
+  globalYamlPath?: string
 }
 
 const ddbjUrl = (lang: "ja" | "en", slug: string): string =>
@@ -27,20 +31,37 @@ const dbclsUrl = (lang: "ja" | "en", slug: string): string => {
   return `https://dbcls.rois.ac.jp/${lang}/${y}/${mo}/${d}/${title}.html`
 }
 
-export const ddbjConfig = (repo: string, branch: string): GitHubSourceConfig => ({
+export const ddbjConfig = (
+  repoUrl: string,
+  branch: string,
+  localDir: string,
+): RepoSourceConfig => ({
   source: "ddbj",
-  repo,
+  repoUrl,
   branch,
-  pathByLang: { ja: "_news/ja", en: "_news/en" },
+  localDir,
+  pathByLang: {
+    ja: path.join(localDir, "_news/ja"),
+    en: path.join(localDir, "_news/en"),
+  },
+  globalYamlPath: path.join(localDir, "_data/global.yml"),
   urlBuilder: ddbjUrl,
   slugFromFilename: ddbjSlugStripper,
 })
 
-export const dbclsConfig = (repo: string, branch: string): GitHubSourceConfig => ({
+export const dbclsConfig = (
+  repoUrl: string,
+  branch: string,
+  localDir: string,
+): RepoSourceConfig => ({
   source: "dbcls",
-  repo,
+  repoUrl,
   branch,
-  pathByLang: { ja: "_posts/ja", en: "_posts/en" },
+  localDir,
+  pathByLang: {
+    ja: path.join(localDir, "_posts/ja"),
+    en: path.join(localDir, "_posts/en"),
+  },
   urlBuilder: dbclsUrl,
   slugFromFilename: dbclsSlugStripper,
   publishedAtFromSlug: dbclsDateFromSlug,

@@ -31,12 +31,12 @@ export const ServerEnv = z.object({
   DB_PORTAL_LLM_TIMEOUT_MS: numberFromString(60000),
   DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN: numberFromString(60),
   DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN: numberFromString(30),
-  DB_PORTAL_NEWS_MIRROR_DDBJ_REPO: z.string().default("ddbj/www"),
+  DB_PORTAL_NEWS_REPOS_DIR: z.string().default("./repos"),
+  DB_PORTAL_NEWS_DDBJ_REPO_URL: z.string().default("https://github.com/ddbj/www.git"),
   DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH: z.string().default("main"),
-  DB_PORTAL_NEWS_MIRROR_DBCLS_REPO: z.string().default("dbcls/website"),
+  DB_PORTAL_NEWS_DBCLS_REPO_URL: z.string().default("https://github.com/dbcls/website.git"),
   DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH: z.string().default("master"),
   DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS: numberFromString(1800),
-  DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN: optionalString,
   DB_PORTAL_NEWS_CACHE_DIR: z.string().default("/var/cache/db-portal/news"),
 })
 

@@ -19,6 +19,7 @@ export const createI18nInstance = (lng: Lang): I18nInstance => {
   return instance
 }
 
+export { type CategoryLabelKey, categoryLabelKey } from "./category-label"
 export { flattenKeys } from "./flatten-keys"
 export { formatDate } from "./format-date"
 export { en } from "./resources/en"

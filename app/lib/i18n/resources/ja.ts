@@ -98,10 +98,11 @@ export type Resources = {
     }
     category: {
       announcement: string
-      release: string
+      "data-release": string
       maintenance: string
       event: string
-      news: string
+      service: string
+      other: string
     }
   }
   switchLang: {
@@ -656,11 +657,12 @@ export const ja: Resources = {
       service: "サービス",
     },
     category: {
-      announcement: "重要なお知らせ",
-      release: "リリース",
+      announcement: "お知らせ",
+      "data-release": "データ公開",
       maintenance: "メンテナンス",
-      event: "イベント",
-      news: "ニュース",
+      event: "イベント・募集",
+      service: "サービス",
+      other: "その他",
     },
   },
   switchLang: {

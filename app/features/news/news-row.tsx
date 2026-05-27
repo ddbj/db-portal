@@ -1,16 +1,6 @@
 import { type NewsItem, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api"
-import { formatDate, type Lang, useT } from "~/lib/i18n"
-import { cn, Tag, TextLink } from "~/ui"
-
-type CategoryLabelKey =
-  | "news.category.announcement"
-  | "news.category.release"
-  | "news.category.maintenance"
-  | "news.category.event"
-  | "news.category.news"
-
-const categoryLabelKey = (category: NewsItem["category"]): CategoryLabelKey =>
-  `news.category.${category}` as CategoryLabelKey
+import { categoryLabelKey, formatDate, type Lang, useT } from "~/lib/i18n"
+import { Tag, TextLink } from "~/ui"
 
 type NewsRowProps = {
   item: NewsItem
@@ -22,26 +12,11 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
   const title = newsItemTitle(item, lang)
   const summary = newsItemSummary(item, lang)
   const externalUrl = newsItemUrl(item, lang)
-  const isAnnouncement = item.category === "announcement"
-
-  const importantBadge = (
-    <span className="mr-2 inline-block" style={{ verticalAlign: 2 }}>
-      <Tag kind="status" tone="critical" size="md">
-        {t("notificationBar.important")}
-      </Tag>
-    </span>
-  )
 
   return (
     <li
-      className={cn(
-        "flex items-start gap-hero-gap border-b border-border-soft last:border-b-0",
-        isAnnouncement ? "border-l border-l-brand pl-3" : "",
-      )}
-      style={{
-        borderLeftWidth: isAnnouncement ? 3 : undefined,
-        padding: isAnnouncement ? "16px 4px 16px 12px" : "16px 4px",
-      }}
+      className="flex items-start gap-hero-gap border-b border-border-soft last:border-b-0"
+      style={{ padding: "16px 4px" }}
     >
       <span
         className="font-mono text-fs-meta text-ink-soft shrink-0 w-news-date tracking-meta"
@@ -53,15 +28,11 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
         {externalUrl !== undefined
           ? (
             <TextLink href={externalUrl} external weight="bold">
-              <span className="text-ink text-fs-body leading-title">
-                {isAnnouncement && importantBadge}
-                {title}
-              </span>
+              <span className="text-ink text-fs-body leading-title">{title}</span>
             </TextLink>
           )
           : (
             <span className="text-ink text-fs-body font-semibold leading-title">
-              {isAnnouncement && importantBadge}
               {title}
             </span>
           )}

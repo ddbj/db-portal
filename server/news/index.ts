@@ -6,14 +6,21 @@ export {
   persistCacheToDisk,
 } from "./cache"
 export {
-  compareCommits,
-  type CompareFile,
-  type ContentEntry,
-  fetchContents,
-  fetchLatestCommitSha,
-  fetchRawText,
-  type GitHubClientConfig,
-} from "./github-client"
+  emptyWhitelist,
+  type FeaturedWhitelist,
+  isFeaturedSlug,
+  loadFeaturedWhitelist,
+} from "./featured"
+export {
+  cloneRepo,
+  defaultRunGit,
+  getHeadSha,
+  isGitRepo,
+  pullRepo,
+  type RunGit,
+  type RunGitResult,
+  syncRepo,
+} from "./git-sync"
 export {
   createNewsMirror,
   getActiveNewsCache,
@@ -26,6 +33,7 @@ export {
   type ParsedMarkdown,
   parseFrontMatter,
   type RawArticle,
+  stripHtmlTags,
   tagsToCategory,
   toNewsItem,
 } from "./normalize"
@@ -41,6 +49,6 @@ export {
 export {
   dbclsConfig,
   ddbjConfig,
-  type GitHubSourceConfig,
   knownSources,
+  type RepoSourceConfig,
 } from "./sources"

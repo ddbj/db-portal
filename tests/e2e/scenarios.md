@@ -236,21 +236,21 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **手順**:
   1. `/news` を開く
-  2. 種別 facet で `リリース` を選択
+  2. 種別 facet で `データ公開` を選択
   3. 年 facet で `2024` を選択
 - **期待**:
-  - URL が `/news?category=release&year=2024` に更新 (params alphabet sort)
-  - 一覧が release かつ 2024 年の item に絞り込まれる
+  - URL が `/news?category=data-release&year=2024` に更新 (params alphabet sort)
+  - 一覧が data-release かつ 2024 年の item に絞り込まれる
   - AppliedFilters に 2 chip 表示
 
-### S-NEWS-03: NotificationBar に announcement が表示
+### S-NEWS-03: NotificationBar に featured が表示
 
 - **ペルソナ**: P-ANON
 - **手順**:
   1. `/` を開く
 - **期待**:
   - 全 page 上部に NotificationBar が表示
-  - `category === "announcement"` かつ `retireTime > now` の最新 1 件のみ表示
+  - `featured === true` かつ `retireTime > now` の最新 1 件のみ表示 (featured は `_data/global.yml` の `top_news.{ja,en}[].path` 由来)
   - 「閉じる」 で次の候補に遷移、sessionStorage に dismissed id 保存
 
 ### S-NEWS-04: トップ右ペインに 8 件 + 「すべて見る」
