@@ -1,12 +1,12 @@
 # Architecture
 
-DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `content-system.md` / `development.md`) はここから参照される。
+DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。
 
 ## プロジェクトの位置付け
 
 DDBJ の登録・検索サービスへの統合ポータル。**DDBJ Record (v3) schema には依存しない**。登録ナビは「登録経路の知識ベース」 であって登録メタデータではなく、Record 完成後に必要なら adapter を後付けする (`decisions.md`)。
 
-ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリース時点では含めない。コンテンツ機構 (`*.content.tsx` collection、`content-system.md`) は段階移行できるよう最初から設計する (`decisions.md`)。
+ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリース時点では含めない。コンテンツ機構 (`*.content.tsx` collection、`frontend.md`) は段階移行できるよう最初から設計する (`decisions.md`)。
 
 次の機能領域を 1 リポジトリで提供する。
 
@@ -17,7 +17,7 @@ ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリー�
 | 登録ナビゲーション | `/submit` | テーブル + per-cell tag + 動的 FlowStep カードによる登録経路ナビ |
 | ニュース | `/news` | ddbj/www の `_news/` を mirror し、カテゴリ facet で閲覧 |
 | データベース解説 | `/databases/:slug` | コンテンツ collection から各 DB の説明を生成 |
-| 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない  |
+| 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない |
 | 言語切替 API | `/api/set-lang` | lang cookie を更新する resource route (詳細 `i18n.md`) |
 
 ## ディレクトリ構造
@@ -60,6 +60,71 @@ db-portal/
 `app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は本書の SSR/CSR、build/runtime のセクションで扱う。
 
 リポジトリは 1 つのまま運用する。module 境界は内部 import 制約で表現し、物理分割 (`packages/*` への分解) は採用しない (`decisions.md`)。
+
+## URL とルーティング
+
+`app/routes.ts` (RR v7 config-based routing) が URL 全構造の SSOT。
+
+### URL 一覧
+
+URL は lang 中立 (cookie で言語が決まる、`i18n.md` 参照)。
+
+| URL | route file | 役割 |
+|---|---|---|
+| `/` | `routes/top/route.tsx` | トップ (hero 検索 + サービス tile + Popular Resources + News aside) |
+| `/search` | `routes/search/route.tsx` | クエリビルダー / AI アシスタント / 検索条件構築 |
+| `/search/results` | `routes/search-results/route.tsx` | cross-DB / per-DB の検索結果 |
+| `/submit` | `routes/submit/route.tsx` | 登録ナビ (テーブル + FlowStep カード + modal) |
+| `/news` | `routes/news/route.tsx` | ニュース一覧 + facet panel |
+| `/databases/:slug` | `routes/databases/$slug.tsx` | DatabaseContent collection の各エントリ表示 |
+| `/api/set-lang` | `routes/api.set-lang.ts` | 言語切替 resource route (action のみ、cookie 更新 + Referer に 303) |
+| `/auth/callback` | `routes/auth/callback.tsx` | OIDC コールバック fallback |
+| `/auth/silent-callback` | `routes/auth/silent-callback.tsx` | silent renew コールバック placeholder |
+| `/auth/logout-callback` | `routes/auth/logout-callback.tsx` | logout コールバック fallback |
+| `/_design/*` | `routes/_design/*` | デザイントークン / primitive 視覚確認 (本番ビルドではフラグで除外) |
+
+`/databases/:slug` は config-based route で 1 つの param ルートとして宣言する。`/bioproject` 等の単体 URL は採用しない (URL 設計の論理性と既存サイトとの衝突回避)。
+
+`/auth/*` は BFF (`server/api/auth/*`) が 302 で抜けるため、client 側の route は実際には到達しないが、Keycloak client 設定が旧 redirect_uri を保持していた場合の fallback として残す (`auth.md`)。
+
+`/api/set-lang` は `server/index.ts` の `app.all("*", createRequestHandler(...))` フォールバック経由で RR まで届く (既存 BFF 個別登録 `/api/me` / `/api/news` 等とは衝突しない、`i18n.md` 参照)。
+
+### routes.ts の役割
+
+`app/routes.ts` は上表の URL を helper 関数 (`index` / `route` / `layout` / `designRoutes`) で 1 ファイルに列挙する。RR v7 config-based routing の入口であり、URL を追加 / 変更するときは本ファイルだけを直す。`/auth/*` は薄い layout (`routes/auth/layout.tsx`) を共有し、`/_design/*` は env フラグで開発時のみ生成する。
+
+`routes.ts` の import path は `./lib/routes-helpers` を相対指定する (RR の `react-router typegen` が `~` alias を解決しないため)。
+
+### route handle 規約
+
+route handle (静的 metadata) は **各 route component module の `export const handle = {...} as const`** で宣言する。`routes.ts` の helper では渡せない (RR の `CreateRouteOptions` / `CreateIndexOptions` / `CreateLayoutOptions` は `id` 等のみ受け入れる)。loader (非同期 data fetch) ではなく handle に書く理由は、`createRoutesStub` を使った unit test で loader 実行を起こさず参照できる点と、SSR / CSR で同じ値が確実に取れる点。
+
+| handle key | 値 | 用途 |
+|---|---|---|
+| `i18n.en` | `"complete"` / `"missing"` / `"partial"` | `<TranslationUnavailable />` バナー判定 |
+| `breadcrumbI18nKey` | string (例: `"breadcrumb.databases"`) | static breadcrumb segment |
+| `breadcrumbResolver` | string (resolver 名) | dynamic breadcrumb segment、`useBreadcrumb` の resolver dict で解決 |
+
+複数 handle が混在してよい (例: `{ breadcrumbResolver: "database-content", i18n: { en: "complete" } }`)。`useMatches` で全 match の handle を走査するので、親 layout の handle と子 route の handle は両方有効。
+
+en 表示時に対応キーが en リソースに存在しない page では、route handle に `handle.i18n.en = "partial" | "missing"` を立てる。`<TranslationUnavailable />` がそれを検出してバナーを出す。`handle.i18n.en` を書かない route は「en 翻訳が complete である」 とみなす。
+
+動的 breadcrumb の resolver dict は `app/shell/breadcrumb.tsx` 内で組み立て、`getDatabaseBySlug(params.slug)` 等を呼んで `{ label, href }` を返す。中間セグメント (「データベース」 等) は `app/shell/breadcrumb.tsx` 内で固定挿入する (`/databases` 単体 URL を持たないので、ラベルクリック先は top に向ける)。
+
+### design preview routes
+
+`/_design/*` は `process.env.NODE_ENV` が production 以外、または `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` のときだけ `app/routes.ts` に含まれる (`app/lib/routes-helpers.ts` の `designRoutes()` が分岐)。staging では env を立てれば閲覧可、production では off にすることで bundle と URL 露出を抑える。
+
+### loader / action 規約
+
+- データ fetch は `loader` で行う。SSR / CSR どちらでも fetch (`/api/*` 経由) を共通化する
+- `app` から `server` への直接 import は ESLint で禁止 (`no-restricted-paths`)。BFF の関数を呼びたい場合も `fetch(new URL("/api/...", request.url))` 経由
+- search-results route は `process.env.DB_PORTAL_SEARCH_API_URL` を直接読んで ddbj-search-api に問い合わせる (BFF を経由しない読み取り。`api-types.md`)
+- loader 内 throw は React Router の error boundary に流れる。404 は `throw new Response("Not Found", { status: 404 })` 形式
+- root loader は cookie / Accept-Language / `?lang=` から lang を解決し loaderData に乗せる (`i18n.md`)
+- `/api/set-lang` は唯一の action 持ち resource route。lang cookie 更新後 303 redirect で Referer に戻す
+- リリース時点で他に本番ロジックの action は無い (state 永続化 / mutation 系は後送り phase)
+- RR v7 framework mode は `loader` 1 つで SSR / CSR を兼ねる。`clientLoader` を別宣言しない (loader を 1 本化することで挙動の予測可能性を保つ)
 
 ## import 境界
 
@@ -150,7 +215,7 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 ### ビルド時に確定するもの
 
 - API 型 (`app/lib/api/openapi-types.ts`): `npm run gen:api-types` で staging openapi.json から生成。git commit 対象。詳細 `api-types.md`
-- コンテンツ collection (`app/content/**/*.content.tsx`): `import.meta.glob` で列挙、Zod schema で eager validate。1 件でも parse 失敗すれば build が落ちる。詳細 `content-system.md`
+- コンテンツ collection (`app/content/**/*.content.tsx`): `import.meta.glob` で列挙、Zod schema で eager validate。1 件でも parse 失敗すれば build が落ちる。詳細 `frontend.md`
 - i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`): 静的 import。`ja` と `en` でキーセットが乖離した場合は PBT (`tests/pbt/`) で検出。詳細 `i18n.md`
 - Tailwind utility class: `@theme` block + JSX を Vite が走査して必要な class のみを出力
 
@@ -258,7 +323,7 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 `app/styles/tailwind.css` の `@theme` block がデザイントークンの SSOT (色 / spacing / font / radius / shadow)。`app/ui/` の primitive はこの token を utility class 経由で参照する。
 
 - token utility class: `bg-brand` / `text-ink` / `border-border-soft` / `p-section-md` / `rounded-card` …
-- 生 hex literal / arbitrary value は ESLint で物理禁止 
+- 生 hex literal / arbitrary value は ESLint で物理禁止
 - primitive 一覧 (Button / IconButton / NativeSelect / FormGroup / Tag / Chip / Callout / Modal / Pagination …) は `app/ui/` に集約、`features` / `shell` / `routes` / `content` は primitive を消費する
 - 新 primitive が必要な場合、`features` 内で独自実装せず `app/ui/` に追加する (zones で物理強制)
 
@@ -278,7 +343,7 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 | `X-Content-Type-Options` | `nosniff` | 全 response |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | 全 response |
 
-CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成し、middleware が `res.locals.cspNonce` に置く。SSR レンダリング時に `app/root.tsx` の `loader` が `res.locals.cspNonce` を読み、`<Scripts nonce={...} />` / `<Links nonce={...} />` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
+CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成して middleware が `res.locals.cspNonce` に置き、root loader が `<Scripts>` / `<Links>` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
 
 `style-src` に `'unsafe-inline'` を残しているのは、Tailwind v4 の inject や React の `style={...}` prop に対応するため。script より影響範囲が小さく、portal は外部 stylesheet を読まないので妥当と判断する。
 
@@ -298,7 +363,7 @@ URL に該当 route が無い場合 / loader が `throw new Response(null, { sta
 - WCAG AA 相当の色コントラスト (token 段階で確認、`app/routes/_design/` で視覚チェック可)
 - フォーカスリングを全インタラクティブ要素に明示 (`app/ui/` primitive 内で `ring-focus` token を必ず適用)
 - キーボード操作で全画面到達可能 (modal は focus trap)
-- `<html lang>` を `useLang` で動的に出力 (i18n.md)
+- `<html lang>` を `useLang` で動的に出力 (`i18n.md`)
 
 axe-core の e2e 統合はリリース時点で未採用 (false positive 多発リスク回避、人手レビュー優先)。unit テスト内での @axe-core/react による primitive 単位の検査は将来評価。
 
@@ -319,4 +384,3 @@ axe-core の e2e 統合はリリース時点で未採用 (false positive 多発�
 - TanStack Query の `staleTime` 調整 (`/api/me` 5 分、`/api/news` 5 分)
 
 計測は Playwright e2e で `page.evaluate( => performance.getEntriesByType("navigation"))` を取得し、staging で複数試行平均を取って判定。検索 95p は ddbj-search-api 側の負荷状況で振れるため最終判定は手動。
-

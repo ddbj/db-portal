@@ -185,15 +185,7 @@ client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStr
 
 ### アルゴリズム
 
-固定 window で 1 分粒度のカウンタを Map に持つ。sliding window でなく単純化 (window 境界で 2 倍まで流れ得るが、リリース時点はこの精度で十分)。
-
-```ts
-type Window = { startMs: number; count: number }
-const ipMap = new Map<string, Window>
-const sessionMap = new Map<string, Window>
-```
-
-cleanup は 5 分間隔 (session store と同じ間隔)、古い window を破棄する。
+固定 window で 1 分粒度のカウンタを in-memory Map (per-IP / per-session それぞれ 1 個) に持つ。sliding window でなく単純化 (window 境界で 2 倍まで流れ得るが、リリース時点はこの精度で十分)。cleanup は 5 分間隔 (session store と同じ間隔) で、古い window を破棄する。
 
 sliding window への移行条件: (a) 境界 burst による誤閾値超過の運用報告が発生する、または (b) multi-instance 化に伴い rate-limit state を共有 store (redis 等) に移すタイミング。固定 window の境界 burst (1 分の境界で最大 2x まで通り得る) を許容できるのは **1 instance 構成のリリース期間** に限った前提で、`auth.md` の multi-instance 拡張と同じトリガで再設計する。
 
@@ -272,15 +264,6 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL=` (空) で起動し、「LLM 未設定
 | `tests/pbt/server/llm/redaction-coverage.pbt.test.ts` | 任意の文字列に PII を挿入しても全パターン redact される |
 | `tests/pbt/server/llm/assistant-parse.pbt.test.ts` | 任意の不正 JSON を入れても parse 関数が throw せず error event を返す |
 | `tests/pbt/server/llm/rate-limit-monotone.pbt.test.ts` | 任意の request 列で window 内 count が単調増加、window 跨ぎで reset |
-
-### E2E
-
-| ID | 内容 |
-|---|---|
-| `S-LLM-01` | 自然文入力 → SSE で proposal 受信 → Apply で Advanced state に反映 |
-| `S-LLM-02` | `/api/llm/health` が `ok` のとき SearchAssistant が表示 |
-| `E-LLM-01` | vLLM 停止状態で `/api/llm/health` が `unreachable` → SearchAssistant 非表示 |
-| `E-LLM-02` | SSE 切断時に toast + 入力欄復元 |
 
 ## 将来拡張余地
 

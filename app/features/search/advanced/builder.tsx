@@ -1,7 +1,7 @@
 import type { Dispatch } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, Label, NativeSelect, type NativeSelectOption, Tag } from "~/ui"
+import { Button, Label, Select, type SelectOption, Tag } from "~/ui"
 
 import type { AdvancedCombinator } from "../types"
 import { ConditionRow } from "./condition-row"
@@ -128,7 +128,7 @@ type GroupBlockProps = {
 
 const GroupBlock = ({ group, index, parentId, depth, dispatch }: GroupBlockProps) => {
   const t = useT()
-  const innerOptions: NativeSelectOption[] = (["AND", "OR"] as const).map((value) => ({
+  const innerOptions: SelectOption[] = (["AND", "OR"] as const).map((value) => ({
     value,
     label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or"}`),
   }))
@@ -146,17 +146,16 @@ const GroupBlock = ({ group, index, parentId, depth, dispatch }: GroupBlockProps
             />
           )}
         <Label>{t("search.builder.combinator.and")} / {t("search.builder.combinator.or")}</Label>
-        <NativeSelect
+        <Select
           ariaLabel={t("search.a11y.builderConditions")}
           options={innerOptions}
           value={group.innerCombinator}
-          onChange={(event) =>
+          onChange={(next) =>
             dispatch({
               type: "updateInnerCombinator",
               id: group.id,
-              innerCombinator: event.currentTarget.value as AdvancedInnerCombinator,
-            })
-          }
+              innerCombinator: next as AdvancedInnerCombinator,
+            })}
           width={88}
         />
         <span className="ml-auto">
@@ -197,17 +196,17 @@ type CombinatorPickerProps = {
 
 const CombinatorPicker = ({ combinator, onChange }: CombinatorPickerProps) => {
   const t = useT()
-  const options: NativeSelectOption[] = (["AND", "OR", "NOT"] as const).map((value) => ({
+  const options: SelectOption[] = (["AND", "OR", "NOT"] as const).map((value) => ({
     value,
     label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or" | "not"}`),
   }))
 
   return (
-    <NativeSelect
+    <Select
       ariaLabel={t("search.a11y.builderConditions")}
       options={options}
       value={combinator}
-      onChange={(event) => onChange(event.currentTarget.value as AdvancedCombinator)}
+      onChange={(next) => onChange(next as AdvancedCombinator)}
       width={92}
     />
   )

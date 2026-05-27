@@ -22,39 +22,45 @@
 
 ## データモデル
 
-`app/schemas/api-bff/news.ts` の Zod schema が SSOT。BFF (`server/news/`) と client (`app/lib/api/news.ts`) で共用する境界 (`architecture.md`)。
+Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と client (`app/lib/api/news.ts`) で共用する境界 (`architecture.md`)。
 
-```ts
-const NewsCategory = z.enum([
-  "announcement",   // 告知・お知らせ・プレスリリース
-  "data-release",   // データ公開・リリース
-  "maintenance",    // メンテナンス・障害
-  "event",          // イベント・募集
-  "service",        // サービス紹介・更新 (DBCLS 起点)
-  "other",          // その他 (default fallback)
-])
+### NewsCategory
 
-const NewsItem = z.object({
-  id: z.string.min(1),                  // `${source}-${slug}` 形式、ja/en 共通の pairId として機能
-  source: NewsSource,                     // "ddbj" | "dbcls"
-  category: NewsCategory,                 // 正規化後 (UI の分配判定に使う)
-  featured: z.boolean.default(false),   // global.yml top_news に該当 → NotificationBar 表示対象
-  publishedAt: z.string.datetime,     // ISO 8601、front matter の `date`
-  retireTime: z.string.datetime.optional,  // NotificationBar 表示終了基準
-  title: z.object({ ja: z.string, en: z.string }),
-  summary: z.object({ ja: z.string, en: z.string }).optional,
-  url: z.object({ ja: z.string.url.optional, en: z.string.url.optional }).optional,
-  db: z.array(z.string).default([]),    // 関連 DB の slug 配列 (facet で使う)
-  rawTags: z.object({ ja: z.array(z.string).default([]), en: z.array(z.string).default([]) }),
-})
+`NewsCategory` enum の 6 値。UI の分配判定 (NotificationBar / facet) で使う。
 
-const NewsCache = z.object({
-  schemaVersion: z.literal(3),
-  lastSyncSha: z.record(NewsSource, z.string.nullable),  // git HEAD SHA (source ごと 1 値)
-  lastFetchedAt: z.string.datetime,
-  items: z.array(NewsItem),
-})
-```
+| 値 | 意味 |
+|---|---|
+| `announcement` | 告知・お知らせ・プレスリリース |
+| `data-release` | データ公開・リリース |
+| `maintenance` | メンテナンス・障害 |
+| `event` | イベント・募集 |
+| `service` | サービス紹介・更新 (DBCLS 起点) |
+| `other` | その他 (default fallback) |
+
+### NewsItem の主要フィールド
+
+| フィールド | 内容 |
+|---|---|
+| `id` | `${source}-${slug}` 形式、ja/en 共通の pairId として機能 |
+| `source` | `"ddbj"` / `"dbcls"` |
+| `category` | 正規化後の `NewsCategory` |
+| `featured` | `global.yml` の `top_news` slug whitelist に一致 → NotificationBar 表示対象 (default false) |
+| `publishedAt` | ISO 8601、front matter の `date` |
+| `retireTime` | optional、NotificationBar 表示終了基準 |
+| `title.{ja,en}` | 該当言語側に title (片言語のみのとき他言語は空文字) |
+| `summary.{ja,en}` | optional |
+| `url.{ja,en}` | source / lang / slug から組み立てた外部 URL (片言語のみのとき省略) |
+| `db` | 関連 DB の slug 配列 (facet で使う) |
+| `rawTags.{ja,en}` | 原 tag 配列 (写像前) |
+
+### NewsCache の主要フィールド
+
+| フィールド | 内容 |
+|---|---|
+| `schemaVersion` | `3` で固定 (schema 更新時に bump して旧 cache を破棄する) |
+| `lastSyncSha` | source ごとの git HEAD SHA |
+| `lastFetchedAt` | ISO 8601 |
+| `items` | `NewsItem[]` |
 
 ### ja/en pair の id
 
@@ -78,21 +84,12 @@ dbcls/website (Jekyll `_posts` 形式、`YYYY-MM-DD-post{N}.md`):
 
 front matter に明示的な URL は無い。portal は source / lang / slug から `server/news/sources.ts` の `urlBuilder` で組み立てる。
 
-ddbj/www:
+| source | URL pattern (ja) | URL pattern (en) |
+|---|---|---|
+| ddbj | `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html` | `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html` |
+| dbcls | `https://dbcls.rois.ac.jp/ja/${YYYY}/${MM}/${DD}/${postN}.html` | `https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/${postN}.html` |
 
-```
-url.ja = https://www.ddbj.nig.ac.jp/news/ja/${slug}.html
-url.en = https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html
-```
-
-dbcls/website (slug `YYYY-MM-DD-postN` を分解して埋め込む):
-
-```
-url.ja = https://dbcls.rois.ac.jp/ja/${YYYY}/${MM}/${DD}/${postN}.html
-url.en = https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/${postN}.html
-```
-
-該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
+dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
 ## 取得フロー
 
@@ -106,7 +103,7 @@ url.en = https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/${postN}.html
    - 存在すれば `git fetch --depth 1 origin <branch> && git reset --hard origin/<branch>`
 4. `git rev-parse HEAD` で HEAD SHA を取得、cache の `lastSyncSha[source]` と比較
    - 一致なら no-op
-   - 不一致なら全件再構築 
+   - 不一致なら全件再構築
 5. 以降 `setInterval(tickAll, intervalMs)` で polling
 
 ### ポーリング (tickAll)
@@ -218,28 +215,26 @@ URL params との同期 (`facet-url-state.ts`):
 
 ### NotificationBar / NewsAside
 
-NotificationBar (top page 上部、1 件 close 可) と NewsAside (top page 右ペイン、8 件 compact list) の表示仕様は `shell.md` を参照。
+NotificationBar (top page 上部、1 件 close 可) と NewsAside (top page 右ペイン、8 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
 
-news data source 側の補足: NotificationBar 掲載対象は **`featured` フラグ** (= `global.yml` の `top_news` slug whitelist に該当) で判定する。 category とは独立した軸で、category が `announcement` であっても featured でなければ NotificationBar に出さない。逆に featured なら category を問わず出る (ddbj 側のみ運用、`global.yml` メンテナで決まる)。
+news data source 側の補足: NotificationBar 掲載対象は **`featured` フラグ** (= `global.yml` の `top_news` slug whitelist に該当) で判定する。category とは独立した軸で、category が `announcement` であっても featured でなければ NotificationBar に出さない。逆に featured なら category を問わず出る (ddbj 側のみ運用、`global.yml` メンテナで決まる)。
 
 ### /news 一覧 + facet
 
-`app/features/news/` 配下で実装する (`architecture.md` zones に準拠して `app/features/` 内に閉じる)。
+`app/features/news/` 配下で実装する (`architecture.md` zones に準拠して `app/features/` 内に閉じる)。次の責務に分割する:
 
-```
-app/features/news/
-├── category-label.ts    ← NewsCategory → i18n key の写像 (集約)
-├── news-list.tsx        ← Toolbar + NewsList + Pagination の組立て
-├── news-row.tsx         ← 1 行 (date / title / featured バッジ / source / category Tag)
-├── facet-panel.tsx      ← 4 グループ FacetGroup の配置
-├── facet-item.tsx       ← 1 item のチェックボックス + count
-├── applied-filters.tsx  ← 適用中 chip の表示と解除
-├── facet-url-state.ts   ← facet ↔ URL params の双方向 helper (純粋関数)
-├── use-news-list.ts     ← TanStack Query で /api/news を取得、facet 適用
-└── index.ts
-```
+| ファイル | 役割 |
+|---|---|
+| `category-label.ts` | NewsCategory → i18n key の写像 |
+| `news-list.tsx` | Toolbar + NewsList + Pagination の組立て |
+| `news-row.tsx` | 1 行 (date / title / featured バッジ / source / category Tag) |
+| `facet-panel.tsx` | 4 グループ FacetGroup の配置 |
+| `facet-item.tsx` | 1 item のチェックボックス + count |
+| `applied-filters.tsx` | 適用中 chip の表示と解除 |
+| `facet-url-state.ts` | facet ↔ URL params の双方向 helper (純粋関数) |
+| `use-news-list.ts` | TanStack Query で /api/news を取得、facet 適用 |
 
-routing 側 (`app/routes/news/route.tsx`) は loader で `loadAuth(request)` 等の global state を取り、children に `app/features/news` の component を組み合わせる。ja / en の id 二重宣言は `app/routes.ts` で行い、lang は handle (`routes/lang-en/layout.tsx` の `handle.lang = "en"`) で決まる (`i18n.md`)。
+routing 側 (`app/routes/news/route.tsx`) は loader で global state を取り、children に `app/features/news` の component を組み合わせる。lang は cookie で決まる (`i18n.md`)。
 
 pagination は `app/ui/pagination.tsx` を使い、1 page 20 件、URL に `?page=` で反映する。facet と pagination を同時に変えた場合は URL を 1 回で更新する。
 
@@ -267,7 +262,7 @@ PBT (`tests/pbt/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file
 | `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` | `1800` (30 分) | 全 source 共通のポーリング間隔 |
 | `DB_PORTAL_NEWS_CACHE_DIR` | `/var/cache/db-portal/news` | disk cache 配置先 |
 
-git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要 (`DB_PORTAL_NEWS_MIRROR_GITHUB_TOKEN` は廃止)。
+git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要 (`decisions.md`)。
 
 ## テスト
 
@@ -291,15 +286,3 @@ git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API ra
 | `tests/pbt/news/pair-symmetry.pbt.test.ts` | 任意の `{ ja, en }` slug ペア生成器で、ペアリング後の item.id が ja / en どちらから入っても等しい |
 | `tests/pbt/news/sort-order.pbt.test.ts` | 任意の date 配列が降順 sort 後に「より新しい item が先」 を満たす |
 | `tests/pbt/news/cache-migration.pbt.test.ts` | 任意の旧 schema cache JSON (`schemaVersion: 0` 等) で起動が成功し、空 cache から復元される |
-
-### E2E
-
-| ID | 内容 |
-|---|---|
-| `S-NEWS-01` | `/news` を開き一覧表示、default で date 降順 |
-| `S-NEWS-02` | facet で category / year / service 絞り込み、URL に `?category=...` 反映 |
-| `S-NEWS-03` | NotificationBar に featured 記事が表示、close で次の 1 件 |
-| `S-NEWS-04` | top page 右ペインに 8 件 + 「すべて見る」 リンク |
-| `E-NEWS-01` | git pull 失敗時、disk cache から応答 (既存 cache 維持) |
-| `E-NEWS-02` | 不正 front matter (date が欠落 等) で起動時に該当 item を skip + log warn |
-

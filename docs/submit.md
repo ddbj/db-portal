@@ -162,22 +162,7 @@ GroupType は経路導出の分岐要素として効く。代表例:
 
 ### 構造
 
-```ts
-deriveFlowSteps(submission)
-  = [
-    ...biosampleStep(submission, ctx),
-    ...bioprojectStep(submission, ctx),
-    ...umbrellaBioprojectStep(submission, ctx),
-    ...draStep(submission, ctx),
-    ...jgaStep(submission, ctx),
-    ...annotationStep(submission, ctx),
-    ...variationStep(submission, ctx),
-    ...geaStep(submission, ctx),
-    ...metabobankStep(submission, ctx),
-    ...thirdPartyStep(submission, ctx),
-    ...multiModalStep(submission, ctx),
-  ].sort(byServicePhysicalOrder)
-```
+`deriveFlowSteps(submission)` が `app/features/submit/flow-rules/steps/` 配下の各 step 関数 (`biosampleStep` / `bioprojectStep` / `umbrellaBioprojectStep` / `draStep` / `jgaStep` / `annotationStep` / `variationStep` / `geaStep` / `metabobankStep` / `thirdPartyStep` / `multiModalStep`) を順に呼び、結果を flatten して `byServicePhysicalOrder` で sort する。
 
 `ctx` は `deriveFlowContext(submission)` が 1 度計算する派生情報 (Primary BP の分裂計画など)。各 step が ctx を read-only で受け、再計算しない (冪等性)。各 step 関数の入力条件・出力 service は `app/features/submit/flow-rules/steps/` の関数定義を参照。
 
@@ -236,7 +221,7 @@ Step カードの header / 外周 border に Service バッジ色を表現する
 ├─ Footer ──────────────────────────────────────────────────────┤
 ```
 
-`Section` / `SectionHeading` / `PageTitle` / `Modal` / `Callout` などは `app/ui/` の primitive をそのまま使う (`docs/ui-primitives.md`)。
+`Section` / `SectionHeading` / `PageTitle` / `Modal` / `Callout` などは `app/ui/` の primitive をそのまま使う (`docs/frontend.md` の「UI primitives」)。
 
 id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダリングでは initial state が空のため hydration mismatch が起きない。
 
@@ -246,7 +231,7 @@ id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダ�
 
 ファイルテーブルは Cross-DB Tag の **buttonType / organism / access** の 3 軸 + ファイル名 + 「データ詳細」 chip cell の 5 列構成 (+ 削除アクション列)。`dataForm` / `chipTags` / `groupType` は「データ詳細」 chip cell の modal 内で編集する。
 
-`buttonType` は行追加時に固定し変更不可 (誤った種別を選んだ場合は行削除 + 別ボタンで作り直す)。これにより `TYPICAL_DATA_FORM_FOR_BUTTON` / `TYPICAL_GROUP_TYPE_FOR_BUTTON` の default 整合が崩れない。`organism` / `filename` 未設定は `state="warn"` を `NativeSelect` / `TextInput` に渡す。
+`buttonType` は行追加時に固定し変更不可 (誤った種別を選んだ場合は行削除 + 別ボタンで作り直す)。これにより `TYPICAL_DATA_FORM_FOR_BUTTON` / `TYPICAL_GROUP_TYPE_FOR_BUTTON` の default 整合が崩れない。`organism` / `filename` 未設定は `state="warn"` を `Select` / `TextInput` に渡す。
 
 「データ詳細」 chip cell は ButtonType ごとの controlled vocabulary を 1 click で編集する trigger。表示は 2 形態:
 
@@ -288,7 +273,7 @@ modal の責務は次の 3 つの編集:
 
 保存ボタンは常に enable (default 値で保存可)。 行削除確認は `ModalRouter` が `state.editing.kind === "confirm-delete"` のときに render する小型 modal。
 
-`Modal` primitive の自前 focus trap (`docs/ui-primitives.md`) が open 時に dialog 内最初の focusable に focus 移動、close 時に trigger 要素 (= テーブル行の RowSetTag / WarnDashedButton) に focus 復元する。ESC / overlay click で `CLOSE_MODAL`。
+`Modal` primitive の自前 focus trap (`docs/frontend.md` の「UI primitives」) が open 時に dialog 内最初の focusable に focus 移動、close 時に trigger 要素 (= テーブル行の RowSetTag / WarnDashedButton) に focus 復元する。ESC / overlay click で `CLOSE_MODAL`。
 
 ---
 
@@ -347,4 +332,4 @@ selectors (`selectSteps` / `selectValidations` / `selectRowDetailSummary`) は m
 
 - submit features は外部 API を呼ばない (navigator のみ)。 将来 draft 永続化 / Repository API 連携を入れる場合は `app/features/submit/api/` を新設する余地を残すが、本リリースでは作らない
 - zones / lint 制約 (生 hex 禁止、`react/forbid-elements` で生 button / input / select / textarea 禁止、生 hex / arbitrary value 禁止) は `architecture.md` に従う
-- 新 primitive 追加は `docs/ui-primitives.md` の手順を経由する
+- 新 primitive 追加は `docs/frontend.md` の「UI primitives」 の手順を経由する

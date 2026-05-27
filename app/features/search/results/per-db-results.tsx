@@ -1,6 +1,6 @@
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, useT } from "~/lib/i18n"
-import { Callout, NativeSelect, type NativeSelectOption, Tag } from "~/ui"
+import { Callout, Select, type SelectOption, Tag } from "~/ui"
 
 import {
   type DbSlug,
@@ -56,14 +56,14 @@ export const PerDbResults = ({
   const totalPages = response.total === 0 ? 0 : Math.ceil(response.total / perPage)
   const { start, end } = computeRange(response.total, page, perPage)
 
-  const sortOptions: NativeSelectOption[] = SORT_KEYS.map((key) => {
+  const sortOptions: SelectOption[] = SORT_KEYS.map((key) => {
     const labelKey = key === "relevance"
       ? "search.results.sort.relevance"
       : key === "date_desc" ? "search.results.sort.dateDesc" : "search.results.sort.dateAsc"
 
     return { value: key, label: t(labelKey) }
   })
-  const perPageOptions: NativeSelectOption[] = PER_PAGE_VALUES.map((value) => ({
+  const perPageOptions: SelectOption[] = PER_PAGE_VALUES.map((value) => ({
     value: String(value),
     label: String(value),
   }))
@@ -90,24 +90,24 @@ export const PerDbResults = ({
         <div className="ml-auto flex items-center gap-3">
           <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
             <span>{t("search.results.sort.label")}</span>
-            <NativeSelect
+            <Select
               ariaLabel={t("search.results.sort.label")}
               options={sortOptions}
               value={sort}
-              onChange={(event) => onSortChange(event.currentTarget.value as SortKey)}
+              onChange={(next) => onSortChange(next as SortKey)}
               width={148}
             />
           </label>
           <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
             <span>{t("search.results.perPage.label")}</span>
-            <NativeSelect
+            <Select
               ariaLabel={t("search.results.perPage.label")}
               options={perPageOptions}
               value={String(perPage)}
-              onChange={(event) => {
-                const next = Number.parseInt(event.currentTarget.value, 10)
-                if (PER_PAGE_VALUES.includes(next as PerPageValue)) {
-                  onPerPageChange(next as PerPageValue)
+              onChange={(next) => {
+                const parsed = Number.parseInt(next, 10)
+                if (PER_PAGE_VALUES.includes(parsed as PerPageValue)) {
+                  onPerPageChange(parsed as PerPageValue)
                 }
               }}
               width={80}

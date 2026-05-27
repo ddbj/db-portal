@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest"
 import { SidebarHeading } from "~/ui/sidebar-heading"
 
 describe("SidebarHeading", () => {
-  test("SidebarHeading_default_appliesH3WithoutBar", () => {
+  test("SidebarHeading_default_appliesH3WithBrandBar", () => {
     render(<SidebarHeading>側面見出し</SidebarHeading>)
     const node = screen.getByRole("heading", { level: 3, name: "側面見出し" })
     expect(node).toHaveClass("text-fs-h3")
@@ -13,8 +13,9 @@ describe("SidebarHeading", () => {
     expect(node).toHaveClass("m-0")
     expect(node).toHaveClass("tracking-h3")
     expect(node).toHaveClass("leading-tight")
-    expect(node).not.toHaveClass("border-l-[3px]")
-    expect(node).not.toHaveClass("border-brand")
+    expect(node).toHaveClass("pl-2.5")
+    expect(node).toHaveClass("border-l-[3px]")
+    expect(node).toHaveClass("border-brand")
   })
 
   test("SidebarHeading_asH2_rendersAsH2", () => {

@@ -63,7 +63,7 @@ test.describe("Search Domain", () => {
 
 ### 3.2 ログイン情報の入手
 
-`DB_PORTAL_E2E_USER_PASSWORD` は実行者の環境変数として渡す (password manager 等から取り出す)。ユーザーは Keycloak `staging` realm の `ts-db-portal-dev` (`keycloak-setup.md §7`)。
+`DB_PORTAL_E2E_USER_PASSWORD` は実行者の環境変数として渡す (password manager 等から取り出す)。ユーザーは Keycloak `staging` realm の `ts-db-portal-dev` (`docs/auth.md` の「e2e テスト用ユーザー」)。
 
 ### 3.3 storageState の TTL
 
@@ -165,4 +165,4 @@ docker compose exec app sh -c '
 | `docs/auth.md §12.3` | 認証 e2e 範囲 |
 | `docs/llm.md §6` | LLM e2e 範囲 |
 | `docs/deployment.md` | staging deploy フロー |
-| `docs/keycloak-setup.md §7` | テストユーザー |
+| `docs/auth.md` 「e2e テスト用ユーザー」 | テストユーザー |

@@ -1,7 +1,7 @@
 import type { NewsItem } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import type { Lang } from "~/lib/i18n/use-lang"
-import { NativeSelect, Pagination } from "~/ui"
+import { Pagination, Select } from "~/ui"
 
 import {
   type NewsFacetState,
@@ -46,11 +46,10 @@ export const NewsList = ({
         </p>
         <label className="flex items-center gap-2 text-fs-meta text-ink-soft">
           <span>{t("news.toolbar.sort")}</span>
-          <NativeSelect
+          <Select
             ariaLabel={t("news.toolbar.sort")}
             value={facet.sort}
-            onChange={(event) =>
-              onChange(setSort(facet, event.currentTarget.value as NewsFacetState["sort"]))}
+            onChange={(next) => onChange(setSort(facet, next as NewsFacetState["sort"]))}
             options={[
               { value: "newest", label: t("news.toolbar.sortNewest") },
               { value: "oldest", label: t("news.toolbar.sortOldest") },

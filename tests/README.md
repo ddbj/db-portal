@@ -79,24 +79,7 @@ fast-check (`@fast-check/vitest` で Vitest 統合)
 - shrink で失敗例が縮小されることを利用してデバッグを楽にする
 - 実行時間が許容範囲なら `numRuns` を増やす (デフォルト 100、PBT 用 1000+)
 
-例:
-
-```ts
-import { test, fc } from "@fast-check/vitest"
-import { generateFlowSteps } from "~/features/submit/flow-rules"
-import { arbSubmission } from "./arbitraries"
-
-test.prop([arbSubmission])(
-  "open 行があれば必ず DRA か JGA の Step が生成される",
-  (submission) => {
-    const steps = generateFlowSteps(submission)
-    const hasOpen = submission.fileEntries.some((e) => e.access === "open")
-    if (hasOpen) {
-      expect(steps.some((s) => s.service === "dra" || s.service === "jga")).toBe(true)
-    }
-  },
-)
-```
+実例は `tests/pbt/` 配下を参照 (submit flow-rules / search AST round-trip / i18n resource parity 等)。
 
 ## e2e テスト
 
@@ -119,7 +102,7 @@ Playwright
 
 ### シナリオ集が SSOT
 
-`tests/e2e/scenarios.md` をテスト実装の前に書く。
+`e2e/scenarios.md` をテスト実装の前に書く。
 
 #### シナリオ ID 体系
 
@@ -134,7 +117,7 @@ Playwright
 | P-ANON | 未認証ユーザー | なし |
 | P-USER | 一般ユーザー (Keycloak login) | DDBJ Account JWT |
 
-リリース時点では認証ボタンのみで専用機能なし (`auth.md`)。`P-USER` シナリオはログイン動作確認に限定。
+リリース時点では認証ボタンのみで専用機能なし (`docs/auth.md`)。`P-USER` シナリオはログイン動作確認に限定。
 
 #### シナリオ要素
 
@@ -165,7 +148,7 @@ Playwright
 
 ### 設計ノート
 
-`tests/e2e/notes.md` に設計上の制約・ハマりどころを書く。
+`e2e/notes.md` に設計上の制約・ハマりどころを書く。
 
 書くべき内容:
 
@@ -201,46 +184,20 @@ Playwright
 
 内部 mock が必要に見えるなら **設計が悪い**。テストではなく設計を直す。
 
-#### RR loader/action の unit テスト例
+#### RR loader/action の unit テスト方針
 
-```ts
-// tests/unit/routes/search-results.test.tsx
-import { createRoutesStub } from "react-router"
-import { render, screen } from "@testing-library/react"
-import { http, HttpResponse } from "msw"
-import { server } from "../mocks/server"
-import SearchResultsRoute, {
-  loader as searchResultsLoader,
-} from "~/routes/search-results/route"
-
-test("searchResults_load_rendersCounts", async  => {
-  server.use(
-    http.get("*/db-portal/cross-search",  =>
-      HttpResponse.json({ counts: { bioproject: 12, sra: 5 } }),
-    ),
-  )
-
-  const Stub = createRoutesStub([
-    {
-      path: "/search/results",
-      Component: SearchResultsRoute,
-      loader: searchResultsLoader,
-    },
-  ])
-
-  render(<Stub initialEntries={["/search/results?q=cancer"]} />)
-  expect(await screen.findByText(/12/)).toBeVisible
-})
-```
+`createRoutesStub` で「route + loader/action を組んだ状態」 を再構築し、その上で component を render する。loader 内 fetch は msw で境界 mock する。
 
 - loader は実コードを直接渡す (mock しない)
 - 外部 HTTP は msw で境界 mock
 - unit テストで「loader が動いた状態の component」 を verify できる
 - e2e に出すまでもないシナリオはここで吸収
 
+実例は `tests/unit/routes/` 配下を参照。
+
 ### msw の使い方
 
-`tests/unit/mocks/handlers.ts` に Search API のレスポンス handler を集約する。各 unit test で `server.use(...)` で個別 override。staging API の OpenAPI schema から型を借りるので、handler のレスポンスも型安全。
+`unit/mocks/handlers.ts` に Search API のレスポンス handler を集約する。各 unit test で `server.use(...)` で個別 override。staging API の OpenAPI schema から型を借りるので、handler のレスポンスも型安全。
 
 ## テスト間の独立性
 
@@ -296,4 +253,3 @@ tests/
 ```
 
 ヘルパー命名規約: `_helpers.ts` / `_fixtures.ts` のように `_` prefix で始めて vitest の collection から除外する。
-

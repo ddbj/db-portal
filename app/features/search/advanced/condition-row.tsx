@@ -1,5 +1,5 @@
 import { useT } from "~/lib/i18n"
-import { CloseIcon, IconButton, Label, NativeSelect, type NativeSelectOption, TextInput } from "~/ui"
+import { CloseIcon, IconButton, Label, Select, type SelectOption, TextInput } from "~/ui"
 
 import {
   ADVANCED_FIELDS,
@@ -43,15 +43,15 @@ export const ConditionRow = ({
 }: ConditionRowProps) => {
   const t = useT()
   const dateField = isDateField(condition.field)
-  const opOptions: NativeSelectOption[] = (dateField ? DATE_OPS : STRING_OPS).map((op) => ({
+  const opOptions: SelectOption[] = (dateField ? DATE_OPS : STRING_OPS).map((op) => ({
     value: op,
     label: t(`search.builder.op.${op}`),
   }))
-  const fieldOptions: NativeSelectOption[] = ADVANCED_FIELDS.map((field) => ({
+  const fieldOptions: SelectOption[] = ADVANCED_FIELDS.map((field) => ({
     value: field,
     label: t(`search.builder.field.${camelize(field)}`),
   }))
-  const combinatorOptions: NativeSelectOption[] = COMBINATOR_VALUES.map((value) => ({
+  const combinatorOptions: SelectOption[] = COMBINATOR_VALUES.map((value) => ({
     value,
     label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or" | "not"}`),
   }))
@@ -62,12 +62,11 @@ export const ConditionRow = ({
         {combinatorMode === "where"
           ? <Label>{t("search.builder.where")}</Label>
           : (
-            <NativeSelect
+            <Select
               ariaLabel={t("search.a11y.builderConditions")}
               options={combinatorOptions}
               value={condition.combinator}
-              onChange={(event) => {
-                const next = event.currentTarget.value
+              onChange={(next) => {
                 if (COMBINATOR_VALUES.includes(next as AdvancedCombinator)) {
                   onCombinatorChange(next as AdvancedCombinator)
                 }
@@ -76,21 +75,20 @@ export const ConditionRow = ({
             />
           )}
       </div>
-      <NativeSelect
+      <Select
         ariaLabel={t("search.a11y.fieldSelector")}
         options={fieldOptions}
         value={condition.field}
-        onChange={(event) => {
-          const next = event.currentTarget.value
+        onChange={(next) => {
           if (isAdvancedField(next)) onFieldChange(next)
         }}
         width={184}
       />
-      <NativeSelect
+      <Select
         ariaLabel={t("search.a11y.opSelector")}
         options={opOptions}
         value={dateField ? "between" : condition.op}
-        onChange={(event) => onOpChange(event.currentTarget.value as AdvancedOp)}
+        onChange={(next) => onOpChange(next as AdvancedOp)}
         width={148}
       />
       {dateField || condition.op === "between"

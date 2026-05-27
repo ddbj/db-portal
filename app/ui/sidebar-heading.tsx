@@ -19,7 +19,8 @@ export const SidebarHeading = ({
       as,
       {
         id,
-        className: "text-fs-h3 font-bold text-ink m-0 tracking-h3 leading-tight",
+        className:
+          "text-fs-h3 font-bold text-ink m-0 tracking-h3 leading-tight pl-2.5 border-l-[3px] border-brand",
       },
       children,
     )}

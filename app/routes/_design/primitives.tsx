@@ -20,13 +20,13 @@ import {
   ModalFooter,
   ModalHeader,
   ModalPreview,
-  NativeSelect,
   PageTitle,
   Pagination,
   PreviewCard,
   SearchBox,
   Section,
   SectionHeading,
+  Select,
   SidebarGroupLabel,
   SidebarHeading,
   Tag,
@@ -145,7 +145,7 @@ const HeadingGallery = () => (
     <SectionHeading count={755} countSuffix="件" action={<TextLink to="#">すべて見る →</TextLink>}>
       SectionHeading (3px brand bar, with count + action)
     </SectionHeading>
-    <SidebarHeading>SidebarHeading (bar 無し、action なし)</SidebarHeading>
+    <SidebarHeading>SidebarHeading (3px brand bar, action なし)</SidebarHeading>
     <SidebarHeading action={<TextLink to="#">編集</TextLink>}>
       SidebarHeading with action
     </SidebarHeading>
@@ -182,16 +182,16 @@ const FormsGallery = () => (
     <Row label="TextArea warn">
       <TextArea ariaLabel="description-warn" state="warn" defaultValue="error" />
     </Row>
-    <Row label="NativeSelect default">
-      <NativeSelect
+    <Row label="Select default">
+      <Select
         ariaLabel="field"
         options={["organism", "date_published", "title"]}
         defaultValue="organism"
         width={200}
       />
     </Row>
-    <Row label="NativeSelect warn (unset)">
-      <NativeSelect
+    <Row label="Select warn (unset)">
+      <Select
         ariaLabel="organism"
         options={["", "Homo sapiens", "Mus musculus"]}
         defaultValue=""

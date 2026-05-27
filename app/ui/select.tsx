@@ -1,0 +1,212 @@
+import type { CSSProperties, KeyboardEvent } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
+
+import { cn } from "./cn"
+import { ChevronDownIcon } from "./icons"
+
+type SelectState = "default" | "warn"
+
+export type SelectOption = string | { value: string; label: string }
+
+type NormalizedOption = { value: string; label: string }
+
+export type SelectProps = {
+  ariaLabel: string
+  ariaDescribedby?: string
+  options: readonly SelectOption[]
+  value?: string
+  defaultValue?: string
+  onChange?: (value: string) => void
+  width?: number
+  state?: SelectState
+  disabled?: boolean
+  id?: string
+}
+
+const normalize = (option: SelectOption): NormalizedOption =>
+  typeof option === "string" ? { value: option, label: option } : option
+
+export const Select = ({
+  ariaLabel,
+  ariaDescribedby,
+  options,
+  value,
+  defaultValue,
+  onChange,
+  width,
+  state = "default",
+  disabled = false,
+  id,
+}: SelectProps) => {
+  const isControlled = value !== undefined
+  const [internalValue, setInternalValue] = useState<string>(defaultValue ?? "")
+  const currentValue = isControlled ? value : internalValue
+
+  const normalizedOptions = useMemo(() => options.map(normalize), [options])
+
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState<number>(() => {
+    const idx = normalizedOptions.findIndex((opt) => opt.value === currentValue)
+    return idx >= 0 ? idx : 0
+  })
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const listboxId = useId()
+  const optionIdBase = useId()
+
+  const isWarn = state === "warn"
+  const isEmpty = currentValue === ""
+  const selectedOption = normalizedOptions.find((opt) => opt.value === currentValue)
+  const triggerLabel = selectedOption?.label ?? ""
+
+  const closeAndFocus = (): void => {
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
+
+  const commit = (next: string): void => {
+    if (!isControlled) setInternalValue(next)
+    onChange?.(next)
+  }
+
+  const openWithActive = (): void => {
+    const idx = normalizedOptions.findIndex((opt) => opt.value === currentValue)
+    setActiveIndex(idx >= 0 ? idx : 0)
+    setOpen(true)
+  }
+
+  const handleToggle = (): void => {
+    if (disabled) return
+    if (open) {
+      setOpen(false)
+    } else {
+      openWithActive()
+    }
+  }
+
+  const handleSelect = (next: string): void => {
+    commit(next)
+    closeAndFocus()
+  }
+
+  const handleKey = (e: KeyboardEvent<HTMLButtonElement>): void => {
+    if (disabled) return
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      if (open) {
+        setActiveIndex((i) => (i + 1) % normalizedOptions.length)
+      } else {
+        openWithActive()
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      if (open) {
+        setActiveIndex((i) => (i - 1 + normalizedOptions.length) % normalizedOptions.length)
+      } else {
+        openWithActive()
+      }
+    } else if (e.key === "Home" && open) {
+      e.preventDefault()
+      setActiveIndex(0)
+    } else if (e.key === "End" && open) {
+      e.preventDefault()
+      setActiveIndex(normalizedOptions.length - 1)
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      if (open) {
+        const target = normalizedOptions[activeIndex]
+        if (target !== undefined) handleSelect(target.value)
+      } else {
+        openWithActive()
+      }
+    } else if (e.key === "Escape" && open) {
+      e.preventDefault()
+      setOpen(false)
+    } else if (e.key === "Tab" && open) {
+      setOpen(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (e: MouseEvent | TouchEvent): void => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown)
+    document.addEventListener("touchstart", onPointerDown)
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown)
+      document.removeEventListener("touchstart", onPointerDown)
+    }
+  }, [open])
+
+  const wrapperStyle: CSSProperties = { width: width ?? "auto" }
+
+  return (
+    <div ref={wrapperRef} className="relative inline-block" style={wrapperStyle}>
+      <button
+        ref={triggerRef}
+        type="button"
+        id={id}
+        role="combobox"
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedby}
+        aria-invalid={isWarn || undefined}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-activedescendant={open ? `${optionIdBase}-${activeIndex}` : undefined}
+        disabled={disabled}
+        onClick={handleToggle}
+        onKeyDown={handleKey}
+        className={cn(
+          "w-full inline-flex items-center justify-between gap-2 text-fs-body py-2 pl-3 pr-2 rounded-button font-sans text-left cursor-pointer",
+          isWarn
+            ? "border border-warn-border bg-warn-bg"
+            : "border border-border-soft bg-surface",
+          isWarn && isEmpty ? "text-ink-soft" : "text-ink",
+          disabled && "opacity-50 cursor-not-allowed",
+        )}
+      >
+        <span className="flex-1 truncate">{triggerLabel}</span>
+        <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
+      </button>
+      {open && (
+        <ul
+          id={listboxId}
+          role="listbox"
+          aria-label={ariaLabel}
+          className="absolute z-20 top-full left-0 mt-1 min-w-full bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-72 overflow-auto"
+        >
+          {normalizedOptions.map((opt, idx) => {
+            const selected = opt.value === currentValue
+            const active = idx === activeIndex
+            return (
+              <li key={opt.value} role="presentation">
+                <button
+                  type="button"
+                  id={`${optionIdBase}-${idx}`}
+                  role="option"
+                  aria-selected={selected}
+                  tabIndex={-1}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                  onClick={() => handleSelect(opt.value)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-fs-body cursor-pointer",
+                    active ? "bg-surface-subtle" : "",
+                    selected ? "text-brand-deep font-bold" : "text-ink",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}

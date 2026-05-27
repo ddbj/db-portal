@@ -2,7 +2,7 @@ import type { ChangeEvent } from "react"
 
 import type { Access, FileEntry, Organism } from "~/schemas/submit"
 import { Access as AccessEnum, Organism as OrganismEnum } from "~/schemas/submit"
-import { CloseIcon, IconButton, NativeSelect, Tag, TextInput } from "~/ui"
+import { CloseIcon, IconButton, Select, Tag, TextInput } from "~/ui"
 
 import { RowSetTag } from "../components/row-set-tag"
 import { WarnDashedButton } from "../components/warn-dashed-button"
@@ -82,22 +82,20 @@ export const FileTableRow = ({
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <NativeSelect
+        <Select
           ariaLabel={cellLabels.organismAria}
           options={organismOptions}
           state={organismMissing ? "warn" : "default"}
           value={entry.organism}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-            onOrganismChange(e.target.value as Organism | "")}
+          onChange={(next) => onOrganismChange(next as Organism | "")}
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <NativeSelect
+        <Select
           ariaLabel={cellLabels.accessAria}
           options={accessOptions}
           value={entry.access}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-            onAccessChange(e.target.value as Access)}
+          onChange={(next) => onAccessChange(next as Access)}
         />
       </td>
       <td className="px-3 py-3 align-top">

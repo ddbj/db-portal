@@ -90,13 +90,13 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 - 採用: route + loader/action を `createRoutesStub` で組み立て、loader 内の HTTP は msw で境界 mock
 - 不採用: loader を mock する / `MemoryRouter` で route を再構築する
-- 理由: 内部関数を mock しないテスト哲学に準拠 (`testing.md`)。e2e に出すまでもないシナリオを unit で吸収できる
+- 理由: 内部関数を mock しないテスト哲学に準拠 (`tests/README.md`)。e2e に出すまでもないシナリオを unit で吸収できる
 
 ### mock は外部境界のみ
 
 - 採用: HTTP / FS / 時刻 / 乱数 / OIDC のみ mock
 - 不採用: 内部関数 / Zod schema / component / Tailwind を mock
-- 理由: 内部 mock が必要に見えるなら設計が悪い。テストではなく設計を直す方針 (`testing.md`)
+- 理由: 内部 mock が必要に見えるなら設計が悪い。テストではなく設計を直す方針 (`tests/README.md`)
 
 ## ビルド・運用
 
@@ -124,7 +124,7 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 - 採用: Jekyll Markdown を **キーボードで打ち直して** TSX fragment に再起筆、Zod schema で eager validate
 - 不採用: Markdown 直書き、 機械変換による一括移植
-- 理由: 文章を再構造化する機会にする。TSX なら `<Callout>` / `<Section>` などのリッチコンポーネントを直接使え、Zod で構造の不正を build 時に弾ける (`content-system.md`)
+- 理由: 文章を再構造化する機会にする。TSX なら `<Callout>` / `<Section>` などのリッチコンポーネントを直接使え、Zod で構造の不正を build 時に弾ける (`frontend.md`)
 
 比較した代替案:
 
@@ -140,7 +140,7 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 - 採用: 各 route の `handle.breadcrumb` で文字列キー or 関数を返し、`shell/breadcrumb.tsx` が描画
 - 不採用: content の Zod schema に `breadcrumb` field を持たせる
-- 理由: breadcrumb は content の本質的な属性ではなく、URL 構造から導出される表示要素。route handle に置く方が DRY (`shell.md`)
+- 理由: breadcrumb は content の本質的な属性ではなく、URL 構造から導出される表示要素。route handle に置く方が DRY (`frontend.md`)
 
 ### DDBJ Record (v3) schema には依存しない
 

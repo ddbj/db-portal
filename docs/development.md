@@ -176,14 +176,7 @@ staging / production の openapi.json と portal 側生成物 (`app/lib/api/open
 
 ## Content の lastUpdated 運用
 
-`*.content.tsx` の `meta.lastUpdated` は **手書き** する。
-
-```ts
-meta: {
-  lastUpdated: "2026-05-21T00:00:00Z",
-  // ...
-}
-```
+`*.content.tsx` の `meta.lastUpdated` は **手書き** で ISO 8601 文字列を入れる。
 
 - コンテンツの実質的な更新 (誤字修正以外) があったときに手で更新
 - CI で commit timestamp と `lastUpdated` を比較し、差分が 30 日以上なら warning を出す lint を持つ (実装は CI 設計の別 SSOT)
