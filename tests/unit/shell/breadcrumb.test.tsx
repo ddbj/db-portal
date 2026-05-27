@@ -13,8 +13,7 @@ const renderBreadcrumb = (
   renderWithStub({
     routes: [
       {
-        path: lang === "en" ? "/en" : "/",
-        handle: { lang },
+        path: "/",
         Component: () => (
           <>
             <Breadcrumb />
@@ -71,9 +70,9 @@ describe("Breadcrumb", () => {
     })
   })
 
-  test("Breadcrumb_enLang_homeHrefIsEn", () => {
-    renderBreadcrumb(["/en/databases"], "en")
-    expect(screen.getByRole("link", { name: /Home/i })).toHaveAttribute("href", "/en")
+  test("Breadcrumb_enLang_homeHrefIsRoot", () => {
+    renderBreadcrumb(["/databases"], "en")
+    expect(screen.getByRole("link", { name: /Home/i })).toHaveAttribute("href", "/")
   })
 
   test("Breadcrumb_unknownDatabaseSlug_resolverReturnsNull", () => {

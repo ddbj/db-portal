@@ -1,7 +1,7 @@
-import { useLocation, useMatches } from "react-router"
+import { useFetcher, useMatches } from "react-router"
 
-import { getCounterpartUrl, useLang, useT } from "~/lib/i18n"
-import { InfoIcon, TextLink } from "~/ui"
+import { useLang, useT } from "~/lib/i18n"
+import { InfoIcon } from "~/ui"
 
 type I18nState = "complete" | "missing" | "partial"
 
@@ -21,8 +21,8 @@ const isMissing = (handle: unknown): boolean => {
 export const TranslationUnavailable = () => {
   const lang = useLang()
   const matches = useMatches()
-  const { pathname } = useLocation()
   const t = useT()
+  const fetcher = useFetcher()
 
   if (lang !== "en") return null
   const missing = matches.some((m) => isMissing(m.handle))
@@ -45,9 +45,15 @@ export const TranslationUnavailable = () => {
             {t("translationUnavailable.description")}
           </p>
         </div>
-        <TextLink to={getCounterpartUrl(pathname, "ja")}>
-          {t("translationUnavailable.switchToJa")}
-        </TextLink>
+        <fetcher.Form method="post" action="/api/set-lang" className="inline-flex">
+          <input type="hidden" name="lang" value="ja" />
+          <button
+            type="submit"
+            className="text-link underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer text-fs-body-sm"
+          >
+            {t("translationUnavailable.switchToJa")}
+          </button>
+        </fetcher.Form>
       </div>
     </div>
   )

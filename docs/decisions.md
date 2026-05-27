@@ -72,18 +72,17 @@ XSS 耐性と Safari ITP への耐性を最優先。BFF は News mirror / LLM pr
 
 ## i18n
 
-### URL 戦略は ja default 無 prefix + `/en/...` のみ prefix
+### URL から lang を排除し Cookie で管理する
 
-- 採用: ja は `/`、`/search`、`/news`、英語は `/en`、`/en/search`、`/en/news`。route id を二重宣言して同じ component を再利用
-- 不採用: `/ja/...` も明示する両方 prefix、accept-language ベースの自動切替
-- 理由: portal の主読者は日本語話者。ja を default にすることで URL がシンプルになり、SEO 上の重複も `<link rel="alternate">` で吸収できる (`i18n.md`)
+- 採用: URL は `/`、`/search`、`/databases/bioproject` のような単一形のみ。lang は HTTP cookie `db_portal_lang` の値で決まり、SSR 時に root loader で確定する。初回訪問は `Accept-Language` で推定 (fallback `ja`)。SwitchLang は `/api/set-lang` resource route に POST して cookie を更新し URL を変えずに revalidate する。`?lang=ja|en` は読み取り専用 hint として認め、踏まれたら cookie に保存しつつ `?lang` を落とす 302 redirect で吸収する
+- 不採用: `/en/...` のような lang prefix を URL に持たせる方式、Accept-Language で常時自動切替 (cookie を持たない)、localStorage 管理
+- 理由: 主要 URL を共有しやすくする (`/databases/bioproject` のような短い形)。SwitchLang で URL が変わらないため UX が連続する。SEO は sitemap.xml が `?lang=ja` / `?lang=en` の 2 entry に hreflang を出力することで担保し、crawler / 共有 URL から特定言語を踏める
 
 補足理由:
 
-- ja URL を短く保てる (ddbj.nig.ac.jp 既存サイトとの互換を取りやすい)
-- ja 主・en 副の運営感と URL 構造が一致する
-- SEO: `hreflang` で言語別バリエーションを宣言できる
-- CDN cache: URL で言語が決まるため `Vary: Cookie` などのキャッシュ複雑化が不要
+- 「同じ URL を共有しても相手の cookie 次第で言語が変わる」副作用は `?lang=xx` の hint URL を別途持つことで救済できる (検索結果や日常 share では `/foo` を渡し、特定言語固定が必要な場合のみ `?lang=en` を共有)
+- CDN cache は `Vary: Cookie` で言語ごとに分かれるが、`db_portal_lang` の値域は 2 値 (`ja` / `en`) しかなく、複雑化は実質的に許容範囲
+- 共有 URL から検索 DSL の query (`?q=` 等) と lang が混ざらない (`?lang=` は SwitchLang のような内部 navigation で付かない)
 
 ## テスト
 

@@ -58,12 +58,12 @@ describe("NewsAside", () => {
     expect(headingLink).toHaveAttribute("href", "/news")
   })
 
-  test("NewsAside_enLang_viewAllPointsToEnNews", async () => {
+  test("NewsAside_enLang_viewAllPointsToNews", async () => {
     server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(2))))
     renderAside("en")
     await waitFor(() => screen.getByText("Announcement 1"))
     const headingLink = screen.getAllByRole("link", { name: /View all/ })[0]
-    expect(headingLink).toHaveAttribute("href", "/en/news")
+    expect(headingLink).toHaveAttribute("href", "/news")
   })
 
   test("NewsAside_apiError_showsEmptyMessage", async () => {

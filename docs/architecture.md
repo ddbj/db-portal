@@ -18,7 +18,7 @@ ddbj.nig.ac.jp 全ページの移行を最終ゴールとするが、リリー�
 | ニュース | `/news` | ddbj/www の `_news/` を mirror し、カテゴリ facet で閲覧 |
 | データベース解説 | `/databases/:slug` | コンテンツ collection から各 DB の説明を生成 |
 | 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない  |
-| 英語版 | `/en/...` | URL prefix によるロケール切替 (詳細 `i18n.md`) |
+| 言語切替 API | `/api/set-lang` | lang cookie を更新する resource route (詳細 `i18n.md`) |
 
 ## ディレクトリ構造
 
@@ -284,7 +284,7 @@ CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成し
 
 ### sitemap.xml / robots.txt
 
-- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、`/search`、`/submit`、`/news`) を ja / en の両方で列挙する `<urlset>` を返す。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、`<changefreq>` / `<priority>` は省略 (Google が無視するため)
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、`/search`、`/submit`、`/news`) について、各 path の `?lang=ja` / `?lang=en` 2 URL を出力し、各 `<url>` 内に `<xhtml:link rel="alternate" hreflang="ja|en|x-default">` を相互宣言する。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、`<changefreq>` / `<priority>` は省略 (Google が無視するため)
 - `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
 
 ### 404 ページ

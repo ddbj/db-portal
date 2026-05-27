@@ -61,7 +61,7 @@ export default {
         <Callout tone="info">
           BioSample submission usually happens alongside sequence or expression data. Open the
           {" "}
-          <TextLink to="/en/submit">submission navigator</TextLink>
+          <TextLink to="/submit">submission navigator</TextLink>
           {" "}
           and choose your data type — the registration path it assembles will include BioSample
           when needed.

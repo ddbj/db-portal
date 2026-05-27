@@ -5,24 +5,17 @@ import { computeActiveNav, Header } from "~/shell/header"
 
 import { renderWithStub } from "../_helpers/render"
 
-const enHandle = { lang: "en" as const }
-
-const renderHeader = (path: string) => {
-  const isEn = path === "/en" || path.startsWith("/en/")
-
-  return renderWithStub({
+const renderHeader = (path: string, lang: "ja" | "en" = "ja") =>
+  renderWithStub({
     routes: [
       { path: "/", Component: () => <Header /> },
       { path: "/search", Component: () => <Header /> },
       { path: "/search/results", Component: () => <Header /> },
-      { path: "/en", handle: enHandle, Component: () => <Header /> },
-      { path: "/en/search", handle: enHandle, Component: () => <Header /> },
-      { path: "/en/submit", handle: enHandle, Component: () => <Header /> },
+      { path: "/submit", Component: () => <Header /> },
     ],
     initialEntries: [path],
-    lang: isEn ? "en" : "ja",
+    lang,
   })
-}
 
 describe("Header", () => {
   test("Header_searchPath_searchIsActive", () => {
@@ -37,12 +30,12 @@ describe("Header", () => {
     expect(search).toHaveAttribute("aria-current", "page")
   })
 
-  test("Header_enRoot_navHrefsArePrefixed", () => {
-    renderHeader("/en")
+  test("Header_navHrefs_areLangNeutral", () => {
+    renderHeader("/", "en")
     const search = screen.getByRole("link", { name: "Search" })
     const submit = screen.getByRole("link", { name: "Submit" })
-    expect(search).toHaveAttribute("href", "/en/search")
-    expect(submit).toHaveAttribute("href", "/en/submit")
+    expect(search).toHaveAttribute("href", "/search")
+    expect(submit).toHaveAttribute("href", "/submit")
   })
 
   test("Header_aboutUs_isExternalLink", () => {
@@ -55,27 +48,23 @@ describe("Header", () => {
 })
 
 describe("computeActiveNav", () => {
-  test("computeActiveNav_jaRoot_returnsNull", () => {
-    expect(computeActiveNav("/", "ja")).toBe(null)
+  test("computeActiveNav_root_returnsNull", () => {
+    expect(computeActiveNav("/")).toBe(null)
   })
 
-  test("computeActiveNav_enRoot_returnsNull", () => {
-    expect(computeActiveNav("/en", "en")).toBe(null)
+  test("computeActiveNav_searchResults_returnsSearch", () => {
+    expect(computeActiveNav("/search/results")).toBe("search")
   })
 
-  test("computeActiveNav_searchResultsJa_returnsSearch", () => {
-    expect(computeActiveNav("/search/results", "ja")).toBe("search")
+  test("computeActiveNav_databases_returnsNull", () => {
+    expect(computeActiveNav("/databases/bioproject")).toBe(null)
   })
 
-  test("computeActiveNav_databasesJa_returnsNull", () => {
-    expect(computeActiveNav("/databases/bioproject", "ja")).toBe(null)
-  })
-
-  test("computeActiveNav_enSubmit_returnsSubmit", () => {
-    expect(computeActiveNav("/en/submit", "en")).toBe("submit")
+  test("computeActiveNav_submit_returnsSubmit", () => {
+    expect(computeActiveNav("/submit")).toBe("submit")
   })
 
   test("computeActiveNav_searchOnlyMatchesPrefix_notSearchSimilar", () => {
-    expect(computeActiveNav("/searches", "ja")).toBe(null)
+    expect(computeActiveNav("/searches")).toBe(null)
   })
 })

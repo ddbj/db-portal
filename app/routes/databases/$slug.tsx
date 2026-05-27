@@ -48,12 +48,9 @@ const DatabaseSlugRoute = () => {
             {db.meta.relatedDbs.map((relatedSlug) => {
               const related = getDatabaseBySlug(relatedSlug)
               if (related === undefined) return null
-              const href = lang === "en"
-                ? `/en/databases/${relatedSlug}`
-                : `/databases/${relatedSlug}`
               return (
                 <li key={relatedSlug} className="m-0">
-                  <TextLink to={href}>{related.title[lang]}</TextLink>
+                  <TextLink to={`/databases/${relatedSlug}`}>{related.title[lang]}</TextLink>
                 </li>
               )
             })}

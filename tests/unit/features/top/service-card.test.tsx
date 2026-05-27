@@ -49,17 +49,17 @@ const renderCard = (
   })
 
 describe("ServiceCard", () => {
-  test("ServiceCard_internalJa_buildsLinkWithoutLangPrefix", () => {
+  test("ServiceCard_internal_usesLinkToVerbatim", () => {
     renderCard(internalService, "ja")
     const link = screen.getByRole("link", { name: /横断検索/ })
     expect(link).toHaveAttribute("href", "/search")
     expect(link).not.toHaveAttribute("target")
   })
 
-  test("ServiceCard_internalEn_buildsLinkWithEnPrefix", () => {
+  test("ServiceCard_internal_doesNotPrefixForEn", () => {
     renderCard(internalService, "en")
     const link = screen.getByRole("link", { name: /Cross-DB search/ })
-    expect(link).toHaveAttribute("href", "/en/search")
+    expect(link).toHaveAttribute("href", "/search")
   })
 
   test("ServiceCard_external_setsTargetAndRel", () => {

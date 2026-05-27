@@ -29,8 +29,6 @@ const accentClass: Record<ResourceAccent, string> = {
   "src-dbcls-mid": "bg-src-dbcls-mid/12 text-src-dbcls-mid",
 }
 
-const prefixForLang = (lang: Lang): string => (lang === "en" ? "/en" : "")
-
 export const ResourceCard = ({ service, lang, accent }: ResourceCardProps) => {
   const link = service.link
   if (link === undefined) return null
@@ -60,6 +58,6 @@ export const ResourceCard = ({ service, lang, accent }: ResourceCardProps) => {
   )
 
   return link.kind === "internal"
-    ? <LinkCard to={`${prefixForLang(lang)}${link.to}`}>{inner}</LinkCard>
+    ? <LinkCard to={link.to}>{inner}</LinkCard>
     : <LinkCard external href={link.href}>{inner}</LinkCard>
 }

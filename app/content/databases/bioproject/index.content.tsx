@@ -60,7 +60,7 @@ export default {
         <Callout tone="info">
           Submitting a BioProject requires a DDBJ Account. Open the
           {" "}
-          <TextLink to="/en/submit">submission navigator</TextLink>
+          <TextLink to="/submit">submission navigator</TextLink>
           {" "}
           to see the registration path tailored to the file types you plan to deposit.
         </Callout>

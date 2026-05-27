@@ -6,8 +6,7 @@ import { fetchNews, type NewsItem, newsItemTitle, newsItemUrl } from "~/lib/api/
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
 
-const isTopPath = (pathname: string): boolean =>
-  pathname === "/" || pathname === "/en" || pathname === "/en/"
+const isTopPath = (pathname: string): boolean => pathname === "/"
 
 const STORAGE_KEY = "dbPortal.notificationBar.dismissed"
 

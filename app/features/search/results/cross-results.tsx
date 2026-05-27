@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
-import { type Lang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import { Label, TextLink } from "~/ui"
 
 import { type DbSlug, isDbSlug } from "../types"
@@ -10,7 +10,6 @@ import { buildResultsHref } from "../url/url-params"
 export type CrossResultsProps = {
   q: string
   response: CrossSearchResponse
-  lang: Lang
 }
 
 type DbEntry = CrossSearchResponse["databases"][number]
@@ -29,11 +28,11 @@ const formatHitDate = (value: string | null | undefined): string => {
   return parsed.toISOString().slice(0, 10)
 }
 
-const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lang }) => {
+const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   const t = useT()
   if (!isDbSlug(entry.db)) return null
   const db: DbSlug = entry.db
-  const href = buildResultsHref({ q, db }, lang)
+  const href = buildResultsHref({ q, db })
   const hits = (entry.hits ?? []).slice(0, 5)
 
   return (
@@ -102,10 +101,10 @@ const DbResultCard = ({ entry, q, lang }: { entry: DbEntry; q: string; lang: Lan
   )
 }
 
-export const CrossResults = ({ q, response, lang }: CrossResultsProps) => (
+export const CrossResults = ({ q, response }: CrossResultsProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {response.databases.map((entry) => (
-      <DbResultCard key={entry.db} entry={entry} q={q} lang={lang} />
+      <DbResultCard key={entry.db} entry={entry} q={q} />
     ))}
   </div>
 )

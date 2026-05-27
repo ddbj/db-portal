@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 
-import { useLang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import {
   SCOPE_KEYS,
   type ScopeKey,
@@ -12,7 +12,6 @@ import { Chip, SearchBox, TextLink } from "~/ui"
 
 export const HeroSection = () => {
   const t = useT()
-  const lang = useLang()
   const navigate = useNavigate()
   const [value, setValue] = useState("")
   const [scope, setScope] = useState<ScopeKey>("all")
@@ -48,10 +47,7 @@ export const HeroSection = () => {
         }}
         onSubmit={(next) => {
           setValue(next)
-          void navigate(buildResultsHref(
-            { q: next.trim(), db: scopeKeyToDbSlug(scope) },
-            lang,
-          ))
+          void navigate(buildResultsHref({ q: next.trim(), db: scopeKeyToDbSlug(scope) }))
         }}
       />
       <div className="mt-4 flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">
@@ -69,7 +65,7 @@ export const HeroSection = () => {
             </li>
           ))}
         </ul>
-        <TextLink to={buildSearchHref(lang)}>{t("top.hero.advancedLink")} →</TextLink>
+        <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
       </div>
     </section>
   )

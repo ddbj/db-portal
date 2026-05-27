@@ -9,8 +9,6 @@ type ServiceCardProps = {
   lang: Lang
 }
 
-const prefixForLang = (lang: Lang): string => (lang === "en" ? "/en" : "")
-
 export const ServiceCard = ({ service, lang }: ServiceCardProps) => {
   const link = service.link
   if (link === undefined) return null
@@ -35,6 +33,6 @@ export const ServiceCard = ({ service, lang }: ServiceCardProps) => {
   )
 
   return link.kind === "internal"
-    ? <LinkCard to={`${prefixForLang(lang)}${link.to}`}>{inner}</LinkCard>
+    ? <LinkCard to={link.to}>{inner}</LinkCard>
     : <LinkCard external href={link.href}>{inner}</LinkCard>
 }

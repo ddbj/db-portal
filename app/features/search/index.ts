@@ -90,7 +90,6 @@ export {
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
   DEFAULT_SORT,
-  langPrefix,
   parseDslToAst,
   readSearchParams,
   type SearchUrlState,

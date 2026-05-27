@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router"
 
-import { type Lang, useLang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import { cn, ExternalIcon } from "~/ui"
 
 import { LoginButton } from "./login-button"
@@ -18,17 +18,10 @@ const NAV_ITEMS: readonly NavItem[] = [
   { id: "about", kind: "external", href: "https://bsi.rois.ac.jp" },
 ]
 
-const buildHref = (path: InternalNavItem["path"], lang: Lang): string => {
-  const prefix = lang === "en" ? "/en" : ""
-  return `${prefix}/${path}`
-}
-
-const buildHomeHref = (lang: Lang): string => (lang === "en" ? "/en" : "/")
-
-export const computeActiveNav = (pathname: string, lang: Lang): NavId | null => {
+export const computeActiveNav = (pathname: string): NavId | null => {
   for (const item of NAV_ITEMS) {
     if (item.kind !== "internal") continue
-    const href = buildHref(item.path, lang)
+    const href = `/${item.path}`
     if (pathname === href || pathname.startsWith(`${href}/`)) {
       return item.id
     }
@@ -41,16 +34,15 @@ type HeaderProps = {
 }
 
 export const Header = ({ active }: HeaderProps) => {
-  const lang = useLang()
   const { pathname } = useLocation()
   const t = useT()
-  const resolvedActive = active === undefined ? computeActiveNav(pathname, lang) : active
+  const resolvedActive = active === undefined ? computeActiveNav(pathname) : active
 
   return (
     <header className="border-b border-border-soft bg-surface">
       <div className="px-page-gutter py-2 flex items-center gap-6">
         <Link
-          to={buildHomeHref(lang)}
+          to="/"
           className="text-fs-h2 font-bold text-ink no-underline leading-tight"
         >
           DDBJ 刷新 <span className="text-ink-soft font-semibold ml-0.5">(仮)</span>
@@ -84,7 +76,7 @@ export const Header = ({ active }: HeaderProps) => {
             return (
               <Link
                 key={item.id}
-                to={buildHref(item.path, lang)}
+                to={`/${item.path}`}
                 aria-current={isActive ? "page" : undefined}
                 className={className}
               >

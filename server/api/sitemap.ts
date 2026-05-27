@@ -31,12 +31,7 @@ const escapeXml = (s: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;")
 
-const joinUrl = (origin: string, pathname: string): string => {
-  const base = origin.replace(/\/$/, "")
-  const suffix = pathname.startsWith("/") ? pathname : `/${pathname}`
-
-  return `${base}${suffix}`
-}
+const trimOrigin = (origin: string): string => origin.replace(/\/$/, "")
 
 const normalizeUrlPath = (p: string): string => {
   const collapsed = p.replace(/\/{2,}/g, "/")
@@ -45,28 +40,58 @@ const normalizeUrlPath = (p: string): string => {
   return collapsed.replace(/\/+$/, "")
 }
 
+export type SitemapAlternate = {
+  hreflang: "ja" | "en" | "x-default"
+  href: string
+}
+
+export type SitemapEntry = {
+  loc: string
+  alternates: readonly SitemapAlternate[]
+}
+
 export const buildSitemapEntries = (
   origin: string,
   databaseSlugs: readonly string[],
-): readonly string[] => {
-  const localePrefixes = ["", "/en"] as const
+): readonly SitemapEntry[] => {
+  const base = trimOrigin(origin)
   const paths = [
     ...STATIC_PATHS,
     ...databaseSlugs.map((slug) => `/databases/${slug}`),
   ]
 
-  return localePrefixes.flatMap((prefix) =>
-    paths.map((p) => joinUrl(origin, normalizeUrlPath(`${prefix}${p}`))),
-  )
+  return paths.flatMap((rawPath): SitemapEntry[] => {
+    const normalized = normalizeUrlPath(rawPath)
+    const jaUrl = `${base}${normalized}?lang=ja`
+    const enUrl = `${base}${normalized}?lang=en`
+    const alternates: readonly SitemapAlternate[] = [
+      { hreflang: "ja", href: jaUrl },
+      { hreflang: "en", href: enUrl },
+      { hreflang: "x-default", href: jaUrl },
+    ]
+    return [
+      { loc: jaUrl, alternates },
+      { loc: enUrl, alternates },
+    ]
+  })
 }
 
-export const renderSitemapXml = (urls: readonly string[]): string => {
-  const body = urls
-    .map((url) => `  <url><loc>${escapeXml(url)}</loc></url>`)
+export const renderSitemapXml = (entries: readonly SitemapEntry[]): string => {
+  const body = entries
+    .map((entry) => {
+      const alternates = entry.alternates
+        .map(
+          (a) =>
+            `    <xhtml:link rel="alternate" hreflang="${escapeXml(a.hreflang)}" href="${escapeXml(a.href)}"/>`,
+        )
+        .join("\n")
+
+      return `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>\n${alternates}\n  </url>`
+    })
     .join("\n")
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${body}
 </urlset>
 `
@@ -75,6 +100,6 @@ ${body}
 export const handleSitemap = (env: ServerEnv): RequestHandler =>
   async (_req, res) => {
     const slugs = await listDatabaseSlugs()
-    const urls = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, slugs)
-    res.type("application/xml").send(renderSitemapXml(urls))
+    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, slugs)
+    res.type("application/xml").send(renderSitemapXml(entries))
   }

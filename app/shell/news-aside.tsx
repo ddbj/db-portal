@@ -2,18 +2,14 @@ import { useQuery } from "@tanstack/react-query"
 import { useId } from "react"
 
 import { fetchNews, newsItemSummary, newsItemTitle } from "~/lib/api/news"
-import { categoryLabelKey, formatDate, type Lang, useLang, useT } from "~/lib/i18n"
+import { categoryLabelKey, formatDate, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
 
 const NEWS_LIMIT = 5
 
-const newsHref = (id: string, lang: Lang): string =>
-  lang === "en" ? `/en/news#${id}` : `/news#${id}`
-
 export const NewsAside = () => {
   const t = useT()
   const lang = useLang()
-  const newsListHref = lang === "en" ? "/en/news" : "/news"
   const headingId = useId()
 
   const query = useQuery({
@@ -30,7 +26,7 @@ export const NewsAside = () => {
         as="h2"
         id={headingId}
         action={
-          <TextLink to={newsListHref}>
+          <TextLink to="/news">
             {t("newsAside.viewAll")} →
           </TextLink>
         }
@@ -62,7 +58,7 @@ export const NewsAside = () => {
                 <Tag kind="source" name={n.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
                 <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
               </div>
-              <TextLink to={newsHref(n.id, lang)} weight="bold">
+              <TextLink to={`/news#${n.id}`} weight="bold">
                 <span className="text-ink text-fs-body leading-snug">
                   {newsItemTitle(n, lang)}
                 </span>

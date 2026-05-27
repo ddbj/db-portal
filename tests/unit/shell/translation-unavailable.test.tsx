@@ -75,7 +75,7 @@ describe("TranslationUnavailable", () => {
     expect(screen.getByText(/not yet translated/i)).toBeInTheDocument()
   })
 
-  test("TranslationUnavailable_switchLink_pointsToJaCounterpart", () => {
+  test("TranslationUnavailable_switchButton_postsJaToSetLang", () => {
     renderAt(
       "en",
       [
@@ -87,8 +87,14 @@ describe("TranslationUnavailable", () => {
       ],
       "/en/databases/bioproject",
     )
-    const link = screen.getByRole("link", { name: /Switch to Japanese/i })
-    expect(link).toHaveAttribute("href", "/databases/bioproject")
+    const btn = screen.getByRole("button", { name: /Switch to Japanese/i })
+    expect(btn.getAttribute("type")).toBe("submit")
+    const form = btn.closest("form")
+    expect(form).not.toBeNull()
+    expect(form?.getAttribute("action")).toBe("/api/set-lang")
+    expect(form?.getAttribute("method")?.toLowerCase()).toBe("post")
+    const hidden = form?.querySelector('input[name="lang"]') as HTMLInputElement | null
+    expect(hidden?.value).toBe("ja")
   })
 
   test("TranslationUnavailable_noI18nHandle_doesNotRender", () => {

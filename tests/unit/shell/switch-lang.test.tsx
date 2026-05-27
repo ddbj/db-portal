@@ -5,59 +5,49 @@ import { SwitchLang } from "~/shell/switch-lang"
 
 import { renderWithStub } from "../_helpers/render"
 
-const enHandle = { lang: "en" as const }
-
-const renderAt = (path: string) => {
-  const isEn = path === "/en" || path.startsWith("/en/")
-
-  return renderWithStub({
-    routes: [
-      { path: "/", Component: () => <SwitchLang /> },
-      { path: "/search", Component: () => <SwitchLang /> },
-      { path: "/en", handle: enHandle, Component: () => <SwitchLang /> },
-      { path: "/en/news", handle: enHandle, Component: () => <SwitchLang /> },
-    ],
-    initialEntries: [path],
-    lang: isEn ? "en" : "ja",
+const renderAt = (lang: "ja" | "en") =>
+  renderWithStub({
+    routes: [{ path: "/", Component: () => <SwitchLang /> }],
+    initialEntries: ["/"],
+    lang,
     withQuery: false,
   })
-}
+
+const getForm = (): HTMLFormElement | null =>
+  document.querySelector('form[action="/api/set-lang"]')
 
 describe("SwitchLang", () => {
-  test("SwitchLang_jaPath_linksToEnCounterpart", () => {
-    renderAt("/search")
-    const link = screen.getByRole("link")
-    expect(link).toHaveAttribute("href", "/en/search")
+  test("SwitchLang_jaActive_postsEnToSetLang", () => {
+    renderAt("ja")
+    const form = getForm()
+    expect(form).not.toBeNull()
+    expect(form?.getAttribute("method")?.toLowerCase()).toBe("post")
+    const hidden = form?.querySelector('input[name="lang"]') as HTMLInputElement | null
+    expect(hidden?.value).toBe("en")
   })
 
-  test("SwitchLang_jaRoot_linksToEnRoot", () => {
-    renderAt("/")
-    const link = screen.getByRole("link")
-    expect(link).toHaveAttribute("href", "/en")
+  test("SwitchLang_enActive_postsJaToSetLang", () => {
+    renderAt("en")
+    const form = getForm()
+    expect(form).not.toBeNull()
+    const hidden = form?.querySelector('input[name="lang"]') as HTMLInputElement | null
+    expect(hidden?.value).toBe("ja")
   })
 
-  test("SwitchLang_enPath_linksToJaCounterpart", () => {
-    renderAt("/en/news")
-    const link = screen.getByRole("link")
-    expect(link).toHaveAttribute("href", "/news")
+  test("SwitchLang_submitButton_hasAriaLabel", () => {
+    renderAt("ja")
+    const btn = screen.getByRole("button", { name: "言語切替" })
+    expect(btn).toBeInTheDocument()
+    expect(btn.getAttribute("type")).toBe("submit")
   })
 
-  test("SwitchLang_linkHasAriaLabelForLanguageSwitcher", () => {
-    renderAt("/search")
-    const link = screen.getByRole("link", { name: "言語切替" })
-    expect(link).toHaveAttribute("hrefLang", "en")
-    expect(link).toHaveAttribute("lang", "en")
-  })
-
-  test("SwitchLang_enPath_hrefLangPointsToJa", () => {
-    renderAt("/en/news")
-    const link = screen.getByRole("link", { name: "Language switcher" })
-    expect(link).toHaveAttribute("hrefLang", "ja")
-    expect(link).toHaveAttribute("lang", "ja")
+  test("SwitchLang_enLang_submitButtonHasEnAriaLabel", () => {
+    renderAt("en")
+    expect(screen.getByRole("button", { name: "Language switcher" })).toBeInTheDocument()
   })
 
   test("SwitchLang_jaActive_jaPillIsBoldEnPillIsNotBold", () => {
-    renderAt("/search")
+    renderAt("ja")
     const jaPill = screen.getByText("JA")
     const enPill = screen.getByText("EN")
     expect(jaPill).toHaveClass("font-bold", "text-ink")
@@ -67,7 +57,7 @@ describe("SwitchLang", () => {
   })
 
   test("SwitchLang_enActive_enPillIsBoldJaPillIsNotBold", () => {
-    renderAt("/en/news")
+    renderAt("en")
     const jaPill = screen.getByText("JA")
     const enPill = screen.getByText("EN")
     expect(enPill).toHaveClass("font-bold", "text-ink")

@@ -1,12 +1,10 @@
 import { Link } from "react-router"
 
-import { useLang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import { PageTitle } from "~/ui"
 
 const AuthCallback = () => {
   const t = useT()
-  const lang = useLang()
-  const homeHref = lang === "en" ? "/en" : "/"
 
   return (
     <main className="mx-auto max-w-content-max">
@@ -15,7 +13,7 @@ const AuthCallback = () => {
         subtitle={t("auth.callback.description")}
       />
       <div className="px-page-gutter pb-section-md">
-        <Link to={homeHref} className="text-brand underline">
+        <Link to="/" className="text-brand underline">
           {t("auth.callback.backHome")}
         </Link>
       </div>

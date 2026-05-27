@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import { I18nextProvider } from "react-i18next"
 import { createRoutesStub } from "react-router"
 
-import { createI18nInstance } from "~/lib/i18n"
+import { createI18nInstance, LangProvider } from "~/lib/i18n"
 import { createQueryClient } from "~/lib/query/client"
 
 type Routes = Parameters<typeof createRoutesStub>[0]
@@ -24,7 +24,11 @@ const wrap = (
   queryClient: QueryClient | undefined,
 ): ReactNode => {
   const i18n = createI18nInstance(lang)
-  const inner = <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
+  const inner = (
+    <LangProvider value={lang}>
+      <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
+    </LangProvider>
+  )
   if (!withQuery) return inner
   const qc = queryClient ?? createQueryClient()
 

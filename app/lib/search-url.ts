@@ -1,4 +1,3 @@
-import type { Lang } from "./i18n"
 import {
   type DbSlug,
   isDbSlug,
@@ -51,13 +50,11 @@ export const writeSearchParams = (state: Partial<SearchUrlState>): URLSearchPara
   return params
 }
 
-export const langPrefix = (lang: Lang): "" | "/en" => (lang === "en" ? "/en" : "")
+export const buildSearchHref = (): string => "/search"
 
-export const buildSearchHref = (lang: Lang): string => `${langPrefix(lang)}/search`
-
-export const buildResultsHref = (state: Partial<SearchUrlState>, lang: Lang): string => {
+export const buildResultsHref = (state: Partial<SearchUrlState>): string => {
   const params = writeSearchParams(state)
   const search = params.toString()
 
-  return `${langPrefix(lang)}/search/results${search ? `?${search}` : ""}`
+  return `/search/results${search ? `?${search}` : ""}`
 }

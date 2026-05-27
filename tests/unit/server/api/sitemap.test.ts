@@ -3,59 +3,100 @@ import { describe, expect, test } from "vitest"
 import { buildSitemapEntries, renderSitemapXml } from "../../../../server/api/sitemap"
 
 describe("buildSitemapEntries", () => {
-  test("buildSitemapEntries_emitsJaAndEnForEachPath", () => {
-    const urls = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["bioproject", "biosample"])
+  test("buildSitemapEntries_emitsJaAndEnQueryUrlsForEachPath", () => {
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["bioproject", "biosample"])
+    const locs = entries.map((e) => e.loc)
 
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/search")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en/search")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/submit")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en/submit")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/news")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en/news")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/databases/bioproject")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en/databases/bioproject")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/databases/biosample")
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/en/databases/biosample")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/search?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/search?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/submit?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/submit?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/news?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/news?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/bioproject?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/bioproject?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/biosample?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/biosample?lang=en")
   })
 
-  test("buildSitemapEntries_emitsTwoUrlsPerLogicalPath", () => {
-    const urls = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["a", "b", "c"])
-    expect(urls).toHaveLength((4 + 3) * 2)
+  test("buildSitemapEntries_emitsTwoEntriesPerLogicalPath", () => {
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["a", "b", "c"])
+    expect(entries).toHaveLength((4 + 3) * 2)
   })
 
   test("buildSitemapEntries_trimsTrailingSlashOnOrigin", () => {
-    const urls = buildSitemapEntries("https://portal.ddbj.nig.ac.jp/", [])
-    expect(urls).toContain("https://portal.ddbj.nig.ac.jp/")
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp/", [])
+    const locs = entries.map((e) => e.loc)
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/?lang=ja")
   })
 
   test("buildSitemapEntries_emptySlugs_emitsOnlyStaticPaths", () => {
-    const urls = buildSitemapEntries("https://example.com", [])
-    expect(urls).toHaveLength(4 * 2)
+    const entries = buildSitemapEntries("https://example.com", [])
+    expect(entries).toHaveLength(4 * 2)
+  })
+
+  test("buildSitemapEntries_eachEntry_carriesJaEnXDefaultAlternates", () => {
+    const entries = buildSitemapEntries("https://example.com", [])
+    for (const entry of entries) {
+      const hreflangs = entry.alternates.map((a) => a.hreflang).sort()
+      expect(hreflangs).toEqual(["en", "ja", "x-default"])
+    }
+  })
+
+  test("buildSitemapEntries_xDefaultAlternate_matchesJaUrl", () => {
+    const entries = buildSitemapEntries("https://example.com", [])
+    for (const entry of entries) {
+      const ja = entry.alternates.find((a) => a.hreflang === "ja")
+      const xDefault = entry.alternates.find((a) => a.hreflang === "x-default")
+      expect(xDefault?.href).toBe(ja?.href)
+    }
   })
 })
 
 describe("renderSitemapXml", () => {
-  test("renderSitemapXml_emitsValidEnvelope", () => {
-    const xml = renderSitemapXml(["https://example.com/", "https://example.com/x"])
+  test("renderSitemapXml_emitsXhtmlNamespacedEnvelope", () => {
+    const xml = renderSitemapXml([])
     expect(xml).toMatch(/^<\?xml version="1\.0" encoding="UTF-8"\?>/)
-    expect(xml).toContain("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
-    expect(xml).toContain("<loc>https://example.com/</loc>")
-    expect(xml).toContain("<loc>https://example.com/x</loc>")
+    expect(xml).toContain("xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"")
+    expect(xml).toContain("xmlns:xhtml=\"http://www.w3.org/1999/xhtml\"")
     expect(xml).toContain("</urlset>")
   })
 
+  test("renderSitemapXml_emitsLocAndAlternateLinksPerEntry", () => {
+    const xml = renderSitemapXml([
+      {
+        loc: "https://example.com/?lang=ja",
+        alternates: [
+          { hreflang: "ja", href: "https://example.com/?lang=ja" },
+          { hreflang: "en", href: "https://example.com/?lang=en" },
+          { hreflang: "x-default", href: "https://example.com/?lang=ja" },
+        ],
+      },
+    ])
+    expect(xml).toContain("<loc>https://example.com/?lang=ja</loc>")
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="ja" href="https://example.com/?lang=ja"/>')
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.com/?lang=en"/>')
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="x-default" href="https://example.com/?lang=ja"/>')
+  })
+
   test("renderSitemapXml_escapesAmpersandsAndAngleBrackets", () => {
-    const xml = renderSitemapXml(["https://example.com/?q=a&b=<c>"])
-    expect(xml).toContain("?q=a&amp;b=&lt;c&gt;")
+    const xml = renderSitemapXml([
+      {
+        loc: "https://example.com/?q=a&b=<c>&lang=ja",
+        alternates: [],
+      },
+    ])
+    expect(xml).toContain("?q=a&amp;b=&lt;c&gt;&amp;lang=ja")
     expect(xml).not.toContain("?q=a&b=<c>")
   })
 
-  test("renderSitemapXml_emptyUrls_emitsBareEnvelope", () => {
+  test("renderSitemapXml_emptyEntries_emitsBareEnvelope", () => {
     const xml = renderSitemapXml([])
     expect(xml).toContain("<urlset")
     expect(xml).toContain("</urlset>")
     expect(xml).not.toContain("<loc>")
+    expect(xml).not.toContain("<xhtml:link")
   })
 })

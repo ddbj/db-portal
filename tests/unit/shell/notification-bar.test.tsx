@@ -8,14 +8,13 @@ import { NotificationBar } from "~/shell/notification-bar"
 import { createNoRetryClient, renderWithStub } from "../_helpers/render"
 import { server } from "../mocks/server"
 
-const renderBar = (lang: "ja" | "en" = "ja", path?: string) =>
+const renderBar = (lang: "ja" | "en" = "ja", path = "/") =>
   renderWithStub({
     routes: [
       { path: "/", Component: () => <NotificationBar /> },
       { path: "/search", Component: () => <NotificationBar /> },
-      { path: "/en", handle: { lang: "en" as const }, Component: () => <NotificationBar /> },
     ],
-    initialEntries: [path ?? (lang === "en" ? "/en" : "/")],
+    initialEntries: [path],
     lang,
     queryClient: createNoRetryClient(),
   })

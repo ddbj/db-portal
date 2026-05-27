@@ -13,19 +13,40 @@ const ORIGIN = "https://portal.example.test"
 
 describe("buildSitemapEntries PBT", () => {
   test.prop([arbSlugSet])(
-    "buildSitemapEntries_anySlugSet_urlCountIsTwiceStaticPlusSlugs",
+    "buildSitemapEntries_anySlugSet_entryCountIsTwiceStaticPlusSlugs",
     (slugs) => {
-      const urls = buildSitemapEntries(ORIGIN, slugs)
-      expect(urls.length).toBe((STATIC_PATH_COUNT + slugs.length) * 2)
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      expect(entries.length).toBe((STATIC_PATH_COUNT + slugs.length) * 2)
     },
   )
 
   test.prop([arbSlugSet])(
-    "buildSitemapEntries_anySlugSet_everyUrlStartsWithOrigin",
+    "buildSitemapEntries_anySlugSet_everyLocStartsWithOrigin",
     (slugs) => {
-      const urls = buildSitemapEntries(ORIGIN, slugs)
-      for (const url of urls) {
-        expect(url.startsWith(ORIGIN)).toBe(true)
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      for (const entry of entries) {
+        expect(entry.loc.startsWith(ORIGIN)).toBe(true)
+      }
+    },
+  )
+
+  test.prop([arbSlugSet])(
+    "buildSitemapEntries_anySlugSet_everyLocEndsWithLangQuery",
+    (slugs) => {
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      for (const entry of entries) {
+        expect(entry.loc.endsWith("?lang=ja") || entry.loc.endsWith("?lang=en")).toBe(true)
+      }
+    },
+  )
+
+  test.prop([arbSlugSet])(
+    "buildSitemapEntries_everyEntry_hasThreeAlternatesJaEnXDefault",
+    (slugs) => {
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      for (const entry of entries) {
+        const hreflangs = entry.alternates.map((a) => a.hreflang).sort()
+        expect(hreflangs).toEqual(["en", "ja", "x-default"])
       }
     },
   )
@@ -33,21 +54,32 @@ describe("buildSitemapEntries PBT", () => {
   test.prop([arbSlugSet])(
     "buildSitemapEntries_eachSlug_yieldsJaAndEnDatabasesUrls",
     (slugs) => {
-      const urls = buildSitemapEntries(ORIGIN, slugs)
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      const locs = entries.map((e) => e.loc)
       for (const slug of slugs) {
-        expect(urls).toContain(`${ORIGIN}/databases/${slug}`)
-        expect(urls).toContain(`${ORIGIN}/en/databases/${slug}`)
+        expect(locs).toContain(`${ORIGIN}/databases/${slug}?lang=ja`)
+        expect(locs).toContain(`${ORIGIN}/databases/${slug}?lang=en`)
       }
     },
   )
 
   test.prop([arbSlugSet])(
-    "renderSitemapXml_anyUrlList_locCountMatchesUrlCount",
+    "renderSitemapXml_anyEntryList_locCountMatchesEntryCount",
     (slugs) => {
-      const urls = buildSitemapEntries(ORIGIN, slugs)
-      const xml = renderSitemapXml(urls)
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      const xml = renderSitemapXml(entries)
       const matches = xml.match(/<loc>/g) ?? []
-      expect(matches.length).toBe(urls.length)
+      expect(matches.length).toBe(entries.length)
+    },
+  )
+
+  test.prop([arbSlugSet])(
+    "renderSitemapXml_anyEntryList_xhtmlLinkCountIsThreePerEntry",
+    (slugs) => {
+      const entries = buildSitemapEntries(ORIGIN, slugs)
+      const xml = renderSitemapXml(entries)
+      const matches = xml.match(/<xhtml:link /g) ?? []
+      expect(matches.length).toBe(entries.length * 3)
     },
   )
 })

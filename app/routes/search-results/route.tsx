@@ -47,7 +47,6 @@ import { loader } from "./loader"
 export { loader }
 
 export const handle = {
-  lang: undefined,
   i18n: { en: "complete" },
 } as const
 
@@ -92,53 +91,41 @@ const SearchResultsRoute = () => {
   const sync = useDebouncedSerialize(mergedAst, (dsl) => {
     if (dsl === data.q) return
     navigate(
-      buildResultsHref(
-        {
-          q: dsl,
-          db: data.db,
-          page: DEFAULT_PAGE,
-          perPage: data.perPage,
-          sort: data.sort,
-        },
-        lang,
-      ),
+      buildResultsHref({
+        q: dsl,
+        db: data.db,
+        page: DEFAULT_PAGE,
+        perPage: data.perPage,
+        sort: data.sort,
+      }),
       { replace: true },
     )
   })
 
   const handlePageChange = (nextPage: number) => {
     navigate(
-      buildResultsHref(
-        { q: data.q, db: data.db, page: nextPage, perPage: data.perPage, sort: data.sort },
-        lang,
-      ),
+      buildResultsHref({ q: data.q, db: data.db, page: nextPage, perPage: data.perPage, sort: data.sort }),
     )
   }
   const handlePerPageChange = (nextPerPage: PerPageValue) => {
     navigate(
-      buildResultsHref(
-        { q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: nextPerPage, sort: data.sort },
-        lang,
-      ),
+      buildResultsHref({ q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: nextPerPage, sort: data.sort }),
     )
   }
   const handleSortChange = (nextSort: SortKey) => {
     navigate(
-      buildResultsHref(
-        { q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: data.perPage, sort: nextSort },
-        lang,
-      ),
+      buildResultsHref({ q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: data.perPage, sort: nextSort }),
     )
   }
   const handleClear = () => {
-    navigate(buildSearchHref(lang))
+    navigate(buildSearchHref())
   }
   const handleEditInBuilder = () => {
-    navigate(buildSearchHref(lang))
+    navigate(buildSearchHref())
   }
   const handleSubmitFromBox = (value: string) => {
     setQInput(value)
-    navigate(buildResultsHref({ q: value, db: data.db }, lang))
+    navigate(buildResultsHref({ q: value, db: data.db }))
   }
   const scopeOptions = useMemo(
     () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
@@ -156,10 +143,7 @@ const SearchResultsRoute = () => {
     const nextDb = scopeKeyToDbSlug(key)
     if (nextDb === data.db) return
     navigate(
-      buildResultsHref(
-        { q: data.q, db: nextDb, page: DEFAULT_PAGE, perPage: data.perPage, sort: data.sort },
-        lang,
-      ),
+      buildResultsHref({ q: data.q, db: nextDb, page: DEFAULT_PAGE, perPage: data.perPage, sort: data.sort }),
     )
   }
 
@@ -191,7 +175,7 @@ const SearchResultsRoute = () => {
       {data.q === ""
         ? (
           <Section padTop="block" padBottom="lg">
-            <ExamplesChip onPick={(item) => navigate(buildResultsHref({ q: item }, lang))} />
+            <ExamplesChip onPick={(item) => navigate(buildResultsHref({ q: item }))} />
           </Section>
         )
         : data.errorKey
@@ -217,7 +201,7 @@ const SearchResultsRoute = () => {
                 <div className="grid gap-6 md:grid-cols-[var(--spacing-sidebar)_1fr]">
                   <FacetPanel state={facetState} dispatch={dispatchFacet} db={null} />
                   <div role="region" aria-label={t("search.a11y.resultsRegion")}>
-                    <CrossResults q={data.q} response={data.cross} lang={lang} />
+                    <CrossResults q={data.q} response={data.cross} />
                   </div>
                 </div>
               </Section>

@@ -18,7 +18,7 @@ import {
   useDebouncedSerialize,
 } from "~/features/search"
 import { searchApiBaseUrl } from "~/lib/api"
-import { useLang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import { SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
 import {
   Button,
@@ -29,13 +29,11 @@ import {
 } from "~/ui"
 
 export const handle = {
-  lang: undefined,
   i18n: { en: "complete" },
 } as const
 
 const SearchRoute = () => {
   const t = useT()
-  const lang = useLang()
   const navigate = useNavigate()
   const [qInput, setQInput] = useState("")
   const [scope, setScope] = useState<ScopeKey>("all")
@@ -61,22 +59,21 @@ const SearchRoute = () => {
         const parsed = await parseDslToAst(qInput, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
-        navigate(buildResultsHref({ q: qInput, db }, lang))
+        navigate(buildResultsHref({ q: qInput, db }))
 
         return
       }
     }
     if (isIdentityAst(combined)) {
-      navigate(buildResultsHref({ db }, lang))
+      navigate(buildResultsHref({ db }))
 
       return
     }
     try {
       const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
-      navigate(buildResultsHref({ q: dsl, db }, lang))
+      navigate(buildResultsHref({ q: dsl, db }))
     } catch {
-      // serialize 失敗時はとりあえず simple query だけで遷移
-      navigate(buildResultsHref({ q: qInput, db }, lang))
+      navigate(buildResultsHref({ q: qInput, db }))
     }
   }
 

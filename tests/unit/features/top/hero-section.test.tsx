@@ -8,20 +8,10 @@ import { renderWithStub } from "../../_helpers/render"
 const renderHero = (lang: "ja" | "en" = "ja") =>
   renderWithStub({
     routes: [
-      {
-        path: "/",
-        handle: { lang: "ja" as const },
-        Component: () => <HeroSection />,
-      },
-      {
-        path: "/en",
-        handle: { lang: "en" as const },
-        Component: () => <HeroSection />,
-      },
+      { path: "/", Component: () => <HeroSection /> },
       { path: "/search", Component: () => <span>search</span> },
-      { path: "/en/search", Component: () => <span>en-search</span> },
     ],
-    initialEntries: [lang === "en" ? "/en" : "/"],
+    initialEntries: ["/"],
     lang,
   })
 
@@ -60,16 +50,10 @@ describe("HeroSection", () => {
     expect(screen.getByRole("textbox")).toHaveValue(label)
   })
 
-  test("HeroSection_advancedLink_pointsToSearch_ja", () => {
-    renderHero("ja")
+  test("HeroSection_advancedLink_pointsToSearch", () => {
+    renderHero()
     const link = screen.getByRole("link", { name: /→/ })
     expect(link).toHaveAttribute("href", "/search")
-  })
-
-  test("HeroSection_advancedLink_pointsToSearch_en", () => {
-    renderHero("en")
-    const link = screen.getByRole("link", { name: /→/ })
-    expect(link).toHaveAttribute("href", "/en/search")
   })
 
   test("HeroSection_scopeDropdown_opensListbox", () => {

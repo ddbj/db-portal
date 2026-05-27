@@ -40,16 +40,16 @@ const renderCard = (
   })
 
 describe("ResourceCard", () => {
-  test("ResourceCard_internalJa_buildsLinkWithoutLangPrefix", () => {
+  test("ResourceCard_internal_usesLinkToVerbatim", () => {
     renderCard(buildService(), "src-ddbj-warm", "ja")
     expect(screen.getByRole("link", { name: /BioProject/ }))
       .toHaveAttribute("href", "/services/bp")
   })
 
-  test("ResourceCard_internalEn_buildsLinkWithEnPrefix", () => {
+  test("ResourceCard_internal_doesNotPrefixForEn", () => {
     renderCard(buildService(), "src-ddbj-warm", "en")
     expect(screen.getByRole("link", { name: /BioProject/ }))
-      .toHaveAttribute("href", "/en/services/bp")
+      .toHaveAttribute("href", "/services/bp")
   })
 
   test("ResourceCard_external_setsTargetAndRel", () => {

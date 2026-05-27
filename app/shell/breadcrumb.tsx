@@ -7,13 +7,11 @@ import {
   useBreadcrumb,
 } from "~/lib/content/breadcrumb"
 import { getDatabaseBySlug } from "~/lib/content/loader"
-import { type Lang, useLang, useT } from "~/lib/i18n"
+import { useLang, useT } from "~/lib/i18n"
 
 type BreadcrumbProps = {
   resolvers?: BreadcrumbOptions["resolvers"]
 }
-
-const homeHrefFor = (lang: Lang): string => (lang === "en" ? "/en" : "/")
 
 export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   const lang = useLang()
@@ -31,7 +29,7 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   if (raw.length === 0) return null
 
   const items: BreadcrumbItem[] = [
-    { label: t("breadcrumb.home"), href: homeHrefFor(lang) },
+    { label: t("breadcrumb.home"), href: "/" },
     ...raw,
   ]
 

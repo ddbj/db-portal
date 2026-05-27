@@ -23,10 +23,9 @@ const NewsRoute = () => {
   const handleChange = useCallback(
     (next: NewsFacetState) => {
       const qs = serializeNewsFacetState(next)
-      const pathname = lang === "en" ? "/en/news" : "/news"
-      void navigate(`${pathname}${qs}`, { replace: true })
+      void navigate(`/news${qs}`, { replace: true })
     },
-    [lang, navigate],
+    [navigate],
   )
 
   return (

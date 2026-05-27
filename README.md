@@ -54,8 +54,8 @@ docker compose exec app npm run check:last-updated
 
 **アプリ基盤 (横断的な仕組み)**
 
-- [routes.md](docs/routes.md) — 全 URL 一覧 / `bilingualRoutes` / route handle
-- [i18n.md](docs/i18n.md) — URL 戦略 / リソース運用 / 翻訳なし fallback
+- [routes.md](docs/routes.md) — 全 URL 一覧 / route handle / resource route
+- [i18n.md](docs/i18n.md) — lang cookie 戦略 / リソース運用 / 翻訳なし fallback
 - [content-system.md](docs/content-system.md) — `*.content.tsx` collection / loader / breadcrumb 自動生成
 - [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / `gen:api-types` 運用
 - [ui-primitives.md](docs/ui-primitives.md) — `app/ui/` の primitive 設計原則
