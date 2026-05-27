@@ -79,13 +79,23 @@ describe("ResultCard", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer")
   })
 
+  test("ResultCard_externalLink_announcesViaSrOnlyLabel", () => {
+    renderCard({
+      db: "bioproject",
+      hit: buildBioProjectHit(),
+      lang: "ja",
+    })
+    const link = screen.getByRole("link", { name: /Whole-genome sequencing.*external link/ })
+    expect(link).toBeInTheDocument()
+  })
+
   test("ResultCard_missingTitle_fallsBackToIdentifier", () => {
     renderCard({
       db: "sra",
       hit: buildSraHit({ title: null }),
       lang: "ja",
     })
-    const link = screen.getByRole("link", { name: "DRA000001" })
+    const link = screen.getByRole("link", { name: /^DRA000001/ })
     expect(link).toBeInTheDocument()
   })
 

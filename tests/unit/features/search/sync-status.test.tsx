@@ -30,12 +30,12 @@ describe("SyncStatusChip", () => {
 
   test("syncing_showsTag", () => {
     renderChip("syncing")
-    expect(screen.getByText("URL 同期中")).toBeTruthy()
+    expect(screen.getByText("URL 同期中")).toBeInTheDocument()
   })
 
   test("failed_showsTagAndRetry", () => {
     renderChip("failed")
-    expect(screen.getByText("URL 同期失敗")).toBeTruthy()
-    expect(screen.getByText("再試行")).toBeTruthy()
+    expect(screen.getByText("URL 同期失敗")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "再試行" })).toBeInTheDocument()
   })
 })

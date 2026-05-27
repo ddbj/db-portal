@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { http, HttpResponse } from "msw"
 import { describe, expect, test } from "vitest"
 
@@ -48,6 +49,16 @@ describe("ShellLayout", () => {
     const firstLink = container.querySelector("a")
     expect(firstLink).not.toBeNull()
     expect(firstLink).toHaveAttribute("href", "#main")
+  })
+
+  test("ShellLayout_tabKey_movesFocusToSkipLinkFirst", async () => {
+    const user = userEvent.setup()
+    renderLayout()
+    await user.tab()
+    const focused = document.activeElement
+    expect(focused?.tagName).toBe("A")
+    expect(focused).toHaveAttribute("href", "#main")
+    expect(focused).not.toHaveAttribute("tabindex", "-1")
   })
 
   test("ShellLayout_header_isPresent", () => {

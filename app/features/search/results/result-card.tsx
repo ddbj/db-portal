@@ -1,8 +1,6 @@
-import { Link } from "react-router"
-
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, useT } from "~/lib/i18n"
-import { Tag } from "~/ui"
+import { Tag, TextLink } from "~/ui"
 
 import type { DbSlug } from "../types"
 
@@ -107,14 +105,9 @@ export const ResultCard = ({ db, hit, lang }: ResultCardProps) => {
           <Tag key={key} kind="brand" size="sm" mono>{value}</Tag>
         ))}
       </div>
-      <Link
-        to={detailHref(db, hit.identifier)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-ink font-semibold text-fs-h2 no-underline hover:underline"
-      >
-        {title}
-      </Link>
+      <TextLink href={detailHref(db, hit.identifier)} external weight="bold">
+        <span className="text-fs-h2">{title}</span>
+      </TextLink>
       {description && (
         <p className="text-ink-mid text-fs-body-sm m-0 line-clamp-3 leading-snug">{description}</p>
       )}

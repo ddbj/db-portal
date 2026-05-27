@@ -106,7 +106,7 @@
   --spacing-page-gutter:   32px;  /* page 横余白 */
   --spacing-content-max: 1180px;  /* page content max-width (中央寄せ) */
   --spacing-sidebar:      220px;  /* search results / news の sidebar 固定幅 */
-  --spacing-right-pane:   280px;  /* search per-DB result の right pane 固定幅 */
+  --spacing-right-pane:   280px;  /* search per-DB result の right pane / news row 右端 tag 領域の最大幅 */
 
   /* === Radius ============================================================= */
   --radius-card:   10px;  /* card / panel / SearchBox / Callout */

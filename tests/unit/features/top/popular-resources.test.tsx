@@ -21,8 +21,8 @@ describe("PopularResources", () => {
     const { container } = renderPanel()
     const ddbjLabel = container.querySelector(".text-src-ddbj")
     const dbclsLabel = container.querySelector(".text-src-dbcls")
-    expect(ddbjLabel?.textContent ?? "").not.toBe("")
-    expect(dbclsLabel?.textContent ?? "").not.toBe("")
+    expect(ddbjLabel).toHaveTextContent("DDBJ")
+    expect(dbclsLabel).toHaveTextContent("DBCLS")
   })
 
   test("PopularResources_ddbjAndDbclsCounts_matchContentCollection", () => {

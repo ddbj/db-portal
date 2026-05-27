@@ -29,8 +29,7 @@ describe("HeroSection", () => {
   test("HeroSection_searchBox_isRenderedWithPlaceholder", () => {
     renderHero()
     const input = screen.getByRole("textbox")
-    expect(input).toHaveAttribute("placeholder")
-    expect((input.getAttribute("placeholder") ?? "").length).toBeGreaterThan(0)
+    expect(input).toHaveAttribute("placeholder", "キーワード、accession、学名で検索")
   })
 
   test("HeroSection_searchBox_hasSearchIconAndMaxWidth", () => {

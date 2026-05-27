@@ -111,8 +111,7 @@ describe("NewsRow", () => {
   test("NewsRow_categoryTag_isRendered", () => {
     renderRow(buildItem({ category: "data-release" }))
     const list = screen.getByRole("listitem")
-    const tagsContainer = list.querySelector(".flex.items-start.gap-1\\.5")
-    expect(tagsContainer?.textContent ?? "").not.toBe("")
+    expect(within(list).getByText("データ公開")).toBeInTheDocument()
   })
 
   test("NewsRow_listItemBorder_isAppliedExceptLast", () => {
