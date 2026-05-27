@@ -28,12 +28,12 @@ export const SectionHeading = ({
           {
             id,
             className:
-              "text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-[1.2]",
+              "text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tight",
           },
           children,
         )}
         {count !== undefined && (
-          <span className="text-[12.5px] text-ink-soft">
+          <span className="text-fs-label text-ink-soft">
             {count}{countSuffix === undefined || countSuffix === "" ? "" : ` ${countSuffix}`}
           </span>
         )}

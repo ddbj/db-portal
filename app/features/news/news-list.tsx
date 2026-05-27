@@ -40,10 +40,7 @@ export const NewsList = ({
 
   return (
     <div className="flex-1 min-w-0 flex flex-col">
-      <header
-        className="flex items-center justify-between gap-4 border-b border-border-soft"
-        style={{ padding: "10px 0" }}
-      >
+      <header className="flex items-center justify-between gap-4 border-b border-border-soft py-2.5">
         <p className="text-fs-meta text-ink-soft m-0">
           {t("news.toolbar.count", { count: total })}
         </p>
@@ -67,7 +64,7 @@ export const NewsList = ({
         </p>
       )}
       {!loading && error && (
-        <p className="text-fail text-fs-body py-4" role="alert">
+        <p className="text-red text-fs-body py-4" role="alert">
           {t("news.list.error")}
         </p>
       )}
@@ -82,10 +79,7 @@ export const NewsList = ({
         </ul>
       )}
       {showFooter && (
-        <footer
-          className="flex items-center justify-between gap-4 border-t border-border-soft"
-          style={{ padding: "16px 0" }}
-        >
+        <footer className="flex items-center justify-between gap-4 border-t border-border-soft py-4">
           <p className="text-fs-meta text-ink-soft m-0 font-mono">
             {`${rangeStart}–${rangeEnd} / ${total.toLocaleString()} ${t("common.countSuffix")}`}
           </p>

@@ -152,7 +152,7 @@ export const ModalHeader = ({
   closeLabel = "閉じる",
   as: TitleTag = "h2",
 }: ModalHeaderProps) => (
-  <div className="px-5 pt-4 pb-3.5 border-b border-border-soft flex items-start gap-3">
+  <div className="px-5 py-3.5 border-b border-border-soft flex items-start gap-3">
     <div className="flex-1 min-w-0">
       {(eyebrowTag !== undefined || eyebrowMeta !== undefined) && (
         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -174,7 +174,7 @@ export const ModalHeader = ({
         {title}
       </TitleTag>
       {description !== undefined && (
-        <p className="text-[12.5px] text-ink-mid mt-1 leading-relaxed">
+        <p className="text-fs-label text-ink-mid mt-1 leading-relaxed">
           {description}
         </p>
       )}

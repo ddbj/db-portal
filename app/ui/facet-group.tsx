@@ -28,7 +28,7 @@ export const FacetGroup = ({
           <button
             type="button"
             onClick={onClear}
-            className="bg-transparent border-0 text-brand text-[11.5px] font-semibold cursor-pointer p-0 font-sans"
+            className="bg-transparent border-0 text-brand text-fs-micro font-semibold cursor-pointer p-0 font-sans"
           >
             解除
           </button>
@@ -42,7 +42,7 @@ export const FacetGroup = ({
       <button
         type="button"
         onClick={onShowMore}
-        className="bg-transparent border-0 text-brand text-[12.5px] cursor-pointer pt-1.5 font-semibold font-sans"
+        className="bg-transparent border-0 text-brand text-fs-label cursor-pointer pt-1.5 font-semibold font-sans"
       >
         {showMoreLabel}
       </button>

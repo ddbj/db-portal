@@ -51,8 +51,7 @@ export const Header = ({ active }: HeaderProps) => {
       <div className="px-page-gutter py-2 flex items-center gap-6">
         <Link
           to={buildHomeHref(lang)}
-          className="text-[17px] font-bold text-ink no-underline leading-tight"
-          style={{ letterSpacing: "0.005em" }}
+          className="text-fs-h2 font-bold text-ink no-underline leading-tight"
         >
           DDBJ 刷新 <span className="text-ink-soft font-semibold ml-0.5">(仮)</span>
         </Link>
@@ -63,7 +62,7 @@ export const Header = ({ active }: HeaderProps) => {
           {NAV_ITEMS.map((item) => {
             const isActive = item.kind === "internal" && resolvedActive === item.id
             const className = cn(
-              "px-3 py-1 text-[14px] rounded-button no-underline inline-flex items-center gap-1.5",
+              "px-3 py-1 text-fs-body rounded-button no-underline inline-flex items-center gap-1.5",
               isActive
                 ? "text-brand font-bold"
                 : "text-ink-mid font-medium hover:text-ink",
@@ -94,7 +93,7 @@ export const Header = ({ active }: HeaderProps) => {
             )
           })}
           <SwitchLang />
-          <span aria-hidden className="w-px h-[18px] bg-border-soft mx-2" />
+          <span aria-hidden className="w-px h-4 bg-border-soft mx-2" />
           <LoginButton />
         </nav>
       </div>

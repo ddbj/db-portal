@@ -15,7 +15,7 @@ export type ChipProps =
   | (ChipBase & { as: "button"; onClick?: MouseEventHandler<HTMLButtonElement>; to?: never })
 
 const baseClass =
-  "inline-flex items-center gap-1 px-3 py-1 rounded-pill border text-[12.5px] font-medium no-underline cursor-pointer"
+  "inline-flex items-center gap-1 px-3 py-1 rounded-pill border text-fs-label font-medium no-underline cursor-pointer"
 
 const stateClass = ({ kind, selected }: { kind: "filter" | "example"; selected: boolean }) => {
   if (kind === "filter" && selected) {

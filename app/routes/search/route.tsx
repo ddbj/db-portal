@@ -89,7 +89,7 @@ const SearchRoute = () => {
   return (
     <>
       <PageTitle title={t("search.pageTitle")} />
-      <Section padTop="none" padBottom="tight">
+      <Section padTop="none" padBottom="none">
         <SearchBox
           size="md"
           maxWidth={1180}
@@ -109,23 +109,23 @@ const SearchRoute = () => {
             void runSearch()
           }}
         />
-        <div className="mt-2.5 text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-hero-gap gap-y-1">
+        <div className="mt-2.5 text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-4 gap-y-1">
           <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>
           <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
           <span>{t("search.syntax.advancedHint")}</span>
         </div>
       </Section>
-      <Section padTop="block" padBottom="tight">
+      <Section padTop="block" padBottom="none">
         <ExamplesChip onPick={setQInput} />
       </Section>
-      <Section padTop="loose" padBottom="tight">
+      <Section padTop="md" padBottom="none">
         <SearchAssistant
           advancedState={advancedState}
           dispatch={dispatch}
           baseUrl={searchApiBaseUrl}
         />
       </Section>
-      <Section padTop="loose" padBottom="tight">
+      <Section padTop="md" padBottom="none">
         <SectionHeading
           action={<SyncStatusChip status={sync.status} onRetry={sync.retry} />}
         >
@@ -134,7 +134,7 @@ const SearchRoute = () => {
         <AdvancedBuilder state={advancedState} dispatch={dispatch} />
       </Section>
       {sync.dsl && (
-        <Section padTop="block" padBottom="tight">
+        <Section padTop="block" padBottom="none">
           <QueryPreview dsl={sync.dsl} />
         </Section>
       )}

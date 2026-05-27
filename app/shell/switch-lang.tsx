@@ -6,7 +6,7 @@ import { cn, GlobeIcon } from "~/ui"
 const LangPill = ({ code, active }: { code: "JA" | "EN"; active: boolean }) => (
   <span
     className={cn(
-      "text-[13.5px] leading-none",
+      "text-fs-body-sm leading-none",
       active ? "text-ink font-bold" : "text-ink-mid font-normal",
     )}
   >

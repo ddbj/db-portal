@@ -7,7 +7,7 @@ type SidebarGroupLabelProps = {
 
 export const SidebarGroupLabel = ({ children, action }: SidebarGroupLabelProps) => (
   <div className="flex items-center justify-between mb-2">
-    <div className="text-fs-label font-bold text-ink-mid tracking-[0.06em]">
+    <div className="text-fs-label font-bold text-ink-mid tracking-label">
       {children}
     </div>
     {action}

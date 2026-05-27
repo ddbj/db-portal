@@ -1,32 +1,51 @@
 @import "tailwindcss";
 
+/* DDBJ ポータル デザイントークン (Tailwind v4 @theme).
+ *
+ * 本ファイルがデザインシステムの値の SSOT。utility class は Tailwind v4 が
+ * @theme 宣言から自動生成する (--color-brand → bg-brand / text-brand / border-brand、
+ * --spacing-section-md → p-section-md / m-section-md、--text-fs-h2 → text-fs-h2 …)。
+ *
+ * primitive 実装は app/ui/*.tsx、消費は app/features/ や app/routes/。
+ * primitive の Props / Variant ガイド + token の使い分け解説は docs/ui-primitives.md。
+ *
+ * ルール:
+ *   - 値は整数 px のみ。0.5px 刻みは置かない (drift の温床)。
+ *   - 1-2 箇所しか使われない値は token 化しない (直接 utility で書く)。
+ *   - 同値で意味が違う token は別 token として残す (例: fs-h3/fs-body = 14, weight 違い)。
+ *   - 生 hex / arbitrary value (text-[14px], bg-[#xxx] 等) は app/features/ で ESLint 禁止。
+ *     app/ui/ と app/shell/ のみ細部値 (1px 境界線、3px brand bar 等) を直接書ける。
+ */
+
 @theme {
-  --color-brand:        #6F4392;
-  --color-brand-deep:   #502E6B;
-  --color-brand-light:  #A987C5;
-  --color-brand-soft:   #F4F2FA;
-  --color-brand-softer: #F8F4FB;
+  /* === Colors ============================================================ */
+  /* Brand (BSI 紫、本物ロゴ色 #6F4392 起点) */
+  --color-brand:        #6F4392;  /* primary button / active nav / link / H2 left bar */
+  --color-brand-deep:   #502E6B;  /* hover / pressed / 強調テキスト */
+  --color-brand-light:  #A987C5;  /* secondary surface fill / radio card border (checked) */
+  --color-brand-soft:   #F4F2FA;  /* tinted background block / brand chip bg */
+  --color-brand-softer: #F8F4FB;  /* checked card surface (FmtRadio / FmtCheck) */
 
-  --color-ink:        #1A1726;
-  --color-ink-mid:    #3F3B4F;
-  --color-ink-soft:   #6E6A7B;
-  --color-ink-softer: #9C99A6;
+  /* Ink (text 階層、WCAG AA 担保) */
+  --color-ink:        #1A1726;  /* heading / 主要 body */
+  --color-ink-mid:    #3F3B4F;  /* secondary text / nav inactive / caption */
+  --color-ink-soft:   #6E6A7B;  /* date / metadata / hint */
+  --color-ink-softer: #9C99A6;  /* 装飾 (·, ×) のみ。body には使わない (AA fail) */
 
-  --color-green:      #2F7A48;
-  --color-green-deep: #1F5430;
-  --color-red:        #B73B2C;
-  --color-focus:      #FFCC33;
+  /* Action / accent */
+  --color-red:   #B73B2C;  /* danger button text / critical */
+  --color-focus: #FFCC33;  /* :focus-visible outline (global rule で使用) */
 
-  --color-surface:        #FFFFFF;
-  --color-surface-subtle: #FAFAFC;
-  --color-surface-panel:  #F6F4FA;
-  --color-border-soft:    #DAD6E0;
-  --color-border-strong:  #1A1726;
+  /* Surface / border */
+  --color-surface:        #FFFFFF;  /* default page bg / card */
+  --color-surface-subtle: #FAFAFC;  /* table head / notice bg / panel inner */
+  --color-border-soft:    #DAD6E0;  /* default border / divider / Header bottom border */
+  --color-border-strong:  #1A1726;  /* SearchBox 外周 border (strong contrast) */
 
+  /* Status palette (warn は色相 47° goldenrod、DDBJ source 35° と識別可能) */
   --color-warn-bg:     #FCF7E3;
   --color-warn-fg:     #705800;
   --color-warn-border: #E3C65F;
-  --color-warn-dot:    #B58E00;
   --color-ok-bg:       #F1F8F3;
   --color-ok-fg:       #1F5430;
   --color-ok-border:   #BFD9C7;
@@ -34,88 +53,74 @@
   --color-critical-fg:     #B73B2C;
   --color-critical-border: #F0BBB2;
 
-  --color-src-ddbj:         #A56712;
-  --color-src-ddbj-soft:    #FBEFDF;
-  --color-src-ddbj-border:  #ECBB79;
-  --color-src-dbcls:        #004098;
-  --color-src-dbcls-soft:   #DFEBFB;
-  --color-src-dbcls-border: #7DAAE8;
+  /* Source palette (DDBJ amber vs DBCLS blue、source pill 専用) */
+  --color-src-ddbj:       #A56712;  /* logo-derived amber (small chip / strong text 用) */
+  --color-src-ddbj-soft:  #FBEFDF;
+  --color-src-dbcls:      #004098;  /* royal blue (DBCLS site primary) */
+  --color-src-dbcls-soft: #DFEBFB;
 
-  /* Per-card accent rotation for Popular Resources monograms. */
-  --color-src-ddbj-warm:   #C26416;
-  --color-src-ddbj-mid:    #A85825;
-  --color-src-ddbj-deep:   #8E4516;
-  --color-src-dbcls-warm:  #1F6FB4;
-  --color-src-dbcls-mid:   #1B5990;
+  /* Source palette accent rotation (Popular Resources monogram 用) */
+  --color-src-ddbj-warm:  #C26416;
+  --color-src-ddbj-mid:   #A85825;
+  --color-src-ddbj-deep:  #8E4516;
+  --color-src-dbcls-warm: #1F6FB4;
+  --color-src-dbcls-mid:  #1B5990;
 
+  /* === Font family ======================================================== */
   --font-sans:  "Noto Sans JP Variable", "Public Sans", "Helvetica Neue", system-ui, sans-serif;
   --font-serif: "Noto Serif JP", "Source Serif 4", Georgia, serif;
   --font-mono:  "IBM Plex Mono", ui-monospace, monospace;
 
-  --text-fs-h1:         28px;
-  --text-fs-h2:         18px;
-  --text-fs-h3:         14px;
-  --text-fs-subtitle:   14.5px;
-  --text-fs-body:       14px;
-  --text-fs-body-md:    13.5px;
-  --text-fs-body-sm:    13px;
-  --text-fs-meta:       12.5px;
-  --text-fs-label:      12px;
-  --text-fs-tag-md:     11.5px;
-  --text-fs-micro:      11px;
-  --text-fs-card-title: 17px;
+  /* === Type scale (整数 px、半端値は置かない) ============================ */
+  --text-fs-h1:      28px;  /* PageTitle h1 */
+  --text-fs-h2:      18px;  /* SectionHeading / ModalHeader title / card title (h3) */
+  --text-fs-h3:      14px;  /* SidebarHeading (= fs-body と同値、weight 700 で識別) */
+  --text-fs-body:    14px;  /* default body / form control / SearchBox input (md) */
+  --text-fs-body-sm: 13px;  /* excerpt / Button sm / SearchBox scope (md) / FmtRadio・FmtCheck */
+  --text-fs-label:   12px;  /* mono small-caps label / FacetRow count / Chip / Pagination */
+  --text-fs-meta:    12px;  /* metadata (news date, accession code) — fs-label と同値、weight/family が違う */
+  --text-fs-micro:   11px;  /* Tag / FacetRow sub / FormGroup hint */
 
-  --tracking-label:    0.06em;
-  --tracking-eyebrow:  0.1em;
-  --tracking-h3:       0.01em;
-  --tracking-h2-sub:   0.005em;
-  --tracking-h1:      -0.015em;
-  --tracking-monogram:-0.02em;
-  --tracking-tag-sm:   0.04em;
-  --tracking-meta:     0.02em;
+  /* === Tracking (意味別、フォントの締まりを担う) ========================= */
+  --tracking-h1:       -0.015em;  /* PageTitle h1 */
+  --tracking-h3:        0.01em;   /* SidebarHeading */
+  --tracking-mono:      0.02em;   /* font-mono input / news date / mono metadata */
+  --tracking-tag:       0.04em;   /* Tag / FormGroup num */
+  --tracking-label:     0.06em;   /* Label / SidebarGroupLabel (uppercase mono) */
+  --tracking-eyebrow:   0.1em;    /* PageTitle eyebrow / Popular Resources eyebrow */
+  --tracking-monogram: -0.02em;   /* Popular Resources monogram (大文字 2 文字) */
 
-  --leading-h2:    1.2;
-  --leading-h1:    1.25;
-  --leading-tag:   1.4;
-  --leading-title: 1.45;
-  --leading-tile:  1.5;
-  --leading-body:  1.55;
-  --leading-prose: 1.6;
-  --leading-loose: 1.7;
+  /* === Leading (5 段階、Tailwind 標準名で override) ====================== */
+  --leading-tight:   1.2;   /* h1 / h2 / sidebar heading */
+  --leading-snug:    1.4;   /* Tag / news title / search result card title */
+  --leading-normal:  1.5;   /* tile (service / file-type card) */
+  --leading-relaxed: 1.6;   /* body prose / Modal description / Callout / content 段落 */
+  --leading-loose:   1.7;   /* dense paragraph (cross results description) */
 
-  --spacing-section-tight:  4px;
-  --spacing-section-snug:   8px;
-  --spacing-section-sm:    16px;
-  --spacing-section-mid:   24px;
-  --spacing-section-block: 28px;
-  --spacing-section-md:    32px;
-  --spacing-section-loose: 36px;
-  --spacing-section-lg:    48px;
-  --spacing-hero-top:      74px;
-  --spacing-hero-bottom:   83px;
-  --spacing-hero-row-gap:  41px;
-  --spacing-hero-x:        37px;
-  --spacing-hero-gap:      18px;
-  --spacing-page-bottom:   55px;
-  --spacing-page-gutter:   32px;
-  --spacing-content-max: 1180px;
-  --spacing-hero-max:    820px;
-  --spacing-sidebar:     220px;
-  --spacing-right-pane:  280px;
-  --spacing-news-date:   84px;
+  /* === Spacing (4 倍数を基本、1-2 箇所しか使わない値は token 化しない) === */
+  --spacing-section-sm:    16px;  /* 小 section padding */
+  --spacing-section-mid:   24px;  /* 中 section gap */
+  --spacing-section-block: 28px;  /* block 系 padding */
+  --spacing-section-md:    32px;  /* default section padding */
+  --spacing-section-lg:    48px;  /* hero / top page section */
+  --spacing-page-gutter:   32px;  /* page 横余白 */
+  --spacing-content-max: 1180px;  /* page content max-width (中央寄せ) */
+  --spacing-sidebar:      220px;  /* search results / news の sidebar 固定幅 */
+  --spacing-right-pane:   280px;  /* search per-DB result の right pane 固定幅 */
 
-  --radius-card:     10px;
-  --radius-button:    6px;
-  --radius-tag:       4px;
-  --radius-monogram:  8px;
-  --radius-tile:     12px;
-  --radius-dot:       2px;
-  --radius-pill:   9999px;
+  /* === Radius ============================================================= */
+  --radius-card:   10px;  /* card / panel / SearchBox / Callout */
+  --radius-button:  6px;  /* button / input / select / segmented button / chip filter */
+  --radius-tag:     4px;  /* Tag / badge / swatch */
+  --radius-pill: 9999px;  /* Chip / interactive pill */
 
+  /* === Shadow ============================================================= */
   --shadow-card:       0 1px 2px rgba(26, 23, 38, 0.04);
   --shadow-card-hover: 0 4px 16px -4px rgba(80, 46, 107, 0.12);
   --shadow-modal:      0 20px 50px -10px rgba(20, 15, 30, 0.35);
 }
+
+/* === Global a11y rules ==================================================== */
 
 *:focus:not(:focus-visible) {
   outline: none;
@@ -127,7 +132,7 @@
   border-radius: 3px;
 }
 
-/* テキスト入力系は form 側で focus 表現を担い、自身は outline を出さない。*/
+/* テキスト入力系は form 側で focus 表現を担うため、自前 outline は出さない */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {

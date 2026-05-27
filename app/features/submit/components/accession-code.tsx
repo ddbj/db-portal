@@ -9,8 +9,7 @@ export const AccessionCode = ({ codes }: AccessionCodeProps) => {
       {codes.map((code) => (
         <code
           key={code}
-          className="font-mono text-fs-meta text-ink bg-surface-subtle border border-border-soft rounded-tag"
-          style={{ padding: "1px 7px" }}
+          className="font-mono text-fs-meta text-ink bg-surface-subtle border border-border-soft rounded-tag py-px px-2"
         >
           {code}
         </code>

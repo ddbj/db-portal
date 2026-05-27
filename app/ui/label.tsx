@@ -11,7 +11,7 @@ export const Label = ({ children, color, size, as = "span" }: LabelProps) => {
   const style: CSSProperties | undefined =
     color === undefined && size === undefined ? undefined : { color, fontSize: size }
   const className =
-    "font-mono font-bold uppercase tracking-[0.08em] text-ink-mid text-fs-label"
+    "font-mono font-bold uppercase tracking-label text-ink-mid text-fs-label"
 
   return as === "div"
     ? <div className={className} style={style}>{children}</div>

@@ -165,7 +165,7 @@ const SearchResultsRoute = () => {
 
   return (
     <>
-      <Section padTop="mid" padBottom="tight">
+      <Section padTop="mid" padBottom="none">
         <SearchBox
           size="md"
           maxWidth={1180}

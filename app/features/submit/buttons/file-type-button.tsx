@@ -29,7 +29,7 @@ export const FileTypeButton = ({
     <span className="text-brand-deep shrink-0 inline-flex items-center">
       <FileTypeIcon buttonType={buttonType} size={20} />
     </span>
-    <span className="flex-1 text-fs-body-md font-semibold text-ink overflow-hidden text-ellipsis whitespace-nowrap">
+    <span className="flex-1 text-fs-body-sm font-semibold text-ink overflow-hidden text-ellipsis whitespace-nowrap">
       {label}
     </span>
     <span className="font-mono text-fs-micro text-ink-soft shrink-0">{ext}</span>

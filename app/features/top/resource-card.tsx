@@ -42,7 +42,7 @@ export const ResourceCard = ({ service, lang, accent }: ResourceCardProps) => {
       <div
         aria-hidden
         className={cn(
-          "w-9 h-9 rounded-monogram shrink-0 flex items-center justify-center font-extrabold text-fs-body-md tracking-monogram",
+          "w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-extrabold text-fs-body-sm tracking-monogram",
           accentClass[accent],
         )}
       >
@@ -52,7 +52,7 @@ export const ResourceCard = ({ service, lang, accent }: ResourceCardProps) => {
         <div className="text-ink font-bold text-fs-body m-0 overflow-hidden text-ellipsis whitespace-nowrap">
           {title}
         </div>
-        <div className="text-ink-soft text-fs-tag-md m-0 mt-px overflow-hidden text-ellipsis whitespace-nowrap">
+        <div className="text-ink-soft text-fs-micro m-0 mt-px overflow-hidden text-ellipsis whitespace-nowrap">
           {description}
         </div>
       </div>

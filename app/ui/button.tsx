@@ -25,9 +25,9 @@ type LinkButtonProps = ButtonHtmlBase & {
 type ButtonProps = SizedButtonProps | LinkButtonProps
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-[13px]",
-  md: "px-4.5 py-2.25 text-fs-body",
-  lg: "px-5.5 py-2.75 text-[15px]",
+  sm: "px-3 py-1.5 text-fs-body-sm",
+  md: "px-4 py-2 text-fs-body",
+  lg: "px-6 py-3 text-fs-body",
 }
 
 const kindClass: Record<ButtonKind, string> = {

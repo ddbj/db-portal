@@ -38,7 +38,7 @@ export const FacetRow = ({
     <li
       className={cn(
         "flex items-center gap-2 text-fs-body",
-        compact ? "py-[3px]" : "py-1",
+        compact ? "py-0.5" : "py-1",
       )}
     >
       <label className="flex items-center gap-2 cursor-pointer w-full">
@@ -54,26 +54,26 @@ export const FacetRow = ({
         {swatch !== undefined && (
           <span
             aria-hidden
-            className="w-2 h-2 rounded-[2px] shrink-0"
+            className="w-2 h-2 rounded-sm shrink-0"
             style={swatchStyle}
           />
         )}
         <span
           className={cn(
             "text-ink flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
-            mono ? "font-mono text-[12.5px]" : "font-sans text-[13.5px]",
+            mono ? "font-mono text-fs-label" : "font-sans text-fs-body-sm",
             isChecked ? "font-semibold" : "font-normal",
           )}
         >
           {label}
           {sub !== undefined && (
-            <span className="ml-1.5 font-mono text-[10.5px] text-ink-soft font-normal">
+            <span className="ml-1.5 font-mono text-fs-micro text-ink-soft font-normal">
               {sub}
             </span>
           )}
         </span>
         {count !== undefined && (
-          <span className="text-ink-soft font-mono text-[12px]">{count}</span>
+          <span className="text-ink-soft font-mono text-fs-label">{count}</span>
         )}
       </label>
     </li>

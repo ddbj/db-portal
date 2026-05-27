@@ -13,7 +13,7 @@ type PaginationProps = {
 
 const btnClass = (isActive: boolean, isDisabled: boolean): string =>
   cn(
-    "min-w-7 h-7 px-2 rounded-button text-[12px] font-semibold font-mono inline-flex items-center justify-center border",
+    "min-w-7 h-7 px-2 rounded-button text-fs-label font-semibold font-mono inline-flex items-center justify-center border",
     isActive
       ? "border-brand bg-brand text-white"
       : isDisabled
@@ -77,7 +77,7 @@ export const Pagination = ({
         <>
           <span
             aria-hidden
-            className="self-center text-ink-soft px-1 font-mono text-[12px]"
+            className="self-center text-ink-soft px-1 font-mono text-fs-label"
           >
             …
           </span>

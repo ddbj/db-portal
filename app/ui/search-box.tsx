@@ -23,16 +23,16 @@ type SearchBoxProps = {
 
 const sizeClass = {
   md: {
-    input: "py-2 text-[14.5px]",
-    scope: "py-1.5 text-[13.5px]",
-    button: "px-6 text-[14px]",
+    input: "py-2 text-fs-body",
+    scope: "py-1.5 text-fs-body-sm",
+    button: "px-6 text-fs-body",
     icon: 14,
   },
   lg: {
-    input: "py-3.25 text-[16px]",
-    scope: "py-3 text-[14.5px]",
-    button: "px-7.5 text-[15.5px]",
-    icon: 17,
+    input: "py-3 text-fs-body",
+    scope: "py-3 text-fs-body-sm",
+    button: "px-7 text-fs-body",
+    icon: 16,
   },
 } as const
 
@@ -182,7 +182,7 @@ export const SearchBox = ({
                   aria-selected={selected}
                   onClick={() => handleScopeChange(opt)}
                   className={cn(
-                    "w-full text-left px-4 py-2 text-[14px] hover:bg-surface-subtle cursor-pointer",
+                    "w-full text-left px-4 py-2 text-fs-body hover:bg-surface-subtle cursor-pointer",
                     selected ? "text-brand font-bold" : "text-ink font-medium",
                   )}
                 >

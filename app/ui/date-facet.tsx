@@ -51,7 +51,7 @@ export const DateFacet = ({
               onClick={() => onRangeChange?.(key)}
               aria-pressed={on}
               className={cn(
-                "flex-1 py-[5px] text-[12px] font-semibold rounded-button cursor-pointer font-sans border",
+                "flex-1 py-1 text-fs-label font-semibold rounded-button cursor-pointer font-sans border",
                 on
                   ? "bg-brand-soft text-brand-deep border-brand/35"
                   : "bg-transparent text-ink-mid border-border-soft",
@@ -63,7 +63,7 @@ export const DateFacet = ({
         })}
       </div>
       <details className="mt-2">
-        <summary className="cursor-pointer list-none text-[11.5px] text-ink-mid font-semibold inline-flex items-center gap-1 py-0.5">
+        <summary className="cursor-pointer list-none text-fs-micro text-ink-mid font-semibold inline-flex items-center gap-1 py-0.5">
           <ChevronDownIcon size={9} />
           日付を指定
         </summary>
@@ -74,7 +74,7 @@ export const DateFacet = ({
             value={from ?? ""}
             onChange={(e) => onFromChange?.(e.target.value)}
             aria-label="開始日"
-            className="mt-1 w-full px-2.5 py-1.5 text-[13px] border border-border-soft rounded-button text-ink-mid font-mono box-border"
+            className="mt-1 w-full px-2.5 py-1.5 text-fs-body-sm border border-border-soft rounded-button text-ink-mid font-mono box-border"
           />
           <Label as="div">TO</Label>
           <input
@@ -82,7 +82,7 @@ export const DateFacet = ({
             value={to ?? ""}
             onChange={(e) => onToChange?.(e.target.value)}
             aria-label="終了日"
-            className="mt-1 w-full px-2.5 py-1.5 text-[13px] border border-border-soft rounded-button text-ink-mid font-mono box-border"
+            className="mt-1 w-full px-2.5 py-1.5 text-fs-body-sm border border-border-soft rounded-button text-ink-mid font-mono box-border"
           />
         </div>
       </details>

@@ -15,7 +15,7 @@ export const ModalPreview = ({ label, children, footnote }: ModalPreviewProps) =
     <Label as="div">{label}</Label>
     <div className="mt-3">{children}</div>
     {footnote !== undefined && (
-      <div className="mt-3 pt-3 border-t border-dashed border-border-soft text-[11.5px] text-ink-mid leading-relaxed">
+      <div className="mt-3 pt-3 border-t border-dashed border-border-soft text-fs-micro text-ink-mid leading-relaxed">
         {footnote}
       </div>
     )}
@@ -39,9 +39,9 @@ export const PreviewCard = ({ source, db, title, body, active = true }: PreviewC
   >
     <div className="flex items-center gap-1.5 mb-1">
       <Tag kind="source" name={source} />
-      <span className="font-mono text-[11.5px] font-bold text-ink-mid">{db}</span>
+      <span className="font-mono text-fs-micro font-bold text-ink-mid">{db}</span>
     </div>
-    <div className="text-[13px] font-bold text-ink mb-0.5">{title}</div>
-    <div className="text-[12px] text-ink-mid leading-relaxed">{body}</div>
+    <div className="text-fs-body-sm font-bold text-ink mb-0.5">{title}</div>
+    <div className="text-fs-label text-ink-mid leading-relaxed">{body}</div>
   </div>
 )

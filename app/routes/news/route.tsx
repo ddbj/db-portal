@@ -32,7 +32,7 @@ const NewsRoute = () => {
   return (
     <>
       <PageTitle title={t("news.pageTitle")} />
-      <Section padTop="snug" padBottom="lg">
+      <Section padTop="sm" padBottom="lg">
         <div className="flex gap-8 items-start">
           <FacetPanel facet={facet} options={result.options} onChange={handleChange} />
           <NewsList

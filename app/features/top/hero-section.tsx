@@ -63,7 +63,7 @@ export const HeroSection = () => {
           void navigate(buildResultsHref(next, scopeKeyToDbSlug(scope), lang))
         }}
       />
-      <div className="mt-hero-gap flex items-center gap-2 flex-wrap justify-center text-fs-body-md text-ink-soft">
+      <div className="mt-4 flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">
         <span className="text-ink-mid">{t("top.hero.examplesLabel")}:</span>
         <ul className="list-none p-0 m-0 flex items-center gap-2 flex-wrap">
           {examples.map((example) => (

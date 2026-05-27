@@ -2,16 +2,7 @@ import type { CSSProperties, ReactNode } from "react"
 
 import { cn } from "./cn"
 
-type SectionPad =
-  | "none"
-  | "tight"
-  | "snug"
-  | "sm"
-  | "mid"
-  | "block"
-  | "md"
-  | "loose"
-  | "lg"
+type SectionPad = "none" | "sm" | "mid" | "block" | "md" | "lg"
 
 type SectionProps = {
   children: ReactNode
@@ -23,25 +14,19 @@ type SectionProps = {
 
 const padTopClass: Record<SectionPad, string> = {
   none: "pt-0",
-  tight: "pt-section-tight",
-  snug: "pt-section-snug",
   sm: "pt-section-sm",
   mid: "pt-section-mid",
   block: "pt-section-block",
   md: "pt-section-md",
-  loose: "pt-section-loose",
   lg: "pt-section-lg",
 }
 
 const padBottomClass: Record<SectionPad, string> = {
   none: "pb-0",
-  tight: "pb-section-tight",
-  snug: "pb-section-snug",
   sm: "pb-section-sm",
   mid: "pb-section-mid",
   block: "pb-section-block",
   md: "pb-section-md",
-  loose: "pb-section-loose",
   lg: "pb-section-lg",
 }
 

@@ -26,7 +26,7 @@ export const FmtRadio = ({
   return (
     <label
       className={cn(
-        "flex items-start gap-2.5 px-3 py-2 rounded-button cursor-pointer text-[13.5px] text-ink leading-snug border",
+        "flex items-start gap-2.5 px-3 py-2 rounded-button cursor-pointer text-fs-body-sm text-ink leading-snug border",
         isChecked
           ? "bg-brand-softer border-brand-light/50"
           : "bg-surface border-border-soft",
@@ -46,7 +46,7 @@ export const FmtRadio = ({
         {sub !== undefined && (
           <span
             className={cn(
-              "block text-[11.5px] mt-0.5 font-normal",
+              "block text-fs-micro mt-0.5 font-normal",
               isChecked ? "text-brand-deep" : "text-ink-mid",
             )}
           >

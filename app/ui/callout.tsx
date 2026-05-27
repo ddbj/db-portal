@@ -20,7 +20,7 @@ export const Callout = ({ children, tone = "info", role }: CalloutProps) => (
   <div
     role={role}
     className={cn(
-      "px-3.5 py-2.5 border rounded-card text-[13.5px] leading-relaxed",
+      "px-3.5 py-2.5 border rounded-card text-fs-body-sm leading-relaxed",
       toneClass[tone],
     )}
   >

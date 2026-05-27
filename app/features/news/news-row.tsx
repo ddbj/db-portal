@@ -14,38 +14,29 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
   const externalUrl = newsItemUrl(item, lang)
 
   return (
-    <li
-      className="flex items-start gap-hero-gap border-b border-border-soft last:border-b-0"
-      style={{ padding: "16px 4px" }}
-    >
-      <span
-        className="font-mono text-fs-meta text-ink-soft shrink-0 w-news-date tracking-meta"
-        style={{ paddingTop: 3 }}
-      >
+    <li className="flex items-start gap-4 py-4 px-2 border-b border-border-soft last:border-b-0">
+      <span className="font-mono text-fs-meta text-ink-soft shrink-0 w-20 tracking-mono pt-0.5">
         {formatDate(item.publishedAt)}
       </span>
       <div className="flex-1 min-w-0">
         {externalUrl !== undefined
           ? (
             <TextLink href={externalUrl} external weight="bold">
-              <span className="text-ink text-fs-body leading-title">{title}</span>
+              <span className="text-ink text-fs-body leading-snug">{title}</span>
             </TextLink>
           )
           : (
-            <span className="text-ink text-fs-body font-semibold leading-title">
+            <span className="text-ink text-fs-body font-semibold leading-snug">
               {title}
             </span>
           )}
         {summary !== undefined && summary !== "" && (
-          <p className="text-ink-soft text-fs-meta leading-prose mt-1 m-0 line-clamp-2">
+          <p className="text-ink-soft text-fs-meta leading-relaxed mt-1 m-0 line-clamp-2">
             {summary}
           </p>
         )}
       </div>
-      <div
-        className="flex items-start gap-1.5 flex-wrap shrink-0 max-w-right-pane justify-end"
-        style={{ paddingTop: 3 }}
-      >
+      <div className="flex items-start gap-1.5 flex-wrap shrink-0 max-w-right-pane justify-end pt-0.5">
         <Tag kind="source" name={item.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
         {item.db.map((db) => (
           <Tag key={db} kind="tag" size="sm" mono>{db}</Tag>

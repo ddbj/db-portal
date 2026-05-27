@@ -40,7 +40,7 @@ export const TextInput = ({
         isWarn
           ? "border border-warn-border bg-warn-bg text-ink"
           : "border border-border-soft bg-surface text-ink",
-        mono && "font-mono tracking-[0.02em]",
+        mono && "font-mono tracking-mono",
       )}
     />
   )

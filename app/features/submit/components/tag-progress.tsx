@@ -29,17 +29,15 @@ export const TagProgress = ({
     <div
       data-testid="tag-progress"
       className={cn(
-        "flex flex-col gap-2 border rounded-card",
+        "flex flex-col gap-2 border rounded-card py-3.5 px-4",
         container,
       )}
-      style={{ padding: "14px 16px 12px" }}
     >
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-fs-meta font-semibold text-ink-mid">{heading}</span>
         <span className="font-mono text-fs-label text-ink-mid font-semibold">{countLabel}</span>
         <div
-          className="flex-1 h-1.5 bg-border-soft rounded-pill overflow-hidden"
-          style={{ minWidth: 160 }}
+          className="flex-1 min-w-40 h-1.5 bg-border-soft rounded-pill overflow-hidden"
           role="progressbar"
           aria-label={heading}
           aria-valuenow={percent}
@@ -56,7 +54,7 @@ export const TagProgress = ({
           {percent}%
         </span>
       </div>
-      <p className={cn("text-fs-meta m-0 leading-body", descriptionColor)}>
+      <p className={cn("text-fs-meta m-0 leading-relaxed", descriptionColor)}>
         {isComplete ? completeText : remainingText}
       </p>
     </div>

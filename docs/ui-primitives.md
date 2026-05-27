@@ -1,17 +1,29 @@
 # UI Primitives
 
-`app/ui/` 配下の primitive 仕様。22 primitive を 9 ファイルに分割して実装する。各 primitive は `app/styles/tailwind.css` の `@theme` トークンを utility class 経由でのみ参照し、利用側 (`shell` / `routes` / `features` / `content`) は `import { Button } from "~/ui"` の形で消費する。
+`app/ui/` 配下の primitive 仕様。本書はデザインシステムの「使い方ガイド」 (入口) として位置付けられ、値の SSOT は `app/styles/tailwind.css` の `@theme` block、primitive 実装の SSOT は `app/ui/*.tsx` のコード本体に置く。
+
+## 0. デザインシステム SSOT
+
+| 種類 | SSOT | 補足 |
+|---|---|---|
+| トークン値 (color / font / spacing / radius / shadow / tracking / leading) | `app/styles/tailwind.css` の `@theme` block | Tailwind v4 が utility class を自動生成。値の重複定義を避けるため、本書では数値リテラルを再掲しない |
+| primitive 実装 | `app/ui/*.tsx` のコード | Props 型、Variant 切替、class 構造はコードが最終形態 |
+| primitive 使い方ガイド (本書) | `docs/ui-primitives.md` | 各 primitive の Props / Variant / 使い分けの説明 |
+| 視覚カタログ | `/_design` route (`app/routes/_design/`) | 全 primitive を variant × state で並べる。production build では除外 |
+| 物理強制 | `eslint.config.ts` | 生 hex / arbitrary value / 生 HTML / zones の lint ルール |
+
+トークン名 (`brand`, `fs-h2`, `section-md`, `tracking-tag`, `leading-snug` …) と意味の対応は `app/styles/tailwind.css` のコメントを参照する。本書では token 名で primitive の class を語り、px 値は書かない。
 
 ## 1. 設計原則
 
 ### 1.1 トークン参照のみ
 
-`@theme` で定義された token (`brand` / `ink` / `border-soft` / `radius-card` …) を Tailwind utility class (`bg-brand` / `text-ink` / `rounded-card` …) で参照する。`app/{features,routes,shell,content}/` 配下で次は ESLint で物理禁止される (`architecture.md §3.3`):
+`@theme` で定義された token (`brand` / `ink` / `border-soft` / `radius-card` …) を Tailwind utility class (`bg-brand` / `text-ink` / `rounded-card` …) で参照する。`app/{features,routes,content}/` 配下で次は ESLint で物理禁止される (`architecture.md §3.3`):
 
 - 生 hex literal (`"#6F4392"` のような文字列)
-- arbitrary Tailwind value (`bg-[#6F4392]` / `text-[14.5px]` / `p-[3px]`)
+- arbitrary Tailwind value (`bg-[#6F4392]` / `text-[14px]` / `p-[3px]`)
 
-`app/ui/` のみこの制限から除外される。primitive 内部で 1px のような細部値や、token に表現しきれない計算値を Tailwind class に直接書ける。新しい色や spacing が必要になったら、まず `@theme` に token を追加してから token utility 経由で参照する。
+`app/ui/` と `app/shell/` は arbitrary value を許容するが、生 hex は禁止される (shell は logo の `text-fs-h2` 等は token 経由、ただし vh / rem 単位など token 化に向かない細部値は許容)。新しい色や spacing が必要になったら、まず `@theme` に token を追加してから token utility 経由で参照する。0.5px 刻みのような半端値は token に置かない (drift の温床)。
 
 ### 1.2 `className` prop を外から受けない
 
@@ -146,9 +158,9 @@ class 骨格:
 
 - 外周: `px-page-gutter pt-9 pb-6`
 - 内側 wrapper: `max-w-content-max mx-auto` (default) または `style={{ maxWidth }}`
-- eyebrow: `text-fs-label text-brand font-bold uppercase tracking-[0.1em] font-mono mb-2`
-- H1: `text-fs-h1 font-extrabold text-ink leading-tight tracking-tight m-0`
-- subtitle: `text-[14.5px] text-ink-mid leading-relaxed mt-2.5 max-w-[1100px]`
+- eyebrow: `text-fs-label text-brand font-bold uppercase tracking-eyebrow font-mono mb-2`
+- H1: `text-fs-h1 font-extrabold text-ink leading-tight tracking-h1 m-0`
+- subtitle: `text-fs-body text-ink-mid leading-relaxed mt-2.5 max-w-[1100px]`
 
 ### 4.3 SearchBox
 
@@ -173,19 +185,14 @@ type SearchBoxProps = {
 }
 ```
 
-size 別寸法 (`primitives/chrome.md §SearchBox` を SSOT として参照):
-
-| size | 入力 padding-y | scope padding-y | input font | scope font | button padding-x | button font |
-|---|---|---|---|---|---|---|
-| md | 11 | 10 | 15 | 14 | 26 | 14.5 |
-| lg | 13 | 12 | 16 | 14.5 | 30 | 15.5 |
+size 別の寸法は `app/ui/search-box.tsx` の `sizeClass` map が SSOT。input / scope / button それぞれの padding-y と font は同 map で variant ごとに切替える (整数値の Tailwind utility のみ、半端値は使わない)。
 
 class 骨格:
 
 - 外周 form: `bg-surface border border-border-strong rounded-card flex items-stretch overflow-hidden shadow-card`
-- scope label: `flex items-center gap-2 px-4 py-2.5 text-[14px] font-bold border-r border-border-soft cursor-pointer text-ink min-w-[200px]`
-- input: `flex-1 border-0 bg-transparent text-[15px] py-2.5 outline-none text-ink font-sans`
-- button: `bg-brand text-white border-0 px-7 text-[14.5px] font-bold cursor-pointer`
+- scope: `flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft min-w-[140px]` + size 別 `py-* text-fs-*`
+- input: `flex-1 min-w-0 border-0 bg-transparent text-ink font-sans caret-ink leading-tight` + size 別 `py-* text-fs-*`
+- button: `bg-brand text-white border-0 font-bold cursor-pointer hover:bg-brand-deep leading-none` + size 別 `px-* text-fs-body`
 
 `maxWidth` は `style={{ maxWidth }}` で渡す (token に縛らないレイアウト変数)。検索ボタンは disabled 化しない (常に submit 可能)。
 
@@ -243,7 +250,7 @@ container は `flex flex-col gap-1.5 mb-3`、heading 行は `flex items-baseline
 
 `subtitle` が渡されたときは heading 行の直下に `<p className="text-fs-body-sm text-ink-mid m-0 pl-2.5">{subtitle}</p>` として描画する (左 padding は heading のバー位置に揃える)。AI 検索アシスタント等、heading + 説明文の組合せで使う。
 
-`count` は `text-[12.5px] text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
+`count` は `text-fs-label text-ink-soft` で数字を表示する。`countSuffix` が渡されたときだけ「{count} {countSuffix}」のように半角スペース 1 個挟んで suffix を後置する (ja は `t("common.countSuffix")` で `件`、en は `items`)。`count` が `undefined` のときは何も表示しない (空状態のセクションで「0 件」 を出さない選択も可能)。
 
 ### 6.2 SidebarHeading
 
@@ -258,7 +265,7 @@ type SidebarHeadingProps = {
 }
 ```
 
-heading: `text-fs-h3 font-bold text-ink m-0 tracking-tight leading-tight`。
+heading: `text-fs-h3 font-bold text-ink m-0 tracking-h3 leading-tight`。
 
 ### 6.3 SidebarGroupLabel
 
@@ -271,7 +278,7 @@ type SidebarGroupLabelProps = {
 }
 ```
 
-label: `text-fs-label font-bold text-ink-mid tracking-[0.06em]`。
+label: `text-fs-label font-bold text-ink-mid tracking-label`。
 
 ### 6.4 Label
 
@@ -286,7 +293,7 @@ type LabelProps = {
 }
 ```
 
-class: `font-mono font-bold uppercase tracking-[0.08em] text-ink-mid`。`color` / `size` を渡したときは `style={{ color, fontSize: size }}` で上書きする (`color` 値は token utility が表現できない動的色 — 例: source palette — を許容するための逃げ道。`color="brand"` のような token alias は使わず `style` 経由でのみ)。
+class: `font-mono font-bold uppercase tracking-label text-ink-mid text-fs-label`。`color` / `size` を渡したときは `style={{ color, fontSize: size }}` で上書きする (`color` 値は token utility が表現できない動的色 — 例: source palette — を許容するための逃げ道。`color="brand"` のような token alias は使わず `style` 経由でのみ)。
 
 ## 7. Forms
 
@@ -324,15 +331,15 @@ type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & 
 | ghost | `transparent` | `brand-deep` | 0 |
 | link | `transparent` | `brand` | 0, `padding: 0`, `weight 600` |
 
-size:
+size (`NativeSelect` / `TextInput` / `TextArea` と high さを揃えた、整数 px の Tailwind 標準スケール):
 
-| size | padding | font-size |
+| size | padding | font |
 |---|---|---|
-| sm | `px-3 py-1.5` | 13 (`text-[13px]`) |
-| md | `px-4.5 py-2.25` | `text-fs-body` (14) |
-| lg | `px-5.5 py-2.75` | 15 (`text-[15px]`) |
+| sm | `px-3 py-1.5` | `text-fs-body-sm` |
+| md | `px-4 py-2` | `text-fs-body` |
+| lg | `px-6 py-3` | `text-fs-body` |
 
-共通: `inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer`。disabled 時 `cursor-not-allowed opacity-55`。
+共通: `inline-flex items-center gap-1.5 rounded-button font-semibold font-sans cursor-pointer leading-none`。disabled 時 `cursor-not-allowed opacity-55`。
 
 ### 7.2 IconButton
 
@@ -369,7 +376,7 @@ state:
 - default: `border border-border-soft bg-surface text-ink`、`aria-invalid` 未設定
 - warn: `border border-warn-border bg-warn-bg text-ink`、`aria-invalid="true"` を自動付与
 
-`ariaDescribedby` を渡すと `aria-describedby` 属性に流す (`FormGroup` の hint / error 領域 id と紐付ける)。`mono` で `font-mono tracking-[0.02em]` を加える (DSL 入力など)。
+`ariaDescribedby` を渡すと `aria-describedby` 属性に流す (`FormGroup` の hint / error 領域 id と紐付ける)。`mono` で `font-mono tracking-mono` を加える (DSL 入力など)。
 
 class 共通: `text-fs-body py-2 px-3 rounded-button font-sans`。
 
@@ -429,11 +436,11 @@ type FormGroupProps = {
 ```
 <fieldset className="mb-5 border-0 p-0 m-0" aria-describedby={hintId}>
   <legend className="flex items-baseline gap-2 mb-2 flex-wrap p-0">
-    <span className="font-mono text-fs-micro font-bold text-brand-deep tracking-[0.04em] shrink-0">{num}</span>
+    <span className="font-mono text-fs-micro font-bold text-brand-deep tracking-tag shrink-0">{num}</span>
     <span className="text-fs-body font-bold text-ink">{label}</span>
     {optional && <Tag size="sm">任意</Tag>}
     {hint !== undefined && (
-      <span id={hintId} className="text-[11.5px] text-ink-mid">{hint}</span>
+      <span id={hintId} className="text-fs-micro text-ink-mid">{hint}</span>
     )}
   </legend>
   <div className="flex flex-col gap-1">{children}</div>
@@ -462,13 +469,13 @@ class 骨格 (`FmtRadio`):
 
 ```
 <label className={cn(
-  "flex items-start gap-2.5 px-3 py-2 rounded-button cursor-pointer text-[13.5px] text-ink leading-snug border",
+  "flex items-start gap-2.5 px-3 py-2 rounded-button cursor-pointer text-fs-body-sm text-ink leading-snug border",
   checked ? "bg-brand-softer border-brand-light/50" : "bg-surface border-border-soft",
 )}>
   <input type="radio" name={name} defaultChecked={checked} className="mt-1 shrink-0 accent-brand" />
   <span className="flex-1 min-w-0">
     <span className={checked ? "font-semibold" : "font-medium"}>{label}</span>
-    {sub && <span className={cn("block text-[11.5px] mt-0.5 font-normal", checked ? "text-brand-deep" : "text-ink-mid")}>{sub}</span>}
+    {sub && <span className={cn("block text-fs-micro mt-0.5 font-normal", checked ? "text-brand-deep" : "text-ink-mid")}>{sub}</span>}
   </span>
 </label>
 ```
@@ -502,7 +509,7 @@ discriminated union で `source` は `name` を、`status` は `tone` を要求�
 | status: success | `ok-bg` | `ok-fg` | `ok-border` |
 | status: info | `brand-soft` | `brand-deep` | none |
 
-共通: `inline-flex items-center rounded-tag font-bold tracking-[0.04em] whitespace-nowrap leading-tight`。size sm `px-2 py-px text-fs-micro`、md `px-2.5 py-0.5 text-[11.5px]`。
+共通: `inline-flex items-center rounded-tag font-bold tracking-tag whitespace-nowrap leading-snug`。size sm `px-2 py-px text-fs-micro`、md `px-2.5 py-0.5 text-fs-micro` (font は同じ、padding で差別化)。
 
 ### 8.2 Chip
 
@@ -526,7 +533,7 @@ type ChipProps =
 | filter (selected) | `brand-soft` | `brand-deep` | `brand/35` |
 | example | `surface-subtle` | `ink-mid` | `border-soft` |
 
-共通: `inline-flex items-center gap-1 px-3 py-1 rounded-pill border text-[12.5px] font-medium no-underline cursor-pointer`。
+共通: `inline-flex items-center gap-1 px-3 py-1 rounded-pill border text-fs-label font-medium no-underline cursor-pointer`。
 
 `as="a"` は ナビゲーション (URL push) 用、`as="button"` は状態変更だけ (URL 不変) 用。
 
@@ -620,7 +627,7 @@ type CalloutProps = {
 | warn | `warn-bg` | `warn-border` | `warn-fg` |
 | ok | `ok-bg` | `ok-border` | `ok-fg` |
 
-class: `mt-3 px-3.5 py-2.5 border rounded-card text-[13.5px] leading-relaxed`。
+class: `mt-3 px-3.5 py-2.5 border rounded-card text-fs-body-sm leading-relaxed`。
 
 ## 11. Modal
 
@@ -739,12 +746,15 @@ class: `text-brand font-semibold no-underline hover:underline`。
 
 ## 14. デザイントークン参照
 
-`@theme` の token は `app/styles/tailwind.css` で確定する (color / typography / spacing / radius / shadow の SSOT)。Tailwind v4 は `@theme` 宣言から自動で utility class を生成する (`--color-brand` → `bg-brand` / `text-brand` / `border-brand`、`--spacing-section-lg` → `p-section-lg` / `m-section-lg`)。
+token 値の SSOT は `app/styles/tailwind.css` の `@theme` block。Tailwind v4 が `@theme` 宣言から utility class を自動生成する (`--color-brand` → `bg-brand` / `text-brand` / `border-brand`、`--spacing-section-md` → `p-section-md` / `m-section-md`、`--text-fs-h2` → `text-fs-h2`、`--tracking-tag` → `tracking-tag`、`--leading-snug` → `leading-snug`、`--radius-card` → `rounded-card`、`--shadow-card` → `shadow-card`)。
 
-primitive 内で direct 値を書くケース:
+token の使い分けは `app/styles/tailwind.css` のコメントに添える (値の隣で意味を語る、本書では数値を再掲しない)。新しい色や spacing が必要になったら、まず `@theme` に token を追加し、コメントで意図を書く。半端値 (14.5px / 13.5px のような 0.5px 刻み) は drift の温床なので置かない。
 
-- 1px / 0.5px / 18px などの hairline、`@theme` で予約してない細部値 — `app/ui/` のみ許容
-- `style={{ color, fontSize, maxWidth }}` で動的に渡される値 — `Label` の source 色や `SearchBox` の幅など、token 化しても消費側で逃げ道が要るケース
+primitive 内で arbitrary value を書くケース (`app/ui/` のみ許容):
+
+- 1px / 3px などの hairline・accent ライン (`border-l-[3px]` 等) で、token 化する価値が薄い細部値
+- `max-w-[1100px]` のような 1 箇所限定 layout 値
+- `style={{ color, fontSize, maxWidth }}` で動的に渡される値 (`Label` の source 色、`SearchBox` の `maxWidth` 等)
 
 ## 15. ESLint による物理強制
 
@@ -758,12 +768,12 @@ no-restricted-syntax:
 react/forbid-elements:
   - button / a / input / select / textarea (primitive 経由を強制)
 
-// app/shell/**/*.{ts,tsx} に対して (chrome レベル、arbitrary value 許容、生 hex のみ禁止)
+// app/{ui,shell}/**/*.{ts,tsx} に対して (細部値 / vh / rem 許容、生 hex のみ禁止)
 no-restricted-syntax:
   - Literal[value=/^#[0-9A-Fa-f]{3,8}$/]
 ```
 
-primitive 自体は `app/ui/` 配下なので除外される。`app/shell/` (Header / Footer / NotificationBar 等の chrome) も `react/forbid-elements` と arbitrary value 禁止から除外する (デザイン仕様上の細部値 — 14.5px nav / 17px logo / 18px divider など — を token 化すると tokens が肥大化するため)。`app/shell/` でも生 hex は禁止される (token 違反を防ぐ)。
+primitive 自体 (`app/ui/`) と chrome (`app/shell/`) は arbitrary value から除外する。`app/ui/` は 3px brand bar や 9999 px radius のような細部値、`app/shell/` は `min-h-[60vh]` / `max-w-[10rem]` のような token 化に向かない単位 (vh / rem) を許容する。両 zone とも生 hex は禁止 (token を経由しない色を防ぐ)。
 
 ## 16. 視覚確認
 

@@ -28,7 +28,7 @@ const GroupLabel = ({ tone, children }: { tone: "ddbj" | "dbcls"; children: stri
     <span
       aria-hidden
       className={cn(
-        "inline-block w-2 h-2 rounded-dot",
+        "inline-block w-2 h-2 rounded-sm",
         tone === "ddbj" ? "bg-src-ddbj" : "bg-src-dbcls",
       )}
     />

@@ -55,20 +55,20 @@ export const NewsAside = () => {
               key={n.id}
               className={isLast ? "py-3" : "py-3 border-b border-border-soft"}
             >
-              <div className="flex items-center gap-1.5 mb-[5px] flex-wrap">
-                <span className="font-mono text-[12px] text-ink-soft">
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <span className="font-mono text-fs-label text-ink-soft">
                   {formatDate(n.publishedAt)}
                 </span>
                 <Tag kind="source" name={n.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
                 <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
               </div>
               <TextLink to={newsHref(n.id, lang)} weight="bold">
-                <span className="text-ink text-[14px] leading-[1.45]">
+                <span className="text-ink text-fs-body leading-snug">
                   {newsItemTitle(n, lang)}
                 </span>
               </TextLink>
               {summary !== undefined && summary !== "" && (
-                <p className="text-ink-soft text-[12.5px] leading-[1.55] mt-[3px] m-0 line-clamp-1">
+                <p className="text-ink-soft text-fs-label leading-relaxed mt-0.5 m-0 line-clamp-1">
                   {summary}
                 </p>
               )}
