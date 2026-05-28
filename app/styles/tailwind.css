@@ -101,10 +101,11 @@
   --spacing-section-block: 28px;  /* block 系 padding */
   --spacing-section-md:    32px;  /* default section padding */
   --spacing-section-lg:    48px;  /* hero / top page section */
-  --spacing-page-gutter:   32px;  /* page 横余白 */
-  --spacing-content-max: 1180px;  /* page content max-width (中央寄せ) */
-  --spacing-sidebar:      220px;  /* search results / news の sidebar 固定幅 */
-  --spacing-right-pane:   280px;  /* search per-DB result の right pane / news row 右端 tag 領域の最大幅 */
+  --spacing-page-gutter:    40px;  /* page 横余白 */
+  --spacing-content-max:  1280px;  /* page content max-width (中央寄せ) */
+  --spacing-content-narrow: 880px; /* hero / reading 幅 (form 中央寄せ、subtitle 等) */
+  --spacing-sidebar:       256px;  /* search results / news の sidebar 固定幅 */
+  --spacing-right-pane:    280px;  /* search per-DB result の right pane / news row 右端 tag 領域の最大幅 */
 
   /* === Radius ============================================================= */
   --radius-card:   10px;  /* card / panel / SearchBox / Callout */

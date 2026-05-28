@@ -153,14 +153,15 @@ const SPACINGS: readonly SpacingItem[] = [
   { name: "section-block", cls: "w-section-block", px: "28px" },
   { name: "section-mid", cls: "w-section-mid", px: "24px" },
   { name: "section-sm", cls: "w-section-sm", px: "16px" },
-  { name: "page-gutter", cls: "w-page-gutter", px: "32px" },
+  { name: "page-gutter", cls: "w-page-gutter", px: "40px" },
 ]
 
 type LayoutSpacingItem = { name: string; px: string; use: string }
 
 const LAYOUT_SPACINGS: readonly LayoutSpacingItem[] = [
-  { name: "content-max", px: "1180px", use: "page content の中央寄せ最大幅" },
-  { name: "sidebar", px: "220px", use: "search results / news の sidebar 固定幅" },
+  { name: "content-max", px: "1280px", use: "page content の中央寄せ最大幅" },
+  { name: "content-narrow", px: "880px", use: "hero / reading 幅 (form 中央寄せ、subtitle 等)" },
+  { name: "sidebar", px: "256px", use: "search results / news の sidebar 固定幅" },
   { name: "right-pane", px: "280px", use: "search per-DB result の right pane / news row 右端 tag 領域" },
 ]
 

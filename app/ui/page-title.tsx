@@ -22,7 +22,7 @@ export const PageTitle = ({ title, subtitle, eyebrow, maxWidth }: PageTitleProps
           {title}
         </h1>
         {subtitle !== undefined && (
-          <p className="text-fs-body text-ink-mid leading-relaxed mt-2.5 max-w-[1100px]">
+          <p className="text-fs-body text-ink-mid leading-relaxed mt-2.5 max-w-content-narrow">
             {subtitle}
           </p>
         )}

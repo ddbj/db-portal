@@ -89,7 +89,7 @@ const SearchRoute = () => {
       <Section padTop="none" padBottom="none">
         <SearchBox
           size="md"
-          maxWidth={1180}
+          maxWidth={1280}
           value={qInput}
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}

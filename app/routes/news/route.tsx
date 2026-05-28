@@ -32,7 +32,7 @@ const NewsRoute = () => {
     <>
       <PageTitle title={t("news.pageTitle")} />
       <Section padTop="sm" padBottom="lg">
-        <div className="flex gap-8 items-start">
+        <div className="grid gap-8 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
           <FacetPanel facet={facet} options={result.options} onChange={handleChange} />
           <NewsList
             lang={lang}

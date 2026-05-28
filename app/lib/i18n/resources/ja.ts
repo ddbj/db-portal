@@ -590,7 +590,7 @@ export const ja: Resources = {
       placeholder: "キーワード、accession、学名で検索",
       submit: "検索",
       examplesLabel: "例",
-      examples: ["cancer", "Homo sapiens", "PRJDB*"],
+      examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
       advancedLink: "クエリビルダーで詳細条件を組む",
       a11y: { input: "検索キーワード", scope: "検索対象データベース" },
     },

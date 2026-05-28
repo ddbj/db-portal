@@ -260,7 +260,7 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 | 列 | 幅 | 内容 |
 |---|---|---|
-| Sidebar | `--spacing-sidebar` (220 px) | `SidebarHeading` + `AppliedFilters` + `FacetGroup` × N + `DateFacet` |
+| Sidebar | `--spacing-sidebar` (256 px) | `SidebarHeading` + `AppliedFilters` + `FacetGroup` × N + `DateFacet` |
 | Main | flex-1 | ResultsToolbar (件数 + sort + perPage + pagination) + record card list + ResultsToolbar (bottom pagination のみ) |
 | Right pane | `--spacing-right-pane` (280 px) | クエリプレビュー + AI assistant (LLM available 時) |
 

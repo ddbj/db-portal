@@ -152,7 +152,7 @@ const SearchResultsRoute = () => {
       <Section padTop="mid" padBottom="none">
         <SearchBox
           size="md"
-          maxWidth={1180}
+          maxWidth={1280}
           value={qInput}
           placeholder={t("search.searchBoxPlaceholder")}
           ariaLabel={t("search.a11y.input")}
@@ -198,9 +198,9 @@ const SearchResultsRoute = () => {
           : data.cross
             ? (
               <Section padTop="block" padBottom="lg">
-                <div className="grid gap-6 md:grid-cols-[var(--spacing-sidebar)_1fr]">
+                <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
                   <FacetPanel state={facetState} dispatch={dispatchFacet} db={null} />
-                  <div role="region" aria-label={t("search.a11y.resultsRegion")}>
+                  <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                     <CrossResults q={data.q} response={data.cross} />
                   </div>
                 </div>
@@ -209,9 +209,9 @@ const SearchResultsRoute = () => {
             : data.perDb && data.db
               ? (
                 <Section padTop="block" padBottom="lg">
-                  <div className="grid gap-6 md:grid-cols-[var(--spacing-sidebar)_1fr_var(--spacing-right-pane)]">
+                  <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr] lg:grid-cols-[var(--spacing-sidebar)_1fr_var(--spacing-right-pane)]">
                     <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} />
-                    <div role="region" aria-label={t("search.a11y.resultsRegion")}>
+                    <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                       <PerDbResults
                         db={data.db}
                         response={data.perDb}
@@ -224,7 +224,7 @@ const SearchResultsRoute = () => {
                         onSortChange={handleSortChange}
                       />
                     </div>
-                    <aside className="flex flex-col gap-5">
+                    <aside className="flex flex-col gap-5 sm:col-span-2 lg:col-span-1">
                       <SidebarHeading>{t("search.preview.label")}</SidebarHeading>
                       <BuilderSummaryPanel
                         dsl={sync.dsl ?? data.q}

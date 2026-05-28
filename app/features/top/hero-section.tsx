@@ -33,7 +33,7 @@ export const HeroSection = () => {
       <SearchBox
         size="md"
         value={value}
-        maxWidth={820}
+        maxWidth={880}
         placeholder={t("top.hero.placeholder")}
         ariaLabel={t("top.hero.a11y.input")}
         submitLabel={t("top.hero.submit")}

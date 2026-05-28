@@ -444,7 +444,7 @@ const SearchBoxGallery = () => (
         size="lg"
         showSearchIcon
         showScope={false}
-        maxWidth={820}
+        maxWidth={880}
         onSubmit={() => undefined}
       />
     </Row>
@@ -453,7 +453,7 @@ const SearchBoxGallery = () => (
         size="lg"
         showScope
         scopeOptions={["全データベース", "BioProject", "BioSample"]}
-        maxWidth={820}
+        maxWidth={880}
         onSubmit={() => undefined}
       />
     </Row>

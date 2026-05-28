@@ -35,7 +35,7 @@ export const en: Resources = {
       placeholder: "Search by keyword, accession, or organism",
       submit: "Search",
       examplesLabel: "Examples",
-      examples: ["cancer", "Homo sapiens", "PRJDB*"],
+      examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
       advancedLink: "Open the query builder",
       a11y: { input: "Search keywords", scope: "Database scope" },
     },

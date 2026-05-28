@@ -144,7 +144,7 @@ Tailwind v4 は `@theme` 宣言から utility class を自動生成する (`--co
 `app/ui/` 内で arbitrary value を書くケース:
 
 - 1px / 3px などの hairline・accent ライン (`border-l-[3px]` 等) で、token 化する価値が薄い細部値
-- 1 箇所限定の layout 値 (`PageTitle` subtitle の `max-w-[1100px]`、`SearchBox` scope の `min-w-[140px]`、`ModalPreview` の `flex-[0_0_44%]` など)
+- 1 箇所限定の layout 値 (`SearchBox` scope の `min-w-[140px]`、`ModalPreview` の `flex-[0_0_44%]` など)
 - `style={{ color, fontSize, maxWidth }}` で動的に渡される値
 
 `app/shell/` でも次は許容: vh / rem 単位 (`min-h-[60vh]` / `max-w-[10rem]` 等、`@theme` で表現しづらい単位)。「複数箇所で同じ値が出てきた」 「サイズ感を全体で揃えたい」 と感じたら `@theme` に token を追加して移行する。
