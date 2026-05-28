@@ -127,18 +127,14 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 
 症状: `/api/news` が空配列を返し続ける、log に `news_mirror_failed` が頻発。
 
-切り分け: GitHub への git 疎通、disk cache (`news.json`) の存在と `schema_version`、mirror polling interval の env。
-
-原因の典型:
-
 | 原因 | 対応軸 |
 |---|---|
-| network 失敗 (`git clone` / `git fetch` に到達できない) | host から直接 `git ls-remote` で疎通 |
-| repo URL / branch が誤設定 | `DB_PORTAL_NEWS_DDBJ_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` (および dbcls 側) を確認 |
+| network 失敗 (`git clone` / `git fetch` に到達できない) | host から直接 `git ls-remote` で疎通確認 |
+| repo URL / branch が誤設定 | `DB_PORTAL_NEWS_*_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_*_BRANCH` を確認 |
 | disk cache 破損 (Zod schema mismatch) | cache file を rename して server 再起動 (再構築) |
 | repo の force-push で history が壊れた | `repos/<src>/` を消して container 再起動 (clone からやり直し) |
 
-詳細な mirror 挙動は `news.md`。
+mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 
 ### vLLM が unreachable
 
@@ -191,12 +187,10 @@ News cache 配下は単一 `news.json` (数 MB 程度) のみ。容量問題が�
 
 ### CSP 違反 (browser console に CSP error)
 
-production で CSP `Content-Security-Policy` が違反 report を上げる場合:
+CSP の仕様詳細 (header 値 / nonce 生成) は `architecture.md` の「非機能要件 / セキュリティ headers」 が SSOT。違反の典型:
 
-- 新規導入した 3rd-party script (CDN font 等) が CSP ホワイトリストに無い (portal は外部 CDN を使わない方針、外部 script を追加していないか確認)
-- inline `<script>` / `<style>` に nonce が付いていない (RR が hydration script に nonce を載せ忘れ、`root.tsx` の `<Scripts nonce={nonce} />` を確認)
-
-CSP 仕様の詳細は `architecture.md` を参照。
+- 新規導入した 3rd-party script (CDN font 等) が CSP ホワイトリストに無い (portal は外部 CDN を使わない方針、新規追加していないか確認)
+- inline `<script>` / `<style>` に nonce が付いていない (RR の `<Scripts nonce={nonce} />` で hydration script に nonce が載っているか確認)
 
 ## Secret rotation
 
@@ -209,7 +203,7 @@ rotation 対象:
 | `DB_PORTAL_E2E_USER_PASSWORD` | リリースマネージャの作業環境 | 半年毎 / incident 時 |
 | Deploy host への SSH 鍵 | 各リリースマネージャの `~/.ssh/` | 半年毎 / incident 時 |
 
-Keycloak client は public client (`auth.md`) のため client secret は存在しない。PKCE で代替している。News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`decisions.md`)。
+Keycloak client は public client (`auth.md`) のため client secret は存在しない。PKCE で代替している。News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`news.md`)。
 
 ### vLLM API key 更新
 

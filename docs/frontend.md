@@ -429,18 +429,7 @@ Hero に独立した heading は置かない (SearchBox 自体が page の入口
 
 #### データソース
 
-`app/content/services/` collection の `top.category === "primary-service"` を `top.order` 昇順で取得する (本書「Content system」)。
-
-現状 6 件:
-
-| id | 表示 | link.kind | link target |
-|---|---|---|---|
-| `search` | 横断検索 / Cross-DB search | internal | `/search` |
-| `submit-nav` | 登録ナビ / Submission navigator | internal | `/submit` |
-| `services-index` | サービス一覧 / Services | external | https://www.ddbj.nig.ac.jp/services/index.html |
-| `supercomputer` | スパコン / Supercomputer | external | https://sc.ddbj.nig.ac.jp/ |
-| `statistics` | 統計 / Statistics | external | https://www.ddbj.nig.ac.jp/statistics/index.html |
-| `activity` | 活動報告 / Activities | external | https://www.ddbj.nig.ac.jp/activities/index.html |
+`app/content/services/` collection の `top.category === "primary-service"` を `top.order` 昇順で取得する (本書「Content system」)。entry の全件・表示名・link 先は collection が SSOT、本書には書かない。
 
 Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `LinkCard` primitive を使う。`LinkCard` は internal なら `react-router` の `<Link>`、external なら `<a target="_blank" rel="noopener noreferrer">` を内部で組み立てる。
 
@@ -455,26 +444,9 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 #### データソース
 
-`app/content/services/` collection の `top.category === "popular-ddbj"` / `top.category === "popular-dbcls"` を `top.order` 昇順で取得する。
+`app/content/services/` collection の `top.category === "popular-ddbj"` / `top.category === "popular-dbcls"` を `top.order` 昇順で取得する。entry 全件・monogram・link 先は collection が SSOT。
 
-現状の構成 (DDBJ × 7 / DBCLS × 5):
-
-| group | id | monogram | link | 備考 |
-|---|---|---|---|---|
-| popular-ddbj | `bioproject` | BP | internal `/databases/bioproject` | DatabaseContent 連動 |
-| popular-ddbj | `biosample` | BS | internal `/databases/biosample` | DatabaseContent 連動 |
-| popular-ddbj | `dra` | DR | external | DDBJ Sequence Read Archive |
-| popular-ddbj | `annotation` | DA | external | DDBJ Annotated/MSS |
-| popular-ddbj | `gea` | GE | external | Gene Expression Archive |
-| popular-ddbj | `jga` | JG | external | Japanese Genotype-phenotype Archive |
-| popular-ddbj | `metabobank` | MB | external | MetaboBank |
-| popular-dbcls | `togovar` | TGV | external | TogoVar |
-| popular-dbcls | `togogenome` | TGN | external | TogoGenome |
-| popular-dbcls | `refex` | REX | external | RefEx |
-| popular-dbcls | `togoid` | TGI | external | TogoID |
-| popular-dbcls | `togotv` | TTV | external | TogoTV (tutorial) |
-
-`/databases/:slug` が用意されている entry は internal link (`bioproject` / `biosample`)、他は外部 URL。他 DB の DatabaseContent が追加されれば、entry 側で `link.kind` を内部に切り替えるだけで Popular Resources も自動的に portal 内に遷移する。
+`/databases/:slug` が用意されている entry は internal link、他は外部 URL。他 DB の DatabaseContent が追加されれば、entry 側で `link.kind` を内部に切り替えるだけで Popular Resources も自動的に portal 内に遷移する。
 
 #### グリッドと card design
 
@@ -513,13 +485,17 @@ NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有�
 
 ### 方針
 
-- コンテンツは **`*.content.tsx`** ファイルとして書く。Markdown 直書きは採用しない
-- 長文の本文 (`body.ja` / `body.en`) は **TSX fragment 直書き**。リッチ表現 (Callout / Section / Table / TextLink) は `app/ui/` の primitive を JSX で使う
+- コンテンツは **`*.content.tsx`** ファイルで書き、本文 (`body.ja` / `body.en`) は **TSX fragment 直書き**。リッチ表現 (Callout / Section / Table / TextLink) は `app/ui/` の primitive を JSX で組む
 - Frontmatter 相当のメタ (title / slug / description / 関連 DB / 外部リンク / サービス分類) は **Zod schema で型検証**。ビルド時に壊れていれば即エラー
 - Breadcrumb は content 側に書かず、**route handle + i18n リソースで自動生成** する
 - 翻訳は同一ファイル内 `{ ja, en }` 並びで持ち、diff が読みやすい形を取る
 
-代替案 (Markdown / MDX / Headless CMS) との比較と却下理由は `decisions.md` の「コンテンツは `*.content.tsx`」 を参照。
+この方式が保証する性質:
+
+- 型安全: Zod schema による frontmatter 検証 + `satisfies` による本文構造の型 error
+- リッチ表現: JSX で `app/ui/` primitive を直接使える
+- i18n diff の読みやすさ: 同一ファイルに `{ja, en}` 並走、レビュー時に両言語の差を 1 ファイルで確認
+- CMS 化への移行余地: loader (`app/lib/content/loader.ts`) を差し替えれば外部 CMS への切替が可能
 
 ### ディレクトリ構造
 
@@ -559,7 +535,7 @@ zone 関係は `architecture.md` を参照。`content` は `ui` / `lib` / `schem
 
 実装側 (`app/content/databases/<slug>/index.content.tsx`) は `satisfies DatabaseContent` で書き、フィールド書き忘れ / 型違い / 余計なフィールドが全て type error になるようにする。
 
-Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、後述)。
+Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、本書「Breadcrumb 自動生成」 節)。
 
 ### ServiceContent
 
@@ -695,7 +671,7 @@ ESLint `react/forbid-elements` (`app/{features,routes,content}/**`) で次を禁
 
 #### 未翻訳の扱い
 
-en だけ書かれていない場合、Zod schema が `body.en` を必須にしているため build 時に弾かれる。「en は後追い」を許容するために、`body.en` には「This page is not yet translated. See the Japanese version for now.」のような翻訳予定スタブを書き、route の `handle.i18n.en` を `"missing"` にして `<TranslationUnavailable />` バナーを出す運用とする。schema 側で `body.en` を optional にする案は不採用 (型上 en は必須として扱い、未提供は UI 側で明示する)。
+en は schema 上必須として扱う。`body.en` が未提供の段階では「This page is not yet translated. See the Japanese version for now.」 のような翻訳予定スタブを書き、route の `handle.i18n.en` を `"missing"` にして `<TranslationUnavailable />` バナーで明示する (型では強制し、UI では fallback を見せる二段構え)。
 
 #### 翻訳完了 flag
 

@@ -262,7 +262,7 @@ PBT (`tests/pbt/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file
 | `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` | `1800` (30 分) | 全 source 共通のポーリング間隔 |
 | `DB_PORTAL_NEWS_CACHE_DIR` | (env で指定) | disk cache 配置先 |
 
-git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要 (`decisions.md`)。
+git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要。
 
 ## テスト
 

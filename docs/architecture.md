@@ -1,22 +1,6 @@
 # Architecture
 
-DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。
-
-## プロジェクトの位置付け
-
-DDBJ の登録・検索サービスへの統合ポータル。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
-
-次の機能領域を 1 リポジトリで提供する。
-
-| 機能 | URL | 概要 |
-|---|---|---|
-| トップ | `/` | 検索ボックスを実質的なヒーローとし、DDBJ 全体動線と最新ニュースへ案内する |
-| 検索 | `/search` `/search/results` | cross-DB 検索と DB 指定検索を Advanced builder と Sidebar facet で構成 |
-| 登録ナビゲーション | `/submit` | テーブル + per-cell tag + 動的 FlowStep カードによる登録経路ナビ |
-| ニュース | `/news` | ddbj/www の `_news/` を mirror し、カテゴリ facet で閲覧 |
-| データベース解説 | `/databases/:slug` | コンテンツ collection から各 DB の説明を生成 |
-| 認証 | `/auth/*` | DDBJ Account (Keycloak) との OIDC 連携、JS は token に触れない |
-| 言語切替 API | `/api/set-lang` | lang cookie を更新する resource route (詳細 `i18n.md`) |
+DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
 
 ## ディレクトリ構造
 
@@ -57,7 +41,7 @@ db-portal/
 
 `app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は本書の SSR/CSR、build/runtime のセクションで扱う。
 
-リポジトリは 1 つのまま運用する。module 境界は内部 import 制約で表現し、物理分割 (`packages/*` への分解) は採用しない (`decisions.md`)。
+portal は 1 リポジトリで運用する。module 境界は内部 import 制約 (本書「import 境界 / zones 表」) で物理強制し、これで単一プロダクトの規模では十分に分離される。
 
 ## URL とルーティング
 
@@ -81,7 +65,7 @@ URL は lang 中立 (cookie で言語が決まる、`i18n.md` 参照)。
 | `/auth/logout-callback` | `routes/auth/logout-callback.tsx` | logout コールバック fallback |
 | `/_design/*` | `routes/_design/*` | デザイントークン / primitive 視覚確認 (本番ビルドではフラグで除外) |
 
-`/databases/:slug` は config-based route で 1 つの param ルートとして宣言する。`/bioproject` 等の単体 URL は採用しない (URL 設計の論理性と既存サイトとの衝突回避)。
+`/databases/:slug` は config-based route で 1 つの param ルートとして宣言する。各 DB は `/databases/<slug>` の形に統一する (URL 設計の論理性、および既存 DDBJ サイトの単体 path との衝突回避のため)。
 
 `/auth/*` は BFF (`server/api/auth/*`) が 302 で抜けるため、client 側の route は実際には到達しないが、Keycloak client 設定が旧 redirect_uri を保持していた場合の fallback として残す (`auth.md`)。
 
@@ -346,8 +330,10 @@ CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成し
 
 ### sitemap.xml / robots.txt
 
-- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/`、`/search`、`/submit`、`/news`) について、各 path の `?lang=ja` / `?lang=en` 2 URL を出力し、各 `<url>` 内に `<xhtml:link rel="alternate" hreflang="ja|en|x-default">` を相互宣言する。`<loc>` は production origin 固定 (`DB_PORTAL_PORTAL_ORIGIN` を base)、`<changefreq>` / `<priority>` は省略 (Google が無視するため)
-- `GET /robots.txt` (`server/api/robots.ts`): `DB_PORTAL_ENV=production` のみ `User-agent: *` + `Allow: /` + `Sitemap: {origin}/sitemap.xml` を返す。dev / staging では `User-agent: *` + `Disallow: /` を返してインデックス回避
+URL × lang × hreflang の表現は i18n と一体なので、SSOT を `i18n.md` の「SEO」 節に集約する。本書は概要のみ:
+
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes について `?lang=ja` / `?lang=en` 2 URL を出力、hreflang 相互宣言
+- `GET /robots.txt` (`server/api/robots.ts`): production のみ全許可 + Sitemap、dev / staging は全 disallow
 
 ### 404 ページ
 

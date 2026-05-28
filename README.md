@@ -1,8 +1,6 @@
 # db-portal
 
-DDBJ の登録・検索サービスへの統合ポータル。検索 (横断 / DB 指定 + Advanced builder + Sidebar facet)、登録ナビゲーション (テーブル + 動的 FlowStep カード)、ニュース、DDBJ Account (Keycloak) 連携、AI 検索アシスタント (LLM)、日本語 / 英語の i18n を 1 リポジトリで提供する。
-
-他コンテンツの段階移行に備え、コンテンツ機構 (`*.content.tsx` collection) を最初から組んでいる。
+DDBJ の登録・検索サービスへの統合ポータル。検索 (横断 / DB 指定 + Advanced builder + Sidebar facet)、登録ナビゲーション (テーブル + 動的 FlowStep カード)、ニュース、DDBJ Account (Keycloak) 連携、AI 検索アシスタント (LLM)、日本語 / 英語の i18n を 1 リポジトリで提供する。コンテンツは `*.content.tsx` collection (TSX fragment + Zod 検証) で扱う。
 
 ## 技術スタック
 
@@ -52,7 +50,6 @@ docker compose exec app npm run check:last-updated
 
 - [architecture.md](docs/architecture.md) — 全体構造 / zones / URL とルーティング / SSR / BFF / 非機能要件 (CSP / sitemap / 404)
 - [development.md](docs/development.md) — dev 環境セットアップ / env 切替 / よく使うコマンド
-- [decisions.md](docs/decisions.md) — 主要な設計判断 (ADR、採用 / 不採用の理由)
 
 **機能基盤**
 

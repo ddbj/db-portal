@@ -31,7 +31,7 @@ cross-DB から per-DB への遷移はカードの「結果一覧」link、per-D
 
 ### portal 側に thin serializer を持たない
 
-AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由 (`decisions.md`):
+AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由:
 
 - grammar の二重保守を排除する
 - precedence / quote / wildcard / range の規則を 1 箇所に集約する
@@ -329,21 +329,10 @@ assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更
 
 「やり直す」 button は textarea をクリアし proposal を `null` にする。
 
-## portal が依存する `app/ui/` primitive
+## search 固有の primitive 事情
 
-本書実装で消費する primitive (詳細は `frontend.md`):
+UI primitive の一覧と仕様は `frontend.md` (SSOT)。search が特別に必要とするものは:
 
-| 用途 | primitive |
-|---|---|
-| Simple query + scope selector | SearchBox |
-| レイアウト | Section / Page / PageTitle |
-| 見出し / ラベル | SectionHeading / SidebarHeading / SidebarGroupLabel / Label |
-| アクション | Button / IconButton |
-| 選択 | NativeSelect |
-| chip / pill | Chip / Tag |
-| Sidebar facet | AppliedFilters / FacetGroup / FacetRow / DateFacet |
-| ページネーション | Pagination |
-| リンク | TextLink |
-| エラーバナー | Callout |
-
-Advanced builder の value 入力用に `app/ui/text-input.tsx` を新規追加する (date input も `type="date"` の variant として同 primitive で扱う)。`/_design/primitives` に variant 一覧を追加する。
+- **Advanced builder の value 入力用** に `app/ui/text-input.tsx` を持つ (date input も `type="date"` の variant として同 primitive で扱う)
+- **Sidebar facet** の `AppliedFilters` / `FacetGroup` / `FacetRow` / `DateFacet` を消費 (facet UI のドメインは search だが primitive 自体は `app/ui/` 側)
+- **SearchBox** は Top / Search で共有 (`frontend.md` の Chrome カテゴリ)

@@ -50,7 +50,7 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-`compose.yml` は `.env` の `DB_PORTAL_PREFIX` を `container_name` / `image` / `volume` / `network` 名に含めるので、dev / staging / production が同一ホストで並列に動いても衝突しない (`decisions.md`)。
+`compose.yml` は `.env` の `DB_PORTAL_PREFIX` を `container_name` / `image` / `volume` / `network` 名に含めるので、dev / staging / production が同一ホストで並列に動いても衝突しない。
 
 ### 環境ごとの差
 
@@ -65,14 +65,14 @@ docker compose up -d --build
 - `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID`: Keycloak realm / client (`auth.md`)
 - `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY`: vLLM 接続先 (`llm.md`)。空文字なら AI 補助機能を hide
 
-実値は `env.dev` / `env.staging` / `env.production` を直接参照する (root に commit 済)。env の compose 内マッピングは `compose.yml`、設計根拠は `decisions.md`。
+実値は `env.dev` / `env.staging` / `env.production` を直接参照する (root に commit 済)。env の compose 内マッピングは `compose.yml`。
 
 ### Secret の扱い
 
 - `.gitignore` に `.env.*.local` を含める
 - production の secret は `env.production` で `CHANGE_ME` プレースホルダとして commit され、実値は deploy 時に `.env.production.local` から merge して上書き (詳細は `deployment.md`)
 - 開発者は staging key を使う、production key は触らない
-- News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`decisions.md`)
+- News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`news.md`)
 
 ## よく使うコマンド
 

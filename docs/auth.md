@@ -1,19 +1,19 @@
 # Authentication
 
-DDBJ Account (Keycloak) との連携を、**BFF (Backend for Frontend) + HttpOnly cookie** pattern で実装する。JS は access token / refresh token に **一切触れない**。
-
-責務分離図は `architecture.md`、採用理由は `decisions.md` の「token storage は BFF + HttpOnly cookie」 を参照。
+DDBJ Account (Keycloak) との連携を、**BFF (Backend for Frontend) + HttpOnly cookie** pattern で実装する。JS は access token / refresh token に **一切触れない**。責務分離図は `architecture.md`。
 
 ## 方針
 
-OAuth 2.0 for Browser-Based Apps の BFF pattern を採用する。
+OAuth 2.0 for Browser-Based Apps の BFF pattern に準拠する。役割分担:
 
-| 項目 | 採用 | 採用しない |
-|---|---|---|
-| Token 保管場所 | サーバ in-memory session store | localStorage / sessionStorage / JS から読める Cookie |
-| Browser ↔ Server の identity 受け渡し | HttpOnly cookie (`sid`) | JWT 本体を Cookie に入れる |
-| Token refresh | BFF が背面で実行 | 旧来の silent renew (iframe) |
-| User info の供給 | `GET /api/me` | client が token をデコード |
+| 項目 | 実装 |
+|---|---|
+| Token 保管場所 | サーバ in-memory session store (browser からは不可視) |
+| Browser ↔ Server の identity 受け渡し | HttpOnly cookie (`sid`)、token そのものは Cookie に載せない |
+| Token refresh | BFF が背面で実行 |
+| User info の供給 | `GET /api/me` (token をデコードしない) |
+
+XSS で token が漏れない (JS から到達できない) こと、Safari ITP の影響を受けないこと (3rd-party cookie に依存しない) を担保する。BFF 層は News mirror / LLM proxy / Search API serialize でも使うので、認証用 session 機能の追加コストも小さい。
 
 ## データフロー全体図
 
@@ -291,11 +291,11 @@ dev / staging は同じ realm を共有し、client を env 別に分ける (テ
 
 各 env の実 origin / realm URL / client ID は git 管理外運用メモを参照する。
 
-### PKCE の強制
+### 設定値の補足
 
-Access Type `public` + Standard Flow + `Proof Key for Code Exchange Code Challenge Method = S256` を組み合わせて、PKCE なしの code 交換を拒否する設定にする。
-
-portal 側 BFF は常に `code_verifier` を送出するので、Keycloak 側で強制しても挙動は変わらないが、設定ミスや別 client による悪用を防ぐ層として強制する。
+- **PKCE 強制**: Access Type `public` + Standard Flow + Code Challenge Method `S256` を組み合わせ、PKCE なしの code 交換を Keycloak 側で拒否する (portal BFF は常に `code_verifier` を送出するので、設定ミスや別 client による悪用に対する防護層)
+- **Redirect URI の運用**: ワイルドカード `*` は禁止。各環境は実 origin (`<DB_PORTAL_PORTAL_ORIGIN>`) を完全一致で登録する。production client の redirect URI に staging origin を含めない (逆も同様、production の `code` が staging に流れて悪用されることを防ぐ)
+- **Web Origins / CORS**: BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には portal 自身の origin のみ登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない
 
 ### Token 寿命の規約
 
@@ -308,10 +308,6 @@ portal 側 BFF は常に `code_verifier` を送出するので、Keycloak 側で
 
 Access Token を短くする理由: BFF が `expiresAt - 30 秒` のタイミングで refresh する。AT が短い分だけ漏洩リスクが減る。Refresh Token は HttpOnly cookie とは別経路 (server in-memory) で保持されるため、client が直接触れない。
 
-### Redirect URI の運用
-
-ワイルドカード `*` は禁止。各環境は実 origin (`<DB_PORTAL_PORTAL_ORIGIN>`) を完全一致で登録する。production client の redirect URI に staging origin を含めない (逆も同様、production の `code` が staging に流れて悪用されることを防ぐ)。
-
 ### Scope 設定
 
 portal が要求する scope:
@@ -323,10 +319,6 @@ portal が要求する scope:
 | `email` | `email` |
 
 `offline_access` は要求しない (BFF 内のみで refresh、client 側で長期保管しない)。Keycloak realm の "Client Scopes" で 3 scope を client の "Default Client Scopes" に紐づける。
-
-### Web Origins / CORS
-
-portal は BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には portal 自身の origin のみを登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない。
 
 ### e2e テスト用ユーザー
 
