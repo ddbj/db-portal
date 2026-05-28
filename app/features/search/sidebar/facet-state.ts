@@ -32,11 +32,6 @@ export const FACET_STUDY_TYPES: readonly string[] = [
   "Epigenetics",
 ]
 
-export type SampleCountRange = {
-  min: number | null
-  max: number | null
-}
-
 export type DatePublishedFilter = {
   active: DateRangeKey
   from: string
@@ -47,7 +42,6 @@ export type SearchFacetState = {
   organisms: string[]
   submitters: string[]
   studyType: string | null
-  sampleCount: SampleCountRange
   datePublished: DatePublishedFilter
 }
 
@@ -55,7 +49,6 @@ export type SearchFacetAction =
   | { type: "toggleOrganism"; value: string }
   | { type: "toggleSubmitter"; value: string }
   | { type: "setStudyType"; value: string | null }
-  | { type: "setSampleCount"; range: SampleCountRange }
   | { type: "setDateRange"; active: DateRangeKey }
   | { type: "setDateFrom"; value: string }
   | { type: "setDateTo"; value: string }
@@ -66,7 +59,6 @@ export const createInitialSearchFacetState = (): SearchFacetState => ({
   organisms: [],
   submitters: [],
   studyType: null,
-  sampleCount: { min: null, max: null },
   datePublished: { active: "all", from: "", to: "" },
 })
 
@@ -87,8 +79,6 @@ export const searchFacetReducer = (state: SearchFacetState, action: SearchFacetA
       return { ...state, submitters: toggle(state.submitters, action.value) }
     case "setStudyType":
       return { ...state, studyType: action.value }
-    case "setSampleCount":
-      return { ...state, sampleCount: action.range }
     case "setDateRange":
       return {
         ...state,

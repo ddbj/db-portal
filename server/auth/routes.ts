@@ -72,12 +72,7 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
       })
       const sid = crypto.randomUUID()
       sessionStore.set(sid, {
-        tokens: {
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          idToken: tokens.idToken,
-          expiresAt: tokens.expiresAt,
-        },
+        tokens: { idToken: tokens.idToken },
         userInfo,
         expiresAt: 0,
       })

@@ -9,6 +9,7 @@ export {
   NewsCategory,
   NewsItem,
   NewsList,
+  NewsSource,
 } from "~/schemas/api-bff/news"
 
 export const newsItemTitle = (item: NewsItem, lang: Lang): string =>
@@ -30,6 +31,7 @@ export const newsItemUrl = (item: NewsItem, lang: Lang): string | undefined => {
 
 export type FetchNewsQuery = {
   lang?: Lang
+  source?: readonly string[]
   category?: readonly string[]
   year?: readonly number[]
   service?: readonly string[]
@@ -40,6 +42,9 @@ const buildNewsPath = (query: FetchNewsQuery | undefined): string => {
   if (!query) return base
   const params = new URLSearchParams()
   if (query.lang) params.set("lang", query.lang)
+  if (query.source && query.source.length > 0) {
+    params.set("source", [...query.source].sort().join(","))
+  }
   if (query.category && query.category.length > 0) {
     params.set("category", [...query.category].sort().join(","))
   }

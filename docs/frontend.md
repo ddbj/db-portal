@@ -58,7 +58,7 @@
 
 ### ファイル構成
 
-`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`Header` / `Footer` のような chrome は `app/shell/` 側 (本書「Shell」)。
+`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`Header` のような chrome は `app/shell/` 側 (本書「Shell」)。
 
 ### 共通規約
 
@@ -68,7 +68,7 @@ state 表現には次の prop 名を使う:
 
 | prop | 採用 primitive 例 | 例 |
 |---|---|---|
-| `kind` | Button / Tag / Chip | `kind="primary"` / `kind="brand"` / `kind="filter"` |
+| `kind` | Button / Tag / Chip | Button: `"primary" \| "secondary" \| "danger" \| "ghost" \| "link"` / Tag: `"brand" \| "source" \| "status"` / Chip: `"filter" \| "example"` |
 | `tone` | Tag (status) / Callout | `tone="critical"` / `tone="warn"` |
 | `size` | Button / Tag / SearchBox | `size="sm" \| "md" \| "lg"` |
 | `mono` | Tag / Chip / Label | `mono` (boolean) |
@@ -97,9 +97,9 @@ state 表現には次の prop 名を使う:
 各 primitive の Props 型 / class 骨格 / variant 一覧は **コードと `/_design` route が SSOT**。本書は各カテゴリで「何を担う primitive 群か」 と「特殊な制約」 のみ述べる。
 
 - **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)
-- **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`section-sm` / `section-mid` / `section-block` / `section-md` / `section-lg`) は `@theme` block が SSOT
+- **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
 - **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
-- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `native-select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` / `<select>` の thin wrapper。詳細は次節の error state policy を参照
+- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。詳細は次節の error state policy を参照
 - **Tags & Chips** (`tag.tsx` / `chip.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
@@ -108,7 +108,7 @@ state 表現には次の prop 名を使う:
 
 ### Forms: error state と SR 連携
 
-入力 primitive (`Button` を除く form control: TextInput / TextArea / NativeSelect / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**:
+入力 primitive (`Button` を除く form control: TextInput / TextArea / Select / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**:
 
 - `aria-invalid` は **state ベース** で primitive 側が自動付与する (`state="warn"` のとき `aria-invalid="true"`、default のとき false / 未設定)
 - `aria-describedby` は consumer 側 (`FormGroup` の `errorId` / `hintId` など) が渡せるよう prop を開ける
@@ -162,37 +162,37 @@ dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した 
 
 ## Shell
 
-`app/shell/` 配下の global layout 部品。Header / Footer / NotificationBar / NewsAside / Breadcrumb / TranslationUnavailable / ShellLayout の責務と組み立てを定義する。`app/root.tsx` がこれらを噛ませて全ページ共通の chrome を構築する。
+`app/shell/` 配下の global layout 部品。Header / NotificationBar / NewsAside / Breadcrumb / SkipLink / TranslationUnavailable / ShellLayout の責務と組み立てを定義する。`app/root.tsx` がこれらを噛ませて全ページ共通の chrome を構築する。
 
 ### 責務分担
 
 | ファイル | 役割 |
 |---|---|
 | `header.tsx` | wordmark + 主要 nav + lang 切替 + login button、active nav 判定 |
-| `footer.tsx` | 組織情報 + 4 リンク (運営組織 / 利用規約 / プライバシー / アクセシビリティ) |
-| `notification-bar.tsx` | 全ページ上部、announcement カテゴリ news を表示、close 永続化 |
-| `news-aside.tsx` | トップ右ペイン compact news 8 件 + 「すべて見る」リンク |
+| `notification-bar.tsx` | トップページ上部に featured news を表示、close 永続化 |
+| `news-aside.tsx` | トップ右ペイン compact news + 「すべて見る」リンク |
 | `breadcrumb.tsx` | `app/lib/content/breadcrumb.ts` の `useBreadcrumb` を消費して描画 |
+| `skip-link.tsx` | Tab フォーカス時に表示される `<main>` への skip リンク |
 | `translation-unavailable.tsx` | en page で翻訳が未完了の場合のバナー |
 | `login-button.tsx` | `useAuth` の状態を見て「ログイン / ログアウト」 button を切替 |
 | `switch-lang.tsx` | `/api/set-lang` に POST して言語切替する fetcher Form |
-| `shell-layout.tsx` | Header / NotificationBar / Breadcrumb / `<Outlet />` / Footer を組み立てる wrapper |
+| `shell-layout.tsx` | SkipLink / Header / NotificationBar / Breadcrumb / `<Outlet />` を組み立てる wrapper |
 | `index.ts` | 上記の re-export |
 
-`app/shell/` は `app/ui/` の primitive と `app/lib/` の hook / helper を消費する。`app/features/` を import してはならない (`architecture.md` zones)。LoginButton / Footer / SwitchLang 等が BFF endpoint や外部 URL への `<a href>` を直接扱うため `react/forbid-elements` は除外、ただし `<button>` 等は primitive 経由を優先する。
+`app/shell/` は `app/ui/` の primitive と `app/lib/` の hook / helper を消費する。`app/features/` を import してはならない (`architecture.md` zones)。LoginButton / SwitchLang 等が BFF endpoint や外部 URL への `<a href>` を直接扱うため `react/forbid-elements` は除外、ただし `<button>` 等は primitive 経由を優先する。
 
 ### Header
 
 #### 構成
 
 ```
-[wordmark] ............................ [nav] [|] [SwitchLang] [LoginButton]
+[wordmark] ............................ [nav] [SwitchLang] [|] [LoginButton]
 ```
 
-- wordmark: 左端、`/` への link
+- wordmark: 左端、`/` への link。テキスト "DDBJ 刷新 (仮)" を brand-deep で render する暫定ロゴ
 - nav: 中央-右寄せ、active nav に `aria-current="page"` + `text-brand font-bold`
-- 縦区切り: `w-px h-[18px] bg-border-soft mx-2`
 - SwitchLang: lang 切替リンク (cookie 更新で URL 不変、`i18n.md`)
+- 縦区切り: `w-px h-4 bg-border-soft mx-2` (SwitchLang と LoginButton の間)
 - LoginButton: 認証 state を見て「ログイン / ログアウト」を出し分け
 
 背景は `surface` (白)、下に `1px solid border-soft` の境界。紫ベタ / グラデーション / 上端帯は使わない。
@@ -219,34 +219,24 @@ ja / en で同じ構造、文言だけ i18n リソースから引く。wordmark 
 
 | `useAuth.status` | 表示 | 遷移先 |
 |---|---|---|
-| `"loading"` | skeleton (spinner) | — |
-| `"unauthenticated"` | "ログイン" button | `buildLoginUrl({ returnTo: pathname })` |
-| `"authenticated"` | user icon + display name + ドロップダウン (展開で "ログアウト" button) | `buildLogoutUrl({ returnTo: pathname })` |
+| `"loading"` | text `t("auth.loggingIn")` (= "認証中…") | — |
+| `"unauthenticated"` | "ログイン" link (`<a href>`) | `buildLoginUrl(pathname)` |
+| `"authenticated"` | name と "ログアウト" が `·` でつながった単一 `<a href>` | `buildLogoutUrl(pathname)` |
 
-returnTo はクライアントから渡す。`buildLoginUrl` / `buildLogoutUrl` は同一 origin 検証して `/` 始まり以外を `/` に正規化する (`auth.md`)。
+returnTo はクライアントから渡す。`buildLoginUrl(returnTo?)` / `buildLogoutUrl(returnTo?)` は positional 引数で受け、同一 origin 検証して `/` 始まり以外を `/` に正規化する (`auth.md`)。
 
 #### SwitchLang
 
 `/api/set-lang` resource route に POST する fetcher Form で実装する (`i18n.md`)。URL は不変、root loader が revalidate されて全画面が新 lang で再 render される。Globe icon を左に、text に "JA / EN" 切替の意味を持たせる ("Switch to English" / "日本語" を i18n リソースから引く)。
 
-### Footer
-
-`background: ink` (`#1A1726`)、文字 `text-white`。組織情報 (左) と 4 リンク (右) の `justify-between`。
-
-```
-[DDBJ — Bioinformation and DDBJ Center / National Institute of Genetics · ROIS / BSI]
-                                                                   [運営組織] [利用規約] [プライバシー] [アクセシビリティ]
-```
-
-リンク先は i18n リソース駆動 (DDBJ 既存サイトの各 page へ向ける)。
-
 ### NotificationBar
 
 #### 表示条件
 
-`/api/news` から取得した news のうち以下を満たすものを 1 件表示:
+NotificationBar は **トップページ (`pathname === "/"`) のみ** で render される。`/api/news` から取得した news のうち以下を満たすものを 1 件表示:
 
-- `category === "announcement"`
+- `featured === true` (featured whitelist で marked)
+- `retireTime` が無いか、現在時刻が `retireTime` 未満
 - 表示済みリスト (`dismissedIds` を sessionStorage に保持) に含まれていない
 
 #### 順序
@@ -281,7 +271,7 @@ sessionStorage は client 専用。SSR では「全件未読」前提で 1 件�
 
 ### NewsAside
 
-トップページ右ペイン専用 (sticky positioning)。ヘッダー高さを除いた viewport 高さに追従し、8 件の compact news list を表示する。
+トップページ右ペイン専用 (sticky positioning)。ヘッダー高さを除いた viewport 高さに追従し、最新 5 件の compact news list を表示する (`NEWS_LIMIT` 定数で SSOT)。
 
 #### 表示
 
@@ -352,8 +342,7 @@ Page
 ├ NotificationBar
 ├ TranslationUnavailable
 ├ Breadcrumb
-├ <main id="main">{children}</main>
-└ Footer
+└ <main id="main">{children}</main>
 ```
 
 - `Page` は `app/ui/page.tsx` (font / color baseline)
@@ -369,7 +358,7 @@ Page
 
 `app/lib/i18n/` の `createI18nInstance(lang)` を 1 request ごとに呼び、`<I18nextProvider>` に渡す。これにより SSR の並列 request で `changeLanguage` のレースが発生しない (`i18n.md`)。module-level の global instance は持たない。
 
-shell が直接消費するキー namespace は `common` / `nav` / `breadcrumb` / `auth` / `switchLang` / `notificationBar` / `newsAside` / `translationUnavailable` / `footer` / `a11y`。実体は `app/lib/i18n/resources/{ja,en}.ts` が SSOT。ja と en でキーセットは完全一致させる (`i18n.md` PBT で担保)。
+shell が直接消費するキー namespace は `common` / `nav` / `breadcrumb` / `auth` / `switchLang` / `notificationBar` / `newsAside` / `translationUnavailable` / `a11y`。実体は `app/lib/i18n/resources/{ja,en}.ts` が SSOT。ja と en でキーセットは完全一致させる (`i18n.md` PBT で担保)。
 
 ## Top route
 
@@ -379,7 +368,7 @@ shell が直接消費するキー namespace は `common` / `nav` / `breadcrumb` 
 
 ### 全体構成
 
-ShellLayout が Header / NotificationBar / Breadcrumb / Footer を描画した上で、TopRoute は `<main>` に Hero section と「ServiceGrid + PopularResources の左カラム / NewsAside の右カラム」 の 2-col grid (`lg` 以降は `1fr right-pane`) を組み立てる。NewsAside は **トップページのみ** で aside カラムに表示する。`ShellLayout` は NewsAside を embed せず、トップ route 側で explicit に呼ぶことで layout の単一責務を保つ。
+ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した上で、TopRoute は `<main>` に Hero section と「ServiceGrid + PopularResources の左カラム / NewsAside の右カラム」 の 2-col grid (`lg` 以降は `1fr right-pane`) を組み立てる。NewsAside は **トップページのみ** で aside カラムに表示する。`ShellLayout` は NewsAside を embed せず、トップ route 側で explicit に呼ぶことで layout の単一責務を保つ。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -399,7 +388,7 @@ ShellLayout が Header / NotificationBar / Breadcrumb / Footer を描画した�
 
 #### 構成
 
-- `SearchBox` (`size="lg"`, `showSearchIcon`, `maxWidth=820`, scope selector あり)
+- `SearchBox` (`size="md"`, `showSearchIcon`, `maxWidth=820`, scope selector あり)
 - scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")
 - 下に example chip 列 (3 件): クリックで `q` に投入、submit と等価 (UX 試行で 3 件固定)
 - 右端に「クエリビルダーで詳細条件を組む →」 リンク (`/search` への TextLink)
@@ -423,7 +412,7 @@ ShellLayout が Header / NotificationBar / Breadcrumb / Footer を描画した�
 | `top.hero.a11y.input` | "検索キーワード" | "Search keywords" |
 | `top.hero.a11y.scope` | "検索対象データベース" | "Database scope" |
 
-Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。Header の wordmark + Footer の組織情報がブランド表示を担う。
+Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。Header の wordmark がブランド表示を担う。
 
 ### Service tiles
 
@@ -437,7 +426,7 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 - `grid-cols-2 gap-3`
 - 各 card: 56×56 icon (`surface-subtle` bg, brand fg) + title (17px bold) + description (13px ink-soft)
-- icon は `app/ui/icons/` の汎用 icon を流用する (`SearchIcon` / `UserIcon` / `GlobeIcon` / `ExternalIcon` 等)。Service 専用 icon は持たない
+- icon は service entry の `id` に応じた dedicated SVG を `app/features/top/service-icon.tsx` の switch から選ぶ (各 service 専用デザイン)
 - 外部リンク card には右上に `ExternalIcon` (12px) を visual hint として表示
 
 ### Popular Resources
@@ -451,19 +440,21 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 #### グリッドと card design
 
 - `SectionHeading "Popular Resources"` を上に出す (TextLink の action は持たない)
-- group label (`DDBJ` / `DBCLS`) は source 色の dot + Label brand 色で表示
-- 各 group は `grid-cols-3 gap-2`
-- 各 ResourceCard: 36×36 monogram (round 8, source color の 18%-alpha 背景 + source color の文字) + name (14px semibold) + 1 行 description (13px ink-soft)
-- monogram の色は `Tag kind="source"` と同じ tone を使い、DDBJ = `src-ddbj`、DBCLS = `src-dbcls` token を `bg-src-ddbj-soft text-src-ddbj` のように適用する
+- group label (`DDBJ` / `DBCLS`) は source 色の dot + `text-src-ddbj` / `text-src-dbcls` の uppercase mono 文字で表示
+- 各 group は `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2` (画面幅で 1/2/3 列に増える)
+- 各 ResourceCard: 36×36 monogram (round 8, source accent の `/12` opacity 背景 + accent 文字) + name (14px semibold) + 1 行 description (13px ink-soft)
+- monogram の accent は entry の `id` に応じて DDBJ 系 (`src-ddbj-warm` / `-mid` / `-deep`) / DBCLS 系 (`src-dbcls-warm` / `-mid`) の 5 種から選ぶ。例: `bg-src-ddbj-warm/12 text-src-ddbj-warm`
 
 #### i18n キー
 
 | key | ja | en |
 |---|---|---|
-| `top.serviceGrid.heading` | "DDBJ ポータルでできること" | "What you can do in DDBJ Portal" |
+| `top.serviceGrid.heading` | "サービス" | "Services" |
 | `top.popularResources.heading` | "Popular Resources" | "Popular Resources" |
 | `top.popularResources.groupDdbj` | "DDBJ" | "DDBJ" |
 | `top.popularResources.groupDbcls` | "DBCLS" | "DBCLS" |
+
+`top.serviceGrid.heading` は資源として宣言してあるが、現状の `ServiceGrid` 実装は内側に heading を render しない (page heading は他で出る)。
 
 各 entry の title / description は collection 内の `title.{ja,en}` / `description.{ja,en}` を直接読む (i18n リソースには複製しない、SSOT は collection)。
 
@@ -475,7 +466,7 @@ NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有�
 
 ### SSR / hydration
 
-- TopRoute は loader を持たない (Service tiles / Popular Resources は collection 起動時 load、News は TanStack Query)
+- TopRoute は loader を持たない (Service tiles / Popular Resources は collection 起動時 load、News は client-side の TanStack Query で取得)
 - SSR では News fetch を `useQuery` の `prefetch` で行わない (TanStack Query の hydration は採用していない)。初回 client mount で fetch する
 - 結果として SSR では `NewsAside` が loading / empty 状態でレンダリングされ、hydration 後に実データに置き換わる (initial paint で skeleton 相当の表示)
 
@@ -624,11 +615,11 @@ Content 側に breadcrumb を **書かない**。Route handle に i18n キー (�
 - resolver 関数の入力: `{ data, pathname, params }`
 - resolver の出力: `{ label, href }` または `null` (`null` を返した match は item を生やさない)
 
-hook は `useMatches` を順に走査し、handle に `breadcrumbI18nKey` / `breadcrumbResolver` を持つ match を処理して `BreadcrumbItem[]` を返す。resolver は features/lib のヘルパに依存しないよう、shell 側で `~/lib/content/loader` の `listDatabases` / `getServiceById` を直接読んで組み立てる。
+hook は `useMatches` を順に走査し、handle に `breadcrumbI18nKey` / `breadcrumbResolver` を持つ match を処理して **handle 由来の `BreadcrumbItem[]`** を返す (Home entry は含まない)。resolver は features/lib のヘルパに依存しないよう、shell 側で `~/lib/content/loader` の `listDatabases` / `getServiceById` を直接読んで組み立てる。
 
 #### 表示しないケース
 
-0-1 件 (= top のみ) を返した場合、何も render しない (`null`)。top page で breadcrumb が冗長になるのを避けるため。
+shell の `<Breadcrumb />` wrapper が hook の出力を受け取り、先頭に Home entry を prepend する。prepend 後の合計が 0-1 件 (= Home のみ、handle item 0 件) のとき、何も render しない (`null`)。top page で breadcrumb が冗長になるのを避けるため。
 
 #### 利点
 
@@ -658,7 +649,7 @@ ESLint `react/forbid-elements` (`app/{features,routes,content}/**`) で次を禁
 | `<button>` | `~/ui` の `Button` / `IconButton` |
 | `<a>` | `~/ui` の `TextLink` または `react-router` の `Link` |
 | `<input>` | `~/ui` の form primitive |
-| `<select>` | `~/ui` の `NativeSelect` |
+| `<select>` | `~/ui` の `Select` (popover combobox) |
 | `<textarea>` | `~/ui` の form primitive (必要なら primitive を追加) |
 
 許容される構造タグ: `<p>` / `<div>` / `<ul>` / `<ol>` / `<li>` / `<dl>` / `<dt>` / `<dd>` / `<h2>` / `<h3>` / `<strong>` / `<em>` 等。生 hex / Tailwind arbitrary value は ESLint で禁止される。
@@ -698,9 +689,8 @@ UI primitives:
 Shell:
 
 - nav 項目 / active 判定 / SwitchLang / LoginButton 出し分け
-- Footer の 4 リンクと i18n 引き
 - NotificationBar の表示・close・全件 close でバー消失・sessionStorage 永続化
-- NewsAside の 8 件 list / 「すべて見る」 link / source / category Tag
+- NewsAside の 5 件 list / 「すべて見る」 link / source / category Tag
 - Breadcrumb の 0-1 件 null / handle 駆動描画
 - TranslationUnavailable の表示条件 / ja URL で非表示
 - ShellLayout の組み立て / skip link

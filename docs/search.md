@@ -41,7 +41,7 @@ portal 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar �
 
 ### AI 検索アシスタントの位置付け
 
-AI 検索アシスタントは「自然言語入力 → Advanced builder の差分提案」 という UX を担う。`/api/llm/health` で LLM availability を判定し、status が `"ok"` 以外なら UI を物理的に出さない (`architecture.md`、LLM 未到達でもエラーバナーは出さない)。
+AI 検索アシスタントは「自然言語入力 → Advanced builder の差分提案」 という UX を担う。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
 
 server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では client 側 UI 配線のみ。
 
@@ -76,9 +76,9 @@ free_text node は Advanced builder には載せず (Simple query との混在�
 
 ### URL parse の失敗
 
-`/db-portal/parse` が 400 を返した場合、loader は throw する。route の ErrorBoundary が「URL のクエリを解析できません」 バナーを表示し、「クリア」 button で `?q=` を削除した状態に戻す。
+`/db-portal/parse` が 400 を返した場合、loader は `errorKey: "parse"` を data として返し、route component が inline の `<Callout tone="warn">` と「再試行」 button (`navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
 
-API 接続失敗 (5xx / timeout) は TanStack Query retry policy で 2 回まで再試行され、それでも失敗すれば同様に ErrorBoundary に流れる。
+API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が `error` を表示する。
 
 ## Advanced builder
 
@@ -90,7 +90,7 @@ API 接続失敗 (5xx / timeout) は TanStack Query retry policy で 2 回まで
 - **Group**: 子を束ねる入れ物。親 group 内での結合子 + 子集合の内部結合 (`AND` / `OR`) + 子の配列
 - **Root**: 最上位 group。combinator は無視、子の数 0 から可
 
-root 直下の最初の node だけ UI で `WHERE` 表示し、値は固定で `AND` 扱い。
+各 group の最初の child だけ UI で `WHERE` 表示し、値は固定で `AND` 扱い (root の先頭にも、入れ子 group の先頭にも `WHERE` が出る)。
 
 field の取り得る値 (`organism` / `identifier` / `title` / `description` / `date_published` / `date_modified` / `date_created` 等) と op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) はコードが SSOT。新規追加時は AdvancedField / AdvancedOp の enum 値と prompt (`llm.md`) を同時更新する。
 
@@ -143,10 +143,10 @@ reducer は immer を使わず手で immutable 更新する。
 Advanced builder の UI は state を受け取り、再帰的に ConditionRow / GroupRow を render する。
 
 - ConditionRow: combinator 選択 + field 選択 + op 選択 + value 入力 (text または date input 2 個) + 削除
-- GroupRow: 左 3 px brand バー + group ラベル + innerCombinator selector + 内側の再帰描画 + 削除
+- GroupRow: 左 4 px brand バー + group ラベル + innerCombinator selector + 内側の再帰描画 + 削除
 - 末尾: 「+ 条件を追加」 / 「+ グループを追加」
 
-入力は `app/ui/` primitive 経由 (NativeSelect / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
+入力は `app/ui/` primitive 経由 (Select / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
 
 UI 上の最大ネスト深さは制約しないが、設計目安 4 段。
 
@@ -159,10 +159,9 @@ UI 上の最大ネスト深さは制約しないが、設計目安 4 段。
 | organisms | checkbox 複数 | cross-DB + per-DB |
 | submitters | checkbox 複数 | per-DB のみ |
 | studyType | radio | per-DB のみ |
-| sampleCount | min / max 数値 | per-DB のみ |
 | datePublished | プリセット (`all` / `1y` / `5y` / `10y`) + FROM/TO | cross-DB + per-DB |
 
-reducer は各 facet を独立に更新する action (`setOrganisms` / `toggleOrganism` / `setStudyType` / `setSampleCount` / `setDateRange` / `setDateFromTo` / `clear` / `replace`) を持つ。
+reducer は各 facet を独立に更新する action (`toggleOrganism` / `toggleSubmitter` / `setStudyType` / `setDateRange` / `setDateFrom` / `setDateTo` / `clear` / `replace`) を持つ。
 
 ### AST 変換 (Sidebar → AST)
 
@@ -173,14 +172,16 @@ reducer は各 facet を独立に更新する action (`setOrganisms` / `toggleOr
 - `studyType` (per-DB) は API 側 field 名 (`library_strategy` 等、ddbj-search-api allowlist 準拠) にマップ
 - `datePublished.active === "all"` または from/to 両方空のとき何も出さない
 - プリセット値 (1y / 5y / 10y) は client local time を基に from/to を導出して LeafRange に
+- `setDateFrom` / `setDateTo` が呼ばれると `datePublished.active` は `"all"` に reset される (プリセット選択を解除し、FROM/TO 入力に切り替わる)
 - どの facet も未指定なら identityAst
-- options.db で per-DB 固有 facet (sampleCount / studyType / submitter) を有効化
+- options.db で per-DB 固有 facet (studyType / submitter) を有効化
 
 `splitForSidebar` の挙動:
 
 - AST の trunk から「Sidebar facet に表現できる leaf」 を抜き取り、残りを返す
 - 抜き取り対象は top-level BoolOp(AND) の子で、`LeafValue { field: "organism", op: "eq" }` / `LeafValue { field: "library_strategy", op: "eq" }` / `LeafRange { field: "date_published" }` 等
-- 抜き取れない leaf / BoolOp(OR/NOT) は Advanced builder 側に倒す
+- 同質な leaf 群 (organism のみ / submitter のみ) の `BoolOp(OR, [...])` は Sidebar の複数選択に拾い上げる (`collectOrOfFieldValues`)
+- 抜き取れない leaf / 異質な OR / NOT は Advanced builder 側に倒す
 - root 自体が単独 leaf でも対象なら抜き取る (rest は identityAst)
 
 ### UI
@@ -230,13 +231,13 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 - 表示中の検索結果は古い URL のまま (URL は書き換えない、古いままで使い続けられる)
 - 検索実行 button は別経路で `/db-portal/serialize` を直接呼ぶため、debounce 失敗で button が disable されることはない
-- 5xx は TanStack Query retry policy で 2 回まで自動再試行、それでも失敗で syncStatus = "failed"
+- `useDebouncedSerialize` は `useMutation` を使い、`mutations.retry: 0` で retry なし。1 回目の 5xx で `syncStatus = "failed"` になり、SyncStatusChip の「再試行」 button で同じ AST を再 dispatch する
 
 ## 検索結果 UI
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=5` を loader / TanStack Query で呼ぶ。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
+`GET /db-portal/cross-search?q=...&topHits=5` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
 
 各カードの内容:
 
@@ -253,14 +254,14 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
-`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を loader / TanStack Query で呼ぶ。
+`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。
 
 #### Layout (3-col)
 
 | 列 | 幅 | 内容 |
 |---|---|---|
 | Sidebar | `--spacing-sidebar` (220 px) | `SidebarHeading` + `AppliedFilters` + `FacetGroup` × N + `DateFacet` |
-| Main | flex-1 | ResultsToolbar (件数 + sort + pagination) + record card list + ResultsToolbar (bottom pagination) |
+| Main | flex-1 | ResultsToolbar (件数 + sort + perPage + pagination) + record card list + ResultsToolbar (bottom pagination のみ) |
 | Right pane | `--spacing-right-pane` (280 px) | クエリプレビュー + AI assistant (LLM available 時) |
 
 #### Result card
@@ -276,13 +277,15 @@ DB ごとの差分は内部分岐で表現する (DB ごとに `result-card-biop
 
 #### Pagination
 
-`app/ui/pagination.tsx` を使う。cursor mode (ES backed: sra / bioproject / biosample / jga / gea / metabobank) では `page` 値が `null` で返る可能性があるため、`page === null && hasNext` のとき次のページボタンだけ active にして prev は disable / 数値ボタンは hide。Solr backed (trad / taxonomy) は通常の page-based pagination。
+`app/ui/pagination.tsx` で `totalPages = Math.ceil(total / perPage)` を計算した offset pagination のみを使う。ES の `max_result_window` (10000 件) を超える page にユーザーが行ったとき、API が error を返す前提で UI は通常の数値 pagination をそのまま描画する。深部 page の cursor 切替 (search_after) は portal 側では実装していない。
 
 ### ResultsToolbar
 
 - 左: 件数 (`<total> 件中 <start>-<end>`)
-- 中: sort 切替 (`relevance` / `date_desc` / `date_asc`)
+- 中: sort 切替 (`relevance` / `date_desc` / `date_asc`) + perPage 切替 (`20` / `50` / `100`)
 - 右: pagination
+
+ResultsToolbar は結果リストの上下に置く。上は件数 + sort + perPage + pagination、下は pagination のみ。
 
 `hardLimitReached === true` のとき件数の横に Tag 「上位 10000 件まで」 を出す (API 仕様、ES / Solr のハードリミット表示)。
 
@@ -301,10 +304,13 @@ assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更
 
 ### LLM availability
 
-`/api/llm/health` を `useQuery` で取得し、`status === "ok"` のとき UI を表示する。queryKey は `["llm", "health"]`、staleTime は 5 分 (頻繁に poll しない)。
+`/api/llm/health` を `useQuery` で取得し、`status` ごとに `ready` を導く (`app/features/search/assistant/llm-availability.ts`):
 
-- `ready: false` のとき component は `null` を return (UI を物理的に出さない、エラーバナーも出さない)
-- `ready: true` のとき textarea + Examples chip + 「提案を生成」 button + 提案表示エリアを描画
+- `status === "ok"` → `ready: true`
+- `status === "unset"` → `ready: false` (UI を物理的に出さない)
+- `status === "unreachable"` → `ready: true` (UI を出して、送信時に SSE error 経路で fail を伝える)
+
+queryKey は `["llm-availability"]`、`staleTime` は 5 分 (頻繁に poll しない)。
 
 `/search` (検索ビルダ) と per-DB results (`/search/results?db=<id>`) で表示する。cross-DB results (`/search/results` で `db` 未指定) では表示しない (AI 提案は Advanced builder への差分提案であり、cross-DB の表示文脈ではユーザの操作対象がないため)。
 
@@ -312,22 +318,21 @@ assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
 
-- `event: token` → 表示はしない (内部受信のみ)
-- `event: proposal` → 提案 JSON を state に
-- `event: done` → state = "done"
-- `event: error` → state = "error" + toast
+- `event: message` → 累積バッファに delta を貯める (内部表示なし)
+- `event: done` → data を `AssistantProposal` として parse して proposal state に反映、state = "done"
+- `event: error` → state = "error"、toast を出す
 
-`AbortController` で stop 可能。SSE のため `response.body.getReader` で chunk を読む。
+`AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
 
 ### 提案の反映
 
 「クエリビルダーに追加」 button 押下で、Advanced state の root に新 group を append する純粋関数で反映する。
 
 - proposal.conditions を condition の配列に変換
-- proposal.combinator が OR なら 1 つの group (innerCombinator=OR) で包んで append、AND なら conditions を直接 root に append
+- `proposal.combinator === "OR" && conditions.length > 1` のとき 1 つの group (innerCombinator=OR) で包んで append、それ以外は conditions を直接 root に append
 - 各 condition の combinator は AND (先頭含めて、root に追加されるため)
 
-「やり直す」 button は textarea をクリアし proposal を `null` にする。
+「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。
 
 ## search 固有の primitive 事情
 

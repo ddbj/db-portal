@@ -1,10 +1,13 @@
 import type { Request, Response } from "express"
 
-import { NewsCategory } from "../../app/schemas/api-bff/news"
+import { NewsCategory, NewsSource } from "../../app/schemas/api-bff/news"
 import { getActiveNewsCache } from "../news/mirror"
 
 const isNewsCategory = (value: string): value is (typeof NewsCategory.options)[number] =>
   (NewsCategory.options as readonly string[]).includes(value)
+
+const isNewsSource = (value: string): value is (typeof NewsSource.options)[number] =>
+  (NewsSource.options as readonly string[]).includes(value)
 
 const splitList = (value: string | undefined): string[] => {
   if (!value) return []
@@ -17,6 +20,9 @@ const splitList = (value: string | undefined): string[] => {
 
 const parseLang = (value: string | null): "ja" | "en" | undefined =>
   value === "ja" || value === "en" ? value : undefined
+
+const parseSources = (raw: string | null): readonly (typeof NewsSource.options)[number][] =>
+  splitList(raw ?? undefined).filter(isNewsSource)
 
 const parseCategories = (raw: string | null): readonly (typeof NewsCategory.options)[number][] =>
   splitList(raw ?? undefined).filter(isNewsCategory)
@@ -41,6 +47,7 @@ export const handleNews = (req: Request, res: Response): void => {
   const lang = parseLang(url.searchParams.get("lang"))
   const items = cache.list({
     ...(lang ? { lang } : {}),
+    source: parseSources(url.searchParams.get("source")),
     category: parseCategories(url.searchParams.get("category")),
     year: parseYears(url.searchParams.get("year")),
     service: parseServices(url.searchParams.get("service")),

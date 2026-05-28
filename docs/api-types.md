@@ -23,8 +23,8 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 | `app/lib/api/client.ts` | `apiGet` / `apiPost` の operation 型補完付き fetch wrapper |
 | `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 |
 | `app/lib/api/search.ts` | `crossSearch` / `dbSearch` / `parseQuery` / `serializeAst` の wrapper |
-| `app/lib/api/news.ts` | BFF `/api/news` の wrapper + `NewsItem` Zod schema |
-| `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `LlmHealth` Zod schema + `isLlmAvailable` |
+| `app/lib/api/news.ts` | BFF `/api/news` の wrapper。Zod schema (`NewsItem` / `NewsList` / `NewsSource` / `NewsCategory` / `NewsCache`) は `app/schemas/api-bff/news.ts` に置き、ここで re-export |
+| `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `isLlmAvailable`。`LlmHealth` Zod schema は `app/schemas/api-bff/llm.ts` に置き、ここで re-export |
 | `app/lib/api/search-types.ts` | `ParseNode` alias (`-Input` / `-Output` ハイフン名を隠す) |
 | `app/lib/api/index.ts` | 上記の re-export |
 
@@ -44,7 +44,7 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 ddbj-search-api の検索 AST は Pydantic v2 の recursive Annotated discriminator union で表現されており、`openapi-typescript` の生成型は **Input 用と Output 用の 2 種類** に分かれる:
 
 - `DbPortalParseBoolOp-Input`: Request body 用 (`POST /db-portal/serialize`)
-- `DbPortalParseBoolOp-Output`: Response body 用 (`POST /db-portal/parse`)
+- `DbPortalParseBoolOp-Output`: Response body 用 (`GET /db-portal/parse`)
 
 UI 層がこのハイフン名を意識しなくて済むよう、`app/lib/api/search-types.ts` で次の 2 つの alias を提供する:
 
@@ -78,7 +78,7 @@ dev / staging は同じ openapi 配置 (staging API) を共有する。Productio
 
 `app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する型付き fetch wrapper。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、client.ts が直接 env を参照しない)。
 
-`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (q / topHits / db / page / perPage / cursor / sort / keywordOperator) を `options.query` で渡す。
+`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `fields` / `includeProperties` 等、operation ごとに有効な subset) を `options.query` で渡す。
 
 呼び出し側は通常 `app/lib/api/search.ts` の thin wrapper を経由する (`crossSearch` / `dbSearch` / `parseQuery` / `serializeAst`)。`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は wrapper を経由する。
 
@@ -98,7 +98,7 @@ dev / staging は同じ openapi 配置 (staging API) を共有する。Productio
 | `detail` | Problem の `detail` (任意) |
 | `instance` | Problem の `instance` (任意) |
 
-`isAPIError(value)` の type guard で `instanceof APIError` を扱う。TanStack Query 側では `APIError` の status を見て 5xx だけ retry (`app/lib/query/client.ts` の `shouldRetry`)。
+`isAPIError(value)` の type guard で `instanceof APIError` を扱う。TanStack Query の `queries.retry` は `shouldRetry` を使って `APIError` の status が 5xx のときだけ最大 2 回 retry。`mutations.retry` は `0` (debounced serialize は 1 度で fail し、SyncStatusChip の再試行 button から手動 retry する想定)。
 
 ### openapi-fetch 等の外部ライブラリ採用判断
 

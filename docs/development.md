@@ -59,11 +59,14 @@ docker compose up -d --build
 - `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV`: 環境識別子 (compose の container_name / image / volume / network 名に展開される)
 - `DB_PORTAL_APP_COMMAND`: dev は `npm run dev`、staging / production は `npm start`
 - `DB_PORTAL_APP_PORT`: host 側 listen port (環境ごとに異なる)
+- `DB_PORTAL_APP_INTERNAL_PORT`: container 内 listen port (`vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む。dev は 3000)
 - `DB_PORTAL_PORTAL_ORIGIN`: portal 自身の origin (redirect_uri 計算 / `<base>` 等の起点)
 - `DB_PORTAL_LOG_LEVEL`: `debug` / `info` / `warn` から選ぶ
+- `DB_PORTAL_DEFAULT_LANG`: i18n の default 言語 (`ja` / `en`、`i18n.md`)。`VITE_DB_PORTAL_DEFAULT_LANG` として client にも露出
 - `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_OPENAPI_URL`: ddbj-search-api の base / openapi.json 配置先
-- `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID`: Keycloak realm / client (`auth.md`)
-- `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY`: vLLM 接続先 (`llm.md`)。空文字なら AI 補助機能を hide
+- `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID` / `DB_PORTAL_AUTH_SESSION_TTL_SECONDS`: Keycloak realm / client / session TTL (`auth.md`)
+- `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY` / `DB_PORTAL_LLM_MODEL` / `DB_PORTAL_LLM_TIMEOUT_MS` / `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN`: vLLM 接続先と挙動 (`llm.md`)。`DB_PORTAL_LLM_BASE_URL` 空文字で AI 補助機能を hide
+- `DB_PORTAL_NEWS_REPOS_DIR` / `DB_PORTAL_NEWS_DDBJ_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` / `DB_PORTAL_NEWS_DBCLS_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` / `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` / `DB_PORTAL_NEWS_CACHE_DIR`: News mirror の clone 設定と cache 配置 (`news.md`)
 
 実値は `env.dev` / `env.staging` / `env.production` を直接参照する (root に commit 済)。env の compose 内マッピングは `compose.yml`。
 
@@ -188,7 +191,7 @@ dev origin (`env.dev` の `DB_PORTAL_PORTAL_ORIGIN`) を起点に:
 | `/` | トップページ (placeholder でも 200) |
 | `/api/me` | 401 (Cookie なし) |
 | `/api/news` | `[]` (空配列、News mirror 未稼働 / 初期化中) |
-| `/api/llm/health` | `DB_PORTAL_LLM_BASE_URL` が空なら `{"status":"unset"}`、dummy URL が入っていれば `{"status":"unreachable", ...}` |
+| `/api/llm/health` | `DB_PORTAL_LLM_BASE_URL` が空、または起動 5 秒前なら `{"status":"unset"}`、URL 設定後の health check 失敗で `{"status":"unreachable", ...}`、成功で `{"status":"ok", "model": ...}` (`llm.md`) |
 
 ## Troubleshooting
 
@@ -205,7 +208,7 @@ docker compose exec app npm install
 
 ### dev サーバが reload されない
 
-Vite の HMR が外部 IP からの WebSocket 接続を許容できていない場合がある。`vite.config.ts` の `server.hmr.host` などを確認する。`compose.yml` の port mapping が `3000:3000` (両端同じ) であれば通常は問題ない。
+Vite の HMR が外部 IP からの WebSocket 接続を許容できていない場合がある。`vite.config.ts` の `server.host` / `server.port` が `0.0.0.0:DB_PORTAL_APP_INTERNAL_PORT` を listen しているか確認する。`compose.yml` の port mapping が dev で `3000:3000` (両端同じ) であれば通常は問題ない。
 
 ### Lint で zones エラーが出る
 
@@ -213,7 +216,7 @@ Vite の HMR が外部 IP からの WebSocket 接続を許容できていない�
 
 ### `gen:api-types` が失敗する
 
-`DB_PORTAL_OPENAPI_URL` が container 内に届いていない可能性がある。 の検証コマンドで確認する。Staging API が落ちている場合もある (`curl $DB_PORTAL_OPENAPI_URL` で疎通確認)。
+`DB_PORTAL_OPENAPI_URL` が container 内に届いていない可能性がある。上の「Container 内の env 検証」 と同じ要領で `docker compose exec app printenv DB_PORTAL_OPENAPI_URL` で確認する。Staging API が落ちている場合もある (`curl $DB_PORTAL_OPENAPI_URL` で疎通確認)。
 
 ### Keycloak とのログインがリダイレクトループする
 
@@ -221,13 +224,24 @@ Vite の HMR が外部 IP からの WebSocket 接続を許容できていない�
 
 ## PR を出す前のチェック
 
-CI (`.github/workflows/ci.yml`) は次の 3 つを Docker Compose 内で回す。PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
+CI (`.github/workflows/ci.yml`) は次の 4 つを Docker Compose 内で回す。PR を出す前にローカルでも同じコマンドを走らせて全 pass を確認する。
 
 ```bash
 docker compose exec app npm run typecheck
 docker compose exec app npm run lint
 docker compose exec app npm test
+docker compose exec app npm audit --audit-level=high --omit=dev
 ```
+
+`npm audit` は production dependencies の high+ severity のみを対象にする。CI で fail する。
+
+ローカル開発で news cache repo を最新化したいときは:
+
+```bash
+docker compose exec app npm run news:repos:sync
+```
+
+これで `./repos/{ddbj-www,dbcls-website}/` を `git pull` (もしくは shallow clone) する (`news.md`)。
 
 加えて、リリース直前 / 大きい変更時には以下も手元で確認する:
 

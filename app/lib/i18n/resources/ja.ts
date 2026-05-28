@@ -92,6 +92,7 @@ export type Resources = {
     }
     facet: {
       heading: string
+      source: string
       category: string
       year: string
       service: string
@@ -122,14 +123,6 @@ export type Resources = {
     title: string
     description: string
     switchToJa: string
-  }
-  footer: {
-    orgFullName: string
-    orgSubtitle: string
-    operatedBy: string
-    termsOfUse: string
-    privacy: string
-    accessibility: string
   }
   a11y: {
     skipToContent: string
@@ -486,7 +479,6 @@ export type Resources = {
       organism: string
       submitter: string
       studyType: string
-      sampleCount: string
       datePublished: string
       dateRange: {
         all: string
@@ -652,6 +644,7 @@ export const ja: Resources = {
     },
     facet: {
       heading: "絞り込み",
+      source: "ソース",
       category: "種別",
       year: "年",
       service: "サービス",
@@ -682,14 +675,6 @@ export const ja: Resources = {
     title: "このページの英語訳は未提供です",
     description: "日本語版を表示しています。翻訳の追加を予定しています。",
     switchToJa: "日本語版を表示",
-  },
-  footer: {
-    orgFullName: "DDBJ — Bioinformation and DDBJ Center",
-    orgSubtitle: "National Institute of Genetics · ROIS / BSI",
-    operatedBy: "運営組織",
-    termsOfUse: "利用規約",
-    privacy: "プライバシー",
-    accessibility: "アクセシビリティ",
   },
   a11y: {
     skipToContent: "メインコンテンツへスキップ",
@@ -1139,7 +1124,6 @@ export const ja: Resources = {
       organism: "生物種",
       submitter: "登録機関",
       studyType: "研究タイプ",
-      sampleCount: "サンプル数",
       datePublished: "公開日",
       dateRange: {
         all: "すべて",

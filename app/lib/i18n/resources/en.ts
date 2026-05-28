@@ -89,6 +89,7 @@ export const en: Resources = {
     },
     facet: {
       heading: "Refine",
+      source: "Source",
       category: "Type",
       year: "Year",
       service: "Service",
@@ -119,14 +120,6 @@ export const en: Resources = {
     title: "This page is not yet translated",
     description: "Showing the Japanese version. An English translation is planned.",
     switchToJa: "Switch to Japanese version",
-  },
-  footer: {
-    orgFullName: "DDBJ — Bioinformation and DDBJ Center",
-    orgSubtitle: "National Institute of Genetics · ROIS / BSI",
-    operatedBy: "Operating organisation",
-    termsOfUse: "Terms of use",
-    privacy: "Privacy",
-    accessibility: "Accessibility",
   },
   a11y: {
     skipToContent: "Skip to main content",
@@ -576,7 +569,6 @@ export const en: Resources = {
       organism: "Organism",
       submitter: "Submitter",
       studyType: "Study type",
-      sampleCount: "Sample count",
       datePublished: "Date published",
       dateRange: {
         all: "All",

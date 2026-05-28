@@ -5,7 +5,6 @@ import { handleLlmHealth } from "./api/llm/health"
 import { handleMe } from "./api/me"
 import { handleNews } from "./api/news"
 import { handleRobots } from "./api/robots"
-import { handleSearchSerialize } from "./api/search/serialize"
 import { handleSitemap } from "./api/sitemap"
 import { mountAuthRoutes } from "./auth/routes"
 import { parseServerEnv } from "./lib/env"
@@ -39,7 +38,6 @@ app.get("/api/me", handleMe)
 app.get("/api/news", handleNews)
 app.get("/api/llm/health", handleLlmHealth)
 app.post("/api/llm/search-assistant", makeHandleSearchAssistant(env, logger, { client: llmClient }))
-app.post("/api/search/serialize", handleSearchSerialize)
 app.get("/sitemap.xml", handleSitemap(env))
 app.get("/robots.txt", handleRobots(env))
 mountAuthRoutes(app, env, logger)

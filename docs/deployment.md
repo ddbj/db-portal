@@ -70,10 +70,10 @@ production の `openapi.json` と portal が知っている型 (`app/lib/api/ope
 1. `validate:content`: `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` を Zod parse。1 件でも fail すると **exit 1** で起動失敗 (build / runtime 両方で fail-fast)
 2. `server/lib/env.ts` の `parseServerEnv` で env を Zod 検証。必須 env が無いと exit
 3. Express server を listen (`server_listening` log)
-4. News mirror が起動 (`startMirror`): **5 秒後に初回 fetch**、以降 `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
-5. LLM health monitor が起動: 起動直後に 1 回 health check、以降 5 分間隔で polling (`llm.md`)
+4. News mirror が起動 (`createNewsMirror.mirror.start`): disk cache を即時 load して以降は `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
+5. LLM health monitor が起動: 5 秒後に初回 health check、以降 5 分間隔で polling (`llm.md`)
 
-起動からの最初の 5 秒は `/api/news` が空配列を返すことがある (mirror 未起動)。これは 200 で返るので外形監視は通る。
+LLM health monitor が初回 check を打つまでの 5 秒間、`/api/llm/health` は `status: "unset"` を返す (URL 設定有無に関わらず)。News mirror は disk cache を即時 load するので、cache が残っていれば `/api/news` は最初から item を返す。
 
 ## 監視
 
@@ -83,9 +83,9 @@ production の `openapi.json` と portal が知っている型 (`app/lib/api/ope
 
 | Field | 型 | 説明 |
 |---|---|---|
-| `time` | string (ISO8601) | log 時刻 |
+| `ts` | string (ISO8601) | log 時刻 |
 | `level` | `"debug" \| "info" \| "warn" \| "error"` | severity |
-| `event` | string | snake_case event name (例 `server_listening` / `news_mirror_failed`) |
+| `msg` | string | snake_case event name (例 `server_listening` / `news_mirror_failed`) |
 | `...` | 任意 | event 固有の payload (redact 済) |
 
 log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
@@ -95,17 +95,28 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 | Event | level | 意味 |
 |---|---|---|
 | `server_listening` | info | server 起動完了 |
-| `news_mirror_initial_load` | info | disk cache から item を初期 load |
-| `news_mirror_fetched` | info | GitHub API から item 取得成功 |
-| `news_mirror_failed` | warn | GitHub API 取得失敗 (rate limit / network) |
-| `llm_health_changed` | info | vLLM 接続状態が遷移 (`ok` ↔ `unreachable` 等) |
-| `llm_health_check_failed` | warn | health 取得自体が timeout / 5xx |
-| `llm_rate_limited` | info | per-IP / per-session rate limit 発火 |
-| `oidc_callback_failed` | warn | state 不一致 / token 交換失敗 |
-| `auth_session_refresh_failed` | warn | Keycloak refresh が拒否 |
-| `request_failed` | error | unhandled exception (5xx) |
+| `auth_login_success` | info | OIDC code 交換が成功し session 発行 |
+| `auth_callback_invalid_state` | warn | callback の `state` が pending store に無い (replay / CSRF) |
+| `auth_callback_invalid_id_token` | warn | `id_token` の payload 検証に失敗 |
+| `auth_callback_failed` | error | token endpoint への code 交換が失敗 (502) |
+| `news_cache_loaded` | info | disk cache から item を初期 load |
+| `news_cache_read_failed` | warn | disk cache の読込に失敗 |
+| `news_cache_persist_failed` | warn | disk cache の書込に失敗 |
+| `news_cache_schema_mismatch` | warn | disk cache の schema が現行と不一致、空 cache に fallback |
+| `news_dir_read_failed` | warn | source repo の dir 読込に失敗 |
+| `news_git_head_unknown` | warn | source repo の HEAD SHA が取得できない |
+| `news_git_sync_failed` | warn | source repo の git pull / clone に失敗 |
+| `news_mirror_no_change` | debug | source repo の HEAD に変更なし、再 build なし |
+| `news_mirror_full_refresh` | info | source repo の HEAD が更新され、cache を全件 rebuild |
+| `news_mirror_failed` | warn | mirror tick の例外 (rate limit / network) |
+| `featured_whitelist_read_failed` | warn | featured whitelist YAML の読込に失敗 |
+| `featured_whitelist_yaml_parse_failed` | warn | featured whitelist YAML の parse に失敗 |
+| `featured_whitelist_schema_mismatch` | warn | featured whitelist の schema が不一致 |
+| `llm_health_transition` | info | vLLM 接続状態が遷移 (`ok` ↔ `unreachable` ↔ `unset`) |
+| `llm_assistant_request` | info | search-assistant SSE 開始 |
+| `llm_assistant_failed` | warn | search-assistant 中に upstream または parse 系の失敗 |
 
-`accessToken` / `refreshToken` / `cookie` / `authorization` の各フィールドは `[REDACTED]` に置換されて log に出る (`auth.md`)。session entry を丸ごと log に出すケースは作らない。
+`accessToken` / `refreshToken` / `idToken` / `cookie` / `Cookie` / `authorization` / `Authorization` の各フィールドは `[REDACTED]` に置換されて log に出る (`auth.md`)。session entry を丸ごと log に出すケースは作らない。
 
 ### Health endpoint
 
@@ -113,9 +124,9 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 
 | Endpoint | 期待 (起動成功時) | 監視で見るもの |
 |---|---|---|
-| `GET /api/me` | 401 (cookie なし) | server が listen しているか |
+| `GET /api/me` | 401 (cookie なし) / `Cache-Control: no-store` | server が listen しているか |
 | `GET /api/news` | 200 JSON array (空可) | mirror 起動 + cache 応答 |
-| `GET /api/llm/health` | 200 `{status: "ok" \| "unreachable" \| "unset"}` | vLLM 接続性 |
+| `GET /api/llm/health` | 200 `{status: "ok" \| "unreachable" \| "unset"}` / `Cache-Control: no-store` | vLLM 接続性 |
 
 外部監視ツール (NIG infra 側の uptime monitor 等) はこの 3 endpoint を 1 分間隔で叩き、連続失敗で alert を出す構成にする。`/api/llm/health` の `status` フィールドの解釈は `llm.md`。
 
@@ -183,7 +194,7 @@ session TTL は default 30 分 (sliding)。操作のたびに延長されるが�
 
 ### disk cache 容量
 
-News cache 配下は単一 `news.json` (数 MB 程度) のみ。容量問題が出るとすれば schema 変更で `news.json.bak` が累積するケース、定期的に bak ファイルを削除する。
+News cache 配下は単一 `news.json` (数 MB 程度) のみ。schema mismatch / 読み込みエラー時は cache を空 (`items: []`) に reset して再 build に任せる (back up は取らない)。
 
 ### CSP 違反 (browser console に CSP error)
 
@@ -229,6 +240,6 @@ Keycloak client は public client (`auth.md`) のため client secret は存在�
 | 周期 | 作業 |
 |---|---|
 | 週次 | log で `*_failed` event を集計、上位を確認 |
-| 月次 | News disk cache のサイズ確認、bak ファイル整理 |
+| 月次 | News disk cache のサイズ確認 |
 | 半年毎 | Deploy host への SSH 鍵 rotation、e2e user password rotation |
 | リリース毎 | release announcement 公開、`gen:api-types` の production URL 差分確認 |

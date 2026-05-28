@@ -7,10 +7,7 @@ import {
 
 const baseEntry = {
   tokens: {
-    accessToken: "atk",
-    refreshToken: "rtk",
     idToken: "itk",
-    expiresAt: 0,
   },
   userInfo: {
     sub: "user-1",

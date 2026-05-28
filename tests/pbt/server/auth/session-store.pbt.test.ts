@@ -10,10 +10,7 @@ import {
 
 const arbEntry: fc.Arbitrary<SessionEntry> = fc.record({
   tokens: fc.record({
-    accessToken: fc.string({ minLength: 1, maxLength: 16 }),
-    refreshToken: fc.string({ minLength: 1, maxLength: 16 }),
     idToken: fc.string({ minLength: 1, maxLength: 16 }),
-    expiresAt: fc.integer({ min: 0, max: 10_000 }),
   }),
   userInfo: fc.record({
     sub: fc.string({ minLength: 1, maxLength: 10 }),

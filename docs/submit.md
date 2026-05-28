@@ -30,7 +30,7 @@ UI 全体は 2 段構造になる:
 │   - 各行 = 1 ファイル (FileEntry)                            │
 │   - 列 = buttonType / organism / access / dataForm           │
 │   - 行内 chip で追加軸を表現                                  │
-│   - 「ファイルを追加」ボタン (9 種) で行追加                  │
+│   - 「ファイルを追加」ボタン (`ButtonType` enum、9 種) で行追加 │
 ├─────────────────────────────────────────────────────────────┤
 │  下段: Step カード列 (導出結果)                              │
 │   - Step カード = 1 つの登録 step (FlowStep)                 │
@@ -62,7 +62,7 @@ Cross-DB Tag はテーブル列 / 行内 chip で表現、Intra-DB Tag は Step 
 
 値域は `app/schemas/submit/vocabulary.ts` と `app/schemas/submit/service.ts` を SSOT とする。本章では各 enum の **意図と使い分け** だけを述べる (値リストはコード参照)。
 
-- **ButtonType**: ファイルの **物理的種類**。FASTQ raw か、assembly FASTA か、VCF か、MAGE-TAB マトリクスか、質量分析 raw か、といった粒度。テーブル先頭の「ファイルを追加」 ボタンに並ぶ ButtonType ごとに 1 行追加され、行追加時に固定 (変更不可)。新 ButtonType を vocabulary に追加すると grid に自動で追加される (`.options` を直接 map するため)
+- **ButtonType**: ファイルの **物理的種類**。FASTQ raw か、assembly FASTA か、VCF か、MAGE-TAB マトリクスか、質量分析 raw か、といった粒度。テーブル先頭の「ファイルを追加」 ボタンに並ぶ ButtonType ごとに 1 行追加され、行追加時に固定 (変更不可)。「ファイルを追加」 ボタンの実体は `app/features/submit/buttons/file-type-grid.tsx` で 3×3 grid に固定配置されており、`ButtonType` enum に新規 type を加えるときはこの grid 側も合わせて配置する
 - **GroupType**: 複数ファイルが論理的に 1 単位を成す関係 (pair-end / 10x / MAGE-TAB / mag-sag chain 等)。経路導出の分岐要素として効く (例: `jga-dataset` の存在は JGA step を強くドライブ)
 - **Organism**: DDBJ 登録経路の分岐に必要十分な粒度の生物分類。種・属レベルの phylogeny は持たない (それは BS package / BP organism field など Intra-DB Tag で扱う)。`bioprojectStep` は organism 集合のユニーク値ごとに Primary BP を分裂させる
 - **Access**: `open` / `restricted`。`restricted ∧ human` の組合せが JGA / humandbs への分岐起点
@@ -206,19 +206,18 @@ Step カードの header / 外周 border に Service バッジ色を表現する
 ┌─ Header (active="submit") ───────────────────────────────────────┐
 ├─ PageTitle "登録ナビゲーション" + subtitle ────────────────────────┤
 │
-├─ Section padY="md"   ファイルテーブル ────────────────────────────┤
+├─ Section padTop="sm" padBottom="mid"   ファイルテーブル ──────────┤
 │   ┌ SectionHeading "ファイルテーブル" ───────────────────────────┐│
 │   ├ FileTypeGrid (3 列 × 3 行、9 ButtonType) ────────────────────┤│
 │   └ FileTable (or empty placeholder) ──────────────────────────┘│
 │
-├─ Section padY="md"   登録フロー ──────────────────────────────────┤
+├─ Section padTop="sm" padBottom="lg"   登録フロー ─────────────────┤
 │   ┌ SectionHeading "登録フロー" count={steps.length} ───────────┐│
 │   ├ TagProgress (設定済 / 全行) ────────────────────────────────┤│
 │   ├ FlowStepCards (FlowStep[] → 並んだ card) ────────────────────┤│
 │   └ PartialFailureBanner (validation 違反時のみ) ───────────────┘│
 │
-├─ ModalRouter (overlay、editing 行のとき 1 つだけ open) ────────────┤
-├─ Footer ──────────────────────────────────────────────────────┤
+├─ EditRowModal (overlay、editing 行のとき 1 つだけ open) ───────────┤
 ```
 
 `Section` / `SectionHeading` / `PageTitle` / `Modal` / `Callout` などは `app/ui/` の primitive をそのまま使う (`docs/frontend.md` の「UI primitives」)。
@@ -236,9 +235,9 @@ id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダ�
 「データ詳細」 chip cell は ButtonType ごとの controlled vocabulary を 1 click で編集する trigger。表示は 2 形態:
 
 - **未設定** (chipTags が空かつ groupType が default): `WarnDashedButton` (warn 配色 + dashed border)
-- **設定済み** (chipTags ≥ 1 件、または groupType が default 以外): `RowSetTag` (brand-soft 背景 + check icon + 短文サマリ、 例 `"pair-end · GEA"` / `"third-party"`)
+- **設定済み** (chipTags ≥ 1 件、または groupType が default 以外): `RowSetTag` (brand-soft 背景 + check icon + 短文サマリ、 例 `"pair-end · layout:paired"` / `"third-party"`)
 
-行削除は confirm modal を経由する。 reducer は孤立 entry の `groupId` を新規の単独 group に再割当する (整合維持)。 同 group への 2 件目追加 (pair-end の R1 + R2 等) は `ADD_TO_GROUP` action を発火する。
+行削除は confirm modal を経由する。reducer は対象 entry を `memberFileIds` から除外し、空になった group は drop するが、残った同 group の sibling entry の `groupId` は触らない (元の group を保持)。同 group への 2 件目追加 (pair-end の R1 + R2 等) は `ADD_TO_GROUP` action を発火する。
 
 100 行以上の行を持つテーブルでも、デフォルト DOM レンダリング (`<table>` + n `<tr>`) を維持する。virtualization (`react-window` 等) は導入しない。
 
@@ -246,7 +245,7 @@ id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダ�
 
 ## Modal UX
 
-各 `ButtonType` 専用の編集 modal を実装する (現状 9 種)。`ModalRouter` が `state.editing` を見て対応 modal を render する。全 modal は同じ shape を持つ:
+編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<ButtonType, RowFormDef>` table から該当 `ButtonType` の form definition (chip axes / fields / default values) を引いて描画する。`ButtonType` を増やすときは `form-defs.ts` に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の shape は次の通り:
 
 ```
 ┌ Modal (width 820) ─────────────────────────────────────────────┐
@@ -283,11 +282,11 @@ modal の責務は次の 3 つの編集:
 
 - **StepBadge** (1, 2, 3, … の進捗番号、確定 / pending で配色切替)
 - **ServiceBadge** (`Tag kind="source"` で DDBJ / DBCLS の source pill)
-- **Card 外周 border** で service バッジ色 (emerald / amber / rose) を表現
-- **AccessionPlaceholder** (発行 accession の例、`ACCESSION_PLACEHOLDERS: Record<Service, string[]>` が SSOT、i18n しない)
+- **Card 外周 border** は確定状態 (`border-border-soft shadow-card`) と pending (`border-dashed border-border-soft`) を切り替える。service バッジ色 (emerald / amber / rose) は service バッジ chip 自体で表現し、card border には乗せない
+- **AccessionPlaceholder** (発行 accession の例、`app/content/services/*.content.tsx` の `accessionExamples` フィールドが SSOT、`getServiceBySubmit()` 経由で取得)
 - **FilesBlock** (`scope.groupIds` を iterate して filename を 1/n 表記で並べる、5 件以上は折り畳み)
 - **Notes** (`step.notes` を info / warning / error で出し分け、`messageKey` が i18n リソースキー)
-- **ExternalLinkButton** (`EXTERNAL_LINKS: Record<Service, string>` を hardcode、`Button kind="secondary"` の onClick で `window.open(url, "_blank", "noopener,noreferrer")`)
+- **ExternalLinkButton** (`app/content/services/*.content.tsx` の `submitUrl` フィールドが SSOT、`getServiceBySubmit()` 経由で取得、`Button kind="secondary"` の onClick で `window.open(url, "_blank", "noopener,noreferrer")`)
 
 section heading 直下に **TagProgress** (データ詳細 設定済 / 全行) を、validation 違反があれば末尾に **PartialFailureBanner** (`Callout tone="warn" role="alert"`) を出す。
 
@@ -297,7 +296,7 @@ section heading 直下に **TagProgress** (データ詳細 設定済 / 全行) �
 
 - `missing-organism`: FileEntry.organism が空
 - `missing-filename`: FileEntry.filename が空白文字列
-- `inconsistent-group-type`: `FileGroup.groupType` が entry の `buttonType` と互換しない (例 `mage-tab` group に `mass-spec` entry が混入)
+- `inconsistent-group-type`: `FileGroup.groupType === "mage-tab"` の group に `microarray-expression` / `rna-seq-matrix` 以外の entry が混入したケースを検出 (`selectValidations` の `selectInconsistentGroupTypeIds`)
 - `dangling-group-id`: FileEntry.groupId が submission.fileGroups にない (UI バグ検知、reducer 不変量で起きないはずだが安全網)
 
 各 validation は i18n key + 該当 row index list を含む。click で row scroll into view + 編集 modal を open する。
@@ -318,7 +317,7 @@ UI 状態は `app/features/submit/state/` の reducer + selectors で管理す�
 4. **editing 整合**: `editing.kind === "row"` のとき `editing.entryId` は `fileEntries` 内に存在する
 5. **buttonType 不変**: `EDIT_ROW_CELL` / `COMMIT_ROW_EDIT` は entry.buttonType を書き換えない
 
-selectors (`selectSteps` / `selectValidations` / `selectRowDetailSummary`) は memoize しない (デフォルトで純粋関数として呼び、React の reconciliation で不要な再計算を抑える)。
+selectors (`selectSteps` / `selectValidations` / `selectRowDetailSummary` / `countConfiguredRows` / `rowIsConfigured`) は memoize しない (デフォルトで純粋関数として呼び、React の reconciliation で不要な再計算を抑える)。
 
 ---
 

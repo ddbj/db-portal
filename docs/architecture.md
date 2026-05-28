@@ -10,7 +10,7 @@ db-portal/
 │   ├── root.tsx                 HTML shell、i18n provider、QueryClient provider
 │   ├── routes.ts                config-based routing の宣言 (URL 全構造の SSOT)
 │   ├── routes/                  route component の置き場 (file 名 ≠ URL)
-│   ├── features/                画面横断ロジック (search / submit / news / auth)
+│   ├── features/                画面横断ロジック (search / submit / news / top / errors)
 │   ├── shell/                   Header / Footer / NotificationBar / NewsAside / Breadcrumb
 │   ├── ui/                      Tailwind primitives (Button / Card / Tag / Callout / Modal …)
 │   ├── lib/                     純粋ユーティリティ (api / i18n / auth client / content / query)
@@ -180,15 +180,14 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 
 | BFF 責務 | エンドポイント | client が直接アクセスする外部に対する遮蔽点 |
 |---|---|---|
-| OIDC token 管理 | `/api/auth/*`、`/api/me` | Keycloak access token / refresh token は browser に出さない (`auth.md`) |
-| Search API への AST→DSL serialize 中継 | `POST /api/search/serialize` | ddbj-search-api への HTTP を BFF 経由にし、debounce ロジックは client / 認可と timeout は BFF |
+| OIDC token 管理 | `/api/auth/*`、`/api/me` | Keycloak token は browser に出さない (`auth.md`) |
 | LLM ストリーミング | `/api/llm/health`、`POST /api/llm/*` | vLLM の URL / API key を browser に出さない、SSE は BFF で pass-through |
 | News mirror | `GET /api/news` | ddbj/www の commit を polling し、disk cache を経由して browser へ提供 |
 
-外部 API (Search / vLLM / Keycloak / GitHub) に client が直接アクセスすることはない。これにより:
+secret (LLM API key / Keycloak credential) を要求する外部 API (vLLM / Keycloak / GitHub) は BFF 経由でのみ叩く。ddbj-search-api は public な検索 API のため client から直接アクセスする。これにより:
 
-- secret (LLM API key / Keycloak client secret) が client bundle に embed されない
-- ddbj-search-api / vLLM が CORS を緩める必要がない
+- secret が client bundle に embed されない
+- vLLM が CORS を緩める必要がない
 - 障害時 fallback (LLM 未到達なら UI を hide する) を BFF の health 判定で集約できる
 
 ## ビルド時と runtime の境界
@@ -228,16 +227,13 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
   └─ Sidebar facet → AST (app/features/search/)
         │
         ▼ debounce 500-1000 ms
-  POST /api/search/serialize (server/api/search/serialize.ts)
-        │
-        ▼
   ddbj-search-api POST /db-portal/serialize
         │
         ▼
   DSL 文字列を URL の ?q= に反映
         │
         ▼
-  検索結果取得 (TanStack Query + ddbj-search-api /db-portal/{cross-search,search})
+  検索結果取得 (loader + ddbj-search-api GET /db-portal/{cross-search,search})
 ```
 
 AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT とする。詳細 `api-types.md`。
@@ -266,11 +262,10 @@ AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT と�
 [Server] /api/me
         │
         ▼ in-memory session store
-  { tokens, userInfo, expiresAt (sliding 30 min) }
-        │
-        ▼ 期限切れ前に background refresh
-[Keycloak] /protocol/openid-connect/token
+  { tokens: { idToken }, userInfo, expiresAt (sliding 30 min) }
 ```
+
+session の `idToken` は logout 時の `id_token_hint` 用にのみ保持する。詳細 `auth.md`。
 
 詳細 `auth.md`。
 
@@ -305,7 +300,7 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 
 - token utility class: `bg-brand` / `text-ink` / `border-border-soft` / `p-section-md` / `rounded-card` …
 - 生 hex literal / arbitrary value は ESLint で物理禁止
-- primitive 一覧 (Button / IconButton / NativeSelect / FormGroup / Tag / Chip / Callout / Modal / Pagination …) は `app/ui/` に集約、`features` / `shell` / `routes` / `content` は primitive を消費する
+- primitive 一覧 (Button / IconButton / Select / FormGroup / Tag / Chip / Callout / Modal / Pagination …) は `app/ui/` に集約、`features` / `shell` / `routes` / `content` は primitive を消費する
 - 新 primitive が必要な場合、`features` 内で独自実装せず `app/ui/` に追加する (zones で物理強制)
 
 詳細な token 値と primitive 仕様はコード (`app/styles/tailwind.css` と `app/ui/`) を一次情報とする。
@@ -318,7 +313,7 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 
 | Header | 値 | 適用範囲 |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | 全 response |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | dev を除く全 response (`server/lib/security.ts` で `env !== "dev"` のとき付与) |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | production のみ (`DB_PORTAL_ENV=production`) |
 | `X-Frame-Options` | `DENY` | 全 response |
 | `X-Content-Type-Options` | `nosniff` | 全 response |
@@ -339,12 +334,12 @@ URL × lang × hreflang の表現は i18n と一体なので、SSOT を `i18n.md
 
 URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、`app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
 
-404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は production では出さない (`DB_PORTAL_ENV` で分岐)。
+404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は UI に出さない (env を問わず常に hide)。
 
 ### アクセシビリティ
 
 - WCAG AA 相当の色コントラスト (token 段階で確認、`app/routes/_design/` で視覚チェック可)
-- フォーカスリングを全インタラクティブ要素に明示 (`app/ui/` primitive 内で `ring-focus` token を必ず適用)
+- フォーカスリングを `app/styles/tailwind.css` の `*:focus-visible` で global に適用 (`--color-focus` token を outline 色とする、primitive 単位で個別に上書きしない)
 - キーボード操作で全画面到達可能 (modal は focus trap)
 - `<html lang>` を `useLang` で動的に出力 (`i18n.md`)
 
@@ -360,7 +355,7 @@ axe 系の e2e 統合は採用していない (false positive 多発リスクを
 
 達成手段:
 
-- Vite code splitting (`splitVendorChunkPlugin` 自動適用)
+- Vite + React Router framework mode の自動 code splitting (`vite.config.ts` には `tailwindcss()` と `reactRouter()` plugin のみ、route 単位の chunk は RR が処理する)
 - Tailwind v4 の CSS optimization
 - Noto Sans JP Variable の self-host + `font-display: swap`
 - 画像 lazy loading (`<img loading="lazy">`)

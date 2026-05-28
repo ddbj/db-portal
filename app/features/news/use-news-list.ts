@@ -23,6 +23,7 @@ const applyFilter = (items: NewsList, lang: Lang, facet: NewsFacetState): NewsLi
   items.filter((item) => {
     const title = item.title[lang]
     if (!title || title.trim() === "") return false
+    if (facet.source.length > 0 && !facet.source.includes(item.source)) return false
     if (facet.category.length > 0 && !facet.category.includes(item.category)) return false
     if (facet.year.length > 0) {
       const year = Number(item.publishedAt.slice(0, 4))

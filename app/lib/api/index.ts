@@ -30,6 +30,7 @@ export {
   newsItemTitle,
   newsItemUrl,
   NewsList,
+  NewsSource,
 } from "./news"
 export {
   crossSearch,

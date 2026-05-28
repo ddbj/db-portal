@@ -45,10 +45,10 @@ Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と c
 | `source` | `"ddbj"` / `"dbcls"` |
 | `category` | 正規化後の `NewsCategory` |
 | `featured` | `global.yml` の `top_news` slug whitelist に一致 → NotificationBar 表示対象 (default false) |
-| `publishedAt` | ISO 8601、front matter の `date` |
+| `publishedAt` | ISO 8601、ddbj は front matter の `date`、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成 (`publishedAtFromSlug`) |
 | `retireTime` | optional、NotificationBar 表示終了基準 |
-| `title.{ja,en}` | 該当言語側に title (片言語のみのとき他言語は空文字) |
-| `summary.{ja,en}` | optional |
+| `title.{ja,en}` | 該当言語側に title (片言語のみのとき他言語は空文字)。`published: false` の言語は title を空文字にする (この片言語は item を pair から落とす条件にも使う) |
+| `summary.{ja,en}` | 本文 markdown の先頭から `extractSummary` で抽出 (180 文字以内、`#` heading / link 等の markdown 装飾は除去)。front matter には summary を持たない |
 | `url.{ja,en}` | source / lang / slug から組み立てた外部 URL (片言語のみのとき省略) |
 | `db` | 関連 DB の slug 配列 (facet で使う) |
 | `rawTags.{ja,en}` | 原 tag 配列 (写像前) |
@@ -69,7 +69,7 @@ source ごとに slug 規則が異なる。`server/news/sources.ts` の `slugFro
 ddbj/www:
 
 - `_news/ja/1996-06-21.md` → slug `1996-06-21`
-- `_news/en/1996-06-21-e.md` → slug `1996-06-21` (末尾 `-e` を削除)
+- `_news/en/1996-06-21-e.md` → slug `1996-06-21` (en file の末尾 `-e` のみを削除、ja side は無修正)
 - `_news/ja/2024-04-01_2.md` → slug `2024-04-01_2`
 - `_news/en/2024-04-01_2-e.md` → slug `2024-04-01_2`
 
@@ -87,7 +87,7 @@ front matter に明示的な URL は無い。portal は source / lang / slug か
 | source | URL pattern (ja) | URL pattern (en) |
 |---|---|---|
 | ddbj | `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html` | `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html` |
-| dbcls | `https://dbcls.rois.ac.jp/ja/${YYYY}/${MM}/${DD}/${postN}.html` | `https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/${postN}.html` |
+| dbcls | `https://dbcls.rois.ac.jp/ja/${YYYY}/${MM}/${DD}/postN.html` | `https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/postN.html` |
 
 dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
@@ -122,20 +122,23 @@ dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が�
 2. 各 markdown を `fs.readFile` → `parseRawArticle` で `RawArticle` に
 3. `pairToNewsItems` で ja/en pair → `NewsItem` の配列を作る
 4. ddbj source は `repos/ddbj-www/_data/global.yml` を `loadFeaturedWhitelist` で読み、`isFeaturedSlug` で各 NewsItem に `featured` フラグを付与 (DBCLS 側は常に false)
-5. `cache.replaceItemsForSource(source, items, newSha)` で in-memory + disk 両方を atomic 更新
+5. `cache.replaceItemsForSource(source, items, newSha)` で **当該 source の items のみを差し替え**、他 source の items は保持したまま、in-memory + disk 両方を atomic 更新
 
 ### 正規化 (normalize)
 
 各 markdown の front matter を YAML として parse し、NewsItem に写す。
 
 - `title` → `title.{ja|en}` (該当言語側に格納)
-- `date` → `publishedAt` (タイムゾーン情報込みで ISO 8601 にする)
+- `date` → `publishedAt` (ddbj は front matter の `date` をそのまま、dbcls は file slug `YYYY-MM-DD-postN` から JST 00:00 を合成する)
 - `retire_time` → `retireTime`
-- `db` → `db` (文字列の正規化: 小文字化 + trim、`agd  ` のような余分な空白は除去)
+- `db` → `db` (文字列を全て `.toLowerCase().trim()` してから dedupe、`agd  ` のような余分な空白も除去)
 - `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像)
 - `lang` → 受信時に自明 (`_news/ja` か `_news/en` か、dbcls なら `_posts/ja` / `_posts/en`)
+- `published` → `false` のとき、その言語側を pair から落とす。両言語共に `published: false` の slug は最終的な item に含めない
 
 front matter の `category:` field は source 側で Jekyll の layout 用に使われており、portal の `NewsCategory` 分類とは別物。portal の `category` は `tags` 配列からの写像のみで決定する。
+
+`summary.{ja,en}` は front matter には無く、本文 markdown の先頭から `extractSummary` で抽出する (heading / link 等を strip し、180 文字でカット)。
 
 ## tag → NewsCategory 写像
 
@@ -145,14 +148,14 @@ source ごとに語彙が異なる。portal は次の **source 別 mapping 表**
 
 front matter の `tags` で使われている実値:
 
-| tag | category |
+| tag (lowercased で比較) | category |
 |---|---|
-| `お知らせ` / `Announcement` | `announcement` |
-| `データ公開` / `Data Release` | `data-release` |
-| `メンテナンス` / `Maintenance` | `maintenance` |
+| `お知らせ` / `announcement` | `announcement` |
+| `データ公開` / `data release` | `data-release` |
+| `メンテナンス` / `maintenance` | `maintenance` |
 | 上記いずれもなし / 未知 tag | `other` |
 
-> Note: DDBJ の Database 区分 (`BioProject`, `BioSample`, `DRA`, `GEA`, `JGA`, `AGD`, `MetaboBank`, `TogoVar`, `DTA` 等) は **`tags` ではなく front matter の `db` フィールド** に入っており、`NewsItem.db` にそのまま格納される。NewsCategory 体系とは独立した別軸 (facet の「サービス」 で使う)。
+> Note: DDBJ の Database 区分 (`BioProject`, `BioSample`, `DRA`, `GEA`, `JGA`, `AGD`, `MetaboBank`, `TogoVar`, `DTA` 等) は **`tags` ではなく front matter の `db` フィールド** に入っており、`.toLowerCase().trim()` 後に `NewsItem.db` に格納される。NewsCategory 体系とは独立した別軸 (facet の「サービス」 で使う)。
 
 ### dbcls/website (DBCLS)
 
@@ -205,17 +208,18 @@ URL params との同期 (`facet-url-state.ts`):
 | query | 型 | 動作 |
 |---|---|---|
 | `category` | comma separated NewsCategory | いずれかに一致する item |
-| `lang` | `ja` または `en` | 該当言語の title / summary を持つ item に絞る (両言語持ちは常に通る) |
+| `source` | comma separated NewsSource (`ddbj` / `dbcls`) | source がいずれかに一致する item |
+| `lang` | `ja` または `en` | 該当言語の title が非空である item に絞る (summary は判定に使わない) |
 | `year` | comma separated YYYY | publishedAt の年が一致 |
 | `service` | comma separated db slug | `db` 配列に いずれか含む item |
 
-`Cache-Control: public, max-age=60` を付ける (ブラウザの過剰呼び出しを抑制、server cache は 30 分間隔で更新)。SSR loader は `fetch(new URL("/api/news", ...))` で BFF を経由する (`architecture.md` zones)。
+`Cache-Control: public, max-age=60` を付ける (ブラウザの過剰呼び出しを抑制、server cache は polling 間隔で更新)。`/news` route は SSR loader を持たず、`useNewsList` (`app/features/news/use-news-list.ts`) が client-side で TanStack Query 経由で `/api/news` を 1 回 fetch する。`NotificationBar` / `NewsAside` も同じ query key を共有する (`["news"]`)。
 
 ## UI 統合
 
 ### NotificationBar / NewsAside
 
-NotificationBar (top page 上部、1 件 close 可) と NewsAside (top page 右ペイン、8 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
+NotificationBar (top page 上部、1 件 close 可) と NewsAside (top page 右ペイン、最新 5 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
 
 news data source 側の補足: NotificationBar 掲載対象は **`featured` フラグ** (= `global.yml` の `top_news` slug whitelist に該当) で判定する。category とは独立した軸で、category が `announcement` であっても featured でなければ NotificationBar に出さない。逆に featured なら category を問わず出る (ddbj 側のみ運用、`global.yml` メンテナで決まる)。
 
@@ -225,18 +229,17 @@ news data source 側の補足: NotificationBar 掲載対象は **`featured` フ�
 
 | ファイル | 役割 |
 |---|---|
-| `category-label.ts` | NewsCategory → i18n key の写像 |
 | `news-list.tsx` | Toolbar + NewsList + Pagination の組立て |
 | `news-row.tsx` | 1 行 (date / title / featured バッジ / source / category Tag) |
-| `facet-panel.tsx` | 4 グループ FacetGroup の配置 |
-| `facet-item.tsx` | 1 item のチェックボックス + count |
-| `applied-filters.tsx` | 適用中 chip の表示と解除 |
+| `facet-panel.tsx` | 4 グループ FacetGroup (category / source / year / service) の配置 |
 | `facet-url-state.ts` | facet ↔ URL params の双方向 helper (純粋関数) |
 | `use-news-list.ts` | TanStack Query で /api/news を取得、facet 適用 |
 
-routing 側 (`app/routes/news/route.tsx`) は loader で global state を取り、children に `app/features/news` の component を組み合わせる。lang は cookie で決まる (`i18n.md`)。
+`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用する。`NewsCategory` → i18n key の写像 helper (`categoryLabelKey`) は `app/lib/i18n/category-label.ts` が SSOT。
 
-pagination は `app/ui/pagination.tsx` を使い、1 page 20 件、URL に `?page=` で反映する。facet と pagination を同時に変えた場合は URL を 1 回で更新する。
+routing 側 (`app/routes/news/route.tsx`) は loader を持たず、URL から facet state を組み立てて `useNewsList(lang, facet)` に渡すだけ。lang は cookie で決まる (`i18n.md`)。
+
+pagination は `app/ui/pagination.tsx` を使い、1 page 20 件 (`NEWS_PAGE_SIZE`)、URL に `?page=` で反映する。facet と pagination を同時に変えた場合は URL を 1 回で更新する。
 
 ## cache の schema migration
 
@@ -246,7 +249,7 @@ pagination は `app/ui/pagination.tsx` を使い、1 page 20 件、URL に `?pag
 2. server 起動時、disk cache が `schemaVersion: 3` (旧) なら `safeParse` 失敗 → 空 cache から再構築 (起動直後 initial sync で全件取得)
 3. 旧 file は上書き保存される (古い schema を後方互換で持たない、シンプル化優先)
 
-PBT (`tests/pbt/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file を渡しても、起動が成功し空 cache から復元される」 不変量を担保する。
+`tests/unit/server/news/cache.test.ts` の "schema mismatch" ケースで「任意の旧 cache file を渡しても、起動が成功し空 cache から復元される」 挙動を担保する。
 
 ## 環境変数
 
@@ -260,7 +263,7 @@ PBT (`tests/pbt/news/cache-migration.pbt.test.ts`) で「任意の旧 cache file
 | `DB_PORTAL_NEWS_DBCLS_REPO_URL` | `https://github.com/dbcls/website.git` | dbcls source の clone 元 URL |
 | `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` | `master` | dbcls source の branch |
 | `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` | `1800` (30 分) | 全 source 共通のポーリング間隔 |
-| `DB_PORTAL_NEWS_CACHE_DIR` | (env で指定) | disk cache 配置先 |
+| `DB_PORTAL_NEWS_CACHE_DIR` | `/var/cache/db-portal/news` | disk cache 配置先 |
 
 git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API rate limit (60 req/h IP) とは別枠であり、PAT などの認証は不要。
 
@@ -270,19 +273,14 @@ git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API ra
 
 | ファイル | 内容 |
 |---|---|
-| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像 (source 別 mapping 表を table-driven で網羅)、url 組み立て、retire_time 解析 |
-| `tests/unit/server/news/cache.test.ts` | disk load (file 不在 / 破損 / schema 不一致) → 空 cache、update で in-memory + disk 両方更新、filter (category / year / service / lang)、v3 → v3 round trip |
+| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像、url 組み立て、retire_time 解析、`published: false` 除外 |
+| `tests/unit/server/news/cache.test.ts` | disk load (file 不在 / 破損 / schema 不一致) → 空 cache、`replaceItemsForSource` で他 source の items を保持しつつ差し替え、filter (category / source / year / service / lang) |
 | `tests/unit/server/news/pair.test.ts` | ja のみ / en のみ / 両方ある場合の slug ペアリング |
 | `tests/unit/server/news/featured.test.ts` | `global.yml` parser: 正常 / 末尾空白 / 空 array / 不在 / malformed YAML / `path` が non-string / BOM 付きの 7 ケース |
 | `tests/unit/server/news/git-sync.test.ts` | 子プロセス起動 API を inject 可能にして mock、clone / pull / rev-parse の成功・失敗を網羅 |
-| `tests/unit/server/news/mirror.test.ts` | timer mock で initial sync → 30 分後 sync、SHA 同一なら no-op、SHA 変化で全件 rebuild |
 
 ### PBT
 
 | ファイル | 内容 |
 |---|---|
-| `tests/pbt/news/normalize.pbt.test.ts` | 任意の tag 配列に対して `tagsToCategory(source, tags)` が `NewsCategory.options` のいずれかを返す、mapping 表に列挙した tag は対応 category を返す、source ごとに mapping が独立している |
-| `tests/pbt/news/featured-symmetry.pbt.test.ts` | 任意の slug 集合と whitelist 集合の組合せで、`isFeaturedSlug` の結果が「whitelist に含まれる ⇔ true」 を満たす (DDBJ のみ、DBCLS は常に false) |
-| `tests/pbt/news/pair-symmetry.pbt.test.ts` | 任意の `{ ja, en }` slug ペア生成器で、ペアリング後の item.id が ja / en どちらから入っても等しい |
-| `tests/pbt/news/sort-order.pbt.test.ts` | 任意の date 配列が降順 sort 後に「より新しい item が先」 を満たす |
-| `tests/pbt/news/cache-migration.pbt.test.ts` | 任意の旧 schema cache JSON (`schemaVersion: 0` 等) で起動が成功し、空 cache から復元される |
+| `tests/pbt/server/news/normalize-mapping.pbt.test.ts` | 任意の tag 配列に対して `tagsToCategory(source, tags)` が `NewsCategory.options` のいずれかを返す、mapping 表に列挙した tag は対応 category を返す、source ごとに mapping が独立している |

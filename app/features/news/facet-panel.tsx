@@ -1,4 +1,4 @@
-import { NewsCategory } from "~/lib/api"
+import { NewsCategory, NewsSource } from "~/lib/api"
 import { categoryLabelKey, useT } from "~/lib/i18n"
 import type { AppliedFilter } from "~/ui"
 import { AppliedFilters, FacetGroup, FacetRow, SidebarHeading } from "~/ui"
@@ -9,6 +9,7 @@ import {
   type NewsFacetState,
   toggleCategory,
   toggleService,
+  toggleSource,
   toggleYear,
 } from "./facet-url-state"
 import type { NewsFacetOptions } from "./use-news-list"
@@ -19,10 +20,18 @@ type FacetPanelProps = {
   onChange: (next: NewsFacetState) => void
 }
 
+const sourceDisplayLabel = (source: NewsSource): string =>
+  source === "ddbj" ? "DDBJ" : "DBCLS"
+
 export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
   const t = useT()
 
   const applied: AppliedFilter[] = [
+    ...facet.source.map((source) => ({
+      label: t("news.facet.source"),
+      value: sourceDisplayLabel(source),
+      onClear: () => onChange(toggleSource(facet, source)),
+    })),
     ...facet.category.map((category) => ({
       label: t("news.facet.category"),
       value: t(categoryLabelKey(category)),
@@ -67,6 +76,22 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
             label={t(categoryLabelKey(category))}
             checked={facet.category.includes(category)}
             onChange={() => onChange(toggleCategory(facet, category))}
+          />
+        ))}
+      </FacetGroup>
+      <FacetGroup
+        label={t("news.facet.source")}
+        appliedCount={facet.source.length}
+        {...(facet.source.length > 0
+          ? { onClear: () => onChange(clearFacet(facet, "source")) }
+          : {})}
+      >
+        {NewsSource.options.map((source) => (
+          <FacetRow
+            key={source}
+            label={sourceDisplayLabel(source)}
+            checked={facet.source.includes(source)}
+            onChange={() => onChange(toggleSource(facet, source))}
           />
         ))}
       </FacetGroup>

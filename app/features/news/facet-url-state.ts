@@ -1,6 +1,7 @@
-import { NewsCategory } from "~/lib/api"
+import { NewsCategory, NewsSource } from "~/lib/api"
 
 export type NewsFacetState = {
+  source: readonly NewsSource[]
   category: readonly NewsCategory[]
   year: readonly number[]
   service: readonly string[]
@@ -12,6 +13,9 @@ const SORT_VALUES: readonly NewsFacetState["sort"][] = ["newest", "oldest"]
 
 const isNewsCategory = (value: string): value is NewsCategory =>
   (NewsCategory.options as readonly string[]).includes(value)
+
+const isNewsSource = (value: string): value is NewsSource =>
+  (NewsSource.options as readonly string[]).includes(value)
 
 const splitList = (value: string | null | undefined): string[] => {
   if (!value) return []
@@ -31,6 +35,7 @@ export const parseNewsFacetState = (search: string): NewsFacetState => {
   const page = Math.max(1, Number(params.get("page") ?? "1") || 1)
 
   return {
+    source: splitList(params.get("source")).filter(isNewsSource),
     category: splitList(params.get("category")).filter(isNewsCategory),
     year: splitList(params.get("year"))
       .map((entry) => Number(entry))
@@ -43,6 +48,9 @@ export const parseNewsFacetState = (search: string): NewsFacetState => {
 
 export const serializeNewsFacetState = (state: NewsFacetState): string => {
   const params = new URLSearchParams()
+  if (state.source.length > 0) {
+    params.set("source", [...state.source].sort().join(","))
+  }
   if (state.category.length > 0) {
     params.set("category", [...state.category].sort().join(","))
   }
@@ -58,6 +66,14 @@ export const serializeNewsFacetState = (state: NewsFacetState): string => {
 
   return qs ? `?${qs}` : ""
 }
+
+export const toggleSource = (state: NewsFacetState, source: NewsSource): NewsFacetState => ({
+  ...state,
+  source: state.source.includes(source)
+    ? state.source.filter((s) => s !== source)
+    : [...state.source, source],
+  page: 1,
+})
 
 export const toggleCategory = (state: NewsFacetState, category: NewsCategory): NewsFacetState => ({
   ...state,
@@ -94,7 +110,11 @@ export const setPage = (state: NewsFacetState, page: number): NewsFacetState => 
   page: Math.max(1, page),
 })
 
-export const clearFacet = (state: NewsFacetState, kind: "category" | "year" | "service"): NewsFacetState => {
+export const clearFacet = (
+  state: NewsFacetState,
+  kind: "source" | "category" | "year" | "service",
+): NewsFacetState => {
+  if (kind === "source") return { ...state, source: [], page: 1 }
   if (kind === "category") return { ...state, category: [], page: 1 }
   if (kind === "year") return { ...state, year: [], page: 1 }
 
@@ -102,6 +122,7 @@ export const clearFacet = (state: NewsFacetState, kind: "category" | "year" | "s
 }
 
 export const emptyNewsFacetState = (): NewsFacetState => ({
+  source: [],
   category: [],
   year: [],
   service: [],

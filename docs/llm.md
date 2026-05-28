@@ -14,8 +14,8 @@ DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LL
 | streaming | SSE pass-through (`event: message` / `event: done` / `event: error`)、15 秒間隔 heartbeat |
 | rate limit | per-IP 60 req/min + per-session 30 req/min (env で上書き可) |
 | 入出力 redaction | log は email / phone / クレジットカード / API key 風 token を `[REDACTED]` 化 |
-| 未設定時 | env が空なら BFF は常に `{status: "unset"}`、UI は AI 補助機能を hide |
-| 未到達時 | health check が連続失敗で `{status: "unreachable", reason}`、UI は hide |
+| 未設定時 | `DB_PORTAL_LLM_BASE_URL` が空のとき BFF は `{status: "unset"}` を返し、`/api/llm/search-assistant` は 503 `{error: "llm_unset"}`、UI は AI 補助機能を hide |
+| 未到達時 | health check が失敗のとき `{status: "unreachable", reason}`、UI は表示したまま (送信時に error event が流れる) |
 | 用途 | AI 検索アシスタント (`/api/llm/search-assistant`) |
 
 ## データフロー
@@ -66,12 +66,13 @@ server 起動時に env を確認する。
 | 状況 | status | reason |
 |---|---|---|
 | `DB_PORTAL_LLM_BASE_URL` が空 | `unset` | (なし) |
-| `DB_PORTAL_LLM_BASE_URL` 設定済、起動 5 秒後の初回 health check 成功 | `ok` | (なし) |
-| 同上、起動 5 秒後 / 5 分間隔の health check 失敗 | `unreachable` | `"<HTTP status> ...` または `"network error"` |
+| `DB_PORTAL_LLM_BASE_URL` 設定済、起動 5 秒前 | `unset` (初期値) | (なし) |
+| `DB_PORTAL_LLM_BASE_URL` 設定済、初回 health check 成功 | `ok` | (なし) |
+| 同上、health check 失敗 | `unreachable` | `"status <n>"` / `"invalid models response"` / `"model <id> not served"` / fetch 例外メッセージ |
 
-「成功」 の判定: `GET {DB_PORTAL_LLM_BASE_URL}/v1/models` が 200 を返し、response body の `data[]` に `DB_PORTAL_LLM_MODEL` が含まれる。
+「成功」 の判定: `GET {DB_PORTAL_LLM_BASE_URL}/v1/models` が 200 を返し、response body の `data[]` に `DB_PORTAL_LLM_MODEL` が含まれる。models endpoint の timeout は `min(DB_PORTAL_LLM_TIMEOUT_MS, 10s)` で打ち切る。
 
-health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保持し、`/api/llm/health` handler はそれを返すだけ (request ごとに vLLM を叩かない)。
+health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保持し、`/api/llm/health` handler はそれを返すだけ (request ごとに vLLM を叩かない)。env 空 (`unset`) のときは polling timer も立ち上げない。
 
 ### client での消費
 
@@ -79,9 +80,9 @@ health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保�
 
 - `health.status === "ok"` → `{ ready: true }`
 - `health.status === "unset"` → `{ ready: false, reason: "unset" }`
-- `health.status === "unreachable"` → `{ ready: false, reason: health.reason }`
+- `health.status === "unreachable"` → `{ ready: true, reason: health.reason, health }` (UI は表示し、送信時の SSE error 経路で fail を通知する)
 
-`SearchAssistant` component は `availability.ready` が false なら何も render しない。「LLM 未到達のためアシスタントは利用できません」 のような表示は **出さない** (機能が存在しないように振る舞う、`architecture.md` の障害時 fallback 方針)。
+`SearchAssistant` component は `availability.ready` が false (= `unset`) なら何も render しない。`unreachable` のときは UI は出るが、送信時に SSE の `event: error` が `upstream-disconnect` などで流れて toast 経由でエラーが伝わる。
 
 ## SSE 仕様
 
@@ -97,7 +98,7 @@ health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保�
 
 ### heartbeat
 
-15 秒間隔で空コメント `: heartbeat\n\n` を出力する。中継 proxy の idle timeout (Express / Nginx) で接続が切れるのを防ぐ。
+stream を `start()` した直後に `: stream-open\n\n` を 1 度送出し、以降 15 秒間隔で空コメント `: heartbeat\n\n` を出力する。中継 proxy の idle timeout (Express / Nginx) で接続が切れるのを防ぐ。
 
 ### 接続切断 / エラー
 
@@ -118,7 +119,13 @@ health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保�
 { "code": "string", "message": "string" }
 ```
 
-`code` は portal 内で意味付けされた短い識別子 (`upstream-status` / `upstream-disconnect` / `parse-failed` / `timeout` 等)。`message` は human readable な短文。
+`code` は portal 内で意味付けされた短い識別子。現状の値:
+
+- `upstream-status`: vLLM が 200 以外のステータスを返した
+- `upstream-disconnect`: streaming 中の切断 / fetch 例外 / その他予期しない upstream エラー
+- `no_json` / `invalid_json` / `schema_violation`: vLLM 出力の parse 失敗 (`server/llm/assistant/parse.ts`)
+
+`message` は human readable な短文。
 
 ## 検索アシスタント
 
@@ -151,16 +158,16 @@ system prompt の方針:
 - few-shot 3-5 例 (single keyword / multi keyword AND / OR / field filter / range filter のカバレッジ)
 - 「JSON 以外を出力するな」 / 「`<advanced field id>` は portal の許容 enum から選べ」 等の制約
 
-許容 enum の SSOT は `app/features/search/types.ts` の `AdvancedField` / `AdvancedOp` (`architecture.md` の features zone 内、server は import 不可なので enum 値は手書きで prompt に複製する)。enum を増減したら prompt も更新する。
+許容 enum の SSOT は `app/schemas/api-bff/llm.ts` の `ADVANCED_FIELDS` / `ADVANCED_OPS` / `ASSISTANT_COMBINATORS`。`server/llm/assistant/prompt.ts` がこれを `app/schemas/api-bff/` 経由で直接 import し、`app/features/search/types.ts` も同じ schema を re-export する。enum を増減すれば server / client の両方が同じ source を共有する。
 
 ### parse 失敗時
 
 `server/llm/assistant/parse.ts` が vLLM 出力を JSON.parse + Zod 検証する。
 
-- JSON でない / schema 違反 → `event: error` で `{ code: "parse-failed", message }` を流す
+- JSON が含まれない → `event: error` で `{ code: "no_json", message }`
+- JSON.parse 失敗 → `event: error` で `{ code: "invalid_json", message }`
+- schema 違反 (`AssistantProposal.safeParse` 失敗) → `event: error` で `{ code: "schema_violation", message }`
 - 検証通過 → `event: done` で payload を流す
-
-PBT (`tests/pbt/server/llm/assistant-parse.pbt.test.ts`) で「任意の不正 JSON を入れても parse 関数が throw せず error event を返す」 を担保する。
 
 ### 障害時の UI 連動
 
@@ -203,7 +210,7 @@ client は toast 「しばらくしてから再試行してください」 を�
 
 ### client IP の取得
 
-`server/lib/env.ts` で `trust proxy` を `loopback` に設定済 (`server/index.ts`)。staging / production の reverse proxy 設定で `X-Forwarded-For` の信頼ホストを正しく制限する (`auth.md` の安全性前提と同じ)。
+`server/index.ts` で `trust proxy` を `loopback` に設定済。staging / production の reverse proxy 設定で `X-Forwarded-For` の信頼ホストを正しく制限する (`auth.md` の安全性前提と同じ)。
 
 ## PII redaction
 
@@ -236,8 +243,8 @@ PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で次の不変量�
 |---|---|---|
 | `DB_PORTAL_LLM_BASE_URL` | (空) | vLLM の base URL。空ならアシスタント機能を完全停止 |
 | `DB_PORTAL_LLM_API_KEY` | (空) | vLLM の Bearer token (vLLM 側で `--api-key` を設定している場合に使う) |
-| `DB_PORTAL_LLM_MODEL` | (env で指定) | model name (vLLM `--served-model-name` と一致) |
-| `DB_PORTAL_LLM_TIMEOUT_MS` | `60000` | upstream timeout (cold start や大きい prompt のため長め) |
+| `DB_PORTAL_LLM_MODEL` | `"Qwen/Qwen2.5-32B-Instruct-AWQ"` | model name (vLLM `--served-model-name` と一致) |
+| `DB_PORTAL_LLM_TIMEOUT_MS` | `60000` | upstream timeout (cold start や大きい prompt のため長め)。`/v1/models` プローブは `min(timeoutMs, 10s)` で打ち切る |
 | `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` | `60` | per-IP rate limit (req / 分) |
 | `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` | `30` | per-session rate limit (req / 分) |
 
@@ -249,21 +256,15 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL` を空にすると「LLM 未設定で 
 
 | ファイル | 内容 |
 |---|---|
-| `tests/unit/server/llm/client.test.ts` | vLLM HTTP client (timeout / Authorization header / model パラメタ) |
-| `tests/unit/server/llm/proxy.test.ts` | SSE pass-through (event 名、heartbeat、error 経路、client abort) |
-| `tests/unit/server/llm/health.test.ts` | unset (env 空) / ok / unreachable の判定 |
+| `tests/unit/server/llm/assistant-parse.test.ts` | 正常 JSON / 壊れた JSON / schema 違反の振り分け |
 | `tests/unit/server/llm/rate-limit.test.ts` | window 境界、per-IP + per-session 同時適用、cleanup |
 | `tests/unit/server/llm/redaction.test.ts` | email / phone / cc / token の正規表現 |
-| `tests/unit/server/llm/assistant-prompt.test.ts` | system + few-shot + user input の組み立て |
-| `tests/unit/server/llm/assistant-parse.test.ts` | 正常 JSON / 壊れた JSON / schema 違反の振り分け |
 
 ### PBT
 
 | ファイル | 内容 |
 |---|---|
 | `tests/pbt/server/llm/redaction-coverage.pbt.test.ts` | 任意の文字列に PII を挿入しても全パターン redact される |
-| `tests/pbt/server/llm/assistant-parse.pbt.test.ts` | 任意の不正 JSON を入れても parse 関数が throw せず error event を返す |
-| `tests/pbt/server/llm/rate-limit-monotone.pbt.test.ts` | 任意の request 列で window 内 count が単調増加、window 跨ぎで reset |
 
 ## 追加機能の組み入れ方
 

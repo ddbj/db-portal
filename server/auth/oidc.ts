@@ -16,9 +16,6 @@ export type AuthorizeUrlResult = {
 }
 
 export type Tokens = {
-  accessToken: string
-  refreshToken: string
-  expiresAt: number
   idToken: string
 }
 
@@ -29,9 +26,6 @@ export type UserInfo = {
 }
 
 const TokenResponseSchema = z.object({
-  access_token: z.string().min(1),
-  refresh_token: z.string().min(1),
-  expires_in: z.number().int().positive(),
   id_token: z.string().min(1).optional(),
 })
 
@@ -125,12 +119,7 @@ const callTokenEndpoint = async (
     throw new Error("token endpoint did not return id_token")
   }
 
-  return {
-    accessToken: parsed.access_token,
-    refreshToken: parsed.refresh_token,
-    expiresAt: Date.now() + parsed.expires_in * 1000,
-    idToken: parsed.id_token,
-  }
+  return { idToken: parsed.id_token }
 }
 
 export const exchangeCodeForTokens = async (
@@ -144,19 +133,6 @@ export const exchangeCodeForTokens = async (
     redirect_uri: config.redirectUri,
     client_id: config.clientId,
     code_verifier: codeVerifier,
-  })
-
-  return callTokenEndpoint(config, body)
-}
-
-export const refreshTokens = async (
-  config: OidcConfig,
-  refreshToken: string,
-): Promise<Tokens> => {
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
-    client_id: config.clientId,
   })
 
   return callTokenEndpoint(config, body)

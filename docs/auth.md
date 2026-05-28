@@ -1,6 +1,6 @@
 # Authentication
 
-DDBJ Account (Keycloak) との連携を、**BFF (Backend for Frontend) + HttpOnly cookie** pattern で実装する。JS は access token / refresh token に **一切触れない**。責務分離図は `architecture.md`。
+DDBJ Account (Keycloak) との連携を、**BFF (Backend for Frontend) + HttpOnly cookie** pattern で実装する。JS は token に **一切触れない**。責務分離図は `architecture.md`。
 
 ## 方針
 
@@ -10,10 +10,9 @@ OAuth 2.0 for Browser-Based Apps の BFF pattern に準拠する。役割分担:
 |---|---|
 | Token 保管場所 | サーバ in-memory session store (browser からは不可視) |
 | Browser ↔ Server の identity 受け渡し | HttpOnly cookie (`sid`)、token そのものは Cookie に載せない |
-| Token refresh | BFF が背面で実行 |
 | User info の供給 | `GET /api/me` (token をデコードしない) |
 
-XSS で token が漏れない (JS から到達できない) こと、Safari ITP の影響を受けないこと (3rd-party cookie に依存しない) を担保する。BFF 層は News mirror / LLM proxy / Search API serialize でも使うので、認証用 session 機能の追加コストも小さい。
+XSS で token が漏れない (JS から到達できない) こと、Safari ITP の影響を受けないこと (3rd-party cookie に依存しない) を担保する。BFF 層は News mirror / LLM proxy でも使うので、認証用 session 機能の追加コストも小さい。
 
 ## データフロー全体図
 
@@ -25,8 +24,7 @@ XSS で token が漏れない (JS から到達できない) こと、Safari ITP 
    │  Map<sid, { tokens, userInfo, expiresAt }>
    │  TTL 30 min sliding, cleanup 5 min
    │
-   ├─ OIDC code 交換 / refresh / logout
-   └─ proxy 時に Authorization: Bearer <accessToken> を背面で付与
+   └─ OIDC code 交換 / logout
    ▼
 [Keycloak (DDBJ Account)]
 ```
@@ -38,7 +36,6 @@ XSS で token が漏れない (JS から到達できない) こと、Safari ITP 
 - HttpOnly cookie (`sid`、SameSite=Lax、Secure、Path=/)
 - ログイン / ログアウト UI (BFF endpoint への遷移)
 - Header にユーザー名表示 (`GET /api/me`)
-- Token refresh は BFF が背面で実行
 - `useAuth` hook + `<RequireAuth>` wrapper を構造として提供
 
 mutation 系 API を portal に追加するときは CSRF token / Origin check を同時に導入する (現状は mutation が無いので攻撃面が薄い)。
@@ -61,8 +58,7 @@ mutation 系 API を portal に追加するときは CSRF token / Origin check �
 
 | 項目 | 内容 |
 |---|---|
-| `tokens.accessToken` / `tokens.refreshToken` | Keycloak から発行されたトークン |
-| `tokens.expiresAt` | access token の expiry (unix ms) |
+| `tokens.idToken` | logout 時の `id_token_hint` 用 |
 | `userInfo.sub` / `userInfo.name` / `userInfo.email` | id_token から抽出した user 情報 |
 | `expiresAt` | session 自体の TTL (sliding) |
 
@@ -77,15 +73,11 @@ mutation 系 API を portal に追加するときは CSRF token / Origin check �
 
 `server/lib/log.ts` の log helper で次のフィールドを `[REDACTED]` に置換する:
 
-- `accessToken` / `refreshToken`
+- `accessToken` / `refreshToken` / `idToken`
 - `cookie` / `Cookie` (HTTP header)
 - `authorization` / `Authorization` (HTTP header)
 
 session entry 全体を log に出すケースは作らない。debug 用に log するなら `sub` と `name` だけに絞る。
-
-### Session store の interface
-
-`DB_PORTAL_SESSION_STORE=memory|redis` env で memory / redis 実装を切替可能な interface を持つ (現状の実装は in-memory)。
 
 ## OIDC Authorization Code Flow + PKCE
 
@@ -109,7 +101,7 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 
 1. Browser が `/api/auth/callback?code=...&state=...` を踏む
 2. BFF が `state` から `code_verifier` と `returnTo` を **1 回限り take** (replay 防止)
-3. Keycloak の `token_endpoint` に `code` + `code_verifier` を POST し `access_token` / `refresh_token` / `id_token` を取得
+3. Keycloak の `token_endpoint` に `code` + `code_verifier` を POST し `id_token` を取得
 4. `id_token` の payload を検証 (下表)、user info を抽出
 5. `sid` を発行し session store に格納、`Set-Cookie: sid=...` を返す
 6. `returnTo` (もしくは `/`) へ 302
@@ -126,10 +118,6 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 | `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
 
 payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、JWKS 署名再検証を後から差し込める構造に保つ (upstream の信頼境界が変わって token endpoint からの direct 受信が成り立たなくなった場合への備え)。
-
-### Refresh
-
-`session_store.get(sid)` で得た entry の `tokens.expiresAt` が **残り 30 秒未満** なら、API proxy 直前に refresh を実行する。Refresh が失敗したら session を破棄して 401 を返す。
 
 ### Logout
 
@@ -198,7 +186,7 @@ server 側の再検証は「クライアント側 helper を経由しない直�
 
 これらの fallback page は単に「サインイン処理中」 / 「サインアウトしました」 を表示し、ホームへの link を置く。loader は持たない (`app → server` zones を尊重)。
 
-silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。BFF refresh を採用しているので機能としては不要だが、既存仕様との互換のため空 page を残す。
+silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。機能としては不要だが、既存仕様との互換のため空 page を残す。
 
 ## `/api/me` 仕様
 
@@ -297,16 +285,9 @@ dev / staging は同じ realm を共有し、client を env 別に分ける (テ
 - **Redirect URI の運用**: ワイルドカード `*` は禁止。各環境は実 origin (`<DB_PORTAL_PORTAL_ORIGIN>`) を完全一致で登録する。production client の redirect URI に staging origin を含めない (逆も同様、production の `code` が staging に流れて悪用されることを防ぐ)
 - **Web Origins / CORS**: BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には portal 自身の origin のみ登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない
 
-### Token 寿命の規約
+### Token 寿命
 
-| 項目 | 規約 | 補足 |
-|---|---|---|
-| Access Token Lifespan | 5 分 | BFF が refresh を背面で実行するため短くて OK |
-| Client Session Idle | portal の `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` と揃える | BFF session TTL と短い方で実効 TTL が決まる |
-| Client Session Max | 12 時間 | refresh の最長寿命 |
-| SSO Session Idle / Max | Client Session と同水準 | realm 全体の idle / max |
-
-Access Token を短くする理由: BFF が `expiresAt - 30 秒` のタイミングで refresh する。AT が短い分だけ漏洩リスクが減る。Refresh Token は HttpOnly cookie とは別経路 (server in-memory) で保持されるため、client が直接触れない。
+portal は `id_token` のみを保持する (logout 時の `id_token_hint` に使用)。Keycloak の Access Token / Refresh Token Lifespan は portal の動作に影響しないため、Keycloak realm 全体のポリシーに従う。portal session の実効 TTL は `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で独立に管理する。
 
 ### Scope 設定
 
@@ -318,7 +299,7 @@ portal が要求する scope:
 | `profile` | `name` |
 | `email` | `email` |
 
-`offline_access` は要求しない (BFF 内のみで refresh、client 側で長期保管しない)。Keycloak realm の "Client Scopes" で 3 scope を client の "Default Client Scopes" に紐づける。
+`offline_access` は要求しない。Keycloak realm の "Client Scopes" で 3 scope を client の "Default Client Scopes" に紐づける。
 
 ### e2e テスト用ユーザー
 

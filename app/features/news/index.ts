@@ -9,6 +9,7 @@ export {
   setSort,
   toggleCategory,
   toggleService,
+  toggleSource,
   toggleYear,
 } from "./facet-url-state"
 export { NewsList, type NewsListProps } from "./news-list"

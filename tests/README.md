@@ -112,12 +112,12 @@ Playwright
 
 #### ペルソナ
 
-| ID | 名前 | 認証 |
-|---|---|---|
-| P-ANON | 未認証ユーザー | なし |
-| P-USER | 一般ユーザー (Keycloak login) | DDBJ Account JWT |
+| ID | 名前 | 認証 | Playwright project |
+|---|---|---|---|
+| P-ANON | 未認証ユーザー | なし | `anon` |
+| P-USER | 一般ユーザー (Keycloak login) | DDBJ Account JWT | `user` |
 
-リリース時点では認証ボタンのみで専用機能なし (`docs/auth.md`)。`P-USER` シナリオはログイン動作確認に限定。
+`user` project は `setup` project (`auth.setup.ts`) が事前に Keycloak でログインして保存した storage state を読み込んで起動する。リリース時点では認証ボタンのみで専用機能なし (`docs/auth.md`)。`P-USER` シナリオはログイン動作確認に限定。
 
 #### シナリオ要素
 
@@ -224,32 +224,37 @@ docker compose exec app npm run test:e2e
 
 ```
 tests/
-├── unit/                   ← Vitest unit tests
-│   ├── _helpers/           ← render-with-providers 等の共通ヘルパー (`_` prefix で test 収集から除外)
-│   ├── features/
-│   ├── ui/
-│   ├── lib/
-│   ├── schemas/
-│   ├── shell/
+├── unit/                   ← Vitest unit tests (collect rule: tests/unit/**/*.test.{ts,tsx})
+│   ├── _helpers/           ← render-with-providers 等の共通ヘルパー
 │   ├── content/
-│   ├── server/
-│   │   └── news/_fixtures.ts ← 領域別 fixture (`_` prefix で除外)
+│   ├── features/
+│   ├── lib/
 │   ├── mocks/              ← msw handlers + server
-│   └── setup.ts            ← Vitest setup (jsdom / msw 起動 / storage clear)
-├── pbt/                    ← fast-check PBT
-│   ├── arbitraries/        ← Submission / AST 等の generator
-│   ├── submit/             ← サービス step 不変量
-│   ├── features/search/    ← AST round-trip / URL 対称性
-│   ├── server/             ← BFF 側 (auth, news, llm, security, sitemap)
-│   ├── content/services/   ← Service schema coverage
-│   └── lib/                ← URL serialize / i18n parity 等
+│   ├── routes/             ← route action / resource route のテスト (例: api.set-lang)
+│   ├── schemas/
+│   ├── server/             ← BFF 側 (api / auth / lib / llm / news)
+│   │   └── news/_fixtures.ts ← 領域別 fixture (`_` prefix)
+│   ├── setup.ts            ← Vitest setup (jsdom / msw 起動 / storage clear)
+│   ├── shell/
+│   └── ui/
+├── pbt/                    ← fast-check PBT (collect rule: tests/pbt/**/*.{test,pbt.test}.{ts,tsx})
+│   ├── arbitraries/
+│   ├── content/services/
+│   ├── features/
+│   │   ├── search/
+│   │   └── submit/
+│   ├── lib/                ← env / api / content / i18n の PBT
+│   ├── server/             ← api / auth / lib / llm / news の PBT
+│   └── submit/             ← サービス step 不変量
 └── e2e/                    ← Playwright
-    ├── scenarios.md        ← シナリオ集 (SSOT)
-    ├── notes.md            ← 設計ノート
-    ├── fixtures/           ← test user 等
-    ├── helpers.ts          ← test fixture (clean page) / Keycloak login helper
+    ├── auth.setup.ts       ← Playwright `setup` project (storage state 生成)
+    ├── *.spec.ts           ← anon project (cookie 無しで実行する一般 scenario)
+    ├── *.user.spec.ts      ← user project (auth.setup.ts で作った storage state を読む scenario)
+    ├── fixtures/
+    ├── helpers.ts
+    ├── notes.md
     ├── playwright.config.ts
-    └── *.spec.ts           ← シナリオ ID と紐づくテスト
+    └── scenarios.md
 ```
 
-ヘルパー命名規約: `_helpers.ts` / `_fixtures.ts` のように `_` prefix で始めて vitest の collection から除外する。
+ヘルパー命名規約: `_helpers.ts` / `_fixtures.ts` のように `_` prefix で始めて、`*.test.*` 命名を避けることで vitest の collection (suffix で集めている) から外す。
