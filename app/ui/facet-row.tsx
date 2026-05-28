@@ -54,7 +54,7 @@ export const FacetRow = ({
         {swatch !== undefined && (
           <span
             aria-hidden
-            className="w-2 h-2 rounded-sm shrink-0"
+            className="w-2 h-2 rounded-pill shrink-0"
             style={swatchStyle}
           />
         )}

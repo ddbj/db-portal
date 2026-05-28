@@ -90,12 +90,10 @@
   --tracking-eyebrow:   0.1em;    /* PageTitle eyebrow / Popular Resources eyebrow */
   --tracking-monogram: -0.02em;   /* Popular Resources monogram (大文字 2 文字) */
 
-  /* === Leading (5 段階、Tailwind 標準名で override) ====================== */
-  --leading-tight:   1.2;   /* h1 / h2 / sidebar heading */
+  /* === Leading (3 段階、Tailwind 標準名で override) ====================== */
+  --leading-tight:   1.2;   /* h1 / h2 / h3 / sidebar heading */
   --leading-snug:    1.4;   /* Tag / news title / search result card title */
-  --leading-normal:  1.5;   /* tile (service / file-type card) */
-  --leading-relaxed: 1.6;   /* body prose / Modal description / Callout / content 段落 */
-  --leading-loose:   1.7;   /* dense paragraph (cross results description) */
+  --leading-relaxed: 1.6;   /* body / description / Modal description / Callout / content 段落 */
 
   /* === Spacing (4 倍数を基本、1-2 箇所しか使わない値は token 化しない) === */
   --spacing-section-sm:    16px;  /* 小 section padding */

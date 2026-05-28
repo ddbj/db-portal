@@ -40,7 +40,7 @@ export const ResourceCard = ({ service, lang, accent }: ResourceCardProps) => {
       <div
         aria-hidden
         className={cn(
-          "w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-extrabold text-fs-body-sm tracking-monogram",
+          "w-9 h-9 rounded-button shrink-0 flex items-center justify-center font-extrabold text-fs-body-sm tracking-monogram",
           accentClass[accent],
         )}
       >

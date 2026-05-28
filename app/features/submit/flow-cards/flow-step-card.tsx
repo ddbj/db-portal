@@ -57,7 +57,7 @@ export const FlowStepCard = ({
     >
       <header className="flex items-center gap-3 flex-wrap">
         <StepBadge index={index} pending={pending} />
-        <h3 className="text-fs-h2 font-bold text-ink m-0 flex-1 min-w-0">
+        <h3 className="text-fs-h2 font-bold text-ink m-0 leading-tight flex-1 min-w-0">
           {serviceTitle}
         </h3>
         {pending && (
@@ -68,7 +68,7 @@ export const FlowStepCard = ({
         )}
       </header>
       {!pending && (
-        <p className="text-fs-body-sm text-ink-mid m-0 leading-loose">
+        <p className="text-fs-body-sm text-ink-mid m-0 leading-relaxed">
           {serviceDescription}
         </p>
       )}
