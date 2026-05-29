@@ -38,8 +38,12 @@ export {
 } from "./ast"
 export { BuilderSummaryPanel, ExamplesChip, QueryPreview } from "./components"
 export {
+  type CrossSearchSyncOutcome,
+  type CrossSearchSyncResult,
   DEBOUNCE_MS,
   type DebouncedSerializeResult,
+  resolveCrossSearchSync,
+  useCrossSearchSync,
   useDebouncedSerialize,
   useDebouncedValue,
 } from "./debounce"
@@ -49,6 +53,15 @@ export {
   ResultCard,
   ResultsPagination,
 } from "./results"
+export {
+  type AiMode,
+  type AiModeDefault,
+  applyProposalByMode,
+  builderConditionCount,
+  resolveAiModeDefault,
+  SearchInputPanel,
+  type SearchInputPanelProps,
+} from "./search-input"
 export {
   createInitialSearchFacetState,
   FACET_ORGANISMS,

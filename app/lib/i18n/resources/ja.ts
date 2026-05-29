@@ -461,6 +461,12 @@ export type Resources = {
       rangeFromPlaceholder: string
       rangeToPlaceholder: string
       valuePlaceholder: string
+      freeText: {
+        field: string
+        allFields: string
+        placeholder: string
+        remove: string
+      }
     }
     preview: {
       label: string
@@ -543,6 +549,13 @@ export type Resources = {
       proposalDescription: string
       apply: string
       reset: string
+      enterMode: string
+      exitMode: string
+      modeGroupLabel: string
+      modeNew: string
+      modeAppend: string
+      modeHint: string
+      applyReplace: string
     }
     scope: {
       all: string
@@ -1078,12 +1091,12 @@ export const ja: Resources = {
   },
   search: {
     pageTitle: "データベース横断検索",
-    pageSubtitle: "8 つの DDBJ データベースを横断して検索します。",
+    pageSubtitle: "キーワードでも、AI への自然文でも。入力はすべて下のクエリビルダーに集約され、その内容で検索します。",
     searchBoxPlaceholder: "キーワード、accession、学名で検索",
     syntax: {
       spaceAnd: "スペース = AND 検索",
       phrase: "\"…\" = フレーズ検索",
-      advancedHint: "フィールド指定や AND / OR / NOT はクエリビルダーで組み立てます。",
+      advancedHint: "検索すると下のクエリビルダーに 1 行追加され、双方向に同期します。",
     },
     examples: {
       label: "例",
@@ -1138,6 +1151,12 @@ export const ja: Resources = {
       rangeFromPlaceholder: "YYYY-MM-DD",
       rangeToPlaceholder: "YYYY-MM-DD",
       valuePlaceholder: "値を入力",
+      freeText: {
+        field: "keyword",
+        allFields: "全フィールド",
+        placeholder: "キーワードを入力",
+        remove: "キーワードを削除",
+      },
     },
     preview: {
       label: "クエリプレビュー",
@@ -1224,6 +1243,13 @@ export const ja: Resources = {
       proposalDescription: "内容を確認してください",
       apply: "クエリビルダーに追加",
       reset: "やり直す",
+      enterMode: "AI モード",
+      exitMode: "AI モードを終了",
+      modeGroupLabel: "生成モード",
+      modeNew: "新規生成",
+      modeAppend: "既存に追加",
+      modeHint: "現在のビルダー {{count}} 件を考慮します",
+      applyReplace: "この内容で置き換える",
     },
     scope: {
       all: "全データベース",

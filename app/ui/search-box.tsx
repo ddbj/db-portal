@@ -11,6 +11,7 @@ type SearchBoxProps = {
   scope?: string
   scopeOptions?: readonly string[]
   onScopeChange?: (value: string) => void
+  onChange?: (value: string) => void
   maxWidth?: number
   showSearchIcon?: boolean
   showScope?: boolean
@@ -43,6 +44,7 @@ export const SearchBox = ({
   scope = "全データベース",
   scopeOptions,
   onScopeChange,
+  onChange,
   maxWidth = 920,
   showSearchIcon = false,
   showScope = true,
@@ -146,7 +148,10 @@ export const SearchBox = ({
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              onChange?.(e.target.value)
+            }}
             placeholder={placeholder}
             aria-label={ariaLabel}
             className={cn(

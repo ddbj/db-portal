@@ -12,7 +12,7 @@ import {
 } from "../types"
 import type { AdvancedCondition } from "./reducer"
 
-type CombinatorMode = "where" | "selectable"
+type CombinatorMode = "where" | "and" | "selectable"
 
 const COMBINATOR_VALUES: readonly AdvancedCombinator[] = ["AND", "OR", "NOT"]
 
@@ -59,19 +59,21 @@ export const ConditionRow = ({
       <div className="min-w-20">
         {combinatorMode === "where"
           ? <Label>{t("search.builder.where")}</Label>
-          : (
-            <Select
-              ariaLabel={t("search.a11y.builderConditions")}
-              options={combinatorOptions}
-              value={condition.combinator}
-              onChange={(next) => {
-                if (COMBINATOR_VALUES.includes(next as AdvancedCombinator)) {
-                  onCombinatorChange(next as AdvancedCombinator)
-                }
-              }}
-              width={92}
-            />
-          )}
+          : combinatorMode === "and"
+            ? <Label>{t("search.builder.combinator.and")}</Label>
+            : (
+              <Select
+                ariaLabel={t("search.a11y.builderConditions")}
+                options={combinatorOptions}
+                value={condition.combinator}
+                onChange={(next) => {
+                  if (COMBINATOR_VALUES.includes(next as AdvancedCombinator)) {
+                    onCombinatorChange(next as AdvancedCombinator)
+                  }
+                }}
+                width={92}
+              />
+            )}
       </div>
       <Select
         ariaLabel={t("search.a11y.fieldSelector")}

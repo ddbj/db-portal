@@ -81,7 +81,7 @@ test.describe("Search Domain", () => {
     ).toBeVisible({ timeout: 10_000 })
   })
 
-  test("E-SEARCH-03: LLM 未到達で assistant 非表示", async ({ page }) => {
+  test("E-SEARCH-03: LLM 未到達で AI モードトグル非表示", async ({ page }) => {
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
         status: 200,
@@ -91,8 +91,10 @@ test.describe("Search Domain", () => {
     )
     await page.goto("/search")
 
+    // 統合検索ボックスは出るが、AI モードトグルは出ない
+    await expect(page.getByRole("search")).toBeVisible()
     await expect(
-      page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i }),
+      page.getByRole("button", { name: /AI モード|AI mode/i }),
     ).toHaveCount(0)
   })
 })

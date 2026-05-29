@@ -14,6 +14,7 @@ export type AssistantStreamResult = {
   proposal: AssistantProposal | null
   start: (input: string) => Promise<void>
   stop: () => void
+  reset: () => void
 }
 
 const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
@@ -43,6 +44,13 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     controllerRef.current?.abort()
     controllerRef.current = null
     setState((current) => (current === "streaming" ? "idle" : current))
+  }, [])
+
+  const reset = useCallback(() => {
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setProposal(null)
+    setState("idle")
   }, [])
 
   const start = useCallback(async (input: string) => {
@@ -108,5 +116,5 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     }
   }, [baseUrl, state])
 
-  return { state, proposal, start, stop }
+  return { state, proposal, start, stop, reset }
 }

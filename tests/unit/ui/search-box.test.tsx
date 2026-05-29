@@ -273,6 +273,15 @@ describe("SearchBox", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 
+  test("SearchBox_typing_invokesOnChangeWithValue", () => {
+    const onChange = vi.fn()
+    render(<SearchBox onChange={onChange} />)
+    fireEvent.change(screen.getByRole("textbox", { name: "検索キーワード" }), {
+      target: { value: "tumor" },
+    })
+    expect(onChange).toHaveBeenCalledWith("tumor")
+  })
+
   test("SearchBox_maxWidth_appliesInlineStyle", () => {
     const { container } = render(<SearchBox maxWidth={820} />)
     const wrapper = container.firstElementChild as HTMLElement | null

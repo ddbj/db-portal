@@ -38,6 +38,8 @@ cross-DB から per-DB への遷移はカードの「結果一覧」link、per-D
 
 3 経路の AST は AND 結合関数で 1 つの ParseNode に畳む。これを `/db-portal/serialize` に投げて DSL を得る。
 
+`/search` (cross-search ビルダー) では Simple query (キーワード) と AI アシスタントを 1 つの統合入力 (`SearchInputPanel`) に畳む。キーワードは Advanced builder の先頭に **keyword 行** として双方向同期して表示する (上部ボックス submit / keyword 行の編集のどちらからでも sync する)。キーワードの parse → merge → serialize は `useCrossSearchSync` が単一 debounce で行い、live preview / URL に反映する。上部ボックス submit はキービルダーへの集約のみで、cross-search の実行 (results への遷移) は「この条件で検索」 button が担う。
+
 ### portal 側に thin serializer を持たない
 
 AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由:
@@ -81,7 +83,10 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 表現できない構造 (たとえば `OR` を Sidebar facet 側に持たせる、など) は **Advanced builder 側に倒す**。Sidebar は単純な AND of equality / range のみを表す。
 
-free_text node は Advanced builder には載せず (Simple query との混在を避ける)、SearchBox には URL `?q=` 文字列をそのまま表示する。
+free_text node の扱いは経路で **非対称**:
+
+- `/search` (cross-search ビルダー) では、上部キーワードボックスと双方向同期する **keyword 行** として Advanced builder に表示し、parse → merge した内容を live preview / URL に反映する。keyword の文字列自体は AST 化せず行に生表示し、AST は別経路 (`useCrossSearchSync`) で算出する (複合 DSL でも行表示が壊れない)。
+- `/search/results` の URL 復元 (`toAdvanced`) は free_text を Advanced builder に載せず drop し、SearchBox には URL `?q=` 文字列をそのまま表示する。
 
 ### parse の失敗
 
@@ -101,7 +106,7 @@ API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系�
 - **Group**: 子を束ねる入れ物。親 group 内での結合子 + 子集合の内部結合 (`AND` / `OR`) + 子の配列
 - **Root**: 最上位 group。combinator は無視、子の数 0 から可
 
-各 group の最初の child だけ UI で `WHERE` 表示し、値は固定で `AND` 扱い (root の先頭にも、入れ子 group の先頭にも `WHERE` が出る)。
+各 group の最初の child だけ UI で結合子ラベルを固定表示し、値は固定で `AND` 扱い。表示文言は: 入れ子 group の先頭は常に `WHERE`、root の先頭は keyword 行が無ければ `WHERE`・あれば `AND` (`/search` で keyword 行が WHERE の anchor を担うため、root 先頭の構造化条件は `AND` 表示になり、削除も可能)。この root 先頭の `AND` 化は root group のみで、入れ子 group には波及しない。
 
 field の取り得る値 (`identifier` / `title` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`) は cross-DB でも安全な Tier 1/2 のみを採る (ddbj-search-api allowlist 準拠)。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field ごとに制限される (`FIELD_OPS`、ddbj-search-api の演算子マトリクスに対応): date 系は `between` のみ、`identifier` / `organism_id` は `eq` / `wildcard`、text 系は `eq` / `contains`。コードが SSOT。新規追加時は AdvancedField / FIELD_OPS の値と prompt (`llm.md`) を同時更新する。
 
@@ -235,6 +240,8 @@ facet 候補値 (organism / submitter 等の選択肢) は **hardcoded 静的リ
 
 merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ。debounced ast が identityAst なら何もしない (URL の `?q=` を削除する場合は別 action)。成功で `navigate("/search/results?q=...", { replace: true })`、失敗で `syncStatus = "failed"`。
 
+`/search` (cross-search ビルダー) はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 700 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` する。keyword の parse 失敗は `parseError` (構文エラー) として `failed` 扱いにし、serialize 失敗とは区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる (`useDebouncedSerialize` と同じく非キャンセル)。per-DB / 構造化のみの経路は従来通り `useDebouncedSerialize`。
+
 ### sync-status
 
 `SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ chip を表示し、`failed` には「再試行」 link を添える。`synced` は通常 invisible (idle と同じ扱い、動的演出はしない)。
@@ -326,6 +333,20 @@ queryKey は `["llm-availability"]`、`staleTime` は 5 分 (頻繁に poll し�
 
 `/search` (検索ビルダ) と per-DB results (`/search/results?db=<id>`) で表示する。cross-DB results (`/search/results` で `db` 未指定) では表示しない (AI 提案は Advanced builder への差分提案であり、cross-DB の表示文脈ではユーザの操作対象がないため)。
 
+`/search` では統合入力 (`SearchInputPanel`) の中に AI を畳み込み、キーワードモードと AI モードを「AI モード」 トグルで切り替える。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの textarea (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。
+
+### 生成モード (cross-search ビルダー)
+
+AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがある。AI モード入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
+
+| 件数 | default | append |
+|---|---|---|
+| 1 以上 | append (既存に追加) | 有効 |
+| 0 | new (新規生成) | disable (追加先が無い) |
+
+- **append**: 提案を現在の構造化条件に graft する (keyword は不変)
+- **new**: 現在の構造化条件を破棄して提案だけにする。keyword も初期化する (「新規」 の意味を保つため)
+
 ### SSE 配線
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
@@ -338,11 +359,13 @@ queryKey は `["llm-availability"]`、`staleTime` は 5 分 (頻繁に poll し�
 
 ### 提案の反映
 
-「クエリビルダーに追加」 button 押下で、Advanced state の root に新 group を append する純粋関数で反映する。
+純粋関数で proposal を Advanced state に反映する。proposal.conditions の condition 化規則は共通:
 
 - proposal.conditions を condition の配列に変換
-- `proposal.combinator === "OR" && conditions.length > 1` のとき 1 つの group (innerCombinator=OR) で包んで append、それ以外は conditions を直接 root に append
+- `proposal.combinator === "OR" && conditions.length > 1` のとき 1 つの group (innerCombinator=OR) で包んで append、それ以外は conditions を直接 append
 - 各 condition の combinator は AND (先頭含めて、root に追加されるため)
+
+cross-search ビルダーの統合入力では適用先を生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
 
 「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。
 

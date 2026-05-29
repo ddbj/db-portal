@@ -488,12 +488,12 @@ export const en: Resources = {
   },
   search: {
     pageTitle: "Cross-database search",
-    pageSubtitle: "Search across the eight DDBJ databases at once.",
+    pageSubtitle: "Keywords or natural language — every input is consolidated into the query builder below and searched as a whole.",
     searchBoxPlaceholder: "Search by keyword, accession, or organism",
     syntax: {
       spaceAnd: "space = AND search",
       phrase: "\"…\" = phrase search",
-      advancedHint: "Field-qualified clauses and AND / OR / NOT live in the query builder below.",
+      advancedHint: "Searching adds a row to the query builder below, kept in two-way sync.",
     },
     examples: {
       label: "Examples",
@@ -548,6 +548,12 @@ export const en: Resources = {
       rangeFromPlaceholder: "YYYY-MM-DD",
       rangeToPlaceholder: "YYYY-MM-DD",
       valuePlaceholder: "Enter value",
+      freeText: {
+        field: "keyword",
+        allFields: "all fields",
+        placeholder: "Enter a keyword",
+        remove: "Remove keyword",
+      },
     },
     preview: {
       label: "Query preview",
@@ -634,6 +640,13 @@ export const en: Resources = {
       proposalDescription: "Please review the suggested conditions",
       apply: "Add to query builder",
       reset: "Start over",
+      enterMode: "AI mode",
+      exitMode: "Exit AI mode",
+      modeGroupLabel: "Generation mode",
+      modeNew: "Generate new",
+      modeAppend: "Add to existing",
+      modeHint: "Considers {{count}} current builder conditions",
+      applyReplace: "Replace builder with this",
     },
     scope: {
       all: "All databases",
