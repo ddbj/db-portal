@@ -68,10 +68,10 @@ export const FileTableRow = ({
       data-entry-id={entry.id}
       className={editing ? "bg-brand-softer outline outline-1 outline-brand" : undefined}
     >
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         <Tag kind="tag" size="sm">{vocab.buttonTypeLabel}</Tag>
       </td>
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         <TextInput
           ariaLabel={cellLabels.filenameAria}
           mono
@@ -81,7 +81,7 @@ export const FileTableRow = ({
           onChange={(e: ChangeEvent<HTMLInputElement>) => onFilenameChange(e.target.value)}
         />
       </td>
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         <Select
           ariaLabel={cellLabels.organismAria}
           options={organismOptions}
@@ -90,7 +90,7 @@ export const FileTableRow = ({
           onChange={(next) => onOrganismChange(next as Organism | "")}
         />
       </td>
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         <Select
           ariaLabel={cellLabels.accessAria}
           options={accessOptions}
@@ -98,7 +98,7 @@ export const FileTableRow = ({
           onChange={(next) => onAccessChange(next as Access)}
         />
       </td>
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         {configured && detailSummary !== ""
           ? (
             <RowSetTag
@@ -115,7 +115,7 @@ export const FileTableRow = ({
             />
           )}
       </td>
-      <td className="px-3 py-3 align-top">
+      <td className="px-3 py-3 align-middle">
         <IconButton ariaLabel={cellLabels.deleteAria} onClick={onRequestDelete} size={28}>
           <CloseIcon size={16} />
         </IconButton>

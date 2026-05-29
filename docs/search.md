@@ -13,16 +13,16 @@ AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,seria
 | cross-DB | `/search/results?q=<DSL>` | 8 DB (`trad` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy`) を横断、ヒット数カード + 上位 hit list |
 | per-DB | `/search/results?q=<DSL>&db=<id>` | 1 DB に絞り、record card list + pagination + 詳細 facet |
 
-cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` を呼ぶ。両方とも query string `q` に DSL を載せ、`keywordOperator=AND` を明示的に付与する。
+cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` を呼ぶ。両方とも query string `q` に DSL を載せる。
 
-### キーワードの結合規則 (keywordOperator)
+### キーワードの結合規則
 
-ddbj-search-api の `keywordOperator` の API default は `OR` だが、portal は「複数キーワードは全て含む」 という一般的な検索体験に合わせるため **常に `AND` を明示送信** する。結果として:
+検索語の結合は入力の区切り文字で決まる。portal は `keywordOperator` を送らず API default (`OR`) に従う。`keywordOperator` はカンマ区切りトークンの結合演算子であり、カンマは「いずれかに一致 (列挙)」 を意味する OR が自然なため、default のままで正しい。
 
-- スペース区切り (`cancer mouse`) → AND (全語を含む)
-- カンマ区切り (`cancer,mouse`) → `keywordOperator=AND` を送るため AND
+- スペース区切り (`cancer mouse`) → AND (全語を含む)。`keywordOperator` とは無関係 (ddbj-search-api の DSL 文法が値内空白を AND 連結する)
+- カンマ区切り (`cancer,mouse`) → OR (いずれかに一致)。`keywordOperator` の default
 - クオート (`"Homo sapiens"`) → phrase 一致 (順序保持)
-- DSL 内の明示的 `AND` / `OR` / `NOT` は keywordOperator と無関係
+- DSL 内の明示的 `AND` / `OR` / `NOT` は `keywordOperator` と無関係
 
 cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
 
@@ -249,7 +249,7 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=5&keywordOperator=AND` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
+`GET /db-portal/cross-search?q=...&topHits=5` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
 
 各カードの内容:
 
@@ -266,7 +266,7 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
-`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>&keywordOperator=AND` を route loader が呼ぶ。
+`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。
 
 #### Layout (3-col)
 

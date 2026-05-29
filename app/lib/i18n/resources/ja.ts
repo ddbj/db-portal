@@ -1252,7 +1252,7 @@ export const ja: Resources = {
       dbSearchFailure: "検索に失敗しました",
       serializeFailure: "URL の同期に失敗しました",
       querySyntax: "クエリを解析できませんでした。構文を確認して再度お試しください。",
-      querySyntaxHint: "スペース = AND (すべての語を含む)、\"…\" = フレーズ、field:value でフィールド検索 (例: organism_name:\"Homo sapiens\")。",
+      querySyntaxHint: "スペース = AND (すべての語)、カンマ = OR (いずれかの語)、\"…\" = フレーズ、field:value でフィールド検索 (例: organism_name:\"Homo sapiens\")。",
     },
     a11y: {
       input: "検索キーワード",

@@ -232,6 +232,8 @@ id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダ�
 
 `buttonType` は行追加時に固定し変更不可 (誤った種別を選んだ場合は行削除 + 別ボタンで作り直す)。これにより `TYPICAL_DATA_FORM_FOR_BUTTON` / `TYPICAL_GROUP_TYPE_FOR_BUTTON` の default 整合が崩れない。`organism` / `filename` 未設定は `state="warn"` を `Select` / `TextInput` に渡す。
 
+「ファイルを追加」 ボタンは modal を出さず、テーブルに 1 行追加するだけの操作。追加時に filename は buttonType ごとの prefix + 連番 3 桁 + 拡張子で自動採番する (例: `read-001.fastq` / `asm-001.fasta`)。同 buttonType の既存行の連番 max + 1 を採番するため、中間行を削除しても欠番を埋め直さず既存名と衝突しない (prefix / 拡張子の対応表は `BUTTON_DEFAULT_FILENAME` が SSOT)。採番された filename は `TextInput` で後から編集できる。
+
 「データ詳細」 chip cell は ButtonType ごとの controlled vocabulary を 1 click で編集する trigger。表示は 2 形態:
 
 - **未設定** (chipTags が空かつ groupType が default): `WarnDashedButton` (warn 配色 + dashed border)
@@ -245,7 +247,7 @@ id は client mount 後に `crypto.randomUUID` で採番する。SSR レンダ�
 
 ## Modal UX
 
-編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<ButtonType, RowFormDef>` table から該当 `ButtonType` の form definition (chip axes / fields / default values) を引いて描画する。`ButtonType` を増やすときは `form-defs.ts` に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の shape は次の通り:
+編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<ButtonType, RowFormDef>` table から該当 `ButtonType` の form definition (chip axes / fields / default values) を引いて描画する。`ButtonType` を増やすときは `form-defs.ts` に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。この modal は Detail 列の trigger (RowSetTag / WarnDashedButton) クリックで開く編集専用で、行追加時には開かない (行追加は `editing` を立てずテーブルに行を足すだけ)。modal の shape は次の通り:
 
 ```
 ┌ Modal (width 820) ─────────────────────────────────────────────┐

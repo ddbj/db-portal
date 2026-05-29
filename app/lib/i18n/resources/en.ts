@@ -662,7 +662,7 @@ export const en: Resources = {
       dbSearchFailure: "Search failed",
       serializeFailure: "Failed to sync the URL",
       querySyntax: "Could not parse the query. Check the syntax and try again.",
-      querySyntaxHint: "space = AND (all words required), \"…\" = phrase, field:value for field search (e.g. organism_name:\"Homo sapiens\").",
+      querySyntaxHint: "space = AND (all words), comma = OR (any word), \"…\" = phrase, field:value for field search (e.g. organism_name:\"Homo sapiens\").",
     },
     a11y: {
       input: "Search keywords",

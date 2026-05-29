@@ -67,7 +67,7 @@ export const FileTable = ({
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnOrganism}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnAccess}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnDetail}</Label></th>
-            <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnDelete}</Label></th>
+            <th scope="col" className="px-3 py-2 text-left"><span className="sr-only">{labels.columnDelete}</span></th>
           </tr>
         </thead>
         <tbody className="text-fs-body">

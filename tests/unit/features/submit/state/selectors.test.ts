@@ -55,11 +55,16 @@ describe("selectors", () => {
   })
 
   test("selectValidations_missingFilename_isReported", () => {
-    const state = submitReducer(initialState, {
+    let state = submitReducer(initialState, {
       type: "ADD_ROW",
       buttonType: "sequence-read",
       entryId: "e1",
       groupId: "g1",
+    })
+    state = submitReducer(state, {
+      type: "EDIT_ROW_CELL",
+      entryId: "e1",
+      patch: { filename: "" },
     })
     const validations = selectValidations(state)
     expect(validations.some((v) => v.kind === "missing-filename")).toBe(true)

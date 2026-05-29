@@ -93,6 +93,21 @@ export const TYPICAL_GROUP_TYPE_FOR_BUTTON: Readonly<Record<ButtonType, GroupTyp
   "spatial-tx": "single",
 }
 
+// 行追加時に自動採番する default filename の buttonType ごとの prefix と拡張子
+export const BUTTON_DEFAULT_FILENAME: Readonly<
+  Record<ButtonType, { prefix: string; ext: string }>
+> = {
+  "sequence-read": { prefix: "read", ext: "fastq" },
+  "assembled": { prefix: "asm", ext: "fasta" },
+  "gene-annotation": { prefix: "ann", ext: "gff" },
+  "variation": { prefix: "var", ext: "vcf" },
+  "phenotype": { prefix: "phe", ext: "tsv" },
+  "microarray-expression": { prefix: "arr", ext: "cel" },
+  "rna-seq-matrix": { prefix: "mtx", ext: "tsv" },
+  "mass-spec": { prefix: "ms", ext: "mzML" },
+  "spatial-tx": { prefix: "spt", ext: "tsv" },
+}
+
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
   "provenance": ["third-party"],

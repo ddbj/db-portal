@@ -1,5 +1,6 @@
 import type { FileEntry, FileGroup, GroupType, Submission } from "~/schemas/submit"
 import {
+  BUTTON_DEFAULT_FILENAME,
   TYPICAL_DATA_FORM_FOR_BUTTON,
   TYPICAL_GROUP_TYPE_FOR_BUTTON,
 } from "~/schemas/submit"
@@ -38,14 +39,36 @@ const newGroupFor = (buttonType: FileEntry["buttonType"], groupId: string): File
   linkedGroupIds: [],
 })
 
+// 同 buttonType の既存 filename から連番を読み取り max+1 を 3 桁ゼロ埋めした default 名を返す
+// (削除後の再追加でも衝突しないよう max 方式)
+export const defaultFilenameFor = (
+  entries: readonly FileEntry[],
+  buttonType: FileEntry["buttonType"],
+): string => {
+  const { prefix, ext } = BUTTON_DEFAULT_FILENAME[buttonType]
+  const re = new RegExp(`^${prefix}-(\\d+)`)
+  let maxN = 0
+  for (const entry of entries) {
+    if (entry.buttonType !== buttonType) continue
+    const match = entry.filename.match(re)
+    if (match?.[1] !== undefined) {
+      const n = Number.parseInt(match[1], 10)
+      if (Number.isFinite(n) && n > maxN) maxN = n
+    }
+  }
+
+  return `${prefix}-${String(maxN + 1).padStart(3, "0")}.${ext}`
+}
+
 const newEntryFor = (
   buttonType: FileEntry["buttonType"],
   entryId: string,
   groupId: string,
+  filename: string,
 ): FileEntry => ({
   id: entryId,
   buttonType,
-  filename: "",
+  filename,
   organism: "" as FileEntry["organism"],
   access: "open",
   dataForm: TYPICAL_DATA_FORM_FOR_BUTTON[buttonType],
@@ -98,15 +121,17 @@ const addRow = (
   groupId: string,
 ): UIState => {
   const group = newGroupFor(buttonType, groupId)
-  const entry = newEntryFor(buttonType, entryId, groupId)
+  const filename = defaultFilenameFor(state.submission.fileEntries, buttonType)
+  const entry = newEntryFor(buttonType, entryId, groupId, filename)
   const groups = [
     ...state.submission.fileGroups,
     { ...group, memberFileIds: [entry.id] },
   ]
   const entries = [...state.submission.fileEntries, entry]
+
   return {
     submission: { ...state.submission, fileEntries: entries, fileGroups: groups },
-    editing: { kind: "row", entryId: entry.id },
+    editing: null,
   }
 }
 
@@ -119,14 +144,16 @@ const addToGroup = (
   const targetGroup = state.submission.fileGroups.find((g) => g.id === groupId)
   if (!targetGroup) return state
 
-  const entry: FileEntry = newEntryFor(buttonType, entryId, groupId)
+  const filename = defaultFilenameFor(state.submission.fileEntries, buttonType)
+  const entry: FileEntry = newEntryFor(buttonType, entryId, groupId, filename)
+
   return {
     submission: {
       ...state.submission,
       fileEntries: [...state.submission.fileEntries, entry],
       fileGroups: ensureGroupContainsEntry(state.submission.fileGroups, groupId, entry.id),
     },
-    editing: { kind: "row", entryId: entry.id },
+    editing: null,
   }
 }
 
