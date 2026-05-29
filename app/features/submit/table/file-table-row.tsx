@@ -1,15 +1,11 @@
-import type { ChangeEvent } from "react"
-
 import type { Access, FileEntry } from "~/schemas/submit"
 import { Access as AccessEnum } from "~/schemas/submit"
-import { CloseIcon, IconButton, Select, Tag, TextInput } from "~/ui"
+import { CloseIcon, IconButton, Select, Tag } from "~/ui"
 
 import { RowSetTag } from "../components/row-set-tag"
 import { WarnDashedButton } from "../components/warn-dashed-button"
 
 type CellLabels = {
-  filenamePlaceholder: string
-  filenameAria: string
   accessAria: string
   detailUnsetLabel: string
   editDetailAria: string
@@ -28,7 +24,6 @@ type FileTableRowProps = {
   editing: boolean
   cellLabels: CellLabels
   vocab: VocabLabels
-  onFilenameChange: (value: string) => void
   onAccessChange: (value: Access) => void
   onEditDetail: () => void
   onRequestDelete: () => void
@@ -41,7 +36,6 @@ export const FileTableRow = ({
   editing,
   cellLabels,
   vocab,
-  onFilenameChange,
   onAccessChange,
   onEditDetail,
   onRequestDelete,
@@ -50,8 +44,6 @@ export const FileTableRow = ({
     value: a,
     label: vocab.accessLabel(a),
   }))
-
-  const filenameMissing = entry.filename.trim() === ""
 
   return (
     <tr
@@ -63,14 +55,7 @@ export const FileTableRow = ({
         <Tag kind="tag" size="sm">{vocab.fileTypeKindLabel}</Tag>
       </td>
       <td className="px-3 py-3 align-middle">
-        <TextInput
-          ariaLabel={cellLabels.filenameAria}
-          mono
-          state={filenameMissing ? "warn" : "default"}
-          value={entry.filename}
-          placeholder={cellLabels.filenamePlaceholder}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onFilenameChange(e.target.value)}
-        />
+        <span className="font-mono text-ink">{entry.filename}</span>
       </td>
       <td className="px-3 py-3 align-middle">
         <Select

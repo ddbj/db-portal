@@ -3,10 +3,9 @@ import type { FileEntry, FileGroup } from "~/schemas/submit"
 type FilesBlockProps = {
   groups: readonly FileGroup[]
   entries: readonly FileEntry[]
-  filenameMissingLabel: string
 }
 
-export const FilesBlock = ({ groups, entries, filenameMissingLabel }: FilesBlockProps) => {
+export const FilesBlock = ({ groups, entries }: FilesBlockProps) => {
   if (groups.length === 0) return null
   const byGroup = new Map<string, FileEntry[]>()
   for (const e of entries) {
@@ -28,24 +27,11 @@ export const FilesBlock = ({ groups, entries, filenameMissingLabel }: FilesBlock
               {idx + 1}/{groups.length}
             </span>
             <span className="flex flex-col gap-0.5 min-w-0">
-              {members.length === 0 && (
-                <span className="text-fs-micro text-warn-fg">{filenameMissingLabel}</span>
-              )}
-              {members.map((entry) => {
-                const filename = entry.filename.trim()
-                return (
-                  <span
-                    key={entry.id}
-                    className={
-                      filename === ""
-                        ? "font-mono text-fs-micro text-warn-fg"
-                        : "font-mono text-fs-micro text-ink"
-                    }
-                  >
-                    {filename === "" ? filenameMissingLabel : filename}
-                  </span>
-                )
-              })}
+              {members.map((entry) => (
+                <span key={entry.id} className="font-mono text-fs-micro text-ink">
+                  {entry.filename}
+                </span>
+              ))}
             </span>
           </li>
         )

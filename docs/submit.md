@@ -433,9 +433,9 @@ Service は単一の enum で、各値が **role** を持つ。利用者向け�
 
 ## ファイルテーブル UX
 
-ファイルテーブルは Cross-DB Tag の **fileTypeKind / access** の 2 軸 + ファイル名 + 「データ詳細」 chip cell の 4 列構成 (+ 削除アクション列)。`dataForm` / `chipTags` / `groupType` は「データ詳細」 chip cell の modal 内で編集する。
+ファイルテーブルは Cross-DB Tag の **fileTypeKind / access** の 2 軸 + ファイル名 (読み取り専用) + 「データ詳細」 chip cell の 4 列構成 (+ 削除アクション列)。`dataForm` / `chipTags` / `groupType` は「データ詳細」 chip cell の modal 内で編集する。
 
-`fileTypeKind` は行追加時に固定し変更不可 (誤った種別は行削除 + 別ボタンで作り直す)。`access` は Q1 が default を注入する (Q1 = 公開 なら open 固定)。`filename` 未設定は `state="warn"` を `TextInput` に渡す。
+`fileTypeKind` は行追加時に固定し変更不可 (誤った種別は行削除 + 別ボタンで作り直す)。`access` は Q1 が default を注入する (Q1 = 公開 なら open 固定)。`filename` はユーザーが設定せず、行追加時に同種別の既存連番を読んで `{prefix}-{連番 (3 桁ゼロ埋め)}.{ext}` を自動採番し読み取り専用で表示する (連番は削除後の再追加でも衝突しないよう max+1 方式)。
 
 「データ詳細」 chip cell は種別ごとの controlled vocabulary を 1 click で編集する trigger。表示は 2 形態:
 
@@ -448,7 +448,7 @@ Service は単一の enum で、各値が **role** を持つ。利用者向け�
 
 ### Modal UX
 
-編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<FileTypeKind, RowFormDef>` から該当種別の form definition を引いて描画する。種別を増やすときは form definition に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の責務は `FileGroup.groupType` の選択 / `FileEntry.dataForm` の override / `FileEntry.chipTags` の編集の 3 つ。`access` / `filename` はテーブル列で編集し modal では扱わない。
+編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<FileTypeKind, RowFormDef>` から該当種別の form definition を引いて描画する。種別を増やすときは form definition に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の責務は `FileGroup.groupType` の選択 / `FileEntry.dataForm` の override / `FileEntry.chipTags` の編集の 3 つ。`access` はテーブル列で編集し、`filename` は自動採番の読み取り専用。どちらも modal では扱わない。
 
 `ModalPreview` は仮 patch を当てた `Submission` で `deriveFlowSteps` を呼び、対象 entry を含む step を `PreviewCard` で render する。`Modal` primitive の focus trap が open/close 時の focus を制御する。
 
@@ -458,7 +458,6 @@ Service は単一の enum で、各値が **role** を持つ。利用者向け�
 
 `selectValidations(state)` (純粋関数) が次を検査する。各 validation は i18n key + 該当 row index list を含み、click で row scroll into view + 編集 modal を open する。
 
-- `missing-filename`: FileEntry.filename が空白
 - `precondition-conflict`: 前段 Q1/Q2 で disable された種別の行が残っている
 - `no-destination-service`: その entry がどの destination service step にも入らない
 - `dangling-group-id`: FileEntry.groupId が submission.fileGroups にない (UI バグ検知)

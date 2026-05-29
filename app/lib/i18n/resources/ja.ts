@@ -199,7 +199,6 @@ export type Resources = {
       columnAccess: string
       columnDetail: string
       columnDelete: string
-      filenamePlaceholder: string
       detailUnset: string
       empty: string
     }
@@ -228,7 +227,6 @@ export type Resources = {
     flow: {
       empty: string
       accessionLabel: string
-      filenameMissing: string
       noteWarning: string
       noteError: string
       "bioproject": { title: string; description: string; cta: string }
@@ -443,13 +441,11 @@ export type Resources = {
     validations: {
       heading: string
       rowReference: string
-      "missing-filename": string
       "precondition-conflict": string
       "no-destination-service": string
       "dangling-group-id": string
     }
     a11y: {
-      filenameCell: string
       accessCell: string
       editDetail: string
       deleteRow: string
@@ -846,7 +842,6 @@ export const ja: Resources = {
       columnAccess: "公開区分",
       columnDetail: "データ詳細",
       columnDelete: "削除",
-      filenamePlaceholder: "ファイル名を入力",
       detailUnset: "未設定",
       empty: "上のボタンからファイル種別を追加してください",
     },
@@ -875,7 +870,6 @@ export const ja: Resources = {
     flow: {
       empty: "ファイルを追加すると、ここに登録フローが表示されます",
       accessionLabel: "アクセッション",
-      filenameMissing: "ファイル名が未入力です",
       noteWarning: "注意",
       noteError: "エラー",
       "bioproject": { title: "BioProject", description: "プロジェクトを束ねる随伴エントリ", cta: "詳細" },
@@ -1163,13 +1157,11 @@ export const ja: Resources = {
     validations: {
       heading: "確認事項が {{count}} 件あります",
       rowReference: "{{index}} 行目",
-      "missing-filename": "ファイル名が入力されていません",
       "precondition-conflict": "登録前提と矛盾する種別の行があります",
       "no-destination-service": "この行はどの登録先にも入りません",
       "dangling-group-id": "存在しないグループを参照している行があります",
     },
     a11y: {
-      filenameCell: "ファイル名",
       accessCell: "公開区分",
       editDetail: "データ詳細を編集",
       deleteRow: "行を削除",

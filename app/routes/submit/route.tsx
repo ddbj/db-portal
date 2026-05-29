@@ -134,8 +134,6 @@ const SubmitRoute = () => {
             columnDetail: t("submit.table.columnDetail"),
             columnDelete: t("submit.table.columnDelete"),
             empty: t("submit.table.empty"),
-            filenamePlaceholder: t("submit.table.filenamePlaceholder"),
-            filenameAria: t("submit.a11y.filenameCell"),
             accessAria: t("submit.a11y.accessCell"),
             detailUnsetLabel: t("submit.table.detailUnset"),
             editDetailAria: t("submit.a11y.editDetail"),
@@ -143,7 +141,6 @@ const SubmitRoute = () => {
             fileTypeKindLabel,
             accessLabel,
           }}
-          onFilenameChange={(entryId, value) => actions.editRowCell(entryId, { filename: value })}
           onAccessChange={(entryId, value) => actions.editRowCell(entryId, { access: value })}
           onEditDetail={actions.openEditRow}
           onRequestDelete={actions.openConfirmDelete}
@@ -176,7 +173,6 @@ const SubmitRoute = () => {
           serviceTitle={serviceTitle}
           serviceDescription={serviceDescription}
           accessionLabel={t("submit.flow.accessionLabel")}
-          filenameMissingLabel={t("submit.flow.filenameMissing")}
           resolveNote={resolveNote}
           noteKindLabel={noteKindLabel}
           externalCtaLabel={externalCtaLabel}

@@ -247,7 +247,6 @@ describe("submitReducer EDIT_ROW_CELL", () => {
         id: "hijacked",
         fileTypeKind: "variant",
         groupId: "g-hijack",
-        filename: "custom.fastq",
         access: "restricted",
         dataForm: "assembled",
         chipTags: [{ axis: "provenance", value: "third-party" }],
@@ -258,7 +257,6 @@ describe("submitReducer EDIT_ROW_CELL", () => {
     expect(entry.fileTypeKind).toBe("sequence-read")
     expect(entry.groupId).toBe("g1")
     // 上書き可能なフィールドは反映される
-    expect(entry.filename).toBe("custom.fastq")
     expect(entry.access).toBe("restricted")
     expect(entry.dataForm).toBe("assembled")
     expect(entry.chipTags).toEqual([{ axis: "provenance", value: "third-party" }])
@@ -272,7 +270,7 @@ describe("submitReducer EDIT_ROW_CELL", () => {
     const next = submitReducer(opened, {
       type: "EDIT_ROW_CELL",
       entryId: "e1",
-      patch: { filename: "x.fastq" },
+      patch: { access: "restricted" },
     })
     // EDIT_ROW_CELL は editing を維持する (COMMIT_ROW_EDIT のみ閉じる)
     expect(next.editing).toEqual({ kind: "row", entryId: "e1" })
@@ -283,10 +281,10 @@ describe("submitReducer EDIT_ROW_CELL", () => {
     const next = submitReducer(seeded, {
       type: "EDIT_ROW_CELL",
       entryId: "ghost",
-      patch: { filename: "x.fastq" },
+      patch: { access: "restricted" },
     })
     expect(next.submission.fileEntries).toHaveLength(1)
-    expect(next.submission.fileEntries[0]!.filename).toBe("read-001.fastq")
+    expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 
   test("submitReducer_editRowCellOnlyIdInPatch_isNoOpOnFields", () => {
@@ -435,7 +433,7 @@ describe("defaultFilenameFor", () => {
     expect(defaultFilenameFor(entries, "sequence-read")).toBe("read-001.fastq")
   })
 
-  test("defaultFilenameFor_handEditedNonMatchingNames_areIgnored", () => {
+  test("defaultFilenameFor_nonMatchingNames_areIgnored", () => {
     const entries = [
       entryWith("sequence-read", "my-reads.fastq"),
       entryWith("sequence-read", ""),

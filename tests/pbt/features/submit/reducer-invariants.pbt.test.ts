@@ -3,8 +3,8 @@ import { expect } from "vitest"
 
 import { initialState, submitReducer } from "../../../../app/features/submit/state/reducer"
 import type { Action, UIState } from "../../../../app/features/submit/state/types"
-import type { FileTypeKind } from "../../../../app/schemas/submit"
-import { arbFileTypeKind } from "../../arbitraries/submission"
+import type { Access, FileTypeKind } from "../../../../app/schemas/submit"
+import { arbAccess, arbFileTypeKind } from "../../arbitraries/submission"
 
 const applySequence = (actions: readonly Action[]): UIState => {
   let state: UIState = initialState
@@ -17,7 +17,7 @@ const applySequence = (actions: readonly Action[]): UIState => {
 type ActionStep =
   | { kind: "add"; fileTypeKind: FileTypeKind }
   | { kind: "add-to-group"; groupIdx: number; fileTypeKind: FileTypeKind }
-  | { kind: "edit-filename"; entryIdx: number; filename: string }
+  | { kind: "edit-access"; entryIdx: number; access: Access }
   | { kind: "remove"; entryIdx: number }
   | { kind: "close" }
 
@@ -29,9 +29,9 @@ const arbStep: fc.Arbitrary<ActionStep> = fc.oneof(
     fileTypeKind: arbFileTypeKind,
   }),
   fc.record({
-    kind: fc.constant("edit-filename" as const),
+    kind: fc.constant("edit-access" as const),
     entryIdx: fc.integer({ min: 0, max: 9 }),
-    filename: fc.string({ minLength: 0, maxLength: 24 }),
+    access: arbAccess,
   }),
   fc.record({
     kind: fc.constant("remove" as const),
@@ -62,10 +62,10 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
       const eid = `e${entryCounter++}`
       acts.push({ type: "ADD_TO_GROUP", groupId, fileTypeKind: step.fileTypeKind, entryId: eid })
       knownEntryIds.push(eid)
-    } else if (step.kind === "edit-filename") {
+    } else if (step.kind === "edit-access") {
       if (knownEntryIds.length === 0) continue
       const id = knownEntryIds[step.entryIdx % knownEntryIds.length]!
-      acts.push({ type: "EDIT_ROW_CELL", entryId: id, patch: { filename: step.filename } })
+      acts.push({ type: "EDIT_ROW_CELL", entryId: id, patch: { access: step.access } })
     } else if (step.kind === "remove") {
       if (knownEntryIds.length === 0) continue
       const idx = step.entryIdx % knownEntryIds.length
@@ -161,11 +161,11 @@ test.prop([arbReachableState, arbFileTypeKind], { numRuns: 1000 })(
   },
 )
 
-test.prop([arbReachableState, arbFileTypeKind, fc.string({ minLength: 0, maxLength: 24 })], {
+test.prop([arbReachableState, arbFileTypeKind, arbAccess], {
   numRuns: 1000,
 })(
   "submitReducer_editRowCell_cannotHijackFileTypeKindOrId",
-  (state, hijackKind, newFilename) => {
+  (state, hijackKind, newAccess) => {
     if (state.submission.fileEntries.length === 0) return
     const target = state.submission.fileEntries[0]!
     const next = submitReducer(state, {
@@ -175,7 +175,7 @@ test.prop([arbReachableState, arbFileTypeKind, fc.string({ minLength: 0, maxLeng
         id: "hijacked",
         fileTypeKind: hijackKind,
         groupId: "hijacked-group",
-        filename: newFilename,
+        access: newAccess,
       },
     })
     const updated = next.submission.fileEntries.find((e) => e.id === target.id)
@@ -184,7 +184,7 @@ test.prop([arbReachableState, arbFileTypeKind, fc.string({ minLength: 0, maxLeng
     expect(updated!.fileTypeKind).toBe(target.fileTypeKind)
     expect(updated!.groupId).toBe(target.groupId)
     // benign フィールドは反映される
-    expect(updated!.filename).toBe(newFilename)
+    expect(updated!.access).toBe(newAccess)
     // hijack id を持つ entry が生成されていない
     expect(next.submission.fileEntries.some((e) => e.id === "hijacked")).toBe(false)
   },

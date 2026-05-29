@@ -13,8 +13,6 @@ type FileTableLabels = {
   columnDetail: string
   columnDelete: string
   empty: string
-  filenamePlaceholder: string
-  filenameAria: string
   accessAria: string
   detailUnsetLabel: string
   editDetailAria: string
@@ -26,7 +24,6 @@ type FileTableLabels = {
 type FileTableProps = {
   state: UIState
   labels: FileTableLabels
-  onFilenameChange: (entryId: string, value: string) => void
   onAccessChange: (entryId: string, value: Access) => void
   onEditDetail: (entryId: string) => void
   onRequestDelete: (entryId: string) => void
@@ -35,7 +32,6 @@ type FileTableProps = {
 export const FileTable = ({
   state,
   labels,
-  onFilenameChange,
   onAccessChange,
   onEditDetail,
   onRequestDelete,
@@ -73,8 +69,6 @@ export const FileTable = ({
               detailSummary={selectRowDetailSummary(state, entry.id)}
               editing={editingEntryId === entry.id}
               cellLabels={{
-                filenamePlaceholder: labels.filenamePlaceholder,
-                filenameAria: labels.filenameAria,
                 accessAria: labels.accessAria,
                 detailUnsetLabel: labels.detailUnsetLabel,
                 editDetailAria: labels.editDetailAria,
@@ -84,7 +78,6 @@ export const FileTable = ({
                 fileTypeKindLabel: labels.fileTypeKindLabel(entry.fileTypeKind),
                 accessLabel: labels.accessLabel,
               }}
-              onFilenameChange={(value) => onFilenameChange(entry.id, value)}
               onAccessChange={(value) => onAccessChange(entry.id, value)}
               onEditDetail={() => onEditDetail(entry.id)}
               onRequestDelete={() => onRequestDelete(entry.id)}

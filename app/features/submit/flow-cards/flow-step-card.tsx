@@ -15,7 +15,6 @@ type FlowStepCardProps = {
   serviceTitle: string
   serviceDescription: string
   accessionLabel: string
-  filenameMissingLabel: string
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
   externalCtaLabel: string
@@ -30,7 +29,6 @@ export const FlowStepCard = ({
   serviceTitle,
   serviceDescription,
   accessionLabel,
-  filenameMissingLabel,
   resolveNote,
   noteKindLabel,
   externalCtaLabel,
@@ -80,7 +78,6 @@ export const FlowStepCard = ({
         <FilesBlock
           groups={scopeGroups}
           entries={scopeEntries}
-          filenameMissingLabel={filenameMissingLabel}
         />
       )}
       {step.notes.length > 0 && (

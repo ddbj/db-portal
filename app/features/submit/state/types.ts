@@ -26,7 +26,6 @@ export type UIState = {
 }
 
 export type ValidationKind =
-  | "missing-filename"
   | "precondition-conflict"
   | "no-destination-service"
   | "dangling-group-id"

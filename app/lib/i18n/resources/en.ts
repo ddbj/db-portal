@@ -193,7 +193,6 @@ export const en: Resources = {
       columnAccess: "Access",
       columnDetail: "Data details",
       columnDelete: "Remove",
-      filenamePlaceholder: "Enter a filename",
       detailUnset: "Set data details",
       empty: "No files yet. Add a file type to get started.",
     },
@@ -222,7 +221,6 @@ export const en: Resources = {
     flow: {
       empty: "Add a file to see where it should be submitted.",
       accessionLabel: "Accession",
-      filenameMissing: "Filename not set",
       noteWarning: "Warning",
       noteError: "Error",
       "bioproject": { title: "BioProject", description: "Groups the whole submission under one project.", cta: "Details" },
@@ -510,13 +508,11 @@ export const en: Resources = {
     validations: {
       heading: "{{count}} things to check",
       rowReference: "Row {{index}}",
-      "missing-filename": "A filename is missing.",
       "precondition-conflict": "A row uses a file type that is no longer allowed by the submission basics.",
       "no-destination-service": "This row does not map to any destination service.",
       "dangling-group-id": "A row references a group that no longer exists.",
     },
     a11y: {
-      filenameCell: "Filename",
       accessCell: "Access level",
       editDetail: "Edit data details",
       deleteRow: "Remove row",

@@ -11,7 +11,6 @@ type FlowStepCardsProps = {
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
   accessionLabel: string
-  filenameMissingLabel: string
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
   externalCtaLabel: (service: Service) => string
@@ -26,7 +25,6 @@ export const FlowStepCards = ({
   serviceTitle,
   serviceDescription,
   accessionLabel,
-  filenameMissingLabel,
   resolveNote,
   noteKindLabel,
   externalCtaLabel,
@@ -47,7 +45,6 @@ export const FlowStepCards = ({
           serviceTitle={serviceTitle(step.service)}
           serviceDescription={serviceDescription(step.service)}
           accessionLabel={accessionLabel}
-          filenameMissingLabel={filenameMissingLabel}
           resolveNote={resolveNote}
           noteKindLabel={noteKindLabel}
           externalCtaLabel={externalCtaLabel(step.service)}

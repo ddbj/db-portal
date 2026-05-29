@@ -33,27 +33,6 @@ const kindsOf = (state: UIState, kind: string): boolean =>
   selectValidations(state).some((v) => v.kind === kind)
 
 describe("selectValidations", () => {
-  test("selectValidations_blankFilenameViaEdit_reportsMissingFilename", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, { type: "EDIT_ROW_CELL", entryId: "e1", patch: { filename: "" } })
-
-    expect(selectValidations(state)).toContainEqual({ kind: "missing-filename", entryId: "e1" })
-  })
-
-  test("selectValidations_whitespaceOnlyFilename_reportsMissingFilename", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, { type: "EDIT_ROW_CELL", entryId: "e1", patch: { filename: "   \t " } })
-
-    expect(kindsOf(state, "missing-filename")).toBe(true)
-  })
-
-  test("selectValidations_freshlyAddedRowWithPrecond_hasNoMissingFilename", () => {
-    // ADD_ROW injects an auto-numbered default filename, so a brand-new row is never missing-filename
-    const state = addRow(withPrecond("public", "human"), "sequence-read", "e1", "g1")
-
-    expect(kindsOf(state, "missing-filename")).toBe(false)
-  })
-
   test("selectValidations_kindDisabledByPrecond_reportsPreconditionConflict", () => {
     // restricted forces JGA-only repos; expression-matrix (gea only) is disabled under restricted/human
     expect(isKindEnabled("restricted", "human", "expression-matrix")).toBe(false)
@@ -184,7 +163,7 @@ describe("selectValidations", () => {
         {
           id: "e1",
           fileTypeKind: "expression-matrix",
-          filename: "  ",
+          filename: "mtx-001.tsv",
           access: "restricted",
           dataForm: "matrix",
           groupId: "ghost",
@@ -196,7 +175,6 @@ describe("selectValidations", () => {
     })
     const kinds = selectValidations(state).map((v) => v.kind)
 
-    expect(kinds).toContain("missing-filename")
     expect(kinds).toContain("precondition-conflict")
     expect(kinds).toContain("dangling-group-id")
   })

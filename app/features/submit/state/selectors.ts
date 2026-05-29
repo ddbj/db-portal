@@ -21,9 +21,6 @@ export const selectValidations = (state: UIState): Validation[] => {
   }
 
   for (const entry of state.submission.fileEntries) {
-    if (entry.filename.trim() === "") {
-      validations.push({ kind: "missing-filename", entryId: entry.id })
-    }
     if (!isKindEnabled(q1, q2, entry.fileTypeKind)) {
       validations.push({ kind: "precondition-conflict", entryId: entry.id })
     }
