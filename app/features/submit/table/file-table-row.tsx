@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react"
 
-import type { Access, FileEntry, Organism } from "~/schemas/submit"
-import { Access as AccessEnum, Organism as OrganismEnum } from "~/schemas/submit"
+import type { Access, FileEntry } from "~/schemas/submit"
+import { Access as AccessEnum } from "~/schemas/submit"
 import { CloseIcon, IconButton, Select, Tag, TextInput } from "~/ui"
 
 import { RowSetTag } from "../components/row-set-tag"
@@ -10,7 +10,6 @@ import { WarnDashedButton } from "../components/warn-dashed-button"
 type CellLabels = {
   filenamePlaceholder: string
   filenameAria: string
-  organismAria: string
   accessAria: string
   detailUnsetLabel: string
   editDetailAria: string
@@ -18,8 +17,7 @@ type CellLabels = {
 }
 
 type VocabLabels = {
-  buttonTypeLabel: string
-  organismLabel: (value: Organism | "") => string
+  fileTypeKindLabel: string
   accessLabel: (value: Access) => string
 }
 
@@ -31,7 +29,6 @@ type FileTableRowProps = {
   cellLabels: CellLabels
   vocab: VocabLabels
   onFilenameChange: (value: string) => void
-  onOrganismChange: (value: Organism | "") => void
   onAccessChange: (value: Access) => void
   onEditDetail: () => void
   onRequestDelete: () => void
@@ -45,22 +42,16 @@ export const FileTableRow = ({
   cellLabels,
   vocab,
   onFilenameChange,
-  onOrganismChange,
   onAccessChange,
   onEditDetail,
   onRequestDelete,
 }: FileTableRowProps) => {
-  const organismOptions = [
-    { value: "", label: cellLabels.organismAria },
-    ...OrganismEnum.options.map((o) => ({ value: o, label: vocab.organismLabel(o) })),
-  ]
   const accessOptions = AccessEnum.options.map((a) => ({
     value: a,
     label: vocab.accessLabel(a),
   }))
 
   const filenameMissing = entry.filename.trim() === ""
-  const organismMissing = (entry.organism as string) === ""
 
   return (
     <tr
@@ -69,7 +60,7 @@ export const FileTableRow = ({
       className={editing ? "bg-brand-softer outline outline-1 outline-brand" : undefined}
     >
       <td className="px-3 py-3 align-middle">
-        <Tag kind="tag" size="sm">{vocab.buttonTypeLabel}</Tag>
+        <Tag kind="tag" size="sm">{vocab.fileTypeKindLabel}</Tag>
       </td>
       <td className="px-3 py-3 align-middle">
         <TextInput
@@ -79,15 +70,6 @@ export const FileTableRow = ({
           value={entry.filename}
           placeholder={cellLabels.filenamePlaceholder}
           onChange={(e: ChangeEvent<HTMLInputElement>) => onFilenameChange(e.target.value)}
-        />
-      </td>
-      <td className="px-3 py-3 align-middle">
-        <Select
-          ariaLabel={cellLabels.organismAria}
-          options={organismOptions}
-          state={organismMissing ? "warn" : "default"}
-          value={entry.organism}
-          onChange={(next) => onOrganismChange(next as Organism | "")}
         />
       </td>
       <td className="px-3 py-3 align-middle">

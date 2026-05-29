@@ -1,9 +1,11 @@
 export { FileTypeGrid } from "./buttons/file-type-grid"
+export { allowedRepos, enabledKinds, isKindEnabled, isQ2Enabled } from "./cascade"
 export { AccessionCode } from "./components/accession-code"
 export { ExternalLinkButton } from "./components/external-link-button"
 export { FileTypeIcon } from "./components/file-type-icon"
 export { FilesBlock } from "./components/files-block"
 export { RowSetTag } from "./components/row-set-tag"
+export { type Segment,SegmentedControl } from "./components/segmented-control"
 export { StepBadge } from "./components/step-badge"
 export { TagProgress } from "./components/tag-progress"
 export { WarnDashedButton } from "./components/warn-dashed-button"
@@ -11,12 +13,11 @@ export { getSubmitMeta, type ServiceSource, type SubmitMeta } from "./external-l
 export { FlowEmptyState } from "./flow-cards/flow-empty-state"
 export { FlowStepCard } from "./flow-cards/flow-step-card"
 export { FlowStepCards } from "./flow-cards/flow-step-cards"
-export type { FlowContext, ServiceBadgeColor } from "./flow-rules"
+export type { ServiceBadgeColor } from "./flow-rules"
 export {
   byServicePhysicalOrder,
-  deriveFlowContext,
   deriveFlowSteps,
-  entryHasChip,
+  hasChip,
   stepBadgeColor,
 } from "./flow-rules"
 export { ConfirmDeleteModal } from "./modals/confirm-delete-modal"

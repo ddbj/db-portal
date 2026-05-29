@@ -1,24 +1,28 @@
 import { useCallback, useReducer, useRef } from "react"
 
-import type { ButtonType, FileEntry } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind, Q1, Q2 } from "~/schemas/submit"
 
 import { initialState, submitReducer } from "./reducer"
 import type { RowEditPatch, UIState } from "./types"
 
 const buildIdGenerator = () => {
   let counter = 0
+
   return () => {
     counter += 1
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
       return crypto.randomUUID()
     }
+
     return `local-${counter.toString(36)}-${Date.now().toString(36)}`
   }
 }
 
 export type SubmitDispatch = {
-  addRow: (buttonType: ButtonType) => void
-  addToGroup: (groupId: string, buttonType: ButtonType) => void
+  setQ1: (q1: Q1 | null) => void
+  setQ2: (q2: Q2 | null) => void
+  addRow: (fileTypeKind: FileTypeKind) => void
+  addToGroup: (groupId: string, fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   openEditRow: (entryId: string) => void
   openConfirmDelete: (entryId: string) => void
@@ -37,16 +41,24 @@ export const useSubmitState = (
   }
   const newId = newIdRef.current
 
+  const setQ1 = useCallback((q1: Q1 | null) => {
+    dispatch({ type: "SET_Q1", q1 })
+  }, [])
+
+  const setQ2 = useCallback((q2: Q2 | null) => {
+    dispatch({ type: "SET_Q2", q2 })
+  }, [])
+
   const addRow = useCallback(
-    (buttonType: ButtonType) => {
-      dispatch({ type: "ADD_ROW", buttonType, entryId: newId(), groupId: newId() })
+    (fileTypeKind: FileTypeKind) => {
+      dispatch({ type: "ADD_ROW", fileTypeKind, entryId: newId(), groupId: newId() })
     },
     [newId],
   )
 
   const addToGroup = useCallback(
-    (groupId: string, buttonType: ButtonType) => {
-      dispatch({ type: "ADD_TO_GROUP", groupId, buttonType, entryId: newId() })
+    (groupId: string, fileTypeKind: FileTypeKind) => {
+      dispatch({ type: "ADD_TO_GROUP", groupId, fileTypeKind, entryId: newId() })
     },
     [newId],
   )
@@ -79,6 +91,8 @@ export const useSubmitState = (
   }, [])
 
   const actions: SubmitDispatch = {
+    setQ1,
+    setQ2,
     addRow,
     addToGroup,
     editRowCell,

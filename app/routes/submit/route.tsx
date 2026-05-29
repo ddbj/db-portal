@@ -3,21 +3,19 @@ import {
   FileTable,
   FileTypeGrid,
   FlowStepCards,
+  isKindEnabled,
+  isQ2Enabled,
   ModalRouter,
   PartialFailureBanner,
+  SegmentedControl,
   selectSteps,
   selectValidations,
   TagProgress,
   useSubmitState,
 } from "~/features/submit"
 import { useT } from "~/lib/i18n"
-import type {
-  Access,
-  ButtonType,
-  FileEntry,
-  Organism,
-  Service,
-} from "~/schemas/submit"
+import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
+import { Q1 as Q1Enum, Q2 as Q2Enum } from "~/schemas/submit"
 import { PageTitle, Section, SectionHeading } from "~/ui"
 
 export const handle = {
@@ -28,6 +26,7 @@ export const handle = {
 const SubmitRoute = () => {
   const t = useT()
   const { state, actions } = useSubmitState()
+  const { q1, q2 } = state.submission.preconditions
   const steps = selectSteps(state)
   const validations = selectValidations(state)
   const { configured, total } = countConfiguredRows(state)
@@ -35,11 +34,9 @@ const SubmitRoute = () => {
   const remainingText = t("submit.progress.remaining", { count: total - configured })
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
-  const buttonTypeLabel = (bt: ButtonType): string => t(`submit.buttons.${bt}.label`)
-  const buttonTypeExt = (bt: ButtonType): string => t(`submit.buttons.${bt}.ext`)
-  const buttonTypeHint = (bt: ButtonType): string => t(`submit.buttons.${bt}.hint`)
-  const organismLabel = (o: Organism | ""): string =>
-    o === "" ? t("submit.organism.empty") : t(`submit.organism.${o}`)
+  const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}.label`)
+  const fileTypeKindExt = (k: FileTypeKind): string => t(`submit.fileType.${k}.ext`)
+  const fileTypeKindHint = (k: FileTypeKind): string => t(`submit.fileType.${k}.hint`)
   const accessLabel = (a: Access): string => t(`submit.access.${a}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
@@ -53,20 +50,65 @@ const SubmitRoute = () => {
 
   const resolveNote = (key: string): string => {
     const value = t(key)
+
     return value === key ? "" : value
   }
+
+  const q1Segments = Q1Enum.options.map((v) => ({
+    value: v,
+    label: t(`submit.preconditions.q1.${v}.label`),
+    sub: t(`submit.preconditions.q1.${v}.sub`),
+  }))
+  const q2Segments = Q2Enum.options.map((v) => ({
+    value: v,
+    label: t(`submit.preconditions.q2.${v}.label`),
+    sub: t(`submit.preconditions.q2.${v}.sub`),
+    disabled: !isQ2Enabled(q1, v),
+    disabledReason: t("submit.preconditions.q2DisabledReason"),
+  }))
+  const gridDisabledReason = q1 === null || q2 === null
+    ? t("submit.preconditions.q1Required")
+    : t("submit.preconditions.kindDisabledReason")
 
   const rowIndexOf = (entryId: string): number =>
     state.submission.fileEntries.findIndex((e) => e.id === entryId)
 
-  const buttonTypeLabelForEntry = (entryId: string): string => {
+  const fileTypeKindLabelForEntry = (entryId: string): string => {
     const entry = state.submission.fileEntries.find((e) => e.id === entryId)
-    return entry === undefined ? "" : buttonTypeLabel(entry.buttonType)
+
+    return entry === undefined ? "" : fileTypeKindLabel(entry.fileTypeKind)
   }
 
   return (
     <>
-      <PageTitle title={t("submit.pageTitle")} />
+      <PageTitle title={t("submit.pageTitle")} subtitle={t("submit.pageSubtitle")} />
+      <Section padTop="sm" padBottom="mid">
+        <SectionHeading>{t("submit.sections.preconditions")}</SectionHeading>
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">
+              {t("submit.preconditions.q1Heading")}
+            </p>
+            <SegmentedControl
+              ariaLabel={t("submit.preconditions.q1Heading")}
+              value={q1}
+              segments={q1Segments}
+              onChange={(v) => actions.setQ1(v as Q1)}
+            />
+          </div>
+          <div>
+            <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">
+              {t("submit.preconditions.q2Heading")}
+            </p>
+            <SegmentedControl
+              ariaLabel={t("submit.preconditions.q2Heading")}
+              value={q2}
+              segments={q2Segments}
+              onChange={(v) => actions.setQ2(v as Q2)}
+            />
+          </div>
+        </div>
+      </Section>
       <Section padTop="sm" padBottom="mid">
         <SectionHeading>{t("submit.sections.table")}</SectionHeading>
         <p className="text-fs-body-sm text-ink-mid mt-0 mb-4 leading-relaxed">
@@ -75,36 +117,33 @@ const SubmitRoute = () => {
         <div className="mb-6">
           <FileTypeGrid
             onClick={actions.addRow}
-            getLabel={buttonTypeLabel}
-            getExt={buttonTypeExt}
-            getHint={buttonTypeHint}
+            getLabel={fileTypeKindLabel}
+            getExt={fileTypeKindExt}
+            getHint={fileTypeKindHint}
+            isEnabled={(k) => isKindEnabled(q1, q2, k)}
+            disabledReason={gridDisabledReason}
           />
         </div>
         <FileTable
           state={state}
           labels={{
             caption: t("submit.table.caption"),
-            columnButtonType: t("submit.table.columnButtonType"),
+            columnFileType: t("submit.table.columnFileType"),
             columnFilename: t("submit.table.columnFilename"),
-            columnOrganism: t("submit.table.columnOrganism"),
             columnAccess: t("submit.table.columnAccess"),
             columnDetail: t("submit.table.columnDetail"),
             columnDelete: t("submit.table.columnDelete"),
             empty: t("submit.table.empty"),
             filenamePlaceholder: t("submit.table.filenamePlaceholder"),
             filenameAria: t("submit.a11y.filenameCell"),
-            organismAria: t("submit.a11y.organismCell"),
             accessAria: t("submit.a11y.accessCell"),
             detailUnsetLabel: t("submit.table.detailUnset"),
             editDetailAria: t("submit.a11y.editDetail"),
             deleteAria: t("submit.a11y.deleteRow"),
-            buttonTypeLabel,
-            organismLabel,
+            fileTypeKindLabel,
             accessLabel,
           }}
           onFilenameChange={(entryId, value) => actions.editRowCell(entryId, { filename: value })}
-          onOrganismChange={(entryId, value) =>
-            actions.editRowCell(entryId, { organism: (value === "" ? "" : value) as FileEntry["organism"] })}
           onAccessChange={(entryId, value) => actions.editRowCell(entryId, { access: value })}
           onEditDetail={actions.openEditRow}
           onRequestDelete={actions.openConfirmDelete}
@@ -174,6 +213,7 @@ const SubmitRoute = () => {
             optionSub: (subKey: string | undefined) => {
               if (subKey === undefined) return undefined
               const value = t(subKey)
+
               return value === subKey ? undefined : value
             },
             previewTitle,
@@ -187,7 +227,7 @@ const SubmitRoute = () => {
             cancel: t("submit.modal.confirmDelete.cancel"),
           },
         }}
-        buttonTypeLabelFor={buttonTypeLabelForEntry}
+        fileTypeKindLabelFor={fileTypeKindLabelForEntry}
       />
     </>
   )

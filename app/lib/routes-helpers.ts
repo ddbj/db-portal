@@ -16,6 +16,7 @@ export const designRoutes = (): RouteConfigEntry[] =>
         index("routes/_design/index.tsx"),
         route("tokens", "routes/_design/tokens.tsx"),
         route("primitives", "routes/_design/primitives.tsx"),
+        route("submit-flow-explorer", "routes/_design/submit-flow-explorer.tsx"),
       ]),
     ]
     : []

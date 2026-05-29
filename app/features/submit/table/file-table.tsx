@@ -1,4 +1,4 @@
-import type { Access, ButtonType, FileEntry, Organism } from "~/schemas/submit"
+import type { Access, FileEntry, FileTypeKind } from "~/schemas/submit"
 import { Label } from "~/ui"
 
 import { rowIsConfigured, selectRowDetailSummary } from "../state/selectors"
@@ -7,22 +7,19 @@ import { FileTableRow } from "./file-table-row"
 
 type FileTableLabels = {
   caption: string
-  columnButtonType: string
+  columnFileType: string
   columnFilename: string
-  columnOrganism: string
   columnAccess: string
   columnDetail: string
   columnDelete: string
   empty: string
   filenamePlaceholder: string
   filenameAria: string
-  organismAria: string
   accessAria: string
   detailUnsetLabel: string
   editDetailAria: string
   deleteAria: string
-  buttonTypeLabel: (bt: ButtonType) => string
-  organismLabel: (o: Organism | "") => string
+  fileTypeKindLabel: (kind: FileTypeKind) => string
   accessLabel: (a: Access) => string
 }
 
@@ -30,7 +27,6 @@ type FileTableProps = {
   state: UIState
   labels: FileTableLabels
   onFilenameChange: (entryId: string, value: string) => void
-  onOrganismChange: (entryId: string, value: Organism | "") => void
   onAccessChange: (entryId: string, value: Access) => void
   onEditDetail: (entryId: string) => void
   onRequestDelete: (entryId: string) => void
@@ -40,7 +36,6 @@ export const FileTable = ({
   state,
   labels,
   onFilenameChange,
-  onOrganismChange,
   onAccessChange,
   onEditDetail,
   onRequestDelete,
@@ -62,9 +57,8 @@ export const FileTable = ({
         <caption className="sr-only">{labels.caption}</caption>
         <thead className="bg-surface-subtle">
           <tr>
-            <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnButtonType}</Label></th>
+            <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnFileType}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnFilename}</Label></th>
-            <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnOrganism}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnAccess}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnDetail}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><span className="sr-only">{labels.columnDelete}</span></th>
@@ -81,19 +75,16 @@ export const FileTable = ({
               cellLabels={{
                 filenamePlaceholder: labels.filenamePlaceholder,
                 filenameAria: labels.filenameAria,
-                organismAria: labels.organismAria,
                 accessAria: labels.accessAria,
                 detailUnsetLabel: labels.detailUnsetLabel,
                 editDetailAria: labels.editDetailAria,
                 deleteAria: labels.deleteAria,
               }}
               vocab={{
-                buttonTypeLabel: labels.buttonTypeLabel(entry.buttonType),
-                organismLabel: labels.organismLabel,
+                fileTypeKindLabel: labels.fileTypeKindLabel(entry.fileTypeKind),
                 accessLabel: labels.accessLabel,
               }}
               onFilenameChange={(value) => onFilenameChange(entry.id, value)}
-              onOrganismChange={(value) => onOrganismChange(entry.id, value)}
               onAccessChange={(value) => onAccessChange(entry.id, value)}
               onEditDetail={() => onEditDetail(entry.id)}
               onRequestDelete={() => onRequestDelete(entry.id)}

@@ -168,15 +168,34 @@ export type Resources = {
     pageTitle: string
     pageSubtitle: string
     sections: {
+      preconditions: string
       table: string
       flow: string
+    }
+    preconditions: {
+      q1Heading: string
+      q2Heading: string
+      q1Required: string
+      q2DisabledReason: string
+      kindDisabledReason: string
+      q1: {
+        "public": { label: string; sub: string }
+        "restricted": { label: string; sub: string }
+        "third-party": { label: string; sub: string }
+      }
+      q2: {
+        "human": { label: string; sub: string }
+        "eukaryote": { label: string; sub: string }
+        "prokaryote": { label: string; sub: string }
+        "virus": { label: string; sub: string }
+        "metagenome": { label: string; sub: string }
+      }
     }
     table: {
       caption: string
       headingDescription: string
-      columnButtonType: string
+      columnFileType: string
       columnFilename: string
-      columnOrganism: string
       columnAccess: string
       columnDetail: string
       columnDelete: string
@@ -184,26 +203,18 @@ export type Resources = {
       detailUnset: string
       empty: string
     }
-    buttons: {
+    fileType: {
       "sequence-read": { label: string; ext: string; hint: string }
-      "assembled": { label: string; ext: string; hint: string }
-      "gene-annotation": { label: string; ext: string; hint: string }
-      "variation": { label: string; ext: string; hint: string }
-      "phenotype": { label: string; ext: string; hint: string }
+      "sequence-nucleotide": { label: string; ext: string; hint: string }
+      "sequence-annotation": { label: string; ext: string; hint: string }
+      "variant": { label: string; ext: string; hint: string }
+      "expression-matrix": { label: string; ext: string; hint: string }
       "microarray-expression": { label: string; ext: string; hint: string }
-      "rna-seq-matrix": { label: string; ext: string; hint: string }
-      "mass-spec": { label: string; ext: string; hint: string }
-      "spatial-tx": { label: string; ext: string; hint: string }
-    }
-    organism: {
-      empty: string
-      "human": string
-      "human-microbiome": string
-      "eukaryote": string
-      "prokaryote": string
-      "virus": string
-      "metagenome": string
-      "organelle-plasmid": string
+      "spatial-transcriptomics": { label: string; ext: string; hint: string }
+      "spatial-image": { label: string; ext: string; hint: string }
+      "mass-spectrometry": { label: string; ext: string; hint: string }
+      "nmr": { label: string; ext: string; hint: string }
+      "metabolite-assignment": { label: string; ext: string; hint: string }
     }
     access: {
       "open": string
@@ -221,12 +232,11 @@ export type Resources = {
       noteWarning: string
       noteError: string
       "bioproject": { title: string; description: string; cta: string }
-      "umbrella-bioproject": { title: string; description: string; cta: string }
       "biosample": { title: string; description: string; cta: string }
       "dra": { title: string; description: string; cta: string }
       "jga": { title: string; description: string; cta: string }
-      "annotation": { title: string; description: string; cta: string }
-      "ddbj-mass": { title: string; description: string; cta: string }
+      "ddbj-trad": { title: string; description: string; cta: string }
+      "togovar": { title: string; description: string; cta: string }
       "gea": { title: string; description: string; cta: string }
       "metabobank": { title: string; description: string; cta: string }
       "humandbs": { title: string; description: string; cta: string }
@@ -240,12 +250,11 @@ export type Resources = {
       footnote: string
       serviceCode: {
         "bioproject": string
-        "umbrella-bioproject": string
         "biosample": string
         "dra": string
         "jga": string
-        "annotation": string
-        "ddbj-mass": string
+        "ddbj-trad": string
+        "togovar": string
         "gea": string
         "metabobank": string
         "humandbs": string
@@ -256,12 +265,11 @@ export type Resources = {
       }
       title: {
         "bioproject": string
-        "umbrella-bioproject": string
         "biosample": string
         "dra": string
         "jga": string
-        "annotation": string
-        "ddbj-mass": string
+        "ddbj-trad": string
+        "togovar": string
         "gea": string
         "metabobank": string
         "humandbs": string
@@ -272,12 +280,11 @@ export type Resources = {
       }
       body: {
         "bioproject": string
-        "umbrella-bioproject": string
         "biosample": string
         "dra": string
         "jga": string
-        "annotation": string
-        "ddbj-mass": string
+        "ddbj-trad": string
+        "togovar": string
         "gea": string
         "metabobank": string
         "humandbs": string
@@ -286,6 +293,11 @@ export type Resources = {
         "eva": string
         "dgva": string
       }
+    }
+    origin: {
+      tier1: string
+      tier2: string
+      recipe: string
     }
     modal: {
       title: string
@@ -298,18 +310,14 @@ export type Resources = {
       formGroupLabels: {
         structure: string
         multiplex: string
-        analysisOutput: string
         form: string
         annotationPair: string
         provenance: string
         target: string
         reference: string
-        phenotypeType: string
-        dataForm: string
         platform: string
         domain: string
         method: string
-        stage: string
       }
       options: {
         sequenceRead: {
@@ -319,53 +327,58 @@ export type Resources = {
           pacbio: { label: string; sub: string }
           perSample: { label: string; sub: string }
           multiplex: { label: string; sub: string }
-          geaPair: { label: string; sub: string }
         }
-        assembled: {
-          assembled: { label: string; sub: string }
+        sequenceNucleotide: {
+          standalone: { label: string; sub: string }
           hybrid: { label: string; sub: string }
-          magSag: { label: string; sub: string }
+          magChain: { label: string; sub: string }
+          sagChain: { label: string; sub: string }
           annotationPair: { label: string; sub: string }
           firstParty: { label: string; sub: string }
           thirdParty: { label: string; sub: string }
         }
-        geneAnnotation: {
+        sequenceAnnotation: {
           assemblyPair: { label: string; sub: string }
           standalone: { label: string; sub: string }
           firstParty: { label: string; sub: string }
           thirdParty: { label: string; sub: string }
         }
-        variation: {
+        variant: {
           perSample: { label: string; sub: string }
           aggregate: { label: string; sub: string }
           withRef: { label: string; sub: string }
           withoutRef: { label: string; sub: string }
         }
-        phenotype: {
-          clinical: { label: string; sub: string }
-          modelOrganism: { label: string; sub: string }
-          raw: { label: string; sub: string }
-          summary: { label: string; sub: string }
+        expressionMatrix: {
+          standalone: { label: string; sub: string }
+          mageTab: { label: string; sub: string }
         }
         microarray: {
           singleColor: { label: string; sub: string }
           twoColor: { label: string; sub: string }
         }
-        rnaSeq: {
-          rawCounts: { label: string; sub: string }
-          normalized: { label: string; sub: string }
-        }
-        massSpec: {
-          proteomics: { label: string; sub: string }
-          metabolomics: { label: string; sub: string }
-          shotgun: { label: string; sub: string }
-          imaging: { label: string; sub: string }
-        }
-        spatial: {
+        spatialTranscriptomics: {
           visium: { label: string; sub: string }
           stereoSeq: { label: string; sub: string }
-          raw: { label: string; sub: string }
-          analysis: { label: string; sub: string }
+          merfish: { label: string; sub: string }
+        }
+        spatialImage: {
+          visium: { label: string; sub: string }
+          merfish: { label: string; sub: string }
+        }
+        massSpectrometry: {
+          metabolomics: { label: string; sub: string }
+          proteomics: { label: string; sub: string }
+          standard: { label: string; sub: string }
+          imaging: { label: string; sub: string }
+        }
+        nmr: {
+          metabolomics: { label: string; sub: string }
+          proteomics: { label: string; sub: string }
+        }
+        metaboliteAssignment: {
+          metabolomics: { label: string; sub: string }
+          proteomics: { label: string; sub: string }
         }
       }
       confirmDelete: {
@@ -375,31 +388,68 @@ export type Resources = {
         cancel: string
       }
     }
-    biosample: { intro: string }
-    bioproject: { intro: string }
-    umbrella: { intro: string; publicOnly: string }
-    dra: { intro: string }
-    jga: { intro: string; dbclsApplicationRequired: string }
-    annotation: { intro: string }
-    variation: {
-      internal: { intro: string; togovarLink: string }
-      external: { restrictedHuman: string }
+    sequenceRead: {
+      jga: { intro: string; dbclsPolicy: string }
+      dra: { intro: string; restrictedNonHumanEmbargo: string }
     }
-    gea: { intro: string; mageTabRequired: string }
-    metabobank: { intro: string; jpostRedirect: string }
-    thirdParty: { intro: string; originDoiRequired: string }
+    ddbjTrad: {
+      intro: string
+      divisionByDataType: string
+      notForReads: string
+      locusTagPrefix: string
+      mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
+      sag: { misagPackage: string }
+      tpa: { intro: string; primaryAccessionRequired: string }
+      assemblyAnnotation: { intro: string; filenamePairing: string }
+      annotation: { needsSequencePair: string }
+    }
+    variant: {
+      referenceByName: string
+      jga: { intro: string; policyDelegated: string }
+      togovar: { intro: string; humanRefOnly: string }
+    }
+    gea: {
+      expressionMatrix: { intro: string }
+      microarray: { intro: string }
+      spatial: { intro: string }
+      spatialImage: { intro: string; largeImageGeneralist: string }
+    }
+    jga: {
+      array: { intro: string }
+      dataset: { intro: string }
+      policyApplication: string
+      nbdcPolicy: string
+    }
+    metabobank: {
+      ms: { intro: string; proteomicsToJpost: string; imagingImageFiles: string }
+      nmr: { intro: string }
+      maf: { intro: string; proteomicsToJpost: string }
+    }
+    bioproject: { intro: string }
+    biosample: { intro: string }
     multiModal: { warning: string }
+    mag: {
+      bioproject: { intro: string }
+      biosample: { metagenome: string; binned: string; mag: string }
+      dra: { run: string; analysis: string }
+      ddbjTrad: { envGenome: string }
+    }
+    sag: {
+      bioproject: { intro: string }
+      biosample: { misag: string; combined: string }
+      dra: { run: string }
+      ddbjTrad: { entry: string }
+    }
     validations: {
       heading: string
       rowReference: string
       "missing-filename": string
-      "missing-organism": string
-      "inconsistent-group-type": string
+      "precondition-conflict": string
+      "no-destination-service": string
       "dangling-group-id": string
     }
     a11y: {
       filenameCell: string
-      organismCell: string
       accessCell: string
       editDetail: string
       deleteRow: string
@@ -763,142 +813,110 @@ export const ja: Resources = {
   },
   submit: {
     pageTitle: "登録ナビゲーション",
-    pageSubtitle: "ファイルの種類・生物・公開区分を入力すると、必要な登録経路を自動で組み立てます。",
+    pageSubtitle: "手元のデータの性質を答えるだけで、どの登録先に何を出すかを導出します",
     sections: {
+      preconditions: "登録前提",
       table: "ファイルテーブル",
       flow: "登録フロー",
     },
+    preconditions: {
+      q1Heading: "登録種別",
+      q2Heading: "生物ドメイン",
+      q1Required: "登録種別を選択してください",
+      q2DisabledReason: "選択した登録種別では、この生物ドメインは登録先を持ちません",
+      kindDisabledReason: "選択した登録前提では、この種別の登録先がありません",
+      q1: {
+        "public": { label: "公開データの登録", sub: "公開を前提としたデータ" },
+        "restricted": { label: "制限公開データを含む登録", sub: "アクセス制御を伴うデータを含む" },
+        "third-party": { label: "第三者データの解析登録", sub: "他者が登録したデータに対する解析結果" },
+      },
+      q2: {
+        "human": { label: "ヒト", sub: "ヒト個人由来のデータ" },
+        "eukaryote": { label: "ヒト以外の真核生物", sub: "動植物・菌類など" },
+        "prokaryote": { label: "原核生物", sub: "細菌・古細菌" },
+        "virus": { label: "ファージ・ウイルス", sub: "ウイルス・ファージ" },
+        "metagenome": { label: "環境サンプル", sub: "メタゲノム・環境由来サンプル" },
+      },
+    },
     table: {
-      caption: "登録ファイル一覧",
-      headingDescription: "登録したいファイルを種別ボタンから追加し、生物・公開区分・データ詳細を埋めてください。",
-      columnButtonType: "種別",
+      caption: "登録するデータファイルの一覧",
+      headingDescription: "ファイルの種別と公開区分を行ごとに入力します",
+      columnFileType: "ファイル種別",
       columnFilename: "ファイル名",
-      columnOrganism: "生物",
       columnAccess: "公開区分",
       columnDetail: "データ詳細",
       columnDelete: "削除",
-      filenamePlaceholder: "例: read-001_R1.fastq.gz",
-      detailUnset: "+ 設定",
-      empty: "NO FILES",
+      filenamePlaceholder: "ファイル名を入力",
+      detailUnset: "未設定",
+      empty: "上のボタンからファイル種別を追加してください",
     },
-    buttons: {
-      "sequence-read": { label: "配列リード", ext: "fastq", hint: "FASTQ / BAM 形式のシーケンス読み出し" },
-      "assembled": { label: "組み立て済み配列", ext: "fasta", hint: "アセンブリ済みの FASTA / GFA" },
-      "gene-annotation": { label: "遺伝子アノテーション", ext: "gff", hint: "GFF / GTF / EMBL 形式のアノテーション" },
-      "variation": { label: "変異情報", ext: "vcf", hint: "VCF / 解析結果の変異データ" },
-      "phenotype": { label: "表現型データ", ext: "tsv", hint: "TSV 形式の表現型・臨床情報" },
-      "microarray-expression": { label: "マイクロアレイ発現", ext: "cel", hint: "CEL / MAGE-TAB 形式の発現データ" },
-      "rna-seq-matrix": { label: "RNA-seq マトリクス", ext: "tsv", hint: "RNA-seq 発現量マトリクス" },
-      "mass-spec": { label: "質量分析", ext: "mzML", hint: "mzML / mzXML 形式の質量スペクトル" },
-      "spatial-tx": { label: "空間トランスクリプトーム", ext: "tsv", hint: "Visium / Stereo-seq 等の空間データ" },
-    },
-    organism: {
-      empty: "—",
-      "human": "ヒト (Homo sapiens)",
-      "human-microbiome": "ヒト関連マイクロバイオーム",
-      "eukaryote": "真核生物 (ヒト以外)",
-      "prokaryote": "原核生物",
-      "virus": "ウイルス",
-      "metagenome": "メタゲノム",
-      "organelle-plasmid": "オルガネラ / プラスミド",
+    fileType: {
+      "sequence-read": { label: "配列リード", ext: "FASTQ", hint: "シーケンサーが出力した生リード" },
+      "sequence-nucleotide": { label: "FASTA 塩基配列", ext: "FASTA", hint: "組み上げ済みの塩基配列" },
+      "sequence-annotation": { label: "配列アノテーション", ext: "GFF", hint: "配列に付与する feature 情報" },
+      "variant": { label: "バリアント", ext: "VCF", hint: "変異・多型の一覧" },
+      "expression-matrix": { label: "発現マトリクス", ext: "TSV", hint: "遺伝子発現の数値マトリクス" },
+      "microarray-expression": { label: "マイクロアレイ発現", ext: "CEL", hint: "マイクロアレイによる発現測定" },
+      "spatial-transcriptomics": { label: "空間トランスクリプトーム", ext: "TSV", hint: "空間座標に対応した発現データ" },
+      "spatial-image": { label: "空間画像", ext: "TIFF", hint: "空間トランスクリプトームの組織画像" },
+      "mass-spectrometry": { label: "質量分析", ext: "mzML", hint: "質量分析計の測定データ" },
+      "nmr": { label: "NMR", ext: "nmrML", hint: "核磁気共鳴の測定データ" },
+      "metabolite-assignment": { label: "代謝物アサインメント", ext: "TSV", hint: "代謝物の同定結果テーブル" },
     },
     access: {
-      "open": "公開 (open)",
-      "restricted": "制限公開 (restricted)",
+      "open": "公開",
+      "restricted": "制限公開",
     },
     progress: {
-      heading: "データ詳細 設定済み",
-      remaining: "残り {{count}} 件のデータ詳細を設定すると、フローカードの詳細が確定します。",
-      complete: "すべての行のデータ詳細が設定されています。",
+      heading: "入力状況",
+      remaining: "残り {{count}} 行",
+      complete: "すべての行が入力済みです",
     },
     flow: {
-      empty: "ファイルを追加すると、必要な登録手順 (BioProject + BioSample + DRA / MSS / GEA / JGA など) が自動で組み立てられます。",
-      accessionLabel: "発行 accession (例)",
-      filenameMissing: "<ファイル名未設定>",
-      noteWarning: "要注意",
+      empty: "ファイルを追加すると、ここに登録フローが表示されます",
+      accessionLabel: "アクセッション",
+      filenameMissing: "ファイル名が未入力です",
+      noteWarning: "注意",
       noteError: "エラー",
-      "bioproject": {
-        title: "BioProject 登録",
-        description: "研究プロジェクトの輪郭を表すメタデータ。生物 / アクセス区分の組み合わせごとに分裂する場合があります。",
-        cta: "BioProject 登録 (D-way) を開く",
-      },
-      "umbrella-bioproject": {
-        title: "Umbrella BioProject 登録",
-        description: "複数 BioProject の親プロジェクトとして公開する場合に必要です。",
-        cta: "Umbrella BioProject の案内を開く",
-      },
-      "biosample": {
-        title: "BioSample 登録",
-        description: "試料 (個体・組織・培養株・環境メタゲノム等) ごとのメタデータ。",
-        cta: "BioSample 登録 (D-way) を開く",
-      },
-      "dra": {
-        title: "DRA (Run / Experiment / Analysis)",
-        description: "公開シーケンスリードを Sequence Read Archive に登録します。",
-        cta: "DRA 登録の案内を開く",
-      },
-      "jga": {
-        title: "JGA 制限公開リード登録",
-        description: "ヒト由来制限公開リードを JGA に登録します。DBCLS への申請が必要です。",
-        cta: "JGA 登録の案内を開く",
-      },
-      "annotation": {
-        title: "Annotation (MSS) 登録",
-        description: "GFF / GTF / EMBL 形式のアノテーションをアセンブリと併せて登録します。",
-        cta: "アノテーション登録の案内を開く",
-      },
-      "ddbj-mass": {
-        title: "DDBJ Mass 登録",
-        description: "アセンブリ・解析結果・third-party など、DDBJ Mass で受け入れる多目的ストアです。",
-        cta: "DDBJ Mass の案内を開く",
-      },
-      "gea": {
-        title: "GEA (Gene Expression Archive) 登録",
-        description: "マイクロアレイ / RNA-seq の発現量マトリクスを MAGE-TAB と共に登録します。",
-        cta: "GEA 登録の案内を開く",
-      },
-      "metabobank": {
-        title: "MetaboBank 登録",
-        description: "メタボロームデータを MetaboBank に登録します (proteomics は jpost 案内)。",
-        cta: "MetaboBank の登録ページを開く",
-      },
-      "humandbs": {
-        title: "humandbs への誘導",
-        description: "DBCLS が運用する humandbs への登録について案内します。",
-        cta: "humandbs を開く",
-      },
-      "dbcls": {
-        title: "DBCLS への申請",
-        description: "JGA / humandbs 等の DBCLS 経由申請について案内します。",
-        cta: "DBCLS を開く",
-      },
-      "jpost": {
-        title: "jPOST への誘導",
-        description: "プロテオーム質量分析は DDBJ MetaboBank ではなく jPOST へ誘導します。",
-        cta: "jPOST を開く",
-      },
-      "eva": {
-        title: "European Variation Archive への誘導",
-        description: "ヒト由来制限公開の変異データは EVA への登録を検討してください。",
-        cta: "EVA を開く",
-      },
-      "dgva": {
-        title: "DGVa への誘導",
-        description: "大規模構造変異は DGVa (Database of Genomic Variants archive) を検討してください。",
-        cta: "DGVa を開く",
-      },
+      "bioproject": { title: "BioProject", description: "プロジェクトを束ねる随伴エントリ", cta: "詳細" },
+      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴エントリ", cta: "詳細" },
+      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先", cta: "詳細" },
+      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先", cta: "詳細" },
+      "ddbj-trad": { title: "DDBJ Trad", description: "塩基配列を一括登録する MSS", cta: "詳細" },
+      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先", cta: "詳細" },
+      "gea": { title: "GEA", description: "遺伝子発現データの登録先", cta: "詳細" },
+      "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先", cta: "詳細" },
+      "humandbs": { title: "humandbs", description: "制限公開ヒトデータの Policy 申請窓口", cta: "申請窓口へ進む" },
+      "dbcls": { title: "DBCLS", description: "NBDC ポリシー・JGAP 発行の窓口", cta: "DBCLS へ進む" },
+      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先", cta: "jPOST へ進む" },
+      "eva": { title: "EVA", description: "European Variation Archive への誘導", cta: "EVA へ進む" },
+      "dgva": { title: "DGVa", description: "構造多型アーカイブへの誘導", cta: "DGVa へ進む" },
     },
     preview: {
-      label: "この設定で組まれる登録",
-      footnote: "この内容で保存すると、テーブルおよびフローカードに反映されます。",
+      label: "プレビュー",
+      footnote: "入力内容から導出した登録フローのプレビューです",
       serviceCode: {
         "bioproject": "BioProject",
-        "umbrella-bioproject": "Umbrella BP",
         "biosample": "BioSample",
         "dra": "DRA",
         "jga": "JGA",
-        "annotation": "Annotation",
-        "ddbj-mass": "DDBJ Mass",
+        "ddbj-trad": "DDBJ Trad",
+        "togovar": "TogoVar",
+        "gea": "GEA",
+        "metabobank": "MetaboBank",
+        "humandbs": "humandbs",
+        "dbcls": "DBCLS",
+        "jpost": "jPOST",
+        "eva": "EVA",
+        "dgva": "dgVa",
+      },
+      title: {
+        "bioproject": "BioProject",
+        "biosample": "BioSample",
+        "dra": "DRA",
+        "jga": "JGA",
+        "ddbj-trad": "DDBJ Trad",
+        "togovar": "TogoVar",
         "gea": "GEA",
         "metabobank": "MetaboBank",
         "humandbs": "humandbs",
@@ -907,186 +925,255 @@ export const ja: Resources = {
         "eva": "EVA",
         "dgva": "DGVa",
       },
-      title: {
-        "bioproject": "1 BioProject",
-        "umbrella-bioproject": "1 Umbrella BP",
-        "biosample": "1 BioSample",
-        "dra": "Experiment + Run",
-        "jga": "Submission + Dataset",
-        "annotation": "Annotation Entry",
-        "ddbj-mass": "Mass Entry",
-        "gea": "Data Object (発現量行列)",
-        "metabobank": "Metabolome Entry",
-        "humandbs": "humandbs Application",
-        "dbcls": "DBCLS Application",
-        "jpost": "jPOST Submission",
-        "eva": "EVA Submission",
-        "dgva": "DGVa Submission",
-      },
       body: {
-        "bioproject": "研究プロジェクトのメタデータが BioProject に登録されます。",
-        "umbrella-bioproject": "複数の BioProject を束ねる Umbrella を新規発行します。",
-        "biosample": "試料の属性を BioSample に登録します。",
-        "dra": "シーケンスリードを公開アーカイブに登録します。",
-        "jga": "制限公開ヒトリードを JGA に登録します。",
-        "annotation": "GFF / GTF を MSS で登録します。",
-        "ddbj-mass": "アセンブリや解析結果を DDBJ Mass に登録します。",
-        "gea": "発現量マトリクスを GEA に登録します。",
-        "metabobank": "メタボローム質量分析を MetaboBank に登録します。",
-        "humandbs": "humandbs への申請を案内します。",
-        "dbcls": "DBCLS への事前申請を案内します。",
-        "jpost": "プロテオーム質量分析は jPOST へ。",
-        "eva": "ヒト変異は EVA への登録を検討します。",
-        "dgva": "構造変異は DGVa への登録を検討します。",
+        "bioproject": "プロジェクト全体を束ねる随伴エントリです",
+        "biosample": "サンプルを束ねる随伴エントリです",
+        "dra": "配列リードを Run・Analysis として登録します",
+        "jga": "制限公開ヒト個人データを Dataset 単位で登録します",
+        "ddbj-trad": "塩基配列を MSS で一括登録します",
+        "togovar": "公開ヒト variant を登録します",
+        "gea": "遺伝子発現データを登録します",
+        "metabobank": "メタボロミクスデータを登録します",
+        "humandbs": "制限公開ヒトデータの Policy 申請を行います",
+        "dbcls": "NBDC ポリシー利用・JGAP 発行の手続きを行います",
+        "jpost": "プロテオミクスデータを jPOST に登録します",
+        "eva": "variant を EVA に登録します",
+        "dgva": "構造多型を DGVa に登録します",
       },
     },
+    origin: {
+      tier1: "ルール由来",
+      tier2: "集約由来",
+      recipe: "レシピ由来",
+    },
     modal: {
-      title: "データ詳細を入力",
-      description: "ファイルの構成と内容を選ぶと、組まれる登録 (BioSample / DRA / GEA 等) が右側プレビューに反映されます。",
-      save: "この内容で保存",
+      title: "データ詳細の編集",
+      description: "この行のグループ・データ形態・詳細区分を設定します",
+      save: "保存",
       cancel: "キャンセル",
-      statusReady: "必須項目はすべて入力済み · 保存後はいつでも編集できます",
-      previewLabel: "この設定で組まれる登録",
-      previewFootnote: "この内容で保存すると、テーブルおよびフローカードに反映されます。",
+      statusReady: "設定済み",
+      previewLabel: "プレビュー",
+      previewFootnote: "この設定での登録フローのプレビューです",
       formGroupLabels: {
-        structure: "リードの構成は?",
-        multiplex: "サンプルの混合状況は?",
-        analysisOutput: "発現量等の解析済みデータも登録しますか?",
-        form: "形式は?",
-        annotationPair: "アノテーションも同時に登録しますか?",
-        provenance: "データの由来は?",
-        target: "アノテーション対象は?",
-        reference: "リファレンス FASTA も同時に登録しますか?",
-        phenotypeType: "表現型データの種類は?",
-        dataForm: "データの形は?",
-        platform: "プラットフォームは?",
-        domain: "質量分析の領域は?",
-        method: "取得方法は?",
-        stage: "解析段階は?",
+        structure: "構造",
+        multiplex: "多重化",
+        form: "データ形態",
+        annotationPair: "アノテーションのペア",
+        provenance: "由来",
+        target: "対象",
+        reference: "リファレンス",
+        platform: "プラットフォーム",
+        domain: "分析ドメイン",
+        method: "測定手法",
       },
       options: {
         sequenceRead: {
-          singleEnd: { label: "single-end FASTQ", sub: "1 ファイル" },
-          pairEnd: { label: "pair-end FASTQ", sub: "R1 + R2 の 2 ファイル" },
-          tenx: { label: "10x Genomics FASTQ", sub: "I1 + R1 + R2 の 3 ファイル" },
-          pacbio: { label: "PacBio HDF5", sub: "bas.h5 + bax.h5 × 3" },
-          perSample: { label: "1 サンプル分の FASTQ", sub: "サンプル単位のリード" },
-          multiplex: { label: "事前 demultiplex 済み per-sample FASTQ", sub: "1 group に複数 sample 由来のリードが混在" },
-          geaPair: { label: "解析済みデータも GEA に登録する", sub: "発現量行列 / peak / scRNA counts 等" },
+          singleEnd: { label: "シングルエンド", sub: "片方向のリード" },
+          pairEnd: { label: "ペアエンド", sub: "両端からのリード" },
+          tenx: { label: "10x", sub: "10x Genomics 形式" },
+          pacbio: { label: "PacBio", sub: "ロングリード" },
+          perSample: { label: "サンプルごと", sub: "サンプル単位のリード" },
+          multiplex: { label: "多重化", sub: "複数サンプルを 1 ファイルに多重化" },
         },
-        assembled: {
-          assembled: { label: "アセンブリ済み (single)", sub: "1 ファイル / 1 アセンブリ" },
-          hybrid: { label: "Hybrid assembly (long + short)", sub: "Hybrid scope note を付与" },
-          magSag: { label: "MAG / SAG chain", sub: "raw → primary → binned → mag/sag" },
-          annotationPair: { label: "アノテーションと同時登録", sub: "GFF / GTF を同時に取り扱う" },
-          firstParty: { label: "自分たちの解析データ", sub: "通常の DDBJ 経路" },
-          thirdParty: { label: "third-party (公開済データの再解析)", sub: "元データの DOI 必須" },
+        sequenceNucleotide: {
+          standalone: { label: "単独配列", sub: "アノテーションを伴わない配列" },
+          hybrid: { label: "ハイブリッド", sub: "複数プラットフォームのアセンブリ" },
+          magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
+          sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
+          annotationPair: { label: "アノテーションペア", sub: "アノテーションと対になる配列" },
+          firstParty: { label: "一次登録", sub: "自身が産生した配列" },
+          thirdParty: { label: "第三者 (TPA)", sub: "他者データを引用した配列" },
         },
-        geneAnnotation: {
-          assemblyPair: { label: "アセンブリと同時登録", sub: "DDBJ Mass + Annotation 連動" },
-          standalone: { label: "アノテーションのみ", sub: "Annotation のみ" },
-          firstParty: { label: "自分たちのアノテーション", sub: "通常の DDBJ 経路" },
-          thirdParty: { label: "third-party", sub: "元データの DOI 必須" },
+        sequenceAnnotation: {
+          assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },
+          standalone: { label: "単独アノテーション", sub: "配列ファイルと別に登録" },
+          firstParty: { label: "一次登録", sub: "自身が作成したアノテーション" },
+          thirdParty: { label: "第三者 (TPA)", sub: "他者データへのアノテーション" },
         },
-        variation: {
-          perSample: { label: "サンプルごとの VCF", sub: "サンプル単位の variants" },
-          aggregate: { label: "集約済み VCF", sub: "集約された aggregate VCF" },
-          withRef: { label: "リファレンス FASTA も登録する", sub: "VCF + reference FASTA pair" },
-          withoutRef: { label: "VCF のみ", sub: "リファレンスは登録済みのものを参照" },
+        variant: {
+          perSample: { label: "サンプルごと", sub: "個別サンプルの variant" },
+          aggregate: { label: "集計", sub: "複数サンプルを集計した variant" },
+          withRef: { label: "リファレンスあり", sub: "リファレンスを参照する" },
+          withoutRef: { label: "リファレンスなし", sub: "リファレンスを参照しない" },
         },
-        phenotype: {
-          clinical: { label: "臨床表現型", sub: "ヒト臨床表現型 (host-pathogen chip)" },
-          modelOrganism: { label: "モデル生物 / 実験表現型", sub: "実験動物・植物などの表現型" },
-          raw: { label: "raw 計測", sub: "実測値そのまま" },
-          summary: { label: "サマリ統計", sub: "サマリ統計に集約" },
+        expressionMatrix: {
+          standalone: { label: "単独マトリクス", sub: "発現マトリクスのみ" },
+          mageTab: { label: "MAGE-TAB", sub: "MAGE-TAB 形式の一式" },
         },
         microarray: {
-          singleColor: { label: "single-color アレイ", sub: "MAGE-TAB IDF + SDRF 一式" },
-          twoColor: { label: "two-color アレイ", sub: "Cy3 / Cy5 の two-color アレイ" },
+          singleColor: { label: "1 色法", sub: "シングルチャネル測定" },
+          twoColor: { label: "2 色法", sub: "デュアルチャネル測定" },
         },
-        rnaSeq: {
-          rawCounts: { label: "raw counts マトリクス", sub: "Sample × Gene の count matrix" },
-          normalized: { label: "正規化済みマトリクス", sub: "TPM / FPKM / 正規化済み" },
+        spatialTranscriptomics: {
+          visium: { label: "Visium", sub: "10x Visium プラットフォーム" },
+          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq プラットフォーム" },
+          merfish: { label: "MERFISH", sub: "MERFISH プラットフォーム" },
         },
-        massSpec: {
-          proteomics: { label: "プロテオーム", sub: "jPOST への誘導が追加されます" },
-          metabolomics: { label: "メタボローム", sub: "MetaboBank に登録" },
-          shotgun: { label: "通常 (shotgun / targeted)", sub: "通常のショットガン / ターゲット型" },
-          imaging: { label: "イメージング質量分析", sub: "imaging-ms (空間質量分析)" },
+        spatialImage: {
+          visium: { label: "Visium", sub: "Visium の組織画像" },
+          merfish: { label: "MERFISH", sub: "MERFISH の大容量画像" },
         },
-        spatial: {
-          visium: { label: "10x Visium", sub: "10x Visium / Visium HD" },
-          stereoSeq: { label: "Stereo-seq", sub: "BGI Stereo-seq" },
-          raw: { label: "raw 計測", sub: "FASTQ + Image / SubBC マトリクス" },
-          analysis: { label: "解析済み出力", sub: "解析後の出力 (clusters / DEGs)" },
+        massSpectrometry: {
+          metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
+          proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
+          standard: { label: "通常測定", sub: "一般的な質量分析" },
+          imaging: { label: "イメージング", sub: "imaging mass spec" },
+        },
+        nmr: {
+          metabolomics: { label: "メタボロミクス", sub: "代謝物の NMR" },
+          proteomics: { label: "プロテオミクス", sub: "タンパク質の NMR" },
+        },
+        metaboliteAssignment: {
+          metabolomics: { label: "メタボロミクス", sub: "代謝物の同定結果" },
+          proteomics: { label: "プロテオミクス", sub: "タンパク質の同定結果" },
         },
       },
       confirmDelete: {
-        title: "この行を削除しますか?",
-        description: "削除すると、この行に関連する Step とプレビューが変更されます。",
-        confirm: "削除する",
+        title: "行を削除しますか",
+        description: "この行とデータ詳細の設定が削除されます",
+        confirm: "削除",
         cancel: "キャンセル",
       },
     },
-    biosample: {
-      intro: "試料単位のメタデータ。organism / package を選んで登録します。",
-    },
-    bioproject: {
-      intro: "研究プロジェクトの輪郭を BioProject として登録します。",
-    },
-    umbrella: {
-      intro: "複数の BioProject を束ねる Umbrella を発行します。",
-      publicOnly: "Umbrella は公開のみ受け付けます。",
-    },
-    dra: {
-      intro: "公開のシーケンスリードを DRA に登録します。",
-    },
-    jga: {
-      intro: "制限公開ヒトリードは JGA に登録します。",
-      dbclsApplicationRequired: "JGA 登録には事前に DBCLS への利用申請が必要です。",
-    },
-    annotation: {
-      intro: "GFF / GTF / EMBL のアノテーションを登録します。",
-    },
-    variation: {
-      internal: {
-        intro: "open / 制限ヒト以外の変異データは DDBJ Mass (TogoVar 連携) に登録します。",
-        togovarLink: "TogoVar Annotator 経由でアノテーション付与を依頼できます。",
+    sequenceRead: {
+      jga: {
+        intro: "制限公開のヒト個人データやヒト関連メタゲノムの配列リードは、JGA に登録します。",
+        dbclsPolicy: "JGA への登録には、DBCLS で Policy 承認 (JGAP) を取得する必要があります。",
       },
-      external: {
-        restrictedHuman: "ヒト由来制限公開の変異は EVA への登録を検討してください。",
+      dra: {
+        intro: "公開データ、または非ヒトの配列リードは DRA に登録します。",
+        restrictedNonHumanEmbargo: "非ヒトの制限公開リードは、DRA の公開予定日 (embargo) を設定して非公開期間を扱います。",
+      },
+    },
+    ddbjTrad: {
+      intro: "組み上げ済みの塩基配列は、DDBJ Trad (MSS = Mass Submission System) で一括登録します。",
+      divisionByDataType: "MSS では、Division と data type の 2 軸で配列が分類されます。",
+      notForReads: "生リードは MSS の対象外です。配列リードは DRA に登録してください。",
+      locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
+      mag: {
+        envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",
+        rawReadsToDraRequired: "MAG の登録には、元の生リードを先に DRA へ登録しておく必要があります。",
+      },
+      sag: {
+        misagPackage: "SAG は MAG とは別の MISAG package で扱います。",
+      },
+      tpa: {
+        intro: "第三者 (TPA) の配列・アノテーションも MSS で受け付けます。",
+        primaryAccessionRequired: "TPA には、引用元となる INSDC accession の指定が必須です。",
+      },
+      assemblyAnnotation: {
+        intro: "配列とアノテーションは、MSS の 1 ファイルペアとして同一 step で登録します。",
+        filenamePairing: "配列ファイルとアノテーションファイルは、拡張子を除いてファイル名を一致させます。",
+      },
+      annotation: {
+        needsSequencePair: "単独のアノテーション行には、対応する配列ファイルのペアが必要です。",
+      },
+    },
+    variant: {
+      referenceByName: "reference は VCF ヘッダで GRCh37/38 などを名前参照するだけで、reference FASTA の別登録は不要です。",
+      jga: {
+        intro: "制限公開のヒトやヒト関連メタゲノムの variant は、JGA の Analysis に登録します。",
+        policyDelegated: "JGA の Policy 承認は DBCLS / NBDC に委譲されています。",
+      },
+      togovar: {
+        intro: "公開ヒトの variant は TogoVar に登録します。",
+        humanRefOnly: "TogoVar は GRCh37/38 のヒトゲノム参照に限るため、非ヒトの variant は受理されない可能性があります。",
       },
     },
     gea: {
-      intro: "発現量マトリクスを GEA に登録します。",
-      mageTabRequired: "MAGE-TAB IDF + SDRF が必要です。",
+      expressionMatrix: {
+        intro: "発現マトリクスは GEA に登録します。",
+      },
+      microarray: {
+        intro: "マイクロアレイ発現は、GEA の Experiment として登録します。",
+      },
+      spatial: {
+        intro: "空間トランスクリプトームの発現・空間対応データは GEA に登録します。生リードは別 entry として DRA に登録してください。",
+      },
+      spatialImage: {
+        intro: "空間画像は GEA に登録します。",
+        largeImageGeneralist: "MERFISH などの大容量画像は、汎用アーカイブの利用も検討してください。",
+      },
+    },
+    jga: {
+      array: {
+        intro: "制限公開のヒトやヒト関連メタゲノムのアレイデータは、JGA の Analysis に登録します。",
+      },
+      dataset: {
+        intro: "JGA は、Policy 単位の Dataset でデータを束ねます。",
+      },
+      policyApplication: "制限公開データの登録には、申請窓口 (humandbs) で Policy 申請が必要です。",
+      nbdcPolicy: "NBDC 標準ポリシーを利用できます。独自ポリシーは DBCLS 登録で JGAP を発行します。",
     },
     metabobank: {
-      intro: "質量分析メタデータを MetaboBank に登録します。",
-      jpostRedirect: "プロテオームは jPOST への登録を案内します。",
+      ms: {
+        intro: "質量分析データは MetaboBank に登録します。",
+        proteomicsToJpost: "プロテオミクスは MetaboBank の対象外です。jPOST に登録してください。",
+        imagingImageFiles: "imaging mass spec の組織切片画像は、本データの追加ファイルとして同梱します。",
+      },
+      nmr: {
+        intro: "NMR データは MetaboBank に登録します。",
+      },
+      maf: {
+        intro: "代謝物アサインメント (MAF) は MetaboBank に登録します。",
+        proteomicsToJpost: "プロテオミクスの同定結果は jPOST に登録してください。",
+      },
     },
-    thirdParty: {
-      intro: "third-party 由来のデータは DDBJ Mass の TPA scope に振り分けられます。",
-      originDoiRequired: "元データの DOI を必ず付与してください。",
+    bioproject: {
+      intro: "プロジェクトを束ねる BioProject が随伴して作成されます。",
+    },
+    biosample: {
+      intro: "サンプルを束ねる BioSample が随伴して作成されます。実サンプル数・生物種は各 step で入力します。",
     },
     multiModal: {
-      warning: "同一グループに異種ファイルが混在しています。multi-modal scope として扱います。",
+      warning: "1 つのファイルグループに複数の種別が混在しています。",
+    },
+    mag: {
+      bioproject: {
+        intro: "MAG の全段が、共通の BioProject (type=Metagenome) を参照します。",
+      },
+      biosample: {
+        metagenome: "元のメタゲノムサンプルの BioSample です。",
+        binned: "Binned サンプルは、メタゲノムサンプルから derived_from で派生します。",
+        mag: "MAG サンプルは、メタゲノムサンプルから derived_from で派生します。",
+      },
+      dra: {
+        run: "生リードを DRA Run として登録します。",
+        analysis: "プライマリ・Binned アセンブリを、DRA Analysis (De Novo Assembly) として登録します。",
+      },
+      ddbjTrad: {
+        envGenome: "MAG ゲノムを、MSS の ENV division のゲノムエントリとして登録します。",
+      },
+    },
+    sag: {
+      bioproject: {
+        intro: "SAG を束ねる共通の BioProject です。",
+      },
+      biosample: {
+        misag: "一細胞の SAG サンプルを、MISAG package で登録します (実生物種名を用います)。",
+        combined: "複数細胞のときは、個別 SAG を derived_from で束ねる結合 SAG サンプルです。",
+      },
+      dra: {
+        run: "SAG の生リードを、任意で DRA Run として登録します。",
+      },
+      ddbjTrad: {
+        entry: "SAG 配列を、MSS の data type=SAG のエントリとして登録します。",
+      },
     },
     validations: {
-      heading: "{{count}} 件のデータ設定が flow-rules と整合していません。",
-      rowReference: "→ 行 #{{index}} を編集",
-      "missing-filename": "ファイル名が未入力です。",
-      "missing-organism": "生物が未選択です。",
-      "inconsistent-group-type": "GroupType がボタン種別と整合していません。",
-      "dangling-group-id": "グループ参照が壊れています。",
+      heading: "確認事項が {{count}} 件あります",
+      rowReference: "{{index}} 行目",
+      "missing-filename": "ファイル名が入力されていません",
+      "precondition-conflict": "登録前提と矛盾する種別の行があります",
+      "no-destination-service": "この行はどの登録先にも入りません",
+      "dangling-group-id": "存在しないグループを参照している行があります",
     },
     a11y: {
       filenameCell: "ファイル名",
-      organismCell: "生物の選択",
-      accessCell: "公開区分の選択",
+      accessCell: "公開区分",
       editDetail: "データ詳細を編集",
-      deleteRow: "この行を削除",
-      modalClose: "モーダルを閉じる",
+      deleteRow: "行を削除",
+      modalClose: "閉じる",
     },
   },
   search: {

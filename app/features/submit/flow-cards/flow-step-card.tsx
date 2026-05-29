@@ -36,7 +36,7 @@ export const FlowStepCard = ({
   externalCtaLabel,
   sourceTagLabel,
 }: FlowStepCardProps) => {
-  const pending = step.notes.some((n) => n.kind === "warning" || n.kind === "error")
+  const hasWarningOrError = step.notes.some((n) => n.kind === "warning" || n.kind === "error")
   const scopeGroups = groups.filter((g) => step.scope.groupIds.includes(g.id))
   const scopeEntries = entries.filter((e) => step.scope.entryIds.includes(e.id))
   const meta = getSubmitMeta(step.service)
@@ -50,35 +50,33 @@ export const FlowStepCard = ({
       data-service={step.service}
       className={cn(
         "border rounded-card flex flex-col gap-3 p-5",
-        pending
+        hasWarningOrError
           ? "bg-surface-subtle border-dashed border-border-soft"
           : "bg-surface border-border-soft shadow-card",
       )}
     >
       <header className="flex items-center gap-3 flex-wrap">
-        <StepBadge index={index} pending={pending} />
+        <StepBadge index={index} pending={hasWarningOrError} />
         <h3 className="text-fs-h2 font-bold text-ink m-0 leading-tight flex-1 min-w-0">
           {serviceTitle}
         </h3>
-        {pending && (
+        {hasWarningOrError && (
           <Tag kind="status" tone="warning">{noteKindLabel("warning")}</Tag>
         )}
         {source !== null && (
           <Tag kind="source" name={source}>{sourceTagLabel(source)}</Tag>
         )}
       </header>
-      {!pending && (
-        <p className="text-fs-body-sm text-ink-mid m-0 leading-relaxed">
-          {serviceDescription}
-        </p>
-      )}
-      {!pending && accession.length > 0 && (
+      <p className="text-fs-body-sm text-ink-mid m-0 leading-relaxed">
+        {serviceDescription}
+      </p>
+      {accession.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <Label as="span">{accessionLabel}</Label>
           <AccessionCode codes={accession} />
         </div>
       )}
-      {!pending && (scopeGroups.length > 0 || scopeEntries.length > 0) && (
+      {(scopeGroups.length > 0 || scopeEntries.length > 0) && (
         <FilesBlock
           groups={scopeGroups}
           entries={scopeEntries}
@@ -108,7 +106,7 @@ export const FlowStepCard = ({
           })}
         </ul>
       )}
-      {!pending && externalUrl !== undefined && (
+      {!hasWarningOrError && externalUrl !== undefined && (
         <div>
           <ExternalLinkButton url={externalUrl} label={externalCtaLabel} />
         </div>

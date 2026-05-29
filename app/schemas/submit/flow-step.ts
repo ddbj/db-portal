@@ -17,9 +17,14 @@ export const FlowStepScope = z.object({
 })
 export type FlowStepScope = z.infer<typeof FlowStepScope>
 
+// step の導出元。フロー・エクスプローラの由来バッジが参照する
+export const FlowStepOrigin = z.enum(["tier1", "tier2", "recipe"])
+export type FlowStepOrigin = z.infer<typeof FlowStepOrigin>
+
 export const FlowStep = z.object({
   id: z.string().min(1),
   service: Service,
+  origin: FlowStepOrigin,
   scope: FlowStepScope,
   notes: z.array(FlowStepNote).default([]),
 })

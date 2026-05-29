@@ -31,6 +31,15 @@ const DesignIndex = () => (
           /_design/primitives →
         </Link>
       </li>
+      <li className="border border-border-soft rounded-card p-4 bg-surface">
+        <h2 className="text-fs-h2 font-bold text-ink m-0 mb-2">Submit flow explorer</h2>
+        <p className="text-ink-mid m-0 mb-3 text-fs-body-sm leading-relaxed">
+          登録ナビの入力から導出される FlowStep を全件プレビューし、由来 (Tier1 / Tier2 / recipe) と Q1 x Q2 x 種別の到達可能性を確認する。
+        </p>
+        <Link to="/_design/submit-flow-explorer" className="text-brand font-semibold no-underline hover:underline">
+          /_design/submit-flow-explorer →
+        </Link>
+      </li>
     </ul>
   </div>
 )

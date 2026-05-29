@@ -5,22 +5,46 @@ import { FlowStep, FlowStepNote, FlowStepScope } from "../../../../app/schemas/s
 describe("FlowStep", () => {
   test("FlowStep_validInput_parses", () => {
     const parsed = FlowStep.parse({
-      id: "dra",
+      id: "tier1-dra",
       service: "dra",
+      origin: "tier1",
       scope: { groupIds: ["g1"], entryIds: ["e1"] },
-      notes: [{ kind: "info", messageKey: "submit.dra.intro" }],
+      notes: [{ kind: "info", messageKey: "submit.sequenceRead.dra.intro" }],
     })
     expect(parsed.service).toBe("dra")
+    expect(parsed.origin).toBe("tier1")
     expect(parsed.notes[0]!.kind).toBe("info")
   })
 
   test("FlowStep_notesOmitted_defaultsToEmpty", () => {
     const parsed = FlowStep.parse({
-      id: "biosample:human",
+      id: "tier2-biosample",
       service: "biosample",
+      origin: "tier2",
       scope: { groupIds: ["g1"], entryIds: ["e1"] },
     })
     expect(parsed.notes).toEqual([])
+  })
+
+  test("FlowStep_originOmitted_throws", () => {
+    expect(() =>
+      FlowStep.parse({
+        id: "x",
+        service: "dra",
+        scope: { groupIds: [], entryIds: ["e1"] },
+      }),
+    ).toThrow()
+  })
+
+  test("FlowStep_unknownOrigin_throws", () => {
+    expect(() =>
+      FlowStep.parse({
+        id: "x",
+        service: "dra",
+        origin: "manual",
+        scope: { groupIds: [], entryIds: ["e1"] },
+      }),
+    ).toThrow()
   })
 
   test("FlowStepScope_emptyArrays_parses", () => {
@@ -41,6 +65,7 @@ describe("FlowStep", () => {
       FlowStep.parse({
         id: "x",
         service: "unknown",
+        origin: "tier1",
         scope: { groupIds: ["g1"], entryIds: [] },
         notes: [],
       }),

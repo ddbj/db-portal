@@ -80,7 +80,8 @@ const dedupeCategories = (categories: ServiceCategory[]): ServiceCategory[] => {
 export const ddbjTagsToCategories = (tags: readonly string[]): ServiceCategory[] =>
   dedupeCategories(
     tags
-      .map((tag) => DDBJ_TAG_MAP[tag.trim().toLowerCase()])
+      .map((tag) => tag.trim().toLowerCase())
+      .map((key) => (Object.hasOwn(DDBJ_TAG_MAP, key) ? DDBJ_TAG_MAP[key] : undefined))
       .filter((category): category is ServiceCategory => category !== undefined),
   )
 

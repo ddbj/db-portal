@@ -4,8 +4,7 @@ import { FileEntry } from "../../../../app/schemas/submit"
 
 const validEntry = {
   id: "e1",
-  buttonType: "sequence-read",
-  organism: "human",
+  fileTypeKind: "sequence-read",
   access: "restricted",
   dataForm: "raw",
   groupId: "g1",
@@ -29,8 +28,8 @@ describe("FileEntry", () => {
     expect(() => FileEntry.parse({ ...validEntry, id: "" })).toThrow()
   })
 
-  test("FileEntry_unknownButtonType_throws", () => {
-    expect(() => FileEntry.parse({ ...validEntry, buttonType: "unknown" })).toThrow()
+  test("FileEntry_unknownFileTypeKind_throws", () => {
+    expect(() => FileEntry.parse({ ...validEntry, fileTypeKind: "unknown" })).toThrow()
   })
 
   test("FileEntry_invalidChipAxis_throws", () => {
@@ -60,7 +59,7 @@ describe("FileEntry", () => {
     ).toThrow()
   })
 
-  test("FileEntry_chipForAxisWithoutAllowedValues_throws", () => {
+  test("FileEntry_retiredChipAxis_throws", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,

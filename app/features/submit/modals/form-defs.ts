@@ -1,7 +1,7 @@
 import type {
-  ButtonType,
   ChipAxis,
   DataForm,
+  FileTypeKind,
   GroupType,
 } from "~/schemas/submit"
 
@@ -30,6 +30,48 @@ export type FormGroupDef = {
 export type RowFormDef = {
   groups: readonly FormGroupDef[]
 }
+
+const provenanceGroup = (kindKey: string, num: string): FormGroupDef => ({
+  id: "provenance",
+  num,
+  labelKey: "submit.modal.formGroupLabels.provenance",
+  kind: "radio",
+  options: [
+    {
+      value: "first-party",
+      labelKey: `submit.modal.options.${kindKey}.firstParty.label`,
+      subKey: `submit.modal.options.${kindKey}.firstParty.sub`,
+      effect: { chipRemoveAxis: "provenance" },
+    },
+    {
+      value: "third-party",
+      labelKey: `submit.modal.options.${kindKey}.thirdParty.label`,
+      subKey: `submit.modal.options.${kindKey}.thirdParty.sub`,
+      effect: { chipAdd: { axis: "provenance", value: "third-party" } },
+    },
+  ],
+})
+
+const domainGroup = (kindKey: string): FormGroupDef => ({
+  id: "domain",
+  num: "1.",
+  labelKey: "submit.modal.formGroupLabels.domain",
+  kind: "radio",
+  options: [
+    {
+      value: "metabolomics",
+      labelKey: `submit.modal.options.${kindKey}.metabolomics.label`,
+      subKey: `submit.modal.options.${kindKey}.metabolomics.sub`,
+      effect: { chipAdd: { axis: "mass-spec-domain", value: "metabolomics" } },
+    },
+    {
+      value: "proteomics",
+      labelKey: `submit.modal.options.${kindKey}.proteomics.label`,
+      subKey: `submit.modal.options.${kindKey}.proteomics.sub`,
+      effect: { chipAdd: { axis: "mass-spec-domain", value: "proteomics" } },
+    },
+  ],
+})
 
 const sequenceReadDef: RowFormDef = {
   groups: [
@@ -75,7 +117,7 @@ const sequenceReadDef: RowFormDef = {
           value: "per-sample",
           labelKey: "submit.modal.options.sequenceRead.perSample.label",
           subKey: "submit.modal.options.sequenceRead.perSample.sub",
-          effect: { chipRemoveAxis: "haplotype-mode" },
+          effect: {},
         },
         {
           value: "multiplex",
@@ -85,24 +127,10 @@ const sequenceReadDef: RowFormDef = {
         },
       ],
     },
-    {
-      id: "analysisOutput",
-      num: "3.",
-      labelKey: "submit.modal.formGroupLabels.analysisOutput",
-      kind: "check",
-      options: [
-        {
-          value: "gea",
-          labelKey: "submit.modal.options.sequenceRead.geaPair.label",
-          subKey: "submit.modal.options.sequenceRead.geaPair.sub",
-          effect: { chipAdd: { axis: "functional-genomics", value: "rna-seq" } },
-        },
-      ],
-    },
   ],
 }
 
-const assembledDef: RowFormDef = {
+const sequenceNucleotideDef: RowFormDef = {
   groups: [
     {
       id: "form",
@@ -111,22 +139,28 @@ const assembledDef: RowFormDef = {
       kind: "radio",
       options: [
         {
-          value: "assembled",
-          labelKey: "submit.modal.options.assembled.assembled.label",
-          subKey: "submit.modal.options.assembled.assembled.sub",
-          effect: { groupType: "single", dataForm: "assembled" },
+          value: "single",
+          labelKey: "submit.modal.options.sequenceNucleotide.standalone.label",
+          subKey: "submit.modal.options.sequenceNucleotide.standalone.sub",
+          effect: { groupType: "single" },
         },
         {
           value: "hybrid",
-          labelKey: "submit.modal.options.assembled.hybrid.label",
-          subKey: "submit.modal.options.assembled.hybrid.sub",
-          effect: { groupType: "hybrid", dataForm: "assembled" },
+          labelKey: "submit.modal.options.sequenceNucleotide.hybrid.label",
+          subKey: "submit.modal.options.sequenceNucleotide.hybrid.sub",
+          effect: { groupType: "hybrid" },
         },
         {
-          value: "mag-sag-chain",
-          labelKey: "submit.modal.options.assembled.magSag.label",
-          subKey: "submit.modal.options.assembled.magSag.sub",
-          effect: { groupType: "mag-sag-chain", dataForm: "assembled" },
+          value: "mag-chain",
+          labelKey: "submit.modal.options.sequenceNucleotide.magChain.label",
+          subKey: "submit.modal.options.sequenceNucleotide.magChain.sub",
+          effect: { groupType: "mag-sag-chain", chipAdd: { axis: "assembly-form", value: "mag" } },
+        },
+        {
+          value: "sag-chain",
+          labelKey: "submit.modal.options.sequenceNucleotide.sagChain.label",
+          subKey: "submit.modal.options.sequenceNucleotide.sagChain.sub",
+          effect: { groupType: "mag-sag-chain", chipAdd: { axis: "assembly-form", value: "sag" } },
         },
       ],
     },
@@ -138,36 +172,17 @@ const assembledDef: RowFormDef = {
       options: [
         {
           value: "pair",
-          labelKey: "submit.modal.options.assembled.annotationPair.label",
-          subKey: "submit.modal.options.assembled.annotationPair.sub",
+          labelKey: "submit.modal.options.sequenceNucleotide.annotationPair.label",
+          subKey: "submit.modal.options.sequenceNucleotide.annotationPair.sub",
           effect: { groupType: "assembly-annotation" },
         },
       ],
     },
-    {
-      id: "provenance",
-      num: "3.",
-      labelKey: "submit.modal.formGroupLabels.provenance",
-      kind: "radio",
-      options: [
-        {
-          value: "first-party",
-          labelKey: "submit.modal.options.assembled.firstParty.label",
-          subKey: "submit.modal.options.assembled.firstParty.sub",
-          effect: { chipRemoveAxis: "provenance" },
-        },
-        {
-          value: "third-party",
-          labelKey: "submit.modal.options.assembled.thirdParty.label",
-          subKey: "submit.modal.options.assembled.thirdParty.sub",
-          effect: { chipAdd: { axis: "provenance", value: "third-party" } },
-        },
-      ],
-    },
+    provenanceGroup("sequenceNucleotide", "3."),
   ],
 }
 
-const geneAnnotationDef: RowFormDef = {
+const sequenceAnnotationDef: RowFormDef = {
   groups: [
     {
       id: "target",
@@ -177,42 +192,23 @@ const geneAnnotationDef: RowFormDef = {
       options: [
         {
           value: "assembly-pair",
-          labelKey: "submit.modal.options.geneAnnotation.assemblyPair.label",
-          subKey: "submit.modal.options.geneAnnotation.assemblyPair.sub",
+          labelKey: "submit.modal.options.sequenceAnnotation.assemblyPair.label",
+          subKey: "submit.modal.options.sequenceAnnotation.assemblyPair.sub",
           effect: { groupType: "assembly-annotation" },
         },
         {
           value: "standalone",
-          labelKey: "submit.modal.options.geneAnnotation.standalone.label",
-          subKey: "submit.modal.options.geneAnnotation.standalone.sub",
+          labelKey: "submit.modal.options.sequenceAnnotation.standalone.label",
+          subKey: "submit.modal.options.sequenceAnnotation.standalone.sub",
           effect: { groupType: "single" },
         },
       ],
     },
-    {
-      id: "provenance",
-      num: "2.",
-      labelKey: "submit.modal.formGroupLabels.provenance",
-      kind: "radio",
-      options: [
-        {
-          value: "first-party",
-          labelKey: "submit.modal.options.geneAnnotation.firstParty.label",
-          subKey: "submit.modal.options.geneAnnotation.firstParty.sub",
-          effect: { chipRemoveAxis: "provenance" },
-        },
-        {
-          value: "third-party",
-          labelKey: "submit.modal.options.geneAnnotation.thirdParty.label",
-          subKey: "submit.modal.options.geneAnnotation.thirdParty.sub",
-          effect: { chipAdd: { axis: "provenance", value: "third-party" } },
-        },
-      ],
-    },
+    provenanceGroup("sequenceAnnotation", "2."),
   ],
 }
 
-const variationDef: RowFormDef = {
+const variantDef: RowFormDef = {
   groups: [
     {
       id: "form",
@@ -222,14 +218,14 @@ const variationDef: RowFormDef = {
       options: [
         {
           value: "per-sample",
-          labelKey: "submit.modal.options.variation.perSample.label",
-          subKey: "submit.modal.options.variation.perSample.sub",
+          labelKey: "submit.modal.options.variant.perSample.label",
+          subKey: "submit.modal.options.variant.perSample.sub",
           effect: { chipAdd: { axis: "variation-form", value: "per-sample" } },
         },
         {
           value: "aggregate",
-          labelKey: "submit.modal.options.variation.aggregate.label",
-          subKey: "submit.modal.options.variation.aggregate.sub",
+          labelKey: "submit.modal.options.variant.aggregate.label",
+          subKey: "submit.modal.options.variant.aggregate.sub",
           effect: { chipAdd: { axis: "variation-form", value: "aggregate" } },
         },
       ],
@@ -242,14 +238,14 @@ const variationDef: RowFormDef = {
       options: [
         {
           value: "with",
-          labelKey: "submit.modal.options.variation.withRef.label",
-          subKey: "submit.modal.options.variation.withRef.sub",
+          labelKey: "submit.modal.options.variant.withRef.label",
+          subKey: "submit.modal.options.variant.withRef.sub",
           effect: { groupType: "variation-with-reference" },
         },
         {
           value: "without",
-          labelKey: "submit.modal.options.variation.withoutRef.label",
-          subKey: "submit.modal.options.variation.withoutRef.sub",
+          labelKey: "submit.modal.options.variant.withoutRef.label",
+          subKey: "submit.modal.options.variant.withoutRef.sub",
           effect: { groupType: "single" },
         },
       ],
@@ -257,45 +253,25 @@ const variationDef: RowFormDef = {
   ],
 }
 
-const phenotypeDef: RowFormDef = {
+const expressionMatrixDef: RowFormDef = {
   groups: [
     {
-      id: "phenotypeType",
+      id: "structure",
       num: "1.",
-      labelKey: "submit.modal.formGroupLabels.phenotypeType",
+      labelKey: "submit.modal.formGroupLabels.structure",
       kind: "radio",
       options: [
         {
-          value: "clinical",
-          labelKey: "submit.modal.options.phenotype.clinical.label",
-          subKey: "submit.modal.options.phenotype.clinical.sub",
-          effect: { chipAdd: { axis: "host-pathogen", value: "clinical" } },
+          value: "single",
+          labelKey: "submit.modal.options.expressionMatrix.standalone.label",
+          subKey: "submit.modal.options.expressionMatrix.standalone.sub",
+          effect: { groupType: "single" },
         },
         {
-          value: "model-organism",
-          labelKey: "submit.modal.options.phenotype.modelOrganism.label",
-          subKey: "submit.modal.options.phenotype.modelOrganism.sub",
-          effect: { chipRemoveAxis: "host-pathogen" },
-        },
-      ],
-    },
-    {
-      id: "dataForm",
-      num: "2.",
-      labelKey: "submit.modal.formGroupLabels.dataForm",
-      kind: "radio",
-      options: [
-        {
-          value: "raw",
-          labelKey: "submit.modal.options.phenotype.raw.label",
-          subKey: "submit.modal.options.phenotype.raw.sub",
-          effect: { dataForm: "phenotype" },
-        },
-        {
-          value: "summary",
-          labelKey: "submit.modal.options.phenotype.summary.label",
-          subKey: "submit.modal.options.phenotype.summary.sub",
-          effect: { dataForm: "analysis-output" },
+          value: "mage-tab",
+          labelKey: "submit.modal.options.expressionMatrix.mageTab.label",
+          subKey: "submit.modal.options.expressionMatrix.mageTab.sub",
+          effect: { groupType: "mage-tab" },
         },
       ],
     },
@@ -327,77 +303,7 @@ const microarrayDef: RowFormDef = {
   ],
 }
 
-const rnaSeqMatrixDef: RowFormDef = {
-  groups: [
-    {
-      id: "dataForm",
-      num: "1.",
-      labelKey: "submit.modal.formGroupLabels.dataForm",
-      kind: "radio",
-      options: [
-        {
-          value: "raw-counts",
-          labelKey: "submit.modal.options.rnaSeq.rawCounts.label",
-          subKey: "submit.modal.options.rnaSeq.rawCounts.sub",
-          effect: { dataForm: "matrix" },
-        },
-        {
-          value: "normalized",
-          labelKey: "submit.modal.options.rnaSeq.normalized.label",
-          subKey: "submit.modal.options.rnaSeq.normalized.sub",
-          effect: { dataForm: "analysis-output" },
-        },
-      ],
-    },
-  ],
-}
-
-const massSpecDef: RowFormDef = {
-  groups: [
-    {
-      id: "domain",
-      num: "1.",
-      labelKey: "submit.modal.formGroupLabels.domain",
-      kind: "radio",
-      options: [
-        {
-          value: "proteomics",
-          labelKey: "submit.modal.options.massSpec.proteomics.label",
-          subKey: "submit.modal.options.massSpec.proteomics.sub",
-          effect: { chipAdd: { axis: "mass-spec-domain", value: "proteomics" } },
-        },
-        {
-          value: "metabolomics",
-          labelKey: "submit.modal.options.massSpec.metabolomics.label",
-          subKey: "submit.modal.options.massSpec.metabolomics.sub",
-          effect: { chipAdd: { axis: "mass-spec-domain", value: "metabolomics" } },
-        },
-      ],
-    },
-    {
-      id: "method",
-      num: "2.",
-      labelKey: "submit.modal.formGroupLabels.method",
-      kind: "radio",
-      options: [
-        {
-          value: "shotgun",
-          labelKey: "submit.modal.options.massSpec.shotgun.label",
-          subKey: "submit.modal.options.massSpec.shotgun.sub",
-          effect: { groupType: "single" },
-        },
-        {
-          value: "imaging",
-          labelKey: "submit.modal.options.massSpec.imaging.label",
-          subKey: "submit.modal.options.massSpec.imaging.sub",
-          effect: { groupType: "imaging-ms" },
-        },
-      ],
-    },
-  ],
-}
-
-const spatialDef: RowFormDef = {
+const spatialTranscriptomicsDef: RowFormDef = {
   groups: [
     {
       id: "platform",
@@ -407,50 +313,96 @@ const spatialDef: RowFormDef = {
       options: [
         {
           value: "visium",
-          labelKey: "submit.modal.options.spatial.visium.label",
-          subKey: "submit.modal.options.spatial.visium.sub",
+          labelKey: "submit.modal.options.spatialTranscriptomics.visium.label",
+          subKey: "submit.modal.options.spatialTranscriptomics.visium.sub",
           effect: { chipAdd: { axis: "spatial-platform", value: "visium" } },
         },
         {
           value: "stereo-seq",
-          labelKey: "submit.modal.options.spatial.stereoSeq.label",
-          subKey: "submit.modal.options.spatial.stereoSeq.sub",
+          labelKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.label",
+          subKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.sub",
           effect: { chipAdd: { axis: "spatial-platform", value: "stereo-seq" } },
         },
-      ],
-    },
-    {
-      id: "stage",
-      num: "2.",
-      labelKey: "submit.modal.formGroupLabels.stage",
-      kind: "radio",
-      options: [
         {
-          value: "raw",
-          labelKey: "submit.modal.options.spatial.raw.label",
-          subKey: "submit.modal.options.spatial.raw.sub",
-          effect: { dataForm: "matrix" },
-        },
-        {
-          value: "analysis-output",
-          labelKey: "submit.modal.options.spatial.analysis.label",
-          subKey: "submit.modal.options.spatial.analysis.sub",
-          effect: { dataForm: "analysis-output" },
+          value: "merfish",
+          labelKey: "submit.modal.options.spatialTranscriptomics.merfish.label",
+          subKey: "submit.modal.options.spatialTranscriptomics.merfish.sub",
+          effect: { chipAdd: { axis: "spatial-platform", value: "merfish" } },
         },
       ],
     },
   ],
 }
 
-export const ROW_FORM_DEFS: Readonly<Record<ButtonType, RowFormDef>> = {
-  "sequence-read": sequenceReadDef,
-  "assembled": assembledDef,
-  "gene-annotation": geneAnnotationDef,
-  "variation": variationDef,
-  "phenotype": phenotypeDef,
-  "microarray-expression": microarrayDef,
-  "rna-seq-matrix": rnaSeqMatrixDef,
-  "mass-spec": massSpecDef,
-  "spatial-tx": spatialDef,
+const spatialImageDef: RowFormDef = {
+  groups: [
+    {
+      id: "platform",
+      num: "1.",
+      labelKey: "submit.modal.formGroupLabels.platform",
+      kind: "radio",
+      options: [
+        {
+          value: "visium",
+          labelKey: "submit.modal.options.spatialImage.visium.label",
+          subKey: "submit.modal.options.spatialImage.visium.sub",
+          effect: { chipAdd: { axis: "spatial-platform", value: "visium" } },
+        },
+        {
+          value: "merfish",
+          labelKey: "submit.modal.options.spatialImage.merfish.label",
+          subKey: "submit.modal.options.spatialImage.merfish.sub",
+          effect: { chipAdd: { axis: "spatial-platform", value: "merfish" } },
+        },
+      ],
+    },
+  ],
 }
 
+const massSpectrometryDef: RowFormDef = {
+  groups: [
+    domainGroup("massSpectrometry"),
+    {
+      id: "method",
+      num: "2.",
+      labelKey: "submit.modal.formGroupLabels.method",
+      kind: "radio",
+      options: [
+        {
+          value: "standard",
+          labelKey: "submit.modal.options.massSpectrometry.standard.label",
+          subKey: "submit.modal.options.massSpectrometry.standard.sub",
+          effect: { groupType: "single" },
+        },
+        {
+          value: "imaging",
+          labelKey: "submit.modal.options.massSpectrometry.imaging.label",
+          subKey: "submit.modal.options.massSpectrometry.imaging.sub",
+          effect: { groupType: "imaging-ms" },
+        },
+      ],
+    },
+  ],
+}
+
+const nmrDef: RowFormDef = {
+  groups: [domainGroup("nmr")],
+}
+
+const metaboliteAssignmentDef: RowFormDef = {
+  groups: [domainGroup("metaboliteAssignment")],
+}
+
+export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
+  "sequence-read": sequenceReadDef,
+  "sequence-nucleotide": sequenceNucleotideDef,
+  "sequence-annotation": sequenceAnnotationDef,
+  "variant": variantDef,
+  "expression-matrix": expressionMatrixDef,
+  "microarray-expression": microarrayDef,
+  "spatial-transcriptomics": spatialTranscriptomicsDef,
+  "spatial-image": spatialImageDef,
+  "mass-spectrometry": massSpectrometryDef,
+  "nmr": nmrDef,
+  "metabolite-assignment": metaboliteAssignmentDef,
+}

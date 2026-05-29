@@ -3,8 +3,8 @@ import { expect } from "vitest"
 
 import { initialState, submitReducer } from "../../../../app/features/submit/state/reducer"
 import type { Action, UIState } from "../../../../app/features/submit/state/types"
-import type { ButtonType } from "../../../../app/schemas/submit"
-import { arbButtonType } from "../../arbitraries/submission"
+import type { FileTypeKind } from "../../../../app/schemas/submit"
+import { arbFileTypeKind } from "../../arbitraries/submission"
 
 const applySequence = (actions: readonly Action[]): UIState => {
   let state: UIState = initialState
@@ -15,18 +15,18 @@ const applySequence = (actions: readonly Action[]): UIState => {
 }
 
 type ActionStep =
-  | { kind: "add"; bt: ButtonType }
-  | { kind: "add-to-group"; groupIdx: number; bt: ButtonType }
+  | { kind: "add"; fileTypeKind: FileTypeKind }
+  | { kind: "add-to-group"; groupIdx: number; fileTypeKind: FileTypeKind }
   | { kind: "edit-filename"; entryIdx: number; filename: string }
   | { kind: "remove"; entryIdx: number }
   | { kind: "close" }
 
 const arbStep: fc.Arbitrary<ActionStep> = fc.oneof(
-  fc.record({ kind: fc.constant("add" as const), bt: arbButtonType }),
+  fc.record({ kind: fc.constant("add" as const), fileTypeKind: arbFileTypeKind }),
   fc.record({
     kind: fc.constant("add-to-group" as const),
     groupIdx: fc.integer({ min: 0, max: 9 }),
-    bt: arbButtonType,
+    fileTypeKind: arbFileTypeKind,
   }),
   fc.record({
     kind: fc.constant("edit-filename" as const),
@@ -40,6 +40,9 @@ const arbStep: fc.Arbitrary<ActionStep> = fc.oneof(
   fc.record({ kind: fc.constant("close" as const) }),
 )
 
+// 各 step を、entry / group id を機械的に採番した実 Action 列へ変換する。
+// ADD_ROW は新 group を、ADD_TO_GROUP は既存 group を指す。remove 後の空 group は
+// reducer 側で drop されるため、ADD_TO_GROUP が消えた group を指す可能性は許容する (reducer は no-op)
 const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
   const acts: Action[] = []
   let entryCounter = 0
@@ -50,14 +53,14 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
     if (step.kind === "add") {
       const eid = `e${entryCounter++}`
       const gid = `g${groupCounter++}`
-      acts.push({ type: "ADD_ROW", buttonType: step.bt, entryId: eid, groupId: gid })
+      acts.push({ type: "ADD_ROW", fileTypeKind: step.fileTypeKind, entryId: eid, groupId: gid })
       knownEntryIds.push(eid)
       knownGroupIds.push(gid)
     } else if (step.kind === "add-to-group") {
       if (knownGroupIds.length === 0) continue
       const groupId = knownGroupIds[step.groupIdx % knownGroupIds.length]!
       const eid = `e${entryCounter++}`
-      acts.push({ type: "ADD_TO_GROUP", groupId, buttonType: step.bt, entryId: eid })
+      acts.push({ type: "ADD_TO_GROUP", groupId, fileTypeKind: step.fileTypeKind, entryId: eid })
       knownEntryIds.push(eid)
     } else if (step.kind === "edit-filename") {
       if (knownEntryIds.length === 0) continue
@@ -69,7 +72,6 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
       const id = knownEntryIds[idx]!
       acts.push({ type: "REMOVE_ROW", entryId: id })
       knownEntryIds = knownEntryIds.filter((x) => x !== id)
-      // 削除で empty group になった場合は reducer 側で group も削除される。arb 側では追跡せず、ADD_TO_GROUP は不存在 group を指す可能性を許容 (reducer は no-op)
     } else {
       acts.push({ type: "CLOSE_MODAL" })
     }
@@ -78,42 +80,44 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
 }
 
 const arbActionSequence: fc.Arbitrary<Action[]> = fc
-  .array(arbStep, { minLength: 0, maxLength: 10 })
+  .array(arbStep, { minLength: 0, maxLength: 12 })
   .map(stepsToActions)
 
-const arbReachableState: fc.Arbitrary<UIState> = fc.array(arbButtonType, { minLength: 0, maxLength: 5 }).map(
-  (bts) => {
+const arbReachableState: fc.Arbitrary<UIState> = fc
+  .array(arbFileTypeKind, { minLength: 0, maxLength: 6 })
+  .map((kinds) => {
     let state: UIState = initialState
-    bts.forEach((bt, i) => {
-      state = submitReducer(state, { type: "ADD_ROW", buttonType: bt, entryId: `e${i}`, groupId: `g${i}` })
+    kinds.forEach((kind, i) => {
+      state = submitReducer(state, {
+        type: "ADD_ROW",
+        fileTypeKind: kind,
+        entryId: `e${i}`,
+        groupId: `g${i}`,
+      })
     })
     return state
-  },
-)
+  })
 
-test.prop([arbActionSequence], { numRuns: 200 })(
-  "submitReducer_anyActionSequence_groupIdsAreReferenced",
+test.prop([arbActionSequence], { numRuns: 1000 })(
+  "submitReducer_anyActionSequence_entryGroupIdIsBidirectionallyReferenced",
   (actions) => {
     const state = applySequence(actions)
     const groupIds = new Set(state.submission.fileGroups.map((g) => g.id))
     for (const entry of state.submission.fileEntries) {
-      // 本テストの arb はすべて既存 group / 新規 group を指す ADD_ROW / ADD_TO_GROUP しか発火しないので、entry.groupId は必ず submission.fileGroups に存在する
       expect(groupIds.has(entry.groupId)).toBe(true)
-      // 双方向: 参照先 group の memberFileIds に entry が含まれる
-      const matching = state.submission.fileGroups.find((g) => g.id === entry.groupId)
-      expect(matching).toBeDefined()
-      expect(matching!.memberFileIds).toContain(entry.id)
+      const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
+      expect(group).toBeDefined()
+      expect(group!.memberFileIds).toContain(entry.id)
     }
   },
 )
 
-test.prop([arbActionSequence], { numRuns: 200 })(
+test.prop([arbActionSequence], { numRuns: 1000 })(
   "submitReducer_anyActionSequence_memberFileIdsReferenceExistingEntries",
   (actions) => {
     const state = applySequence(actions)
     const entryIds = new Set(state.submission.fileEntries.map((e) => e.id))
     for (const group of state.submission.fileGroups) {
-      // group の memberFileIds は必ず submission.fileEntries に存在する entry を指す
       for (const memberId of group.memberFileIds) {
         expect(entryIds.has(memberId)).toBe(true)
       }
@@ -121,7 +125,7 @@ test.prop([arbActionSequence], { numRuns: 200 })(
   },
 )
 
-test.prop([arbActionSequence], { numRuns: 200 })(
+test.prop([arbActionSequence], { numRuns: 1000 })(
   "submitReducer_anyActionSequence_entryIdsUnique",
   (actions) => {
     const state = applySequence(actions)
@@ -130,7 +134,7 @@ test.prop([arbActionSequence], { numRuns: 200 })(
   },
 )
 
-test.prop([arbActionSequence], { numRuns: 200 })(
+test.prop([arbActionSequence], { numRuns: 1000 })(
   "submitReducer_anyActionSequence_groupIdsUnique",
   (actions) => {
     const state = applySequence(actions)
@@ -139,42 +143,49 @@ test.prop([arbActionSequence], { numRuns: 200 })(
   },
 )
 
-test.prop([arbReachableState, arbButtonType], { numRuns: 200 })(
-  "submitReducer_addRow_preservesButtonTypeOnExistingEntries",
-  (state, bt) => {
-    const before = state.submission.fileEntries.map((e) => ({ id: e.id, buttonType: e.buttonType }))
+test.prop([arbReachableState, arbFileTypeKind], { numRuns: 1000 })(
+  "submitReducer_addRow_preservesFileTypeKindOnExistingEntries",
+  (state, fileTypeKind) => {
+    const before = state.submission.fileEntries.map((e) => ({ id: e.id, fileTypeKind: e.fileTypeKind }))
     const next = submitReducer(state, {
       type: "ADD_ROW",
-      buttonType: bt,
+      fileTypeKind,
       entryId: `new-${state.submission.fileEntries.length}`,
       groupId: `new-g-${state.submission.fileEntries.length}`,
     })
     for (const e of before) {
       const found = next.submission.fileEntries.find((x) => x.id === e.id)
       expect(found).toBeDefined()
-      expect(found!.buttonType).toBe(e.buttonType)
+      expect(found!.fileTypeKind).toBe(e.fileTypeKind)
     }
   },
 )
 
-test.prop([arbReachableState], { numRuns: 200 })(
-  "submitReducer_arbReachableState_editRowCellDoesNotChangeButtonTypeOrId",
-  (state) => {
+test.prop([arbReachableState, arbFileTypeKind, fc.string({ minLength: 0, maxLength: 24 })], {
+  numRuns: 1000,
+})(
+  "submitReducer_editRowCell_cannotHijackFileTypeKindOrId",
+  (state, hijackKind, newFilename) => {
     if (state.submission.fileEntries.length === 0) return
     const target = state.submission.fileEntries[0]!
     const next = submitReducer(state, {
       type: "EDIT_ROW_CELL",
       entryId: target.id,
       patch: {
-        // hijack を試みる
         id: "hijacked",
-        buttonType: "variation",
-        filename: "patched",
+        fileTypeKind: hijackKind,
+        groupId: "hijacked-group",
+        filename: newFilename,
       },
     })
     const updated = next.submission.fileEntries.find((e) => e.id === target.id)
     expect(updated).toBeDefined()
-    expect(updated!.buttonType).toBe(target.buttonType)
-    expect(updated!.filename).toBe("patched")
+    expect(updated!.id).toBe(target.id)
+    expect(updated!.fileTypeKind).toBe(target.fileTypeKind)
+    expect(updated!.groupId).toBe(target.groupId)
+    // benign フィールドは反映される
+    expect(updated!.filename).toBe(newFilename)
+    // hijack id を持つ entry が生成されていない
+    expect(next.submission.fileEntries.some((e) => e.id === "hijacked")).toBe(false)
   },
 )

@@ -1,26 +1,41 @@
-import type { ButtonType } from "~/schemas/submit"
-import { ButtonType as ButtonTypeEnum } from "~/schemas/submit"
+import type { FileTypeKind } from "~/schemas/submit"
+import { FileTypeKind as FileTypeKindEnum } from "~/schemas/submit"
 
 import { FileTypeButton } from "./file-type-button"
 
 type FileTypeGridProps = {
-  onClick: (buttonType: ButtonType) => void
-  getLabel: (buttonType: ButtonType) => string
-  getExt: (buttonType: ButtonType) => string
-  getHint: (buttonType: ButtonType) => string
+  onClick: (fileTypeKind: FileTypeKind) => void
+  getLabel: (fileTypeKind: FileTypeKind) => string
+  getExt: (fileTypeKind: FileTypeKind) => string
+  getHint: (fileTypeKind: FileTypeKind) => string
+  isEnabled: (fileTypeKind: FileTypeKind) => boolean
+  disabledReason: string
 }
 
-export const FileTypeGrid = ({ onClick, getLabel, getExt, getHint }: FileTypeGridProps) => (
+export const FileTypeGrid = ({
+  onClick,
+  getLabel,
+  getExt,
+  getHint,
+  isEnabled,
+  disabledReason,
+}: FileTypeGridProps) => (
   <div className="grid grid-cols-3 gap-2">
-    {ButtonTypeEnum.options.map((bt) => (
-      <FileTypeButton
-        key={bt}
-        buttonType={bt}
-        label={getLabel(bt)}
-        ext={getExt(bt)}
-        hint={getHint(bt)}
-        onClick={() => onClick(bt)}
-      />
-    ))}
+    {FileTypeKindEnum.options.map((kind) => {
+      const enabled = isEnabled(kind)
+
+      return (
+        <FileTypeButton
+          key={kind}
+          fileTypeKind={kind}
+          label={getLabel(kind)}
+          ext={getExt(kind)}
+          hint={getHint(kind)}
+          disabled={!enabled}
+          disabledReason={disabledReason}
+          onClick={() => onClick(kind)}
+        />
+      )
+    })}
   </div>
 )

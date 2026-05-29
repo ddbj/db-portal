@@ -34,14 +34,14 @@ type ModalRouterProps = {
   state: UIState
   actions: SubmitDispatch
   labels: ModalRouterLabels
-  buttonTypeLabelFor: (entryId: string) => string
+  fileTypeKindLabelFor: (entryId: string) => string
 }
 
 export const ModalRouter = ({
   state,
   actions,
   labels,
-  buttonTypeLabelFor,
+  fileTypeKindLabelFor,
 }: ModalRouterProps) => {
   const editing = state.editing
   if (editing === null) return null
@@ -65,7 +65,7 @@ export const ModalRouter = ({
           statusReady: labels.editModal.statusReady,
           previewLabel: labels.editModal.previewLabel,
           previewFootnote: labels.editModal.previewFootnote,
-          buttonTypeLabel: buttonTypeLabelFor(entry.id),
+          fileTypeKindLabel: fileTypeKindLabelFor(entry.id),
           groupLabel: labels.editModal.groupLabel,
           optionLabel: labels.editModal.optionLabel,
           optionSub: labels.editModal.optionSub,

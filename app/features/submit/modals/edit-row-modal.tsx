@@ -27,7 +27,7 @@ type EditRowModalLabels = {
   statusReady: string
   previewLabel: string
   previewFootnote: string
-  buttonTypeLabel: string
+  fileTypeKindLabel: string
   groupLabel: (id: string) => string
   optionLabel: (key: string) => string
   optionSub: (key: string | undefined) => string | undefined
@@ -143,7 +143,7 @@ export const EditRowModal = ({
   onCommit,
 }: EditRowModalProps) => {
   const titleId = useId()
-  const def = ROW_FORM_DEFS[entry.buttonType]
+  const def = ROW_FORM_DEFS[entry.fileTypeKind]
   const [draft, setDraft] = useState<Draft>(() => initDraft(entry, group))
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export const EditRowModal = ({
   return (
     <Modal open={open} onClose={onClose} ariaLabelledby={titleId} width={820}>
       <ModalHeader
-        eyebrowTag={<Tag kind="tag" size="sm">{labels.buttonTypeLabel}</Tag>}
+        eyebrowTag={<Tag kind="tag" size="sm">{labels.fileTypeKindLabel}</Tag>}
         eyebrowMeta={entry.filename === "" ? undefined : entry.filename}
         title={labels.title}
         titleId={titleId}

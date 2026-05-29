@@ -1,13 +1,13 @@
 import { z } from "zod"
 
+// 登録先・導出物・外部誘導を表す単一 enum。各値は role を持つ
 export const Service = z.enum([
   "bioproject",
-  "umbrella-bioproject",
   "biosample",
   "dra",
   "jga",
-  "ddbj-mass",
-  "annotation",
+  "ddbj-trad",
+  "togovar",
   "gea",
   "metabobank",
   "humandbs",
@@ -18,31 +18,44 @@ export const Service = z.enum([
 ])
 export type Service = z.infer<typeof Service>
 
-export const INTERNAL_SERVICES: readonly Service[] = [
-  "bioproject",
-  "umbrella-bioproject",
-  "biosample",
-  "dra",
-  "jga",
-  "ddbj-mass",
-  "annotation",
-  "gea",
-  "metabobank",
-]
+export const ServiceRole = z.enum(["destination", "companion", "external"])
+export type ServiceRole = z.infer<typeof ServiceRole>
 
-export const EXTERNAL_SERVICES: readonly Service[] = [
-  "humandbs",
-  "dbcls",
-  "jpost",
-  "eva",
-  "dgva",
-]
+export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
+  "bioproject": "companion",
+  "biosample": "companion",
+  "dra": "destination",
+  "jga": "destination",
+  "ddbj-trad": "destination",
+  "togovar": "destination",
+  "gea": "destination",
+  "metabobank": "destination",
+  "humandbs": "external",
+  "dbcls": "external",
+  "jpost": "external",
+  "eva": "external",
+  "dgva": "external",
+}
 
-const INTERNAL_SET: ReadonlySet<Service> = new Set(INTERNAL_SERVICES)
+export const serviceRole = (service: Service): ServiceRole => SERVICE_ROLE[service]
+
+const byRole = (role: ServiceRole): readonly Service[] =>
+  Service.options.filter((s) => SERVICE_ROLE[s] === role)
+
+// role=destination の service 部分集合 (candidateRepos / カスケードが参照する登録先集合)
+export const DESTINATION_SERVICES: readonly Service[] = byRole("destination")
+export const COMPANION_SERVICES: readonly Service[] = byRole("companion")
+export const EXTERNAL_SERVICES: readonly Service[] = byRole("external")
+
+const DESTINATION_SET: ReadonlySet<Service> = new Set(DESTINATION_SERVICES)
+const COMPANION_SET: ReadonlySet<Service> = new Set(COMPANION_SERVICES)
 const EXTERNAL_SET: ReadonlySet<Service> = new Set(EXTERNAL_SERVICES)
 
-export const isInternalService = (service: Service): boolean =>
-  INTERNAL_SET.has(service)
+export const isDestinationService = (service: Service): boolean =>
+  DESTINATION_SET.has(service)
+
+export const isCompanionService = (service: Service): boolean =>
+  COMPANION_SET.has(service)
 
 export const isExternalService = (service: Service): boolean =>
   EXTERNAL_SET.has(service)
@@ -60,18 +73,19 @@ export const serviceBadgeColor = ({
   hasWarningOrError,
 }: ServiceBadgeInput): ServiceBadgeColor => {
   if (hasWarningOrError) return "rose"
-  if (isExternalService(service)) return "amber"
+  if (serviceRole(service) === "external") return "amber"
+
   return "emerald"
 }
 
+// 出力整形の物理順: companion -> destination -> external
 export const SERVICE_PHYSICAL_ORDER: readonly Service[] = [
-  "umbrella-bioproject",
   "bioproject",
   "biosample",
   "dra",
   "jga",
-  "annotation",
-  "ddbj-mass",
+  "ddbj-trad",
+  "togovar",
   "gea",
   "metabobank",
   "humandbs",

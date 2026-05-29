@@ -1,205 +1,169 @@
-import { test } from "@fast-check/vitest"
+import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
-import { SERVICE_PHYSICAL_ORDER } from "../../../app/schemas/submit"
+import { detectRecipeGroups } from "../../../app/features/submit/flow-rules/recipes"
+import {
+  type FlowStep,
+  isDestinationService,
+  SERVICE_PHYSICAL_ORDER,
+  type Submission,
+} from "../../../app/schemas/submit"
 import { arbSubmission } from "../arbitraries/submission"
 
-const numRuns = 1000
+const RUNS = { numRuns: 1000 }
 
-test.prop([arbSubmission], { numRuns })(
+const entryIdsOfService = (steps: readonly FlowStep[], pred: (s: FlowStep) => boolean): Set<string> => {
+  const ids = new Set<string>()
+  for (const s of steps) {
+    if (!pred(s)) continue
+    for (const id of s.scope.entryIds) ids.add(id)
+  }
+
+  return ids
+}
+
+const recipeOwnedEntryIds = (submission: Submission): Set<string> => {
+  const { magGroups, sagGroups } = detectRecipeGroups(submission)
+  const gids = new Set([...magGroups, ...sagGroups].map((g) => g.id))
+
+  return new Set(submission.fileEntries.filter((e) => gids.has(e.groupId)).map((e) => e.id))
+}
+
+test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_anySubmission_isIdempotent",
   (submission) => {
-    const a = deriveFlowSteps(submission)
-    const b = deriveFlowSteps(submission)
-    expect(b).toEqual(a)
+    expect(JSON.stringify(deriveFlowSteps(submission))).toBe(JSON.stringify(deriveFlowSteps(submission)))
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
+test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_anySubmission_doesNotMutateInput",
   (submission) => {
-    const snapshot = structuredClone(submission)
+    const snapshot = JSON.stringify(submission)
     deriveFlowSteps(submission)
-    expect(submission).toEqual(snapshot)
+    expect(JSON.stringify(submission)).toBe(snapshot)
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
+test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_emptyEntries_yieldsEmptySteps",
   (submission) => {
-    if (submission.fileEntries.length > 0) return
-    expect(deriveFlowSteps(submission)).toEqual([])
+    const empty: Submission = { ...submission, fileEntries: [] }
+    expect(deriveFlowSteps(empty)).toEqual([])
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_anyEntries_biosampleStepExists",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_anyEntries_yieldsAtLeastOneStep",
   (submission) => {
-    if (submission.fileEntries.length === 0) return
-    const steps = deriveFlowSteps(submission)
-    expect(steps.some((s) => s.service === "biosample")).toBe(true)
+    fc.pre(submission.fileEntries.length > 0)
+    expect(deriveFlowSteps(submission).length).toBeGreaterThan(0)
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_anyEntries_bioprojectStepExists",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_plainSubmission_yieldsExactlyOneBioprojectAndBiosample",
   (submission) => {
-    if (submission.fileEntries.length === 0) return
+    fc.pre(submission.fileEntries.length > 0)
+    const { magGroups, sagGroups } = detectRecipeGroups(submission)
+    fc.pre(magGroups.length === 0 && sagGroups.length === 0)
     const steps = deriveFlowSteps(submission)
-    expect(steps.some((s) => s.service === "bioproject")).toBe(true)
+    const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
+    fc.pre(submission.fileEntries.some((e) => !jgaIds.has(e.id)))
+    expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
+    expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_multiplePrimaryBioproject_yieldsExactlyOneUmbrella",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_sequenceRead_partitionsByJgaOrDraExclusively",
   (submission) => {
     const steps = deriveFlowSteps(submission)
-    const primaryCount = steps.filter((s) => s.service === "bioproject").length
-    const umbrellaCount = steps.filter((s) => s.service === "umbrella-bioproject").length
-    if (primaryCount >= 2) {
-      expect(umbrellaCount).toBe(1)
-    } else {
-      expect(umbrellaCount).toBe(0)
-    }
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_umbrellaScope_isUnionOfPrimaryBioprojectScopes",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const umbrella = steps.find((s) => s.service === "umbrella-bioproject")
-    if (!umbrella) return
-    const primaryEntryIds = new Set(
-      steps.filter((s) => s.service === "bioproject").flatMap((s) => s.scope.entryIds),
-    )
-    const primaryGroupIds = new Set(
-      steps.filter((s) => s.service === "bioproject").flatMap((s) => s.scope.groupIds),
-    )
-    expect(new Set(umbrella.scope.entryIds)).toEqual(primaryEntryIds)
-    expect(new Set(umbrella.scope.groupIds)).toEqual(primaryGroupIds)
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_sequenceReadRows_partitionByJgaOrDra",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const draEntryIds = new Set(
-      steps.filter((s) => s.service === "dra").flatMap((s) => s.scope.entryIds),
-    )
-    const jgaEntryIds = new Set(
-      steps.filter((s) => s.service === "jga").flatMap((s) => s.scope.entryIds),
-    )
+    const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
+    const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
+    const owned = recipeOwnedEntryIds(submission)
+    const q2 = submission.preconditions.q2
     for (const e of submission.fileEntries) {
-      if (e.buttonType !== "sequence-read") continue
-      const isRestrictedHuman = e.access === "restricted" && e.organism === "human"
-      if (isRestrictedHuman) {
-        expect(jgaEntryIds.has(e.id)).toBe(true)
-        expect(draEntryIds.has(e.id)).toBe(false)
+      if (e.fileTypeKind !== "sequence-read" || owned.has(e.id)) continue
+      const toJga = e.access === "restricted" && (q2 === "human" || q2 === "metagenome")
+      if (toJga) {
+        expect(jgaIds.has(e.id)).toBe(true)
+        expect(draIds.has(e.id)).toBe(false)
       } else {
-        expect(draEntryIds.has(e.id)).toBe(true)
-        expect(jgaEntryIds.has(e.id)).toBe(false)
+        expect(draIds.has(e.id)).toBe(true)
+        expect(jgaIds.has(e.id)).toBe(false)
       }
     }
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_draScope_onlyContainsSequenceReadEntries",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_anyStep_scopeEntryIdsSubsetOfSubmissionEntries",
   (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const draEntryIds = new Set(
-      steps.filter((s) => s.service === "dra").flatMap((s) => s.scope.entryIds),
-    )
-    for (const e of submission.fileEntries) {
-      if (draEntryIds.has(e.id)) {
-        expect(e.buttonType).toBe("sequence-read")
-      }
+    const known = new Set(submission.fileEntries.map((e) => e.id))
+    for (const s of deriveFlowSteps(submission)) {
+      for (const id of s.scope.entryIds) expect(known.has(id)).toBe(true)
     }
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_jgaScope_onlyContainsRestrictedHumanSequenceReadEntries",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_anyStep_scopeIsNonEmpty",
   (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const jgaEntryIds = new Set(
-      steps.filter((s) => s.service === "jga").flatMap((s) => s.scope.entryIds),
-    )
-    for (const e of submission.fileEntries) {
-      if (jgaEntryIds.has(e.id)) {
-        expect(e.buttonType).toBe("sequence-read")
-        expect(e.access).toBe("restricted")
-        expect(e.organism).toBe("human")
-      }
+    for (const s of deriveFlowSteps(submission)) {
+      expect(s.scope.entryIds.length + s.scope.groupIds.length).toBeGreaterThan(0)
     }
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_scopeEntryIds_subsetOfSubmissionEntries",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_anySubmission_stepIdsAreUnique",
   (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const allEntryIds = new Set(submission.fileEntries.map((e) => e.id))
-    for (const s of steps) {
-      for (const id of s.scope.entryIds) {
-        expect(allEntryIds.has(id)).toBe(true)
-      }
-    }
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_anySubmission_orderRespectsPhysicalOrder",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const ranks = steps.map((s) => SERVICE_PHYSICAL_ORDER.indexOf(s.service))
-    for (let i = 1; i < ranks.length; i++) {
-      expect(ranks[i]! >= ranks[i - 1]!).toBe(true)
-    }
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_bioprojectStep_appearsBeforeBiosampleStep",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const bpIdx = steps.findIndex((s) => s.service === "bioproject")
-    const bsIdx = steps.findIndex((s) => s.service === "biosample")
-    if (bpIdx === -1 || bsIdx === -1) return
-    expect(bpIdx).toBeLessThan(bsIdx)
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_umbrellaStep_appearsBeforeBioprojectStep",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const umIdx = steps.findIndex((s) => s.service === "umbrella-bioproject")
-    const bpIdx = steps.findIndex((s) => s.service === "bioproject")
-    if (umIdx === -1 || bpIdx === -1) return
-    expect(umIdx).toBeLessThan(bpIdx)
-  },
-)
-
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_anySubmission_stepIdsUnique",
-  (submission) => {
-    const steps = deriveFlowSteps(submission)
-    const ids = steps.map((s) => s.id)
+    const ids = deriveFlowSteps(submission).map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
   },
 )
 
-test.prop([arbSubmission], { numRuns })(
-  "deriveFlowSteps_anySubmission_scopeNonEmpty",
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_anySubmission_orderRespectsPhysicalOrder",
+  (submission) => {
+    const rank = (s: FlowStep) => SERVICE_PHYSICAL_ORDER.indexOf(s.service)
+    const steps = deriveFlowSteps(submission)
+    for (let i = 1; i < steps.length; i++) {
+      const prev = steps[i - 1]!
+      const cur = steps[i]!
+      if (rank(prev) === rank(cur)) {
+        expect(prev.id.localeCompare(cur.id)).toBeLessThanOrEqual(0)
+      } else {
+        expect(rank(prev)).toBeLessThan(rank(cur))
+      }
+    }
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_everyEntry_appearsInSomeDestinationStep",
   (submission) => {
     const steps = deriveFlowSteps(submission)
-    for (const s of steps) {
-      const nonEmpty = s.scope.entryIds.length > 0 || s.scope.groupIds.length > 0
-      expect(nonEmpty).toBe(true)
+    const destIds = entryIdsOfService(steps, (s) => isDestinationService(s.service))
+    for (const e of submission.fileEntries) {
+      expect(destIds.has(e.id)).toBe(true)
+    }
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_spatialGroupKind_stepCoversWholeGroup",
+  (submission) => {
+    const owned = recipeOwnedEntryIds(submission)
+    const steps = deriveFlowSteps(submission)
+    const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
+    for (const e of submission.fileEntries) {
+      if (owned.has(e.id) || !isSpatial(e.fileTypeKind)) continue
+      const geaStep = steps.find((s) => s.service === "gea" && s.scope.entryIds.includes(e.id))
+      expect(geaStep).toBeDefined()
+      expect(geaStep!.scope.groupIds).toContain(e.groupId)
     }
   },
 )

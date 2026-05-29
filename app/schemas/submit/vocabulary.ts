@@ -1,17 +1,38 @@
 import { z } from "zod"
 
-export const ButtonType = z.enum([
+// データファイルの種別。真の一次登録単位のみを値域とする (テーブルの行を生む単位)
+export const FileTypeKind = z.enum([
   "sequence-read",
-  "assembled",
-  "gene-annotation",
-  "variation",
-  "phenotype",
+  "sequence-nucleotide",
+  "sequence-annotation",
+  "variant",
+  "expression-matrix",
   "microarray-expression",
-  "rna-seq-matrix",
-  "mass-spec",
-  "spatial-tx",
+  "spatial-transcriptomics",
+  "spatial-image",
+  "mass-spectrometry",
+  "nmr",
+  "metabolite-assignment",
 ])
-export type ButtonType = z.infer<typeof ButtonType>
+export type FileTypeKind = z.infer<typeof FileTypeKind>
+
+// Q1 登録種別。前段の単一選択。行レベル Access の default を注入する
+export const Q1 = z.enum([
+  "public",
+  "restricted",
+  "third-party",
+])
+export type Q1 = z.infer<typeof Q1>
+
+// Q2 生物ドメイン。前段の単一選択で、submission 全体の唯一の生物軸
+export const Q2 = z.enum([
+  "human",
+  "eukaryote",
+  "prokaryote",
+  "virus",
+  "metagenome",
+])
+export type Q2 = z.infer<typeof Q2>
 
 export const GroupType = z.enum([
   "single",
@@ -30,95 +51,84 @@ export const GroupType = z.enum([
 ])
 export type GroupType = z.infer<typeof GroupType>
 
-export const Organism = z.enum([
-  "human",
-  "human-microbiome",
-  "eukaryote",
-  "prokaryote",
-  "virus",
-  "metagenome",
-  "organelle-plasmid",
-])
-export type Organism = z.infer<typeof Organism>
-
 export const Access = z.enum(["open", "restricted"])
 export type Access = z.infer<typeof Access>
 
 export const DataForm = z.enum([
   "raw",
   "assembled",
-  "analysis-output",
-  "matrix",
   "annotation",
-  "mass-spec",
-  "phenotype",
+  "variant-call",
+  "matrix",
+  "image",
+  "spectrum",
+  "assignment",
 ])
 export type DataForm = z.infer<typeof DataForm>
 
+// テーブル列に表現できない細部区分を行内 chip の {axis, value} ペアで表現する
 export const ChipAxis = z.enum([
   "assembly-form",
   "provenance",
   "variation-form",
-  "host-pathogen",
-  "haplotype-mode",
-  "functional-genomics",
   "mass-spec-domain",
   "spatial-platform",
-  "tpa-subtype",
-  "mag-sag-chain",
 ])
 export type ChipAxis = z.infer<typeof ChipAxis>
 
-export const TYPICAL_DATA_FORM_FOR_BUTTON: Readonly<Record<ButtonType, DataForm>> = {
+// 行追加時に注入する種別ごとの default data form
+export const TYPICAL_DATA_FORM_FOR_KIND: Readonly<Record<FileTypeKind, DataForm>> = {
   "sequence-read": "raw",
-  "assembled": "assembled",
-  "gene-annotation": "annotation",
-  "variation": "analysis-output",
-  "phenotype": "phenotype",
+  "sequence-nucleotide": "assembled",
+  "sequence-annotation": "annotation",
+  "variant": "variant-call",
+  "expression-matrix": "matrix",
   "microarray-expression": "matrix",
-  "rna-seq-matrix": "matrix",
-  "mass-spec": "mass-spec",
-  "spatial-tx": "matrix",
+  "spatial-transcriptomics": "matrix",
+  "spatial-image": "image",
+  "mass-spectrometry": "spectrum",
+  "nmr": "spectrum",
+  "metabolite-assignment": "assignment",
 }
 
-export const TYPICAL_GROUP_TYPE_FOR_BUTTON: Readonly<Record<ButtonType, GroupType>> = {
+// 行追加時に自動生成する単純 group の default group type
+export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupType>> = {
   "sequence-read": "single",
-  "assembled": "single",
-  "gene-annotation": "single",
-  "variation": "variation-with-reference",
-  "phenotype": "single",
+  "sequence-nucleotide": "single",
+  "sequence-annotation": "single",
+  "variant": "single",
+  "expression-matrix": "single",
   "microarray-expression": "mage-tab",
-  "rna-seq-matrix": "mage-tab",
-  "mass-spec": "single",
-  "spatial-tx": "single",
+  "spatial-transcriptomics": "single",
+  "spatial-image": "single",
+  "mass-spectrometry": "single",
+  "nmr": "single",
+  "metabolite-assignment": "single",
 }
 
-// 行追加時に自動採番する default filename の buttonType ごとの prefix と拡張子
-export const BUTTON_DEFAULT_FILENAME: Readonly<
-  Record<ButtonType, { prefix: string; ext: string }>
+// 行追加時に自動採番する default filename の種別ごとの prefix と拡張子
+export const DEFAULT_FILENAME_FOR_KIND: Readonly<
+  Record<FileTypeKind, { prefix: string; ext: string }>
 > = {
   "sequence-read": { prefix: "read", ext: "fastq" },
-  "assembled": { prefix: "asm", ext: "fasta" },
-  "gene-annotation": { prefix: "ann", ext: "gff" },
-  "variation": { prefix: "var", ext: "vcf" },
-  "phenotype": { prefix: "phe", ext: "tsv" },
+  "sequence-nucleotide": { prefix: "seq", ext: "fasta" },
+  "sequence-annotation": { prefix: "ann", ext: "gff" },
+  "variant": { prefix: "var", ext: "vcf" },
+  "expression-matrix": { prefix: "mtx", ext: "tsv" },
   "microarray-expression": { prefix: "arr", ext: "cel" },
-  "rna-seq-matrix": { prefix: "mtx", ext: "tsv" },
-  "mass-spec": { prefix: "ms", ext: "mzML" },
-  "spatial-tx": { prefix: "spt", ext: "tsv" },
+  "spatial-transcriptomics": { prefix: "spt", ext: "tsv" },
+  "spatial-image": { prefix: "img", ext: "tiff" },
+  "mass-spectrometry": { prefix: "ms", ext: "mzML" },
+  "nmr": { prefix: "nmr", ext: "nmrML" },
+  "metabolite-assignment": { prefix: "maf", ext: "tsv" },
 }
 
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
   "provenance": ["third-party"],
   "variation-form": ["per-sample", "aggregate"],
-  "host-pathogen": ["clinical"],
-  "haplotype-mode": [],
-  "functional-genomics": ["rna-seq"],
   "mass-spec-domain": ["proteomics", "metabolomics"],
-  "spatial-platform": ["visium", "stereo-seq"],
-  "tpa-subtype": ["tpa"],
-  "mag-sag-chain": [],
+  "spatial-platform": ["visium", "stereo-seq", "merfish"],
 }
 
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>

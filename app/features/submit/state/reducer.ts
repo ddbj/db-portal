@@ -1,18 +1,22 @@
-import type { FileEntry, FileGroup, GroupType, Submission } from "~/schemas/submit"
+import type { Access, FileEntry, FileGroup, Q1, Submission } from "~/schemas/submit"
 import {
-  BUTTON_DEFAULT_FILENAME,
-  TYPICAL_DATA_FORM_FOR_BUTTON,
-  TYPICAL_GROUP_TYPE_FOR_BUTTON,
+  DEFAULT_FILENAME_FOR_KIND,
+  TYPICAL_DATA_FORM_FOR_KIND,
+  TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
 
+import { isQ2Enabled } from "../cascade"
 import type { Action, RowEditPatch, UIState } from "./types"
+
+// Q1 が行レベル Access の default を注入する (公開 / 第三者解析は open、制限公開含むは restricted)
+const accessDefaultForQ1 = (q1: Q1 | null): Access => (q1 === "restricted" ? "restricted" : "open")
 
 const replaceEntry = (
   entries: readonly FileEntry[],
   entryId: string,
   patch: Partial<FileEntry>,
 ): FileEntry[] =>
-  entries.map((e) => (e.id === entryId ? { ...e, ...patch, id: e.id, buttonType: e.buttonType } : e))
+  entries.map((e) => (e.id === entryId ? { ...e, ...patch, id: e.id, fileTypeKind: e.fileTypeKind } : e))
 
 const replaceGroup = (
   groups: readonly FileGroup[],
@@ -32,24 +36,24 @@ const ensureGroupContainsEntry = (
       : g,
   )
 
-const newGroupFor = (buttonType: FileEntry["buttonType"], groupId: string): FileGroup => ({
+const newGroupFor = (fileTypeKind: FileEntry["fileTypeKind"], groupId: string): FileGroup => ({
   id: groupId,
-  groupType: TYPICAL_GROUP_TYPE_FOR_BUTTON[buttonType],
+  groupType: TYPICAL_GROUP_TYPE_FOR_KIND[fileTypeKind],
   memberFileIds: [],
   linkedGroupIds: [],
 })
 
-// 同 buttonType の既存 filename から連番を読み取り max+1 を 3 桁ゼロ埋めした default 名を返す
+// 同 fileTypeKind の既存 filename から連番を読み取り max+1 を 3 桁ゼロ埋めした default 名を返す
 // (削除後の再追加でも衝突しないよう max 方式)
 export const defaultFilenameFor = (
   entries: readonly FileEntry[],
-  buttonType: FileEntry["buttonType"],
+  fileTypeKind: FileEntry["fileTypeKind"],
 ): string => {
-  const { prefix, ext } = BUTTON_DEFAULT_FILENAME[buttonType]
+  const { prefix, ext } = DEFAULT_FILENAME_FOR_KIND[fileTypeKind]
   const re = new RegExp(`^${prefix}-(\\d+)`)
   let maxN = 0
   for (const entry of entries) {
-    if (entry.buttonType !== buttonType) continue
+    if (entry.fileTypeKind !== fileTypeKind) continue
     const match = entry.filename.match(re)
     if (match?.[1] !== undefined) {
       const n = Number.parseInt(match[1], 10)
@@ -61,17 +65,17 @@ export const defaultFilenameFor = (
 }
 
 const newEntryFor = (
-  buttonType: FileEntry["buttonType"],
+  fileTypeKind: FileEntry["fileTypeKind"],
   entryId: string,
   groupId: string,
   filename: string,
+  access: Access,
 ): FileEntry => ({
   id: entryId,
-  buttonType,
+  fileTypeKind,
   filename,
-  organism: "" as FileEntry["organism"],
-  access: "open",
-  dataForm: TYPICAL_DATA_FORM_FOR_BUTTON[buttonType],
+  access,
+  dataForm: TYPICAL_DATA_FORM_FOR_KIND[fileTypeKind],
   groupId,
   chipTags: [],
 })
@@ -114,23 +118,31 @@ const applyRowEditPatch = (
   }
 }
 
+const setPreconditions = (state: UIState, patch: Partial<Submission["preconditions"]>): UIState => {
+  const next = { ...state.submission.preconditions, ...patch }
+  // Q1 変更で現在の Q2 が disable になったら Q2 を解除する (整合崩れを破壊的に解決しない)
+  if (next.q2 !== null && !isQ2Enabled(next.q1, next.q2)) next.q2 = null
+
+  return { ...state, submission: { ...state.submission, preconditions: next } }
+}
+
 const addRow = (
   state: UIState,
-  buttonType: FileEntry["buttonType"],
+  fileTypeKind: FileEntry["fileTypeKind"],
   entryId: string,
   groupId: string,
 ): UIState => {
-  const group = newGroupFor(buttonType, groupId)
-  const filename = defaultFilenameFor(state.submission.fileEntries, buttonType)
-  const entry = newEntryFor(buttonType, entryId, groupId, filename)
-  const groups = [
-    ...state.submission.fileGroups,
-    { ...group, memberFileIds: [entry.id] },
-  ]
-  const entries = [...state.submission.fileEntries, entry]
+  const group = newGroupFor(fileTypeKind, groupId)
+  const filename = defaultFilenameFor(state.submission.fileEntries, fileTypeKind)
+  const access = accessDefaultForQ1(state.submission.preconditions.q1)
+  const entry = newEntryFor(fileTypeKind, entryId, groupId, filename, access)
 
   return {
-    submission: { ...state.submission, fileEntries: entries, fileGroups: groups },
+    submission: {
+      ...state.submission,
+      fileEntries: [...state.submission.fileEntries, entry],
+      fileGroups: [...state.submission.fileGroups, { ...group, memberFileIds: [entry.id] }],
+    },
     editing: null,
   }
 }
@@ -138,14 +150,15 @@ const addRow = (
 const addToGroup = (
   state: UIState,
   groupId: string,
-  buttonType: FileEntry["buttonType"],
+  fileTypeKind: FileEntry["fileTypeKind"],
   entryId: string,
 ): UIState => {
   const targetGroup = state.submission.fileGroups.find((g) => g.id === groupId)
   if (!targetGroup) return state
 
-  const filename = defaultFilenameFor(state.submission.fileEntries, buttonType)
-  const entry: FileEntry = newEntryFor(buttonType, entryId, groupId, filename)
+  const filename = defaultFilenameFor(state.submission.fileEntries, fileTypeKind)
+  const access = accessDefaultForQ1(state.submission.preconditions.q1)
+  const entry = newEntryFor(fileTypeKind, entryId, groupId, filename, access)
 
   return {
     submission: {
@@ -157,28 +170,35 @@ const addToGroup = (
   }
 }
 
-const removeRow = (state: UIState, entryId: string): UIState => {
-  const entries = state.submission.fileEntries.filter((e) => e.id !== entryId)
-  const groups = dropEntryFromGroups(state.submission.fileGroups, entryId)
-  return {
-    submission: { ...state.submission, fileEntries: entries, fileGroups: groups },
-    editing: null,
-  }
-}
+const removeRow = (state: UIState, entryId: string): UIState => ({
+  submission: {
+    ...state.submission,
+    fileEntries: state.submission.fileEntries.filter((e) => e.id !== entryId),
+    fileGroups: dropEntryFromGroups(state.submission.fileGroups, entryId),
+  },
+  editing: null,
+})
 
 export const submitReducer = (state: UIState, action: Action): UIState => {
   switch (action.type) {
+    case "SET_Q1":
+      return setPreconditions(state, { q1: action.q1 })
+
+    case "SET_Q2":
+      return setPreconditions(state, { q2: action.q2 })
+
     case "ADD_ROW":
-      return addRow(state, action.buttonType, action.entryId, action.groupId)
+      return addRow(state, action.fileTypeKind, action.entryId, action.groupId)
 
     case "ADD_TO_GROUP":
-      return addToGroup(state, action.groupId, action.buttonType, action.entryId)
+      return addToGroup(state, action.groupId, action.fileTypeKind, action.entryId)
 
     case "EDIT_ROW_CELL": {
       const patch: Partial<FileEntry> = { ...action.patch }
       delete patch.id
-      delete patch.buttonType
+      delete patch.fileTypeKind
       delete patch.groupId
+
       return {
         ...state,
         submission: {
@@ -202,13 +222,15 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
 
     case "CLOSE_MODAL":
       return { ...state, editing: null }
-
   }
 }
 
 export const initialState: UIState = {
-  submission: { fileEntries: [], fileGroups: [], notes: "" } satisfies Submission,
+  submission: {
+    preconditions: { q1: null, q2: null },
+    fileEntries: [],
+    fileGroups: [],
+    notes: "",
+  } satisfies Submission,
   editing: null,
 }
-
-export type { GroupType }
