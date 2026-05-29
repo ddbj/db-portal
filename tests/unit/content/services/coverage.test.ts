@@ -32,24 +32,4 @@ describe("services collection coverage", () => {
       expect(s.link).toBeDefined()
     }
   })
-
-  test("services_popularDdbj_hasMonogram", () => {
-    const ddbj = listServices().filter((s) => s.top?.category === "popular-ddbj")
-    expect(ddbj.length).toBeGreaterThan(0)
-    for (const s of ddbj) {
-      const top = s.top
-      if (top === undefined || top.category !== "popular-ddbj") continue
-      expect(top.monogram).toMatch(/^[A-Z][A-Z0-9]{1,2}$/)
-    }
-  })
-
-  test("services_popularDbcls_hasMonogram", () => {
-    const dbcls = listServices().filter((s) => s.top?.category === "popular-dbcls")
-    expect(dbcls.length).toBeGreaterThan(0)
-    for (const s of dbcls) {
-      const top = s.top
-      if (top === undefined || top.category !== "popular-dbcls") continue
-      expect(top.monogram).toMatch(/^[A-Z][A-Z0-9]{1,2}$/)
-    }
-  })
 })

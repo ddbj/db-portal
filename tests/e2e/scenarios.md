@@ -249,9 +249,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. `/` を開く
 - **期待**:
-  - 全 page 上部に NotificationBar が表示
-  - `featured === true` かつ `retireTime > now` の最新 1 件のみ表示 (featured は `_data/global.yml` の `top_news.{ja,en}[].path` 由来)
-  - 「閉じる」 で次の候補に遷移、sessionStorage に dismissed id 保存
+  - トップページ上部に NotificationBar が表示
+  - `featured === true` かつ `retireTime > now` の item を `publishedAt` 降順に全件 stack 表示 (featured は `_data/global.yml` の `top_news.{ja,en}[].path` 由来)
+  - 各 bar の「閉じる」 で該当 bar のみ即時に消え、残りは表示継続。閉じた id は sessionStorage に保存され、新 session で再表示
 
 ### S-NEWS-04: トップ右ペインに 8 件 + 「すべて見る」
 
@@ -270,6 +270,49 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `/news` を開く
 - **期待**:
   - 一覧 0 件でも `<h1>お知らせ</h1>` が描画される
+  - エラーバナーが出ない
+
+## Services Domain
+
+### S-SERVICES-01: /services で一覧表示
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/services` を開く
+- **期待**:
+  - 「サービス」 ページタイトルが表示
+  - 一覧が name アルファベット順で表示 (DDBJ・DBCLS 混在、icon なし)
+  - サイドバーに 種別 (category) / ソース (source) の facet group
+
+### S-SERVICES-02: facet で絞り込み、URL に反映
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/services` を開く
+  2. 種別 facet で `検索` を選択
+  3. ソース facet で `DBCLS` を選択
+- **期待**:
+  - URL が `/services?source=dbcls&category=search` に更新 (各 param 値は alphabet sort)
+  - 一覧が category=search かつ source=dbcls の item に絞り込まれる
+  - AppliedFilters に 2 chip 表示
+
+### S-SERVICES-03: トップに featuredTop の services list
+
+- **ペルソナ**: P-ANON
+- **手順**:
+  1. `/` を開く
+- **期待**:
+  - 「サービス」 セクションに DDBJ (BioProject / BioSample / DDBJ / JGA / DRA / GEA / MetaboBank / TogoVar-repository) と DBCLS の `Togo*` が混在・アルファベット順・list 形式で表示 (icon / card / group なし)
+  - portal 内 navigation の primary tiles は別途維持
+
+### E-SERVICES-01: /api/services 200 空配列でも UI 崩れない
+
+- **ペルソナ**: P-ANON
+- **前提**: `/api/services` を空配列で返すように route mock
+- **手順**:
+  1. `/services` を開く
+- **期待**:
+  - 一覧 0 件でもページタイトルが描画される
   - エラーバナーが出ない
 
 ## Auth Domain

@@ -163,7 +163,7 @@ export const Select = ({
         onClick={handleToggle}
         onKeyDown={handleKey}
         className={cn(
-          "w-full inline-flex items-center justify-between gap-2 text-fs-body py-2 pl-3 pr-2 rounded-button font-sans text-left cursor-pointer",
+          "w-full inline-flex items-center justify-between gap-2 text-fs-body leading-none py-1.5 pl-3 pr-2 rounded-button font-sans text-left cursor-pointer",
           isWarn
             ? "border border-warn-border bg-warn-bg"
             : "border border-border-soft bg-surface",

@@ -8,7 +8,6 @@ export default {
     en: "Research project metadata",
   },
   link: { kind: "internal", to: "/databases/bioproject" },
-  top: { category: "popular-ddbj", order: 1, monogram: "BP" },
   submit: {
     service: "bioproject",
     externalUrl: "https://www.ddbj.nig.ac.jp/bioproject/submission.html",

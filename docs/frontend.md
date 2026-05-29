@@ -233,7 +233,7 @@ returnTo はクライアントから渡す。`buildLoginUrl(returnTo?)` / `build
 
 #### 表示条件
 
-NotificationBar は **トップページ (`pathname === "/"`) のみ** で render される。`/api/news` から取得した news のうち以下を満たすものを 1 件表示:
+NotificationBar は **トップページ (`pathname === "/"`) のみ** で render される。`/api/news` から取得した news のうち以下を満たすものを **新しい順に全件 stack 表示**:
 
 - `featured === true` (featured whitelist で marked)
 - `retireTime` が無いか、現在時刻が `retireTime` 未満
@@ -241,33 +241,39 @@ NotificationBar は **トップページ (`pathname === "/"`) のみ** で rende
 
 #### 順序
 
-複数件が条件を満たす場合は **`publishedAt` 降順 (新しい順)**。優先度フィールドは持たない (時系列のみで決定)。
+`publishedAt` 降順 (新しい順) で縦に積む。優先度フィールドは持たない (時系列のみで決定)。
 
 #### close 動作
 
-close button (× IconButton) を押すと:
+各 bar の close button (× IconButton) を押すと:
 
-1. sessionStorage の `dbPortal.notificationBar.dismissed` に `newsId` を追加
-2. 次の候補があれば自動的に表示、なければ bar 自体を hide
+1. sessionStorage の `dbPortal.notificationBar.dismissed` にその `newsId` を追加
+2. 該当 bar のみ即時に消え、残りの bar はそのまま表示
+3. 全件 close すると section ごと消える
 
 sessionStorage を採用するのは「tab を閉じるまでは再表示しない、次の session では再評価」 の挙動が望ましいため (cookie だと長期で抑制されすぎる、localStorage だと永久に閉じてしまう)。
 
-#### 構成
+#### レイアウト / スタイル
+
+各 bar の中身:
 
 ```
 [Tag status critical "重要"]  [mono date]  [title link]  ............................. [詳細 →]  [× close]
 ```
 
-- 帯背景: `surface-subtle`、上下 1px `border-soft`
+- section 全体: 画面端から左右 8px、header / Breadcrumb 間も上下 8px、bar 間も 8px gap
+- 各 bar: `surface-subtle` 背景 + 四方 `border-soft` 1px + `radius-button`、`content-max` で中央寄せ、bar 内左右 padding 16px
 - Tag は `kind="status" tone="critical"`、size sm
 - date: mono `text-ink-soft text-fs-label`
 - title: `text-ink font-medium`、hover で underline
 - 「詳細 →」: `app/ui/text-link.tsx` 経由で news 詳細 URL へ
-- × close: `app/ui/icon-button.tsx`、`ariaLabel={t("notificationBar.close")}`
+- × close: `app/ui/icon-button.tsx`、`ariaLabel={t("notificationBar.close")}` (全 bar 共通 label)
+
+a11y 上、section landmark (`role="region"`) は 1 つに留め、各 bar は `<article aria-label={title}>` で個別識別する。
 
 #### SSR hydration
 
-sessionStorage は client 専用。SSR では「全件未読」前提で 1 件表示し、hydration 後に sessionStorage を読んで dismissed を反映する。これにより hydration mismatch を避けつつ、SSR でも初回 paint で notification が見える。
+sessionStorage は client 専用。SSR では「全件未読」前提で全件表示し、hydration 後に sessionStorage を読んで dismissed を反映する。これにより hydration mismatch を避けつつ、SSR でも初回 paint で notification が見える。
 
 ### NewsAside
 
@@ -429,34 +435,25 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 - icon は service entry の `id` に応じた dedicated SVG を `app/features/top/service-icon.tsx` の switch から選ぶ (各 service 専用デザイン)
 - 外部リンク card には右上に `ExternalIcon` (12px) を visual hint として表示
 
-### Popular Resources
+### Services (top page)
 
 #### データソース
 
-`app/content/services/` collection の `top.category === "popular-ddbj"` / `top.category === "popular-dbcls"` を `top.order` 昇順で取得する。entry 全件・monogram・link 先は collection が SSOT。
+`GET /api/services?featured=true` を client-side の TanStack Query で取得する (services mirror。データ生成・featuredTop 規約は `services.md`)。`SectionHeading "Services"` (`top.services.heading`) を上に出し、DDBJ・DBCLS を混在させた **name アルファベット順の list** で表示する (source 別の group / card / monogram / icon は持たない)。query key は `/services` 一覧と共有する。
 
-`/databases/:slug` が用意されている entry は internal link、他は外部 URL。他 DB の DatabaseContent が追加されれば、entry 側で `link.kind` を内部に切り替えるだけで Popular Resources も自動的に portal 内に遷移する。
+#### 行 design
 
-#### グリッドと card design
-
-- `SectionHeading "Popular Resources"` を上に出す (TextLink の action は持たない)
-- group label (`DDBJ` / `DBCLS`) は source 色の dot + `text-src-ddbj` / `text-src-dbcls` の uppercase mono 文字で表示
-- 各 group は `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2` (画面幅で 1/2/3 列に増える)
-- 各 ResourceCard: 36×36 monogram (round 8, source accent の `/12` opacity 背景 + accent 文字) + name (14px semibold) + 1 行 description (13px ink-soft)
-- monogram の accent は entry の `id` に応じて DDBJ 系 (`src-ddbj-warm` / `-mid` / `-deep`) / DBCLS 系 (`src-dbcls-warm` / `-mid`) の 5 種から選ぶ。例: `bg-src-ddbj-warm/12 text-src-ddbj-warm`
+- `/services` 一覧と同じ `service-row.tsx` を再利用 (`services.md` の「UI 統合」)。1 行 = name (url があれば外部 link) + 1 行 description + 右に source Tag + category Tag。icon・monogram は持たない
+- facet / pagination は top page には出さない (一覧は `/services` に誘導)
 
 #### i18n キー
 
 | key | ja | en |
 |---|---|---|
 | `top.serviceGrid.heading` | "サービス" | "Services" |
-| `top.popularResources.heading` | "Popular Resources" | "Popular Resources" |
-| `top.popularResources.groupDdbj` | "DDBJ" | "DDBJ" |
-| `top.popularResources.groupDbcls` | "DBCLS" | "DBCLS" |
+| `top.services.heading` | "サービス" | "Services" |
 
-`top.serviceGrid.heading` は資源として宣言してあるが、現状の `ServiceGrid` 実装は内側に heading を render しない (page heading は他で出る)。
-
-各 entry の title / description は collection 内の `title.{ja,en}` / `description.{ja,en}` を直接読む (i18n リソースには複製しない、SSOT は collection)。
+`top.serviceGrid.heading` は資源として宣言してあるが、現状の `ServiceGrid` 実装 (portal 内 navigation の primary tiles) は内側に heading を render しない。name / description / category ラベルは service mirror の data と i18n (`services.category.*`) から解決する。
 
 ### NewsAside / NotificationBar
 
@@ -466,7 +463,7 @@ NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有�
 
 ### SSR / hydration
 
-- TopRoute は loader を持たない (Service tiles / Popular Resources は collection 起動時 load、News は client-side の TanStack Query で取得)
+- TopRoute は loader を持たない (Service tiles は collection 起動時 load、Services list / News は client-side の TanStack Query で取得)
 - SSR では News fetch を `useQuery` の `prefetch` で行わない (TanStack Query の hydration は採用していない)。初回 client mount で fetch する
 - 結果として SSR では `NewsAside` が loading / empty 状態でレンダリングされ、hydration 後に実データに置き換わる (initial paint で skeleton 相当の表示)
 
@@ -530,7 +527,7 @@ Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、
 
 ### ServiceContent
 
-サービス情報 (検索 / 登録 / 各種 DB / 外部サービス) を 1 collection に集約する。トップページの Service tiles / Popular Resources と submit feature の外部 CTA リンクが同じ source を共用する。
+portal 内 navigation の Service tiles (トップ左 main の primary tiles) と submit feature の外部 CTA リンクを 1 collection に集約する。外部サービス一覧 (DDBJ / DBCLS の各サービス) は本 collection ではなく services mirror が SSOT (`services.md`)。
 
 フィールド一覧:
 
@@ -548,15 +545,13 @@ Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、
 - top と submit の少なくとも一方が必須
 - top usage がある場合は link 必須
 
-#### TopUsage の category 分岐
+#### TopUsage の category
 
 | category | 追加フィールド | 表示位置 |
 |---|---|---|
-| `primary-service` | `order` (非負整数) | トップの Service tile grid (左 main 上段、6 件) |
-| `popular-ddbj` | `order` + `monogram` (2-3 文字大文字英数) | Popular Resources DDBJ 群 |
-| `popular-dbcls` | `order` + `monogram` | Popular Resources DBCLS 群 |
+| `primary-service` | `order` (非負整数) | トップの Service tile grid (左 main 上段、portal 内 navigation) |
 
-`order` は各カテゴリ内の表示順。`monogram` は "BP" / "BS" / "DR" / "TGV" のような 2-3 文字。`primary-service` には monogram を要求しない (Service icon を別途持つため)。`order` の重複は手動管理。
+`order` は表示順 (各カテゴリ内、手動管理)。primary-service は `service-icon.tsx` の SVG を `id` で引く。外部サービスの top page 掲載は collection ではなく services mirror の `featuredTop` で決まる (`services.md`)。
 
 #### SubmitUsage
 
@@ -689,7 +684,7 @@ UI primitives:
 Shell:
 
 - nav 項目 / active 判定 / SwitchLang / LoginButton 出し分け
-- NotificationBar の表示・close・全件 close でバー消失・sessionStorage 永続化
+- NotificationBar の表示順 / 個別 close で他 bar 残存 / 全件 close で section 消失 / sessionStorage 永続化
 - NewsAside の 5 件 list / 「すべて見る」 link / source / category Tag
 - Breadcrumb の 0-1 件 null / handle 駆動描画
 - TranslationUnavailable の表示条件 / ja URL で非表示

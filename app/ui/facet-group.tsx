@@ -21,7 +21,7 @@ export const FacetGroup = ({
   onShowMore,
   children,
 }: FacetGroupProps) => (
-  <div className="mb-5">
+  <div>
     <SidebarGroupLabel
       action={
         appliedCount > 0 && onClear && (

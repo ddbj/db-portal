@@ -70,7 +70,7 @@ export const PerDbResults = ({
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border-soft py-2.5 min-h-heading-row">
         <p
           className="text-fs-body-sm text-ink-mid m-0"
           aria-live="polite"
@@ -87,38 +87,38 @@ export const PerDbResults = ({
         {response.hardLimitReached && (
           <Tag kind="status" tone="warning" size="sm">{t("search.results.perDb.hardLimit")}</Tag>
         )}
-        <div className="ml-auto flex items-center gap-3">
-          <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
-            <span>{t("search.results.sort.label")}</span>
-            <Select
-              ariaLabel={t("search.results.sort.label")}
-              options={sortOptions}
-              value={sort}
-              onChange={(next) => onSortChange(next as SortKey)}
-              width={148}
-            />
-          </label>
-          <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
-            <span>{t("search.results.perPage.label")}</span>
-            <Select
-              ariaLabel={t("search.results.perPage.label")}
-              options={perPageOptions}
-              value={String(perPage)}
-              onChange={(next) => {
-                const parsed = Number.parseInt(next, 10)
-                if (PER_PAGE_VALUES.includes(parsed as PerPageValue)) {
-                  onPerPageChange(parsed as PerPageValue)
-                }
-              }}
-              width={80}
-            />
-          </label>
-          <ResultsPagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
+          <span>{t("search.results.sort.label")}</span>
+          <Select
+            ariaLabel={t("search.results.sort.label")}
+            options={sortOptions}
+            value={sort}
+            onChange={(next) => onSortChange(next as SortKey)}
+            width={148}
           />
-        </div>
+        </label>
+        <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
+          <span>{t("search.results.perPage.label")}</span>
+          <Select
+            ariaLabel={t("search.results.perPage.label")}
+            options={perPageOptions}
+            value={String(perPage)}
+            onChange={(next) => {
+              const parsed = Number.parseInt(next, 10)
+              if (PER_PAGE_VALUES.includes(parsed as PerPageValue)) {
+                onPerPageChange(parsed as PerPageValue)
+              }
+            }}
+            width={80}
+          />
+        </label>
+        <ResultsPagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       </div>
       {response.total === 0
         ? <Callout tone="info" role="status">{t("search.results.perDb.empty")}</Callout>

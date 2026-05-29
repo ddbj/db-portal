@@ -1,4 +1,5 @@
-import { HeroSection, PopularResources, ServiceGrid } from "~/features/top"
+import { FeaturedServices } from "~/features/services"
+import { HeroSection, ServiceGrid } from "~/features/top"
 import { NewsAside } from "~/shell"
 
 const TopRoute = () => (
@@ -13,7 +14,7 @@ const TopRoute = () => (
         <main className="min-w-0">
           <ServiceGrid />
           <div className="mt-10">
-            <PopularResources />
+            <FeaturedServices />
           </div>
         </main>
         <aside className="min-w-0">

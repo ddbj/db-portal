@@ -20,7 +20,15 @@ const NewsRoute = () => {
   const facet = parseNewsFacetState(searchParams.toString())
   const result = useNewsList(lang, facet)
 
-  const handleChange = useCallback(
+  const handleFacetChange = useCallback(
+    (next: NewsFacetState) => {
+      const qs = serializeNewsFacetState(next)
+      void navigate(`/news${qs}`, { replace: true, preventScrollReset: true })
+    },
+    [navigate],
+  )
+
+  const handlePagingChange = useCallback(
     (next: NewsFacetState) => {
       const qs = serializeNewsFacetState(next)
       void navigate(`/news${qs}`, { replace: true })
@@ -33,11 +41,11 @@ const NewsRoute = () => {
       <PageTitle title={t("news.pageTitle")} />
       <Section padTop="sm" padBottom="lg">
         <div className="grid gap-8 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
-          <FacetPanel facet={facet} options={result.options} onChange={handleChange} />
+          <FacetPanel facet={facet} options={result.options} onChange={handleFacetChange} />
           <NewsList
             lang={lang}
             facet={facet}
-            onChange={handleChange}
+            onChange={handlePagingChange}
             loading={result.loading}
             error={result.error}
             total={result.total}

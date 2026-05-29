@@ -47,7 +47,7 @@ describe("PageTitle", () => {
     expect(sub).toHaveClass("text-ink-mid")
     expect(sub).toHaveClass("leading-relaxed")
     expect(sub).toHaveClass("mt-2.5")
-    expect(sub).toHaveClass("max-w-[1100px]")
+    expect(sub).toHaveClass("max-w-content-narrow")
   })
 
   test("PageTitle_noSubtitle_doesNotRenderSubtitleParagraph", () => {

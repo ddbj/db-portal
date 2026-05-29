@@ -40,7 +40,7 @@ export const NewsList = ({
 
   return (
     <div className="flex-1 min-w-0 flex flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-border-soft py-2.5">
+      <header className="flex items-center justify-between gap-4 border-b border-border-soft py-2.5 min-h-heading-row">
         <p className="text-fs-meta text-ink-soft m-0">
           {t("news.toolbar.count", { count: total })}
         </p>

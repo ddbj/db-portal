@@ -84,7 +84,7 @@ describe("serializeAst", () => {
       }),
     )
     await serializeAst(
-      { ast: { op: "free_text", value: "x" } },
+      { ast: { op: "free_text", value: "x", is_phrase: false } },
       { baseUrl: BASE, query: { db: "bioproject" } },
     )
   })

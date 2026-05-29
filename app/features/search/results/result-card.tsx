@@ -47,8 +47,8 @@ const renderTags = (db: DbSlug, hit: DbHit): readonly { key: string; value: stri
   if (db === "sra" && "libraryStrategy" in hit && hit.libraryStrategy) {
     tags.push({ key: "library", value: String(hit.libraryStrategy) })
   }
-  if (db === "bioproject" && "projectType" in hit && hit.projectType) {
-    tags.push({ key: "project-type", value: String(hit.projectType) })
+  if (db === "bioproject" && "projectType" in hit && hit.projectType && hit.projectType.length > 0) {
+    tags.push({ key: "project-type", value: hit.projectType.join(", ") })
   }
 
   return tags

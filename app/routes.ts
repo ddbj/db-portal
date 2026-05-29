@@ -8,6 +8,7 @@ export default [
   route("search/results", "routes/search-results/route.tsx"),
   route("submit", "routes/submit/route.tsx"),
   route("news", "routes/news/route.tsx"),
+  route("services", "routes/services/route.tsx"),
   route("databases/:slug", "routes/databases/$slug.tsx"),
   route("api/set-lang", "routes/api.set-lang.ts"),
   layout("routes/auth/layout.tsx", [

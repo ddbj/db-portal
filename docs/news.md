@@ -219,7 +219,7 @@ URL params との同期 (`facet-url-state.ts`):
 
 ### NotificationBar / NewsAside
 
-NotificationBar (top page 上部、1 件 close 可) と NewsAside (top page 右ペイン、最新 5 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
+NotificationBar (top page 上部、全 featured を新しい順に stack、個別 close 可) と NewsAside (top page 右ペイン、最新 5 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
 
 news data source 側の補足: NotificationBar 掲載対象は **`featured` フラグ** (= `global.yml` の `top_news` slug whitelist に該当) で判定する。category とは独立した軸で、category が `announcement` であっても featured でなければ NotificationBar に出さない。逆に featured なら category を問わず出る (ddbj 側のみ運用、`global.yml` メンテナで決まる)。
 

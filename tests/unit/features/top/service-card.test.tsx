@@ -118,7 +118,7 @@ describe("ServiceCard", () => {
     const iconWrap = link.querySelector(".w-14")
     expect(iconWrap).not.toBeNull()
     expect(iconWrap).toHaveClass(
-      "rounded-xl",
+      "rounded-card",
       "bg-surface-subtle",
       "border",
       "border-border-soft",

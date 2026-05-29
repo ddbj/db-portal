@@ -40,7 +40,7 @@ describe("ServiceGrid", () => {
   test("ServiceGrid_listClass_appliesGridResponsive", () => {
     const { container } = renderGrid()
     const ul = container.querySelector("ul")
-    expect(ul).toHaveClass("grid", "sm:grid-cols-2", "gap-3", "list-none")
+    expect(ul).toHaveClass("grid", "lg:grid-cols-2", "gap-3", "list-none")
   })
 
   test("ServiceGrid_enLang_rendersEnglishTitles", () => {

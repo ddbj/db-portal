@@ -37,7 +37,7 @@ export interface paths {
         };
         /**
          * Search bioproject entries
-         * @description Search bioproject entries. Type-specific filters: objectTypes (term), externalLinkLabel (nested), projectType (text).
+         * @description Search bioproject entries. Type-specific filters: objectTypes/relevance (term), externalLinkLabel (nested), projectType (text).
          */
         get: operations["listBioProjectEntries"];
         put?: never;
@@ -57,7 +57,7 @@ export interface paths {
         };
         /**
          * Search biosample entries
-         * @description Search biosample entries. Type-specific filters: derivedFromId (nested); host/strain/isolate/geoLocName/collectionDate (text).
+         * @description Search biosample entries. Type-specific filters: package/model (term); derivedFromId (nested); host/strain/isolate/geoLocName/collectionDate (text).
          */
         get: operations["listBioSampleEntries"];
         put?: never;
@@ -473,7 +473,7 @@ export interface paths {
         };
         /**
          * Facet aggregation for bioproject
-         * @description Get facet counts for bioproject entries. Type-specific filters: objectTypes (term), externalLinkLabel (nested), projectType (text).
+         * @description Get facet counts for bioproject entries. Type-specific filters: objectTypes/relevance (term), externalLinkLabel (nested), projectType (text).
          */
         get: operations["getBioProjectFacets"];
         put?: never;
@@ -493,7 +493,7 @@ export interface paths {
         };
         /**
          * Facet aggregation for biosample
-         * @description Get facet counts for biosample entries. Type-specific filters: derivedFromId (nested); host/strain/isolate/geoLocName/collectionDate (text).
+         * @description Get facet counts for biosample entries. Type-specific filters: package/model (term); derivedFromId (nested); host/strain/isolate/geoLocName/collectionDate (text).
          */
         get: operations["getBioSampleFacets"];
         put?: never;
@@ -2166,6 +2166,15 @@ export interface components {
              */
             objectType?: ("BioProject" | "UmbrellaBioProject") | null;
             /**
+             * Projecttype
+             * @description BioProject project-type values (INSDC controlled vocabulary, e.g. ``genome``, ``metagenome``).  Sourced from the ES ``projectType`` text+keyword field (``list[str]``); distinct from ``object_type`` (Umbrella vs regular BioProject).
+             * @example [
+             *       "genome",
+             *       "metagenome"
+             *     ]
+             */
+            projectType?: string[] | null;
+            /**
              * Organization
              * @example [
              *       {
@@ -3444,8 +3453,8 @@ export interface components {
              *         "value": "cancer"
              *       },
              *       {
-             *         "field": "organism",
-             *         "op": "eq",
+             *         "field": "organism_name",
+             *         "op": "contains",
              *         "value": "Homo sapiens"
              *       }
              *     ]
@@ -3471,8 +3480,8 @@ export interface components {
              *         "value": "cancer"
              *       },
              *       {
-             *         "field": "organism",
-             *         "op": "eq",
+             *         "field": "organism_name",
+             *         "op": "contains",
              *         "value": "Homo sapiens"
              *       }
              *     ]
@@ -3495,6 +3504,13 @@ export interface components {
              * @example cancer
              */
             value: string;
+            /**
+             * Is Phrase
+             * @description True when the value was originally quoted (``"..."`` / ``'...'``) in the DSL. Backend compiles such FreeText to ``multi_match.type=phrase`` (ES) / quoted edismax token (Solr) for order-preserving phrase match. False for bare words. Always present in the response.
+             * @default false
+             * @example true
+             */
+            is_phrase: boolean;
         };
         /**
          * DbPortalParseLeafRange
@@ -3564,8 +3580,8 @@ export interface components {
              *           "value": "cancer"
              *         },
              *         {
-             *           "field": "organism",
-             *           "op": "eq",
+             *           "field": "organism_name",
+             *           "op": "contains",
              *           "value": "Homo sapiens"
              *         }
              *       ]
@@ -3593,8 +3609,8 @@ export interface components {
              *           "value": "cancer"
              *         },
              *         {
-             *           "field": "organism",
-             *           "op": "eq",
+             *           "field": "organism_name",
+             *           "op": "contains",
              *           "value": "Homo sapiens"
              *         }
              *       ]
@@ -3610,7 +3626,7 @@ export interface components {
             /**
              * Dsl
              * @description Normalized DSL string.  Reusable as ``q`` for ``GET /db-portal/parse`` / ``GET /db-portal/cross-search`` / ``GET /db-portal/search``.
-             * @example cancer AND organism:"Homo sapiens"
+             * @example cancer AND organism_name:"Homo sapiens"
              */
             dsl: string;
         };
@@ -3650,10 +3666,10 @@ export interface components {
             type: string;
             /**
              * Encodingformat
-             * @description Representation format of a Schema.org Distribution. "JSON" / "JSON-LD" / "XML" describe textual metadata payloads; "FASTQ" / "SRA" describe binary sequencing data downloads; "DATA" describes a directory landing page that lists analysis output files.
+             * @description Representation format of a Schema.org Distribution. "JSON" / "JSON-LD" / "XML" describe textual metadata payloads; "FASTQ" / "SRA" describe binary sequencing data downloads.
              * @enum {string}
              */
-            encodingFormat: "JSON" | "JSON-LD" | "XML" | "FASTQ" | "SRA" | "DATA";
+            encodingFormat: "JSON" | "JSON-LD" | "XML" | "FASTQ" | "SRA";
             /**
              * Contenturl
              * @description Download URL where the distribution can be retrieved.
@@ -4070,6 +4086,39 @@ export interface components {
              *     ]
              */
             datasetType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Projecttype
+             * @description BioProject projectType count (bioproject only, opt-in). bucket value is the ``projectType.keyword`` exact value; the paired search parameter ``projectType`` performs analyzed text match, so re-injecting a bucket value may return a superset of the bucket (use ``?projectType="<value>"`` to force phrase match).
+             * @example [
+             *       {
+             *         "count": 1200,
+             *         "value": "metagenome"
+             *       }
+             *     ]
+             */
+            projectType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Host
+             * @description BioSample host count (biosample only, opt-in). bucket value is the ``host.keyword`` exact value (cardinality ~134K); the paired search parameter ``host`` performs analyzed text match, so re-injecting a bucket value may return a superset of the bucket (use ``?host="<value>"`` to force phrase match). Due to the high cardinality, large ``facetsSize`` values (e.g. 1000) trigger expensive shard-level aggregation; prefer the default ``facetsSize=100`` and narrow the query (keywords / organism / etc.) before requesting this facet.
+             * @example [
+             *       {
+             *         "count": 3000,
+             *         "value": "Homo sapiens"
+             *       }
+             *     ]
+             */
+            host?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Vendor
+             * @description JGA vendor count (jga-study only, opt-in). bucket value is the ``vendor.keyword`` exact value; the paired search parameter ``vendor`` performs analyzed text match.
+             * @example [
+             *       {
+             *         "count": 90,
+             *         "value": "Illumina"
+             *       }
+             *     ]
+             */
+            vendor?: components["schemas"]["FacetBucket"][] | null;
         };
         /**
          * FacetsResponse
@@ -4435,7 +4484,7 @@ export interface components {
             title?: string | null;
             /**
              * Agency
-             * @description Funding organizations (zero or more). Empty when the source XML has no `Agency` element or all entries failed to parse.
+             * @description Funding organizations (at least one).
              */
             agency: components["schemas"]["Organization"][];
         };
@@ -4840,7 +4889,7 @@ export interface components {
         };
         /**
          * KeywordOperator
-         * @description Boolean operator for combining keywords.
+         * @description Boolean operator for combining comma-separated keywords. Default OR.
          * @enum {string}
          */
         KeywordOperator: "AND" | "OR";
@@ -6080,21 +6129,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -6114,7 +6163,7 @@ export interface operations {
                 includeFacets?: boolean;
                 /** @description Filter by database types (comma-separated). Allowed: any of DbType. */
                 types?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -6263,21 +6312,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -6297,11 +6346,13 @@ export interface operations {
                 includeFacets?: boolean;
                 /** @description Term filter on objectType.keyword (comma-separated values are OR'd). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
                 objectTypes?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on projectType (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on projectType. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 projectType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Term filter on relevance (comma-separated values are OR'd). INSDC 7 controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other. Re-injectable from the relevance facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                relevance?: string | null;
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -6450,21 +6501,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -6482,19 +6533,23 @@ export interface operations {
                 includeProperties?: boolean;
                 /** @description Include facet aggregation alongside search results. */
                 includeFacets?: boolean;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on host (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on host. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 host?: string | null;
-                /** @description Text match on strain (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on strain. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 strain?: string | null;
-                /** @description Text match on isolate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on isolate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 isolate?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Term filter on package (BioSample package name, comma-separated values are OR'd). Re-injectable from the package facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                package?: string | null;
+                /** @description Term filter on model (comma-separated values are OR'd). Re-injectable from the model facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                model?: string | null;
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -6643,21 +6698,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -6689,17 +6744,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -6848,21 +6903,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -6894,17 +6949,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -7053,21 +7108,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -7099,17 +7154,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -7258,21 +7313,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -7304,17 +7359,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -7463,21 +7518,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -7509,17 +7564,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -7668,21 +7723,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -7714,17 +7769,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -7873,21 +7928,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -7909,11 +7964,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -8062,21 +8117,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -8098,11 +8153,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -8251,21 +8306,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -8287,11 +8342,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -8440,21 +8495,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -8476,11 +8531,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -8629,21 +8684,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -8663,7 +8718,7 @@ export interface operations {
                 includeFacets?: boolean;
                 /** @description Term filter on experimentType.keyword (comma-separated values are OR'd). */
                 experimentType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -8812,21 +8867,21 @@ export interface operations {
                 perPage?: number;
                 /** @description Cursor token for cursor-based pagination. Opaque HMAC-signed string returned in the previous response's nextCursor. When specified, almost all search/filter parameters and 'page' must use their defaults; exceptions are perPage / dbXrefsLimit / includeDbXrefs which may be combined. PIT lifetime is 5 minutes after first use; expired tokens return 400. Tokens become invalid across server restarts (signing key regenerates). */
                 cursor?: string | null;
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -8850,7 +8905,7 @@ export interface operations {
                 experimentType?: string | null;
                 /** @description Term filter on submissionType.keyword (comma-separated values are OR'd). */
                 submissionType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9376,21 +9431,21 @@ export interface operations {
     getFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9402,7 +9457,7 @@ export interface operations {
                 dateModifiedTo?: string | null;
                 /** @description Filter by database types (comma-separated). Allowed: any of DbType. */
                 types?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9454,21 +9509,21 @@ export interface operations {
     getBioProjectFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9480,11 +9535,13 @@ export interface operations {
                 dateModifiedTo?: string | null;
                 /** @description Term filter on objectType.keyword (comma-separated values are OR'd). Allowed: BioProject, UmbrellaBioProject. Specifying both is equivalent to omitting the filter. */
                 objectTypes?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on projectType (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on projectType. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 projectType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Term filter on relevance (comma-separated values are OR'd). INSDC 7 controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other. Re-injectable from the relevance facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                relevance?: string | null;
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9536,21 +9593,21 @@ export interface operations {
     getBioSampleFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9560,19 +9617,23 @@ export interface operations {
                 dateModifiedFrom?: string | null;
                 /** @description Modification date range end (YYYY-MM-DD). */
                 dateModifiedTo?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on host (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on host. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 host?: string | null;
-                /** @description Text match on strain (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on strain. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 strain?: string | null;
-                /** @description Text match on isolate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on isolate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 isolate?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Term filter on package (BioSample package name, comma-separated values are OR'd). Re-injectable from the package facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                package?: string | null;
+                /** @description Term filter on model (comma-separated values are OR'd). Re-injectable from the model facet bucket value. Values not present in ES yield no hits naturally; no client-side allowlist is enforced. */
+                model?: string | null;
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9624,21 +9685,21 @@ export interface operations {
     getSraSubmissionFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9662,17 +9723,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9724,21 +9785,21 @@ export interface operations {
     getSraStudyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9762,17 +9823,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9824,21 +9885,21 @@ export interface operations {
     getSraExperimentFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9862,17 +9923,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -9924,21 +9985,21 @@ export interface operations {
     getSraRunFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -9962,17 +10023,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10024,21 +10085,21 @@ export interface operations {
     getSraSampleFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10062,17 +10123,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10124,21 +10185,21 @@ export interface operations {
     getSraAnalysisFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10162,17 +10223,17 @@ export interface operations {
                 libraryLayout?: string | null;
                 /** @description Term filter on analysisType.keyword (comma-separated values are OR'd). */
                 analysisType?: string | null;
-                /** @description Nested filter on derivedFrom.identifier (match within nested objects). */
+                /** @description Nested filter on derivedFrom.identifier (accession ID exact match, case-sensitive). Comma-separated values are OR'd via terms query. No parsing other than comma-split (spaces / quotes / auto-phrase are NOT applied); values containing whitespace or quotes will yield 0 hits. */
                 derivedFromId?: string | null;
-                /** @description Text match on libraryName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryName?: string | null;
-                /** @description Text match on libraryConstructionProtocol (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on libraryConstructionProtocol. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 libraryConstructionProtocol?: string | null;
-                /** @description Text match on geoLocName (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on geoLocName. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 geoLocName?: string | null;
-                /** @description Text match on collectionDate (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on collectionDate. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 collectionDate?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10224,21 +10285,21 @@ export interface operations {
     getJgaStudyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10252,11 +10313,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10308,21 +10369,21 @@ export interface operations {
     getJgaDatasetFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10336,11 +10397,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10392,21 +10453,21 @@ export interface operations {
     getJgaDacFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10420,11 +10481,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10476,21 +10537,21 @@ export interface operations {
     getJgaPolicyFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10504,11 +10565,11 @@ export interface operations {
                 studyType?: string | null;
                 /** @description Term filter on datasetType.keyword (comma-separated values are OR'd). */
                 datasetType?: string | null;
-                /** @description Nested filter on externalLink.label (text match within nested objects). */
+                /** @description Nested filter on externalLink.label. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 externalLinkLabel?: string | null;
-                /** @description Text match on vendor (auto-phrase enabled; comma-separated values are OR'd). */
+                /** @description Text match on vendor. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. */
                 vendor?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10560,21 +10621,21 @@ export interface operations {
     getGeaFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10586,7 +10647,7 @@ export interface operations {
                 dateModifiedTo?: string | null;
                 /** @description Term filter on experimentType.keyword (comma-separated values are OR'd). */
                 experimentType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10638,21 +10699,21 @@ export interface operations {
     getMetaboBankFacets: {
         parameters: {
             query?: {
-                /** @description Search keywords (comma-separated for multiple). Wrap in double quotes for phrase match (e.g. '"whole genome"'). Keywords containing symbols (- / . + :) are auto-phrased (e.g. 'HIF-1', 'COVID-19'). When the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
+                /** @description Search keywords. Semantics: (1) comma-separated values are combined with keywordOperator (default OR); (2) spaces inside one value mean AND (all tokens must match in a document); (3) wrap in double quotes for phrase match (e.g. '"whole genome"'); (4) tokens containing - / . + : are auto-phrased (e.g. 'HIF-1', 'COVID-19'); (5) when the value is a single token that matches an INSDC accession ID exactly, 'suppressed' entries are included in the search scope. */
                 keywords?: string | null;
                 /** @description Limit keyword search to specific fields (comma-separated). Allowed: identifier, title, name, description, organism.name. */
                 keywordFields?: string | null;
-                /** @description Boolean operator for keywords: AND or OR. */
+                /** @description Boolean operator for combining comma-separated keywords: AND or OR. Default OR. Tokens inside a single comma-separated value (e.g. 'whole genome') are always AND-combined regardless of this setting; use double quotes for phrase match. */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
                 /** @description NCBI Taxonomy ID, digits only (e.g. '9606'). */
                 organism?: string | null;
                 /** @description Term filter on accessibility (all DB shared). Allowed: public-access, controlled-access. Re-injectable from the accessibility facet bucket value. */
                 accessibility?: components["schemas"]["Accessibility"] | null;
-                /** @description Nested filter on organization.name. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
+                /** @description Nested filter on organization.name. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints; types whose schema has no organization nested path yield no hits naturally on Elasticsearch side. */
                 organization?: string | null;
-                /** @description Nested filter on publication.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on publication.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 publication?: string | null;
-                /** @description Nested filter on grant.title. Accepted on cross-type and all type-specific endpoints. */
+                /** @description Nested filter on grant.title. Semantics: spaces = AND, commas = OR, double quotes = phrase, tokens with - / . + : auto-phrased. Accepted on cross-type and all type-specific endpoints. */
                 grant?: string | null;
                 /** @description Publication date range start (YYYY-MM-DD). */
                 datePublishedFrom?: string | null;
@@ -10668,7 +10729,7 @@ export interface operations {
                 experimentType?: string | null;
                 /** @description Term filter on submissionType.keyword (comma-separated values are OR'd). */
                 submissionType?: string | null;
-                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility, type (cross-type only), objectType (bioproject only), libraryStrategy, librarySource, librarySelection, platform, instrumentModel (sra-experiment-only buckets), experimentType (gea / metabobank), studyType (jga-study / metabobank), submissionType (metabobank). */
+                /** @description Comma-separated facet fields to aggregate. Omitting the parameter returns common facets only (organism, accessibility, and type for cross-type endpoints). An empty string returns no facets. Explicit values fully replace the default selection (no auto-merge with common facets); to keep common facets, list them explicitly (e.g. 'organism,accessibility,objectType'). Allowed: organism, accessibility (default common); type (cross-type only); objectType, relevance, projectType (bioproject only); package, model, host (biosample only); libraryStrategy, librarySource, librarySelection, platform, instrumentModel, libraryLayout (sra-experiment only); analysisType (sra-analysis only); experimentType (gea / metabobank); studyType (jga-study / metabobank); submissionType (metabobank only); datasetType (jga-dataset only); vendor (jga-study only). */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100). Applies uniformly to every facet selected via ``facets`` (per-facet override is not exposed). The ``organism`` label sub-aggregation always uses size 1 and is unaffected. Ignored when ``includeFacets=false`` on ``/entries/*``. */
                 facetsSize?: number | null;
@@ -10837,11 +10898,11 @@ export interface operations {
     crossSearchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``project_type`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
                 /** @description Per-DB top hits count.  ``0`` returns count-only (``databases[i].hits`` is ``null``); ``1``-``50`` returns up to N hits per DB.  Hits are ordered by relevance (``_score`` desc) with ``identifier`` ascending as the tiebreaker; when ``q`` is omitted (``match_all``) all scores tie, so ``identifier`` ascending becomes the effective order.  Out of range (>50 or negative) returns 422. */
                 topHits?: number;
-                /** @description Default boolean operator for bare word / phrase token connection inside FreeText (e.g. ``q=cancer tumor``).  ``AND`` (default) requires every token to match; ``OR`` requires at least one. The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  ``/db-portal/parse`` does not accept this parameter (the parsed AST does not carry operator state). */
+                /** @description Default boolean operator for connecting comma-separated FreeText tokens (e.g. ``q=cancer,tumor``).  Default **OR** (matches Google-like behaviour and the same parameter on ``/entries/*``).  ``AND`` requires every token to match; ``OR`` requires at least one. Tokens inside a single FreeText value (e.g. ``q=cancer tumor``) are always AND-combined regardless of this setting (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  ``/db-portal/parse`` does not accept this parameter (the parsed AST does not carry operator state). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
             };
             header?: never;
@@ -10963,7 +11024,7 @@ export interface operations {
     searchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``project_type`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
                 /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``/db-portal/cross-search``. */
                 db?: components["schemas"]["DbPortalDb"] | null;
@@ -10975,7 +11036,7 @@ export interface operations {
                 cursor?: string | null;
                 /** @description Sort order.  Allowed: null (relevance, default), ``datePublished:desc``, ``datePublished:asc``. */
                 sort?: ("datePublished:asc" | "datePublished:desc") | null;
-                /** @description Default boolean operator for bare word / phrase token connection inside FreeText (e.g. ``q=cancer tumor``).  ``AND`` (default) requires every token to match; ``OR`` requires at least one. The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  Exclusive with cursor when not at default (AND). */
+                /** @description Default boolean operator for connecting comma-separated FreeText tokens (e.g. ``q=cancer,tumor``).  Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value (e.g. ``q=cancer tumor``) are always AND-combined regardless of this setting (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  Exclusive with cursor when not at default (OR). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
             };
             header?: never;
@@ -11107,7 +11168,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "dsl": "cancer AND organism:\"Homo sapiens\""
+                     *       "dsl": "cancer AND organism_name:\"Homo sapiens\""
                      *     }
                      */
                     "application/json": components["schemas"]["DbPortalSerializeResponse"];

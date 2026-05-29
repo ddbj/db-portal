@@ -14,22 +14,10 @@ const ServiceLink = z.discriminatedUnion("kind", [
 
 export type ServiceLink = z.infer<typeof ServiceLink>
 
-const TopUsage = z.discriminatedUnion("category", [
-  z.object({
-    category: z.literal("primary-service"),
-    order: z.number().int().nonnegative(),
-  }),
-  z.object({
-    category: z.literal("popular-ddbj"),
-    order: z.number().int().nonnegative(),
-    monogram: z.string().regex(/^[A-Z][A-Z0-9]{1,2}$/),
-  }),
-  z.object({
-    category: z.literal("popular-dbcls"),
-    order: z.number().int().nonnegative(),
-    monogram: z.string().regex(/^[A-Z][A-Z0-9]{1,2}$/),
-  }),
-])
+const TopUsage = z.object({
+  category: z.literal("primary-service"),
+  order: z.number().int().nonnegative(),
+})
 
 export type ServiceTopCategory = z.infer<typeof TopUsage>["category"]
 

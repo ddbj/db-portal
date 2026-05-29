@@ -43,10 +43,9 @@ export type Resources = {
     serviceGrid: {
       heading: string
     }
-    popularResources: {
+    services: {
       heading: string
-      groupDdbj: string
-      groupDbcls: string
+      viewAll: string
     }
   }
   databases: {
@@ -95,6 +94,8 @@ export type Resources = {
       source: string
       category: string
       year: string
+      yearShowMore: string
+      yearCollapse: string
       service: string
     }
     category: {
@@ -103,6 +104,34 @@ export type Resources = {
       maintenance: string
       event: string
       service: string
+      other: string
+    }
+  }
+  services: {
+    pageTitle: string
+    pageDescription: string
+    toolbar: {
+      count: string
+      sort: string
+      sortAsc: string
+      sortDesc: string
+    }
+    list: {
+      empty: string
+      error: string
+    }
+    facet: {
+      heading: string
+      source: string
+      category: string
+    }
+    category: {
+      repository: string
+      search: string
+      analysis: string
+      annotation: string
+      integration: string
+      visualization: string
       other: string
     }
   }
@@ -409,13 +438,17 @@ export type Resources = {
       removeCondition: string
       removeGroup: string
       field: {
-        organism: string
         identifier: string
         title: string
         description: string
+        organismId: string
+        organismName: string
+        accessibility: string
         datePublished: string
         dateModified: string
         dateCreated: string
+        submitter: string
+        publication: string
       }
       op: {
         eq: string
@@ -537,6 +570,8 @@ export type Resources = {
       crossSearchFailure: string
       dbSearchFailure: string
       serializeFailure: string
+      querySyntax: string
+      querySyntaxHint: string
     }
     a11y: {
       input: string
@@ -595,11 +630,7 @@ export const ja: Resources = {
       a11y: { input: "検索キーワード", scope: "検索対象データベース" },
     },
     serviceGrid: { heading: "サービス" },
-    popularResources: {
-      heading: "Popular Resources",
-      groupDdbj: "DDBJ",
-      groupDbcls: "DBCLS",
-    },
+    services: { heading: "サービス", viewAll: "すべて見る" },
   },
   databases: {
     overviewHeading: "概要",
@@ -647,6 +678,8 @@ export const ja: Resources = {
       source: "ソース",
       category: "種別",
       year: "年",
+      yearShowMore: "+ さらに表示",
+      yearCollapse: "− 折りたたむ",
       service: "サービス",
     },
     category: {
@@ -655,6 +688,34 @@ export const ja: Resources = {
       maintenance: "メンテナンス",
       event: "イベント・募集",
       service: "サービス",
+      other: "その他",
+    },
+  },
+  services: {
+    pageTitle: "サービス",
+    pageDescription: "DDBJ・DBCLS が提供するデータベースやツールを一覧から探せます。",
+    toolbar: {
+      count: "全 {{count}} 件",
+      sort: "並び順",
+      sortAsc: "A → Z",
+      sortDesc: "Z → A",
+    },
+    list: {
+      empty: "条件に一致するサービスはありません",
+      error: "サービス一覧の取得に失敗しました",
+    },
+    facet: {
+      heading: "絞り込み",
+      source: "ソース",
+      category: "種別",
+    },
+    category: {
+      repository: "登録・公開",
+      search: "検索",
+      analysis: "解析",
+      annotation: "アノテーション",
+      integration: "統合・RDF",
+      visualization: "可視化・教材",
       other: "その他",
     },
   },
@@ -1054,13 +1115,17 @@ export const ja: Resources = {
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
       field: {
-        organism: "生物種 (organism)",
         identifier: "識別子 (identifier)",
         title: "タイトル (title)",
         description: "説明 (description)",
+        organismId: "生物種 ID (organism_id)",
+        organismName: "学名 (organism_name)",
+        accessibility: "公開区分 (accessibility)",
         datePublished: "公開日 (date_published)",
         dateModified: "更新日 (date_modified)",
         dateCreated: "作成日 (date_created)",
+        submitter: "登録機関 (submitter)",
+        publication: "論文 (publication)",
       },
       op: {
         eq: "= (完全一致)",
@@ -1186,6 +1251,8 @@ export const ja: Resources = {
       crossSearchFailure: "横断検索に失敗しました",
       dbSearchFailure: "検索に失敗しました",
       serializeFailure: "URL の同期に失敗しました",
+      querySyntax: "クエリを解析できませんでした。構文を確認して再度お試しください。",
+      querySyntaxHint: "スペース = AND (すべての語を含む)、\"…\" = フレーズ、field:value でフィールド検索 (例: organism_name:\"Homo sapiens\")。",
     },
     a11y: {
       input: "検索キーワード",

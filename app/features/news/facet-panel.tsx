@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react"
+
 import { NewsCategory, NewsSource } from "~/lib/api"
 import { categoryLabelKey, useT } from "~/lib/i18n"
 import type { AppliedFilter } from "~/ui"
@@ -23,8 +25,19 @@ type FacetPanelProps = {
 const sourceDisplayLabel = (source: NewsSource): string =>
   source === "ddbj" ? "DDBJ" : "DBCLS"
 
+const YEAR_INITIAL_COUNT = 5
+
 export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
   const t = useT()
+  const [yearsExpanded, setYearsExpanded] = useState(false)
+  const visibleYears = useMemo(() => {
+    if (yearsExpanded) return options.years
+    const recent = options.years.slice(0, YEAR_INITIAL_COUNT)
+    const recentSet = new Set(recent)
+    const extras = options.years.filter((y) => facet.year.includes(y) && !recentSet.has(y))
+    return [...recent, ...extras]
+  }, [yearsExpanded, options.years, facet.year])
+  const yearToggleVisible = yearsExpanded || visibleYears.length < options.years.length
 
   const applied: AppliedFilter[] = [
     ...facet.source.map((source) => ({
@@ -55,7 +68,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
       aria-label={t("news.facet.heading")}
       className="flex flex-col gap-4 w-sidebar shrink-0"
     >
-      <SidebarHeading>{t("news.facet.heading")}</SidebarHeading>
+      <SidebarHeading withDivider>{t("news.facet.heading")}</SidebarHeading>
       {!isEmpty && (
         <AppliedFilters
           applied={applied}
@@ -99,11 +112,16 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
         <FacetGroup
           label={t("news.facet.year")}
           appliedCount={facet.year.length}
+          showMore={yearToggleVisible}
+          showMoreLabel={yearsExpanded
+            ? t("news.facet.yearCollapse")
+            : t("news.facet.yearShowMore")}
+          onShowMore={() => setYearsExpanded((prev) => !prev)}
           {...(facet.year.length > 0
             ? { onClear: () => onChange(clearFacet(facet, "year")) }
             : {})}
         >
-          {options.years.map((year) => (
+          {visibleYears.map((year) => (
             <FacetRow
               key={year}
               label={`${year}`}

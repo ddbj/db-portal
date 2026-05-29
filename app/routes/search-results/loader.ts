@@ -45,7 +45,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
   }
   try {
     if (params.db === null) {
-      const cross = await crossSearch({ q: params.q, topHits: 5 }, options)
+      const cross = await crossSearch({ q: params.q, topHits: 5, keywordOperator: "AND" }, options)
 
       return { ...params, cross, perDb: null, ast, errorKey: null }
     }
@@ -56,6 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
         db: params.db,
         page: params.page,
         perPage: params.perPage,
+        keywordOperator: "AND",
         ...(apiSort ? { sort: apiSort } : {}),
       },
       options,

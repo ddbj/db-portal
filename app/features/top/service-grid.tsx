@@ -14,7 +14,7 @@ export const ServiceGrid = ({ lang: explicitLang }: ServiceGridProps = {}) => {
 
   return (
     <section>
-      <ul className="list-none p-0 m-0 grid sm:grid-cols-2 gap-3">
+      <ul className="list-none p-0 m-0 grid lg:grid-cols-2 gap-3">
         {services.map((service) => (
           <li key={service.id} className="m-0">
             <ServiceCard service={service} lang={lang} />

@@ -38,6 +38,7 @@ export const ServerEnv = z.object({
   DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH: z.string().default("master"),
   DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS: numberFromString(1800),
   DB_PORTAL_NEWS_CACHE_DIR: z.string().default("/var/cache/db-portal/news"),
+  DB_PORTAL_SERVICES_CACHE_DIR: z.string().default("/var/cache/db-portal/services"),
 })
 
 export type ServerEnv = z.infer<typeof ServerEnv>

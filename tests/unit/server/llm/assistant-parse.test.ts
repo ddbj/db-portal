@@ -6,11 +6,13 @@ describe("parseAssistantOutput", () => {
   test("parseAssistantOutput_validJsonProposal_returnsParsedProposal", () => {
     const raw = JSON.stringify({
       combinator: "AND",
-      conditions: [{ field: "organism", op: "eq", value: "Homo sapiens" }],
+      conditions: [{ field: "organism_name", op: "eq", value: "Homo sapiens" }],
     })
     const outcome = parseAssistantOutput(raw)
     if (!outcome.ok) throw new Error("expected ok")
-    expect(outcome.proposal.conditions[0]?.value).toBe("Homo sapiens")
+    const condition = outcome.proposal.conditions[0]
+    if (condition?.op === "between") throw new Error("expected scalar condition")
+    expect(condition?.value).toBe("Homo sapiens")
   })
 
   test("parseAssistantOutput_jsonEmbeddedInProse_extractsAndParses", () => {

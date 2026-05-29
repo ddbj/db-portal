@@ -5,6 +5,7 @@ import { handleLlmHealth } from "./api/llm/health"
 import { handleMe } from "./api/me"
 import { handleNews } from "./api/news"
 import { handleRobots } from "./api/robots"
+import { handleServices } from "./api/services"
 import { handleSitemap } from "./api/sitemap"
 import { mountAuthRoutes } from "./auth/routes"
 import { parseServerEnv } from "./lib/env"
@@ -15,6 +16,7 @@ import { createLlmClient } from "./llm/client"
 import { startHealthMonitor } from "./llm/health"
 import { createRateLimiter, setActiveRateLimiter } from "./llm/rate-limit"
 import { createNewsMirror } from "./news/mirror"
+import { createServicesMirror } from "./services/mirror"
 
 const env = parseServerEnv()
 const logger = createLogger(env.DB_PORTAL_LOG_LEVEL)
@@ -36,6 +38,7 @@ setActiveRateLimiter(
 
 app.get("/api/me", handleMe)
 app.get("/api/news", handleNews)
+app.get("/api/services", handleServices)
 app.get("/api/llm/health", handleLlmHealth)
 app.post("/api/llm/search-assistant", makeHandleSearchAssistant(env, logger, { client: llmClient }))
 app.get("/sitemap.xml", handleSitemap(env))
@@ -74,7 +77,11 @@ if (isProd) {
   )
 }
 
-createNewsMirror(env, logger).mirror.start()
+const servicesMirror = createServicesMirror(env, logger)
+void servicesMirror.init()
+createNewsMirror(env, logger, {
+  onSourceSynced: servicesMirror.rebuildSource,
+}).mirror.start()
 startHealthMonitor(llmClient, logger).start()
 
 const port = env.DB_PORTAL_APP_INTERNAL_PORT

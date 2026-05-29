@@ -25,5 +25,9 @@ export { formatDate } from "./format-date"
 export { LangProvider } from "./lang-context"
 export { en } from "./resources/en"
 export { ja, type Resources } from "./resources/ja"
+export {
+  type ServiceCategoryLabelKey,
+  serviceCategoryLabelKey,
+} from "./service-category-label"
 export { type Lang, useLang } from "./use-lang"
 export { type TFn, useT } from "./use-t"

@@ -2,7 +2,7 @@ import {
   type AdvancedCombinator,
   type AdvancedField,
   type AdvancedOp,
-  isDateField,
+  FIELD_OPS,
 } from "../types"
 
 export type AdvancedNodeId = string
@@ -72,7 +72,7 @@ export const createCondition = (
   kind: "condition",
   id: newId(),
   combinator: "AND",
-  field: "organism",
+  field: "title",
   op: "eq",
   value: "",
   from: "",
@@ -225,9 +225,8 @@ export const advancedReducer = (state: AdvancedState, action: AdvancedAction): A
       const root = mapGroup(state.root, (node) => {
         if (node.kind === "condition" && node.id === action.id) {
           const nextField = action.field
-          const nextOp: AdvancedOp = isDateField(nextField)
-            ? "between"
-            : node.op === "between" ? "eq" : node.op
+          const allowed = FIELD_OPS[nextField]
+          const nextOp: AdvancedOp = allowed.includes(node.op) ? node.op : (allowed[0] ?? "eq")
 
           return { ...node, field: nextField, op: nextOp }
         }

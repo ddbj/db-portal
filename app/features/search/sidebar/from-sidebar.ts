@@ -7,9 +7,9 @@ import { mergeAstAnd } from "../ast/merge"
 import type { DbSlug } from "../types"
 import type { DatePublishedFilter, SearchFacetState } from "./facet-state"
 
-const SUBMITTER_FIELD = "organization_name"
+const SUBMITTER_FIELD = "submitter"
 const STUDY_TYPE_FIELD = "library_strategy"
-const ORGANISM_FIELD = "organism"
+const ORGANISM_FIELD = "organism_id"
 const DATE_PUBLISHED_FIELD = "date_published"
 
 export type FromSidebarOptions = {
@@ -100,6 +100,10 @@ export const fromSidebar = (
   if (includeDbOnly) {
     const submitter = submittersToAst(state.submitters)
     if (submitter) parts.push(submitter)
+  }
+  // library_strategy is an SRA-only Tier 3 field; emitting it in cross mode or
+  // for other DBs is rejected with 400 field-not-available-in-cross-db.
+  if (options.db === "sra") {
     const studyType = studyTypeToAst(state.studyType)
     if (studyType) parts.push(studyType)
   }

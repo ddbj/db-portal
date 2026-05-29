@@ -4,9 +4,9 @@ export default {
   id: "services-index",
   title: { ja: "サービス", en: "Services" },
   description: {
-    ja: "DDBJ センターで利用可能な全サービス",
-    en: "All services available at DDBJ Center",
+    ja: "DDBJ・DBCLS が提供するサービス",
+    en: "Services from DDBJ and DBCLS",
   },
-  link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/services/index.html" },
+  link: { kind: "internal", to: "/services" },
   top: { category: "primary-service", order: 3 },
 } satisfies ServiceContent

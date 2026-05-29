@@ -20,7 +20,7 @@ export const AppliedFilters = ({
   if (applied.length === 0) return null
 
   return (
-    <div className="mb-5 pb-4 border-b border-border-soft">
+    <div className="pb-3 border-b border-border-soft">
       <div className="flex items-center justify-between mb-2.5">
         <Label>適用中 · {applied.length}</Label>
         {onClearAll && (

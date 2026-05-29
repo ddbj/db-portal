@@ -39,13 +39,14 @@ export const Header = ({ active }: HeaderProps) => {
   const resolvedActive = active === undefined ? computeActiveNav(pathname) : active
 
   return (
-    <header className="border-b border-border-soft bg-surface">
-      <div className="px-page-gutter py-2 flex items-center gap-6">
-        <Link
-          to="/"
-          className="text-fs-h2 font-bold text-ink no-underline leading-tight"
-        >
-          DDBJ 刷新 <span className="text-ink-soft font-semibold ml-0.5">(仮)</span>
+    <header className="bg-surface">
+      <div className="px-12 py-4 flex items-center gap-6">
+        <Link to="/" className="no-underline shrink-0">
+          <img
+            src="/bsi-logo.svg"
+            alt="BioData Science Initiative"
+            className="block h-[34px] w-auto"
+          />
         </Link>
         <nav
           aria-label={t("a11y.mainNav")}

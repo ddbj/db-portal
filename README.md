@@ -63,6 +63,7 @@ docker compose exec app npm run check:last-updated
 - [search.md](docs/search.md) — 検索 UI / Advanced builder / Sidebar facet / AI アシスタント
 - [submit.md](docs/submit.md) — 登録ナビゲーション / controlled vocab / FlowStep
 - [news.md](docs/news.md) — ddbj/www mirror + cache + NotificationBar 振り分け
+- [services.md](docs/services.md) — services 一覧 mirror (news clone 再利用) + cache + /services / top 掲載
 - [auth.md](docs/auth.md) — BFF + HttpOnly cookie / OIDC PKCE / session store / Keycloak 設定
 - [llm.md](docs/llm.md) — vLLM BFF / SSE / health 判定 / rate limit
 

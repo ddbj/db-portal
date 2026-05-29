@@ -8,7 +8,6 @@ export default {
     en: "Biological sample metadata",
   },
   link: { kind: "internal", to: "/databases/biosample" },
-  top: { category: "popular-ddbj", order: 2, monogram: "BS" },
   submit: {
     service: "biosample",
     externalUrl: "https://www.ddbj.nig.ac.jp/biosample/submission.html",

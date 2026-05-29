@@ -26,6 +26,21 @@ export type NewsMirror = {
   stop: () => void
 }
 
+/**
+ * 各 source の git sync が成功するたびに、確定した HEAD SHA を渡して呼ばれる。
+ * 同じ clone を読む別 mirror (services) が news の clone を再利用するための hook。
+ * 呼び出し側 (news) は callback の中身を知らない。
+ */
+export type OnSourceSynced = (
+  source: NewsSource,
+  localDir: string,
+  sha: string,
+) => Promise<void>
+
+export type NewsMirrorOptions = {
+  onSourceSynced?: OnSourceSynced
+}
+
 let activeCache: CacheStore | undefined
 
 export const getActiveNewsCache = (): CacheStore | undefined => activeCache
@@ -96,6 +111,7 @@ const createSourcePoller = (
   runGit: RunGit,
   logger: Logger,
   getWhitelist: () => Promise<FeaturedWhitelist>,
+  onSourceSynced?: OnSourceSynced,
 ): (() => Promise<void>) => {
   let inflight = false
 
@@ -118,6 +134,17 @@ const createSourcePoller = (
 
         return
       }
+      // sync 成功のたびに通知する (no-change でも)。受け手は自身の SHA で再構築要否を判定する。
+      if (onSourceSynced) {
+        try {
+          await onSourceSynced(cfg.source, cfg.localDir, newSha)
+        } catch (error) {
+          logger.warn("news_on_source_synced_failed", {
+            source: cfg.source,
+            message: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
       const previous = cache.getSyncShaForSource(cfg.source)
       if (newSha === previous) {
         logger.debug("news_mirror_no_change", { source: cfg.source, sha: newSha })
@@ -137,7 +164,11 @@ const createSourcePoller = (
   }
 }
 
-export const createNewsMirror = (env: ServerEnv, logger: Logger): {
+export const createNewsMirror = (
+  env: ServerEnv,
+  logger: Logger,
+  options: NewsMirrorOptions = {},
+): {
   mirror: NewsMirror
   cache: CacheStore
 } => {
@@ -152,7 +183,7 @@ export const createNewsMirror = (env: ServerEnv, logger: Logger): {
   }
 
   const pollers = configs.map((cfg) =>
-    createSourcePoller(cache, cfg, defaultRunGit, logger, getWhitelist))
+    createSourcePoller(cache, cfg, defaultRunGit, logger, getWhitelist, options.onSourceSynced))
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
 

@@ -13,7 +13,16 @@ AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,seria
 | cross-DB | `/search/results?q=<DSL>` | 8 DB (`trad` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy`) を横断、ヒット数カード + 上位 hit list |
 | per-DB | `/search/results?q=<DSL>&db=<id>` | 1 DB に絞り、record card list + pagination + 詳細 facet |
 
-cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` を呼ぶ。両方とも query string `q` に DSL を載せる。
+cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` を呼ぶ。両方とも query string `q` に DSL を載せ、`keywordOperator=AND` を明示的に付与する。
+
+### キーワードの結合規則 (keywordOperator)
+
+ddbj-search-api の `keywordOperator` の API default は `OR` だが、portal は「複数キーワードは全て含む」 という一般的な検索体験に合わせるため **常に `AND` を明示送信** する。結果として:
+
+- スペース区切り (`cancer mouse`) → AND (全語を含む)
+- カンマ区切り (`cancer,mouse`) → `keywordOperator=AND` を送るため AND
+- クオート (`"Homo sapiens"`) → phrase 一致 (順序保持)
+- DSL 内の明示的 `AND` / `OR` / `NOT` は keywordOperator と無関係
 
 cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
 
@@ -74,9 +83,11 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 free_text node は Advanced builder には載せず (Simple query との混在を避ける)、SearchBox には URL `?q=` 文字列をそのまま表示する。
 
-### URL parse の失敗
+### parse の失敗
 
-`/db-portal/parse` が 400 を返した場合、loader は `errorKey: "parse"` を data として返し、route component が inline の `<Callout tone="warn">` と「再試行」 button (`navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
+`/search` (検索ビルダ) で SearchBox を submit したとき、入力文字列の parse が失敗したら **results へ遷移せず `/search` 内に inline の `<Callout tone="warn">`** (構文エラー文言 + 構文ヒント) を出す。生クエリを `?q=` に載せて results に飛ばすと再 parse で必ず失敗しユーザーが抜け出せないため、その場で直せるようにする。
+
+`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が `errorKey: "parse"` を data として返し、route component が inline の `<Callout tone="warn">` と「再試行」 button (`navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
 
 API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が `error` を表示する。
 
@@ -92,7 +103,7 @@ API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系�
 
 各 group の最初の child だけ UI で `WHERE` 表示し、値は固定で `AND` 扱い (root の先頭にも、入れ子 group の先頭にも `WHERE` が出る)。
 
-field の取り得る値 (`organism` / `identifier` / `title` / `description` / `date_published` / `date_modified` / `date_created` 等) と op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) はコードが SSOT。新規追加時は AdvancedField / AdvancedOp の enum 値と prompt (`llm.md`) を同時更新する。
+field の取り得る値 (`identifier` / `title` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`) は cross-DB でも安全な Tier 1/2 のみを採る (ddbj-search-api allowlist 準拠)。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field ごとに制限される (`FIELD_OPS`、ddbj-search-api の演算子マトリクスに対応): date 系は `between` のみ、`identifier` / `organism_id` は `eq` / `wildcard`、text 系は `eq` / `contains`。コードが SSOT。新規追加時は AdvancedField / FIELD_OPS の値と prompt (`llm.md`) を同時更新する。
 
 ### reducer の責務
 
@@ -156,9 +167,9 @@ UI 上の最大ネスト深さは制約しないが、設計目安 4 段。
 
 | facet | 種類 | 有効モード |
 |---|---|---|
-| organisms | checkbox 複数 | cross-DB + per-DB |
+| organisms | checkbox 複数 (値は taxID、表示は学名) | cross-DB + per-DB |
 | submitters | checkbox 複数 | per-DB のみ |
-| studyType | radio | per-DB のみ |
+| studyType | radio | per-DB SRA のみ |
 | datePublished | プリセット (`all` / `1y` / `5y` / `10y`) + FROM/TO | cross-DB + per-DB |
 
 reducer は各 facet を独立に更新する action (`toggleOrganism` / `toggleSubmitter` / `setStudyType` / `setDateRange` / `setDateFrom` / `setDateTo` / `clear` / `replace`) を持つ。
@@ -168,18 +179,19 @@ reducer は各 facet を独立に更新する action (`toggleOrganism` / `toggle
 `fromSidebar` の挙動:
 
 - 各 facet を AND 結合
-- `organisms` が複数なら BoolOp(OR, [...]) で OR 展開、1 件なら単一 LeafValue
-- `studyType` (per-DB) は API 側 field 名 (`library_strategy` 等、ddbj-search-api allowlist 準拠) にマップ
+- `organisms` は NCBI taxonomy ID を保持し、`organism_id:<taxID>` の LeafValue を生成する (UI 表示は学名ラベルだが AST / URL には taxID を載せる)。複数なら BoolOp(OR, [...]) で OR 展開、1 件なら単一 LeafValue
+- `submitter` は Tier 2 field `submitter` にマップ (per-DB のみ)
+- `studyType` は SRA-only の Tier 3 field `library_strategy` にマップ。cross-DB や他 DB では出さない (`field-not-available-in-cross-db` で 400 になるため、`options.db === "sra"` のときだけ生成)
 - `datePublished.active === "all"` または from/to 両方空のとき何も出さない
 - プリセット値 (1y / 5y / 10y) は client local time を基に from/to を導出して LeafRange に
 - `setDateFrom` / `setDateTo` が呼ばれると `datePublished.active` は `"all"` に reset される (プリセット選択を解除し、FROM/TO 入力に切り替わる)
 - どの facet も未指定なら identityAst
-- options.db で per-DB 固有 facet (studyType / submitter) を有効化
+- options.db で per-DB 固有 facet (submitter) を有効化、studyType は SRA のときのみ
 
 `splitForSidebar` の挙動:
 
 - AST の trunk から「Sidebar facet に表現できる leaf」 を抜き取り、残りを返す
-- 抜き取り対象は top-level BoolOp(AND) の子で、`LeafValue { field: "organism", op: "eq" }` / `LeafValue { field: "library_strategy", op: "eq" }` / `LeafRange { field: "date_published" }` 等
+- 抜き取り対象は top-level BoolOp(AND) の子で、`LeafValue { field: "organism_id", op: "eq" }` / `LeafValue { field: "submitter", op: "eq" }` / `LeafValue { field: "library_strategy", op: "eq" }` / `LeafRange { field: "date_published" }` 等
 - 同質な leaf 群 (organism のみ / submitter のみ) の `BoolOp(OR, [...])` は Sidebar の複数選択に拾い上げる (`collectOrOfFieldValues`)
 - 抜き取れない leaf / 異質な OR / NOT は Advanced builder 側に倒す
 - root 自体が単独 leaf でも対象なら抜き取る (rest は identityAst)
@@ -237,7 +249,7 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=5` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
+`GET /db-portal/cross-search?q=...&topHits=5&keywordOperator=AND` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
 
 各カードの内容:
 
@@ -254,7 +266,7 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
-`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。
+`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>&keywordOperator=AND` を route loader が呼ぶ。
 
 #### Layout (3-col)
 
@@ -266,7 +278,7 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 #### Result card
 
-- 上 row: accession (mono brand-deep) + `·` + datePublished + 種類別 Tag (study type / organism、per-DB により tag 種類差)
+- 上 row: accession (mono brand-deep) + `·` + datePublished + 種類別 Tag (organism、SRA は libraryStrategy、BioProject は projectType (`string[]` を join 表示)、Trad は molecularType / division。per-DB により tag 種類差)
 - title: 16 px bold
 - excerpt: description / abstract (2 行 clamp)
 - 下 row: 登録機関 (submitter / organization) を mono brand pill 風 Tag で

@@ -130,10 +130,10 @@ describe("ResultCard", () => {
   test("ResultCard_bioProjectProjectType_isShownAsTag", () => {
     renderCard({
       db: "bioproject",
-      hit: buildBioProjectHit({ projectType: "umbrella" }),
+      hit: buildBioProjectHit({ projectType: ["genome", "metagenome"] }),
       lang: "ja",
     })
-    expect(screen.getByText("umbrella")).toBeInTheDocument()
+    expect(screen.getByText("genome, metagenome")).toBeInTheDocument()
   })
 
   test("ResultCard_tradMolecularType_isShownAsTag", () => {

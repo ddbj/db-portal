@@ -8,7 +8,6 @@ export default {
     en: "Genomic Expression Archive",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/gea/index.html" },
-  top: { category: "popular-ddbj", order: 5, monogram: "GE" },
   submit: {
     service: "gea",
     externalUrl: "https://www.ddbj.nig.ac.jp/gea/submission.html",

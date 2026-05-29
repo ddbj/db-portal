@@ -38,7 +38,7 @@ describe("FacetRow", () => {
     expect(swatch).toHaveStyle({ background: "var(--color-src-ddbj)" })
     expect(swatch).toHaveClass("w-2")
     expect(swatch).toHaveClass("h-2")
-    expect(swatch).toHaveClass("rounded-sm")
+    expect(swatch).toHaveClass("rounded-pill")
   })
 
   test("FacetRow_noSwatch_doesNotRenderSwatchSpan", () => {

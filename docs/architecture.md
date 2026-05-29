@@ -22,7 +22,8 @@ db-portal/
 │   ├── lib/                     env 検証 / 構造化 log
 │   ├── auth/                    session store / cookie / OIDC token 交換
 │   ├── api/                     /api/* エンドポイント実装
-│   ├── news/                    ddbj/www mirror + disk cache
+│   ├── news/                    ddbj/www + dbcls/website mirror + disk cache
+│   ├── services/                services 一覧の正規化 + disk cache (news clone 再利用)
 │   └── llm/                     vLLM HTTP client
 ├── docs/                        本書を含む仕様 SSOT (概念 + 図 + schemas/ 参照)
 ├── tests/
@@ -53,11 +54,12 @@ URL は lang 中立 (cookie で言語が決まる、`i18n.md` 参照)。
 
 | URL | route file | 役割 |
 |---|---|---|
-| `/` | `routes/top/route.tsx` | トップ (hero 検索 + サービス tile + Popular Resources + News aside) |
+| `/` | `routes/top/route.tsx` | トップ (hero 検索 + サービス tile + Services list + News aside) |
 | `/search` | `routes/search/route.tsx` | クエリビルダー / AI アシスタント / 検索条件構築 |
 | `/search/results` | `routes/search-results/route.tsx` | cross-DB / per-DB の検索結果 |
 | `/submit` | `routes/submit/route.tsx` | 登録ナビ (テーブル + FlowStep カード + modal) |
 | `/news` | `routes/news/route.tsx` | ニュース一覧 + facet panel |
+| `/services` | `routes/services/route.tsx` | services 一覧 + facet panel |
 | `/databases/:slug` | `routes/databases/$slug.tsx` | DatabaseContent collection の各エントリ表示 |
 | `/api/set-lang` | `routes/api.set-lang.ts` | 言語切替 resource route (action のみ、cookie 更新 + Referer に 303) |
 | `/auth/callback` | `routes/auth/callback.tsx` | OIDC コールバック fallback |
@@ -183,6 +185,7 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 | OIDC token 管理 | `/api/auth/*`、`/api/me` | Keycloak token は browser に出さない (`auth.md`) |
 | LLM ストリーミング | `/api/llm/health`、`POST /api/llm/*` | vLLM の URL / API key を browser に出さない、SSE は BFF で pass-through |
 | News mirror | `GET /api/news` | ddbj/www の commit を polling し、disk cache を経由して browser へ提供 |
+| Services mirror | `GET /api/services` | News mirror の clone を再利用し、services データを正規化・disk cache 経由で browser へ提供 (`services.md`) |
 
 secret (LLM API key / Keycloak credential) を要求する外部 API (vLLM / Keycloak / GitHub) は BFF 経由でのみ叩く。ddbj-search-api は public な検索 API のため client から直接アクセスする。これにより:
 
@@ -204,6 +207,7 @@ secret (LLM API key / Keycloak credential) を要求する外部 API (vLLM / Key
 - 環境変数 (`DB_PORTAL_*`): `server/lib/env.ts` の Zod schema で起動時に validate。違反すれば server を起動しない
 - BFF session store: in-memory Map に sid → session entry。プロセス再起動で揮発
 - News mirror cache: disk persist (`DB_PORTAL_NEWS_CACHE_DIR`)、起動時に再 load し即応答可能
+- Services mirror cache: disk persist (`DB_PORTAL_SERVICES_CACHE_DIR`)、News mirror の sync フックで source 別に再構築 (`services.md`)
 - LLM health 状態: `/api/llm/health` の結果を server memory に保持
 
 ### client bundle と server bundle の分離

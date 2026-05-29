@@ -1,19 +1,24 @@
 import type { DateRangeKey } from "~/ui"
 
-export const FACET_ORGANISMS: readonly string[] = [
-  "Homo sapiens",
-  "Mus musculus",
-  "Rattus norvegicus",
-  "Drosophila melanogaster",
-  "Saccharomyces cerevisiae",
-  "Caenorhabditis elegans",
-  "Escherichia coli",
-  "Arabidopsis thaliana",
-  "Danio rerio",
-  "Zea mays",
-  "Oryza sativa",
-  "Bos taurus",
+// `value` is the NCBI taxonomy ID sent as `organism_id:<value>` to the API;
+// `label` is the scientific name shown in the UI.
+export const FACET_ORGANISMS: readonly { value: string; label: string }[] = [
+  { value: "9606", label: "Homo sapiens" },
+  { value: "10090", label: "Mus musculus" },
+  { value: "10116", label: "Rattus norvegicus" },
+  { value: "7227", label: "Drosophila melanogaster" },
+  { value: "4932", label: "Saccharomyces cerevisiae" },
+  { value: "6239", label: "Caenorhabditis elegans" },
+  { value: "562", label: "Escherichia coli" },
+  { value: "3702", label: "Arabidopsis thaliana" },
+  { value: "7955", label: "Danio rerio" },
+  { value: "4577", label: "Zea mays" },
+  { value: "4530", label: "Oryza sativa" },
+  { value: "9913", label: "Bos taurus" },
 ]
+
+export const organismLabel = (value: string): string =>
+  FACET_ORGANISMS.find((organism) => organism.value === value)?.label ?? value
 
 export const FACET_SUBMITTERS: readonly string[] = [
   "National Institute of Genetics",

@@ -61,48 +61,60 @@ export const NotificationBar = () => {
   if (query.isError || !query.data) return null
 
   const now = Date.now()
-  const featured = query.data
+  const visible = query.data
     .filter((n) => isActiveFeatured(n, now))
+    .filter((n) => !hydrated || !dismissed.includes(n.id))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
 
-  const visible = featured.find(
-    (n) => !hydrated || !dismissed.includes(n.id),
-  )
-  if (!visible) return null
+  if (visible.length === 0) return null
 
-  const dismiss = (): void => {
-    const next = [...dismissed, visible.id]
-    setDismissed(next)
-    writeDismissed(next)
+  const dismiss = (id: string): void => {
+    setDismissed((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      writeDismissed(next)
+      return next
+    })
   }
-
-  const externalUrl = newsItemUrl(visible, lang)
 
   return (
     <section
       role="region"
       aria-label={t("a11y.notificationBar")}
-      className="bg-surface-subtle border-y border-border-soft"
+      className="px-2 py-2 flex flex-col gap-2"
     >
-      <div className="max-w-content-max mx-auto px-page-gutter py-2 flex items-center gap-3 text-fs-body-sm">
-        <Tag kind="status" tone="critical" size="sm">
-          {t("notificationBar.important")}
-        </Tag>
-        <span className="font-mono text-ink-soft text-fs-label">
-          {formatDate(visible.publishedAt)}
-        </span>
-        <span className="text-ink font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-          {newsItemTitle(visible, lang)}
-        </span>
-        {externalUrl !== undefined && (
-          <TextLink href={externalUrl} external>
-            {t("common.detail")}
-          </TextLink>
-        )}
-        <IconButton ariaLabel={t("notificationBar.close")} onClick={dismiss}>
-          <CloseIcon size={14} />
-        </IconButton>
-      </div>
+      {visible.map((item) => {
+        const title = newsItemTitle(item, lang)
+        const externalUrl = newsItemUrl(item, lang)
+        return (
+          <article
+            key={item.id}
+            aria-label={title}
+            className="bg-surface-subtle border border-border-soft rounded-button max-w-content-max mx-auto w-full px-4 py-2 flex items-center gap-3 text-fs-body-sm"
+          >
+            <Tag kind="status" tone="critical" size="sm">
+              {t("notificationBar.important")}
+            </Tag>
+            <span className="font-mono text-ink-soft text-fs-label">
+              {formatDate(item.publishedAt)}
+            </span>
+            <span className="text-ink font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+              {title}
+            </span>
+            {externalUrl !== undefined && (
+              <TextLink href={externalUrl} external>
+                {t("common.detail")}
+              </TextLink>
+            )}
+            <IconButton
+              ariaLabel={t("notificationBar.close")}
+              onClick={() => dismiss(item.id)}
+            >
+              <CloseIcon size={14} />
+            </IconButton>
+          </article>
+        )
+      })}
     </section>
   )
 }

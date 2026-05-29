@@ -8,6 +8,7 @@ import {
   FACET_ORGANISMS,
   FACET_STUDY_TYPES,
   FACET_SUBMITTERS,
+  organismLabel,
   type SearchFacetAction,
   type SearchFacetState,
 } from "./facet-state"
@@ -25,7 +26,7 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
   for (const organism of state.organisms) {
     applied.push({
       label: t("search.facets.organism"),
-      value: organism,
+      value: organismLabel(organism),
       onClear: () => dispatch({ type: "toggleOrganism", value: organism }),
     })
   }
@@ -48,7 +49,7 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
 
   return (
     <aside className="flex flex-col gap-4">
-      <SidebarHeading>{t("search.facets.heading")}</SidebarHeading>
+      <SidebarHeading withDivider>{t("search.facets.heading")}</SidebarHeading>
       <AppliedFilters
         applied={applied}
         onClearAll={() => dispatch({ type: "clear" })}
@@ -90,12 +91,12 @@ export const FacetPanel = ({ state, dispatch, db }: FacetPanelProps) => {
         <FacetGroup label={t("search.facets.organism")} showMore>
           {FACET_ORGANISMS.map((organism) => (
             <FacetRow
-              key={organism}
+              key={organism.value}
               type="checkbox"
               name="organism"
-              label={organism}
-              defaultChecked={state.organisms.includes(organism)}
-              onChange={() => dispatch({ type: "toggleOrganism", value: organism })}
+              label={organism.label}
+              defaultChecked={state.organisms.includes(organism.value)}
+              onChange={() => dispatch({ type: "toggleOrganism", value: organism.value })}
             />
           ))}
         </FacetGroup>

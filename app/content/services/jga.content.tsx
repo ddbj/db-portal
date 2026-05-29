@@ -8,7 +8,6 @@ export default {
     en: "Japanese Genotype-phenotype Archive",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/jga/index.html" },
-  top: { category: "popular-ddbj", order: 6, monogram: "JG" },
   submit: {
     service: "jga",
     externalUrl: "https://www.ddbj.nig.ac.jp/jga/submission.html",

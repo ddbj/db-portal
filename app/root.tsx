@@ -73,6 +73,7 @@ export const meta = ({ data: loaderData, location }: MetaArgs<typeof loader>) =>
     { title: "DDBJ 刷新 (仮)" },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
     { charSet: "utf-8" },
+    { tagName: "link", rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     { tagName: "link", rel: "alternate", hrefLang: "ja", href: href("ja") },
     { tagName: "link", rel: "alternate", hrefLang: "en", href: href("en") },
     { tagName: "link", rel: "alternate", hrefLang: "x-default", href: href("ja") },

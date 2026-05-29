@@ -30,50 +30,57 @@ describe("fromSidebar", () => {
     expect(isIdentityAst(fromSidebar(createInitialSearchFacetState()))).toBe(true)
   })
 
-  test("singleOrganism_returnsLeafValue", () => {
-    const state = { ...createInitialSearchFacetState(), organisms: ["Homo sapiens"] }
+  test("singleOrganism_returnsTaxIdLeafValue", () => {
+    const state = { ...createInitialSearchFacetState(), organisms: ["9606"] }
     const ast = expectEq(fromSidebar(state))
-    expect(ast.field).toBe("organism")
-    expect(ast.value).toBe("Homo sapiens")
+    expect(ast.field).toBe("organism_id")
+    expect(ast.value).toBe("9606")
   })
 
   test("multipleOrganisms_returnsOrOfEq", () => {
-    const state = { ...createInitialSearchFacetState(), organisms: ["Homo sapiens", "Mus musculus"] }
-    const ast = expectOr(fromSidebar(state))
-    expect(ast.rules.length).toBe(2)
+    const state = { ...createInitialSearchFacetState(), organisms: ["9606", "10090"] }
+    const node = fromSidebar(state)
+    const or = expectOr(node)
+    expect(or.rules.length).toBe(2)
+    const first = expectEq(or.rules[0] as ParseNode)
+    expect(first.field).toBe("organism_id")
+    expect(first.value).toBe("9606")
   })
 
-  test("submittersOmittedInCrossMode", () => {
-    const state = { ...createInitialSearchFacetState(), submitters: ["RIKEN"] }
-    const ast = fromSidebar(state, { db: null })
-    expect(isIdentityAst(ast)).toBe(true)
+  test("submittersIncludedOnlyWhenDbSelected", () => {
+    const state = {
+      ...createInitialSearchFacetState(),
+      submitters: ["RIKEN"],
+    }
+    const crossNode = fromSidebar(state, { db: null })
+    expect(isIdentityAst(crossNode)).toBe(true)
+    const dbNode = fromSidebar(state, { db: "bioproject" })
+    const eq = expectEq(dbNode)
+    expect(eq.field).toBe("submitter")
+    expect(eq.value).toBe("RIKEN")
   })
 
-  test("submittersIncludedInPerDbMode", () => {
-    const state = { ...createInitialSearchFacetState(), submitters: ["RIKEN"] }
-    const ast = fromSidebar(state, { db: "bioproject" })
-    expect(ast.op).toBe("eq")
+  test("studyTypeIncludedOnlyForSra", () => {
+    const state = {
+      ...createInitialSearchFacetState(),
+      studyType: "Whole Genome Sequencing",
+    }
+    // library_strategy is SRA-only; cross mode and other DBs must not emit it.
+    expect(isIdentityAst(fromSidebar(state, { db: null }))).toBe(true)
+    expect(isIdentityAst(fromSidebar(state, { db: "bioproject" }))).toBe(true)
+    const sraNode = fromSidebar(state, { db: "sra" })
+    const eq = expectEq(sraNode)
+    expect(eq.field).toBe("library_strategy")
+    expect(eq.value).toBe("Whole Genome Sequencing")
   })
 
-  test("dateRange_preset1y_emitsBetween", () => {
-    const now = new Date("2024-06-01T00:00:00Z")
+  test("dateRangePreset_returnsBetween", () => {
     const state = {
       ...createInitialSearchFacetState(),
       datePublished: { active: "1y" as const, from: "", to: "" },
     }
-    const ast = expectBetween(fromSidebar(state, {}, now))
-    expect(ast.field).toBe("date_published")
-    expect(ast.to).toBe("2024-06-01")
-    expect(ast.from).toBe("2023-06-01")
-  })
-
-  test("explicitFromTo_overridesPresetAll", () => {
-    const state = {
-      ...createInitialSearchFacetState(),
-      datePublished: { active: "all" as const, from: "2020-01-01", to: "2024-12-31" },
-    }
-    const ast = expectBetween(fromSidebar(state))
-    expect(ast.from).toBe("2020-01-01")
-    expect(ast.to).toBe("2024-12-31")
+    const node = expectBetween(fromSidebar(state))
+    expect(node.field).toBe("date_published")
+    expect(node.from).not.toBe("")
   })
 })

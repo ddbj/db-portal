@@ -19,14 +19,24 @@ export const applyProposalToAdvanced = (
   state: AdvancedState,
   proposal: AssistantProposal,
 ): AdvancedState => {
-  const conditions = proposal.conditions.map((condition, index) =>
-    createCondition({
-      combinator: index === 0 ? "AND" : proposal.combinator,
-      field: condition.field,
-      op: condition.op,
-      value: condition.value,
-    }),
-  )
+  const conditions = proposal.conditions.map((condition, index) => {
+    const combinator = index === 0 ? "AND" : proposal.combinator
+
+    return condition.op === "between"
+      ? createCondition({
+        combinator,
+        field: condition.field,
+        op: "between",
+        from: condition.from,
+        to: condition.to,
+      })
+      : createCondition({
+        combinator,
+        field: condition.field,
+        op: condition.op,
+        value: condition.value,
+      })
+  })
   if (conditions.length === 0) return state
   const root = state.root
   if (proposal.combinator === "OR" && conditions.length > 1) {
@@ -135,7 +145,11 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
                   {" "}
                   <span className="text-ink-soft">{condition.op}</span>
                   {" "}
-                  <span className="text-ink font-semibold">{condition.value}</span>
+                  <span className="text-ink font-semibold">
+                    {condition.op === "between"
+                      ? `${condition.from}..${condition.to}`
+                      : condition.value}
+                  </span>
                 </li>
               ))}
             </ul>

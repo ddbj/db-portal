@@ -8,7 +8,6 @@ export default {
     en: "Annotated nucleotide sequences",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/ddbj/index.html" },
-  top: { category: "popular-ddbj", order: 4, monogram: "DA" },
   submit: {
     service: "annotation",
     externalUrl: "https://www.ddbj.nig.ac.jp/ddbj/file-format.html",

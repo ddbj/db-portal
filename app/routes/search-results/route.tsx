@@ -98,7 +98,7 @@ const SearchResultsRoute = () => {
         perPage: data.perPage,
         sort: data.sort,
       }),
-      { replace: true },
+      { replace: true, preventScrollReset: true },
     )
   })
 

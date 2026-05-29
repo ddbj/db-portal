@@ -23,22 +23,10 @@ const externalLinkArb = fc.record({
 
 const linkArb = fc.oneof(internalLinkArb, externalLinkArb)
 
-const topArb = fc.oneof(
-  fc.record({
-    category: fc.constant("primary-service" as const),
-    order: fc.nat({ max: 20 }),
-  }),
-  fc.record({
-    category: fc.constant("popular-ddbj" as const),
-    order: fc.nat({ max: 20 }),
-    monogram: fc.constantFrom("BP", "BS", "DR", "DA", "GE"),
-  }),
-  fc.record({
-    category: fc.constant("popular-dbcls" as const),
-    order: fc.nat({ max: 20 }),
-    monogram: fc.constantFrom("TGV", "TGN", "REX", "TGI", "TTV"),
-  }),
-)
+const topArb = fc.record({
+  category: fc.constant("primary-service" as const),
+  order: fc.nat({ max: 20 }),
+})
 
 const submitArb = fc.record({
   service: submitServiceArb,

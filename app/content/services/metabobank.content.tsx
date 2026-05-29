@@ -8,7 +8,6 @@ export default {
     en: "Metabolome data archive",
   },
   link: { kind: "external", href: "https://mb2.ddbj.nig.ac.jp/" },
-  top: { category: "popular-ddbj", order: 7, monogram: "MB" },
   submit: {
     service: "metabobank",
     externalUrl: "https://mb2.ddbj.nig.ac.jp/submission/",

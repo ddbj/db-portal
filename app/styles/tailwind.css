@@ -59,13 +59,6 @@
   --color-src-dbcls:      #004098;  /* royal blue (DBCLS site primary) */
   --color-src-dbcls-soft: #DFEBFB;
 
-  /* Source palette accent rotation (Popular Resources monogram 用) */
-  --color-src-ddbj-warm:  #C26416;
-  --color-src-ddbj-mid:   #A85825;
-  --color-src-ddbj-deep:  #8E4516;
-  --color-src-dbcls-warm: #1F6FB4;
-  --color-src-dbcls-mid:  #1B5990;
-
   /* === Font family ======================================================== */
   --font-sans:  "Noto Sans JP Variable", "Public Sans", "Helvetica Neue", system-ui, sans-serif;
   --font-serif: "Noto Serif JP", "Source Serif 4", Georgia, serif;
@@ -87,8 +80,7 @@
   --tracking-mono:      0.02em;   /* font-mono input / news date / mono metadata */
   --tracking-tag:       0.04em;   /* Tag / FormGroup num */
   --tracking-label:     0.06em;   /* Label / SidebarGroupLabel (uppercase mono) */
-  --tracking-eyebrow:   0.1em;    /* PageTitle eyebrow / Popular Resources eyebrow */
-  --tracking-monogram: -0.02em;   /* Popular Resources monogram (大文字 2 文字) */
+  --tracking-eyebrow:   0.1em;    /* PageTitle eyebrow */
 
   /* === Leading (3 段階、Tailwind 標準名で override) ====================== */
   --leading-tight:   1.2;   /* h1 / h2 / h3 / sidebar heading */
@@ -106,6 +98,7 @@
   --spacing-content-narrow: 880px; /* hero / reading 幅 (form 中央寄せ、subtitle 等) */
   --spacing-sidebar:       256px;  /* search results / news の sidebar 固定幅 */
   --spacing-right-pane:    280px;  /* search per-DB result の right pane / news row 右端 tag 領域の最大幅 */
+  --spacing-heading-row:    49px;  /* sidebar heading と main heading row の最小高さ (両者の border-b 位置を揃える) */
 
   /* === Radius ============================================================= */
   --radius-card:   10px;  /* card / panel / SearchBox / Callout */

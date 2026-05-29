@@ -49,13 +49,8 @@ const STATUS_SWATCHES: readonly Swatch[] = [
 const SOURCE_SWATCHES: readonly Swatch[] = [
   { name: "src-ddbj", cls: "bg-src-ddbj", hex: "#A56712" },
   { name: "src-ddbj-soft", cls: "bg-src-ddbj-soft", hex: "#FBEFDF" },
-  { name: "src-ddbj-warm", cls: "bg-src-ddbj-warm", hex: "#C26416" },
-  { name: "src-ddbj-mid", cls: "bg-src-ddbj-mid", hex: "#A85825" },
-  { name: "src-ddbj-deep", cls: "bg-src-ddbj-deep", hex: "#8E4516" },
   { name: "src-dbcls", cls: "bg-src-dbcls", hex: "#004098" },
   { name: "src-dbcls-soft", cls: "bg-src-dbcls-soft", hex: "#DFEBFB" },
-  { name: "src-dbcls-warm", cls: "bg-src-dbcls-warm", hex: "#1F6FB4" },
-  { name: "src-dbcls-mid", cls: "bg-src-dbcls-mid", hex: "#1B5990" },
 ]
 
 type TypeFamily = { name: string; cls: string; sample: string }
@@ -122,14 +117,7 @@ const TRACKING: readonly TrackingItem[] = [
     value: "0.1em",
     sample: "DESIGN PREVIEW",
     sampleCls: "font-mono font-bold uppercase text-fs-label tracking-eyebrow text-brand",
-    use: "PageTitle eyebrow / Popular Resources eyebrow",
-  },
-  {
-    name: "tracking-monogram",
-    value: "-0.02em",
-    sample: "DD",
-    sampleCls: "font-mono font-bold text-fs-h1 tracking-monogram",
-    use: "Popular Resources monogram (大文字 2 文字)",
+    use: "PageTitle eyebrow",
   },
 ]
 

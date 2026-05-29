@@ -4,8 +4,8 @@ import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
 import { createInitialSearchFacetState, type SearchFacetState } from "./facet-state"
 
-const ORGANISM_FIELD = "organism"
-const SUBMITTER_FIELD = "organization_name"
+const ORGANISM_FIELD = "organism_id"
+const SUBMITTER_FIELD = "submitter"
 const STUDY_TYPE_FIELD = "library_strategy"
 const DATE_PUBLISHED_FIELD = "date_published"
 

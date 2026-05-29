@@ -32,7 +32,7 @@ export const SwitchLang = () => {
         aria-label={t("a11y.languageSwitcher")}
         className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0"
       >
-        <GlobeIcon size={14} className="text-ink-mid" />
+        <GlobeIcon size={18} className="text-ink-mid" />
         <LangPill code="JA" active={lang === "ja"} />
         <span aria-hidden className="text-ink-softer">/</span>
         <LangPill code="EN" active={lang === "en"} />

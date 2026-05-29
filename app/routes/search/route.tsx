@@ -22,6 +22,7 @@ import { useT } from "~/lib/i18n"
 import { SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
 import {
   Button,
+  Callout,
   PageTitle,
   SearchBox,
   Section,
@@ -36,6 +37,7 @@ const SearchRoute = () => {
   const t = useT()
   const navigate = useNavigate()
   const [qInput, setQInput] = useState("")
+  const [queryError, setQueryError] = useState(false)
   const [scope, setScope] = useState<ScopeKey>("all")
   const [advancedState, dispatch] = useReducer(advancedReducer, undefined, createInitialState)
   const advancedAst = fromAdvanced(advancedState)
@@ -52,18 +54,21 @@ const SearchRoute = () => {
   }, [t])
   const db = scopeKeyToDbSlug(scope)
 
-  const runSearch = async () => {
+  const runSearch = async (query: string = qInput) => {
     let combined = advancedAst
-    if (qInput.trim().length > 0) {
+    if (query.trim().length > 0) {
       try {
-        const parsed = await parseDslToAst(qInput, { baseUrl: searchApiBaseUrl })
+        const parsed = await parseDslToAst(query, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
-        navigate(buildResultsHref({ q: qInput, db }))
+        // Surface the syntax error here so the user can fix it; navigating to
+        // results with the raw query would only re-parse and fail again.
+        setQueryError(true)
 
         return
       }
     }
+    setQueryError(false)
     if (isIdentityAst(combined)) {
       navigate(buildResultsHref({ db }))
 
@@ -73,12 +78,13 @@ const SearchRoute = () => {
       const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
       navigate(buildResultsHref({ q: dsl, db }))
     } catch {
-      navigate(buildResultsHref({ q: qInput, db }))
+      setQueryError(true)
     }
   }
 
   const handleClear = () => {
     setQInput("")
+    setQueryError(false)
     setScope("all")
     dispatch({ type: "clear" })
   }
@@ -103,7 +109,7 @@ const SearchRoute = () => {
           }}
           onSubmit={(value) => {
             setQInput(value)
-            void runSearch()
+            void runSearch(value)
           }}
         />
         <div className="mt-2.5 text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -111,6 +117,14 @@ const SearchRoute = () => {
           <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
           <span>{t("search.syntax.advancedHint")}</span>
         </div>
+        {queryError && (
+          <div className="mt-2.5">
+            <Callout tone="warn" role="alert">
+              <span className="block font-semibold">{t("search.errors.querySyntax")}</span>
+              <span className="block text-fs-label">{t("search.errors.querySyntaxHint")}</span>
+            </Callout>
+          </div>
+        )}
       </Section>
       <Section padTop="block" padBottom="none">
         <ExamplesChip onPick={setQInput} />

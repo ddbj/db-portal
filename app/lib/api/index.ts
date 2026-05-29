@@ -44,3 +44,16 @@ export {
   type SerializeResponse,
 } from "./search"
 export type { ParseNode, ParseNodeInput } from "./search-types"
+export {
+  fetchServices,
+  type FetchServicesOptions,
+  type FetchServicesQuery,
+  ServiceCache,
+  ServiceCategory,
+  serviceDescription,
+  ServiceItem,
+  ServiceList,
+  serviceName,
+  ServiceSource,
+  serviceUrl,
+} from "./services"

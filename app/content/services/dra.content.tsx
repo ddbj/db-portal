@@ -8,7 +8,6 @@ export default {
     en: "DDBJ Sequence Read Archive",
   },
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/dra/index.html" },
-  top: { category: "popular-ddbj", order: 3, monogram: "DR" },
   submit: {
     service: "dra",
     externalUrl: "https://www.ddbj.nig.ac.jp/dra/submission.html",

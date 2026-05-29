@@ -6,6 +6,7 @@ import {
   type AdvancedCombinator,
   type AdvancedField,
   type AdvancedOp,
+  FIELD_OPS,
   isAdvancedField,
   isDateField,
 } from "../types"
@@ -14,9 +15,6 @@ import type { AdvancedCondition } from "./reducer"
 type CombinatorMode = "where" | "selectable"
 
 const COMBINATOR_VALUES: readonly AdvancedCombinator[] = ["AND", "OR", "NOT"]
-
-const STRING_OPS: readonly AdvancedOp[] = ["eq", "contains", "wildcard"]
-const DATE_OPS: readonly AdvancedOp[] = ["between"]
 
 export type ConditionRowProps = {
   condition: AdvancedCondition
@@ -43,7 +41,7 @@ export const ConditionRow = ({
 }: ConditionRowProps) => {
   const t = useT()
   const dateField = isDateField(condition.field)
-  const opOptions: SelectOption[] = (dateField ? DATE_OPS : STRING_OPS).map((op) => ({
+  const opOptions: SelectOption[] = FIELD_OPS[condition.field].map((op) => ({
     value: op,
     label: t(`search.builder.op.${op}`),
   }))
@@ -87,7 +85,7 @@ export const ConditionRow = ({
       <Select
         ariaLabel={t("search.a11y.opSelector")}
         options={opOptions}
-        value={dateField ? "between" : condition.op}
+        value={condition.op}
         onChange={(next) => onOpChange(next as AdvancedOp)}
         width={148}
       />
@@ -136,20 +134,26 @@ export const ConditionRow = ({
   )
 }
 
-const camelize = (field: string): "organism" | "identifier" | "title" | "description" | "datePublished" | "dateModified" | "dateCreated" => {
+const camelize = (
+  field: AdvancedField,
+): "identifier" | "title" | "description" | "organismId" | "organismName" | "accessibility" | "datePublished" | "dateModified" | "dateCreated" | "submitter" | "publication" => {
   switch (field) {
-    case "organism":
-    case "identifier":
-    case "title":
-    case "description":
-      return field
+    case "organism_id":
+      return "organismId"
+    case "organism_name":
+      return "organismName"
     case "date_published":
       return "datePublished"
     case "date_modified":
       return "dateModified"
     case "date_created":
       return "dateCreated"
-    default:
-      return "title"
+    case "identifier":
+    case "title":
+    case "description":
+    case "accessibility":
+    case "submitter":
+    case "publication":
+      return field
   }
 }
