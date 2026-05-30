@@ -559,6 +559,11 @@ export const en: Resources = {
       matchLabel: "Combine",
       negateGroup: "Negate group",
       group: "Group",
+      combinator: {
+        and: "Match all",
+        or: "Match any",
+        not: "Exclude",
+      },
       removeCondition: "Remove condition",
       removeGroup: "Remove group",
       field: {
@@ -595,6 +600,7 @@ export const en: Resources = {
         scopeTooltip: "Searches accession, title, name, description and organism name",
         placeholder: "Enter a keyword",
         remove: "Remove keyword",
+        phrase: "Phrase",
       },
     },
     preview: {
@@ -680,6 +686,7 @@ export const en: Resources = {
       ],
       generate: "Generate suggestions",
       generating: "Generating…",
+      proposalHeading: "AI-generated query",
       proposalLabel: "Proposal",
       proposalDescription: "Please review the suggested conditions",
       apply: "Add to query builder",

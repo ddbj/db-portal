@@ -3,54 +3,11 @@ import { useId, useState } from "react"
 import { useT } from "~/lib/i18n"
 import { Button, Chip, Label, SectionHeading, Tag, TextArea } from "~/ui"
 
-import {
-  type AdvancedAction,
-  type AdvancedState,
-  createCondition,
-  createGroup,
-} from "../advanced"
+import type { AdvancedAction, AdvancedState } from "../advanced"
 import { useLlmAvailability } from "./llm-availability"
-import {
-  type AssistantProposal,
-  useAssistantStream,
-} from "./prompt-client"
+import { useAssistantStream } from "./prompt-client"
+import { applyProposalAst } from "./proposal-apply"
 import { ProposalConditions } from "./proposal-conditions"
-
-export const applyProposalToAdvanced = (
-  state: AdvancedState,
-  proposal: AssistantProposal,
-): AdvancedState => {
-  const conditions = proposal.conditions.map((condition, index) => {
-    const combinator = index === 0 ? "AND" : proposal.combinator
-
-    return condition.op === "between"
-      ? createCondition({
-        combinator,
-        field: condition.field,
-        op: "between",
-        from: condition.from,
-        to: condition.to,
-      })
-      : createCondition({
-        combinator,
-        field: condition.field,
-        op: condition.op,
-        value: condition.value,
-      })
-  })
-  if (conditions.length === 0) return state
-  const root = state.root
-  if (proposal.combinator === "OR" && conditions.length > 1) {
-    const group = createGroup(
-      { combinator: "AND", innerCombinator: "OR" },
-      conditions,
-    )
-
-    return { root: { ...root, children: [...root.children, group] } }
-  }
-
-  return { root: { ...root, children: [...root.children, ...conditions] } }
-}
 
 export type SearchAssistantProps = {
   advancedState: AdvancedState
@@ -71,7 +28,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
 
   const handleApply = () => {
     if (!stream.proposal) return
-    const next = applyProposalToAdvanced(advancedState, stream.proposal)
+    const next = applyProposalAst(advancedState, stream.proposal)
     dispatch({ type: "replaceRoot", root: next.root })
     setInput("")
     stream.stop()
@@ -123,7 +80,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
                   kind="primary"
                   size="sm"
                   disabled={input.trim().length === 0}
-                  onClick={() => stream.start(input)}
+                  onClick={() => void stream.start(input)}
                 >
                   {t("search.assistant.generate")}
                 </Button>
@@ -139,7 +96,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
               <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
               <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
             </div>
-            <ProposalConditions proposal={stream.proposal} />
+            <ProposalConditions node={stream.proposal} />
             <div className="flex flex-wrap justify-end gap-2">
               <Button
                 kind="secondary"

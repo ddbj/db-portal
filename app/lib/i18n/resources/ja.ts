@@ -485,6 +485,11 @@ export type Resources = {
       matchLabel: string
       negateGroup: string
       group: string
+      combinator: {
+        and: string
+        or: string
+        not: string
+      }
       removeCondition: string
       removeGroup: string
       field: {
@@ -521,6 +526,7 @@ export type Resources = {
         scopeTooltip: string
         placeholder: string
         remove: string
+        phrase: string
       }
     }
     preview: {
@@ -602,6 +608,7 @@ export type Resources = {
       examples: readonly string[]
       generate: string
       generating: string
+      proposalHeading: string
       proposalLabel: string
       proposalDescription: string
       apply: string
@@ -1218,6 +1225,11 @@ export const ja: Resources = {
       matchLabel: "条件の結合",
       negateGroup: "グループを否定",
       group: "グループ",
+      combinator: {
+        and: "すべてに一致",
+        or: "いずれかに一致",
+        not: "除外",
+      },
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
       field: {
@@ -1254,6 +1266,7 @@ export const ja: Resources = {
         scopeTooltip: "アクセッション・タイトル・名称・説明・生物種名 を対象に検索します",
         placeholder: "キーワードを入力",
         remove: "キーワードを削除",
+        phrase: "フレーズ",
       },
     },
     preview: {
@@ -1339,6 +1352,7 @@ export const ja: Resources = {
       ],
       generate: "提案を生成",
       generating: "生成中…",
+      proposalHeading: "AI による生成結果",
       proposalLabel: "提案",
       proposalDescription: "内容を確認してください",
       apply: "クエリビルダーに追加",

@@ -363,27 +363,34 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 - **append**: 提案を現在の構造化条件に graft する (keyword は不変)
 - **new**: 現在の構造化条件を破棄して提案だけにする。keyword も初期化する (「新規」 の意味を保つため)
 
-提案カードは各条件を **ビルダーと同じ平易な日本語の節** (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、条件間に連結演算子 (`AND` / `OR`) を出す。生の `field op value` は見せない (`ProposalConditions`、`fieldLabelKey` / `predicateLabelKey` を共有)。footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボタン。反映ボタンは選択中のモードに従う (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。`/search` の統合入力と per-DB アシスタントで同じ `ProposalConditions` を使う。
+提案カード (`ProposalConditions`) は ParseNode AST (フルスペック DSL) を受け取り、**read-only 版のクエリビルダー** として描く。preview なので場所を取りすぎないよう、leaf は 1 行の節・group はインデント + 色付き縦スパイン + 演算子バッジ 1 個に畳む:
+
+- leaf 節は **ビルダーと同じ平易な日本語** (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、`fieldLabelKey` / `predicateLabelKey` をビルダーと共有する。日付 (`between`) は範囲 (`from 〜 to`)、free_text は「キーワード」節 (phrase は値を引用符で囲み「フレーズ」を添える) として描く。allowlist 外の field は素の field 名を fallback 表示する
+- `BoolOp(AND/OR)` は **1 group = 1 演算子バッジ** (`AND すべてに一致` / `OR いずれかに一致`) + 縦スパインでネストを示す (行間に連結語は出さない)
+- `BoolOp(NOT)` は中身で分岐する: **値 / 範囲 leaf 1 個**を包むときは否定述語に畳む (「と一致しない」「の期間外」、バッジを出さない)。**group や free_text** を包むときは赤い `NOT 除外` バッジ + 赤スパインで示す
+- 生の `field op value` は見せない (allowlist 外 field の fallback のみ素の名前)
+
+footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボタン。反映ボタンは選択中のモードに従う (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。`/search` の統合入力と per-DB アシスタントで同じ `ProposalConditions` を使う。
 
 ### SSE 配線
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
 
 - `event: message` → 累積バッファに delta を貯める (内部表示なし)
-- `event: done` → data を `AssistantProposal` として parse して proposal state に反映、state = "done"
+- `event: done` → data を `AssistantProposal` として parse し、ParseNode AST に lift して proposal state に反映、state = "done"
 - `event: error` → state = "error"、toast を出す
 
 `AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
 
 ### 提案の反映
 
-純粋関数で proposal を Advanced state に反映する。proposal.conditions の condition 化規則は共通:
+client は SSE で受け取った flat な `AssistantProposal` を受信直後に ParseNode AST に変換し (`assistantProposalToAst`)、以降の表示・反映はすべて AST を SSOT とする。AST → Advanced state の反映は純粋関数で行う:
 
-- proposal.conditions を condition の配列に変換
-- `proposal.combinator === "OR" && conditions.length > 1` のとき 1 つの group (innerCombinator=OR) で包んで append、それ以外は conditions を直接 append
-- 各 condition の combinator は AND (先頭含めて、root に追加されるため)
+- **append**: AST を `toAdvanced` で展開し、現在の root に graft する。OR が複数節を束ねるときは 1 group (innerCombinator=OR) に包んで AND root へ挿し、AND / 単一節はそのまま展開して append する
+- **new**: `toAdvanced(ast)` で root を組み直す。keyword も初期化する
+- free_text leaf は構造化ビルダーに乗らない (keyword 行が別管理) ため、反映時に drop する
 
-cross-search ビルダーの統合入力では適用先を生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
+cross-search ビルダーの統合入力では生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
 
 per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 

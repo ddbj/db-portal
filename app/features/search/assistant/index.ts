@@ -1,4 +1,4 @@
-export { applyProposalToAdvanced, SearchAssistant } from "./assistant"
+export { SearchAssistant } from "./assistant"
 export {
   LLM_AVAILABILITY_STALE_MS,
   type LlmAvailability,
@@ -12,4 +12,5 @@ export {
   type AssistantStreamResult,
   useAssistantStream,
 } from "./prompt-client"
+export { applyProposalAst, assistantProposalToAst } from "./proposal-apply"
 export { ProposalConditions, type ProposalConditionsProps } from "./proposal-conditions"

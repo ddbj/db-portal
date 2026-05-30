@@ -1,8 +1,8 @@
 import type { Dispatch } from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, cn, Examples, SearchBox, Tag } from "~/ui"
+import { Button, cn, Examples, SearchBox } from "~/ui"
 
 import type { AdvancedAction, AdvancedState } from "../advanced"
 import { ProposalConditions, useAssistantStream, useLlmAvailability } from "../assistant"
@@ -43,6 +43,7 @@ export const SearchInputPanel = ({
   const [mode, setMode] = useState<"keyword" | "ai">("keyword")
   const [aiInput, setAiInput] = useState("")
   const [aiMode, setAiMode] = useState<AiMode>("new")
+  const proposalHeadingId = useId()
   const isAi = mode === "ai"
   const keywordInvalid = invalid && !isAi
 
@@ -144,7 +145,7 @@ export const SearchInputPanel = ({
 
       {isAi
         ? (
-          <p className="text-fs-meta text-ink-soft m-0">
+          <p className="flex min-h-5 items-center text-fs-meta text-ink-soft m-0">
             {effectiveAiMode === "append"
               ? t("search.assistant.descriptionAppend", { count })
               : t("search.assistant.descriptionNew")}
@@ -153,7 +154,7 @@ export const SearchInputPanel = ({
         : (
           <div
             className={cn(
-              "text-fs-meta flex flex-wrap items-center gap-x-4 gap-y-1.5",
+              "text-fs-meta flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1.5",
               keywordInvalid ? "text-warn-fg" : "text-ink-soft",
             )}
           >
@@ -199,14 +200,13 @@ export const SearchInputPanel = ({
 
       {isAi && stream.proposal !== null && (
         <section
-          aria-label={t("search.assistant.proposalLabel")}
-          className="rounded-card border border-brand/40 bg-surface p-3 flex flex-col gap-2.5 overflow-hidden"
+          aria-labelledby={proposalHeadingId}
+          className="rounded-card border border-border-soft bg-surface p-3 flex flex-col gap-2.5 overflow-hidden"
         >
-          <div className="flex items-center gap-2">
-            <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
-            <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
-          </div>
-          <ProposalConditions proposal={stream.proposal} />
+          <h2 id={proposalHeadingId} className="m-0 text-fs-h3 font-bold text-ink">
+            {t("search.assistant.proposalHeading")}
+          </h2>
+          <ProposalConditions node={stream.proposal} />
           <div className="flex flex-wrap justify-end gap-2">
             <Button
               kind="secondary"

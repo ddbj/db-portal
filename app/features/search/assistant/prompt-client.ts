@@ -1,22 +1,46 @@
 import { useCallback, useRef, useState } from "react"
 
-import { buildRequestInit, joinUrl } from "~/lib/api"
-import { type AssistantProposal, AssistantProposalSchema } from "~/schemas/api-bff/llm"
+import { buildRequestInit, joinUrl, type ParseNode } from "~/lib/api"
+import { AssistantProposalSchema } from "~/schemas/api-bff/llm"
+
+import { assistantProposalToAst } from "./proposal-apply"
 
 export type { AssistantCondition, AssistantProposal } from "~/schemas/api-bff/llm"
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
 
-// Dev server only (never under vitest): return a canned proposal without hitting
-// the LLM endpoint so the proposal UI can be seen end to end.
+// Dev server only (never under vitest): return a canned query without hitting
+// the LLM endpoint so the proposal preview can be seen end to end. This sample
+// exercises the full DSL the renderer must handle — a phrase, an OR group, a
+// negated leaf, a negated group, a date range and a wildcard.
 const DEV_STUB = import.meta.env.DEV && import.meta.env.MODE !== "test"
 
-const DEV_SAMPLE_PROPOSAL: AssistantProposal = {
-  combinator: "AND",
-  conditions: [
-    { field: "organism_name", op: "eq", value: "Homo sapiens" },
-    { field: "title", op: "contains", value: "single cell" },
-    { field: "date_published", op: "between", from: "2022-01-01", to: "2024-12-31" },
+const DEV_SAMPLE_AST: ParseNode = {
+  op: "AND",
+  rules: [
+    { op: "free_text", value: "single cell", is_phrase: true },
+    {
+      op: "OR",
+      rules: [
+        { op: "eq", field: "organism_name", value: "Homo sapiens" },
+        { op: "eq", field: "organism_name", value: "Mus musculus" },
+      ],
+    },
+    { op: "NOT", rules: [{ op: "eq", field: "accessibility", value: "controlled-access" }] },
+    {
+      op: "NOT",
+      rules: [
+        {
+          op: "AND",
+          rules: [
+            { op: "contains", field: "title", value: "draft" },
+            { op: "wildcard", field: "identifier", value: "TMP*" },
+          ],
+        },
+      ],
+    },
+    { op: "between", field: "date_published", from: "2022-01-01", to: "2024-12-31" },
+    { op: "wildcard", field: "identifier", value: "PRJDB*" },
   ],
 }
 
@@ -24,7 +48,7 @@ export type AssistantState = "idle" | "streaming" | "done" | "error"
 
 export type AssistantStreamResult = {
   state: AssistantState
-  proposal: AssistantProposal | null
+  proposal: ParseNode | null
   start: (input: string) => Promise<void>
   stop: () => void
   reset: () => void
@@ -50,7 +74,7 @@ const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
 
 export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
   const [state, setState] = useState<AssistantState>("idle")
-  const [proposal, setProposal] = useState<AssistantProposal | null>(null)
+  const [proposal, setProposal] = useState<ParseNode | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
 
   const stop = useCallback(() => {
@@ -76,7 +100,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     if (DEV_STUB) {
       await new Promise((resolve) => setTimeout(resolve, 600))
       if (controller.signal.aborted) return
-      setProposal(DEV_SAMPLE_PROPOSAL)
+      setProposal(DEV_SAMPLE_AST)
       setState("done")
 
       return
@@ -117,7 +141,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
             }
             const parsed = AssistantProposalSchema.safeParse(raw)
             if (parsed.success) {
-              setProposal(parsed.data)
+              setProposal(assistantProposalToAst(parsed.data))
               setState("done")
             } else {
               setState("error")

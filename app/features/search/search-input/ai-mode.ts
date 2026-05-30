@@ -1,5 +1,7 @@
-import { type AdvancedState, createInitialState } from "../advanced"
-import { applyProposalToAdvanced, type AssistantProposal } from "../assistant"
+import type { ParseNode } from "~/lib/api"
+
+import { type AdvancedState, toAdvanced } from "../advanced"
+import { applyProposalAst } from "../assistant"
 
 export type AiMode = "append" | "new"
 
@@ -23,14 +25,12 @@ export const resolveAiModeDefault = (conditionCount: number): AiModeDefault => {
   return { mode: appendDisabled ? "new" : "append", appendDisabled }
 }
 
-// "append" grafts the proposal onto the current structured conditions; "new"
-// discards them and starts from the proposal alone. The caller also clears the
-// keyword for "new" so the builder reflects only the freshly generated query.
+// "append" grafts the proposed query onto the current structured conditions;
+// "new" discards them and rebuilds from the proposal alone. The caller also
+// clears the keyword for "new" so the builder reflects only the new query.
 export const applyProposalByMode = (
   mode: AiMode,
   state: AdvancedState,
-  proposal: AssistantProposal,
+  ast: ParseNode,
 ): AdvancedState =>
-  mode === "new"
-    ? applyProposalToAdvanced(createInitialState(), proposal)
-    : applyProposalToAdvanced(state, proposal)
+  mode === "new" ? toAdvanced(ast) : applyProposalAst(state, ast)

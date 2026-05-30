@@ -3,12 +3,12 @@ import { describe, expect, test } from "vitest"
 import type { AdvancedState } from "~/features/search"
 import {
   applyProposalByMode,
-  type AssistantProposal,
   builderConditionCount,
   createCondition,
   createInitialState,
   resolveAiModeDefault,
 } from "~/features/search"
+import type { ParseNode } from "~/lib/api"
 
 const stateWith = (childCount: number): AdvancedState => {
   const base = createInitialState()
@@ -21,10 +21,7 @@ const stateWith = (childCount: number): AdvancedState => {
   }
 }
 
-const proposal: AssistantProposal = {
-  combinator: "AND",
-  conditions: [{ field: "organism_name", op: "eq", value: "Homo sapiens" }],
-}
+const proposal: ParseNode = { op: "eq", field: "organism_name", value: "Homo sapiens" }
 
 describe("builderConditionCount", () => {
   test("emptyKeyword_noChildren_isZero", () => {

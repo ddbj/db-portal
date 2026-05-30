@@ -17,9 +17,10 @@ export {
   toAdvanced,
 } from "./advanced"
 export {
-  applyProposalToAdvanced,
+  applyProposalAst,
   type AssistantCondition,
   type AssistantProposal,
+  assistantProposalToAst,
   type AssistantState,
   type AssistantStreamResult,
   LLM_AVAILABILITY_STALE_MS,
