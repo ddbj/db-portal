@@ -18,6 +18,7 @@ import {
   SyncStatusChip,
   toAdvanced,
   useCrossSearchSync,
+  useScopeFacets,
   useSearchPending,
 } from "~/features/search"
 import { searchApiBaseUrl } from "~/lib/api"
@@ -59,10 +60,14 @@ const SearchRoute = () => {
   const [keyword, setKeyword] = useState(initState.keyword)
   const [submitParseError, setSubmitParseError] = useState(false)
   const [scope, setScope] = useState<ScopeKey>(dbSlugToScopeKey(data.db))
+  const db = scopeKeyToDbSlug(scope)
   const [advancedState, dispatch] = useReducer(advancedReducer, initState.advanced)
 
   const advancedAst = useMemo(() => fromAdvanced(advancedState), [advancedState])
-  const sync = useCrossSearchSync(keyword, advancedAst, searchApiBaseUrl)
+  const sync = useCrossSearchSync(keyword, advancedAst, searchApiBaseUrl, db)
+  // Facet candidates for the builder's value inputs, refetched when the scope
+  // changes; null until loaded / when the scope has no facets.
+  const facets = useScopeFacets(db, searchApiBaseUrl)
   const search = useSearchPending()
 
   const scopeOptions = useMemo(
@@ -76,7 +81,6 @@ const SearchRoute = () => {
 
     return map
   }, [t])
-  const db = scopeKeyToDbSlug(scope)
 
   const conditionCount = builderConditionCount(keyword, advancedState)
 
@@ -88,7 +92,7 @@ const SearchRoute = () => {
     const trimmed = kw.trim()
     if (trimmed.length > 0) {
       try {
-        const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
+        const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl, db })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
         setSubmitParseError(true)
@@ -104,7 +108,7 @@ const SearchRoute = () => {
       return
     }
     try {
-      const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
+      const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl, db })
       navigate(buildResultsHref({ q: dsl, db }))
     } catch {
       // Serialize is a system-side failure the user cannot fix; the live sync
@@ -175,6 +179,8 @@ const SearchRoute = () => {
         <AdvancedBuilder
           state={advancedState}
           dispatch={dispatch}
+          db={db}
+          facets={facets}
           freeText={keyword}
           onFreeTextChange={handleKeywordChange}
           onFreeTextRemove={() => handleKeywordChange("")}

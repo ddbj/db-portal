@@ -124,7 +124,7 @@ group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正�
 
 各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
-field の取り得る値 (`identifier` / `title` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`) は cross-DB でも安全な Tier 1/2 のみを採る (ddbj-search-api allowlist 準拠)。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field ごとに制限される (`FIELD_OPS`、ddbj-search-api の演算子マトリクスに対応): date 系は `between` のみ、`identifier` / `organism_id` は `eq` / `wildcard`、text 系は `eq` / `contains`。コードが SSOT。新規追加時は AdvancedField / FIELD_OPS の値と prompt (`llm.md`) を同時更新する。
+field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ (`identifier` / `title` / `name` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`)。単一 DB を選ぶと、その DB の Tier 3 field (例: sra なら `library_strategy` / `instrument_model` / `type` 等) が候補に加わる (ddbj-search-api allowlist の field→DB 対応に準拠、Solr backed の trad / taxonomy 専用 field は除く)。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field の型ごとに制限される (ddbj-search-api の演算子マトリクスに対応): date は `between` のみ、`identifier` 系は `eq` / `wildcard`、text 系は `eq` / `contains`、enum 系は `eq` のみ。コードが SSOT (`field-catalog.ts` の `fieldsForScope` / `FIELD_OPS`)。新規追加時は field-catalog の値と prompt (`llm.md`) を同時更新する。
 
 ### reducer の責務
 
@@ -176,13 +176,16 @@ reducer は immer を使わず手で immutable 更新する。`combinator` が�
 
 Advanced builder の UI は state を受け取り、再帰的に ConditionRow / GroupRow を render する。
 
-- ConditionRow: field 選択 + **述語選択** (op と否定をペアにした単一ドロップダウン: `を含む` / `を含まない` / `と一致` / `と一致しない` 等。日本語は助詞+動詞で `を含む` と対称にし、英語は自己説明的な `equals` / `does not equal` を採る) + value 入力 (text または date input 2 個) + 削除 (×)。独立した「除外」トグルは持たない。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃え、`[項目] [述語] [値]` が 1 行で日本語の一文として読み下せるようにする
+- ConditionRow: field 選択 + **述語選択** (op と否定をペアにした単一ドロップダウン: `を含む` / `を含まない` / `と一致` / `と一致しない` 等。日本語は助詞+動詞で `を含む` と対称にし、英語は自己説明的な `equals` / `does not equal` を採る) + value 入力 (text / date input 2 個 / facet combobox のいずれか) + 削除 (×)。独立した「除外」トグルは持たない。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃え、`[項目] [述語] [値]` が 1 行で日本語の一文として読み下せるようにする
+- value 入力の出し分け: date field / `between` は FROM/TO の date input、選択中 scope で facet を持つ field ([§ Sidebar facet](#sidebar-facet) の facet 行と同じ判定 = `rowByDslField`) は **facet combobox** (pull-down + テキスト絞り込み)、それ以外は free text。facet combobox は候補から選べるが **editable** で、候補に無い値も自由入力できる (facet 集計に出ない正当な値を排除しない)。候補は scope の facet 集計から得る (件数付き、organism は学名表示で taxID を確定値にする)。集計が未取得 / 失敗のときは候補ゼロの combobox になり free text と同等に振る舞う
 - GroupRow: 左 4 px brand バー + group ラベル + `AND` / `OR` トグル (`innerCombinator`) + 否定 (`NOT`) トグル + 内側の再帰描画 + 削除
 - root も子が 2 件以上で `AND` / `OR` トグルを出す。行間に連結語 (`かつ` / `または`) は出さず、左ブランチガイドで束ねる
 - keyword 行: 「おもな項目を全文検索」 と正直に表示し、ⓘ (`InfoHint`) のホバー / フォーカス / クリックで対象 5 field (`identifier` / `title` / `name` / `description` / `organism.name`) をツールチップ表示する。`brand-soft` で着色し、AI モードの検索ボックスと面色を揃える
 - 末尾: 「+ 条件を追加」 / 「+ グループを追加」
 
-入力は `app/ui/` primitive 経由 (Select / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
+入力は `app/ui/` primitive 経由 (Select / TextInput / Combobox / IconButton)。facetable な field の value 入力は editable な絞り込み combobox (`app/ui/combobox.tsx`) を使う。
+
+facet 候補は `/search` でも scope の facet 集計を引いて供給する ([§ 候補値・件数の出所](#候補値件数の出所--api-facet-集計) と同じ集計)。Sidebar (`/search/results`) は検索ヒットに連動した `q` 付き集計だが、ビルダーは編集中で確定クエリが無いため **scope 全体 (match_all)** の集計を候補母集団にする。scope セレクタ切替で再取得し、cross は cross-search、単一 DB は db-search の facet を読む。
 
 UI 上の最大ネスト深さは制約しないが、設計目安 4 段。
 
@@ -208,24 +211,26 @@ scope (cross / 各 DB) ごとに出す行は次のとおり。facet は ddbj-sea
 
 | scope | facet | text | range |
 |---|---|---|---|
-| cross | organism | — | datePublished |
-| bioproject | organism, objectType, relevance | submitter, projectType, grantTitle, grantAgency, externalLinkLabel | datePublished |
-| biosample | organism, package, model | submitter, host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished |
-| sra | organism, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | submitter, libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished |
-| jga | organism, studyType, datasetType, vendor | submitter, grantTitle, grantAgency, externalLinkLabel | datePublished |
-| gea | organism, experimentType | submitter | datePublished |
-| metabobank | organism, experimentType, studyType, submissionType | submitter | datePublished |
+| cross | organism, accessibility | name, publication | datePublished, dateModified, dateCreated |
+| bioproject | organism, accessibility, objectType, relevance | submitter, name, publication, projectType, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
+| biosample | organism, accessibility, package, model | submitter, name, host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
+| sra | organism, accessibility, type, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | submitter, name, publication, libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
+| jga | organism, accessibility, type, studyType, datasetType, vendor | submitter, name, publication, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
+| gea | organism, accessibility, experimentType | submitter, name, publication | datePublished, dateModified, dateCreated |
+| metabobank | organism, accessibility, experimentType, studyType, submissionType | submitter, name, publication | datePublished, dateModified, dateCreated |
 | trad | division, molecularType | featureGeneName, referenceJournal, organismName | datePublished, sequenceLength |
 | taxonomy | rank, kingdom | lineage, phylum, class, order, family, genus, species, commonName | — |
 
 注意:
 
 - **`studyType` の意味**: jga / metabobank の facet `studyType` は DSL `study_type` field (jga-study / metabobank の controlled-vocab) を指す。SRA の `libraryStrategy` (DSL `library_strategy`) とは **別 field** なので、`libraryStrategy` は sra scope、`studyType` (= `study_type`) は jga / metabobank scope でのみ出す (混同しない)。
-- **cross は Tier 1 のみ**: cross sidebar は organism (`organism_id`) と datePublished だけ。`type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、portal は filter として再注入できないため要求しない。
+- **cross は Tier 1/2 のみ**: cross sidebar は横断可の共通 field (organism / accessibility / name / publication / datePublished / dateModified / dateCreated)。`type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、portal は filter として再注入できないため要求しない。
+- **`type` (subtype) facet は per-DB のみ**: sra (`sra-*` subtype) / jga (`jga-*` subtype) の scope で `type` facet を出し、bucket は subtype 名。`db=sra` / `db=jga` + `facets=type` が subtype 別件数を返す (ddbj-search-api 対応済み)。単一 subtype の bioproject / biosample / gea / metabobank では出さない (API も `facet-not-applicable` で 400)。
 - **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` / `derivedFromId` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
 - **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは ES 6 DB で text 入力 (`submitter` の contains)。Solr backed (trad / taxonomy) は degenerate のため出さない。
 - **taxonomy の `organism` は出さない**: tax_id が doc 同一性で facet が degenerate (API も taxonomy facet を rank / kingdom のみに限定)。taxonomy の生物種軸は text 入力 (`species` / `commonName` 等) で扱う。
-- accessibility (Tier 1 enum) は filter として出さない (本プロダクトでは不要と判断)。
+- **accessibility は 2 値 enum facet**: public-access / controlled-access。API の `_COMMON_FACET` で全 ES scope 集計可能なので、cross + ES 6 DB の sidebar に facet として出す (Solr trad / taxonomy は field 不在で出さない)。
+- **name / publication / dateModified / dateCreated は共通 field の網羅追加**: 全 ES scope に name (text) と dateModified / dateCreated (range) を、publication が merge される scope (biosample 除く) + cross に publication (text) を出す。keyword box / Advanced builder と重複する分は許容 (sidebar = `/search/results` で唯一編集できる filter のため、横断可 field も sidebar から到達できるようにする)。
 
 ### 候補値・件数の出所 = API facet 集計
 
@@ -254,8 +259,7 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 - 各行を AND 結合する
 - facet (複数選択可) は同 field の `eq` LeafValue 群を、複数なら `BoolOp(OR, [...])`、1 件なら単一 LeafValue にする (`organism` は taxID を載せる)
 - text 行は値があるとき `contains` (text field) / `eq` (identifier field) の LeafValue にする
-- range 行 (datePublished / sequenceLength) は FROM/TO 両方あるとき `between` LeafRange にする。datePublished のプリセット (1y / 5y / 10y) は client local time から from/to を導出する
-- `setDateFrom` / `setDateTo` で `datePublished.active` は `"all"` に reset (プリセット解除)
+- range 行 (datePublished / sequenceLength) は FROM/TO 両方あるとき `between` LeafRange にする。date 行のプリセット (1y / 5y / 10y) は client の現在日から from/to を導出する ([§ date レンジの状態](#date-レンジの状態))
 - scope (`options.db`) に応じて出す行を絞る。cross は Tier 1/2 のみ (Tier 3 を出すと `field-not-available-in-cross-db` で 400)、各 DB はその DB の Tier 1/2/3 のみ。Solr degenerate の行は生成しない
 - どの行も未指定なら identityAst
 
@@ -265,15 +269,32 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 - 抜き取り対象は scope の filter 構成に載る field の `eq` / `contains` LeafValue と `between` LeafRange。同質な `BoolOp(OR, [...])` (同 field の eq 群) は facet の複数選択に拾い上げる (`collectOrOfFieldValues`)
 - 抜き取れない leaf / 異質な OR / NOT は Advanced builder 側に倒す
 - root 自体が単独 leaf でも対象なら抜き取る (rest は identityAst)
+- date 行の `between` は client の現在日基準でプリセット (1y / 5y / 10y) と照合し、一致すればプリセット選択として、一致しなければ custom レンジとして復元する。URL は絶対 between しか持たないため、この照合がプリセット選択をラウンドトリップ越しに保つ ([§ date レンジの状態](#date-レンジの状態))
+
+### date レンジの状態
+
+date 行 (datePublished / dateModified / dateCreated) は「すべて / 1年 / 5年 / 10年」のプリセットボタンと、FROM/TO date input を併せ持つ。内部状態は `active` (プリセット種別 or `custom`) + FROM/TO で表す。
+
+| 状態 (`active`) | FROM/TO の値 | ボタンの選択表示 | emit | 日付指定の展開 |
+|---|---|---|---|---|
+| `all` | 空 | 「すべて」 | emit しない | 閉 |
+| `1y` / `5y` / `10y` | 空 (表示時に現在日から算出) | 該当プリセット | 算出した between | 開 (算出値を表示) |
+| `custom` | ユーザ入力 | どれも非選択 | 両方あるとき between | 開 |
+
+- プリセットを選ぶと「日付指定」を自動展開し、算出した期間を FROM/TO に表示する (選択は保持)
+- FROM/TO を手編集すると `custom` になり、プリセットの選択表示は外れる
+- 「すべて」を選ぶと FROM/TO を空に戻す (フィルタ解除)
+- プリセットの状態は FROM/TO を空で持ち、emit / 表示時に現在日から都度算出する (絶対日付を state に焼き込まない)
 
 ### UI
 
 Sidebar は state から `app/ui/` の FacetGroup / FacetRow / TextInput / DateFacet を render する。
 
 - AppliedFilters: 適用中の行を chip 化 (label + 値、× で個別解除、「すべて解除」 button で `clear`)
-- facet 行: FacetGroup + FacetRow (checkbox / radio) + 件数。候補が多い field (`showMore`) は上位 N + 「もっと見る」
+- facet 行: FacetGroup + FacetRow (checkbox / radio) + 件数。候補が多い field は折りたたみ時 8 件、展開時は上限 20 件まで表示し、「もっと見る / 折りたたむ」をトグルする (選択中の値は上限を超えても常に表示。21 件目以降は sidebar に出さず keyword / builder で扱う)
 - text 行: ラベル + TextInput (1 行)
-- range 行: datePublished は「すべて / 1 年 / 5 年 / 10 年」 segmented + FROM/TO date input、sequenceLength は数値 FROM/TO
+- range 行: date 行は「すべて / 1 年 / 5 年 / 10 年」プリセット + 「日付を指定」(FROM/TO date input) の組 ([§ date レンジの状態](#date-レンジの状態))、sequenceLength は数値 FROM/TO (横並びで欄を伸縮させ sidebar 幅に収める)
+- focus 表現: 入力欄 (text / date) はフォーカス時に角丸を保ったまま枠線を brand 色にする (global の黄色 outline は出さない)
 - 出す行は scope の filter 構成テーブルに従う (Solr degenerate の行は描かない)
 
 ## AST merge
@@ -323,7 +344,7 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`) + SyncStatusChip、さらに下に `[ facet サイドバー | 結果 ]` の grid (`sm:grid-cols-[var(--spacing-sidebar)_1fr]`)。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
 
-検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。
+検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
 送信ボタンは実行中ビジー表示にする: キーワード検索の解決中 (parse → serialize → navigate → loader、`useSearchPending` が `useNavigation` で追跡) は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。`/search` ビルダーの box submit も同じく検索を実行し (旧来は keyword をコミットするだけで無反応だった)、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
 
@@ -428,6 +449,7 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 
 - **append**: 現在のビルダー DSL を `current` として送り、モデルが既存条件を保持したまま融合した完全な DSL を返す。反映は融合済み AST で組み直す (keyword は不変)
 - **new**: `current` を送らず、提案だけの新規クエリにする。keyword も初期化する (「新規」 の意味を保つため)
+- **例プロンプト chip**: new / append で別 set を出す (new = 一からのクエリを記述する例、append = 既存結果を絞る / 除外する例で NOT の使い方も示す)
 
 提案カード (`ProposalConditions`) は ParseNode AST (フルスペック DSL) を受け取り、**read-only 版のクエリビルダー** として描く。preview なので場所を取りすぎないよう、leaf は 1 行の節・group はインデント + 色付き縦スパイン + 演算子バッジ 1 個に畳む:
 

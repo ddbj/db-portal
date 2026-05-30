@@ -4,7 +4,10 @@ import { expect } from "vitest"
 import { initialState, submitReducer } from "../../../../app/features/submit/state/reducer"
 import type { Action, UIState } from "../../../../app/features/submit/state/types"
 import type { Access, FileTypeKind } from "../../../../app/schemas/submit"
+import { GroupType } from "../../../../app/schemas/submit"
 import { arbAccess, arbFileTypeKind } from "../../arbitraries/submission"
+
+const arbGroupType = fc.constantFrom(...GroupType.options)
 
 const applySequence = (actions: readonly Action[]): UIState => {
   let state: UIState = initialState
@@ -16,64 +19,79 @@ const applySequence = (actions: readonly Action[]): UIState => {
 
 type ActionStep =
   | { kind: "add"; fileTypeKind: FileTypeKind }
-  | { kind: "add-to-group"; groupIdx: number; fileTypeKind: FileTypeKind }
   | { kind: "edit-access"; entryIdx: number; access: Access }
+  | { kind: "commit-group-type"; entryIdx: number; groupType: GroupTypeValue }
+  | { kind: "pair"; annotationIdx: number; partnerIdx: number }
   | { kind: "remove"; entryIdx: number }
-  | { kind: "close" }
+
+type GroupTypeValue = (typeof GroupType.options)[number]
 
 const arbStep: fc.Arbitrary<ActionStep> = fc.oneof(
   fc.record({ kind: fc.constant("add" as const), fileTypeKind: arbFileTypeKind }),
-  fc.record({
-    kind: fc.constant("add-to-group" as const),
-    groupIdx: fc.integer({ min: 0, max: 9 }),
-    fileTypeKind: arbFileTypeKind,
-  }),
   fc.record({
     kind: fc.constant("edit-access" as const),
     entryIdx: fc.integer({ min: 0, max: 9 }),
     access: arbAccess,
   }),
   fc.record({
+    kind: fc.constant("commit-group-type" as const),
+    entryIdx: fc.integer({ min: 0, max: 9 }),
+    groupType: arbGroupType,
+  }),
+  fc.record({
+    kind: fc.constant("pair" as const),
+    annotationIdx: fc.integer({ min: 0, max: 9 }),
+    partnerIdx: fc.integer({ min: 0, max: 9 }),
+  }),
+  fc.record({
     kind: fc.constant("remove" as const),
     entryIdx: fc.integer({ min: 0, max: 9 }),
   }),
-  fc.record({ kind: fc.constant("close" as const) }),
 )
 
 // 各 step を、entry / group id を機械的に採番した実 Action 列へ変換する。
-// ADD_ROW は新 group を、ADD_TO_GROUP は既存 group を指す。remove 後の空 group は
-// reducer 側で drop されるため、ADD_TO_GROUP が消えた group を指す可能性は許容する (reducer は no-op)
+// ADD_ROW は新 group を作り、COMMIT_ROW_EDIT / SET_PAIR_PARTNER は解放用の fresh group id を伴う。
 const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
   const acts: Action[] = []
   let entryCounter = 0
   let groupCounter = 0
+  let relCounter = 0
   let knownEntryIds: string[] = []
-  const knownGroupIds: string[] = []
   for (const step of steps) {
     if (step.kind === "add") {
       const eid = `e${entryCounter++}`
       const gid = `g${groupCounter++}`
       acts.push({ type: "ADD_ROW", fileTypeKind: step.fileTypeKind, entryId: eid, groupId: gid })
       knownEntryIds.push(eid)
-      knownGroupIds.push(gid)
-    } else if (step.kind === "add-to-group") {
-      if (knownGroupIds.length === 0) continue
-      const groupId = knownGroupIds[step.groupIdx % knownGroupIds.length]!
-      const eid = `e${entryCounter++}`
-      acts.push({ type: "ADD_TO_GROUP", groupId, fileTypeKind: step.fileTypeKind, entryId: eid })
-      knownEntryIds.push(eid)
     } else if (step.kind === "edit-access") {
       if (knownEntryIds.length === 0) continue
       const id = knownEntryIds[step.entryIdx % knownEntryIds.length]!
       acts.push({ type: "EDIT_ROW_CELL", entryId: id, patch: { access: step.access } })
-    } else if (step.kind === "remove") {
+    } else if (step.kind === "commit-group-type") {
+      if (knownEntryIds.length === 0) continue
+      const id = knownEntryIds[step.entryIdx % knownEntryIds.length]!
+      acts.push({
+        type: "COMMIT_ROW_EDIT",
+        entryId: id,
+        patch: { groupType: step.groupType },
+        releasedGroupId: `rel${relCounter++}`,
+      })
+    } else if (step.kind === "pair") {
+      if (knownEntryIds.length === 0) continue
+      const annotationEntryId = knownEntryIds[step.annotationIdx % knownEntryIds.length]!
+      const partnerEntryId = knownEntryIds[step.partnerIdx % knownEntryIds.length]!
+      acts.push({
+        type: "SET_PAIR_PARTNER",
+        annotationEntryId,
+        partnerEntryId,
+        releasedGroupId: `rel${relCounter++}`,
+      })
+    } else {
       if (knownEntryIds.length === 0) continue
       const idx = step.entryIdx % knownEntryIds.length
       const id = knownEntryIds[idx]!
       acts.push({ type: "REMOVE_ROW", entryId: id })
       knownEntryIds = knownEntryIds.filter((x) => x !== id)
-    } else {
-      acts.push({ type: "CLOSE_MODAL" })
     }
   }
   return acts

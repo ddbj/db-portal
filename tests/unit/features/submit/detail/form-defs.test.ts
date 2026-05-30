@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { hasRowDetail, ROW_FORM_DEFS } from "../../../../../app/features/submit/modals/form-defs"
+import { hasRowDetail, ROW_FORM_DEFS } from "../../../../../app/features/submit/detail/form-defs"
 import {
   ChipAxis,
   DataForm,

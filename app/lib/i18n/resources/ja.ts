@@ -30,8 +30,6 @@ export type Resources = {
   }
   top: {
     hero: {
-      examplesLabel: string
-      examples: readonly string[]
       advancedLink: string
     }
     serviceGrid: {
@@ -160,7 +158,6 @@ export type Resources = {
   }
   submit: {
     pageTitle: string
-    pageSubtitle: string
     sections: {
       preconditions: string
       table: string
@@ -198,113 +195,10 @@ export type Resources = {
     detail: {
       heading: string
       empty: string
-    }
-    flowOverview: {
-      fileCount: string
-    }
-    fileType: {
-      "sequence-read": { label: string; ext: string; hint: string }
-      "sequence-nucleotide": { label: string; ext: string; hint: string }
-      "sequence-annotation": { label: string; ext: string; hint: string }
-      "variant": { label: string; ext: string; hint: string }
-      "expression-matrix": { label: string; ext: string; hint: string }
-      "microarray-expression": { label: string; ext: string; hint: string }
-      "spatial-transcriptomics": { label: string; ext: string; hint: string }
-      "spatial-image": { label: string; ext: string; hint: string }
-      "mass-spectrometry": { label: string; ext: string; hint: string }
-      "nmr": { label: string; ext: string; hint: string }
-      "metabolite-assignment": { label: string; ext: string; hint: string }
-    }
-    access: {
-      "open": string
-      "restricted": string
-    }
-    progress: {
-      heading: string
-      remaining: string
-      complete: string
-    }
-    flow: {
-      empty: string
-      accessionLabel: string
-      noteWarning: string
-      noteError: string
-      "bioproject": { title: string; description: string; cta: string }
-      "biosample": { title: string; description: string; cta: string }
-      "dra": { title: string; description: string; cta: string }
-      "jga": { title: string; description: string; cta: string }
-      "ddbj-trad": { title: string; description: string; cta: string }
-      "nsss": { title: string; description: string; cta: string }
-      "togovar": { title: string; description: string; cta: string }
-      "gea": { title: string; description: string; cta: string }
-      "metabobank": { title: string; description: string; cta: string }
-      "humandbs": { title: string; description: string; cta: string }
-      "dbcls": { title: string; description: string; cta: string }
-      "jpost": { title: string; description: string; cta: string }
-      "eva": { title: string; description: string; cta: string }
-    }
-    preview: {
-      label: string
-      footnote: string
-      serviceCode: {
-        "bioproject": string
-        "biosample": string
-        "dra": string
-        "jga": string
-        "ddbj-trad": string
-        "nsss": string
-        "togovar": string
-        "gea": string
-        "metabobank": string
-        "humandbs": string
-        "dbcls": string
-        "jpost": string
-        "eva": string
-      }
-      title: {
-        "bioproject": string
-        "biosample": string
-        "dra": string
-        "jga": string
-        "ddbj-trad": string
-        "nsss": string
-        "togovar": string
-        "gea": string
-        "metabobank": string
-        "humandbs": string
-        "dbcls": string
-        "jpost": string
-        "eva": string
-      }
-      body: {
-        "bioproject": string
-        "biosample": string
-        "dra": string
-        "jga": string
-        "ddbj-trad": string
-        "nsss": string
-        "togovar": string
-        "gea": string
-        "metabobank": string
-        "humandbs": string
-        "dbcls": string
-        "jpost": string
-        "eva": string
-      }
-    }
-    origin: {
-      tier1: string
-      tier2: string
-      recipe: string
-    }
-    modal: {
-      title: string
-      description: string
-      save: string
-      cancel: string
+      pairPartnerLabel: string
+      pairPartnerPlaceholder: string
+      pairPartnerEmpty: string
       statusReady: string
-      previewLabel: string
-      previewFootnote: string
       formGroupLabels: {
         form: string
         target: string
@@ -336,6 +230,55 @@ export type Resources = {
           proteomics: { label: string; sub: string }
         }
       }
+    }
+    flowOverview: {
+      fileCount: string
+    }
+    fileType: {
+      "sequence-read": { label: string; ext: string; hint: string }
+      "sequence-nucleotide": { label: string; ext: string; hint: string }
+      "sequence-annotation": { label: string; ext: string; hint: string }
+      "variant": { label: string; ext: string; hint: string }
+      "expression-matrix": { label: string; ext: string; hint: string }
+      "microarray-expression": { label: string; ext: string; hint: string }
+      "spatial-transcriptomics": { label: string; ext: string; hint: string }
+      "spatial-image": { label: string; ext: string; hint: string }
+      "mass-spectrometry": { label: string; ext: string; hint: string }
+      "nmr": { label: string; ext: string; hint: string }
+      "metabolite-assignment": { label: string; ext: string; hint: string }
+    }
+    access: {
+      "open": string
+      "restricted": string
+    }
+    progress: {
+      heading: string
+    }
+    flow: {
+      empty: string
+      noteWarning: string
+      noteError: string
+      prereqHeading: string
+      wizardHeading: string
+      prepareHeading: string
+      roleTag: { destination: string; companion: string; external: string }
+      "bioproject": { title: string; description: string; cta: string }
+      "biosample": { title: string; description: string; cta: string }
+      "dra": { title: string; description: string; cta: string }
+      "jga": { title: string; description: string; cta: string }
+      "ddbj-trad": { title: string; description: string; cta: string }
+      "nsss": { title: string; description: string; cta: string }
+      "togovar": { title: string; description: string; cta: string }
+      "gea": { title: string; description: string; cta: string }
+      "metabobank": { title: string; description: string; cta: string }
+      "humandbs": { title: string; description: string; cta: string }
+      "jpost": { title: string; description: string; cta: string }
+      "eva": { title: string; description: string; cta: string }
+    }
+    origin: {
+      tier1: string
+      tier2: string
+      recipe: string
     }
     sequenceRead: {
       jga: { intro: string; dbclsPolicy: string }
@@ -406,15 +349,12 @@ export type Resources = {
     }
     a11y: {
       accessCell: string
-      editDetail: string
       deleteRow: string
       gotoStep: string
-      modalClose: string
     }
   }
   search: {
     pageTitle: string
-    pageSubtitle: string
     searchBoxPlaceholder: string
     syntax: {
       space: string
@@ -453,12 +393,42 @@ export type Resources = {
         description: string
         organismId: string
         organismName: string
+        name: string
         accessibility: string
         datePublished: string
         dateModified: string
         dateCreated: string
         submitter: string
         publication: string
+        objectType: string
+        projectType: string
+        relevance: string
+        grantTitle: string
+        grantAgency: string
+        externalLinkLabel: string
+        host: string
+        strain: string
+        isolate: string
+        package: string
+        model: string
+        geoLocName: string
+        collectionDate: string
+        derivedFromId: string
+        libraryStrategy: string
+        librarySource: string
+        libraryLayout: string
+        librarySelection: string
+        platform: string
+        instrumentModel: string
+        libraryName: string
+        libraryConstructionProtocol: string
+        analysisType: string
+        studyType: string
+        vendor: string
+        datasetType: string
+        type: string
+        experimentType: string
+        submissionType: string
       }
       predicate: {
         eq: string
@@ -541,8 +511,14 @@ export type Resources = {
       field: {
         organism: string
         submitter: string
+        accessibility: string
+        name: string
+        publication: string
         datePublished: string
+        dateModified: string
+        dateCreated: string
         sequenceLength: string
+        type: string
         objectType: string
         relevance: string
         projectType: string
@@ -596,6 +572,7 @@ export type Resources = {
         toLabel: string
       }
       showMore: string
+      showLess: string
       clearGroup: string
       empty: string
     }
@@ -612,7 +589,8 @@ export type Resources = {
       descriptionAppend: string
       placeholder: string
       examplesLabel: string
-      examples: readonly string[]
+      examplesNew: readonly string[]
+      examplesAppend: readonly string[]
       generate: string
       generating: string
       proposalHeading: string
@@ -697,8 +675,6 @@ export const ja: Resources = {
   },
   top: {
     hero: {
-      examplesLabel: "例",
-      examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
       advancedLink: "詳細条件で検索",
     },
     serviceGrid: { heading: "サービス" },
@@ -822,7 +798,6 @@ export const ja: Resources = {
   },
   submit: {
     pageTitle: "登録ナビゲーション",
-    pageSubtitle: "左でファイルを追加して性質を答えると、右に登録先と登録フローを導出します。",
     sections: {
       preconditions: "登録前提",
       table: "ファイルテーブル",
@@ -860,113 +835,10 @@ export const ja: Resources = {
     detail: {
       heading: "データ詳細",
       empty: "追加の詳細設定が必要なファイルはありません",
-    },
-    flowOverview: {
-      fileCount: "{{count}} ファイル",
-    },
-    fileType: {
-      "sequence-read": { label: "配列リード", ext: "FASTQ", hint: "シーケンサーが出力した生リード" },
-      "sequence-nucleotide": { label: "FASTA 塩基配列", ext: "FASTA", hint: "組み上げ済みの塩基配列" },
-      "sequence-annotation": { label: "配列アノテーション", ext: "GFF", hint: "配列に付与する feature 情報" },
-      "variant": { label: "バリアント", ext: "VCF", hint: "変異・多型の一覧" },
-      "expression-matrix": { label: "発現マトリクス", ext: "TSV", hint: "遺伝子発現の数値マトリクス" },
-      "microarray-expression": { label: "マイクロアレイ発現", ext: "CEL", hint: "マイクロアレイによる発現測定" },
-      "spatial-transcriptomics": { label: "空間トランスクリプトーム", ext: "TSV", hint: "空間座標に対応した発現データ" },
-      "spatial-image": { label: "空間画像", ext: "TIFF", hint: "空間トランスクリプトームの組織画像" },
-      "mass-spectrometry": { label: "質量分析", ext: "mzML", hint: "質量分析計の測定データ" },
-      "nmr": { label: "NMR", ext: "nmrML", hint: "核磁気共鳴の測定データ" },
-      "metabolite-assignment": { label: "代謝物アサインメント", ext: "TSV", hint: "代謝物の同定結果テーブル" },
-    },
-    access: {
-      "open": "公開",
-      "restricted": "制限公開",
-    },
-    progress: {
-      heading: "入力状況",
-      remaining: "残り {{count}} 行",
-      complete: "すべての行が入力済みです",
-    },
-    flow: {
-      empty: "ファイルを追加すると、ここに登録フローが表示されます",
-      accessionLabel: "アクセッション",
-      noteWarning: "注意",
-      noteError: "エラー",
-      "bioproject": { title: "BioProject", description: "プロジェクトを束ねる随伴エントリ", cta: "詳細" },
-      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴エントリ", cta: "詳細" },
-      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先", cta: "詳細" },
-      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先", cta: "詳細" },
-      "ddbj-trad": { title: "DDBJ Trad", description: "塩基配列を一括登録する MSS", cta: "詳細" },
-      "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム", cta: "詳細" },
-      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先", cta: "詳細" },
-      "gea": { title: "GEA", description: "遺伝子発現データの登録先", cta: "詳細" },
-      "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先", cta: "詳細" },
-      "humandbs": { title: "humandbs", description: "制限公開ヒトデータの Policy 申請窓口", cta: "申請窓口へ進む" },
-      "dbcls": { title: "DBCLS", description: "NBDC ポリシー・JGAP 発行の窓口", cta: "DBCLS へ進む" },
-      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先", cta: "jPOST へ進む" },
-      "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)", cta: "EVA へ進む" },
-    },
-    preview: {
-      label: "プレビュー",
-      footnote: "入力内容から導出した登録フローのプレビューです",
-      serviceCode: {
-        "bioproject": "BioProject",
-        "biosample": "BioSample",
-        "dra": "DRA",
-        "jga": "JGA",
-        "ddbj-trad": "DDBJ Trad",
-        "togovar": "TogoVar",
-        "gea": "GEA",
-        "metabobank": "MetaboBank",
-        "humandbs": "humandbs",
-        "dbcls": "DBCLS",
-        "nsss": "NSSS",
-        "jpost": "jPOST",
-        "eva": "EVA",
-      },
-      title: {
-        "bioproject": "BioProject",
-        "biosample": "BioSample",
-        "dra": "DRA",
-        "jga": "JGA",
-        "ddbj-trad": "DDBJ Trad",
-        "togovar": "TogoVar",
-        "gea": "GEA",
-        "metabobank": "MetaboBank",
-        "humandbs": "humandbs",
-        "dbcls": "DBCLS",
-        "nsss": "NSSS",
-        "jpost": "jPOST",
-        "eva": "EVA",
-      },
-      body: {
-        "bioproject": "プロジェクト全体を束ねる随伴エントリです",
-        "biosample": "サンプルを束ねる随伴エントリです",
-        "dra": "配列リードを Run・Analysis として登録します",
-        "jga": "制限公開ヒト個人データを Dataset 単位で登録します",
-        "ddbj-trad": "塩基配列を MSS で一括登録します",
-        "togovar": "公開ヒト variant を登録します",
-        "gea": "遺伝子発現データを登録します",
-        "metabobank": "メタボロミクスデータを登録します",
-        "humandbs": "制限公開ヒトデータの Policy 申請を行います",
-        "dbcls": "NBDC ポリシー利用・JGAP 発行の手続きを行います",
-        "nsss": "少数・短い塩基配列を Web 登録システム NSSS で登録します",
-        "jpost": "プロテオミクスデータを jPOST に登録します",
-        "eva": "非ヒト variant を EVA に登録します",
-      },
-    },
-    origin: {
-      tier1: "ルール由来",
-      tier2: "集約由来",
-      recipe: "レシピ由来",
-    },
-    modal: {
-      title: "データ詳細の編集",
-      description: "この行のグループ・データ形態・詳細区分を設定します",
-      save: "保存",
-      cancel: "キャンセル",
+      pairPartnerLabel: "ペアにする配列",
+      pairPartnerPlaceholder: "配列を選択",
+      pairPartnerEmpty: "先に FASTA 塩基配列の行を追加してください",
       statusReady: "設定済み",
-      previewLabel: "プレビュー",
-      previewFootnote: "この設定での登録フローのプレビューです",
       formGroupLabels: {
         form: "データ形態",
         target: "対象",
@@ -998,6 +870,55 @@ export const ja: Resources = {
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
         },
       },
+    },
+    flowOverview: {
+      fileCount: "{{count}} ファイル",
+    },
+    fileType: {
+      "sequence-read": { label: "配列リード", ext: "FASTQ", hint: "シーケンサーが出力した生リード" },
+      "sequence-nucleotide": { label: "FASTA 塩基配列", ext: "FASTA", hint: "組み上げ済みの塩基配列" },
+      "sequence-annotation": { label: "配列アノテーション", ext: "GFF", hint: "配列に付与する feature 情報" },
+      "variant": { label: "バリアント", ext: "VCF", hint: "変異・多型の一覧" },
+      "expression-matrix": { label: "発現マトリクス", ext: "TSV", hint: "遺伝子発現の数値マトリクス" },
+      "microarray-expression": { label: "マイクロアレイ発現", ext: "CEL", hint: "マイクロアレイによる発現測定" },
+      "spatial-transcriptomics": { label: "空間トランスクリプトーム", ext: "TSV", hint: "空間座標に対応した発現データ" },
+      "spatial-image": { label: "空間画像", ext: "TIFF", hint: "空間トランスクリプトームの組織画像" },
+      "mass-spectrometry": { label: "質量分析", ext: "mzML", hint: "質量分析計の測定データ" },
+      "nmr": { label: "NMR", ext: "nmrML", hint: "核磁気共鳴の測定データ" },
+      "metabolite-assignment": { label: "代謝物アサインメント", ext: "TSV", hint: "代謝物の同定結果テーブル" },
+    },
+    access: {
+      "open": "公開",
+      "restricted": "制限公開",
+    },
+    progress: {
+      heading: "入力状況",
+    },
+    flow: {
+      empty: "ファイルを追加すると、ここに登録フローが表示されます",
+      noteWarning: "注意",
+      noteError: "エラー",
+      prereqHeading: "先に済ませること",
+      wizardHeading: "外部サイトでの手順",
+      prepareHeading: "準備するもの",
+      roleTag: { destination: "登録先", companion: "準備", external: "外部窓口" },
+      "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねる随伴メタデータ", cta: "登録画面を開く" },
+      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴メタデータ", cta: "登録画面を開く" },
+      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先", cta: "登録を始める" },
+      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先", cta: "登録を始める" },
+      "ddbj-trad": { title: "DDBJ Trad", description: "塩基配列を一括登録する MSS", cta: "登録を始める" },
+      "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム", cta: "登録を始める" },
+      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先", cta: "登録を始める" },
+      "gea": { title: "GEA", description: "遺伝子発現データの登録先", cta: "登録を始める" },
+      "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先", cta: "登録を始める" },
+      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (DBCLS 運営)", cta: "ポリシー申請に進む" },
+      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先 (DDBJ 外)", cta: "jPOST へ進む" },
+      "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)", cta: "EVA へ進む" },
+    },
+    origin: {
+      tier1: "ルール由来",
+      tier2: "集約由来",
+      recipe: "レシピ由来",
     },
     sequenceRead: {
       jga: {
@@ -1144,15 +1065,12 @@ export const ja: Resources = {
     },
     a11y: {
       accessCell: "公開区分",
-      editDetail: "データ詳細を編集",
       deleteRow: "行を削除",
       gotoStep: "登録ステップに移動",
-      modalClose: "閉じる",
     },
   },
   search: {
     pageTitle: "データベース横断検索",
-    pageSubtitle: "キーワードでも、AI への自然文でも。入力はすべて下のクエリビルダーに集約され、その内容で検索します。",
     searchBoxPlaceholder: "キーワード、accession、学名で検索",
     syntax: {
       space: "スペース",
@@ -1165,11 +1083,11 @@ export const ja: Resources = {
     examples: {
       label: "例",
       items: [
-        "cancer",
-        "Homo sapiens",
-        "cancer, tumor",
-        "\"single cell\"",
-        "COVID-19",
+        "BRCA1",
+        "SARS-CoV-2",
+        "\"Oryza sativa\"",
+        "\"Cyprinus carpio\"",
+        "PRJDB10452",
       ],
     },
     builder: {
@@ -1197,12 +1115,42 @@ export const ja: Resources = {
         description: "説明",
         organismId: "生物種 ID",
         organismName: "学名",
+        name: "名称",
         accessibility: "公開区分",
         datePublished: "公開日",
         dateModified: "更新日",
         dateCreated: "作成日",
         submitter: "登録機関",
         publication: "論文",
+        objectType: "BioProject 種別",
+        projectType: "プロジェクト種別",
+        relevance: "関連分野",
+        grantTitle: "助成課題",
+        grantAgency: "助成機関",
+        externalLinkLabel: "外部リンク",
+        host: "宿主",
+        strain: "系統 (strain)",
+        isolate: "分離株",
+        package: "パッケージ",
+        model: "モデル",
+        geoLocName: "地理的位置",
+        collectionDate: "採取日",
+        derivedFromId: "派生元 ID",
+        libraryStrategy: "ライブラリ戦略",
+        librarySource: "ライブラリ源",
+        libraryLayout: "ライブラリ構成",
+        librarySelection: "ライブラリ選択",
+        platform: "プラットフォーム",
+        instrumentModel: "機器",
+        libraryName: "ライブラリ名",
+        libraryConstructionProtocol: "ライブラリ調製",
+        analysisType: "解析種別",
+        studyType: "スタディ種別",
+        vendor: "ベンダー",
+        datasetType: "データセット種別",
+        type: "種別 (サブタイプ)",
+        experimentType: "実験種別",
+        submissionType: "登録種別",
       },
       predicate: {
         eq: "と一致",
@@ -1285,8 +1233,14 @@ export const ja: Resources = {
       field: {
         organism: "生物種",
         submitter: "登録機関",
+        accessibility: "公開区分",
+        name: "名称",
+        publication: "論文",
         datePublished: "公開日",
+        dateModified: "更新日",
+        dateCreated: "作成日",
         sequenceLength: "配列長",
+        type: "サブタイプ",
         objectType: "BioProject 種別",
         relevance: "関連分野",
         projectType: "プロジェクト種別",
@@ -1340,6 +1294,7 @@ export const ja: Resources = {
         toLabel: "TO",
       },
       showMore: "+ さらに表示",
+      showLess: "− 折りたたむ",
       clearGroup: "解除",
       empty: "facet はありません",
     },
@@ -1356,10 +1311,15 @@ export const ja: Resources = {
       descriptionAppend: "自然文で書くと、現在の {{count}} 件に追加する条件を提案します。",
       placeholder: "例: ヒトの 2022 年以降に公開されたがん関連の BioProject",
       examplesLabel: "例",
-      examples: [
+      examplesNew: [
         "シングルセル RNA-seq のヒト試料",
         "2022 年以降に公開された大腸がん研究",
         "病原性細菌のゲノム配列で公開済みのもの",
+      ],
+      examplesAppend: [
+        "環境サンプルを除く",
+        "2022 年以降に公開されたものに限定する",
+        "ヒト由来の試料に絞り込む",
       ],
       generate: "提案を生成",
       generating: "生成中…",

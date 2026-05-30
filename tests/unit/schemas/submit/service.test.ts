@@ -8,7 +8,8 @@ import {
   isDestinationService,
   isExternalService,
   Service,
-  SERVICE_PHYSICAL_ORDER,
+  SERVICE_DEPENDENCIES,
+  SERVICE_DEPENDENCY_ORDER,
   SERVICE_ROLE,
   serviceBadgeColor,
   ServiceRole,
@@ -16,11 +17,10 @@ import {
 } from "../../../../app/schemas/submit"
 
 const ALL_SERVICES = Service.options
-const ROLE_ORDER: readonly ServiceRole[] = ["companion", "destination", "external"]
 
 describe("Service enum and role partition", () => {
-  test("Service_thirteenOptions", () => {
-    expect(ALL_SERVICES).toHaveLength(13)
+  test("Service_twelveOptions", () => {
+    expect(ALL_SERVICES).toHaveLength(12)
   })
 
   test("SERVICE_ROLE_keysExactlyMatchServiceOptions", () => {
@@ -157,34 +157,29 @@ describe("serviceBadgeColor", () => {
   })
 })
 
-describe("SERVICE_PHYSICAL_ORDER", () => {
-  test("physicalOrder_coversEveryServiceExactlyOnce", () => {
-    expect(new Set(SERVICE_PHYSICAL_ORDER)).toEqual(new Set(ALL_SERVICES))
-    expect(SERVICE_PHYSICAL_ORDER).toHaveLength(ALL_SERVICES.length)
-    expect(new Set(SERVICE_PHYSICAL_ORDER).size).toBe(SERVICE_PHYSICAL_ORDER.length)
+describe("SERVICE_DEPENDENCY_ORDER", () => {
+  test("dependencyOrder_coversEveryServiceExactlyOnce", () => {
+    expect(new Set(SERVICE_DEPENDENCY_ORDER)).toEqual(new Set(ALL_SERVICES))
+    expect(SERVICE_DEPENDENCY_ORDER).toHaveLength(ALL_SERVICES.length)
+    expect(new Set(SERVICE_DEPENDENCY_ORDER).size).toBe(SERVICE_DEPENDENCY_ORDER.length)
   })
 
-  test("physicalOrder_groupsRolesAsCompanionThenDestinationThenExternal", () => {
-    const roleRank = SERVICE_PHYSICAL_ORDER.map((s) => ROLE_ORDER.indexOf(serviceRole(s)))
-    for (let i = 1; i < roleRank.length; i++) {
-      const prev = roleRank[i - 1] ?? -1
-      const cur = roleRank[i] ?? -1
-      expect(cur).toBeGreaterThanOrEqual(prev)
+  test("dependencyOrder_isTopologicalExtensionOfDependencies", () => {
+    const idx = (s: Service) => SERVICE_DEPENDENCY_ORDER.indexOf(s)
+    for (const service of ALL_SERVICES) {
+      for (const dep of SERVICE_DEPENDENCIES[service]) {
+        expect(idx(dep)).toBeLessThan(idx(service))
+      }
     }
   })
 
-  test("physicalOrder_companionPrecedesDestinationPrecedesExternal", () => {
-    const idx = (s: Service) => SERVICE_PHYSICAL_ORDER.indexOf(s)
-    const maxCompanion = Math.max(...COMPANION_SERVICES.map(idx))
-    const minDestination = Math.min(...DESTINATION_SERVICES.map(idx))
-    const maxDestination = Math.max(...DESTINATION_SERVICES.map(idx))
-    const minExternal = Math.min(...EXTERNAL_SERVICES.map(idx))
-    expect(maxCompanion).toBeLessThan(minDestination)
-    expect(maxDestination).toBeLessThan(minExternal)
+  test("dependencyOrder_policyGateHumandbsPrecedesJga", () => {
+    const idx = (s: Service) => SERVICE_DEPENDENCY_ORDER.indexOf(s)
+    expect(idx("humandbs")).toBeLessThan(idx("jga"))
   })
 
-  test("physicalOrder_bioprojectBeforeBiosampleBeforeDra", () => {
-    const idx = (s: Service) => SERVICE_PHYSICAL_ORDER.indexOf(s)
+  test("dependencyOrder_bioprojectBeforeBiosampleBeforeDra", () => {
+    const idx = (s: Service) => SERVICE_DEPENDENCY_ORDER.indexOf(s)
     expect(idx("bioproject")).toBeLessThan(idx("biosample"))
     expect(idx("biosample")).toBeLessThan(idx("dra"))
   })

@@ -22,7 +22,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   const headingId = useId()
   if (!availability.ready) return null
 
-  const rawExamples = t("search.assistant.examples", { returnObjects: true })
+  const rawExamples = t("search.assistant.examplesAppend", { returnObjects: true })
   const examplesList: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
 
   // The per-DB assistant refines the current per-DB query, so it always runs in

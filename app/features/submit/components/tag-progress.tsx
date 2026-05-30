@@ -4,8 +4,6 @@ type TagProgressProps = {
   configured: number
   total: number
   heading: string
-  remainingText: string
-  completeText: string
   countLabel: string
 }
 
@@ -13,8 +11,6 @@ export const TagProgress = ({
   configured,
   total,
   heading,
-  remainingText,
-  completeText,
   countLabel,
 }: TagProgressProps) => {
   const percent = total === 0 ? 100 : Math.round((configured / total) * 100)
@@ -23,7 +19,6 @@ export const TagProgress = ({
   const container = isComplete
     ? "bg-ok-bg border-ok-border text-ok-fg"
     : "bg-surface border-border-soft text-ink-mid"
-  const descriptionColor = isComplete ? "text-ok-fg" : "text-ink-mid"
 
   return (
     <div
@@ -54,9 +49,6 @@ export const TagProgress = ({
           {percent}%
         </span>
       </div>
-      <p className={cn("text-fs-meta m-0 leading-relaxed", descriptionColor)}>
-        {isComplete ? completeText : remainingText}
-      </p>
     </div>
   )
 }

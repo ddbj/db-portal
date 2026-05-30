@@ -89,7 +89,7 @@ describe("submitReducer preconditions", () => {
 })
 
 describe("submitReducer ADD_ROW", () => {
-  test("submitReducer_addRow_addsOneEntryAndGroupWithoutOpeningModal", () => {
+  test("submitReducer_addRow_addsOneEntryAndGroup", () => {
     const next = addRow(initialState, "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries).toHaveLength(1)
     expect(next.submission.fileGroups).toHaveLength(1)
@@ -97,7 +97,6 @@ describe("submitReducer ADD_ROW", () => {
     expect(next.submission.fileGroups[0]!.memberFileIds).toEqual(["e1"])
     expect(next.submission.fileEntries[0]!.id).toBe("e1")
     expect(next.submission.fileEntries[0]!.groupId).toBe("g1")
-    expect(next.editing).toBeNull()
   })
 
   test("submitReducer_addRow_injectsTypicalDataFormGroupTypeFilenamePerKind", () => {
@@ -179,60 +178,90 @@ describe("submitReducer ADD_ROW", () => {
   })
 })
 
-describe("submitReducer ADD_TO_GROUP", () => {
-  test("submitReducer_addToGroup_appendsEntryToExistingGroup", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const next = submitReducer(seeded, {
-      type: "ADD_TO_GROUP",
-      groupId: "g1",
-      fileTypeKind: "sequence-read",
-      entryId: "e2",
+describe("submitReducer SET_PAIR_PARTNER", () => {
+  // アノテーション行で配列ペア (assembly-annotation) を選んだ状態を作る
+  const annotationInPairMode = (): UIState => {
+    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
+    state = addRow(state, "sequence-nucleotide", "fa", "g-fa")
+
+    return submitReducer(state, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "ann",
+      patch: { groupType: "assembly-annotation" },
+      releasedGroupId: "rel-a",
     })
-    expect(next.submission.fileEntries).toHaveLength(2)
-    expect(next.submission.fileGroups).toHaveLength(1)
-    expect(next.submission.fileGroups[0]!.memberFileIds).toEqual(["e1", "e2"])
-    expect(next.submission.fileEntries[1]!.groupId).toBe("g1")
-    expect(next.editing).toBeNull()
+  }
+
+  test("submitReducer_setPairPartner_movesPartnerIntoAnnotationGroupAndDropsOldGroup", () => {
+    const next = submitReducer(annotationInPairMode(), {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-b",
+    })
+    const annGroup = next.submission.fileGroups.find((g) => g.id === "g-ann")!
+    expect(annGroup.groupType).toBe("assembly-annotation")
+    expect(new Set(annGroup.memberFileIds)).toEqual(new Set(["ann", "fa"]))
+    expect(next.submission.fileEntries.find((e) => e.id === "fa")!.groupId).toBe("g-ann")
+    // 相方の元 group は空になり drop される
+    expect(next.submission.fileGroups.some((g) => g.id === "g-fa")).toBe(false)
   })
 
-  test("submitReducer_addToGroupRestrictedQ1_injectsRestrictedAccess", () => {
-    const seeded = addRow(
-      submitReducer(initialState, { type: "SET_Q1", q1: "restricted" }),
-      "sequence-read",
-      "e1",
-      "g1",
-    )
-    const next = submitReducer(seeded, {
-      type: "ADD_TO_GROUP",
-      groupId: "g1",
-      fileTypeKind: "sequence-read",
-      entryId: "e2",
+  test("submitReducer_setPairPartnerSwitch_releasesPreviousPartnerToSingleGroup", () => {
+    let state = annotationInPairMode()
+    state = addRow(state, "sequence-nucleotide", "fa2", "g-fa2")
+    state = submitReducer(state, {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-1",
     })
-    expect(next.submission.fileEntries[1]!.access).toBe("restricted")
+    // 相方を fa -> fa2 へ切り替える。fa は単独 group (releasedGroupId) へ戻る
+    const next = submitReducer(state, {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa2",
+      releasedGroupId: "rel-2",
+    })
+    const annGroup = next.submission.fileGroups.find((g) => g.id === "g-ann")!
+    expect(new Set(annGroup.memberFileIds)).toEqual(new Set(["ann", "fa2"]))
+    const releasedGroup = next.submission.fileGroups.find((g) => g.id === "rel-2")!
+    expect(releasedGroup.groupType).toBe("single")
+    expect(releasedGroup.memberFileIds).toEqual(["fa"])
+    expect(next.submission.fileEntries.find((e) => e.id === "fa")!.groupId).toBe("rel-2")
   })
 
-  test("submitReducer_addToGroupUnknownGroup_returnsStateUnchanged", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
+  test("submitReducer_setPairPartnerUnknownEntry_returnsStateUnchanged", () => {
+    const seeded = annotationInPairMode()
     const next = submitReducer(seeded, {
-      type: "ADD_TO_GROUP",
-      groupId: "does-not-exist",
-      fileTypeKind: "sequence-read",
-      entryId: "e2",
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ghost",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-x",
     })
     expect(next).toBe(seeded)
-    expect(next.submission.fileEntries).toHaveLength(1)
   })
 
-  test("submitReducer_addToGroupDuplicateEntryId_doesNotDuplicateMember", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    // 既に memberFileIds に含まれる id を再度入れても二重登録されない
-    const next = submitReducer(seeded, {
-      type: "ADD_TO_GROUP",
-      groupId: "g1",
-      fileTypeKind: "sequence-read",
-      entryId: "e1",
+  test("submitReducer_commitStandaloneAfterPairing_dissolvesPairAndRestoresPartner", () => {
+    const state = submitReducer(annotationInPairMode(), {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-b",
     })
-    expect(next.submission.fileGroups[0]!.memberFileIds).toEqual(["e1"])
+    // 単独アノテーション (groupType single) に戻すとペアは解消し、相方は単独 group に戻る
+    const next = submitReducer(state, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "ann",
+      patch: { groupType: "single" },
+      releasedGroupId: "rel-c",
+    })
+    expect(next.submission.fileGroups.find((g) => g.id === "g-ann")!.groupType).toBe("single")
+    const faEntry = next.submission.fileEntries.find((e) => e.id === "fa")!
+    expect(faEntry.groupId).not.toBe("g-ann")
+    const faGroup = next.submission.fileGroups.find((g) => g.id === faEntry.groupId)!
+    expect(faGroup.groupType).toBe("single")
+    expect(faGroup.memberFileIds).toEqual(["fa"])
   })
 })
 
@@ -259,20 +288,6 @@ describe("submitReducer EDIT_ROW_CELL", () => {
     expect(entry.access).toBe("restricted")
     expect(entry.dataForm).toBe("assembled")
     expect(entry.chipTags).toEqual([{ axis: "mass-spec-domain", value: "proteomics" }])
-  })
-
-  test("submitReducer_editRowCell_doesNotOpenOrCloseModal", () => {
-    const opened: UIState = {
-      ...addRow(initialState, "sequence-read", "e1", "g1"),
-      editing: { kind: "row", entryId: "e1" },
-    }
-    const next = submitReducer(opened, {
-      type: "EDIT_ROW_CELL",
-      entryId: "e1",
-      patch: { access: "restricted" },
-    })
-    // EDIT_ROW_CELL は editing を維持する (COMMIT_ROW_EDIT のみ閉じる)
-    expect(next.editing).toEqual({ kind: "row", entryId: "e1" })
   })
 
   test("submitReducer_editRowCellUnknownEntry_leavesEntriesUntouched", () => {
@@ -305,21 +320,29 @@ describe("submitReducer REMOVE_ROW", () => {
     const next = submitReducer(seeded, { type: "REMOVE_ROW", entryId: "e1" })
     expect(next.submission.fileEntries).toHaveLength(0)
     expect(next.submission.fileGroups).toHaveLength(0)
-    expect(next.editing).toBeNull()
   })
 
-  test("submitReducer_removeRowFromSharedGroup_keepsGroupAndSibling", () => {
-    let state = addRow(initialState, "sequence-read", "e1", "g1")
+  test("submitReducer_removePartnerFromPair_keepsAnnotationAndRestoresSingle", () => {
+    // 配列ペアを組んだ後に相方 FASTA を削除すると、残ったアノテーションは単独 group に戻る
+    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
+    state = addRow(state, "sequence-nucleotide", "fa", "g-fa")
     state = submitReducer(state, {
-      type: "ADD_TO_GROUP",
-      groupId: "g1",
-      fileTypeKind: "sequence-read",
-      entryId: "e2",
+      type: "COMMIT_ROW_EDIT",
+      entryId: "ann",
+      patch: { groupType: "assembly-annotation" },
+      releasedGroupId: "rel-a",
     })
-    const next = submitReducer(state, { type: "REMOVE_ROW", entryId: "e1" })
-    expect(next.submission.fileEntries.map((e) => e.id)).toEqual(["e2"])
-    expect(next.submission.fileGroups).toHaveLength(1)
-    expect(next.submission.fileGroups[0]!.memberFileIds).toEqual(["e2"])
+    state = submitReducer(state, {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-b",
+    })
+    const next = submitReducer(state, { type: "REMOVE_ROW", entryId: "fa" })
+    expect(next.submission.fileEntries.map((e) => e.id)).toEqual(["ann"])
+    const annGroup = next.submission.fileGroups.find((g) => g.id === "g-ann")!
+    expect(annGroup.memberFileIds).toEqual(["ann"])
+    expect(annGroup.groupType).toBe("single")
   })
 
   test("submitReducer_removeRow_keepsOtherGroupsIntact", () => {
@@ -339,23 +362,9 @@ describe("submitReducer REMOVE_ROW", () => {
   })
 })
 
-describe("submitReducer editing actions", () => {
-  test("submitReducer_openEditRow_setsRowEditing", () => {
-    const next = submitReducer(initialState, { type: "OPEN_EDIT_ROW", entryId: "e1" })
-    expect(next.editing).toEqual({ kind: "row", entryId: "e1" })
-  })
-
-  test("submitReducer_closeModal_resetsEditing", () => {
-    const opened: UIState = { ...initialState, editing: { kind: "row", entryId: "e1" } }
-    const next = submitReducer(opened, { type: "CLOSE_MODAL" })
-    expect(next.editing).toBeNull()
-  })
-
-  test("submitReducer_commitRowEdit_appliesGroupTypeDataFormChipsAndClosesModal", () => {
-    const seeded: UIState = {
-      ...addRow(initialState, "sequence-read", "e1", "g1"),
-      editing: { kind: "row", entryId: "e1" },
-    }
+describe("submitReducer COMMIT_ROW_EDIT", () => {
+  test("submitReducer_commitRowEdit_appliesGroupTypeDataFormAndChips", () => {
+    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
     const next = submitReducer(seeded, {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
@@ -364,13 +373,13 @@ describe("submitReducer editing actions", () => {
         dataForm: "assembled",
         chipTags: [{ axis: "assembly-form", value: "primary" }],
       },
+      releasedGroupId: "rel",
     })
     expect(next.submission.fileGroups[0]!.groupType).toBe("pair-end")
     expect(next.submission.fileEntries[0]!.dataForm).toBe("assembled")
     expect(next.submission.fileEntries[0]!.chipTags).toEqual([
       { axis: "assembly-form", value: "primary" },
     ])
-    expect(next.editing).toBeNull()
   })
 
   test("submitReducer_commitRowEditUnknownEntry_returnsStateUnchanged", () => {
@@ -379,6 +388,7 @@ describe("submitReducer editing actions", () => {
       type: "COMMIT_ROW_EDIT",
       entryId: "ghost",
       patch: { dataForm: "assembled" },
+      releasedGroupId: "rel",
     })
     expect(next).toBe(seeded)
   })

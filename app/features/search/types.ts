@@ -9,7 +9,16 @@ import {
   SORT_KEYS,
   type SortKey,
 } from "~/lib/search-scope"
-import { ADVANCED_FIELDS, type AdvancedField, type AdvancedOp } from "~/schemas/api-bff/llm"
+import { ADVANCED_FIELDS, ADVANCED_OPS, type AdvancedOp } from "~/schemas/api-bff/llm"
+
+import {
+  type AdvancedField,
+  FIELD_OPS,
+  fieldLabelKey,
+  fieldsForScope,
+  isAdvancedField,
+  isDateField,
+} from "./advanced/field-catalog"
 
 export {
   DB_SLUGS,
@@ -23,6 +32,18 @@ export {
   type SortKey,
 }
 
+export {
+  ADVANCED_FIELDS,
+  ADVANCED_OPS,
+  type AdvancedField,
+  type AdvancedOp,
+  FIELD_OPS,
+  fieldLabelKey,
+  fieldsForScope,
+  isAdvancedField,
+  isDateField,
+}
+
 export type ApiSortValue = "datePublished:asc" | "datePublished:desc"
 
 export const sortKeyToApiSort = (key: SortKey): ApiSortValue | undefined => {
@@ -33,42 +54,6 @@ export const sortKeyToApiSort = (key: SortKey): ApiSortValue | undefined => {
 }
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "failed"
-
-export {
-  ADVANCED_FIELDS,
-  ADVANCED_OPS,
-  type AdvancedField,
-  type AdvancedOp,
-} from "~/schemas/api-bff/llm"
-
-export const isAdvancedField = (value: string): value is AdvancedField =>
-  (ADVANCED_FIELDS as readonly string[]).includes(value)
-
-export const DATE_FIELDS: readonly AdvancedField[] = [
-  "date_published",
-  "date_modified",
-  "date_created",
-]
-
-export const isDateField = (value: AdvancedField): boolean =>
-  DATE_FIELDS.includes(value)
-
-// Operators each field accepts, mirroring the ddbj-search-api DSL allowlist
-// (search/dsl/allowlist.py). Picking an unlisted operator yields a 400, so the
-// builder restricts the operator choices per field.
-export const FIELD_OPS: Record<AdvancedField, readonly AdvancedOp[]> = {
-  identifier: ["eq", "wildcard"],
-  title: ["eq", "contains"],
-  description: ["eq", "contains"],
-  organism_id: ["eq", "wildcard"],
-  organism_name: ["eq", "contains"],
-  accessibility: ["eq"],
-  date_published: ["between"],
-  date_modified: ["between"],
-  date_created: ["between"],
-  submitter: ["eq", "contains"],
-  publication: ["eq", "contains"],
-}
 
 export type AdvancedCombinator = "AND" | "OR" | "NOT"
 
@@ -91,43 +76,6 @@ export const fieldPredicates = (field: AdvancedField): readonly Predicate[] =>
     { op, negated: false },
     { op, negated: true },
   ])
-
-// i18n key under search.builder.field for a given field (the resource keys are
-// camelCase while AdvancedField values are snake_case).
-export type FieldLabelKey =
-  | "identifier"
-  | "title"
-  | "description"
-  | "organismId"
-  | "organismName"
-  | "accessibility"
-  | "datePublished"
-  | "dateModified"
-  | "dateCreated"
-  | "submitter"
-  | "publication"
-
-export const fieldLabelKey = (field: AdvancedField): FieldLabelKey => {
-  switch (field) {
-    case "organism_id":
-      return "organismId"
-    case "organism_name":
-      return "organismName"
-    case "date_published":
-      return "datePublished"
-    case "date_modified":
-      return "dateModified"
-    case "date_created":
-      return "dateCreated"
-    case "identifier":
-    case "title":
-    case "description":
-    case "accessibility":
-    case "submitter":
-    case "publication":
-      return field
-  }
-}
 
 // i18n key under search.builder.predicate for a given op + negation.
 export const predicateLabelKey = ({ op, negated }: Predicate): string => {

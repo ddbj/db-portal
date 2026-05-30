@@ -1,12 +1,12 @@
 import type { ParseNode } from "~/lib/api"
-import type { DateRangeKey } from "~/ui"
 
 import { canonicalizeAst } from "../ast/canonicalize"
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
 import type { DbSlug } from "../types"
+import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
-import type { DatePublishedFilter, SearchFacetState } from "./facet-state"
+import type { DateRangeFilter, SearchFacetState } from "./facet-state"
 
 export type FromSidebarOptions = {
   db?: DbSlug | null
@@ -14,29 +14,9 @@ export type FromSidebarOptions = {
 
 type LeafOp = "eq" | "contains"
 
-const presetRangeToDates = (key: DateRangeKey, today: Date): { from: string; to: string } | null => {
-  if (key === "all") return null
-  const to = today.toISOString().slice(0, 10)
-  const fromDate = new Date(today)
-  switch (key) {
-    case "1y":
-      fromDate.setFullYear(today.getFullYear() - 1)
-      break
-    case "5y":
-      fromDate.setFullYear(today.getFullYear() - 5)
-      break
-    case "10y":
-      fromDate.setFullYear(today.getFullYear() - 10)
-      break
-  }
-  const from = fromDate.toISOString().slice(0, 10)
-
-  return { from, to }
-}
-
 const dateRangeToAst = (
   field: string,
-  filter: DatePublishedFilter,
+  filter: DateRangeFilter,
   now: Date,
 ): ParseNode | null => {
   if (filter.active !== "all") {
@@ -70,8 +50,11 @@ const rowToAst = (row: FilterRow, state: SearchFacetState, now: Date): ParseNode
 
       return value === "" ? null : leaf(row.op as LeafOp, row.dslField, value)
     }
-    case "dateRange":
-      return dateRangeToAst(row.dslField, state.datePublished, now)
+    case "dateRange": {
+      const filter = state.dateRanges[row.key]
+
+      return filter ? dateRangeToAst(row.dslField, filter, now) : null
+    }
     case "numberRange": {
       const range = state.ranges[row.key]
       if (!range || range.from === "" || range.to === "") return null

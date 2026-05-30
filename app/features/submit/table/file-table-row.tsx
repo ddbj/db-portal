@@ -1,13 +1,10 @@
-import type { MouseEvent } from "react"
-
 import type { Access, FileEntry } from "~/schemas/submit"
 import { Access as AccessEnum } from "~/schemas/submit"
-import { cn, IconButton, Select, Tag, TrashIcon } from "~/ui"
+import { IconButton, Select, Tag, TrashIcon } from "~/ui"
 
 type CellLabels = {
   accessAria: string
   deleteAria: string
-  rowEditTitle: string
   unsetLabel: string
 }
 
@@ -20,27 +17,19 @@ type FileTableRowProps = {
   entry: FileEntry
   hasDetail: boolean
   configured: boolean
-  editing: boolean
   cellLabels: CellLabels
   vocab: VocabLabels
   onAccessChange: (value: Access) => void
-  onRowClick: () => void
   onDelete: () => void
-}
-
-const stop = (e: MouseEvent): void => {
-  e.stopPropagation()
 }
 
 export const FileTableRow = ({
   entry,
   hasDetail,
   configured,
-  editing,
   cellLabels,
   vocab,
   onAccessChange,
-  onRowClick,
   onDelete,
 }: FileTableRowProps) => {
   const needsDetail = hasDetail && !configured
@@ -51,20 +40,7 @@ export const FileTableRow = ({
   }))
 
   return (
-    <tr
-      data-testid="file-row"
-      data-entry-id={entry.id}
-      onClick={hasDetail ? onRowClick : undefined}
-      title={hasDetail ? cellLabels.rowEditTitle : undefined}
-      className={cn(
-        hasDetail && "cursor-pointer",
-        editing
-          ? "bg-brand-softer outline outline-1 outline-brand"
-          : hasDetail
-            ? "hover:bg-surface-subtle"
-            : undefined,
-      )}
-    >
+    <tr data-testid="file-row" data-entry-id={entry.id}>
       <td className="px-3 py-3 align-middle">
         <Tag kind="tag" size="sm">{vocab.fileTypeKindLabel}</Tag>
       </td>
@@ -76,7 +52,7 @@ export const FileTableRow = ({
           )}
         </div>
       </td>
-      <td className="px-3 py-3 align-middle" onClick={stop}>
+      <td className="px-3 py-3 align-middle">
         <Select
           ariaLabel={cellLabels.accessAria}
           options={accessOptions}
@@ -84,7 +60,7 @@ export const FileTableRow = ({
           onChange={(next) => onAccessChange(next as Access)}
         />
       </td>
-      <td className="px-3 py-3 align-middle text-right" onClick={stop}>
+      <td className="px-3 py-3 align-middle text-right">
         <IconButton ariaLabel={cellLabels.deleteAria} onClick={onDelete} size={28}>
           <TrashIcon size={16} />
         </IconButton>

@@ -12,7 +12,6 @@ export const Service = z.enum([
   "gea",
   "metabobank",
   "humandbs",
-  "dbcls",
   "jpost",
   "eva",
 ])
@@ -32,7 +31,6 @@ export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
   "gea": "destination",
   "metabobank": "destination",
   "humandbs": "external",
-  "dbcls": "external",
   "jpost": "external",
   "eva": "external",
 }
@@ -49,7 +47,7 @@ export const EXTERNAL_SERVICES: readonly Service[] = byRole("external")
 
 // 登録エンドポイント = 利用者データの最終格納先。DDBJ 内 (destination) に加え、
 // 最終格納先が DDBJ 外になる external (jpost = proteomics / eva = 非ヒト variant) も含む。
-// humandbs / dbcls は Policy 申請・公開の誘導であって格納先ではないため含めない。
+// humandbs は Policy 申請・承認の誘導であって格納先ではないため含めない。
 // emit.service / candidateRepos / no-orphan 判定はこの集合を境界に使う。
 export const ENDPOINT_EXTERNALS: readonly Service[] = ["jpost", "eva"]
 export const SUBMISSION_ENDPOINTS: readonly Service[] = [
@@ -92,8 +90,29 @@ export const serviceBadgeColor = ({
   return "emerald"
 }
 
-// 出力整形の物理順: companion -> destination -> external
-export const SERVICE_PHYSICAL_ORDER: readonly Service[] = [
+// service 間の前提関係 (前提 → 依存先)。カード順序の依存順と「先に済ませること」の両方を駆動する。
+// companion (bioproject/biosample) は destination の前提、humandbs (Policy ゲート) は jga の前提、
+// dra は gea (sequencing 2 段) / ddbj-trad (MAG) の前提。jga は companion を抑制するので bioproject/biosample に依存しない。
+export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>> = {
+  "bioproject": [],
+  "biosample": [],
+  "humandbs": [],
+  "jpost": [],
+  "dra": ["bioproject", "biosample"],
+  "jga": ["humandbs"],
+  "ddbj-trad": ["bioproject", "biosample", "dra"],
+  "nsss": ["bioproject", "biosample"],
+  "togovar": ["bioproject", "biosample"],
+  "gea": ["bioproject", "biosample", "dra"],
+  "metabobank": ["bioproject", "biosample"],
+  "eva": ["bioproject", "biosample"],
+}
+
+// SERVICE_DEPENDENCIES のトポロジカル順を実現する線形順 (前提が依存先より前)。
+// 前提ゲート (humandbs) → 随伴 (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva)。
+// SERVICE_DEPENDENCIES の妥当な線形拡張であることは PBT/unit で固定する。
+export const SERVICE_DEPENDENCY_ORDER: readonly Service[] = [
+  "humandbs",
   "bioproject",
   "biosample",
   "dra",
@@ -103,8 +122,16 @@ export const SERVICE_PHYSICAL_ORDER: readonly Service[] = [
   "togovar",
   "gea",
   "metabobank",
-  "humandbs",
-  "dbcls",
   "jpost",
   "eva",
 ]
+
+// あるステップの前提 service のうち、当該フローに実在するものだけを依存順で返す。
+// カードの「先に済ませること」に使う。
+export const stepPrerequisites = (
+  service: Service,
+  presentServices: Iterable<Service>,
+): readonly Service[] => {
+  const present = new Set(presentServices)
+  return (SERVICE_DEPENDENCIES[service] ?? []).filter((dep) => present.has(dep))
+}

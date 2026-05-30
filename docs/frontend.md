@@ -99,7 +99,7 @@ state 表現には次の prop 名を使う:
 - **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search / results で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、キーワード / AI モード切替トグルをボックス内に納める。`/search` は提案レビュー型の `SearchInputPanel`、top / results は生成→遷移型の `NavigableSearchInput` がこの `SearchBox` を包む (`search.md`)
 - **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
 - **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
-- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Select` / `TextInput` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では両者を同じ size に揃えて高さを一致させる。詳細は次節の error state policy を参照
+- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `combobox.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Combobox` は固定リストから選ぶだけの `Select` と違い **editable + 絞り込み**: input にタイプすると候補が前方/部分一致で絞られ、候補に無い値も自由入力で確定できる (検索ビルダーの facet 値入力。候補に件数バッジ、`value` と表示 `label` を分離可能で organism の学名表示等に使う)。menu は `Select` と同じく body portal + fixed positioning で overflow を抜ける。`Select` / `TextInput` / `Combobox` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では揃えて高さを一致させる。詳細は次節の error state policy を参照
 - **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
@@ -108,7 +108,7 @@ state 表現には次の prop 名を使う:
 
 ### Forms: error state と SR 連携
 
-入力 primitive (`Button` を除く form control: TextInput / TextArea / Select / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**:
+入力 primitive (`Button` を除く form control: TextInput / TextArea / Select / Combobox / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**:
 
 - `aria-invalid` は **state ベース** で primitive 側が自動付与する (`state="warn"` のとき `aria-invalid="true"`、default のとき false / 未設定)
 - `aria-describedby` は consumer 側 (`FormGroup` の `errorId` / `hintId` など) が渡せるよう prop を開ける
@@ -135,7 +135,7 @@ placeholder の色は global stylesheet (`app/styles/tailwind.css`) で `::place
 
 focus trap は外部 dependency を増やさず自前実装する (focus 候補は `:not([disabled]):not([aria-hidden])` の `button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])`、Tab で末尾→先頭・Shift+Tab で先頭→末尾を巻き戻す)。
 
-`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。submit 系 modal で「保存したら出る FlowStep」 を予測表示する用途。
+`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。2-col modal の右側に「その操作で組まれる結果」 を予測表示する用途。
 
 ### トークン utility 生成と arbitrary value の許容範囲
 

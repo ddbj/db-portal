@@ -6,6 +6,7 @@ import {
   Button,
   Callout,
   Chip,
+  Combobox,
   DateFacet,
   Examples,
   FacetGroup,
@@ -218,6 +219,17 @@ const FormsGallery = () => (
       <Select size="md" ariaLabel="harmony-select" options={["title", "organism_name"]} defaultValue="title" width={160} />
       <TextInput size="md" ariaLabel="harmony-input" placeholder="値を入力" width={200} />
     </Row>
+    <ComboboxRow />
+    <Row label="Combobox warn (構文エラー枠)">
+      <Combobox
+        ariaLabel="combobox-warn"
+        options={[{ value: "WGS", label: "WGS", count: 8481091 }]}
+        value="invalid"
+        onChange={() => undefined}
+        state="warn"
+        width={232}
+      />
+    </Row>
     <FormGroup num="1." label="ライブラリ構造" hint="単独 radio (sub なし vs sub あり)">
       <FmtRadio name="lib" label="pair-end (checked + sub なし)" defaultChecked />
       <FmtRadio name="lib" label="single-end" sub="補足説明 (unchecked + sub)" />
@@ -229,6 +241,31 @@ const FormsGallery = () => (
     </FormGroup>
   </Block>
 )
+
+// Editable, filterable combobox (the builder's facet value input): typing filters
+// the candidates yet any free-entry value is still accepted.
+const ComboboxRow = () => {
+  const [value, setValue] = useState("")
+
+  return (
+    <Row label="Combobox (filter + 自由入力 + 件数)">
+      <Combobox
+        ariaLabel="combobox-facet"
+        options={[
+          { value: "WGS", label: "WGS", count: 8481091 },
+          { value: "AMPLICON", label: "AMPLICON", count: 17275513 },
+          { value: "RNA-Seq", label: "RNA-Seq", count: 6629341 },
+          { value: "9606", label: "Homo sapiens (9606)", count: 20253242 },
+        ]}
+        value={value}
+        onChange={setValue}
+        placeholder="値を入力"
+        emptyLabel="該当なし"
+        width={232}
+      />
+    </Row>
+  )
+}
 
 const CardGallery = () => (
   <Block title="LinkCard">

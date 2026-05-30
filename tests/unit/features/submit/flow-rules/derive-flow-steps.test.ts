@@ -73,8 +73,9 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // JGA dataset plus the policy/NBDC externals, with the default bioproject/biosample suppressed
-    expect(servicesOf(steps)).toEqual(["jga", "humandbs", "dbcls"])
+    // Policy ゲート (humandbs) が依存順で jga より前に出る。提供申請と NBDC ポリシーは humandbs 1 step に
+    // 統合され、既定の bioproject/biosample は抑制される
+    expect(servicesOf(steps)).toEqual(["humandbs", "jga"])
     expect(steps.some((s) => s.service === "bioproject")).toBe(false)
     expect(steps.some((s) => s.service === "biosample")).toBe(false)
 
@@ -83,7 +84,6 @@ describe("deriveFlowSteps", () => {
     expect(jga.scope.entryIds).toEqual(["e1"])
 
     expect(stepFor(steps, "humandbs").origin).toBe("recipe")
-    expect(stepFor(steps, "dbcls").origin).toBe("recipe")
   })
 
   test("deriveFlowSteps_thirdPartySequenceNucleotide_routesToDdbjTradWithTpaWarning", () => {
@@ -197,7 +197,7 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["jga", "humandbs", "dbcls"])
+    expect(servicesOf(steps)).toEqual(["humandbs", "jga"])
     expect(steps.some((s) => s.service === "togovar")).toBe(false)
     expect(steps.some((s) => s.service === "eva")).toBe(false)
     const jga = stepFor(steps, "jga")

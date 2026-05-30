@@ -1,3 +1,4 @@
+import { type CardCopy, SUBMIT_CARDS } from "~/content/submit-routing/cards"
 import { getServiceBySubmit } from "~/lib/content"
 import type { Service } from "~/schemas/submit"
 
@@ -5,7 +6,6 @@ export type ServiceSource = "DDBJ" | "DBCLS"
 
 export type SubmitMeta = {
   externalUrl: string
-  accessionPlaceholders: readonly string[]
   source: ServiceSource | null
 }
 
@@ -16,7 +16,9 @@ export const getSubmitMeta = (service: Service): SubmitMeta | undefined => {
 
   return {
     externalUrl: submit.externalUrl,
-    accessionPlaceholders: submit.accessionPlaceholders,
     source: submit.source,
   }
 }
+
+// 登録フロー詳細カードの service 別文言 (外部ウィザードの予告)。
+export const getSubmitCard = (service: Service): CardCopy => SUBMIT_CARDS[service]

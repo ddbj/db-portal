@@ -1,7 +1,9 @@
 import type { Dispatch } from "react"
 import { useState } from "react"
 
+import type { DbPortalFacets } from "~/lib/api"
 import { useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { Button, CloseIcon, cn, IconButton, InfoHint, Label, Segmented, Tag, TextInput } from "~/ui"
 
 import type { Predicate } from "../types"
@@ -13,10 +15,17 @@ import type {
   AdvancedNode,
   AdvancedState,
 } from "./reducer"
+import { ScopeDbProvider, ScopeFacetsProvider } from "./scope-context"
 
 type AdvancedBuilderProps = {
   state: AdvancedState
   dispatch: Dispatch<AdvancedAction>
+  // Active DB scope from the top search-box selector; decides which Tier 3
+  // fields the condition rows offer. null = cross (Tier 1/2 only).
+  db?: DbSlug | null
+  // Facet aggregation for the active scope; condition rows on facetable fields
+  // surface these buckets as value suggestions. null = unavailable (plain text).
+  facets?: DbPortalFacets | null
   freeText?: string
   onFreeTextChange?: (value: string) => void
   onFreeTextRemove?: () => void
@@ -25,6 +34,8 @@ type AdvancedBuilderProps = {
 export const AdvancedBuilder = ({
   state,
   dispatch,
+  db = null,
+  facets = null,
   freeText = "",
   onFreeTextChange,
   onFreeTextRemove,
@@ -59,41 +70,45 @@ export const AdvancedBuilder = ({
   }
 
   return (
-    <div className="rounded-card border border-border-soft p-4 flex flex-col gap-3 bg-surface">
-      {keywordRowVisible && onFreeTextChange !== undefined && onFreeTextRemove !== undefined && (
-        <FreeTextRow
-          value={freeText}
-          onChange={onFreeTextChange}
-          onRemove={onFreeTextRemove}
-          onFocusChange={setKeywordFocused}
-        />
-      )}
-      {showCombinator && (
-        <div className="flex items-center gap-2">
-          <Label>{t("search.builder.matchLabel")}</Label>
-          <Segmented
-            options={AND_OR_OPTIONS}
-            value={root.innerCombinator}
-            ariaLabel={t("search.a11y.builderConditions")}
-            onChange={(next) =>
-              dispatch({
-                type: "updateInnerCombinator",
-                id: root.id,
-                innerCombinator: next as AdvancedInnerCombinator,
-              })}
-          />
+    <ScopeDbProvider value={db}>
+      <ScopeFacetsProvider value={facets}>
+        <div className="rounded-card border border-border-soft p-4 flex flex-col gap-3 bg-surface">
+          {keywordRowVisible && onFreeTextChange !== undefined && onFreeTextRemove !== undefined && (
+            <FreeTextRow
+              value={freeText}
+              onChange={onFreeTextChange}
+              onRemove={onFreeTextRemove}
+              onFocusChange={setKeywordFocused}
+            />
+          )}
+          {showCombinator && (
+            <div className="flex items-center gap-2">
+              <Label>{t("search.builder.matchLabel")}</Label>
+              <Segmented
+                options={AND_OR_OPTIONS}
+                value={root.innerCombinator}
+                ariaLabel={t("search.a11y.builderConditions")}
+                onChange={(next) =>
+                  dispatch({
+                    type: "updateInnerCombinator",
+                    id: root.id,
+                    innerCombinator: next as AdvancedInnerCombinator,
+                  })}
+              />
+            </div>
+          )}
+          <GroupChildren group={root} depth={0} dispatch={dispatch} branchGuide={showCombinator} />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button kind="secondary" onClick={() => dispatch({ type: "addCondition", parentId: root.id })}>
+              {t("search.builder.addCondition")}
+            </Button>
+            <Button kind="secondary" onClick={() => dispatch({ type: "addGroup", parentId: root.id })}>
+              {t("search.builder.addGroup")}
+            </Button>
+          </div>
         </div>
-      )}
-      <GroupChildren group={root} depth={0} dispatch={dispatch} branchGuide={showCombinator} />
-      <div className="flex justify-end gap-2 mt-2">
-        <Button kind="secondary" onClick={() => dispatch({ type: "addCondition", parentId: root.id })}>
-          {t("search.builder.addCondition")}
-        </Button>
-        <Button kind="secondary" onClick={() => dispatch({ type: "addGroup", parentId: root.id })}>
-          {t("search.builder.addGroup")}
-        </Button>
-      </div>
-    </div>
+      </ScopeFacetsProvider>
+    </ScopeDbProvider>
   )
 }
 

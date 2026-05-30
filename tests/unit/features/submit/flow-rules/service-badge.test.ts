@@ -94,7 +94,7 @@ describe("stepBadgeColor", () => {
 
   test("stepBadgeColor_errorOnExternalService_isRose", () => {
     const notes: FlowStepNote[] = [{ kind: "error", messageKey: "noDestination" }]
-    expect(stepBadgeColor(mkStep({ service: "dbcls", notes }))).toBe("rose")
+    expect(stepBadgeColor(mkStep({ service: "humandbs", notes }))).toBe("rose")
   })
 
   // origin は色決定に影響しない

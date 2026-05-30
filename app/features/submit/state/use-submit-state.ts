@@ -22,12 +22,10 @@ export type SubmitDispatch = {
   setQ1: (q1: Q1 | null) => void
   setQ2: (q2: Q2 | null) => void
   addRow: (fileTypeKind: FileTypeKind) => void
-  addToGroup: (groupId: string, fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
-  openEditRow: (entryId: string) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
+  setPairPartner: (annotationEntryId: string, partnerEntryId: string) => void
   removeRow: (entryId: string) => void
-  closeModal: () => void
 }
 
 export const useSubmitState = (
@@ -55,13 +53,6 @@ export const useSubmitState = (
     [newId],
   )
 
-  const addToGroup = useCallback(
-    (groupId: string, fileTypeKind: FileTypeKind) => {
-      dispatch({ type: "ADD_TO_GROUP", groupId, fileTypeKind, entryId: newId() })
-    },
-    [newId],
-  )
-
   const editRowCell = useCallback(
     (entryId: string, patch: Partial<FileEntry>) => {
       dispatch({ type: "EDIT_ROW_CELL", entryId, patch })
@@ -69,32 +60,26 @@ export const useSubmitState = (
     [],
   )
 
-  const openEditRow = useCallback((entryId: string) => {
-    dispatch({ type: "OPEN_EDIT_ROW", entryId })
-  }, [])
-
   const commitRowEdit = useCallback((entryId: string, patch: RowEditPatch) => {
-    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })
-  }, [])
+    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch, releasedGroupId: newId() })
+  }, [newId])
+
+  const setPairPartner = useCallback((annotationEntryId: string, partnerEntryId: string) => {
+    dispatch({ type: "SET_PAIR_PARTNER", annotationEntryId, partnerEntryId, releasedGroupId: newId() })
+  }, [newId])
 
   const removeRow = useCallback((entryId: string) => {
     dispatch({ type: "REMOVE_ROW", entryId })
-  }, [])
-
-  const closeModal = useCallback(() => {
-    dispatch({ type: "CLOSE_MODAL" })
   }, [])
 
   const actions: SubmitDispatch = {
     setQ1,
     setQ2,
     addRow,
-    addToGroup,
     editRowCell,
-    openEditRow,
     commitRowEdit,
+    setPairPartner,
     removeRow,
-    closeModal,
   }
 
   return { state, actions }

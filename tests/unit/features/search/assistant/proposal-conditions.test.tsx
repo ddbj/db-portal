@@ -148,11 +148,20 @@ describe("ProposalConditions", () => {
     expect(screen.getByText("PRJDB*")).toBeInTheDocument()
   })
 
-  test("unknownField_fallsBackToRawName", () => {
-    // The parse AST may carry Tier 3 / alias fields with no plain-Japanese label.
+  test("perDbField_showsBuilderLabel", () => {
+    // Per-DB (Tier 3) fields are in the builder field catalog, so the chip
+    // shows their localized label rather than the raw key.
     renderNode({ op: "eq", field: "library_strategy", value: "WGS" })
-    expect(screen.getByText("library_strategy")).toBeInTheDocument()
+    expect(screen.getByText("ライブラリ戦略")).toBeInTheDocument()
     expect(screen.getByText("WGS")).toBeInTheDocument()
+  })
+
+  test("unknownField_fallsBackToRawName", () => {
+    // A field outside the builder catalog (a Solr-backed taxonomy field) has no
+    // builder label, so the chip falls back to the raw field name.
+    renderNode({ op: "eq", field: "kingdom", value: "Bacteria" })
+    expect(screen.getByText("kingdom")).toBeInTheDocument()
+    expect(screen.getByText("Bacteria")).toBeInTheDocument()
   })
 
   test("identityAst_rendersNothing", () => {

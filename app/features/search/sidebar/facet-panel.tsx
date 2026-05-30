@@ -5,8 +5,9 @@ import { useT } from "~/lib/i18n"
 import { type AppliedFilter, AppliedFilters, DateFacet, FacetGroup, FacetRow, SidebarHeading, TextInput } from "~/ui"
 
 import type { DbSlug } from "../types"
+import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
-import type { SearchFacetAction, SearchFacetState } from "./facet-state"
+import { EMPTY_DATE_RANGE, type SearchFacetAction, type SearchFacetState } from "./facet-state"
 
 export type FacetPanelProps = {
   state: SearchFacetState
@@ -17,7 +18,10 @@ export type FacetPanelProps = {
 
 type Bucket = { value: string; count: number; label?: string }
 
+// Collapsed shows VISIBLE values; expanded shows up to CAP (more than that is
+// not surfaced in the sidebar — keyword / builder cover the long tail).
 const VISIBLE = 8
+const CAP = 20
 
 const bucketsFor = (facets: DbPortalFacets | null, row: FilterRow): readonly Bucket[] => {
   if (!row.facetName) return []
@@ -52,13 +56,18 @@ const FacetSection = ({
 }) => {
   const t = useT()
   const [expanded, setExpanded] = useState(false)
-  // Show selected values even when they fall outside the current top buckets.
+  // Cap the rendered buckets (collapsed: VISIBLE, expanded: CAP), but always keep
+  // selected values visible even when they fall outside the cap or top buckets.
+  const shown = buckets.slice(0, expanded ? CAP : VISIBLE)
+  const shownValues = new Set(shown.map((b) => b.value))
   const extras: Bucket[] = selected
-    .filter((v) => !buckets.some((b) => b.value === v))
+    .filter((v) => !shownValues.has(v))
     .map((value) => ({ value, count: 0 }))
-  const options = [...buckets, ...extras]
-  if (options.length === 0) return null
-  const visible = expanded ? options : options.slice(0, VISIBLE)
+  const visible = [...shown, ...extras]
+  if (visible.length === 0) return null
+  // The toggle appears once there are more buckets than the collapsed view; it
+  // both expands (up to CAP) and collapses again.
+  const canToggle = buckets.length > VISIBLE
 
   return (
     <div data-testid={`facet-${row.key}`}>
@@ -66,9 +75,9 @@ const FacetSection = ({
         label={t(`search.facets.field.${row.key}`)}
         appliedCount={selected.length}
         {...(selected.length > 0 ? { onClear } : {})}
-        showMore={options.length > VISIBLE && !expanded}
-        showMoreLabel={t("search.facets.showMore")}
-        onShowMore={() => setExpanded(true)}
+        showMore={canToggle}
+        showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
+        onShowMore={() => setExpanded((v) => !v)}
       >
         {visible.map((bucket) => (
           <FacetRow
@@ -135,6 +144,7 @@ const NumberRangeSection = ({
           ariaLabel={`${label} ${t("search.facets.dateRange.fromLabel")}`}
           size="sm"
           type="number"
+          grow
           value={from}
           onChange={(e) => onFromChange(e.target.value)}
         />
@@ -143,6 +153,7 @@ const NumberRangeSection = ({
           ariaLabel={`${label} ${t("search.facets.dateRange.toLabel")}`}
           size="sm"
           type="number"
+          grow
           value={to}
           onChange={(e) => onToChange(e.target.value)}
         />
@@ -153,6 +164,9 @@ const NumberRangeSection = ({
 
 export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => {
   const t = useT()
+  // Anchor for resolving date presets to concrete windows (display + emit share
+  // the same day, so a freshly picked preset round-trips back to itself).
+  const now = new Date()
   const rows = scopeFilters(db)
   const fieldLabel = (key: string): string => t(`search.facets.field.${key}`)
 
@@ -193,11 +207,6 @@ export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => 
       }
     }
   }
-  const { datePublished } = state
-  // Active iff something is actually emitted: a preset, or a complete custom range.
-  const dateActive = datePublished.active !== "all"
-    || (datePublished.from !== "" && datePublished.to !== "")
-
   return (
     <aside className="flex flex-col gap-4">
       <SidebarHeading withDivider>{t("search.facets.heading")}</SidebarHeading>
@@ -228,18 +237,43 @@ export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => 
           )
         }
         if (row.kind === "dateRange") {
+          const dr = state.dateRanges[row.key] ?? EMPTY_DATE_RANGE
+          // A preset shows its computed window in FROM/TO (state keeps empty
+          // bounds); a custom range shows its own bounds; "all" shows nothing.
+          const preset = presetRangeToDates(dr.active, now)
+          const displayFrom = preset ? preset.from : dr.from
+          const displayTo = preset ? preset.to : dr.to
+          // Active iff a complete window is emitted (preset or both custom bounds).
+          const dateActive = displayFrom !== "" && displayTo !== ""
+
           return (
             <DateFacet
               key={row.key}
               label={fieldLabel(row.key)}
-              active={datePublished.active}
+              active={dr.active}
               appliedCount={dateActive ? 1 : 0}
-              onClear={() => dispatch({ type: "setDateRange", active: "all" })}
-              onRangeChange={(active) => dispatch({ type: "setDateRange", active })}
-              from={datePublished.from}
-              to={datePublished.to}
-              onFromChange={(value) => dispatch({ type: "setDateFrom", value })}
-              onToChange={(value) => dispatch({ type: "setDateTo", value })}
+              onClear={() =>
+                dispatch({ type: "setDateRange", key: row.key, active: "all", from: "", to: "" })}
+              onRangeChange={(next) =>
+                dispatch({ type: "setDateRange", key: row.key, active: next, from: "", to: "" })}
+              from={displayFrom}
+              to={displayTo}
+              onFromChange={(value) =>
+                dispatch({
+                  type: "setDateRange",
+                  key: row.key,
+                  active: "custom",
+                  from: value,
+                  to: displayTo,
+                })}
+              onToChange={(value) =>
+                dispatch({
+                  type: "setDateRange",
+                  key: row.key,
+                  active: "custom",
+                  from: displayFrom,
+                  to: value,
+                })}
             />
           )
         }

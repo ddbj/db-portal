@@ -37,12 +37,12 @@ export const jgaSubmissionSteps = (
     )
   }
 
+  // 提供申請 (NBDC ヒトデータベース / HumanDBs) と利用制限ポリシー (NBDC 標準 / 独自 JGAP) は
+  // 同一プラットフォームで完結するため、1 つの Policy 前提ステップ (humandbs) に統合する。
   const allScope = scopeOfEntries(jgaEntries)
   steps.push(
     makeStep("recipe-jga-policy", "humandbs", "recipe", allScope, [
       { kind: "info", messageKey: MK.jgaPolicyApplication },
-    ]),
-    makeStep("recipe-jga-nbdc", "dbcls", "recipe", allScope, [
       { kind: "info", messageKey: MK.jgaNbdcPolicy },
     ]),
   )

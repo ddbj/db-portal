@@ -2,15 +2,15 @@ import type { ServiceContent } from "~/schemas/content/service-content"
 
 export default {
   id: "humandbs",
-  title: { ja: "humandbs", en: "humandbs" },
+  title: { ja: "NBDC ヒトデータベース", en: "NBDC Human Database" },
   description: {
-    ja: "DBCLS が運用するヒト由来データ共有のためのデータベース。",
-    en: "DBCLS-operated database for sharing human-derived data.",
+    ja: "DBCLS が運用する、制限公開ヒトデータの利用制限ポリシー申請・承認プラットフォーム。",
+    en: "DBCLS-operated platform for applying for and approving data-use policies for controlled-access human data.",
   },
   submit: {
     service: "humandbs",
-    externalUrl: "https://humandbs.dbcls.jp/",
+    externalUrl: "https://humandbs.dbcls.jp/nbdc/application/",
     source: "DBCLS",
-    accessionPlaceholders: ["hum#####"],
+    accessionPlaceholders: [],
   },
 } satisfies ServiceContent

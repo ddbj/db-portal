@@ -2,7 +2,7 @@ import { type FileEntry, type FlowStep, isDestinationService, type Service, type
 
 import { type EntryRouting, routeEntries } from "./interpreter"
 import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
-import { byServicePhysicalOrder } from "./ordering"
+import { byServiceDependencyOrder } from "./ordering"
 import { detectRecipeGroups, jgaSubmissionSteps, magProjectSteps, sagSteps, spatialSteps } from "./recipes"
 import { dedupeNotes, groupMembers, makeStep, mergeScopes, scopeOfEntries } from "./shared"
 
@@ -97,5 +97,5 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
     ...spatialSteps(plainEntries),
   ]
 
-  return [...decorateMultiModal(steps, submission)].sort(byServicePhysicalOrder)
+  return [...decorateMultiModal(steps, submission)].sort(byServiceDependencyOrder)
 }

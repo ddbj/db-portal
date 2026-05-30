@@ -17,7 +17,7 @@ import {
   type Submission,
 } from "../../../../../app/schemas/submit"
 
-const stateOf = (submission: Submission): UIState => ({ submission, editing: null })
+const stateOf = (submission: Submission): UIState => ({ submission })
 
 const addRow = (state: UIState, fileTypeKind: FileTypeKind, entryId: string, groupId: string): UIState =>
   submitReducer(state, { type: "ADD_ROW", fileTypeKind, entryId, groupId })
@@ -184,68 +184,106 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     expect(rowIsConfigured(initialState, "nope")).toBe(false)
   })
 
-  test("rowIsConfigured_freshDefaultRow_returnsFalse", () => {
+  test("rowIsConfigured_noDetailKind_returnsTrue", () => {
+    // 詳細質問を持たない種別は設定するものが無いので設定済み扱い
     const state = addRow(initialState, "sequence-read", "e1", "g1")
 
+    expect(rowIsConfigured(state, "e1")).toBe(true)
+  })
+
+  test("rowIsConfigured_freshStandaloneSequence_returnsTrue", () => {
+    // 単独配列 (既定 single) はそのまま妥当な答えなので最初から設定済み
+    const state = addRow(initialState, "sequence-nucleotide", "e1", "g1")
+
+    expect(rowIsConfigured(state, "e1")).toBe(true)
+  })
+
+  test("rowIsConfigured_freshStandaloneAnnotation_returnsTrue", () => {
+    const state = addRow(initialState, "sequence-annotation", "e1", "g1")
+
+    expect(rowIsConfigured(state, "e1")).toBe(true)
+  })
+
+  test("rowIsConfigured_freshSpatialWithoutPlatform_returnsFalse", () => {
+    // platform を選ぶまでは未設定 (既定ではどのラジオも選ばれていない)
+    const state = addRow(initialState, "spatial-transcriptomics", "e1", "g1")
+
     expect(rowIsConfigured(state, "e1")).toBe(false)
   })
 
-  test("rowIsConfigured_chipAdded_returnsTrue", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "EDIT_ROW_CELL",
-      entryId: "e1",
-      patch: { chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] },
-    })
-
-    expect(rowIsConfigured(state, "e1")).toBe(true)
-  })
-
-  test("rowIsConfigured_dataFormChangedFromTypical_returnsTrue", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "EDIT_ROW_CELL",
-      entryId: "e1",
-      patch: { dataForm: "assembled" },
-    })
-
-    expect(rowIsConfigured(state, "e1")).toBe(true)
-  })
-
-  test("rowIsConfigured_groupTypeChangedFromTypical_returnsTrue", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
+  test("rowIsConfigured_spatialWithPlatform_returnsTrue", () => {
+    const seeded = addRow(initialState, "spatial-transcriptomics", "e1", "g1")
     const state = submitReducer(seeded, {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
-      patch: { groupType: "pair-end", dataForm: "raw", chipTags: [] },
+      patch: { chipTags: [{ axis: "spatial-platform", value: "visium" }] },
+      releasedGroupId: "rel",
     })
 
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
-  test("rowIsConfigured_groupTypeMatchesTypicalForKind_returnsFalse", () => {
-    // microarray-expression has typical group type mage-tab; leaving it as-is is "not configured"
-    const state = addRow(initialState, "microarray-expression", "e1", "g1")
+  test("rowIsConfigured_freshMassSpectrometry_returnsFalse", () => {
+    const state = addRow(initialState, "mass-spectrometry", "e1", "g1")
 
-    expect(state.submission.fileGroups[0]!.groupType).toBe("mage-tab")
     expect(rowIsConfigured(state, "e1")).toBe(false)
   })
 
-  test("countConfiguredRows_mixOfDetailAndNoDetailKinds_countsConfiguredAndNoDetailAsDone", () => {
-    let state = addRow(initialState, "sequence-nucleotide", "e1", "g1") // detail kind, configured below
-    state = addRow(state, "sequence-nucleotide", "e2", "g2") // detail kind, left fresh
-    state = addRow(state, "sequence-read", "e3", "g3") // no-detail kind, nothing to configure
+  test("rowIsConfigured_magChainSequence_returnsTrue", () => {
+    const seeded = addRow(initialState, "sequence-nucleotide", "e1", "g1")
+    const state = submitReducer(seeded, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "e1",
+      patch: { groupType: "mag-sag-chain", chipTags: [{ axis: "assembly-form", value: "mag" }] },
+      releasedGroupId: "rel",
+    })
+
+    expect(rowIsConfigured(state, "e1")).toBe(true)
+  })
+
+  const pairedState = (): UIState => {
+    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
+    state = addRow(state, "sequence-nucleotide", "fa", "g-fa")
     state = submitReducer(state, {
       type: "COMMIT_ROW_EDIT",
-      entryId: "e1",
-      patch: {
-        groupType: "mag-sag-chain",
-        dataForm: "assembled",
-        chipTags: [{ axis: "assembly-form", value: "mag" }],
-      },
+      entryId: "ann",
+      patch: { groupType: "assembly-annotation" },
+      releasedGroupId: "rel-a",
     })
 
-    // e1 has detail set, e3 needs none; only the fresh detail-kind row e2 remains
+    return submitReducer(state, {
+      type: "SET_PAIR_PARTNER",
+      annotationEntryId: "ann",
+      partnerEntryId: "fa",
+      releasedGroupId: "rel-b",
+    })
+  }
+
+  test("rowIsConfigured_annotationPairWithoutPartner_returnsFalse", () => {
+    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
+    state = submitReducer(state, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "ann",
+      patch: { groupType: "assembly-annotation" },
+      releasedGroupId: "rel",
+    })
+
+    expect(rowIsConfigured(state, "ann")).toBe(false)
+  })
+
+  test("rowIsConfigured_annotationPairWithPartner_returnsTrue", () => {
+    expect(rowIsConfigured(pairedState(), "ann")).toBe(true)
+  })
+
+  test("rowIsConfigured_pairedNucleotidePartner_returnsTrue", () => {
+    expect(rowIsConfigured(pairedState(), "fa")).toBe(true)
+  })
+
+  test("countConfiguredRows_countsAnsweredAndNoDetailRowsAsDone", () => {
+    let state = addRow(initialState, "sequence-nucleotide", "e1", "g1") // single default → 設定済み
+    state = addRow(state, "spatial-transcriptomics", "e2", "g2") // platform 未選択 → 未設定
+    state = addRow(state, "sequence-read", "e3", "g3") // 詳細なし → 完了扱い
+
     expect(countConfiguredRows(state)).toEqual({ configured: 2, total: 3 })
   })
 

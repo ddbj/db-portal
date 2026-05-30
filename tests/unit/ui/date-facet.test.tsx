@@ -101,4 +101,11 @@ describe("DateFacet", () => {
     fireEvent.click(screen.getByRole("button", { name: "10年" }))
     expect(onRangeChange).toHaveBeenCalledWith("10y")
   })
+
+  test("DateFacet_activeCustom_pressesNoPresetButton", () => {
+    render(<DateFacet active="custom" from="2020-01-01" to="2020-12-31" />)
+    for (const name of ["すべて", "1年", "5年", "10年"]) {
+      expect(screen.getByRole("button", { name })).toHaveAttribute("aria-pressed", "false")
+    }
+  })
 })

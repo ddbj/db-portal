@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { deriveFlowSteps, enabledKinds, isKindEnabled, isQ2Enabled, SegmentedControl } from "~/features/submit"
+import { deriveFlowSteps, enabledKinds, isKindEnabled, isQ2Enabled, RadioCardGroup } from "~/features/submit"
 import { useT } from "~/lib/i18n"
 import type { Access, ChipAxis, FileEntry, FlowStep, FlowStepOrigin, GroupType, Q1, Q2, Submission } from "~/schemas/submit"
 import {
@@ -125,19 +125,21 @@ const SubmitFlowExplorer = () => {
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q1</p>
-              <SegmentedControl
+              <RadioCardGroup
                 ariaLabel="Q1"
+                name="explorer-q1"
                 value={q1}
-                segments={Q1Enum.options.map((v) => ({ value: v, label: v }))}
+                options={Q1Enum.options.map((v) => ({ value: v, label: v }))}
                 onChange={(v) => setQ1(v as Q1)}
               />
             </div>
             <div>
               <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q2</p>
-              <SegmentedControl
+              <RadioCardGroup
                 ariaLabel="Q2"
+                name="explorer-q2"
                 value={q2}
-                segments={Q2Enum.options.map((v) => ({
+                options={Q2Enum.options.map((v) => ({
                   value: v,
                   label: v,
                   disabled: !isQ2Enabled(q1, v),

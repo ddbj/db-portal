@@ -15,13 +15,8 @@ export type RowEditPatch = {
   chipTags?: FileEntryChip[]
 }
 
-export type Editing =
-  | null
-  | { kind: "row"; entryId: string }
-
 export type UIState = {
   submission: Submission
-  editing: Editing
 }
 
 export type ValidationKind =
@@ -39,16 +34,14 @@ export type Action =
   | { type: "SET_Q2"; q2: Q2 | null }
   | { type: "ADD_ROW"; fileTypeKind: FileTypeKind; entryId: string; groupId: string }
   | { type: "EDIT_ROW_CELL"; entryId: string; patch: Partial<FileEntry> }
-  | { type: "OPEN_EDIT_ROW"; entryId: string }
-  | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch }
+  | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch; releasedGroupId: string }
   | {
-    type: "ADD_TO_GROUP"
-    groupId: string
-    fileTypeKind: FileTypeKind
-    entryId: string
+    type: "SET_PAIR_PARTNER"
+    annotationEntryId: string
+    partnerEntryId: string
+    releasedGroupId: string
   }
   | { type: "REMOVE_ROW"; entryId: string }
-  | { type: "CLOSE_MODAL" }
 
 const emptySubmission = (): Submission => ({
   preconditions: { q1: null, q2: null },
@@ -59,5 +52,4 @@ const emptySubmission = (): Submission => ({
 
 export const createEmptyUIState = (): UIState => ({
   submission: emptySubmission(),
-  editing: null,
 })

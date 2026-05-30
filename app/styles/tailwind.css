@@ -125,12 +125,14 @@
   border-radius: 3px;
 }
 
-/* テキスト入力系は form 側で focus 表現を担うため、自前 outline は出さない */
+/* テキスト入力系は global の黄色 outline ではなく、角丸を保ったまま枠線を
+   brand 色に変えて focus を示す (border-radius は input 自身の値を維持する) */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: none;
-  border-radius: 0;
+  border-color: var(--color-brand);
+  border-radius: var(--radius-button);
 }
 
 button[aria-disabled="true"],

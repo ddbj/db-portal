@@ -5,21 +5,21 @@ import {
   FileTypeGrid,
   FlowOverview,
   FlowStepCards,
+  getSubmitCard,
   isKindEnabled,
   isQ2Enabled,
-  ModalRouter,
   PartialFailureBanner,
+  RadioCardGroup,
   rowIsConfigured,
-  SegmentedControl,
   selectSteps,
   selectValidations,
   TagProgress,
   useSubmitState,
 } from "~/features/submit"
 import { pageTitleMeta } from "~/lib/content"
-import { useT } from "~/lib/i18n"
+import { useLang, useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
-import { Q1 as Q1Enum, Q2 as Q2Enum } from "~/schemas/submit"
+import { Q1 as Q1Enum, Q2 as Q2Enum, serviceRole } from "~/schemas/submit"
 import { PageTitle, Section, SectionHeading } from "~/ui"
 
 export const handle = {
@@ -32,6 +32,7 @@ export const meta = pageTitleMeta
 
 const SubmitRoute = () => {
   const t = useT()
+  const lang = useLang()
   const { state, actions } = useSubmitState()
   const { q1, q2 } = state.submission.preconditions
   const steps = selectSteps(state)
@@ -39,7 +40,6 @@ const SubmitRoute = () => {
   const { configured, total } = countConfiguredRows(state)
 
   const countSuffix = t("common.countSuffix")
-  const remainingText = t("submit.progress.remaining", { count: total - configured })
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
   const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}.label`)
@@ -49,9 +49,17 @@ const SubmitRoute = () => {
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
   const externalCtaLabel = (s: Service): string => t(`submit.flow.${s}.cta`)
-  const previewTitle = (s: Service): string => t(`submit.preview.title.${s}`)
-  const previewBody = (s: Service): string => t(`submit.preview.body.${s}`)
-  const serviceCode = (s: Service): string => t(`submit.preview.serviceCode.${s}`)
+  const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRole(s)}`)
+  const cardCopy = (s: Service) => {
+    const card = getSubmitCard(s)
+
+    return {
+      wizardSteps: card.wizardSteps[lang],
+      prepare: card.prepare[lang],
+      gotcha: card.gotcha?.[lang],
+      issuedNote: card.issuedNote?.[lang],
+    }
+  }
   const sourceTagLabel = (source: "DDBJ" | "DBCLS"): string => source
   const noteKindLabel = (kind: "warning" | "error"): string =>
     kind === "warning" ? t("submit.flow.noteWarning") : t("submit.flow.noteError")
@@ -69,12 +77,12 @@ const SubmitRoute = () => {
     return value === subKey ? undefined : value
   }
 
-  const q1Segments = Q1Enum.options.map((v) => ({
+  const q1Options = Q1Enum.options.map((v) => ({
     value: v,
     label: t(`submit.preconditions.q1.${v}.label`),
     sub: t(`submit.preconditions.q1.${v}.sub`),
   }))
-  const q2Segments = Q2Enum.options.map((v) => ({
+  const q2Options = Q2Enum.options.map((v) => ({
     value: v,
     label: t(`submit.preconditions.q2.${v}.label`),
     sub: t(`submit.preconditions.q2.${v}.sub`),
@@ -88,10 +96,11 @@ const SubmitRoute = () => {
   const rowIndexOf = (entryId: string): number =>
     state.submission.fileEntries.findIndex((e) => e.id === entryId)
 
-  const fileTypeKindLabelForEntry = (entryId: string): string => {
-    const entry = state.submission.fileEntries.find((e) => e.id === entryId)
-
-    return entry === undefined ? "" : fileTypeKindLabel(entry.fileTypeKind)
+  const scrollToRow = (entryId: string): void => {
+    if (typeof document === "undefined") return
+    document
+      .querySelector(`[data-testid="file-row"][data-entry-id="${entryId}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" })
   }
 
   return (
@@ -102,15 +111,16 @@ const SubmitRoute = () => {
           <div className="flex flex-col gap-8 min-w-0 lg:col-span-5">
             <div>
               <SectionHeading>{t("submit.sections.preconditions")}</SectionHeading>
-              <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                 <div>
                   <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">
                     {t("submit.preconditions.q1Heading")}
                   </p>
-                  <SegmentedControl
+                  <RadioCardGroup
                     ariaLabel={t("submit.preconditions.q1Heading")}
+                    name="precondition-q1"
                     value={q1}
-                    segments={q1Segments}
+                    options={q1Options}
                     onChange={(v) => actions.setQ1(v as Q1)}
                   />
                 </div>
@@ -118,10 +128,11 @@ const SubmitRoute = () => {
                   <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">
                     {t("submit.preconditions.q2Heading")}
                   </p>
-                  <SegmentedControl
+                  <RadioCardGroup
                     ariaLabel={t("submit.preconditions.q2Heading")}
+                    name="precondition-q2"
                     value={q2}
-                    segments={q2Segments}
+                    options={q2Options}
                     onChange={(v) => actions.setQ2(v as Q2)}
                   />
                 </div>
@@ -154,13 +165,11 @@ const SubmitRoute = () => {
                   empty: t("submit.table.empty"),
                   accessAria: t("submit.a11y.accessCell"),
                   deleteAria: t("submit.a11y.deleteRow"),
-                  rowEditTitle: t("submit.a11y.editDetail"),
                   detailUnset: t("submit.table.detailUnset"),
                   fileTypeKindLabel,
                   accessLabel,
                 }}
                 onAccessChange={(entryId, value) => actions.editRowCell(entryId, { access: value })}
-                onRowClick={actions.openEditRow}
                 onDelete={actions.removeRow}
               />
             </div>
@@ -173,8 +182,6 @@ const SubmitRoute = () => {
                     configured={configured}
                     total={total}
                     heading={t("submit.progress.heading")}
-                    remainingText={remainingText}
-                    completeText={t("submit.progress.complete")}
                     countLabel={`${configured} / ${total}`}
                   />
                   <DataDetailPanel
@@ -182,8 +189,11 @@ const SubmitRoute = () => {
                     groups={state.submission.fileGroups}
                     labels={{
                       empty: t("submit.detail.empty"),
-                      configured: t("submit.modal.statusReady"),
+                      configured: t("submit.detail.statusReady"),
                       unset: t("submit.table.detailUnset"),
+                      pairPartnerLabel: t("submit.detail.pairPartnerLabel"),
+                      pairPartnerPlaceholder: t("submit.detail.pairPartnerPlaceholder"),
+                      pairPartnerEmpty: t("submit.detail.pairPartnerEmpty"),
                       fileTypeKindLabel,
                       groupLabel: (labelKey: string) => t(labelKey),
                       optionLabel: (labelKey: string) => t(labelKey),
@@ -191,6 +201,7 @@ const SubmitRoute = () => {
                     }}
                     isConfigured={(entryId) => rowIsConfigured(state, entryId)}
                     onCommit={actions.commitRowEdit}
+                    onSetPairPartner={actions.setPairPartner}
                   />
                 </div>
               </div>
@@ -222,7 +233,11 @@ const SubmitRoute = () => {
               emptyMessage={t("submit.flow.empty")}
               serviceTitle={serviceTitle}
               serviceDescription={serviceDescription}
-              accessionLabel={t("submit.flow.accessionLabel")}
+              roleLabel={roleLabel}
+              cardCopy={cardCopy}
+              prereqHeading={t("submit.flow.prereqHeading")}
+              wizardHeading={t("submit.flow.wizardHeading")}
+              prepareHeading={t("submit.flow.prepareHeading")}
               resolveNote={resolveNote}
               noteKindLabel={noteKindLabel}
               externalCtaLabel={externalCtaLabel}
@@ -235,35 +250,12 @@ const SubmitRoute = () => {
                 headingText={validationHeading}
                 rowLabel={(index) => t("submit.validations.rowReference", { index })}
                 validationLabel={(v) => t(`submit.validations.${v.kind}`)}
-                onJumpToRow={actions.openEditRow}
+                onJumpToRow={scrollToRow}
               />
             )}
           </div>
         </div>
       </Section>
-      <ModalRouter
-        state={state}
-        actions={actions}
-        labels={{
-          closeAriaLabel: t("submit.a11y.modalClose"),
-          editModal: {
-            title: t("submit.modal.title"),
-            description: t("submit.modal.description"),
-            save: t("submit.modal.save"),
-            cancel: t("submit.modal.cancel"),
-            statusReady: t("submit.modal.statusReady"),
-            previewLabel: t("submit.modal.previewLabel"),
-            previewFootnote: t("submit.modal.previewFootnote"),
-            groupLabel: (labelKey: string) => t(labelKey),
-            optionLabel: (labelKey: string) => t(labelKey),
-            optionSub,
-            previewTitle,
-            previewBody,
-            serviceCode,
-          },
-        }}
-        fileTypeKindLabelFor={fileTypeKindLabelForEntry}
-      />
     </>
   )
 }

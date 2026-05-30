@@ -15,6 +15,7 @@ export {
   fromAdvanced,
   newId,
   toAdvanced,
+  useScopeFacets,
 } from "./advanced"
 export {
   type AiRequestMode,
@@ -77,6 +78,8 @@ export {
   type FilterRow,
   fromSidebar,
   type FromSidebarOptions,
+  matchDatePreset,
+  presetRangeToDates,
   rowByDslField,
   type Scope,
   SCOPE_FILTERS,

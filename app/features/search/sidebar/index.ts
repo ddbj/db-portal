@@ -1,3 +1,4 @@
+export { matchDatePreset, presetRangeToDates } from "./date-preset"
 export {
   type FilterOp,
   type FilterRow,
@@ -12,7 +13,8 @@ export {
 export { FacetPanel } from "./facet-panel"
 export {
   createInitialSearchFacetState,
-  type DatePublishedFilter,
+  type DateRangeFilter,
+  EMPTY_DATE_RANGE,
   type NumberRange,
   type SearchFacetAction,
   searchFacetReducer,

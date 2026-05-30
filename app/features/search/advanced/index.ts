@@ -16,3 +16,4 @@ export {
   newId,
 } from "./reducer"
 export { toAdvanced } from "./to-advanced"
+export { useScopeFacets } from "./use-scope-facets"

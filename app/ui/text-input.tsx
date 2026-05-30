@@ -16,6 +16,9 @@ type TextInputProps = Omit<
   mono?: boolean
   size?: TextInputSize
   width?: number
+  // Stretch to share a flex row (e.g. side-by-side FROM/TO) instead of using the
+  // intrinsic input width, which would overflow a narrow column.
+  grow?: boolean
 }
 
 // Fixed heights (with leading-none so single-line text stays centered) so a
@@ -34,6 +37,7 @@ export const TextInput = ({
   mono = false,
   size,
   width,
+  grow = false,
   type = "text",
   ...rest
 }: TextInputProps) => {
@@ -50,6 +54,7 @@ export const TextInput = ({
       style={wrapperStyle}
       className={cn(
         "px-3 rounded-button font-sans",
+        grow && "min-w-0 flex-1",
         size === undefined ? "py-2 text-fs-body" : sizeClass[size],
         isWarn
           ? "border border-warn-border bg-warn-bg text-ink"

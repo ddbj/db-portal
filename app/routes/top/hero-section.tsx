@@ -20,8 +20,6 @@ export const HeroSection = () => {
   const search = useSearchPending()
   const [keyword, setKeyword] = useState("")
   const [scope, setScope] = useState<ScopeKey>("all")
-  const rawExamples = t("top.hero.examples", { returnObjects: true })
-  const examples: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
   const scopeOptions = useMemo(
     () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
     [t],
@@ -70,8 +68,6 @@ export const HeroSection = () => {
         baseUrl={searchApiBaseUrl}
         allowAppend={false}
         onGenerated={(ast) => void handleGenerated(ast)}
-        keywordExamples={examples}
-        keywordExamplesLabel={t("top.hero.examplesLabel")}
         examplesTrailing={
           <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
         }

@@ -1,7 +1,7 @@
 import type { Access, FileEntry, FileTypeKind } from "~/schemas/submit"
 import { Label } from "~/ui"
 
-import { hasRowDetail } from "../modals/form-defs"
+import { hasRowDetail } from "../detail/form-defs"
 import { rowIsConfigured } from "../state/selectors"
 import type { UIState } from "../state/types"
 import { FileTableRow } from "./file-table-row"
@@ -15,7 +15,6 @@ type FileTableLabels = {
   empty: string
   accessAria: string
   deleteAria: string
-  rowEditTitle: string
   detailUnset: string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   accessLabel: (a: Access) => string
@@ -25,7 +24,6 @@ type FileTableProps = {
   state: UIState
   labels: FileTableLabels
   onAccessChange: (entryId: string, value: Access) => void
-  onRowClick: (entryId: string) => void
   onDelete: (entryId: string) => void
 }
 
@@ -33,11 +31,9 @@ export const FileTable = ({
   state,
   labels,
   onAccessChange,
-  onRowClick,
   onDelete,
 }: FileTableProps) => {
   const entries = state.submission.fileEntries
-  const editingEntryId = state.editing?.kind === "row" ? state.editing.entryId : null
 
   if (entries.length === 0) {
     return (
@@ -66,11 +62,9 @@ export const FileTable = ({
               entry={entry}
               hasDetail={hasRowDetail(entry.fileTypeKind)}
               configured={rowIsConfigured(state, entry.id)}
-              editing={editingEntryId === entry.id}
               cellLabels={{
                 accessAria: labels.accessAria,
                 deleteAria: labels.deleteAria,
-                rowEditTitle: labels.rowEditTitle,
                 unsetLabel: labels.detailUnset,
               }}
               vocab={{
@@ -78,7 +72,6 @@ export const FileTable = ({
                 accessLabel: labels.accessLabel,
               }}
               onAccessChange={(value) => onAccessChange(entry.id, value)}
-              onRowClick={() => onRowClick(entry.id)}
               onDelete={() => onDelete(entry.id)}
             />
           ))}

@@ -28,10 +28,8 @@ export type NavigableSearchInputProps = {
   appendCurrentAst?: ParseNode | undefined
   // Hand off the validated AST (the caller serializes it and navigates).
   onGenerated: (ast: ParseNode, mode: AiMode) => void
-  // Keyword-mode example chips; defaults to the shared search examples. AI mode
-  // always shows the assistant prompt examples.
-  keywordExamples?: readonly string[]
-  keywordExamplesLabel?: string
+  // Hide the example chip row (results pages omit it). Defaults to shown.
+  showExamples?: boolean
   // Rendered at the right end of the example chip row so it shares the line with
   // the chips (the top hero uses it for the advanced-search link).
   examplesTrailing?: ReactNode
@@ -59,8 +57,7 @@ export const NavigableSearchInput = ({
   allowAppend,
   appendCurrentAst,
   onGenerated,
-  keywordExamples,
-  keywordExamplesLabel,
+  showExamples = true,
   examplesTrailing,
   searchPending = false,
 }: NavigableSearchInputProps) => {
@@ -129,11 +126,15 @@ export const NavigableSearchInput = ({
   }
 
   const examplesItems = isAi
-    ? toStringArray(t("search.assistant.examples", { returnObjects: true }))
-    : (keywordExamples ?? toStringArray(t("search.examples.items", { returnObjects: true })))
+    ? toStringArray(
+      effectiveAiMode === "append"
+        ? t("search.assistant.examplesAppend", { returnObjects: true })
+        : t("search.assistant.examplesNew", { returnObjects: true }),
+    )
+    : toStringArray(t("search.examples.items", { returnObjects: true }))
   const examplesLabel = isAi
     ? t("search.assistant.examplesLabel")
-    : (keywordExamplesLabel ?? t("search.examples.label"))
+    : t("search.examples.label")
 
   // In AI mode the scope dropdown is repurposed to pick the generation mode,
   // but only when append is offered; the top page keeps the DB scope there.
@@ -197,17 +198,19 @@ export const NavigableSearchInput = ({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Examples
-          label={examplesLabel}
-          items={examplesItems}
-          onPick={isAi ? setAiInput : onKeywordChange}
-          mono={!isAi}
-        />
-        {examplesTrailing !== undefined && (
-          <div className="ml-auto">{examplesTrailing}</div>
-        )}
-      </div>
+      {showExamples && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Examples
+            label={examplesLabel}
+            items={examplesItems}
+            onPick={isAi ? setAiInput : onKeywordChange}
+            mono={!isAi}
+          />
+          {examplesTrailing !== undefined && (
+            <div className="ml-auto">{examplesTrailing}</div>
+          )}
+        </div>
+      )}
 
       {isAi && stream.state === "streaming" && (
         <div className="flex items-center gap-2 text-fs-label text-ink-mid">

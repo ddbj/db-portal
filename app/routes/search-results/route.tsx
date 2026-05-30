@@ -248,6 +248,7 @@ const SearchResultsRoute = () => {
           allowAppend
           appendCurrentAst={data.ast ?? undefined}
           onGenerated={(ast) => void handleGenerated(ast)}
+          showExamples={false}
           searchPending={search.pending}
         />
         {data.q && (

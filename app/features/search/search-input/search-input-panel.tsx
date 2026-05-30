@@ -125,7 +125,11 @@ export const SearchInputPanel = ({
   }
 
   const examplesItems = isAi
-    ? toStringArray(t("search.assistant.examples", { returnObjects: true }))
+    ? toStringArray(
+      effectiveAiMode === "append"
+        ? t("search.assistant.examplesAppend", { returnObjects: true })
+        : t("search.assistant.examplesNew", { returnObjects: true }),
+    )
     : toStringArray(t("search.examples.items", { returnObjects: true }))
   const examplesLabel = isAi ? t("search.assistant.examplesLabel") : t("search.examples.label")
 
@@ -222,6 +226,7 @@ export const SearchInputPanel = ({
         label={examplesLabel}
         items={examplesItems}
         onPick={isAi ? setAiInput : onKeywordChange}
+        mono={!isAi}
       />
 
       {isAi && stream.state === "streaming" && (

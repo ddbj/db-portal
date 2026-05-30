@@ -7,7 +7,7 @@ import {
   type FlowStep,
   isSequencingSpatialPlatform,
   isSubmissionEndpoint,
-  SERVICE_PHYSICAL_ORDER,
+  SERVICE_DEPENDENCY_ORDER,
   type Submission,
 } from "../../../app/schemas/submit"
 import { arbSubmission } from "../arbitraries/submission"
@@ -128,9 +128,9 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_anySubmission_orderRespectsPhysicalOrder",
+  "deriveFlowSteps_anySubmission_orderRespectsDependencyOrder",
   (submission) => {
-    const rank = (s: FlowStep) => SERVICE_PHYSICAL_ORDER.indexOf(s.service)
+    const rank = (s: FlowStep) => SERVICE_DEPENDENCY_ORDER.indexOf(s.service)
     const steps = deriveFlowSteps(submission)
     for (let i = 1; i < steps.length; i++) {
       const prev = steps[i - 1]!

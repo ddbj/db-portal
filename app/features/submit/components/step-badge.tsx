@@ -13,7 +13,7 @@ export const StepBadge = ({ index, pending }: StepBadgeProps) => (
       "w-7 h-7 rounded-pill text-fs-label",
       pending
         ? "bg-surface text-ink-soft border border-dashed border-border-soft"
-        : "bg-brand-soft text-brand-deep",
+        : "bg-brand-tint text-brand-deep",
     )}
   >
     {index}

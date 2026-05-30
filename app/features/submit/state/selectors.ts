@@ -1,9 +1,10 @@
 import type { FlowStep } from "~/schemas/submit"
-import { isSubmissionEndpoint, TYPICAL_DATA_FORM_FOR_KIND, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/submit"
+import { isSubmissionEndpoint, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/submit"
 
 import { isKindEnabled } from "../cascade"
+import { optionMatches } from "../detail/form-apply"
+import { hasRowDetail, ROW_FORM_DEFS } from "../detail/form-defs"
 import { deriveFlowSteps } from "../flow-rules"
-import { hasRowDetail } from "../modals/form-defs"
 import type { UIState, Validation } from "./types"
 
 export const selectSteps = (state: UIState): FlowStep[] =>
@@ -40,12 +41,29 @@ export const selectValidations = (state: UIState): Validation[] => {
 export const rowIsConfigured = (state: UIState, entryId: string): boolean => {
   const entry = state.submission.fileEntries.find((e) => e.id === entryId)
   if (!entry) return false
-  if (entry.chipTags.length > 0) return true
-  if (entry.dataForm !== TYPICAL_DATA_FORM_FOR_KIND[entry.fileTypeKind]) return true
   const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
-  if (group === undefined) return false
+  const groupType = group?.groupType ?? TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]
 
-  return group.groupType !== TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]
+  // 配列 + アノテーションのペア (assembly-annotation): 相方が揃って初めて設定済み
+  if (groupType === "assembly-annotation") {
+    // 相方に選ばれた FASTA はアノテーション側で管理されるため常に設定済み
+    if (entry.fileTypeKind === "sequence-nucleotide") return true
+    if (entry.fileTypeKind === "sequence-annotation") {
+      return state.submission.fileEntries.some(
+        (e) => e.id !== entry.id
+          && e.groupId === entry.groupId
+          && e.fileTypeKind === "sequence-nucleotide",
+      )
+    }
+  }
+
+  // それ以外: フォームの各ラジオ群で 1 つ以上選択されていれば設定済み
+  // (既定値がそのまま妥当な答えになる種別は最初から設定済み、選択必須の種別は選ぶまで未設定)
+  const draft = { groupType, dataForm: entry.dataForm, chipTags: entry.chipTags }
+
+  return ROW_FORM_DEFS[entry.fileTypeKind].groups.every(
+    (g) => g.kind !== "radio" || g.options.some((opt) => optionMatches(opt, draft)),
+  )
 }
 
 export const countConfiguredRows = (state: UIState): { configured: number; total: number } => {

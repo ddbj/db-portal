@@ -86,11 +86,38 @@ describe("fromSidebar", () => {
   test("dateRangePreset_returnsBetween", () => {
     const state: SearchFacetState = {
       ...createInitialSearchFacetState(),
-      datePublished: { active: "1y", from: "", to: "" },
+      dateRanges: { datePublished: { active: "1y", from: "", to: "" } },
     }
     const node = expectBetween(fromSidebar(state))
     expect(node.field).toBe("date_published")
     expect(node.from).not.toBe("")
+  })
+
+  test("dateModifiedRange_emitsBetweenOnDateModified", () => {
+    const state: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      dateRanges: { dateModified: { active: "custom", from: "2020-01-01", to: "2020-12-31" } },
+    }
+    const node = expectBetween(fromSidebar(state, { db: "sra" }))
+    expect(node.field).toBe("date_modified")
+    expect(node.from).toBe("2020-01-01")
+    expect(node.to).toBe("2020-12-31")
+  })
+
+  test("dateRangeAll_returnsIdentity", () => {
+    const state: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      dateRanges: { datePublished: { active: "all", from: "", to: "" } },
+    }
+    expect(isIdentityAst(fromSidebar(state))).toBe(true)
+  })
+
+  test("dateRangeCustom_halfFilled_returnsIdentity", () => {
+    const state: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      dateRanges: { datePublished: { active: "custom", from: "2020-01-01", to: "" } },
+    }
+    expect(isIdentityAst(fromSidebar(state))).toBe(true)
   })
 
   test("numberRangeEmittedForTrad", () => {

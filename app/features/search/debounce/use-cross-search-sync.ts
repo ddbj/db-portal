@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ParseNode } from "~/lib/api"
 
 import { astEquals, isIdentityAst, mergeAstAnd } from "../ast"
-import type { SyncStatus } from "../types"
+import type { DbSlug, SyncStatus } from "../types"
 import { parseDslToAst } from "../url/from-url"
 import { serializeAstToDsl } from "../url/to-url"
 import { DEBOUNCE_MS } from "./debounced-serialize"
@@ -16,6 +16,9 @@ export type CrossSearchSyncOutcome =
 
 export type ResolveCrossSearchOptions = {
   baseUrl?: string
+  // Validator scope for the live preview: per-DB admits Tier 3 fields, null
+  // (cross) only Tier 1/2. Must match the scope the search will actually run in.
+  db?: DbSlug | null
 }
 
 // Parse the free-text keyword to an AST, AND-merge it with the structured
@@ -52,7 +55,7 @@ export type CrossSearchSyncResult = {
   retry: () => void
 }
 
-type SyncInput = { keyword: string; ast: ParseNode }
+type SyncInput = { keyword: string; ast: ParseNode; db: DbSlug | null }
 
 const isEmptyInput = (input: SyncInput): boolean =>
   input.keyword.trim() === "" && isIdentityAst(input.ast)
@@ -61,6 +64,7 @@ export const useCrossSearchSync = (
   keyword: string,
   advancedAst: ParseNode,
   baseUrl?: string,
+  db: DbSlug | null = null,
   onSynced?: (dsl: string) => void,
 ): CrossSearchSyncResult => {
   const [status, setStatus] = useState<SyncStatus>("idle")
@@ -90,7 +94,10 @@ export const useCrossSearchSync = (
     }
     setStatus("syncing")
     setParseError(false)
-    const options: ResolveCrossSearchOptions = baseUrl === undefined ? {} : { baseUrl }
+    const options: ResolveCrossSearchOptions = {
+      ...(baseUrl === undefined ? {} : { baseUrl }),
+      db: input.db,
+    }
     void resolveCrossSearchSync(input.keyword, input.ast, options)
       .then((outcome) => {
         if (token !== tokenRef.current) return
@@ -119,12 +126,20 @@ export const useCrossSearchSync = (
 
   // Memoize the debounce input so unrelated re-renders do not reset the timer
   // (the single 700ms debounce must coalesce, not restart, on every render).
-  const input = useMemo<SyncInput>(() => ({ keyword, ast: advancedAst }), [keyword, advancedAst])
+  const input = useMemo<SyncInput>(
+    () => ({ keyword, ast: advancedAst, db }),
+    [keyword, advancedAst, db],
+  )
   const debounced = useDebouncedValue(input, DEBOUNCE_MS)
 
   useEffect(() => {
     const prev = lastRef.current
-    if (prev !== null && prev.keyword === debounced.keyword && astEquals(prev.ast, debounced.ast)) {
+    if (
+      prev !== null
+      && prev.keyword === debounced.keyword
+      && prev.db === debounced.db
+      && astEquals(prev.ast, debounced.ast)
+    ) {
       return
     }
     lastRef.current = debounced

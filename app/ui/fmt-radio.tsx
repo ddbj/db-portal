@@ -9,6 +9,8 @@ type FmtRadioProps = {
   value?: string
   checked?: boolean
   defaultChecked?: boolean
+  disabled?: boolean | undefined
+  title?: string | undefined
   onChange?: ChangeEventHandler<HTMLInputElement>
 }
 
@@ -19,14 +21,18 @@ export const FmtRadio = ({
   value,
   checked,
   defaultChecked,
+  disabled,
+  title,
   onChange,
 }: FmtRadioProps) => {
   const isChecked = checked ?? defaultChecked ?? false
 
   return (
     <label
+      title={title}
       className={cn(
-        "flex items-start gap-2.5 px-3 py-2 rounded-button cursor-pointer text-fs-body-sm text-ink leading-snug border",
+        "flex items-start gap-2.5 px-3 py-2 rounded-button text-fs-body-sm text-ink leading-snug border",
+        disabled ? "cursor-not-allowed opacity-55" : "cursor-pointer",
         isChecked
           ? "bg-brand-softer border-brand-light/50"
           : "bg-surface border-border-soft",
@@ -38,6 +44,7 @@ export const FmtRadio = ({
         value={value}
         checked={checked}
         defaultChecked={defaultChecked}
+        disabled={disabled}
         onChange={onChange}
         className="mt-1 shrink-0 accent-brand"
       />

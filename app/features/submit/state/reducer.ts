@@ -25,17 +25,6 @@ const replaceGroup = (
 ): FileGroup[] =>
   groups.map((g) => (g.id === groupId ? { ...g, ...patch, id: g.id } : g))
 
-const ensureGroupContainsEntry = (
-  groups: readonly FileGroup[],
-  groupId: string,
-  entryId: string,
-): FileGroup[] =>
-  groups.map((g) =>
-    g.id === groupId && !g.memberFileIds.includes(entryId)
-      ? { ...g, memberFileIds: [...g.memberFileIds, entryId] }
-      : g,
-  )
-
 const newGroupFor = (fileTypeKind: FileEntry["fileTypeKind"], groupId: string): FileGroup => ({
   id: groupId,
   groupType: TYPICAL_GROUP_TYPE_FOR_KIND[fileTypeKind],
@@ -80,42 +69,110 @@ const newEntryFor = (
   chipTags: [],
 })
 
-const dropEntryFromGroups = (
-  groups: readonly FileGroup[],
-  entryId: string,
-): FileGroup[] =>
-  groups
-    .map((g) => ({
-      ...g,
-      memberFileIds: g.memberFileIds.filter((id) => id !== entryId),
-    }))
-    .filter((g) => g.memberFileIds.length > 0)
+// assembly-annotation group の相方 (annotation 以外の member) を新しい単独 group へ戻す。相方が無ければ無変更
+const detachPartner = (
+  submission: Submission,
+  annotationGroupId: string,
+  annotationEntryId: string,
+  releasedGroupId: string,
+): Submission => {
+  const partner = submission.fileEntries.find(
+    (e) => e.groupId === annotationGroupId && e.id !== annotationEntryId,
+  )
+  if (partner === undefined) return submission
+
+  const fileEntries = submission.fileEntries.map((e) =>
+    e.id === partner.id ? { ...e, groupId: releasedGroupId } : e,
+  )
+  const fileGroups: FileGroup[] = [
+    ...submission.fileGroups.map((g): FileGroup =>
+      g.id === annotationGroupId
+        ? { ...g, memberFileIds: g.memberFileIds.filter((id) => id !== partner.id) }
+        : g,
+    ),
+    {
+      id: releasedGroupId,
+      groupType: TYPICAL_GROUP_TYPE_FOR_KIND[partner.fileTypeKind],
+      memberFileIds: [partner.id],
+      linkedGroupIds: [],
+    },
+  ]
+
+  return { ...submission, fileEntries, fileGroups }
+}
 
 const applyRowEditPatch = (
   state: UIState,
   entryId: string,
   patch: RowEditPatch,
+  releasedGroupId: string,
 ): UIState => {
   const entry = state.submission.fileEntries.find((e) => e.id === entryId)
   if (!entry) return state
+
+  let submission = state.submission
+  const group = submission.fileGroups.find((g) => g.id === entry.groupId)
+  // アノテーションが assembly-annotation を離れるときはペアを解消し、相方 FASTA を単独 group へ戻す
+  if (
+    entry.fileTypeKind === "sequence-annotation"
+    && group?.groupType === "assembly-annotation"
+    && patch.groupType !== undefined
+    && patch.groupType !== "assembly-annotation"
+  ) {
+    submission = detachPartner(submission, entry.groupId, entry.id, releasedGroupId)
+  }
 
   const entryPatch: Partial<FileEntry> = {}
   if (patch.dataForm !== undefined) entryPatch.dataForm = patch.dataForm
   if (patch.chipTags !== undefined) entryPatch.chipTags = patch.chipTags
 
-  let groups = state.submission.fileGroups
-  if (patch.groupType !== undefined) {
-    groups = replaceGroup(groups, entry.groupId, { groupType: patch.groupType })
-  }
+  const fileGroups = patch.groupType !== undefined
+    ? replaceGroup(submission.fileGroups, entry.groupId, { groupType: patch.groupType })
+    : submission.fileGroups
+  const fileEntries = Object.keys(entryPatch).length > 0
+    ? replaceEntry(submission.fileEntries, entryId, entryPatch)
+    : submission.fileEntries
 
-  const entries = Object.keys(entryPatch).length > 0
-    ? replaceEntry(state.submission.fileEntries, entryId, entryPatch)
-    : state.submission.fileEntries
+  return { submission: { ...submission, fileEntries, fileGroups } }
+}
 
-  return {
-    submission: { ...state.submission, fileEntries: entries, fileGroups: groups },
-    editing: null,
-  }
+// アノテーション行の相方 FASTA を選ぶ。既存の相方は単独 group へ戻し、選んだ FASTA を
+// annotation の group へ移して group を assembly-annotation にする
+const setPairPartner = (
+  state: UIState,
+  annotationEntryId: string,
+  partnerEntryId: string,
+  releasedGroupId: string,
+): UIState => {
+  const annotation = state.submission.fileEntries.find((e) => e.id === annotationEntryId)
+  const newPartner = state.submission.fileEntries.find((e) => e.id === partnerEntryId)
+  if (annotation === undefined || newPartner === undefined) return state
+  const annotationGroupId = annotation.groupId
+  if (newPartner.groupId === annotationGroupId) return state
+
+  const submission = detachPartner(state.submission, annotationGroupId, annotationEntryId, releasedGroupId)
+  const oldPartnerGroupId = newPartner.groupId
+
+  const fileEntries = submission.fileEntries.map((e) =>
+    e.id === newPartner.id ? { ...e, groupId: annotationGroupId } : e,
+  )
+  const fileGroups = submission.fileGroups
+    .map((g): FileGroup => {
+      if (g.id === oldPartnerGroupId) {
+        return { ...g, memberFileIds: g.memberFileIds.filter((id) => id !== newPartner.id) }
+      }
+      if (g.id === annotationGroupId) {
+        return {
+          ...g,
+          groupType: "assembly-annotation",
+          memberFileIds: [...g.memberFileIds.filter((id) => id !== newPartner.id), newPartner.id],
+        }
+      }
+      return g
+    })
+    .filter((g) => g.memberFileIds.length > 0)
+
+  return { submission: { ...submission, fileEntries, fileGroups } }
 }
 
 const setPreconditions = (state: UIState, patch: Partial<Submission["preconditions"]>): UIState => {
@@ -123,7 +180,7 @@ const setPreconditions = (state: UIState, patch: Partial<Submission["preconditio
   // Q1 変更で現在の Q2 が disable になったら Q2 を解除する (整合崩れを破壊的に解決しない)
   if (next.q2 !== null && !isQ2Enabled(next.q1, next.q2)) next.q2 = null
 
-  return { ...state, submission: { ...state.submission, preconditions: next } }
+  return { submission: { ...state.submission, preconditions: next } }
 }
 
 const addRow = (
@@ -143,41 +200,31 @@ const addRow = (
       fileEntries: [...state.submission.fileEntries, entry],
       fileGroups: [...state.submission.fileGroups, { ...group, memberFileIds: [entry.id] }],
     },
-    editing: null,
   }
 }
 
-const addToGroup = (
-  state: UIState,
-  groupId: string,
-  fileTypeKind: FileEntry["fileTypeKind"],
-  entryId: string,
-): UIState => {
-  const targetGroup = state.submission.fileGroups.find((g) => g.id === groupId)
-  if (!targetGroup) return state
+const removeRow = (state: UIState, entryId: string): UIState => {
+  const entry = state.submission.fileEntries.find((e) => e.id === entryId)
+  if (entry === undefined) return state
+  const affectedGroupId = entry.groupId
 
-  const filename = defaultFilenameFor(state.submission.fileEntries, fileTypeKind)
-  const access = accessDefaultForQ1(state.submission.preconditions.q1)
-  const entry = newEntryFor(fileTypeKind, entryId, groupId, filename, access)
+  const fileEntries = state.submission.fileEntries.filter((e) => e.id !== entryId)
+  const fileGroups = state.submission.fileGroups
+    .map((g): FileGroup =>
+      g.id === affectedGroupId
+        ? { ...g, memberFileIds: g.memberFileIds.filter((id) => id !== entryId) }
+        : g,
+    )
+    .filter((g) => g.memberFileIds.length > 0)
+    // ペアの片方を消したら残った行を単独 group に戻す
+    .map((g): FileGroup =>
+      g.id === affectedGroupId && g.groupType === "assembly-annotation"
+        ? { ...g, groupType: "single" }
+        : g,
+    )
 
-  return {
-    submission: {
-      ...state.submission,
-      fileEntries: [...state.submission.fileEntries, entry],
-      fileGroups: ensureGroupContainsEntry(state.submission.fileGroups, groupId, entry.id),
-    },
-    editing: null,
-  }
+  return { submission: { ...state.submission, fileEntries, fileGroups } }
 }
-
-const removeRow = (state: UIState, entryId: string): UIState => ({
-  submission: {
-    ...state.submission,
-    fileEntries: state.submission.fileEntries.filter((e) => e.id !== entryId),
-    fileGroups: dropEntryFromGroups(state.submission.fileGroups, entryId),
-  },
-  editing: null,
-})
 
 export const submitReducer = (state: UIState, action: Action): UIState => {
   switch (action.type) {
@@ -190,9 +237,6 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
     case "ADD_ROW":
       return addRow(state, action.fileTypeKind, action.entryId, action.groupId)
 
-    case "ADD_TO_GROUP":
-      return addToGroup(state, action.groupId, action.fileTypeKind, action.entryId)
-
     case "EDIT_ROW_CELL": {
       const patch: Partial<FileEntry> = { ...action.patch }
       delete patch.id
@@ -200,7 +244,6 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
       delete patch.groupId
 
       return {
-        ...state,
         submission: {
           ...state.submission,
           fileEntries: replaceEntry(state.submission.fileEntries, action.entryId, patch),
@@ -208,17 +251,14 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
       }
     }
 
-    case "OPEN_EDIT_ROW":
-      return { ...state, editing: { kind: "row", entryId: action.entryId } }
-
     case "COMMIT_ROW_EDIT":
-      return applyRowEditPatch(state, action.entryId, action.patch)
+      return applyRowEditPatch(state, action.entryId, action.patch, action.releasedGroupId)
+
+    case "SET_PAIR_PARTNER":
+      return setPairPartner(state, action.annotationEntryId, action.partnerEntryId, action.releasedGroupId)
 
     case "REMOVE_ROW":
       return removeRow(state, action.entryId)
-
-    case "CLOSE_MODAL":
-      return { ...state, editing: null }
   }
 }
 
@@ -229,5 +269,4 @@ export const initialState: UIState = {
     fileGroups: [],
     notes: "",
   } satisfies Submission,
-  editing: null,
 }
