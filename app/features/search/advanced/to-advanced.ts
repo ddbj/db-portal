@@ -67,11 +67,11 @@ const childToAdvanced = (node: ParseNode, parentCombinator: AdvancedCombinator):
     case "OR": {
       const innerCombinator: AdvancedInnerCombinator = node.op
       const children: AdvancedNode[] = []
-      for (let index = 0; index < node.rules.length; index += 1) {
-        const rule = node.rules[index]
+      for (const rule of node.rules) {
         if (rule === undefined) continue
-        const childCombinator: AdvancedCombinator = index === 0 ? "AND" : innerCombinator
-        const advanced = childToAdvanced(rule, childCombinator)
+        // AND / OR joining lives in innerCombinator; a child's combinator only
+        // carries negation, which the NOT case sets. Non-negated children are AND.
+        const advanced = childToAdvanced(rule, "AND")
         if (!advanced) continue
         children.push(advanced)
       }
@@ -94,7 +94,8 @@ const flattenRootGroup = (node: AdvancedNode | null): AdvancedGroup => {
   if (!node) return makeRoot("AND", [])
   if (node.kind === "group") return makeRoot(node.innerCombinator, node.children)
 
-  return makeRoot("AND", [{ ...node, combinator: "AND" }])
+  // Preserve a sole condition's negation; a single NOT(leaf) must round-trip.
+  return makeRoot("AND", [node])
 }
 
 export const toAdvanced = (ast: ParseNode): AdvancedState => {

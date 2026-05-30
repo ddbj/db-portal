@@ -48,8 +48,8 @@ describe("vocabulary enum option counts", () => {
     expect(DataForm.options).toHaveLength(8)
   })
 
-  test("ChipAxis_hasFiveOptions", () => {
-    expect(ChipAxis.options).toHaveLength(5)
+  test("ChipAxis_hasFourOptions", () => {
+    expect(ChipAxis.options).toHaveLength(4)
   })
 })
 
@@ -111,7 +111,7 @@ describe("vocabulary enum parsing", () => {
   })
 
   test("ChipAxis_parse_unknown_throws", () => {
-    expect(() => ChipAxis.parse("haplotype-mode")).toThrow()
+    expect(() => ChipAxis.parse("variation-form")).toThrow()
   })
 })
 

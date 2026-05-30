@@ -208,31 +208,13 @@ const sequenceAnnotationDef: RowFormDef = {
   ],
 }
 
+// per-sample/aggregate と SNP/SV は出る service を変えない (TogoVar/EVA 内の登録種別差) ため
+// データ詳細 chip にせず Step カードの Intra-DB Tag で扱う。modal はリファレンスの有無だけ確定する。
 const variantDef: RowFormDef = {
   groups: [
     {
-      id: "form",
-      num: "1.",
-      labelKey: "submit.modal.formGroupLabels.form",
-      kind: "radio",
-      options: [
-        {
-          value: "per-sample",
-          labelKey: "submit.modal.options.variant.perSample.label",
-          subKey: "submit.modal.options.variant.perSample.sub",
-          effect: { chipAdd: { axis: "variation-form", value: "per-sample" } },
-        },
-        {
-          value: "aggregate",
-          labelKey: "submit.modal.options.variant.aggregate.label",
-          subKey: "submit.modal.options.variant.aggregate.sub",
-          effect: { chipAdd: { axis: "variation-form", value: "aggregate" } },
-        },
-      ],
-    },
-    {
       id: "reference",
-      num: "2.",
+      num: "1.",
       labelKey: "submit.modal.formGroupLabels.reference",
       kind: "radio",
       options: [
@@ -318,16 +300,22 @@ const spatialTranscriptomicsDef: RowFormDef = {
           effect: { chipAdd: { axis: "spatial-platform", value: "visium" } },
         },
         {
-          value: "stereo-seq",
-          labelKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.label",
-          subKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.sub",
-          effect: { chipAdd: { axis: "spatial-platform", value: "stereo-seq" } },
+          value: "xenium",
+          labelKey: "submit.modal.options.spatialTranscriptomics.xenium.label",
+          subKey: "submit.modal.options.spatialTranscriptomics.xenium.sub",
+          effect: { chipAdd: { axis: "spatial-platform", value: "xenium" } },
         },
         {
           value: "merfish",
           labelKey: "submit.modal.options.spatialTranscriptomics.merfish.label",
           subKey: "submit.modal.options.spatialTranscriptomics.merfish.sub",
           effect: { chipAdd: { axis: "spatial-platform", value: "merfish" } },
+        },
+        {
+          value: "stereo-seq",
+          labelKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.label",
+          subKey: "submit.modal.options.spatialTranscriptomics.stereoSeq.sub",
+          effect: { chipAdd: { axis: "spatial-platform", value: "stereo-seq" } },
         },
       ],
     },

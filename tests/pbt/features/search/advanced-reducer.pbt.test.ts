@@ -55,7 +55,7 @@ describe("advanced reducer invariants", () => {
     expect(next).toBe(initial)
   })
 
-  test("advancedReducer_addCondition_inheritsParentInnerCombinator", () => {
+  test("advancedReducer_addCondition_seedsNonNegatedAnd", () => {
     const initial = createInitialState()
     const orInner = advancedReducer(initial, {
       type: "updateInnerCombinator",
@@ -64,6 +64,8 @@ describe("advanced reducer invariants", () => {
     })
     const added = advancedReducer(orInner, { type: "addCondition", parentId: orInner.root.id })
     const lastChild = added.root.children[added.root.children.length - 1]
+    // New conditions are non-negated (combinator AND); AND/OR joining is in
+    // innerCombinator, so the group's OR does not leak onto the child.
     expect(lastChild?.combinator).toBe("AND")
   })
 })

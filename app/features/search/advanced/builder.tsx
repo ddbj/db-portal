@@ -1,19 +1,11 @@
 import type { Dispatch } from "react"
-import { Fragment, useState } from "react"
+import { useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import {
-  Button,
-  CloseIcon,
-  IconButton,
-  Label,
-  Select,
-  type SelectOption,
-  Tag,
-  TextInput,
-} from "~/ui"
+import { Button, CloseIcon, cn, IconButton, InfoHint, Label, Segmented, Tag, TextInput } from "~/ui"
 
-import { ConditionRow, ExcludeToggle } from "./condition-row"
+import type { Predicate } from "../types"
+import { ConditionRow } from "./condition-row"
 import type {
   AdvancedAction,
   AdvancedGroup,
@@ -43,9 +35,9 @@ export const AdvancedBuilder = ({
   const keywordWired = onFreeTextChange !== undefined && onFreeTextRemove !== undefined
   const hasFreeText = freeText.trim().length > 0
   // Keep the row mounted while its input has focus so deleting to empty does
-  // not yank the caret out from under the user; the trimmed predicate still
-  // drives the leading "かつ" connector and the empty placeholder.
+  // not yank the caret out from under the user.
   const keywordRowVisible = keywordWired && (hasFreeText || keywordFocused)
+  const showCombinator = root.children.length >= 2
 
   if (root.children.length === 0 && !keywordRowVisible) {
     return (
@@ -76,22 +68,23 @@ export const AdvancedBuilder = ({
           onFocusChange={setKeywordFocused}
         />
       )}
-      {root.children.length >= 2 && (
+      {showCombinator && (
         <div className="flex items-center gap-2">
           <Label>{t("search.builder.matchLabel")}</Label>
-          <MatchSelector
+          <Segmented
+            options={AND_OR_OPTIONS}
             value={root.innerCombinator}
-            onChange={(innerCombinator) =>
-              dispatch({ type: "updateInnerCombinator", id: root.id, innerCombinator })}
+            ariaLabel={t("search.a11y.builderConditions")}
+            onChange={(next) =>
+              dispatch({
+                type: "updateInnerCombinator",
+                id: root.id,
+                innerCombinator: next as AdvancedInnerCombinator,
+              })}
           />
         </div>
       )}
-      <GroupChildren
-        group={root}
-        depth={0}
-        dispatch={dispatch}
-        leadWithAnd={keywordRowVisible}
-      />
+      <GroupChildren group={root} depth={0} dispatch={dispatch} branchGuide={showCombinator} />
       <div className="flex justify-end gap-2 mt-2">
         <Button kind="secondary" onClick={() => dispatch({ type: "addCondition", parentId: root.id })}>
           {t("search.builder.addCondition")}
@@ -115,9 +108,17 @@ const FreeTextRow = ({ value, onChange, onRemove, onFocusChange }: FreeTextRowPr
   const t = useT()
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-button bg-brand-soft/40 px-2.5 py-2">
-      <Tag kind="brand" mono size="sm">{t("search.builder.freeText.field")}</Tag>
-      <span className="text-fs-body-sm text-ink-mid">{t("search.builder.freeText.allFields")}</span>
+    <div className="flex flex-wrap items-center gap-2 rounded-button bg-brand-soft px-2.5 py-2">
+      <span className="inline-flex items-center rounded-tag font-mono font-bold tracking-tag whitespace-nowrap leading-snug px-2 py-px text-fs-micro bg-brand-tint text-brand-deep">
+        {t("search.builder.freeText.field")}
+      </span>
+      <span className="flex items-center gap-1 text-fs-body-sm text-ink-mid">
+        {t("search.builder.freeText.scopeLabel")}
+        <InfoHint
+          label={t("search.builder.freeText.scopeTooltip")}
+          ariaLabel={t("search.builder.freeText.scopeLabel")}
+        />
+      </span>
       <TextInput
         size="md"
         ariaLabel={t("search.builder.freeText.field")}
@@ -137,158 +138,114 @@ const FreeTextRow = ({ value, onChange, onRemove, onFocusChange }: FreeTextRowPr
   )
 }
 
-type MatchSelectorProps = {
-  value: AdvancedInnerCombinator
-  onChange: (value: AdvancedInnerCombinator) => void
-}
-
-// A single AND/OR control per group/root: "すべての条件に一致" (AND) or
-// "いずれかの条件に一致" (OR). It drives the group's innerCombinator, which is
-// what actually joins the conditions in the AST.
-const MatchSelector = ({ value, onChange }: MatchSelectorProps) => {
-  const t = useT()
-  const options: SelectOption[] = [
-    { value: "AND", label: t("search.builder.match.all") },
-    { value: "OR", label: t("search.builder.match.any") },
-  ]
-
-  return (
-    <Select
-      size="md"
-      ariaLabel={t("search.a11y.builderConditions")}
-      options={options}
-      value={value}
-      onChange={(next) => onChange(next as AdvancedInnerCombinator)}
-      width={200}
-    />
-  )
-}
-
-type ConnectorLineProps = {
-  index: number
-  leadWithAnd: boolean
-  innerCombinator: AdvancedInnerCombinator
-}
-
-// The read-only word shown between rows so the chosen AND/OR is visible inline.
-// The first row's connector is the keyword anchor ("かつ") when a keyword row is
-// present, and nothing otherwise.
-const ConnectorLine = ({ index, leadWithAnd, innerCombinator }: ConnectorLineProps) => {
-  const t = useT()
-  let word: string | null = null
-  if (index === 0) {
-    word = leadWithAnd ? t("search.builder.connector.and") : null
-  } else {
-    word = innerCombinator === "OR"
-      ? t("search.builder.connector.or")
-      : t("search.builder.connector.and")
-  }
-  if (word === null) return null
-
-  return <div className="text-fs-label text-ink-soft font-medium pl-0.5">{word}</div>
-}
+// One AND/OR control per group/root ("1 group = 1 combinator"). Mixing AND and OR
+// is expressed by nesting a group, so a single segmented toggle drives the whole
+// group's innerCombinator — no per-row connector words.
+const AND_OR_OPTIONS = [
+  { value: "AND", label: "AND" },
+  { value: "OR", label: "OR" },
+] as const
 
 type GroupChildrenProps = {
   group: AdvancedGroup
   depth: number
   dispatch: Dispatch<AdvancedAction>
-  leadWithAnd?: boolean
+  branchGuide: boolean
 }
 
-const GroupChildren = ({ group, depth, dispatch, leadWithAnd = false }: GroupChildrenProps) => (
-  <div className="flex flex-col gap-2">
-    {group.children.map((child, index) => (
-      <Fragment key={child.id}>
-        <ConnectorLine index={index} leadWithAnd={leadWithAnd} innerCombinator={group.innerCombinator} />
-        <NodeRow
-          node={child}
-          index={index}
-          depth={depth}
-          dispatch={dispatch}
-          leadWithAnd={leadWithAnd}
-        />
-      </Fragment>
+const GroupChildren = ({ group, depth, dispatch, branchGuide }: GroupChildrenProps) => (
+  <div
+    className={cn(
+      "flex flex-col gap-2",
+      branchGuide && "border-l-2 border-brand-light/40 pl-3",
+    )}
+  >
+    {group.children.map((child) => (
+      <NodeRow key={child.id} node={child} depth={depth} dispatch={dispatch} />
     ))}
   </div>
 )
 
 type NodeRowProps = {
   node: AdvancedNode
-  index: number
   depth: number
   dispatch: Dispatch<AdvancedAction>
-  leadWithAnd: boolean
 }
 
-const NodeRow = ({ node, index, depth, dispatch, leadWithAnd }: NodeRowProps) => {
-  // The root's first child is pinned to AND by the reducer, so it cannot be
-  // negated; every other row can. The root's first structured condition stays
-  // removable only when a keyword row anchors the query.
-  const canExclude = !(depth === 0 && index === 0)
-  const removable = depth > 0 || index > 0 || leadWithAnd
-
+const NodeRow = ({ node, depth, dispatch }: NodeRowProps) => {
   if (node.kind === "condition") {
     return (
       <ConditionRow
         condition={node}
-        excluded={node.combinator === "NOT"}
-        canExclude={canExclude}
-        removable={removable}
+        removable
         onFieldChange={(field) => dispatch({ type: "updateField", id: node.id, field })}
-        onOpChange={(op) => dispatch({ type: "updateOp", id: node.id, op })}
-        onValueChange={(value) => dispatch({ type: "updateValue", id: node.id, value })}
-        onRangeChange={(range) => dispatch({ type: "updateRange", id: node.id, ...range })}
-        onToggleExclude={() =>
+        onPredicateChange={(predicate: Predicate) => {
+          dispatch({ type: "updateOp", id: node.id, op: predicate.op })
           dispatch({
             type: "updateCombinator",
             id: node.id,
-            combinator: node.combinator === "NOT" ? "AND" : "NOT",
-          })}
+            combinator: predicate.negated ? "NOT" : "AND",
+          })
+        }}
+        onValueChange={(value) => dispatch({ type: "updateValue", id: node.id, value })}
+        onRangeChange={(range) => dispatch({ type: "updateRange", id: node.id, ...range })}
         onRemove={() => dispatch({ type: "removeNode", id: node.id })}
       />
     )
   }
 
-  return (
-    <GroupBlock
-      group={node}
-      canExclude={canExclude}
-      depth={depth}
-      dispatch={dispatch}
-    />
-  )
+  return <GroupBlock group={node} depth={depth} dispatch={dispatch} />
 }
 
 type GroupBlockProps = {
   group: AdvancedGroup
-  canExclude: boolean
   depth: number
   dispatch: Dispatch<AdvancedAction>
 }
 
-const GroupBlock = ({ group, canExclude, depth, dispatch }: GroupBlockProps) => {
+const GroupBlock = ({ group, depth, dispatch }: GroupBlockProps) => {
   const t = useT()
+  const negated = group.combinator === "NOT"
 
   return (
-    <div className="rounded-button border border-border-soft border-l-4 border-l-brand bg-surface-subtle/40 p-2.5 flex flex-col gap-2">
+    <div
+      className={cn(
+        "rounded-button border border-l-4 p-2.5 flex flex-col gap-2",
+        negated
+          ? "border-l-red border-red/30 bg-red/5"
+          : "border-l-brand border-border-soft bg-surface-subtle/40",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Tag kind="brand" mono size="sm">{t("search.builder.group")}</Tag>
-        <MatchSelector
-          value={group.innerCombinator}
-          onChange={(innerCombinator) =>
-            dispatch({ type: "updateInnerCombinator", id: group.id, innerCombinator })}
-        />
+        {group.children.length >= 2 && (
+          <Segmented
+            options={AND_OR_OPTIONS}
+            value={group.innerCombinator}
+            ariaLabel={t("search.a11y.builderConditions")}
+            onChange={(next) =>
+              dispatch({
+                type: "updateInnerCombinator",
+                id: group.id,
+                innerCombinator: next as AdvancedInnerCombinator,
+              })}
+          />
+        )}
         <span className="ml-auto flex items-center gap-1.5">
-          <ExcludeToggle
-            excluded={group.combinator === "NOT"}
-            disabled={!canExclude}
-            onToggle={() =>
+          <Button
+            kind={negated ? "danger" : "secondary"}
+            size="sm"
+            aria-pressed={negated}
+            aria-label={t("search.builder.negateGroup")}
+            onClick={() =>
               dispatch({
                 type: "updateCombinator",
                 id: group.id,
-                combinator: group.combinator === "NOT" ? "AND" : "NOT",
+                combinator: negated ? "AND" : "NOT",
               })}
-          />
+          >
+            NOT
+          </Button>
           <Button
             kind="secondary"
             size="sm"
@@ -298,7 +255,7 @@ const GroupBlock = ({ group, canExclude, depth, dispatch }: GroupBlockProps) => 
           </Button>
         </span>
       </div>
-      <GroupChildren group={group} depth={depth + 1} dispatch={dispatch} />
+      <GroupChildren group={group} depth={depth + 1} dispatch={dispatch} branchGuide={false} />
       <div className="flex justify-end gap-2">
         <Button
           kind="secondary"

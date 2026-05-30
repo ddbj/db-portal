@@ -234,6 +234,7 @@ export type Resources = {
       "dra": { title: string; description: string; cta: string }
       "jga": { title: string; description: string; cta: string }
       "ddbj-trad": { title: string; description: string; cta: string }
+      "nsss": { title: string; description: string; cta: string }
       "togovar": { title: string; description: string; cta: string }
       "gea": { title: string; description: string; cta: string }
       "metabobank": { title: string; description: string; cta: string }
@@ -241,7 +242,6 @@ export type Resources = {
       "dbcls": { title: string; description: string; cta: string }
       "jpost": { title: string; description: string; cta: string }
       "eva": { title: string; description: string; cta: string }
-      "dgva": { title: string; description: string; cta: string }
     }
     preview: {
       label: string
@@ -252,6 +252,7 @@ export type Resources = {
         "dra": string
         "jga": string
         "ddbj-trad": string
+        "nsss": string
         "togovar": string
         "gea": string
         "metabobank": string
@@ -259,7 +260,6 @@ export type Resources = {
         "dbcls": string
         "jpost": string
         "eva": string
-        "dgva": string
       }
       title: {
         "bioproject": string
@@ -267,6 +267,7 @@ export type Resources = {
         "dra": string
         "jga": string
         "ddbj-trad": string
+        "nsss": string
         "togovar": string
         "gea": string
         "metabobank": string
@@ -274,7 +275,6 @@ export type Resources = {
         "dbcls": string
         "jpost": string
         "eva": string
-        "dgva": string
       }
       body: {
         "bioproject": string
@@ -282,6 +282,7 @@ export type Resources = {
         "dra": string
         "jga": string
         "ddbj-trad": string
+        "nsss": string
         "togovar": string
         "gea": string
         "metabobank": string
@@ -289,7 +290,6 @@ export type Resources = {
         "dbcls": string
         "jpost": string
         "eva": string
-        "dgva": string
       }
     }
     origin: {
@@ -342,8 +342,6 @@ export type Resources = {
           thirdParty: { label: string; sub: string }
         }
         variant: {
-          perSample: { label: string; sub: string }
-          aggregate: { label: string; sub: string }
           withRef: { label: string; sub: string }
           withoutRef: { label: string; sub: string }
         }
@@ -357,8 +355,9 @@ export type Resources = {
         }
         spatialTranscriptomics: {
           visium: { label: string; sub: string }
-          stereoSeq: { label: string; sub: string }
+          xenium: { label: string; sub: string }
           merfish: { label: string; sub: string }
+          stereoSeq: { label: string; sub: string }
         }
         spatialImage: {
           visium: { label: string; sub: string }
@@ -391,25 +390,28 @@ export type Resources = {
       dra: { intro: string; restrictedNonHumanEmbargo: string }
     }
     ddbjTrad: {
-      intro: string
-      divisionByDataType: string
-      notForReads: string
       locusTagPrefix: string
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
       tpa: { intro: string; primaryAccessionRequired: string }
       assemblyAnnotation: { intro: string; filenamePairing: string }
-      annotation: { needsSequencePair: string }
+      annotation: { intro: string; needsSequencePair: string }
+    }
+    nsss: {
+      intro: string
+      specialToMss: string
+      notForReads: string
     }
     variant: {
       referenceByName: string
       jga: { intro: string; policyDelegated: string }
-      togovar: { intro: string; humanRefOnly: string }
+      togovar: { intro: string }
+      eva: { nonHuman: string }
     }
     gea: {
       expressionMatrix: { intro: string }
       microarray: { intro: string }
-      spatial: { intro: string }
+      spatial: { intro: string; sequencingRawToDra: string }
       spatialImage: { intro: string; largeImageGeneralist: string }
     }
     jga: {
@@ -419,9 +421,12 @@ export type Resources = {
       nbdcPolicy: string
     }
     metabobank: {
-      ms: { intro: string; proteomicsToJpost: string; imagingImageFiles: string }
+      ms: { intro: string; imagingImageFiles: string }
       nmr: { intro: string }
-      maf: { intro: string; proteomicsToJpost: string }
+      maf: { intro: string }
+    }
+    jpost: {
+      proteomics: string
     }
     bioproject: { intro: string }
     biosample: { intro: string }
@@ -457,9 +462,12 @@ export type Resources = {
     pageSubtitle: string
     searchBoxPlaceholder: string
     syntax: {
-      spaceAnd: string
+      space: string
+      comma: string
       phrase: string
-      advancedHint: string
+      spaceUse: string
+      commaUse: string
+      phraseUse: string
     }
     examples: {
       label: string
@@ -475,15 +483,7 @@ export type Resources = {
       addCondition: string
       addGroup: string
       matchLabel: string
-      match: {
-        all: string
-        any: string
-      }
-      connector: {
-        and: string
-        or: string
-      }
-      exclude: string
+      negateGroup: string
       group: string
       removeCondition: string
       removeGroup: string
@@ -500,11 +500,15 @@ export type Resources = {
         submitter: string
         publication: string
       }
-      op: {
+      predicate: {
         eq: string
+        notEq: string
         contains: string
+        notContains: string
         wildcard: string
+        notWildcard: string
         between: string
+        notBetween: string
       }
       rangeFromLabel: string
       rangeToLabel: string
@@ -513,7 +517,8 @@ export type Resources = {
       valuePlaceholder: string
       freeText: {
         field: string
-        allFields: string
+        scopeLabel: string
+        scopeTooltip: string
         placeholder: string
         remove: string
       }
@@ -590,6 +595,8 @@ export type Resources = {
     assistant: {
       heading: string
       description: string
+      descriptionNew: string
+      descriptionAppend: string
       placeholder: string
       examplesLabel: string
       examples: readonly string[]
@@ -599,12 +606,12 @@ export type Resources = {
       proposalDescription: string
       apply: string
       reset: string
+      regenerate: string
       enterMode: string
       generateShort: string
       modeGroupLabel: string
       modeNew: string
       modeAppend: string
-      modeHint: string
       applyReplace: string
     }
     scope: {
@@ -632,9 +639,8 @@ export type Resources = {
       parseFailure: string
       crossSearchFailure: string
       dbSearchFailure: string
-      serializeFailure: string
       querySyntax: string
-      querySyntaxHint: string
+      keywordInvalid: string
     }
     a11y: {
       input: string
@@ -642,7 +648,7 @@ export type Resources = {
       scope: string
       builderConditions: string
       fieldSelector: string
-      opSelector: string
+      predicateSelector: string
       facetGroup: string
       removeFilter: string
       queryPreview: string
@@ -881,14 +887,14 @@ export const ja: Resources = {
       "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先", cta: "詳細" },
       "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先", cta: "詳細" },
       "ddbj-trad": { title: "DDBJ Trad", description: "塩基配列を一括登録する MSS", cta: "詳細" },
+      "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム", cta: "詳細" },
       "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先", cta: "詳細" },
       "gea": { title: "GEA", description: "遺伝子発現データの登録先", cta: "詳細" },
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先", cta: "詳細" },
       "humandbs": { title: "humandbs", description: "制限公開ヒトデータの Policy 申請窓口", cta: "申請窓口へ進む" },
       "dbcls": { title: "DBCLS", description: "NBDC ポリシー・JGAP 発行の窓口", cta: "DBCLS へ進む" },
       "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先", cta: "jPOST へ進む" },
-      "eva": { title: "EVA", description: "European Variation Archive への誘導", cta: "EVA へ進む" },
-      "dgva": { title: "DGVa", description: "構造多型アーカイブへの誘導", cta: "DGVa へ進む" },
+      "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)", cta: "EVA へ進む" },
     },
     preview: {
       label: "プレビュー",
@@ -904,9 +910,9 @@ export const ja: Resources = {
         "metabobank": "MetaboBank",
         "humandbs": "humandbs",
         "dbcls": "DBCLS",
+        "nsss": "NSSS",
         "jpost": "jPOST",
         "eva": "EVA",
-        "dgva": "dgVa",
       },
       title: {
         "bioproject": "BioProject",
@@ -919,9 +925,9 @@ export const ja: Resources = {
         "metabobank": "MetaboBank",
         "humandbs": "humandbs",
         "dbcls": "DBCLS",
+        "nsss": "NSSS",
         "jpost": "jPOST",
         "eva": "EVA",
-        "dgva": "DGVa",
       },
       body: {
         "bioproject": "プロジェクト全体を束ねる随伴エントリです",
@@ -934,9 +940,9 @@ export const ja: Resources = {
         "metabobank": "メタボロミクスデータを登録します",
         "humandbs": "制限公開ヒトデータの Policy 申請を行います",
         "dbcls": "NBDC ポリシー利用・JGAP 発行の手続きを行います",
+        "nsss": "少数・短い塩基配列を Web 登録システム NSSS で登録します",
         "jpost": "プロテオミクスデータを jPOST に登録します",
-        "eva": "variant を EVA に登録します",
-        "dgva": "構造多型を DGVa に登録します",
+        "eva": "非ヒト variant を EVA に登録します",
       },
     },
     origin: {
@@ -989,8 +995,6 @@ export const ja: Resources = {
           thirdParty: { label: "第三者 (TPA)", sub: "他者データへのアノテーション" },
         },
         variant: {
-          perSample: { label: "サンプルごと", sub: "個別サンプルの variant" },
-          aggregate: { label: "集計", sub: "複数サンプルを集計した variant" },
           withRef: { label: "リファレンスあり", sub: "リファレンスを参照する" },
           withoutRef: { label: "リファレンスなし", sub: "リファレンスを参照しない" },
         },
@@ -1003,9 +1007,10 @@ export const ja: Resources = {
           twoColor: { label: "2 色法", sub: "デュアルチャネル測定" },
         },
         spatialTranscriptomics: {
-          visium: { label: "Visium", sub: "10x Visium プラットフォーム" },
-          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq プラットフォーム" },
-          merfish: { label: "MERFISH", sub: "MERFISH プラットフォーム" },
+          visium: { label: "Visium", sub: "10x Visium (Sequencing + DRA 2 段)" },
+          xenium: { label: "Xenium", sub: "10x Xenium (Microarray、DRA 不要)" },
+          merfish: { label: "MERFISH", sub: "MERFISH (Microarray、DRA 不要)" },
+          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq (Sequencing + DRA 2 段)" },
         },
         spatialImage: {
           visium: { label: "Visium", sub: "Visium の組織画像" },
@@ -1044,9 +1049,6 @@ export const ja: Resources = {
       },
     },
     ddbjTrad: {
-      intro: "組み上げ済みの塩基配列は、DDBJ Trad (MSS = Mass Submission System) で一括登録します。",
-      divisionByDataType: "MSS では、Division と data type の 2 軸で配列が分類されます。",
-      notForReads: "生リードは MSS の対象外です。配列リードは DRA に登録してください。",
       locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
       mag: {
         envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",
@@ -1056,7 +1058,7 @@ export const ja: Resources = {
         misagPackage: "SAG は MAG とは別の MISAG package で扱います。",
       },
       tpa: {
-        intro: "第三者 (TPA) の配列・アノテーションも MSS で受け付けます。",
+        intro: "第三者 (TPA) の配列・アノテーションは、DDBJ Trad (MSS) で受け付けます。",
         primaryAccessionRequired: "TPA には、引用元となる INSDC accession の指定が必須です。",
       },
       assemblyAnnotation: {
@@ -1064,18 +1066,26 @@ export const ja: Resources = {
         filenamePairing: "配列ファイルとアノテーションファイルは、拡張子を除いてファイル名を一致させます。",
       },
       annotation: {
+        intro: "組み上げ済み配列へのアノテーションは、DDBJ Trad (MSS) で登録します。",
         needsSequencePair: "単独のアノテーション行には、対応する配列ファイルのペアが必要です。",
       },
+    },
+    nsss: {
+      intro: "少数・短い塩基配列は、Web 登録システム NSSS (Nucleotide Sequence Submission System) で登録します。",
+      specialToMss: "大規模配列・完成ゲノム・WGS / TSA / TLS / EST / HTG / TPA などは NSSS の対象外です。DDBJ Trad (MSS) で登録してください。",
+      notForReads: "生リードは塩基配列登録の対象外です。配列リードは DRA に登録してください。",
     },
     variant: {
       referenceByName: "reference は VCF ヘッダで GRCh37/38 などを名前参照するだけで、reference FASTA の別登録は不要です。",
       jga: {
-        intro: "制限公開のヒトやヒト関連メタゲノムの variant は、JGA の Analysis に登録します。",
+        intro: "制限公開のヒト個人データの variant は、JGA の Analysis に登録します。",
         policyDelegated: "JGA の Policy 承認は DBCLS / NBDC に委譲されています。",
       },
       togovar: {
-        intro: "公開ヒトの variant は TogoVar に登録します。",
-        humanRefOnly: "TogoVar は GRCh37/38 のヒトゲノム参照に限るため、非ヒトの variant は受理されない可能性があります。",
+        intro: "公開ヒトの variant は TogoVar (TogoVar-repository) に登録します。短いバリアントと構造バリアントは、いずれも TogoVar 内の登録種別で扱います。",
+      },
+      eva: {
+        nonHuman: "ヒト以外の variant は、EBI の European Variation Archive (EVA) に登録します。短いバリアントも構造バリアントも EVA が受け付けます。",
       },
     },
     gea: {
@@ -1086,16 +1096,17 @@ export const ja: Resources = {
         intro: "マイクロアレイ発現は、GEA の Experiment として登録します。",
       },
       spatial: {
-        intro: "空間トランスクリプトームの発現・空間対応データは GEA に登録します。生リードは別 entry として DRA に登録してください。",
+        intro: "空間トランスクリプトームの発現・空間対応データは GEA に登録します。",
+        sequencingRawToDra: "シーケンス由来 (Visium / Stereo-seq) の生リードは、別 entry として DRA に登録してください (DRA + GEA の 2 段)。",
       },
       spatialImage: {
         intro: "空間画像は GEA に登録します。",
-        largeImageGeneralist: "MERFISH などの大容量画像は、汎用アーカイブの利用も検討してください。",
+        largeImageGeneralist: "MERFISH などの大容量画像は GEA で受け入れられないため、汎用アーカイブの利用を検討してください。",
       },
     },
     jga: {
       array: {
-        intro: "制限公開のヒトやヒト関連メタゲノムのアレイデータは、JGA の Analysis に登録します。",
+        intro: "制限公開のヒト個人データのアレイは、JGA の Analysis に登録します。",
       },
       dataset: {
         intro: "JGA は、Policy 単位の Dataset でデータを束ねます。",
@@ -1106,7 +1117,6 @@ export const ja: Resources = {
     metabobank: {
       ms: {
         intro: "質量分析データは MetaboBank に登録します。",
-        proteomicsToJpost: "プロテオミクスは MetaboBank の対象外です。jPOST に登録してください。",
         imagingImageFiles: "imaging mass spec の組織切片画像は、本データの追加ファイルとして同梱します。",
       },
       nmr: {
@@ -1114,8 +1124,10 @@ export const ja: Resources = {
       },
       maf: {
         intro: "代謝物アサインメント (MAF) は MetaboBank に登録します。",
-        proteomicsToJpost: "プロテオミクスの同定結果は jPOST に登録してください。",
       },
+    },
+    jpost: {
+      proteomics: "プロテオーム (proteomics) の質量分析は、MetaboBank ではなく jPOST に登録します。",
     },
     bioproject: {
       intro: "プロジェクトを束ねる BioProject が随伴して作成されます。",
@@ -1177,19 +1189,21 @@ export const ja: Resources = {
     pageSubtitle: "キーワードでも、AI への自然文でも。入力はすべて下のクエリビルダーに集約され、その内容で検索します。",
     searchBoxPlaceholder: "キーワード、accession、学名で検索",
     syntax: {
-      spaceAnd: "スペース = AND 検索",
-      phrase: "\"…\" = フレーズ検索",
-      advancedHint: "検索すると下のクエリビルダーに 1 行追加され、双方向に同期します。",
+      space: "スペース",
+      comma: "カンマ",
+      phrase: "\"…\"",
+      spaceUse: "AND 検索",
+      commaUse: "OR 検索",
+      phraseUse: "フレーズ検索",
     },
     examples: {
       label: "例",
       items: [
         "cancer",
         "Homo sapiens",
-        "organism:\"Mus musculus\"",
-        "title:\"single cell\"",
-        "date_published:[2022-01-01 TO 2024-12-31]",
-        "PRJDB*",
+        "cancer, tumor",
+        "\"single cell\"",
+        "COVID-19",
       ],
     },
     builder: {
@@ -1201,16 +1215,8 @@ export const ja: Resources = {
       },
       addCondition: "+ 条件を追加",
       addGroup: "+ グループを追加",
-      matchLabel: "一致条件",
-      match: {
-        all: "すべての条件に一致",
-        any: "いずれかの条件に一致",
-      },
-      connector: {
-        and: "かつ",
-        or: "または",
-      },
-      exclude: "除外",
+      matchLabel: "条件の結合",
+      negateGroup: "グループを否定",
       group: "グループ",
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
@@ -1227,11 +1233,15 @@ export const ja: Resources = {
         submitter: "登録機関",
         publication: "論文",
       },
-      op: {
-        eq: "= (完全一致)",
+      predicate: {
+        eq: "と一致",
+        notEq: "と一致しない",
         contains: "を含む",
-        wildcard: "ワイルドカード",
-        between: "範囲",
+        notContains: "を含まない",
+        wildcard: "パターンに一致",
+        notWildcard: "パターンに一致しない",
+        between: "の期間内",
+        notBetween: "の期間外",
       },
       rangeFromLabel: "FROM",
       rangeToLabel: "TO",
@@ -1240,7 +1250,8 @@ export const ja: Resources = {
       valuePlaceholder: "値を入力",
       freeText: {
         field: "キーワード",
-        allFields: "すべての項目から検索",
+        scopeLabel: "おもな項目を全文検索",
+        scopeTooltip: "アクセッション・タイトル・名称・説明・生物種名 を対象に検索します",
         placeholder: "キーワードを入力",
         remove: "キーワードを削除",
       },
@@ -1316,7 +1327,9 @@ export const ja: Resources = {
     },
     assistant: {
       heading: "AI 検索アシスタント",
-      description: "自然な日本語で条件を書くと、クエリビルダーへの追加候補を提案します。",
+      description: "自然文で条件を書くと、クエリビルダーへの追加候補を提案します。",
+      descriptionNew: "自然文で書くと、新しいクエリの候補を提案します。",
+      descriptionAppend: "自然文で書くと、現在の {{count}} 件に追加する条件を提案します。",
       placeholder: "例: ヒトの 2022 年以降に公開されたがん関連の BioProject",
       examplesLabel: "例",
       examples: [
@@ -1330,13 +1343,13 @@ export const ja: Resources = {
       proposalDescription: "内容を確認してください",
       apply: "クエリビルダーに追加",
       reset: "やり直す",
+      regenerate: "再生成",
       enterMode: "AI モード",
       generateShort: "生成",
       modeGroupLabel: "生成モード",
       modeNew: "新規生成",
       modeAppend: "既存に追加",
-      modeHint: "現在のビルダー {{count}} 件に追加します",
-      applyReplace: "この内容で置き換える",
+      applyReplace: "この内容で作成",
     },
     scope: {
       all: "全データベース",
@@ -1363,9 +1376,8 @@ export const ja: Resources = {
       parseFailure: "URL のクエリを解析できませんでした",
       crossSearchFailure: "横断検索に失敗しました",
       dbSearchFailure: "検索に失敗しました",
-      serializeFailure: "URL の同期に失敗しました",
-      querySyntax: "クエリを解析できませんでした。構文を確認して再度お試しください。",
-      querySyntaxHint: "スペース = AND (すべての語)、カンマ = OR (いずれかの語)、\"…\" = フレーズ、field:value でフィールド検索 (例: organism_name:\"Homo sapiens\")。",
+      querySyntax: "クエリを解析できませんでした。構文を確認してください。",
+      keywordInvalid: "キーワードの構文が正しくありません",
     },
     a11y: {
       input: "検索キーワード",
@@ -1373,7 +1385,7 @@ export const ja: Resources = {
       scope: "検索対象データベース",
       builderConditions: "クエリビルダーの条件一覧",
       fieldSelector: "検索フィールド",
-      opSelector: "演算子",
+      predicateSelector: "条件の演算子",
       facetGroup: "ファセット",
       removeFilter: "フィルタを解除",
       queryPreview: "クエリプレビュー",

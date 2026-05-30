@@ -14,6 +14,7 @@ import {
   type AssistantProposal,
   useAssistantStream,
 } from "./prompt-client"
+import { ProposalConditions } from "./proposal-conditions"
 
 export const applyProposalToAdvanced = (
   state: AdvancedState,
@@ -138,26 +139,20 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
               <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
               <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
             </div>
-            <ul className="list-none p-0 m-0 flex flex-col gap-1">
-              {stream.proposal.conditions.map((condition, index) => (
-                <li key={`${condition.field}-${index}`} className="text-fs-label text-ink-mid font-mono">
-                  <span className="text-brand-deep">{condition.field}</span>
-                  {" "}
-                  <span className="text-ink-soft">{condition.op}</span>
-                  {" "}
-                  <span className="text-ink font-semibold">
-                    {condition.op === "between"
-                      ? `${condition.from}..${condition.to}`
-                      : condition.value}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex justify-end gap-2">
-              <Button kind="secondary" size="sm" onClick={handleReset}>
+            <ProposalConditions proposal={stream.proposal} />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                kind="secondary"
+                size="md"
+                disabled={input.trim().length === 0}
+                onClick={() => void stream.start(input)}
+              >
+                {t("search.assistant.regenerate")}
+              </Button>
+              <Button kind="secondary" size="md" onClick={handleReset}>
                 {t("search.assistant.reset")}
               </Button>
-              <Button kind="primary" size="sm" onClick={handleApply}>
+              <Button kind="primary" size="md" onClick={handleApply}>
                 {t("search.assistant.apply")}
               </Button>
             </div>

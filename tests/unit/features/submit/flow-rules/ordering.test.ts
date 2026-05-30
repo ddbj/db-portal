@@ -72,12 +72,12 @@ describe("byServicePhysicalOrder", () => {
   test("byServicePhysicalOrder_unknownService_sortsToEnd", () => {
     const sorted = [
       mkStep({ id: "x", service: "no-such-service" as FlowStep["service"] }),
-      mkStep({ id: "dgva", service: "dgva" }),
+      mkStep({ id: "eva", service: "eva" }),
       mkStep({ id: "bp", service: "bioproject" }),
     ].sort(byServicePhysicalOrder)
     expect(sorted.map((s) => s.service)).toEqual([
       "bioproject",
-      "dgva",
+      "eva",
       "no-such-service",
     ])
   })

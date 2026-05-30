@@ -7,6 +7,7 @@ export const Service = z.enum([
   "dra",
   "jga",
   "ddbj-trad",
+  "nsss",
   "togovar",
   "gea",
   "metabobank",
@@ -14,7 +15,6 @@ export const Service = z.enum([
   "dbcls",
   "jpost",
   "eva",
-  "dgva",
 ])
 export type Service = z.infer<typeof Service>
 
@@ -27,6 +27,7 @@ export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
   "dra": "destination",
   "jga": "destination",
   "ddbj-trad": "destination",
+  "nsss": "destination",
   "togovar": "destination",
   "gea": "destination",
   "metabobank": "destination",
@@ -34,7 +35,6 @@ export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
   "dbcls": "external",
   "jpost": "external",
   "eva": "external",
-  "dgva": "external",
 }
 
 export const serviceRole = (service: Service): ServiceRole => SERVICE_ROLE[service]
@@ -42,14 +42,25 @@ export const serviceRole = (service: Service): ServiceRole => SERVICE_ROLE[servi
 const byRole = (role: ServiceRole): readonly Service[] =>
   Service.options.filter((s) => SERVICE_ROLE[s] === role)
 
-// role=destination の service 部分集合 (candidateRepos / カスケードが参照する登録先集合)
+// role=destination の service 部分集合 (カスケードの q1/q2 repos が参照する DDBJ 内登録先集合)
 export const DESTINATION_SERVICES: readonly Service[] = byRole("destination")
 export const COMPANION_SERVICES: readonly Service[] = byRole("companion")
 export const EXTERNAL_SERVICES: readonly Service[] = byRole("external")
 
+// 登録エンドポイント = 利用者データの最終格納先。DDBJ 内 (destination) に加え、
+// 最終格納先が DDBJ 外になる external (jpost = proteomics / eva = 非ヒト variant) も含む。
+// humandbs / dbcls は Policy 申請・公開の誘導であって格納先ではないため含めない。
+// emit.service / candidateRepos / no-orphan 判定はこの集合を境界に使う。
+export const ENDPOINT_EXTERNALS: readonly Service[] = ["jpost", "eva"]
+export const SUBMISSION_ENDPOINTS: readonly Service[] = [
+  ...DESTINATION_SERVICES,
+  ...ENDPOINT_EXTERNALS,
+]
+
 const DESTINATION_SET: ReadonlySet<Service> = new Set(DESTINATION_SERVICES)
 const COMPANION_SET: ReadonlySet<Service> = new Set(COMPANION_SERVICES)
 const EXTERNAL_SET: ReadonlySet<Service> = new Set(EXTERNAL_SERVICES)
+const ENDPOINT_SET: ReadonlySet<Service> = new Set(SUBMISSION_ENDPOINTS)
 
 export const isDestinationService = (service: Service): boolean =>
   DESTINATION_SET.has(service)
@@ -59,6 +70,9 @@ export const isCompanionService = (service: Service): boolean =>
 
 export const isExternalService = (service: Service): boolean =>
   EXTERNAL_SET.has(service)
+
+export const isSubmissionEndpoint = (service: Service): boolean =>
+  ENDPOINT_SET.has(service)
 
 export const ServiceBadgeColor = z.enum(["emerald", "amber", "rose"])
 export type ServiceBadgeColor = z.infer<typeof ServiceBadgeColor>
@@ -85,6 +99,7 @@ export const SERVICE_PHYSICAL_ORDER: readonly Service[] = [
   "dra",
   "jga",
   "ddbj-trad",
+  "nsss",
   "togovar",
   "gea",
   "metabobank",
@@ -92,5 +107,4 @@ export const SERVICE_PHYSICAL_ORDER: readonly Service[] = [
   "dbcls",
   "jpost",
   "eva",
-  "dgva",
 ]

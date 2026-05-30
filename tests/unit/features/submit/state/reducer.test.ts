@@ -73,15 +73,13 @@ describe("submitReducer preconditions", () => {
   })
 
   test("submitReducer_setQ1Restricted_keepsStillEnabledQ2", () => {
-    // restricted では human / metagenome は引き続き enable なので維持される
-    for (const q2 of ["human", "metagenome"] as const) {
-      const seeded = submitReducer(
-        submitReducer(initialState, { type: "SET_Q1", q1: "public" }),
-        { type: "SET_Q2", q2 },
-      )
-      const next = submitReducer(seeded, { type: "SET_Q1", q1: "restricted" })
-      expect(next.submission.preconditions.q2).toBe(q2)
-    }
+    // restricted (JGA) はヒト個人のみ。human だけが引き続き enable なので維持される
+    const seeded = submitReducer(
+      submitReducer(initialState, { type: "SET_Q1", q1: "public" }),
+      { type: "SET_Q2", q2: "human" },
+    )
+    const next = submitReducer(seeded, { type: "SET_Q1", q1: "restricted" })
+    expect(next.submission.preconditions.q2).toBe("human")
   })
 
   test("submitReducer_setQ1RestrictedWithNullQ2_leavesQ2Null", () => {

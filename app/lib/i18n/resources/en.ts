@@ -228,14 +228,14 @@ export const en: Resources = {
       "dra": { title: "DRA", description: "Deposits sequencing reads as runs and analyses.", cta: "Details" },
       "jga": { title: "JGA", description: "Deposits controlled-access human data under a policy.", cta: "Details" },
       "ddbj-trad": { title: "DDBJ Trad", description: "Bulk-submits assembled nucleotide sequences via MSS.", cta: "Details" },
+      "nsss": { title: "NSSS", description: "Web-based nucleotide sequence submission system.", cta: "Details" },
       "togovar": { title: "TogoVar", description: "Deposits public human variants.", cta: "Details" },
       "gea": { title: "GEA", description: "Deposits gene expression and spatial data.", cta: "Details" },
       "metabobank": { title: "MetaboBank", description: "Deposits mass spectrometry, NMR, and metabolite data.", cta: "Details" },
       "humandbs": { title: "humandbs", description: "Apply for the data access policy here.", cta: "Open application portal" },
       "dbcls": { title: "DBCLS", description: "Register your policy and obtain JGAP approval.", cta: "Open DBCLS" },
       "jpost": { title: "jPOST", description: "Submit proteomics data here instead.", cta: "Open jPOST" },
-      "eva": { title: "EVA", description: "Submit to the European Variation Archive.", cta: "Open EVA" },
-      "dgva": { title: "DGVa", description: "Submit structural variants here.", cta: "Open DGVa" },
+      "eva": { title: "EVA", description: "Submit non-human variants to the EBI EVA.", cta: "Open EVA" },
     },
     preview: {
       label: "Preview",
@@ -246,6 +246,7 @@ export const en: Resources = {
         "dra": "DRA",
         "jga": "JGA",
         "ddbj-trad": "DDBJ Trad",
+        "nsss": "NSSS",
         "togovar": "TogoVar",
         "gea": "GEA",
         "metabobank": "MetaboBank",
@@ -253,7 +254,6 @@ export const en: Resources = {
         "dbcls": "DBCLS",
         "jpost": "jPOST",
         "eva": "EVA",
-        "dgva": "dgVa",
       },
       title: {
         "bioproject": "BioProject",
@@ -261,6 +261,7 @@ export const en: Resources = {
         "dra": "DRA",
         "jga": "JGA",
         "ddbj-trad": "DDBJ Trad",
+        "nsss": "NSSS",
         "togovar": "TogoVar",
         "gea": "GEA",
         "metabobank": "MetaboBank",
@@ -268,7 +269,6 @@ export const en: Resources = {
         "dbcls": "DBCLS",
         "jpost": "jPOST",
         "eva": "EVA",
-        "dgva": "DGVa",
       },
       body: {
         "bioproject": "An umbrella project that ties the submission together.",
@@ -276,14 +276,14 @@ export const en: Resources = {
         "dra": "Sequencing reads deposited as runs and analyses.",
         "jga": "Controlled-access human data grouped into policy-bound datasets.",
         "ddbj-trad": "Assembled sequences bulk-submitted through the Mass Submission System.",
+        "nsss": "A few short sequences submitted via the web-based NSSS.",
         "togovar": "Public human variants on the GRCh37/38 reference.",
         "gea": "Gene expression, microarray, and spatial data.",
         "metabobank": "Mass spectrometry, NMR, and metabolite assignment data.",
         "humandbs": "Where you apply for the data access policy.",
         "dbcls": "Where you register a policy and obtain JGAP approval.",
         "jpost": "Where proteomics data is submitted.",
-        "eva": "The European Variation Archive.",
-        "dgva": "The Database of Genomic Variants archive.",
+        "eva": "The European Variation Archive (non-human variants).",
       },
     },
     origin: {
@@ -336,8 +336,6 @@ export const en: Resources = {
           thirdParty: { label: "Third party (TPA)", sub: "Based on records submitted by others" },
         },
         variant: {
-          perSample: { label: "Per sample", sub: "One file per sample" },
-          aggregate: { label: "Aggregated", sub: "Combined across samples" },
           withRef: { label: "With reference", sub: "Reference named in the VCF header" },
           withoutRef: { label: "Without reference", sub: "No reference declared" },
         },
@@ -350,9 +348,10 @@ export const en: Resources = {
           twoColor: { label: "Two-color", sub: "Two-channel array" },
         },
         spatialTranscriptomics: {
-          visium: { label: "Visium", sub: "10x Visium spatial data" },
-          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq spatial data" },
-          merfish: { label: "MERFISH", sub: "Imaging-based spatial data" },
+          visium: { label: "Visium", sub: "10x Visium (Sequencing + DRA two-step)" },
+          xenium: { label: "Xenium", sub: "10x Xenium (Microarray, no DRA)" },
+          merfish: { label: "MERFISH", sub: "MERFISH (Microarray, no DRA)" },
+          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq (Sequencing + DRA two-step)" },
         },
         spatialImage: {
           visium: { label: "Visium", sub: "Visium tissue image" },
@@ -391,9 +390,6 @@ export const en: Resources = {
       },
     },
     ddbjTrad: {
-      intro: "Assembled nucleotide sequences are bulk-submitted through DDBJ Trad (the Mass Submission System, MSS).",
-      divisionByDataType: "MSS classifies entries along two axes: division and data type.",
-      notForReads: "Raw reads do not go to MSS; submit them to DRA instead.",
       locusTagPrefix: "You will need to obtain a locus_tag prefix.",
       mag: {
         envGenomeEntry: "MAG genomes are submitted as ENV (environmental) genome entries in MSS.",
@@ -403,7 +399,7 @@ export const en: Resources = {
         misagPackage: "SAGs are handled with the MISAG package, separate from MAGs.",
       },
       tpa: {
-        intro: "Third-party (TPA) sequences and annotation are also accepted through MSS.",
+        intro: "Third-party (TPA) sequences and annotation are accepted through DDBJ Trad (MSS).",
         primaryAccessionRequired: "A TPA submission must cite the source INSDC accession it is based on.",
       },
       assemblyAnnotation: {
@@ -411,18 +407,26 @@ export const en: Resources = {
         filenamePairing: "The sequence and annotation files must share the same name apart from their extensions.",
       },
       annotation: {
+        intro: "Annotation for assembled sequences is submitted through DDBJ Trad (MSS).",
         needsSequencePair: "A standalone annotation row needs a matching sequence file to pair with.",
       },
+    },
+    nsss: {
+      intro: "A small number of short nucleotide sequences are submitted through the web-based NSSS (Nucleotide Sequence Submission System).",
+      specialToMss: "Large-scale sequences, complete genomes, and WGS / TSA / TLS / EST / HTG / TPA are out of scope for NSSS; submit them through DDBJ Trad (MSS).",
+      notForReads: "Raw reads are not part of nucleotide sequence submission; submit them to DRA instead.",
     },
     variant: {
       referenceByName: "The reference is named in the VCF header (such as GRCh37/38); no separate reference FASTA submission is needed.",
       jga: {
-        intro: "Restricted-access human and human-related metagenome variants are deposited as JGA Analysis.",
+        intro: "Restricted-access human individual variants are deposited as JGA Analysis.",
         policyDelegated: "Policy approval for JGA is delegated to DBCLS/NBDC.",
       },
       togovar: {
-        intro: "Public human variants are deposited in TogoVar.",
-        humanRefOnly: "TogoVar only accepts the GRCh37/38 human reference, so non-human variants may not be accepted.",
+        intro: "Public human variants are deposited in TogoVar (TogoVar-repository). Both short and structural variants are handled as registration types within TogoVar.",
+      },
+      eva: {
+        nonHuman: "Non-human variants are submitted to the EBI European Variation Archive (EVA), which accepts both short and structural variants.",
       },
     },
     gea: {
@@ -433,16 +437,17 @@ export const en: Resources = {
         intro: "Microarray expression is deposited as a GEA Experiment.",
       },
       spatial: {
-        intro: "Spatial transcriptomics expression and spatial data are deposited in GEA; raw reads go to DRA as a separate entry.",
+        intro: "Spatial transcriptomics expression and spatial data are deposited in GEA.",
+        sequencingRawToDra: "Sequencing-based platforms (Visium / Stereo-seq) deposit their raw reads in DRA as a separate entry (DRA + GEA two-step).",
       },
       spatialImage: {
         intro: "Spatial images are deposited in GEA.",
-        largeImageGeneralist: "Very large images (such as MERFISH) may be better suited to a general-purpose archive.",
+        largeImageGeneralist: "Very large images (such as MERFISH) are not accepted by GEA; consider a general-purpose archive instead.",
       },
     },
     jga: {
       array: {
-        intro: "Restricted-access human and human-related metagenome array data are deposited as JGA Analysis.",
+        intro: "Restricted-access human individual array data are deposited as JGA Analysis.",
       },
       dataset: {
         intro: "JGA groups data into datasets defined per policy.",
@@ -453,7 +458,6 @@ export const en: Resources = {
     metabobank: {
       ms: {
         intro: "Mass spectrometry data is deposited in MetaboBank.",
-        proteomicsToJpost: "Proteomics is out of scope for MetaboBank; submit it to jPOST instead.",
         imagingImageFiles: "Tissue section images for imaging mass spectrometry are bundled as additional files with this data.",
       },
       nmr: {
@@ -461,8 +465,10 @@ export const en: Resources = {
       },
       maf: {
         intro: "Metabolite assignment files (MAF) are deposited in MetaboBank.",
-        proteomicsToJpost: "Proteomics identification results should be submitted to jPOST instead.",
       },
+    },
+    jpost: {
+      proteomics: "Proteomics mass spectrometry is submitted to jPOST, not MetaboBank.",
     },
     bioproject: {
       intro: "A BioProject is created alongside your submission to tie it together.",
@@ -524,19 +530,21 @@ export const en: Resources = {
     pageSubtitle: "Keywords or natural language — every input is consolidated into the query builder below and searched as a whole.",
     searchBoxPlaceholder: "Search by keyword, accession, or organism",
     syntax: {
-      spaceAnd: "space = AND search",
-      phrase: "\"…\" = phrase search",
-      advancedHint: "Searching adds a row to the query builder below, kept in two-way sync.",
+      space: "Space",
+      comma: "Comma",
+      phrase: "\"…\"",
+      spaceUse: "AND search",
+      commaUse: "OR search",
+      phraseUse: "phrase search",
     },
     examples: {
       label: "Examples",
       items: [
         "cancer",
         "Homo sapiens",
-        "organism:\"Mus musculus\"",
-        "title:\"single cell\"",
-        "date_published:[2022-01-01 TO 2024-12-31]",
-        "PRJDB*",
+        "cancer, tumor",
+        "\"single cell\"",
+        "COVID-19",
       ],
     },
     builder: {
@@ -548,16 +556,8 @@ export const en: Resources = {
       },
       addCondition: "+ Add condition",
       addGroup: "+ Add group",
-      matchLabel: "Match",
-      match: {
-        all: "Match all conditions",
-        any: "Match any condition",
-      },
-      connector: {
-        and: "and",
-        or: "or",
-      },
-      exclude: "Exclude",
+      matchLabel: "Combine",
+      negateGroup: "Negate group",
       group: "Group",
       removeCondition: "Remove condition",
       removeGroup: "Remove group",
@@ -574,11 +574,15 @@ export const en: Resources = {
         submitter: "Submitter",
         publication: "Publication",
       },
-      op: {
-        eq: "= (exact)",
+      predicate: {
+        eq: "equals",
+        notEq: "does not equal",
         contains: "contains",
-        wildcard: "wildcard",
-        between: "between",
+        notContains: "does not contain",
+        wildcard: "matches pattern",
+        notWildcard: "does not match pattern",
+        between: "is within",
+        notBetween: "is outside",
       },
       rangeFromLabel: "FROM",
       rangeToLabel: "TO",
@@ -587,7 +591,8 @@ export const en: Resources = {
       valuePlaceholder: "Enter value",
       freeText: {
         field: "Keyword",
-        allFields: "Search all fields",
+        scopeLabel: "Full-text over key fields",
+        scopeTooltip: "Searches accession, title, name, description and organism name",
         placeholder: "Enter a keyword",
         remove: "Remove keyword",
       },
@@ -664,6 +669,8 @@ export const en: Resources = {
     assistant: {
       heading: "AI search assistant",
       description: "Describe your need in natural language; the assistant proposes query builder conditions.",
+      descriptionNew: "Describe it in natural language and get a fresh query suggestion.",
+      descriptionAppend: "Describe it in natural language to get conditions added to your current {{count}}.",
       placeholder: "Example: human cancer BioProjects published since 2022",
       examplesLabel: "Examples",
       examples: [
@@ -677,13 +684,13 @@ export const en: Resources = {
       proposalDescription: "Please review the suggested conditions",
       apply: "Add to query builder",
       reset: "Start over",
+      regenerate: "Regenerate",
       enterMode: "AI mode",
       generateShort: "Generate",
       modeGroupLabel: "Generation mode",
       modeNew: "Generate new",
       modeAppend: "Add to existing",
-      modeHint: "Adds to {{count}} current builder conditions",
-      applyReplace: "Replace builder with this",
+      applyReplace: "Create with this",
     },
     scope: {
       all: "All databases",
@@ -710,9 +717,8 @@ export const en: Resources = {
       parseFailure: "Could not parse the query in the URL",
       crossSearchFailure: "Cross-database search failed",
       dbSearchFailure: "Search failed",
-      serializeFailure: "Failed to sync the URL",
-      querySyntax: "Could not parse the query. Check the syntax and try again.",
-      querySyntaxHint: "space = AND (all words), comma = OR (any word), \"…\" = phrase, field:value for field search (e.g. organism_name:\"Homo sapiens\").",
+      querySyntax: "Could not parse the query. Check the syntax.",
+      keywordInvalid: "Invalid keyword syntax",
     },
     a11y: {
       input: "Search keywords",
@@ -720,7 +726,7 @@ export const en: Resources = {
       scope: "Database scope",
       builderConditions: "Query builder conditions",
       fieldSelector: "Search field",
-      opSelector: "Operator",
+      predicateSelector: "Condition operator",
       facetGroup: "Facet",
       removeFilter: "Remove filter",
       queryPreview: "Query preview",

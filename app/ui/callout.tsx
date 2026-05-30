@@ -8,6 +8,9 @@ type CalloutProps = {
   children: ReactNode
   tone?: CalloutTone
   role?: "status" | "alert" | "note"
+  // Rendered flush-right inside the callout (e.g. a retry button). Keeps the
+  // action visually tied to the message rather than floating elsewhere.
+  action?: ReactNode
 }
 
 const toneClass: Record<CalloutTone, string> = {
@@ -16,7 +19,7 @@ const toneClass: Record<CalloutTone, string> = {
   ok: "bg-ok-bg border-ok-border text-ok-fg",
 }
 
-export const Callout = ({ children, tone = "info", role }: CalloutProps) => (
+export const Callout = ({ children, tone = "info", role, action }: CalloutProps) => (
   <div
     role={role}
     className={cn(
@@ -24,6 +27,13 @@ export const Callout = ({ children, tone = "info", role }: CalloutProps) => (
       toneClass[tone],
     )}
   >
-    {children}
+    {action !== undefined
+      ? (
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">{children}</div>
+          <div className="shrink-0">{action}</div>
+        </div>
+      )
+      : children}
   </div>
 )

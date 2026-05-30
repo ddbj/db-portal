@@ -2,10 +2,10 @@ import type { Dispatch } from "react"
 import { useEffect, useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, Examples, SearchBox, Tag } from "~/ui"
+import { Button, cn, Examples, SearchBox, Tag } from "~/ui"
 
 import type { AdvancedAction, AdvancedState } from "../advanced"
-import { useAssistantStream, useLlmAvailability } from "../assistant"
+import { ProposalConditions, useAssistantStream, useLlmAvailability } from "../assistant"
 import { type AiMode, applyProposalByMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
 
 export type SearchInputPanelProps = {
@@ -18,6 +18,9 @@ export type SearchInputPanelProps = {
   advancedState: AdvancedState
   dispatch: Dispatch<AdvancedAction>
   baseUrl?: string
+  // The keyword could not be parsed; reflect it on the box (warn border +
+  // warn-coloured syntax hint). Only meaningful in keyword mode.
+  invalid?: boolean
 }
 
 const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
@@ -32,6 +35,7 @@ export const SearchInputPanel = ({
   advancedState,
   dispatch,
   baseUrl,
+  invalid = false,
 }: SearchInputPanelProps) => {
   const t = useT()
   const availability = useLlmAvailability()
@@ -40,6 +44,7 @@ export const SearchInputPanel = ({
   const [aiInput, setAiInput] = useState("")
   const [aiMode, setAiMode] = useState<AiMode>("new")
   const isAi = mode === "ai"
+  const keywordInvalid = invalid && !isAi
 
   const count = builderConditionCount(keyword, advancedState)
   const appendDisabled = resolveAiModeDefault(count).appendDisabled
@@ -122,6 +127,7 @@ export const SearchInputPanel = ({
         maxWidth={9999}
         showSearchIcon={!isAi}
         tone={isAi ? "ai" : "default"}
+        invalid={keywordInvalid}
         value={isAi ? aiInput : keyword}
         placeholder={isAi ? t("search.assistant.placeholder") : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
@@ -138,20 +144,41 @@ export const SearchInputPanel = ({
 
       {isAi
         ? (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-fs-meta text-ink-soft m-0">{t("search.assistant.description")}</p>
-            {effectiveAiMode === "append" && count > 0 && (
-              <p className="text-fs-meta text-ink-soft m-0">
-                {t("search.assistant.modeHint", { count })}
-              </p>
-            )}
-          </div>
+          <p className="text-fs-meta text-ink-soft m-0">
+            {effectiveAiMode === "append"
+              ? t("search.assistant.descriptionAppend", { count })
+              : t("search.assistant.descriptionNew")}
+          </p>
         )
         : (
-          <div className="text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-4 gap-y-1">
-            <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>
-            <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
-            <span>{t("search.syntax.advancedHint")}</span>
+          <div
+            className={cn(
+              "text-fs-meta flex flex-wrap items-center gap-x-4 gap-y-1.5",
+              keywordInvalid ? "text-warn-fg" : "text-ink-soft",
+            )}
+          >
+            {keywordInvalid && (
+              <span className="font-semibold">{t("search.errors.keywordInvalid")}</span>
+            )}
+            {([
+              [t("search.syntax.space"), t("search.syntax.spaceUse")],
+              [t("search.syntax.comma"), t("search.syntax.commaUse")],
+              [t("search.syntax.phrase"), t("search.syntax.phraseUse")],
+            ] as const).map(([key, use]) => (
+              <span key={key} className="inline-flex items-center gap-1.5 leading-none">
+                <kbd
+                  className={cn(
+                    "rounded border px-1.5 py-0.5 font-mono text-fs-meta not-italic leading-none",
+                    keywordInvalid
+                      ? "border-warn-border bg-warn-bg text-warn-fg"
+                      : "border-border-soft bg-surface-subtle text-ink-mid",
+                  )}
+                >
+                  {key}
+                </kbd>
+                <span>= {use}</span>
+              </span>
+            ))}
           </div>
         )}
 
@@ -179,23 +206,17 @@ export const SearchInputPanel = ({
             <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
             <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
           </div>
-          <ul className="list-none p-0 m-0 flex flex-col gap-1">
-            {stream.proposal.conditions.map((condition, index) => (
-              <li key={`${condition.field}-${index}`} className="text-fs-label text-ink-mid font-mono">
-                <span className="text-brand-deep">{condition.field}</span>
-                {" "}
-                <span className="text-ink-soft">{condition.op}</span>
-                {" "}
-                <span className="text-ink font-semibold">
-                  {condition.op === "between"
-                    ? `${condition.from}..${condition.to}`
-                    : condition.value}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="flex justify-end">
-            <Button kind="primary" size="sm" onClick={() => applyProposal(effectiveAiMode)}>
+          <ProposalConditions proposal={stream.proposal} />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              kind="secondary"
+              size="md"
+              disabled={aiInput.trim().length === 0}
+              onClick={() => void stream.start(aiInput)}
+            >
+              {t("search.assistant.regenerate")}
+            </Button>
+            <Button kind="primary" size="md" onClick={() => applyProposal(effectiveAiMode)}>
               {effectiveAiMode === "new"
                 ? t("search.assistant.applyReplace")
                 : t("search.assistant.apply")}

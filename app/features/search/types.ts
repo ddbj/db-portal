@@ -71,3 +71,78 @@ export const FIELD_OPS: Record<AdvancedField, readonly AdvancedOp[]> = {
 }
 
 export type AdvancedCombinator = "AND" | "OR" | "NOT"
+
+// A predicate is an operator paired with whether the condition is negated. The
+// builder folds op selection and negation into one dropdown ("を含む" /
+// "を含まない" 等) so a row reads as a clause; negation maps to a NOT wrapper in
+// the AST, not to a separate operator (the DSL allowlist has no neq/not_contains).
+export type Predicate = { op: AdvancedOp; negated: boolean }
+
+export const predicateValue = ({ op, negated }: Predicate): string =>
+  negated ? `not:${op}` : op
+
+export const parsePredicate = (value: string): Predicate =>
+  value.startsWith("not:")
+    ? { op: value.slice(4) as AdvancedOp, negated: true }
+    : { op: value as AdvancedOp, negated: false }
+
+export const fieldPredicates = (field: AdvancedField): readonly Predicate[] =>
+  FIELD_OPS[field].flatMap((op) => [
+    { op, negated: false },
+    { op, negated: true },
+  ])
+
+// i18n key under search.builder.field for a given field (the resource keys are
+// camelCase while AdvancedField values are snake_case).
+export type FieldLabelKey =
+  | "identifier"
+  | "title"
+  | "description"
+  | "organismId"
+  | "organismName"
+  | "accessibility"
+  | "datePublished"
+  | "dateModified"
+  | "dateCreated"
+  | "submitter"
+  | "publication"
+
+export const fieldLabelKey = (field: AdvancedField): FieldLabelKey => {
+  switch (field) {
+    case "organism_id":
+      return "organismId"
+    case "organism_name":
+      return "organismName"
+    case "date_published":
+      return "datePublished"
+    case "date_modified":
+      return "dateModified"
+    case "date_created":
+      return "dateCreated"
+    case "identifier":
+    case "title":
+    case "description":
+    case "accessibility":
+    case "submitter":
+    case "publication":
+      return field
+  }
+}
+
+// i18n key under search.builder.predicate for a given op + negation.
+export const predicateLabelKey = ({ op, negated }: Predicate): string => {
+  const positive: Record<AdvancedOp, string> = {
+    eq: "eq",
+    contains: "contains",
+    wildcard: "wildcard",
+    between: "between",
+  }
+  const negative: Record<AdvancedOp, string> = {
+    eq: "notEq",
+    contains: "notContains",
+    wildcard: "notWildcard",
+    between: "notBetween",
+  }
+
+  return negated ? negative[op] : positive[op]
+}

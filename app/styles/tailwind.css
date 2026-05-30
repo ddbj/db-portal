@@ -23,7 +23,8 @@
   --color-brand:        #6F4392;  /* primary button / active nav / link / H2 left bar */
   --color-brand-deep:   #502E6B;  /* hover / pressed / 強調テキスト */
   --color-brand-light:  #A987C5;  /* secondary surface fill / radio card border (checked) */
-  --color-brand-soft:   #F4F2FA;  /* tinted background block / brand chip bg */
+  --color-brand-tint:   #E7DDF4;  /* brand-soft の一段濃い薄紫: brand-soft 面に乗る pill (keyword 行の「キーワード」ラベル) */
+  --color-brand-soft:   #F4F2FA;  /* tinted background block / brand chip bg / keyword 行 / AI モード box */
   --color-brand-softer: #F8F4FB;  /* checked card surface (FmtRadio / FmtCheck) */
 
   /* Ink (text 階層、WCAG AA 担保) */

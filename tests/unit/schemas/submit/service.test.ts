@@ -122,7 +122,7 @@ describe("isDestination/Companion/External predicates", () => {
 
   test("isExternalService_humandbs_true", () => {
     expect(isExternalService("humandbs")).toBe(true)
-    expect(isExternalService("dgva")).toBe(true)
+    expect(isExternalService("eva")).toBe(true)
   })
 })
 

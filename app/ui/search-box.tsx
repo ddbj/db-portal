@@ -18,6 +18,7 @@ type SearchBoxProps = {
   showScope?: boolean
   size?: "md" | "lg"
   tone?: "default" | "ai"
+  invalid?: boolean
   trailing?: ReactNode
   ariaLabel?: string
   submitLabel?: string
@@ -54,6 +55,7 @@ export const SearchBox = ({
   showScope = true,
   size = "md",
   tone = "default",
+  invalid = false,
   trailing,
   ariaLabel = "検索キーワード",
   submitLabel = "検索",
@@ -116,8 +118,10 @@ export const SearchBox = ({
         className={cn(
           "rounded-card flex items-stretch overflow-hidden shadow-card w-full border",
           tone === "ai"
-            ? "bg-brand-soft/30 border-brand"
-            : "bg-surface border-border-strong",
+            ? "bg-brand-soft border-brand"
+            : invalid
+              ? "bg-surface border-warn-border ring-1 ring-warn-border"
+              : "bg-surface border-border-strong",
         )}
       >
         {showScope && (
@@ -165,6 +169,7 @@ export const SearchBox = ({
             }}
             placeholder={placeholder}
             aria-label={ariaLabel}
+            aria-invalid={invalid || undefined}
             className={cn(
               "flex-1 min-w-0 border-0 bg-transparent text-ink font-sans caret-ink leading-tight",
               cls.input,

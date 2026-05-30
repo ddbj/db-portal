@@ -173,13 +173,13 @@ describe("evalWhen anyChip", () => {
 
   test("evalWhen_anyChipAxisOnlyWithNoMatchingAxis_false", () => {
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "variation-form" } }, ctx)).toBe(false)
+    expect(evalWhen({ anyChip: { axis: "mass-spec-domain" } }, ctx)).toBe(false)
   })
 
   test("evalWhen_anyChipValueMatchesWrongAxis_false", () => {
-    // value "third-party" exists, but only on the provenance axis, not variation-form
+    // value "third-party" exists, but only on the provenance axis, not mass-spec-domain
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "variation-form", value: "third-party" } }, ctx)).toBe(false)
+    expect(evalWhen({ anyChip: { axis: "mass-spec-domain", value: "third-party" } }, ctx)).toBe(false)
   })
 
   test("evalWhen_anyChipOnEmptyChipTags_false", () => {

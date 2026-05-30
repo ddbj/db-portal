@@ -12,3 +12,4 @@ export {
   type AssistantStreamResult,
   useAssistantStream,
 } from "./prompt-client"
+export { ProposalConditions, type ProposalConditionsProps } from "./proposal-conditions"

@@ -14,7 +14,7 @@ import { renderWithStub } from "../../../_helpers/render"
 import { llmHealth } from "../../../mocks/handlers"
 import { server } from "../../../mocks/server"
 
-const Harness = ({ initial }: { initial: AdvancedState }) => {
+const Harness = ({ initial, invalid = false }: { initial: AdvancedState; invalid?: boolean }) => {
   const [keyword, setKeyword] = useState("")
   const [advancedState, dispatch] = useReducer(advancedReducer, initial)
   const [scope, setScope] = useState("全データベース")
@@ -28,6 +28,7 @@ const Harness = ({ initial }: { initial: AdvancedState }) => {
       onScopeChange={setScope}
       advancedState={advancedState}
       dispatch={dispatch}
+      invalid={invalid}
     />
   )
 }
@@ -43,9 +44,9 @@ const stateWithCondition = (): AdvancedState => {
   }
 }
 
-const renderPanel = (initial: AdvancedState) =>
+const renderPanel = (initial: AdvancedState, invalid = false) =>
   renderWithStub({
-    routes: [{ path: "/", Component: () => <Harness initial={initial} /> }],
+    routes: [{ path: "/", Component: () => <Harness initial={initial} invalid={invalid} /> }],
     initialEntries: ["/"],
   })
 
@@ -115,5 +116,28 @@ describe("SearchInputPanel AI mode", () => {
     fireEvent.click(modeTrigger)
     expect(screen.getByRole("option", { name: "新規生成" })).not.toBeDisabled()
     expect(screen.getByRole("option", { name: "既存に追加" })).not.toBeDisabled()
+  })
+})
+
+describe("SearchInputPanel keyword validation", () => {
+  test("invalid_marksKeywordBoxAndShowsMessage", async () => {
+    server.use(llmHealth({ status: "ok", model: "qwen" }))
+    renderPanel(createInitialState(), true)
+    const box = await screen.findByRole("textbox", { name: "検索キーワード" })
+    expect(box).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByText("キーワードの構文が正しくありません")).toBeInTheDocument()
+  })
+
+  test("invalid_ignoredInAiMode", async () => {
+    server.use(llmHealth({ status: "ok", model: "qwen" }))
+    renderPanel(createInitialState(), true)
+    fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
+    // The AI prompt box is a different input, so keyword validation does not
+    // bleed into AI mode.
+    expect(screen.getByRole("textbox", { name: "AI 検索アシスタントへの入力" })).not.toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    expect(screen.queryByText("キーワードの構文が正しくありません")).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
 import type { FileEntryChip, FlowStep } from "~/schemas/submit"
-import { isDestinationService, TYPICAL_DATA_FORM_FOR_KIND, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/submit"
+import { isSubmissionEndpoint, TYPICAL_DATA_FORM_FOR_KIND, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/submit"
 
 import { isKindEnabled } from "../cascade"
 import { deriveFlowSteps } from "../flow-rules"
@@ -14,9 +14,10 @@ export const selectValidations = (state: UIState): Validation[] => {
   const groupIds = new Set(state.submission.fileGroups.map((g) => g.id))
 
   const steps = deriveFlowSteps(state.submission)
+  // 登録エンドポイント = DDBJ 内 destination ∪ 外部の最終格納先 (jpost / eva)
   const destinationEntryIds = new Set<string>()
   for (const s of steps) {
-    if (!isDestinationService(s.service)) continue
+    if (!isSubmissionEndpoint(s.service)) continue
     for (const id of s.scope.entryIds) destinationEntryIds.add(id)
   }
 

@@ -5,7 +5,7 @@ import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
 import { detectRecipeGroups } from "../../../app/features/submit/flow-rules/recipes"
 import {
   type FlowStep,
-  isDestinationService,
+  isSubmissionEndpoint,
   SERVICE_PHYSICAL_ORDER,
   type Submission,
 } from "../../../app/schemas/submit"
@@ -86,7 +86,8 @@ test.prop([arbSubmission], RUNS)(
     const q2 = submission.preconditions.q2
     for (const e of submission.fileEntries) {
       if (e.fileTypeKind !== "sequence-read" || owned.has(e.id)) continue
-      const toJga = e.access === "restricted" && (q2 === "human" || q2 === "metagenome")
+      // JGA はヒト個人のみ。restricted でも非ヒト (metagenome 含む) は DRA(embargo) に行く
+      const toJga = e.access === "restricted" && q2 === "human"
       if (toJga) {
         expect(jgaIds.has(e.id)).toBe(true)
         expect(draIds.has(e.id)).toBe(false)
@@ -143,12 +144,13 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_everyEntry_appearsInSomeDestinationStep",
+  "deriveFlowSteps_everyEntry_appearsInSomeEndpointStep",
   (submission) => {
     const steps = deriveFlowSteps(submission)
-    const destIds = entryIdsOfService(steps, (s) => isDestinationService(s.service))
+    // 登録エンドポイント = DDBJ 内 destination ∪ 外部の最終格納先 (jpost / eva)
+    const endpointIds = entryIdsOfService(steps, (s) => isSubmissionEndpoint(s.service))
     for (const e of submission.fileEntries) {
-      expect(destIds.has(e.id)).toBe(true)
+      expect(endpointIds.has(e.id)).toBe(true)
     }
   },
 )

@@ -20,6 +20,7 @@ export {
   SearchIcon,
   UserIcon,
 } from "./icons"
+export { InfoHint } from "./info-hint"
 export { Label } from "./label"
 export { LinkCard, type LinkCardProps } from "./link-card"
 export { Modal, ModalBody, ModalFooter, ModalHeader } from "./modal"
@@ -30,6 +31,7 @@ export { Pagination } from "./pagination"
 export { SearchBox } from "./search-box"
 export { Section } from "./section"
 export { SectionHeading } from "./section-heading"
+export { Segmented, type SegmentedOption } from "./segmented"
 export { Select, type SelectOption } from "./select"
 export { SidebarGroupLabel } from "./sidebar-group-label"
 export { SidebarHeading } from "./sidebar-heading"

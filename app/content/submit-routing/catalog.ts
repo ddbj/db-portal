@@ -2,20 +2,22 @@ import { type SubmitKindRoute,SubmitRoutingCatalog } from "~/schemas/content/sub
 import type { FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
 
 // Tier1 ルーティング・カタログ (データ駆動)。DDBJ が編集し、起動時 Zod 検証で typo が落ちる。
-// rules は first-match。emit.service は role=destination のみ。JGA 分岐は access=restricted ∧ q2 ∈ {human, metagenome}。
+// rules は first-match。emit.service は登録エンドポイント (destination ∪ {jpost, eva})。
+// JGA 分岐は access=restricted ∧ q2=human (ヒト個人のみ。メタゲノム/環境は対象外)。
 const catalogData = {
   // カスケード: allowedRepos = Q1.repos ∩ Q2.repos。rules を実行せず repos を読むだけで判定する。
+  // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
   q1Options: [
-    { id: "public", repos: ["dra", "ddbj-trad", "togovar", "gea", "metabobank"] },
+    { id: "public", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
     { id: "restricted", repos: ["jga"] },
     { id: "third-party", repos: ["ddbj-trad", "metabobank"] },
   ],
   q2Options: [
-    { id: "human", repos: ["dra", "jga", "ddbj-trad", "togovar", "gea", "metabobank"] },
-    { id: "eukaryote", repos: ["dra", "ddbj-trad", "togovar", "gea", "metabobank"] },
-    { id: "prokaryote", repos: ["dra", "ddbj-trad", "togovar", "gea", "metabobank"] },
-    { id: "virus", repos: ["dra", "ddbj-trad", "togovar", "gea", "metabobank"] },
-    { id: "metagenome", repos: ["dra", "jga", "ddbj-trad", "togovar", "gea", "metabobank"] },
+    { id: "human", repos: ["dra", "jga", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "eukaryote", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "prokaryote", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "virus", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "metagenome", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
   ],
   kindRoutes: [
     {
@@ -23,7 +25,7 @@ const catalogData = {
       candidateRepos: ["dra", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2In: ["human", "metagenome"] }] },
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -52,7 +54,7 @@ const catalogData = {
     },
     {
       id: "sequence-nucleotide",
-      candidateRepos: ["ddbj-trad", "dra"],
+      candidateRepos: ["ddbj-trad", "nsss", "dra"],
       rules: [
         {
           when: { and: [{ groupType: "mag-sag-chain" }, { anyChip: { axis: "assembly-form", value: "mag" } }] },
@@ -87,12 +89,12 @@ const catalogData = {
         {
           when: { always: true },
           emit: {
-            service: "ddbj-trad",
+            service: "nsss",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.intro" },
-              { kind: "info", messageKey: "submit.ddbjTrad.divisionByDataType" },
-              { kind: "warning", messageKey: "submit.ddbjTrad.notForReads", whenAny: { dataForm: "raw" } },
+              { kind: "info", messageKey: "submit.nsss.intro" },
+              { kind: "info", messageKey: "submit.nsss.specialToMss" },
+              { kind: "warning", messageKey: "submit.nsss.notForReads", whenAny: { dataForm: "raw" } },
             ],
           },
         },
@@ -135,7 +137,7 @@ const catalogData = {
             service: "ddbj-trad",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.intro" },
+              { kind: "info", messageKey: "submit.ddbjTrad.annotation.intro" },
               { kind: "warning", messageKey: "submit.ddbjTrad.annotation.needsSequencePair" },
             ],
           },
@@ -144,10 +146,10 @@ const catalogData = {
     },
     {
       id: "variant",
-      candidateRepos: ["togovar", "jga"],
+      candidateRepos: ["togovar", "eva", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2In: ["human", "metagenome"] }] },
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -163,17 +165,27 @@ const catalogData = {
           },
         },
         {
-          when: { always: true },
+          when: { q2: "human" },
           emit: {
             service: "togovar",
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.variant.togovar.intro" },
               {
-                kind: "warning",
-                messageKey: "submit.variant.togovar.humanRefOnly",
-                whenAny: { q2In: ["eukaryote", "prokaryote", "virus", "metagenome"] },
+                kind: "info",
+                messageKey: "submit.variant.referenceByName",
+                whenAny: { groupType: "variation-with-reference" },
               },
+            ],
+          },
+        },
+        {
+          when: { always: true },
+          emit: {
+            service: "eva",
+            scope: "entry",
+            notes: [
+              { kind: "info", messageKey: "submit.variant.eva.nonHuman" },
               {
                 kind: "info",
                 messageKey: "submit.variant.referenceByName",
@@ -203,7 +215,7 @@ const catalogData = {
       candidateRepos: ["gea", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2In: ["human", "metagenome"] }] },
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -229,7 +241,19 @@ const catalogData = {
           emit: {
             service: "gea",
             scope: "group",
-            notes: [{ kind: "info", messageKey: "submit.gea.spatial.intro" }],
+            notes: [
+              { kind: "info", messageKey: "submit.gea.spatial.intro" },
+              {
+                kind: "info",
+                messageKey: "submit.gea.spatial.sequencingRawToDra",
+                whenAny: {
+                  or: [
+                    { anyChip: { axis: "spatial-platform", value: "visium" } },
+                    { anyChip: { axis: "spatial-platform", value: "stereo-seq" } },
+                  ],
+                },
+              },
+            ],
           },
         },
       ],
@@ -257,8 +281,16 @@ const catalogData = {
     },
     {
       id: "mass-spectrometry",
-      candidateRepos: ["metabobank"],
+      candidateRepos: ["metabobank", "jpost"],
       rules: [
+        {
+          when: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
+          emit: {
+            service: "jpost",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jpost.proteomics" }],
+          },
+        },
         {
           when: { always: true },
           emit: {
@@ -266,11 +298,6 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.metabobank.ms.intro" },
-              {
-                kind: "warning",
-                messageKey: "submit.metabobank.ms.proteomicsToJpost",
-                whenAny: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
-              },
               {
                 kind: "info",
                 messageKey: "submit.metabobank.ms.imagingImageFiles",
@@ -297,21 +324,22 @@ const catalogData = {
     },
     {
       id: "metabolite-assignment",
-      candidateRepos: ["metabobank"],
+      candidateRepos: ["metabobank", "jpost"],
       rules: [
+        {
+          when: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
+          emit: {
+            service: "jpost",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jpost.proteomics" }],
+          },
+        },
         {
           when: { always: true },
           emit: {
             service: "metabobank",
             scope: "entry",
-            notes: [
-              { kind: "info", messageKey: "submit.metabobank.maf.intro" },
-              {
-                kind: "warning",
-                messageKey: "submit.metabobank.maf.proteomicsToJpost",
-                whenAny: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
-              },
-            ],
+            notes: [{ kind: "info", messageKey: "submit.metabobank.maf.intro" }],
           },
         },
       ],

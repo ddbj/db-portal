@@ -35,33 +35,41 @@ const renderBuilder = (initial: AdvancedState) => {
 }
 
 describe("AdvancedBuilder conditions", () => {
-  test("matchSelector_switchesConnectorWord", () => {
+  test("andOrToggle_switchesInnerCombinator", () => {
     renderBuilder(twoConditions())
-    // Two conditions default to "match all" → the rows read joined by "かつ".
-    expect(screen.getByText("かつ")).toBeInTheDocument()
-    expect(screen.queryByText("または")).toBeNull()
+    const and = screen.getByRole("button", { name: "AND" })
+    const or = screen.getByRole("button", { name: "OR" })
+    // Two conditions default to AND; the segmented toggle (not a pulldown) drives
+    // the whole group's combinator.
+    expect(and).toHaveAttribute("aria-pressed", "true")
+    expect(or).toHaveAttribute("aria-pressed", "false")
 
-    fireEvent.click(screen.getByRole("combobox", { name: "クエリビルダーの条件一覧" }))
-    fireEvent.click(screen.getByRole("option", { name: "いずれかの条件に一致" }))
+    fireEvent.click(or)
 
-    // Switching to "match any" flips the inline connector to "または".
-    expect(screen.getByText("または")).toBeInTheDocument()
-    expect(screen.queryByText("かつ")).toBeNull()
+    expect(screen.getByRole("button", { name: "OR" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "AND" })).toHaveAttribute("aria-pressed", "false")
   })
 
-  test("excludeToggle_leadingRowDisabled_othersNegate", () => {
+  test("noConnectorWordsBetweenRows", () => {
     renderBuilder(twoConditions())
-    const excludes = screen.getAllByRole("button", { name: "除外" })
-    expect(excludes).toHaveLength(2)
-    // The leading condition is pinned to AND by the reducer, so it cannot be
-    // negated; the second can.
-    expect(excludes[0]).toBeDisabled()
-    expect(excludes[1]).not.toBeDisabled()
-    expect(excludes[1]).toHaveAttribute("aria-pressed", "false")
+    // Connector words are gone; the toggle plus the branch guide carry the meaning.
+    expect(screen.queryByText("かつ")).toBeNull()
+    expect(screen.queryByText("または")).toBeNull()
+  })
 
-    fireEvent.click(excludes[1] as HTMLElement)
+  test("predicateDropdown_negatesLeadingCondition", () => {
+    renderBuilder(twoConditions())
+    const predicates = screen.getAllByRole("combobox", { name: "条件の演算子" })
+    // The leading row can be negated through its predicate — no separate exclude
+    // button, and no pinned first row.
+    expect(predicates[0]).toHaveTextContent("と一致")
+    expect(predicates[0]).not.toHaveTextContent("と一致しない")
 
-    expect(screen.getAllByRole("button", { name: "除外" })[1]).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(predicates[0] as HTMLElement)
+    fireEvent.click(screen.getByRole("option", { name: "を含まない" }))
+
+    expect(screen.getAllByRole("combobox", { name: "条件の演算子" })[0]).toHaveTextContent("を含まない")
+    expect(screen.queryByRole("button", { name: "除外" })).toBeNull()
   })
 
   test("fieldLabels_areJapaneseOnly", () => {

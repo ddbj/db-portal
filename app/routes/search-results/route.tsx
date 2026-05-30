@@ -164,6 +164,7 @@ const SearchResultsRoute = () => {
           scopeAriaLabel={t("search.a11y.scope")}
           onScopeChange={handleScopeChange}
           onSubmit={handleSubmitFromBox}
+          invalid={data.errorKey === "parse"}
         />
         {data.q && data.db === null && (
           <div className="mt-2.5">
@@ -171,7 +172,7 @@ const SearchResultsRoute = () => {
           </div>
         )}
         <div className="mt-2">
-          <SyncStatusChip status={sync.status} onRetry={sync.retry} />
+          <SyncStatusChip status={sync.status} />
         </div>
       </Section>
       {data.q === ""
@@ -188,18 +189,21 @@ const SearchResultsRoute = () => {
         : data.errorKey
           ? (
             <Section padTop="block" padBottom="lg">
-              <Callout tone="warn" role="status">
+              <Callout
+                tone="warn"
+                role="status"
+                action={
+                  <Button kind="secondary" size="sm" onClick={() => navigate(0)}>
+                    {t("search.sync.retry")}
+                  </Button>
+                }
+              >
                 {data.errorKey === "parse"
                   ? t("search.errors.parseFailure")
                   : data.errorKey === "cross"
                     ? t("search.errors.crossSearchFailure")
                     : t("search.errors.dbSearchFailure")}
               </Callout>
-              <div className="mt-3 flex justify-end">
-                <Button kind="secondary" onClick={() => navigate(0)}>
-                  {t("search.sync.retry")}
-                </Button>
-              </div>
             </Section>
           )
           : data.cross

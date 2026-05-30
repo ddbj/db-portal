@@ -117,7 +117,7 @@ describe("deriveFlowSteps", () => {
     expect(warningKeys(trad)).toContain("submit.ddbjTrad.tpa.primaryAccessionRequired")
   })
 
-  test("deriveFlowSteps_nonHumanVariant_routesToTogovarWithHumanRefOnlyWarning", () => {
+  test("deriveFlowSteps_nonHumanVariant_routesToEvaNotTogovar", () => {
     const submission: Submission = {
       preconditions: { q1: "public", q2: "eukaryote" },
       fileEntries: [
@@ -139,16 +139,45 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "togovar"])
+    // non-human variants go to EVA (an external submission endpoint), never TogoVar
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
 
-    const togovar = stepFor(steps, "togovar")
-    expect(togovar.origin).toBe("tier1")
-    // eukaryote is non-human, so the human-reference-only caveat fires
-    expect(warningKeys(togovar)).toContain("submit.variant.togovar.humanRefOnly")
+    const eva = stepFor(steps, "eva")
+    expect(eva.origin).toBe("tier1")
+    expect(eva.notes.map((n) => n.messageKey)).toContain("submit.variant.eva.nonHuman")
+    expect(steps.some((s) => s.service === "togovar")).toBe(false)
     expect(steps.some((s) => s.service === "jga")).toBe(false)
   })
 
-  test("deriveFlowSteps_restrictedHumanVariant_routesToJgaWithoutTogovarWarning", () => {
+  test("deriveFlowSteps_publicHumanVariant_routesToTogovar", () => {
+    const submission: Submission = {
+      preconditions: { q1: "public", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "variant",
+          filename: "var_001.vcf",
+          access: "open",
+          dataForm: "variant-call",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [
+        { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "togovar"])
+    const togovar = stepFor(steps, "togovar")
+    expect(togovar.origin).toBe("tier1")
+    expect(steps.some((s) => s.service === "eva")).toBe(false)
+  })
+
+  test("deriveFlowSteps_restrictedHumanVariant_routesToJga", () => {
     const submission: Submission = {
       preconditions: { q1: "restricted", q2: "human" },
       fileEntries: [
@@ -170,12 +199,12 @@ describe("deriveFlowSteps", () => {
 
     expect(servicesOf(steps)).toEqual(["jga", "humandbs", "dbcls"])
     expect(steps.some((s) => s.service === "togovar")).toBe(false)
+    expect(steps.some((s) => s.service === "eva")).toBe(false)
     const jga = stepFor(steps, "jga")
     expect(jga.origin).toBe("recipe")
-    expect(warningKeys(jga)).not.toContain("submit.variant.togovar.humanRefOnly")
   })
 
-  test("deriveFlowSteps_publicMetagenomeVariant_routesToTogovarWithHumanRefOnlyWarning", () => {
+  test("deriveFlowSteps_publicMetagenomeVariant_routesToEva", () => {
     const submission: Submission = {
       preconditions: { q1: "public", q2: "metagenome" },
       fileEntries: [
@@ -195,12 +224,13 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "togovar"])
-    // metagenome is non-human, so the GRCh37/38 human-reference-only caveat fires
-    expect(warningKeys(stepFor(steps, "togovar"))).toContain("submit.variant.togovar.humanRefOnly")
+    // metagenome is non-human, so its variants go to EVA (not TogoVar, not JGA)
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
+    expect(steps.some((s) => s.service === "togovar")).toBe(false)
+    expect(steps.some((s) => s.service === "jga")).toBe(false)
   })
 
-  test("deriveFlowSteps_restrictedMetagenomeVariant_routesToJga", () => {
+  test("deriveFlowSteps_restrictedMetagenomeVariant_routesToEvaNotJga", () => {
     const submission: Submission = {
       preconditions: { q1: "restricted", q2: "metagenome" },
       fileEntries: [
@@ -220,7 +250,9 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(steps.some((s) => s.service === "jga")).toBe(true)
+    // restricted metagenome is still non-human: JGA is human-only, so it falls to EVA
+    expect(steps.some((s) => s.service === "eva")).toBe(true)
+    expect(steps.some((s) => s.service === "jga")).toBe(false)
     expect(steps.some((s) => s.service === "togovar")).toBe(false)
   })
 

@@ -15,11 +15,27 @@ const expectGroup = (node: AdvancedNode | undefined): AdvancedGroup => {
 }
 
 describe("advancedReducer", () => {
-  test("addCondition_inheritsInnerCombinator", () => {
+  test("addCondition_seedsNonNegated", () => {
     const initial = createInitialState()
-    const next = advancedReducer(initial, { type: "addCondition", parentId: initial.root.id })
+    const orInner = advancedReducer(initial, {
+      type: "updateInnerCombinator",
+      id: initial.root.id,
+      innerCombinator: "OR",
+    })
+    const next = advancedReducer(orInner, { type: "addCondition", parentId: orInner.root.id })
     expect(next.root.children.length).toBe(1)
+    // A new condition is never negated; its combinator is AND regardless of the
+    // group's OR combinator (AND/OR joining lives in innerCombinator).
     expect(expectCondition(next.root.children[0]).combinator).toBe("AND")
+  })
+
+  test("updateCombinator_negatesLeadingCondition", () => {
+    const initial = createInitialState()
+    const withCondition = advancedReducer(initial, { type: "addCondition", parentId: initial.root.id })
+    const child = expectCondition(withCondition.root.children[0])
+    const negated = advancedReducer(withCondition, { type: "updateCombinator", id: child.id, combinator: "NOT" })
+    // The leading condition can be negated — there is no first-row AND pin.
+    expect(expectCondition(negated.root.children[0]).combinator).toBe("NOT")
   })
 
   test("updateField_dateField_switchesOpToBetween", () => {

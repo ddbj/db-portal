@@ -36,7 +36,7 @@ const SearchRoute = () => {
   const t = useT()
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState("")
-  const [queryError, setQueryError] = useState<null | "parse" | "serialize">(null)
+  const [submitParseError, setSubmitParseError] = useState(false)
   const [scope, setScope] = useState<ScopeKey>("all")
   const [advancedState, dispatch] = useReducer(advancedReducer, undefined, createInitialState)
 
@@ -68,12 +68,12 @@ const SearchRoute = () => {
         const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
-        setQueryError("parse")
+        setSubmitParseError(true)
 
         return
       }
     }
-    setQueryError(null)
+    setSubmitParseError(false)
     if (isIdentityAst(combined)) {
       navigate(buildResultsHref({ db }))
 
@@ -83,20 +83,39 @@ const SearchRoute = () => {
       const dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
       navigate(buildResultsHref({ q: dsl, db }))
     } catch {
-      setQueryError("serialize")
+      // Serialize is a system-side failure the user cannot fix; the live sync
+      // chip surfaces it. Don't navigate and don't raise a warning here.
     }
   }
 
   const handleClear = () => {
     setKeyword("")
-    setQueryError(null)
+    setSubmitParseError(false)
     setScope("all")
     dispatch({ type: "clear" })
   }
 
-  // A failed keyword parse (live sync or submit) is a fixable syntax error; a
-  // serialize failure is a transient sync problem, not bad syntax.
-  const errorKind: null | "parse" | "serialize" = queryError ?? (sync.parseError ? "parse" : null)
+  // Editing the keyword dismisses a stale submit-time error; the live sync
+  // re-flags it if the new keyword is still unparseable.
+  const handleKeywordChange = (value: string) => {
+    setKeyword(value)
+    if (submitParseError) setSubmitParseError(false)
+  }
+
+  // A failed keyword parse (live sync or submit) is the only user-fixable error
+  // surfaced here; system-side serialize failures are left to the sync chip.
+  const hasError = submitParseError || sync.parseError
+
+  // The warning's retry re-runs whichever path failed: a submit-time parse
+  // retries the submit, a live parse error re-runs the debounced sync.
+  const handleRetry = () => {
+    if (submitParseError) {
+      void runSearch()
+
+      return
+    }
+    sync.retry()
+  }
 
   return (
     <>
@@ -104,7 +123,7 @@ const SearchRoute = () => {
       <Section padTop="none" padBottom="none">
         <SearchInputPanel
           keyword={keyword}
-          onKeywordChange={setKeyword}
+          onKeywordChange={handleKeywordChange}
           scope={scopeLabel}
           scopeOptions={scopeOptions}
           scopeAriaLabel={t("search.a11y.scope")}
@@ -115,27 +134,14 @@ const SearchRoute = () => {
           advancedState={advancedState}
           dispatch={dispatch}
           baseUrl={searchApiBaseUrl}
+          invalid={hasError}
         />
-        {errorKind !== null && (
-          <div className="mt-2.5">
-            <Callout tone="warn" role="alert">
-              {errorKind === "serialize"
-                ? <span className="block font-semibold">{t("search.errors.serializeFailure")}</span>
-                : (
-                  <>
-                    <span className="block font-semibold">{t("search.errors.querySyntax")}</span>
-                    <span className="block text-fs-label">{t("search.errors.querySyntaxHint")}</span>
-                  </>
-                )}
-            </Callout>
-          </div>
-        )}
       </Section>
       <Section padTop="md" padBottom="none">
         <SectionHeading
           count={conditionCount}
           countSuffix={t("search.builder.countSuffix")}
-          action={<SyncStatusChip status={sync.status} onRetry={sync.retry} />}
+          action={<SyncStatusChip status={sync.status} />}
         >
           {t("search.builder.heading")}
         </SectionHeading>
@@ -143,22 +149,40 @@ const SearchRoute = () => {
           state={advancedState}
           dispatch={dispatch}
           freeText={keyword}
-          onFreeTextChange={setKeyword}
-          onFreeTextRemove={() => setKeyword("")}
+          onFreeTextChange={handleKeywordChange}
+          onFreeTextRemove={() => handleKeywordChange("")}
         />
       </Section>
-      {sync.dsl && (
-        <Section padTop="block" padBottom="none">
-          <QueryPreview dsl={sync.dsl} />
-        </Section>
-      )}
+      {hasError
+        ? (
+          <Section padTop="block" padBottom="none">
+            <Callout
+              tone="warn"
+              role="alert"
+              action={
+                <Button kind="secondary" size="sm" onClick={handleRetry}>
+                  {t("search.sync.retry")}
+                </Button>
+              }
+            >
+              {t("search.errors.querySyntax")}
+            </Callout>
+          </Section>
+        )
+        : sync.dsl
+          ? (
+            <Section padTop="block" padBottom="none">
+              <QueryPreview dsl={sync.dsl} />
+            </Section>
+          )
+          : null}
       {conditionCount > 0 && (
         <Section padTop="md" padBottom="lg">
           <div className="flex justify-end gap-2.5">
             <Button kind="secondary" onClick={handleClear}>
               {t("search.actions.clear")}
             </Button>
-            <Button kind="primary" onClick={() => void runSearch()}>
+            <Button kind="primary" onClick={() => void runSearch()} disabled={hasError}>
               {t("search.actions.submit")}
             </Button>
           </div>

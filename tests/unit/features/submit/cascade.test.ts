@@ -5,7 +5,7 @@ import { deriveFlowSteps } from "../../../../app/features/submit/flow-rules"
 import {
   type Access,
   FileTypeKind,
-  isDestinationService,
+  isSubmissionEndpoint,
   Q1,
   Q2,
   type Submission,
@@ -13,14 +13,14 @@ import {
 
 describe("submit cascade", () => {
   test("isQ2Enabled_restrictedNonHuman_disabled", () => {
-    for (const q2 of ["eukaryote", "prokaryote", "virus"] as const) {
+    // JGA はヒト個人のみ。メタゲノム/環境を含む非ヒトは制限公開でも JGA に入らず disable
+    for (const q2 of ["eukaryote", "prokaryote", "virus", "metagenome"] as const) {
       expect(isQ2Enabled("restricted", q2)).toBe(false)
     }
   })
 
-  test("isQ2Enabled_restrictedHumanOrMetagenome_enabled", () => {
+  test("isQ2Enabled_restrictedHuman_onlyHumanEnabled", () => {
     expect(isQ2Enabled("restricted", "human")).toBe(true)
-    expect(isQ2Enabled("restricted", "metagenome")).toBe(true)
   })
 
   test("isQ2Enabled_publicAndThirdParty_allEnabled", () => {
@@ -67,8 +67,8 @@ describe("submit cascade", () => {
     }
   })
 
-  // enable された種別の entry を入れると destination service が 1 枚以上出る
-  test("cascadeNoDeadEnd_enabledKindEntry_yieldsDestinationStep", () => {
+  // enable された種別の entry を入れると登録エンドポイント (destination ∪ {jpost, eva}) が 1 枚以上出る
+  test("cascadeNoDeadEnd_enabledKindEntry_yieldsEndpointStep", () => {
     for (const q1 of Q1.options) {
       for (const q2 of Q2.options) {
         if (!isQ2Enabled(q1, q2)) continue
@@ -92,7 +92,7 @@ describe("submit cascade", () => {
             notes: "",
           }
           const steps = deriveFlowSteps(submission)
-          expect(steps.some((s) => isDestinationService(s.service))).toBe(true)
+          expect(steps.some((s) => isSubmissionEndpoint(s.service))).toBe(true)
         }
       }
     }

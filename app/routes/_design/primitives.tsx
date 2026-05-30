@@ -307,6 +307,12 @@ const CalloutGallery = () => (
     <Callout tone="ok">ok: 成功メッセージ</Callout>
     <Callout tone="warn" role="alert">warn + role=alert: SR に即時アナウンス</Callout>
     <Callout tone="ok" role="status">ok + role=status: 状態変化を SR に通知</Callout>
+    <Callout
+      tone="warn"
+      action={<Button kind="secondary" size="sm" onClick={() => undefined}>再試行</Button>}
+    >
+      warn + action: 右端に操作 (例 再試行)
+    </Callout>
   </Block>
 )
 
@@ -488,6 +494,14 @@ const SearchBoxGallery = () => (
       <SearchBox
         size="md"
         showScope={false}
+        onSubmit={() => undefined}
+      />
+    </Row>
+    <Row label="md + invalid (構文エラー時の枠)">
+      <SearchBox
+        size="md"
+        showScope={false}
+        invalid
         onSubmit={() => undefined}
       />
     </Row>

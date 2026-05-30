@@ -5,14 +5,12 @@ import { describe, expect, test } from "vitest"
 import { SyncStatusChip } from "~/features/search/sync-status"
 import { createI18nInstance } from "~/lib/i18n"
 
-const noop = (): void => undefined
-
 const renderChip = (status: "idle" | "syncing" | "synced" | "failed") => {
   const i18n = createI18nInstance("ja")
 
   return render(
     <I18nextProvider i18n={i18n}>
-      <SyncStatusChip status={status} onRetry={noop} />
+      <SyncStatusChip status={status} />
     </I18nextProvider>,
   )
 }
@@ -33,9 +31,9 @@ describe("SyncStatusChip", () => {
     expect(screen.getByText("URL 同期中")).toBeInTheDocument()
   })
 
-  test("failed_showsTagAndRetry", () => {
+  test("failed_showsTagWithoutRetry", () => {
     renderChip("failed")
     expect(screen.getByText("URL 同期失敗")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "再試行" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "再試行" })).toBeNull()
   })
 })

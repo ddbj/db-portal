@@ -8,11 +8,15 @@ import {
   Q1,
   Q2,
   Service,
+  SUBMISSION_ENDPOINTS,
   When,
   whenDepth,
 } from "~/schemas/submit"
 
+// q1/q2 カスケード repos は DDBJ 内登録先 (role=destination) のみ。
+// emit.service / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva}) を許す。
 const DESTINATION_SET: ReadonlySet<Service> = new Set(DESTINATION_SERVICES)
+const ENDPOINT_SET: ReadonlySet<Service> = new Set(SUBMISSION_ENDPOINTS)
 
 export const RoutingScope = z.enum(["entry", "group"])
 export type RoutingScope = z.infer<typeof RoutingScope>
@@ -69,10 +73,16 @@ export const SubmitRoutingCatalog = z
     const fail = (message: string, path: (string | number)[]) =>
       ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
 
-    // cascade repos は role=destination の service のみ
-    const checkRepos = (repos: Service[], path: (string | number)[]) => {
+    // q1/q2 カスケード repos は role=destination のみ
+    const checkDestinationRepos = (repos: Service[], path: (string | number)[]) => {
       for (const r of repos) {
         if (!DESTINATION_SET.has(r)) fail(`repos "${r}" is not a destination service`, path)
+      }
+    }
+    // candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
+    const checkEndpointRepos = (repos: Service[], path: (string | number)[]) => {
+      for (const r of repos) {
+        if (!ENDPOINT_SET.has(r)) fail(`repos "${r}" is not a submission endpoint`, path)
       }
     }
     const q1Ids = cat.q1Options.map((o) => o.id)
@@ -83,8 +93,8 @@ export const SubmitRoutingCatalog = z
     if (new Set(q2Ids).size !== Q2.options.length || !Q2.options.every((q) => q2Ids.includes(q))) {
       fail("q2Options must cover every Q2 exactly once", ["q2Options"])
     }
-    cat.q1Options.forEach((o, i) => checkRepos(o.repos, ["q1Options", i, "repos"]))
-    cat.q2Options.forEach((o, i) => checkRepos(o.repos, ["q2Options", i, "repos"]))
+    cat.q1Options.forEach((o, i) => checkDestinationRepos(o.repos, ["q1Options", i, "repos"]))
+    cat.q2Options.forEach((o, i) => checkDestinationRepos(o.repos, ["q2Options", i, "repos"]))
 
     // kindRoutes は全 FileTypeKind をちょうど 1 つずつ持つ
     const kindIds = cat.kindRoutes.map((k) => k.id)
@@ -97,13 +107,13 @@ export const SubmitRoutingCatalog = z
 
     cat.kindRoutes.forEach((route, ki) => {
       const path = ["kindRoutes", ki] as (string | number)[]
-      checkRepos(route.candidateRepos, [...path, "candidateRepos"])
+      checkEndpointRepos(route.candidateRepos, [...path, "candidateRepos"])
       // candidateRepos-parity: candidateRepos は rules の全 emit.service を包含
       const emitted = new Set(route.rules.map((r) => r.emit.service))
       for (const s of emitted) {
-        // catalog-vocab-closure: emit.service は role=destination
-        if (!DESTINATION_SET.has(s)) {
-          fail(`emit.service "${s}" is not a destination service`, [...path, "rules"])
+        // catalog-vocab-closure: emit.service は登録エンドポイント
+        if (!ENDPOINT_SET.has(s)) {
+          fail(`emit.service "${s}" is not a submission endpoint`, [...path, "rules"])
         }
         if (!route.candidateRepos.includes(s)) {
           fail(`candidateRepos must include emit.service "${s}"`, [...path, "candidateRepos"])

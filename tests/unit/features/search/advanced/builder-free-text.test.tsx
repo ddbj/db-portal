@@ -57,11 +57,19 @@ describe("AdvancedBuilder free-text row", () => {
     expect(screen.queryByText("NO CONDITIONS")).toBeNull()
   })
 
-  test("keyword_rowDescribesAllFieldsSearch", () => {
+  test("keyword_rowDescribesSearchScopeHonestly", () => {
     renderBuilder({ freeText: "cancer" })
-    // The keyword row reads "キーワード｜すべての項目から検索" — no cryptic "*" marker.
-    expect(screen.getByText("すべての項目から検索")).toBeInTheDocument()
-    expect(screen.queryByText("*")).toBeNull()
+    // The honest scope label replaces the old "すべての項目から検索" lie; the exact
+    // 5 default fields live in the ⓘ tooltip, hidden until interaction.
+    expect(screen.getByText("おもな項目を全文検索")).toBeInTheDocument()
+    expect(screen.queryByText("すべての項目から検索")).toBeNull()
+    expect(screen.queryByRole("tooltip")).toBeNull()
+
+    fireEvent.click(screen.getByRole("button", { name: "おもな項目を全文検索" }))
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "アクセッション・タイトル・名称・説明・生物種名 を対象に検索します",
+    )
   })
 
   test("blankKeyword_noChildren_showsEmptyPlaceholder", () => {
@@ -85,32 +93,19 @@ describe("AdvancedBuilder free-text row", () => {
     expect(onFreeTextRemove).toHaveBeenCalledTimes(1)
   })
 
-  test("keywordWithStructured_firstStructuredRowLeadsWithKatsu", () => {
+  test("keywordWithStructured_showsNoConnectorWords", () => {
     renderBuilder({ freeText: "cancer", state: stateWithCondition() })
-    // The keyword row anchors the query; the first structured row reads as joined
-    // with "かつ" (AND), and the SQL-flavoured "WHERE" is gone.
-    expect(screen.getByText("かつ")).toBeInTheDocument()
-    expect(screen.queryByText("WHERE")).toBeNull()
-  })
-
-  test("structuredOnly_firstRowHasNoConnector", () => {
-    renderBuilder({ freeText: "", state: stateWithCondition() })
-    // A single structured condition with no keyword leads with nothing — no
-    // connector word and no "WHERE".
-    expect(screen.queryByText("WHERE")).toBeNull()
+    // Connector words are gone entirely; grouping reads from the AND/OR toggle and
+    // the branch guide, and the SQL-flavoured "WHERE" never appears.
     expect(screen.queryByText("かつ")).toBeNull()
     expect(screen.queryByText("または")).toBeNull()
+    expect(screen.queryByText("WHERE")).toBeNull()
   })
 
-  test("keywordWithStructured_firstConditionIsRemovable", () => {
-    // The keyword row anchors WHERE, so the first structured condition (shown as
-    // AND) must be removable rather than locked like a normal WHERE leader.
-    renderBuilder({ freeText: "cancer", state: stateWithCondition() })
-    expect(screen.getByRole("button", { name: "条件を削除" })).toBeEnabled()
-  })
-
-  test("structuredOnly_firstConditionRemoveLocked", () => {
+  test("structuredCondition_isRemovableWithoutKeyword", () => {
     renderBuilder({ freeText: "", state: stateWithCondition() })
-    expect(screen.getByRole("button", { name: "条件を削除" })).toBeDisabled()
+    // Every condition is independently removable now — there is no pinned leading
+    // row, so removing the only condition just returns to the empty state.
+    expect(screen.getByRole("button", { name: "条件を削除" })).toBeEnabled()
   })
 })

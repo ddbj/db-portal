@@ -8,6 +8,7 @@ const BRAND_SWATCHES: readonly Swatch[] = [
   { name: "brand", cls: "bg-brand", hex: "#6F4392" },
   { name: "brand-deep", cls: "bg-brand-deep", hex: "#502E6B" },
   { name: "brand-light", cls: "bg-brand-light", hex: "#A987C5" },
+  { name: "brand-tint", cls: "bg-brand-tint", hex: "#E7DDF4" },
   { name: "brand-soft", cls: "bg-brand-soft", hex: "#F4F2FA" },
   { name: "brand-softer", cls: "bg-brand-softer", hex: "#F8F4FB" },
 ]

@@ -24,6 +24,10 @@ cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` 
 - クオート (`"Homo sapiens"`) → phrase 一致 (順序保持)
 - DSL 内の明示的 `AND` / `OR` / `NOT` は `keywordOperator` と無関係
 
+キーワードボックスは **自由文** (スペース / カンマ / クオート) として案内する。ddbj-search-api の文法は `field:value` (allowlist 制の Tier 1/2/3 フィールド) も解釈するが、portal の UI ではこれを宣伝しない。フィールドを限定した検索は Advanced builder の役割で、キーワードボックスは「おもな項目の全文検索」 に徹する。不明フィールド (`organism:` 等) や解釈できない構文を入れると `/db-portal/parse` が 400 を返すので、その入力はキーワードボックスを invalid 表示にして知らせる ([§ parse の失敗](#parse-の失敗))。
+
+キーワード (free_text) が照合する **default field は 5 つ** (`identifier` / `title` / `name` / `description` / `organism.name`、ddbj-search-api `compile_free_text` の `_FREE_TEXT_DEFAULT_FIELDS`)。「すべての項目」 ではないので UI もそのように表示する (キーワード行に「おもな項目を全文検索」 + ⓘ で 5 field を明示)。portal は `keywordFields` 相当の絞り込みパラメタを送らない。
+
 cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
 
 ### 3 経路 UI と AST 正規化
@@ -90,11 +94,17 @@ free_text node の扱いは経路で **非対称**:
 
 ### parse の失敗
 
-`/search` (検索ビルダ) で SearchBox を submit したとき、入力文字列の parse が失敗したら **results へ遷移せず `/search` 内に inline の `<Callout tone="warn">`** (構文エラー文言 + 構文ヒント) を出す。生クエリを `?q=` に載せて results に飛ばすと再 parse で必ず失敗しユーザーが抜け出せないため、その場で直せるようにする。
+`/search` (検索ビルダ) でキーワードの parse が失敗したら (live sync / submit のどちらでも) results へ遷移させず、その場で直せるようにする:
 
-`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が `errorKey: "parse"` を data として返し、route component が inline の `<Callout tone="warn">` と「再試行」 button (`navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
+- キーワードボックス自体を **invalid 表示** にし、box 下の構文ヒント (スペース=AND / カンマ=OR / `"…"`=フレーズ) を warn 色に切り替える (入力位置でのインライン検証)
+- **クエリプレビューと同じ位置** を使い、エラーが無いときはクエリプレビュー、エラーが有るときは warn の `<Callout>` (構文エラー文言 + 右端に「再試行」)、という **排他** 表示にする
+- 警告が出ている間は「この条件で検索」 button を disable にする (壊れたクエリでの実行・遷移を防ぐ)
 
-API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が `error` を表示する。
+system 側の serialize / 同期失敗 (ユーザーが直せない) は **この警告として出さない**。それらは sync chip のみが示し、表示中の検索結果は古いまま使える。生クエリを `?q=` に載せて results に飛ばすと再 parse で必ず失敗しユーザーが抜け出せないため、parse エラーは `/search` 内で完結させる。
+
+`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が `errorKey: "parse"` を data として返し、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
+
+API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が失敗を表示する。
 
 ## Advanced builder
 
@@ -106,7 +116,9 @@ API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系�
 - **Group**: 子を束ねる入れ物。親 group 内での結合子 + 子集合の内部結合 (`AND` / `OR`) + 子の配列
 - **Root**: 最上位 group。combinator は無視、子の数 0 から可
 
-group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正規化して見せる: UI では「すべての条件に一致 (AND) / いずれかの条件に一致 (OR)」セレクタを group / root ごとに 1 つ出し (root は子が 2 件以上のとき)、行間にはその語を読み取り専用の連結語 (`かつ` / `または`) として表示する。各 condition / group の `combinator` は UI 上 **否定 (`NOT`) かどうか** だけを担い (行ごとの「除外」トグル)、`AND` / `OR` は AST 上 `innerCombinator` に吸収されるため per-row では選ばせない。reducer は root の最初の child の `combinator` を `AND` に固定する (`ensureFirstCombinatorAnd`) ので、root 先頭行は除外不可。`/search` で keyword 行があるときは、先頭の構造化条件が keyword と AND 結合する関係を `かつ` で示し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
+group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正規化する (Airtable / Notion 流の「1 group = 1 結合子」)。UI は group / root ごとに **`AND` / `OR` セグメントトグル** を 1 つ出す (root は子が 2 件以上のとき)。`AND` / `OR` の混在はネストした group で表現する。行間に連結語 (`かつ` / `または` 等) は **出さない** (縦幅肥大を避ける)。子は左のブランチガイド (縦線) で束ねて見せる。
+
+各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
 field の取り得る値 (`identifier` / `title` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`) は cross-DB でも安全な Tier 1/2 のみを採る (ddbj-search-api allowlist 準拠)。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field ごとに制限される (`FIELD_OPS`、ddbj-search-api の演算子マトリクスに対応): date 系は `between` のみ、`identifier` / `organism_id` は `eq` / `wildcard`、text 系は `eq` / `contains`。コードが SSOT。新規追加時は AdvancedField / FIELD_OPS の値と prompt (`llm.md`) を同時更新する。
 
@@ -114,20 +126,22 @@ field の取り得る値 (`identifier` / `title` / `description` / `organism_id`
 
 | action | 効果 |
 |---|---|
-| 追加系 (`addCondition` / `addGroup`) | 指定 group に新 condition / group を append |
+| 追加系 (`addCondition` / `addGroup`) | 指定 group に新 condition / group を append (否定なし = `combinator: AND` で seed) |
 | 削除 (`removeNode`) | id の node を木から外す。root は不可 |
-| 結合子更新 (`updateCombinator` / `updateInnerCombinator`) | 各 node の combinator または group の内部 combinator を切替 |
-| condition 更新 (`updateField` / `updateOp` / `updateValue` / `updateRange`) | field / op / value / range を変更。date field 切替時は op = `between` も自動切替 |
+| 内部結合更新 (`updateInnerCombinator`) | group / root の `AND` / `OR` を切替 (AND/OR トグル) |
+| 否定更新 (`updateCombinator`) | node の `combinator` を `AND` / `NOT` で切替。condition では述語ドロップダウンが op (`updateOp`) と否定 (`updateCombinator`) を同時に発行し、group ではヘッダの否定トグルが使う |
+| condition 更新 (`updateField` / `updateOp` / `updateValue` / `updateRange`) | field / op / value / range を変更。date field 切替時は op = `between` も自動切替。否定状態 (`combinator`) は保持 |
 | 復元 (`replaceRoot`) | URL 復元時に root を新規 group で置換 |
 | 全消去 (`clear`) | root を空に戻す |
 
-reducer は immer を使わず手で immutable 更新する。
+reducer は immer を使わず手で immutable 更新する。`combinator` が取り得る意味のある値は `AND` (否定なし) / `NOT` (否定) のみで、先頭 child を固定する処理は持たない。
 
 ### 不変量 (PBT)
 
 - 同じ id を 2 つ持つ node が同時に木に存在しない
 - `clear` を 2 回呼ぶ結果は 1 回と同じ
 - `removeNode` で root 以外の任意 node を消すと、残った木が valid AdvancedState になる
+- 否定 (`combinator = NOT`) は op と独立に condition ごとに付き、先頭 condition にも付けられる (先頭固定はしない)
 - 値域 (深さ) は UI 上 4 段を設計目安とするが reducer 側で制約しない
 
 ### AST 変換 (Advanced ↔ AST)
@@ -158,9 +172,10 @@ reducer は immer を使わず手で immutable 更新する。
 
 Advanced builder の UI は state を受け取り、再帰的に ConditionRow / GroupRow を render する。
 
-- ConditionRow: field 選択 + op 選択 + value 入力 (text または date input 2 個) + 「除外 (NOT)」トグル + 削除。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃える
-- GroupRow: 左 4 px brand バー + group ラベル + 一致条件 selector (すべて / いずれか = `innerCombinator`) + 「除外」トグル + 内側の再帰描画 + 削除
-- root も子が 2 件以上で一致条件 selector を出す。行間に連結語 (`かつ` / `または`) を表示する
+- ConditionRow: field 選択 + **述語選択** (op と否定をペアにした単一ドロップダウン: `を含む` / `を含まない` / `と一致` / `と一致しない` 等。日本語は助詞+動詞で `を含む` と対称にし、英語は自己説明的な `equals` / `does not equal` を採る) + value 入力 (text または date input 2 個) + 削除 (×)。独立した「除外」トグルは持たない。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃え、`[項目] [述語] [値]` が 1 行で日本語の一文として読み下せるようにする
+- GroupRow: 左 4 px brand バー + group ラベル + `AND` / `OR` トグル (`innerCombinator`) + 否定 (`NOT`) トグル + 内側の再帰描画 + 削除
+- root も子が 2 件以上で `AND` / `OR` トグルを出す。行間に連結語 (`かつ` / `または`) は出さず、左ブランチガイドで束ねる
+- keyword 行: 「おもな項目を全文検索」 と正直に表示し、ⓘ (`InfoHint`) のホバー / フォーカス / クリックで対象 5 field (`identifier` / `title` / `name` / `description` / `organism.name`) をツールチップ表示する。`brand-soft` で着色し、AI モードの検索ボックスと面色を揃える
 - 末尾: 「+ 条件を追加」 / 「+ グループを追加」
 
 入力は `app/ui/` primitive 経由 (Select / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
@@ -245,13 +260,13 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 ### sync-status
 
-`SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ chip を表示し、`failed` には「再試行」 link を添える。`synced` は通常 invisible (idle と同じ扱い、動的演出はしない)。
+`SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ chip を表示する (`synced` / `idle` は invisible)。chip は **状態を示すタグのみ** で操作は持たない。再試行はクエリプレビュー上の warn `<Callout>` 右端の「再試行」に集約する ([§ parse の失敗](#parse-の失敗))。
 
 ### 失敗時の挙動
 
 - 表示中の検索結果は古い URL のまま (URL は書き換えない、古いままで使い続けられる)
-- 検索実行 button は別経路で `/db-portal/serialize` を直接呼ぶため、debounce 失敗で button が disable されることはない
-- `useDebouncedSerialize` は `useMutation` を使い、`mutations.retry: 0` で retry なし。1 回目の 5xx で `syncStatus = "failed"` になり、SyncStatusChip の「再試行」 button で同じ AST を再 dispatch する
+- 検索実行 button は submit 時に `/db-portal/serialize` を直接呼ぶ。`/search` では parse 構文エラー表示中のみ button を disable にする。serialize / 同期失敗 (system 側、ユーザーが直せない) は警告も disable も伴わず、sync chip だけが示す
+- `useDebouncedSerialize` は `useMutation` を使い、`mutations.retry: 0` で retry なし。1 回目の 5xx で `syncStatus = "failed"` になり chip が失敗を示す。同じ AST の再 dispatch は警告 `<Callout>` の「再試行」が行う
 
 ## 検索結果 UI
 
@@ -348,7 +363,7 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 - **append**: 提案を現在の構造化条件に graft する (keyword は不変)
 - **new**: 現在の構造化条件を破棄して提案だけにする。keyword も初期化する (「新規」 の意味を保つため)
 
-提案カードは選択中のモードに従う単一の反映ボタンを出す (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。
+提案カードは各条件を **ビルダーと同じ平易な日本語の節** (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、条件間に連結演算子 (`AND` / `OR`) を出す。生の `field op value` は見せない (`ProposalConditions`、`fieldLabelKey` / `predicateLabelKey` を共有)。footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボタン。反映ボタンは選択中のモードに従う (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。`/search` の統合入力と per-DB アシスタントで同じ `ProposalConditions` を使う。
 
 ### SSE 配線
 
@@ -370,7 +385,7 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 
 cross-search ビルダーの統合入力では適用先を生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
 
-per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
+per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 
 ## search 固有の primitive 事情
 

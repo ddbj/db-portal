@@ -1,51 +1,53 @@
 import { useT } from "~/lib/i18n"
-import { Button, CloseIcon, IconButton, Label, Select, type SelectOption, TextInput } from "~/ui"
+import { CloseIcon, IconButton, Label, Select, type SelectOption, TextInput } from "~/ui"
 
 import {
   ADVANCED_FIELDS,
   type AdvancedField,
-  type AdvancedOp,
-  FIELD_OPS,
+  fieldLabelKey,
+  fieldPredicates,
   isAdvancedField,
   isDateField,
+  parsePredicate,
+  type Predicate,
+  predicateLabelKey,
+  predicateValue,
 } from "../types"
 import type { AdvancedCondition } from "./reducer"
 
 export type ConditionRowProps = {
   condition: AdvancedCondition
-  excluded: boolean
-  canExclude: boolean
   removable: boolean
   onFieldChange: (field: AdvancedField) => void
-  onOpChange: (op: AdvancedOp) => void
+  onPredicateChange: (predicate: Predicate) => void
   onValueChange: (value: string) => void
   onRangeChange: (range: { from?: string; to?: string }) => void
-  onToggleExclude: () => void
   onRemove: () => void
 }
 
 export const ConditionRow = ({
   condition,
-  excluded,
-  canExclude,
   removable,
   onFieldChange,
-  onOpChange,
+  onPredicateChange,
   onValueChange,
   onRangeChange,
-  onToggleExclude,
   onRemove,
 }: ConditionRowProps) => {
   const t = useT()
   const dateField = isDateField(condition.field)
-  const opOptions: SelectOption[] = FIELD_OPS[condition.field].map((op) => ({
-    value: op,
-    label: t(`search.builder.op.${op}`),
-  }))
+  const negated = condition.combinator === "NOT"
   const fieldOptions: SelectOption[] = ADVANCED_FIELDS.map((field) => ({
     value: field,
-    label: t(`search.builder.field.${camelize(field)}`),
+    label: t(`search.builder.field.${fieldLabelKey(field)}`),
   }))
+  // Operator + negation folded into one predicate dropdown so the row reads as a
+  // clause ("タイトル を含まない …"); there is no separate exclude toggle.
+  const predicateOptions: SelectOption[] = fieldPredicates(condition.field).map((predicate) => ({
+    value: predicateValue(predicate),
+    label: t(`search.builder.predicate.${predicateLabelKey(predicate)}`),
+  }))
+  const currentPredicate = predicateValue({ op: condition.op, negated })
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -61,11 +63,11 @@ export const ConditionRow = ({
       />
       <Select
         size="md"
-        ariaLabel={t("search.a11y.opSelector")}
-        options={opOptions}
-        value={condition.op}
-        onChange={(next) => onOpChange(next as AdvancedOp)}
-        width={148}
+        ariaLabel={t("search.a11y.predicateSelector")}
+        options={predicateOptions}
+        value={currentPredicate}
+        onChange={(next) => onPredicateChange(parsePredicate(next))}
+        width={184}
       />
       {dateField || condition.op === "between"
         ? (
@@ -104,8 +106,7 @@ export const ConditionRow = ({
             width={232}
           />
         )}
-      <span className="ml-auto flex items-center gap-1.5">
-        <ExcludeToggle excluded={excluded} disabled={!canExclude} onToggle={onToggleExclude} />
+      <span className="ml-auto">
         <IconButton
           ariaLabel={t("search.builder.removeCondition")}
           onClick={onRemove}
@@ -116,52 +117,4 @@ export const ConditionRow = ({
       </span>
     </div>
   )
-}
-
-type ExcludeToggleProps = {
-  excluded: boolean
-  disabled: boolean
-  onToggle: () => void
-}
-
-// "除外 (NOT)" negates a single condition. It is the only per-row boolean control;
-// AND/OR is chosen once per group, so there is no per-row combinator picker.
-export const ExcludeToggle = ({ excluded, disabled, onToggle }: ExcludeToggleProps) => {
-  const t = useT()
-
-  return (
-    <Button
-      kind={excluded ? "danger" : "secondary"}
-      size="sm"
-      aria-pressed={excluded}
-      disabled={disabled}
-      onClick={onToggle}
-    >
-      {t("search.builder.exclude")}
-    </Button>
-  )
-}
-
-const camelize = (
-  field: AdvancedField,
-): "identifier" | "title" | "description" | "organismId" | "organismName" | "accessibility" | "datePublished" | "dateModified" | "dateCreated" | "submitter" | "publication" => {
-  switch (field) {
-    case "organism_id":
-      return "organismId"
-    case "organism_name":
-      return "organismName"
-    case "date_published":
-      return "datePublished"
-    case "date_modified":
-      return "dateModified"
-    case "date_created":
-      return "dateCreated"
-    case "identifier":
-    case "title":
-    case "description":
-    case "accessibility":
-    case "submitter":
-    case "publication":
-      return field
-  }
 }

@@ -66,11 +66,12 @@ export const DataForm = z.enum([
 ])
 export type DataForm = z.infer<typeof DataForm>
 
-// テーブル列に表現できない細部区分を行内 chip の {axis, value} ペアで表現する
+// テーブル列・前段で表現できない、かつ出る service を変える (flow-changing) 細部区分を
+// 行内 chip の {axis, value} ペアで表現する。出る service を変えない区分 (バリアントの
+// SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う
 export const ChipAxis = z.enum([
   "assembly-form",
   "provenance",
-  "variation-form",
   "mass-spec-domain",
   "spatial-platform",
 ])
@@ -126,9 +127,8 @@ export const DEFAULT_FILENAME_FOR_KIND: Readonly<
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
   "provenance": ["third-party"],
-  "variation-form": ["per-sample", "aggregate"],
   "mass-spec-domain": ["proteomics", "metabolomics"],
-  "spatial-platform": ["visium", "stereo-seq", "merfish"],
+  "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
 }
 
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>

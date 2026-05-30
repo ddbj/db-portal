@@ -149,21 +149,12 @@ const insertChild = (
   return { ...parent, children }
 }
 
-const ensureFirstCombinatorAnd = (group: AdvancedGroup): AdvancedGroup => {
-  if (group.children.length === 0) return group
-  const first = group.children[0]
-  if (first === undefined || first.combinator === "AND") return group
-  const head: AdvancedNode = { ...first, combinator: "AND" }
-
-  return { ...group, children: [head, ...group.children.slice(1)] }
-}
-
 export const advancedReducer = (state: AdvancedState, action: AdvancedAction): AdvancedState => {
   switch (action.type) {
     case "addCondition": {
       const root = mapGroup(state.root, (node) => {
         if (node.kind === "group" && node.id === action.parentId) {
-          const condition = createCondition({ combinator: node.innerCombinator })
+          const condition = createCondition()
 
           return insertChild(node, condition, action.position)
         }
@@ -171,16 +162,13 @@ export const advancedReducer = (state: AdvancedState, action: AdvancedAction): A
         return node
       })
 
-      return { root: ensureFirstCombinatorAnd(root) }
+      return { root }
     }
     case "addGroup": {
       const root = mapGroup(state.root, (node) => {
         if (node.kind === "group" && node.id === action.parentId) {
-          const seed = createCondition({ combinator: "AND" })
-          const group = createGroup(
-            { combinator: node.innerCombinator, innerCombinator: "AND" },
-            [seed],
-          )
+          const seed = createCondition()
+          const group = createGroup({ innerCombinator: "AND" }, [seed])
 
           return insertChild(node, group, action.position)
         }
@@ -188,27 +176,20 @@ export const advancedReducer = (state: AdvancedState, action: AdvancedAction): A
         return node
       })
 
-      return { root: ensureFirstCombinatorAnd(root) }
+      return { root }
     }
     case "removeNode": {
       if (action.id === state.root.id) return state
       const root = mapGroup(state.root, (node) => (node.id === action.id ? null : node))
 
-      return { root: ensureFirstCombinatorAnd(root) }
+      return { root }
     }
     case "updateCombinator": {
       if (action.id === state.root.id) return state
-      const root = mapGroup(state.root, (node) => {
-        if (node.id === action.id) {
-          if (node.kind === "condition") return { ...node, combinator: action.combinator }
+      const root = mapGroup(state.root, (node) =>
+        node.id === action.id ? { ...node, combinator: action.combinator } : node)
 
-          return { ...node, combinator: action.combinator }
-        }
-
-        return node
-      })
-
-      return { root: ensureFirstCombinatorAnd(root) }
+      return { root }
     }
     case "updateInnerCombinator": {
       const root = mapGroup(state.root, (node) => {
@@ -274,7 +255,7 @@ export const advancedReducer = (state: AdvancedState, action: AdvancedAction): A
       return { root }
     }
     case "replaceRoot": {
-      return { root: ensureFirstCombinatorAnd(action.root) }
+      return { root: action.root }
     }
     case "clear":
       return createInitialState()
