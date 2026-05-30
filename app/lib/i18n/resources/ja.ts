@@ -537,6 +537,55 @@ export type Resources = {
       submitter: string
       studyType: string
       datePublished: string
+      field: {
+        organism: string
+        submitter: string
+        datePublished: string
+        sequenceLength: string
+        objectType: string
+        relevance: string
+        projectType: string
+        grantTitle: string
+        grantAgency: string
+        externalLinkLabel: string
+        package: string
+        model: string
+        host: string
+        strain: string
+        isolate: string
+        geoLocName: string
+        collectionDate: string
+        derivedFromId: string
+        libraryStrategy: string
+        librarySource: string
+        librarySelection: string
+        platform: string
+        libraryLayout: string
+        instrumentModel: string
+        analysisType: string
+        libraryName: string
+        libraryConstructionProtocol: string
+        studyType: string
+        datasetType: string
+        vendor: string
+        experimentType: string
+        submissionType: string
+        division: string
+        molecularType: string
+        featureGeneName: string
+        referenceJournal: string
+        organismName: string
+        rank: string
+        kingdom: string
+        lineage: string
+        phylum: string
+        class: string
+        order: string
+        family: string
+        genus: string
+        species: string
+        commonName: string
+      }
       dateRange: {
         all: string
         oneYear: string
@@ -1231,6 +1280,55 @@ export const ja: Resources = {
       submitter: "登録機関",
       studyType: "研究タイプ",
       datePublished: "公開日",
+      field: {
+        organism: "生物種",
+        submitter: "登録機関",
+        datePublished: "公開日",
+        sequenceLength: "配列長",
+        objectType: "BioProject 種別",
+        relevance: "関連分野",
+        projectType: "プロジェクト種別",
+        grantTitle: "助成課題",
+        grantAgency: "助成機関",
+        externalLinkLabel: "外部リンク",
+        package: "パッケージ",
+        model: "モデル",
+        host: "宿主",
+        strain: "系統 (strain)",
+        isolate: "分離株",
+        geoLocName: "地理的位置",
+        collectionDate: "採取日",
+        derivedFromId: "派生元 ID",
+        libraryStrategy: "ライブラリ戦略",
+        librarySource: "ライブラリ源",
+        librarySelection: "ライブラリ選択",
+        platform: "プラットフォーム",
+        libraryLayout: "ライブラリ構成",
+        instrumentModel: "機器",
+        analysisType: "解析種別",
+        libraryName: "ライブラリ名",
+        libraryConstructionProtocol: "ライブラリ調製",
+        studyType: "スタディ種別",
+        datasetType: "データセット種別",
+        vendor: "ベンダー",
+        experimentType: "実験種別",
+        submissionType: "登録種別",
+        division: "区分",
+        molecularType: "分子種別",
+        featureGeneName: "遺伝子名",
+        referenceJournal: "雑誌",
+        organismName: "学名",
+        rank: "ランク",
+        kingdom: "界",
+        lineage: "系統 (lineage)",
+        phylum: "門",
+        class: "綱",
+        order: "目",
+        family: "科",
+        genus: "属",
+        species: "種",
+        commonName: "一般名",
+      },
       dateRange: {
         all: "すべて",
         oneYear: "1 年",

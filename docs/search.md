@@ -204,25 +204,27 @@ Sidebar の各行はフィールドの値域に応じて 3 種類の制御で出
 
 ### scope 別の filter 構成
 
-scope (cross / 各 DB) ごとに出す行は次のとおり。フィールド名は ddbj-search-api DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch に対応 field が無いものは degenerate (`(-*:*)` で 0 件化) するため **その行自体を出さない** (organism_id は trad、submitter は trad/taxonomy、date_published は taxonomy が degenerate)。
+scope (cross / 各 DB) ごとに出す行は次のとおり。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch で degenerate する行を出さない (trad: organism / submitter、taxonomy: organism / submitter / date_published)。
 
 | scope | facet | text | range |
 |---|---|---|---|
-| cross | organism, type (subtype) | — | datePublished |
-| bioproject | organism, submitter, objectType, relevance | projectType, grantTitle, grantAgency, externalLinkLabel | datePublished |
-| biosample | organism, submitter, package, model | host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished |
-| sra | organism, submitter, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished |
-| jga | organism, submitter, studyType, datasetType, vendor | grantTitle, grantAgency, externalLinkLabel | datePublished |
-| gea | organism, submitter, experimentType | — | datePublished |
-| metabobank | organism, submitter, experimentType, studyType, submissionType | — | datePublished |
+| cross | organism | — | datePublished |
+| bioproject | organism, objectType, relevance | submitter, projectType, grantTitle, grantAgency, externalLinkLabel | datePublished |
+| biosample | organism, package, model | submitter, host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished |
+| sra | organism, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | submitter, libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished |
+| jga | organism, studyType, datasetType, vendor | submitter, grantTitle, grantAgency, externalLinkLabel | datePublished |
+| gea | organism, experimentType | submitter | datePublished |
+| metabobank | organism, experimentType, studyType, submissionType | submitter | datePublished |
 | trad | division, molecularType | featureGeneName, referenceJournal, organismName | datePublished, sequenceLength |
-| taxonomy | organism, rank, kingdom | lineage, phylum, class, order, family, genus, species, commonName | — |
+| taxonomy | rank, kingdom | lineage, phylum, class, order, family, genus, species, commonName | — |
 
 注意:
 
 - **`studyType` の意味**: jga / metabobank の facet `studyType` は DSL `study_type` field (jga-study / metabobank の controlled-vocab) を指す。SRA の `libraryStrategy` (DSL `library_strategy`) とは **別 field** なので、`libraryStrategy` は sra scope、`studyType` (= `study_type`) は jga / metabobank scope でのみ出す (混同しない)。
-- **`type` (cross)**: ES の entry subtype (14 値: `bioproject` / `biosample` / `sra-{submission,study,experiment,run,sample,analysis}` / `jga-{study,dataset,dac,policy}` / `gea` / `metabobank`)。trad / taxonomy は Solr backed で含まれない。DB scope セレクタと粒度が重なるが、DB 内 subtype の絞り込み (sra-run と sra-experiment の分離等) を担う。
+- **cross は Tier 1 のみ**: cross sidebar は organism (`organism_id`) と datePublished だけ。`type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、portal は filter として再注入できないため要求しない。
 - **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` / `derivedFromId` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
+- **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは ES 6 DB で text 入力 (`submitter` の contains)。Solr backed (trad / taxonomy) は degenerate のため出さない。
+- **taxonomy の `organism` は出さない**: tax_id が doc 同一性で facet が degenerate (API も taxonomy facet を rank / kingdom のみに限定)。taxonomy の生物種軸は text 入力 (`species` / `commonName` 等) で扱う。
 - accessibility (Tier 1 enum) は filter として出さない (本プロダクトでは不要と判断)。
 
 ### 候補値・件数の出所 = API facet 集計
@@ -233,16 +235,17 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 - 極小 controlled-vocab (`objectType` 2 / `libraryLayout` 2 等) も、件数表示を揃えるため集計経路に一本化する
 - facet count (値ごとの件数) は静的リストでは得られず、集計でのみ出せる (NCBI 風の「値 + 件数」表示の要件)
 
-集計母集団は **現在の絞り込み結果と一致** させる (`q` 適用後、`status:public` 限定)。`organism` の bucket は taxID (`organism.identifier`) で集計し、`organism_id:<taxID>` として再注入する (表示は学名ラベル、API の `OrganismFacetBucket.label` を使う)。
+集計母集団は **検索ヒットと一致** させる (`q` 適用後、検索と同じ `status_mode`)。accession 完全一致で suppressed が解禁される場合は facet 集計も同じ母集団になる (`/facets` のような public_only 固定にしない)。`organism` の bucket は taxID (`organism.identifier`) で集計し、`organism_id:<taxID>` として再注入する (表示は学名ラベル、API の `OrganismFacetBucket.label` を使う)。
 
-### 前提: ddbj-search-api 側の facet 集計対応 (契約追加)
+### API 契約: `/db-portal/*` の facet 集計
 
-現状の API には gap がある:
+`/db-portal/search` / `/db-portal/cross-search` は `facets` パラメタで `q` 連動の facet 集計をレスポンスに同梱する。raw spec は ddbj-search-api `docs/db-portal-api-spec.md § facet 集計` が SSOT。本書は portal 側の消費規約のみを扱う。
 
-- `/db-portal/search` / `/db-portal/cross-search` (DSL `q` ベース) は facet 集計を返さない
-- `/facets` / `/facets/{type}` は flat param (`keywords` / `organism` 等) 専用で、DSL `q` を受け取れない
-
-→ 上記「`q` で絞った facet 集計」を実現するには、**ddbj-search-api 側で `/db-portal/search` / `/db-portal/cross-search` が `q` 連動の facet aggregation を返す契約追加が前提** (例: `facets` リクエストパラメタ + レスポンスへの facet buckets 同梱)。集計 field の値域・scope は API 側 `_FACET_AGG_SPECS` / `_TYPE_SPECIFIC_FACET_SCOPE` を SSOT とする。Solr backed (trad / taxonomy) は ARSA / TXSearch の native facet で同等を返す。契約の raw spec は ddbj-search-api `docs/db-portal-api-spec.md` を SSOT とし、本書は portal 側の消費規約のみを扱う。
+- **`facets`**: 集計する facet 名のカンマ区切り (省略時は集計なし)。portal は scope の filter 構成テーブルの facet 行に対応する名前を送る (accessibility は送らない)。scope 外の facet は 400 `facet-not-applicable`、allowlist 外の名前は 422
+- **`facetsSize`**: bucket 上限 (1–1000、既定 100)。多値 facet (`package` / `model` / `rank` 等) の「もっと見る」で使う
+- **レスポンス `facets`** (`DbPortalFacets` = `Facets` 拡張): 各 facet が `{value, count}` 配列 (`organism` のみ `{value, count, label}`)。「集計対象外 = `null`」「0 件 = `[]`」。横断はトップレベル 1 セット (ES 6 DB union、organism / type のみ。trad / taxonomy は含まれない)
+- **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。portal の facet state はこのマッピングを持つ
+- **集計失敗時**: API は `facets=null` を返し検索結果は 200 のまま。portal は facet 非表示で degrade する
 
 ### AST 変換 (Sidebar ⇄ AST)
 
@@ -300,6 +303,8 @@ Sidebar は state から `app/ui/` の FacetGroup / FacetRow / TextInput / DateF
 
 merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ。debounced ast が identityAst なら何もしない (URL の `?q=` を削除する場合は別 action)。成功で `navigate("/search/results?q=...", { replace: true })`、失敗で `syncStatus = "failed"`。
 
+`serialize` / `parse` は現在の **`db` scope を渡して呼ぶ** (per-DB は当該 DB、cross は省略)。per-DB facet は Tier 3 field (`object_type` 等) を emit するので、scope を渡さない (= cross 検証) と `field-not-available-in-cross-db` で 400 になり sync 失敗するため。loader の URL 復元 parse も同じ理由で `db` を渡す。
+
 `/search` (cross-search ビルダー) はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 700 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` する。keyword の parse 失敗は `parseError` (構文エラー) として `failed` 扱いにし、serialize 失敗とは区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる (`useDebouncedSerialize` と同じく非キャンセル)。
 
 `/search/results` (cross-DB / per-DB) は `useDebouncedSerialize` を使い、`merge(committed keyword AST, 保持 advanced AST, facet AST)` を serialize する。committed keyword AST を畳むので facet 編集でも free text が保存される。キーワードボックスの submit はこの live sync とは別に、編集中の keyword を parse して同様に merge → serialize → `navigate` (push) する。
@@ -340,7 +345,7 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 `databases` は API 仕様で固定順 (`trad / sra / bioproject / biosample / jga / gea / metabobank / taxonomy`)。portal 側で並び替えない。
 
-cross-DB でも左に Sidebar を出す。構成は cross scope の filter (organism / type / datePublished、[§ Sidebar facet](#sidebar-facet))。Tier 1/2 のみで Tier 3 は出さない (横断で `field-not-available-in-cross-db` になるため)。
+cross-DB でも左に Sidebar を出す。構成は cross scope の filter (organism / datePublished、[§ Sidebar facet](#sidebar-facet))。Tier 1 のみで Tier 3 は出さない (横断で `field-not-available-in-cross-db` になるため)。
 
 Tier 2 fallback: optional field (title / description / datePublished 等) が `null` / `undefined` のとき、該当行を非表示にする (skeleton / placeholder を出さない)。「title なしの hit」 は 1 行で accession だけ表示する。
 

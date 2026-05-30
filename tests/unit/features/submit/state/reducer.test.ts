@@ -42,10 +42,10 @@ describe("submitReducer preconditions", () => {
     expect(next.submission.preconditions.q2).toBeNull()
   })
 
-  test("submitReducer_setQ2_updatesPreconditionQ2", () => {
+  test("submitReducer_setQ2_updatesPreconditionQ2WithoutTouchingQ1", () => {
     const next = submitReducer(initialState, { type: "SET_Q2", q2: "human" })
     expect(next.submission.preconditions.q2).toBe("human")
-    expect(next.submission.preconditions.q1).toBeNull()
+    expect(next.submission.preconditions.q1).toBe(initialState.submission.preconditions.q1)
   })
 
   test("submitReducer_setQ1Null_clearsQ1WithoutTouchingQ2", () => {
@@ -132,7 +132,8 @@ describe("submitReducer ADD_ROW", () => {
   })
 
   test("submitReducer_addRowWithNullQ1_defaultsToOpenAccess", () => {
-    const next = addRow(initialState, "sequence-read", "e1", "g1")
+    const seeded = submitReducer(initialState, { type: "SET_Q1", q1: null })
+    const next = addRow(seeded, "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 

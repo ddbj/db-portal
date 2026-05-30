@@ -5,16 +5,14 @@ import { canonicalizeAst } from "../ast/canonicalize"
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
 import type { DbSlug } from "../types"
+import { type FilterRow, scopeFilters } from "./facet-config"
 import type { DatePublishedFilter, SearchFacetState } from "./facet-state"
-
-const SUBMITTER_FIELD = "submitter"
-const STUDY_TYPE_FIELD = "library_strategy"
-const ORGANISM_FIELD = "organism_id"
-const DATE_PUBLISHED_FIELD = "date_published"
 
 export type FromSidebarOptions = {
   db?: DbSlug | null
 }
+
+type LeafOp = "eq" | "contains"
 
 const presetRangeToDates = (key: DateRangeKey, today: Date): { from: string; to: string } | null => {
   if (key === "all") return null
@@ -36,56 +34,51 @@ const presetRangeToDates = (key: DateRangeKey, today: Date): { from: string; to:
   return { from, to }
 }
 
-const dateRangeToAst = (filter: DatePublishedFilter, now: Date): ParseNode | null => {
+const dateRangeToAst = (
+  field: string,
+  filter: DatePublishedFilter,
+  now: Date,
+): ParseNode | null => {
   if (filter.active !== "all") {
     const preset = presetRangeToDates(filter.active, now)
-    if (preset) {
-      return { op: "between", field: DATE_PUBLISHED_FIELD, from: preset.from, to: preset.to }
-    }
+    if (preset) return { op: "between", field, from: preset.from, to: preset.to }
   }
   if (filter.from !== "" && filter.to !== "") {
-    return { op: "between", field: DATE_PUBLISHED_FIELD, from: filter.from, to: filter.to }
+    return { op: "between", field, from: filter.from, to: filter.to }
   }
 
   return null
 }
 
-const organismToAst = (organisms: readonly string[]): ParseNode | null => {
-  if (organisms.length === 0) return null
-  if (organisms.length === 1) {
-    const [only] = organisms
+const leaf = (op: LeafOp, field: string, value: string): ParseNode => ({ op, field, value })
 
-    return only ? { op: "eq", field: ORGANISM_FIELD, value: only } : null
-  }
-  const rules: ParseNode[] = organisms.map((value) => ({
-    op: "eq" as const,
-    field: ORGANISM_FIELD,
-    value,
-  }))
+const facetToAst = (row: FilterRow, values: readonly string[]): ParseNode | null => {
+  const op = row.op as LeafOp
+  const vals = values.filter((v) => v !== "")
+  if (vals.length === 0) return null
+  if (vals.length === 1) return leaf(op, row.dslField, vals[0] as string)
 
-  return { op: "OR", rules }
+  return { op: "OR", rules: vals.map((value) => leaf(op, row.dslField, value)) }
 }
 
-const submittersToAst = (submitters: readonly string[]): ParseNode | null => {
-  if (submitters.length === 0) return null
-  if (submitters.length === 1) {
-    const [only] = submitters
+const rowToAst = (row: FilterRow, state: SearchFacetState, now: Date): ParseNode | null => {
+  switch (row.kind) {
+    case "facet":
+      return facetToAst(row, state.facets[row.key] ?? [])
+    case "text": {
+      const value = (state.texts[row.key] ?? "").trim()
 
-    return only ? { op: "eq", field: SUBMITTER_FIELD, value: only } : null
+      return value === "" ? null : leaf(row.op as LeafOp, row.dslField, value)
+    }
+    case "dateRange":
+      return dateRangeToAst(row.dslField, state.datePublished, now)
+    case "numberRange": {
+      const range = state.ranges[row.key]
+      if (!range || range.from === "" || range.to === "") return null
+
+      return { op: "between", field: row.dslField, from: range.from, to: range.to }
+    }
   }
-  const rules: ParseNode[] = submitters.map((value) => ({
-    op: "eq" as const,
-    field: SUBMITTER_FIELD,
-    value,
-  }))
-
-  return { op: "OR", rules }
-}
-
-const studyTypeToAst = (value: string | null): ParseNode | null => {
-  if (!value) return null
-
-  return { op: "eq", field: STUDY_TYPE_FIELD, value }
 }
 
 export const fromSidebar = (
@@ -93,22 +86,11 @@ export const fromSidebar = (
   options: FromSidebarOptions = {},
   now: Date = new Date(),
 ): ParseNode => {
-  const includeDbOnly = options.db !== null && options.db !== undefined
   const parts: ParseNode[] = []
-  const organism = organismToAst(state.organisms)
-  if (organism) parts.push(organism)
-  if (includeDbOnly) {
-    const submitter = submittersToAst(state.submitters)
-    if (submitter) parts.push(submitter)
+  for (const row of scopeFilters(options.db ?? null)) {
+    const node = rowToAst(row, state, now)
+    if (node) parts.push(node)
   }
-  // library_strategy is an SRA-only Tier 3 field; emitting it in cross mode or
-  // for other DBs is rejected with 400 field-not-available-in-cross-db.
-  if (options.db === "sra") {
-    const studyType = studyTypeToAst(state.studyType)
-    if (studyType) parts.push(studyType)
-  }
-  const dateRange = dateRangeToAst(state.datePublished, now)
-  if (dateRange) parts.push(dateRange)
   if (parts.length === 0) return identityAst
 
   return canonicalizeAst(mergeAstAnd(...parts))

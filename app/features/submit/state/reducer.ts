@@ -227,7 +227,7 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
 
 export const initialState: UIState = {
   submission: {
-    preconditions: { q1: null, q2: null },
+    preconditions: { q1: "public", q2: null },
     fileEntries: [],
     fileGroups: [],
     notes: "",

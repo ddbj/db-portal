@@ -5,7 +5,7 @@ import type { ParseNode } from "~/lib/api"
 
 import { astEquals } from "../ast/equals"
 import { isIdentityAst } from "../ast/identity"
-import type { SyncStatus } from "../types"
+import type { DbSlug, SyncStatus } from "../types"
 import { serializeAstToDsl } from "../url/to-url"
 import { useDebouncedValue } from "./use-debounced-value"
 
@@ -21,6 +21,7 @@ export const useDebouncedSerialize = (
   ast: ParseNode,
   onSerialized?: (dsl: string) => void,
   baseUrl?: string,
+  db?: DbSlug | null,
 ): DebouncedSerializeResult => {
   const [status, setStatus] = useState<SyncStatus>("idle")
   const [dsl, setDsl] = useState<string>("")
@@ -34,7 +35,10 @@ export const useDebouncedSerialize = (
 
   const mutation = useMutation({
     mutationFn: (target: ParseNode) =>
-      serializeAstToDsl(target, baseUrl !== undefined ? { baseUrl } : undefined),
+      serializeAstToDsl(target, {
+        ...(baseUrl !== undefined ? { baseUrl } : {}),
+        ...(db != null ? { db } : {}),
+      }),
     onSuccess: (nextDsl, target) => {
       lastSyncedRef.current = target
       setDsl(nextDsl)

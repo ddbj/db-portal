@@ -35,8 +35,12 @@ export {
 export {
   crossSearch,
   type CrossSearchResponse,
+  type DbPortalFacets,
   dbSearch,
   type DbSearchResponse,
+  type FacetBucket,
+  type FacetName,
+  type OrganismBucket,
   parseQuery,
   type ParseResponse,
   searchApiBaseUrl,

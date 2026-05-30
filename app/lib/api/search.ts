@@ -18,6 +18,14 @@ export type ParseResponse =
 export type SerializeResponse =
   paths["/db-portal/serialize"]["post"]["responses"][200]["content"]["application/json"]
 
+// Facet aggregation payload shared by cross-search and single-DB responses
+// (`DbPortalFacets`). Each facet is `FacetBucket[] | null` ("null" = not
+// aggregated, "[]" = aggregated with zero buckets); `organism` carries a `label`.
+export type DbPortalFacets = NonNullable<CrossSearchResponse["facets"]>
+export type FacetName = keyof DbPortalFacets
+export type FacetBucket = NonNullable<DbPortalFacets["objectType"]>[number]
+export type OrganismBucket = NonNullable<DbPortalFacets["organism"]>[number]
+
 export const crossSearch = (
   query: CrossSearchQuery,
   options: ApiRequestOptions,

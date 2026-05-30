@@ -1,9 +1,19 @@
+export {
+  type FilterOp,
+  type FilterRow,
+  type FilterRowKind,
+  rowByDslField,
+  type Scope,
+  SCOPE_FILTERS,
+  scopeFacetParam,
+  scopeFilters,
+  scopeOf,
+} from "./facet-config"
 export { FacetPanel } from "./facet-panel"
 export {
   createInitialSearchFacetState,
-  FACET_ORGANISMS,
-  FACET_STUDY_TYPES,
-  FACET_SUBMITTERS,
+  type DatePublishedFilter,
+  type NumberRange,
   type SearchFacetAction,
   searchFacetReducer,
   type SearchFacetState,

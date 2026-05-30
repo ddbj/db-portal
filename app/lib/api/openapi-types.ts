@@ -2049,6 +2049,11 @@ export interface components {
              *     ]
              */
             databases: components["schemas"]["DbPortalCount"][];
+            /**
+             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (trad / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
+             * @example null
+             */
+            facets?: components["schemas"]["DbPortalFacets"] | null;
         };
         /**
          * DbPortalDb
@@ -2056,6 +2061,315 @@ export interface components {
          * @enum {string}
          */
         DbPortalDb: "trad" | "sra" | "bioproject" | "biosample" | "jga" | "gea" | "metabobank" | "taxonomy";
+        /**
+         * DbPortalFacets
+         * @description Facet aggregation results for db-portal endpoints.
+         *
+         *     Extends the shared :class:`~ddbj_search_api.schemas.common.Facets`
+         *     (ES-backed facets) with the four Solr-backed facets that only
+         *     db-portal exposes: ``division`` / ``molecularType`` (trad / ARSA) and
+         *     ``rank`` / ``kingdom`` (taxonomy / TXSearch).  The same convention
+         *     applies to every field: ``null`` = not aggregated, ``[]`` = aggregated
+         *     with zero buckets.  See docs/db-portal-api-spec.md § facet 集計.
+         */
+        DbPortalFacets: {
+            /**
+             * Type
+             * @description Entry count per database type (cross-type search only; null when not aggregated).
+             * @example [
+             *       {
+             *         "count": 1234,
+             *         "value": "bioproject"
+             *       },
+             *       {
+             *         "count": 567,
+             *         "value": "biosample"
+             *       }
+             *     ]
+             */
+            type?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Organism
+             * @description Entry count per organism. ``value`` is the NCBI Taxonomy ID (string), ``label`` is the scientific name; ``value`` can be re-injected into ``?organism=`` directly. Null when not aggregated (e.g. excluded from an explicit ``facets`` selection).
+             * @example [
+             *       {
+             *         "count": 1000,
+             *         "label": "Homo sapiens",
+             *         "value": "9606"
+             *       }
+             *     ]
+             */
+            organism?: components["schemas"]["OrganismFacetBucket"][] | null;
+            /**
+             * Accessibility
+             * @description Entry count per accessibility level. Null when not aggregated.
+             * @example [
+             *       {
+             *         "count": 1000,
+             *         "value": "public-access"
+             *       },
+             *       {
+             *         "count": 50,
+             *         "value": "controlled-access"
+             *       }
+             *     ]
+             */
+            accessibility?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Objecttype
+             * @description Umbrella / non-umbrella count (bioproject only, opt-in).
+             * @example [
+             *       {
+             *         "count": 900,
+             *         "value": "BioProject"
+             *       },
+             *       {
+             *         "count": 100,
+             *         "value": "UmbrellaBioProject"
+             *       }
+             *     ]
+             */
+            objectType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Librarystrategy
+             * @description Library strategy count (sra-experiment only, opt-in).
+             * @example [
+             *       {
+             *         "count": 500,
+             *         "value": "WGS"
+             *       }
+             *     ]
+             */
+            libraryStrategy?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Librarysource
+             * @description Library source count (sra-experiment only, opt-in).
+             * @example [
+             *       {
+             *         "count": 800,
+             *         "value": "GENOMIC"
+             *       }
+             *     ]
+             */
+            librarySource?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Libraryselection
+             * @description Library selection count (sra-experiment only, opt-in).
+             * @example [
+             *       {
+             *         "count": 600,
+             *         "value": "RANDOM"
+             *       }
+             *     ]
+             */
+            librarySelection?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Platform
+             * @description Sequencing platform count (sra-experiment only, opt-in).
+             * @example [
+             *       {
+             *         "count": 950,
+             *         "value": "ILLUMINA"
+             *       }
+             *     ]
+             */
+            platform?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Instrumentmodel
+             * @description Instrument model count (sra-experiment only, opt-in).
+             * @example [
+             *       {
+             *         "count": 200,
+             *         "value": "HiSeq X Ten"
+             *       }
+             *     ]
+             */
+            instrumentModel?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Experimenttype
+             * @description Experiment type count (gea / metabobank, opt-in).
+             * @example [
+             *       {
+             *         "count": 50,
+             *         "value": "RNA-Seq of coding RNA"
+             *       }
+             *     ]
+             */
+            experimentType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Studytype
+             * @description Study type count (jga-study / metabobank, opt-in).
+             * @example [
+             *       {
+             *         "count": 30,
+             *         "value": "GWAS"
+             *       }
+             *     ]
+             */
+            studyType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Submissiontype
+             * @description Submission type count (metabobank only, opt-in).
+             * @example [
+             *       {
+             *         "count": 20,
+             *         "value": "open"
+             *       }
+             *     ]
+             */
+            submissionType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Relevance
+             * @description BioProject relevance count (bioproject only, opt-in). INSDC controlled values: Agricultural / Medical / Industrial / Environmental / Evolution / ModelOrganism / Other.
+             * @example [
+             *       {
+             *         "count": 1500,
+             *         "value": "Medical"
+             *       },
+             *       {
+             *         "count": 800,
+             *         "value": "ModelOrganism"
+             *       }
+             *     ]
+             */
+            relevance?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Package
+             * @description BioSample package count (biosample only, opt-in). bucket value is the package name (``package.name`` keyword).
+             * @example [
+             *       {
+             *         "count": 4000,
+             *         "value": "MIGS.ba"
+             *       }
+             *     ]
+             */
+            package?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Model
+             * @description BioSample model count (biosample only, opt-in).
+             * @example [
+             *       {
+             *         "count": 5000,
+             *         "value": "Generic.1.0"
+             *       }
+             *     ]
+             */
+            model?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Librarylayout
+             * @description Library layout count (sra-experiment only, opt-in). Cardinality 2.
+             * @example [
+             *       {
+             *         "count": 800,
+             *         "value": "PAIRED"
+             *       },
+             *       {
+             *         "count": 200,
+             *         "value": "SINGLE"
+             *       }
+             *     ]
+             */
+            libraryLayout?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Analysistype
+             * @description Analysis type count (sra-analysis only, opt-in).
+             * @example [
+             *       {
+             *         "count": 300,
+             *         "value": "REFERENCE_ALIGNMENT"
+             *       }
+             *     ]
+             */
+            analysisType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Datasettype
+             * @description JGA dataset type count (jga-dataset only, opt-in).
+             * @example [
+             *       {
+             *         "count": 250,
+             *         "value": "Whole genome sequencing"
+             *       }
+             *     ]
+             */
+            datasetType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Projecttype
+             * @description BioProject projectType count (bioproject only, opt-in). bucket value is the ``projectType.keyword`` exact value; the paired search parameter ``projectType`` performs analyzed text match, so re-injecting a bucket value may return a superset of the bucket (use ``?projectType="<value>"`` to force phrase match).
+             * @example [
+             *       {
+             *         "count": 1200,
+             *         "value": "metagenome"
+             *       }
+             *     ]
+             */
+            projectType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Host
+             * @description BioSample host count (biosample only, opt-in). bucket value is the ``host.keyword`` exact value (cardinality ~134K); the paired search parameter ``host`` performs analyzed text match, so re-injecting a bucket value may return a superset of the bucket (use ``?host="<value>"`` to force phrase match). Due to the high cardinality, large ``facetsSize`` values (e.g. 1000) trigger expensive shard-level aggregation; prefer the default ``facetsSize=100`` and narrow the query (keywords / organism / etc.) before requesting this facet.
+             * @example [
+             *       {
+             *         "count": 3000,
+             *         "value": "Homo sapiens"
+             *       }
+             *     ]
+             */
+            host?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Vendor
+             * @description JGA vendor count (jga-study only, opt-in). bucket value is the ``vendor.keyword`` exact value; the paired search parameter ``vendor`` performs analyzed text match.
+             * @example [
+             *       {
+             *         "count": 90,
+             *         "value": "Illumina"
+             *       }
+             *     ]
+             */
+            vendor?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Division
+             * @description Trad division count (db=trad only). INSDC division code (ARSA ``Division`` field).
+             * @example [
+             *       {
+             *         "count": 1200,
+             *         "value": "BCT"
+             *       }
+             *     ]
+             */
+            division?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Moleculartype
+             * @description Trad molecular type count (db=trad only, ARSA ``MolecularType`` field). Re-inject a bucket value as ``molecular_type:<value>`` in the DSL ``q``.
+             * @example [
+             *       {
+             *         "count": 800,
+             *         "value": "genomic DNA"
+             *       }
+             *     ]
+             */
+            molecularType?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Rank
+             * @description Taxonomy rank count (db=taxonomy only, TXSearch ``rank`` field).
+             * @example [
+             *       {
+             *         "count": 5000,
+             *         "value": "species"
+             *       }
+             *     ]
+             */
+            rank?: components["schemas"]["FacetBucket"][] | null;
+            /**
+             * Kingdom
+             * @description Taxonomy kingdom count (db=taxonomy only, TXSearch ``kingdom`` field).
+             * @example [
+             *       {
+             *         "count": 300,
+             *         "value": "Bacteria"
+             *       }
+             *     ]
+             */
+            kingdom?: components["schemas"]["FacetBucket"][] | null;
+        };
         /**
          * DbPortalHitBioProject
          * @description BioProject hit.
@@ -3341,6 +3655,11 @@ export interface components {
              * @example true
              */
             hasNext: boolean;
+            /**
+             * @description Facet aggregation scoped to the current ``q`` when the ``facets`` parameter is supplied; ``null`` otherwise.  Population matches the hits query (same compiled query + status filter).  See db-portal-api-spec.md § facet 集計.
+             * @example null
+             */
+            facets?: components["schemas"]["DbPortalFacets"] | null;
         };
         /**
          * DbPortalLightweightHit
@@ -10904,6 +11223,10 @@ export interface operations {
                 topHits?: number;
                 /** @description Default boolean operator for connecting comma-separated FreeText tokens (e.g. ``q=cancer,tumor``).  Default **OR** (matches Google-like behaviour and the same parameter on ``/entries/*``).  ``AND`` requires every token to match; ``OR`` requires at least one. Tokens inside a single FreeText value (e.g. ``q=cancer tumor``) are always AND-combined regardless of this setting (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  ``/db-portal/parse`` does not accept this parameter (the parsed AST does not carry operator state). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Cross-search accepts ``organism`` / ``accessibility`` / ``type`` only (ES entries-alias aggregation); any other name returns 400 ``facet-not-applicable``.  Allowlist typos return 422.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                facets?: string | null;
+                /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
+                facetsSize?: number | null;
             };
             header?: never;
             path?: never;
@@ -11038,6 +11361,10 @@ export interface operations {
                 sort?: ("datePublished:asc" | "datePublished:desc") | null;
                 /** @description Default boolean operator for connecting comma-separated FreeText tokens (e.g. ``q=cancer,tumor``).  Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value (e.g. ``q=cancer tumor``) are always AND-combined regardless of this setting (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  Exclusive with cursor when not at default (OR). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=trad`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                facets?: string | null;
+                /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
+                facetsSize?: number | null;
             };
             header?: never;
             path?: never;

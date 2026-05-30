@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest"
 import {
   canonicalizeAst,
   createCondition,
+  createInitialSearchFacetState,
   fromAdvanced,
   fromSidebar,
+  type SearchFacetState,
   splitForSidebar,
   toAdvanced,
 } from "~/features/search"
@@ -41,25 +43,39 @@ describe("advanced AST round-trip", () => {
   })
 })
 
-// Organisms are tracked as NCBI taxonomy IDs and emitted as `organism_id:<taxID>`.
-const sidebarStateArb = fc.record({
-  organisms: fc.array(fc.constantFrom("9606", "10090", "562"), { maxLength: 3 }),
-  submitters: fc.array(fc.constantFrom("RIKEN", "The University of Tokyo"), { maxLength: 2 }),
-  studyType: fc.constantFrom(null, "Whole Genome Sequencing", "Metagenomics"),
-  datePublished: fc.record({
-    active: fc.constantFrom("all" as const),
-    from: fc.constant(""),
-    to: fc.constant(""),
-  }),
-})
+const sorted = (values: readonly string[]): string[] => [...values].sort()
+
+// Non-blank token (no surrounding whitespace, so fromSidebar's trim is identity).
+const tokenArb = fc.string({ minLength: 1, maxLength: 8 })
+  .map((s) => s.replace(/\s/g, "x"))
+  .filter((s) => s.length > 0)
+
+// Organisms are tracked as NCBI taxonomy IDs emitted as `organism_id:<taxID>`.
+const taxIdArb = fc.constantFrom("9606", "10090", "562", "7227")
+const objectTypeArb = fc.constantFrom("BioProject", "UmbrellaBioProject")
+
+const bioprojectStateArb = fc.record({
+  organism: fc.uniqueArray(taxIdArb, { maxLength: 3 }),
+  objectType: fc.uniqueArray(objectTypeArb, { maxLength: 2 }),
+  submitter: fc.option(tokenArb, { nil: "" }),
+}).map(({ organism, objectType, submitter }): { state: SearchFacetState; submitter: string } => ({
+  state: {
+    ...createInitialSearchFacetState(),
+    facets: { organism, objectType },
+    ...(submitter === "" ? {} : { texts: { submitter } }),
+  },
+  submitter,
+}))
 
 describe("sidebar round-trip", () => {
-  it("fromSidebar→splitForSidebar recovers organism taxIDs", () => {
+  it("fromSidebar→splitForSidebar recovers facets and text for the scope", () => {
     fc.assert(
-      fc.property(sidebarStateArb, (state) => {
-        const ast = fromSidebar(state)
-        const { sidebar } = splitForSidebar(ast)
-        expect([...sidebar.organisms].sort()).toEqual([...state.organisms].sort())
+      fc.property(bioprojectStateArb, ({ state, submitter }) => {
+        const ast = fromSidebar(state, { db: "bioproject" })
+        const { sidebar } = splitForSidebar(ast, "bioproject")
+        expect(sorted(sidebar.facets.organism ?? [])).toEqual(sorted(state.facets.organism ?? []))
+        expect(sorted(sidebar.facets.objectType ?? [])).toEqual(sorted(state.facets.objectType ?? []))
+        expect(sidebar.texts.submitter ?? "").toEqual(submitter)
       }),
     )
   })

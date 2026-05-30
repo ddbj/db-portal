@@ -74,7 +74,7 @@ const SearchResultsRoute = () => {
       }
     }
     const ft = splitFreeText(data.ast)
-    const split = splitForSidebar(ft.rest)
+    const split = splitForSidebar(ft.rest, data.db)
 
     return {
       keywordInit: ft.keyword,
@@ -82,7 +82,7 @@ const SearchResultsRoute = () => {
       advancedInit: toAdvanced(split.rest),
       facetInit: split.sidebar,
     }
-  }, [data.ast])
+  }, [data.ast, data.db])
 
   const [keyword, setKeyword] = useState(keywordInit)
   const [keywordParseError, setKeywordParseError] = useState(false)
@@ -120,7 +120,7 @@ const SearchResultsRoute = () => {
       }),
       { replace: true, preventScrollReset: true },
     )
-  }, searchApiBaseUrl)
+  }, searchApiBaseUrl, data.db)
 
   const handlePageChange = (nextPage: number) => {
     navigate(
@@ -159,7 +159,7 @@ const SearchResultsRoute = () => {
     let dsl = ""
     if (!isIdentityAst(combined)) {
       try {
-        dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl })
+        dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl, db: data.db })
       } catch {
         // Serialize is a system-side failure the user cannot fix; the sync chip
         // surfaces it. Don't navigate and don't raise a warning here.
@@ -183,7 +183,7 @@ const SearchResultsRoute = () => {
     let dsl = ""
     if (!isIdentityAst(ast)) {
       try {
-        dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl })
+        dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: data.db })
       } catch {
         // Serialize failure is system-side; leave the current results in place.
         search.end()
@@ -290,7 +290,7 @@ const SearchResultsRoute = () => {
             ? (
               <Section padTop="block" padBottom="lg">
                 <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                  <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} />
+                  <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} facets={data.facets} />
                   <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                     {data.cross
                       ? <CrossResults q={data.q} response={data.cross} />
