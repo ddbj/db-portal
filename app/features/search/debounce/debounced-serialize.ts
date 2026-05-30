@@ -20,6 +20,7 @@ export type DebouncedSerializeResult = {
 export const useDebouncedSerialize = (
   ast: ParseNode,
   onSerialized?: (dsl: string) => void,
+  baseUrl?: string,
 ): DebouncedSerializeResult => {
   const [status, setStatus] = useState<SyncStatus>("idle")
   const [dsl, setDsl] = useState<string>("")
@@ -32,7 +33,8 @@ export const useDebouncedSerialize = (
   const debounced = useDebouncedValue(ast, DEBOUNCE_MS)
 
   const mutation = useMutation({
-    mutationFn: (target: ParseNode) => serializeAstToDsl(target),
+    mutationFn: (target: ParseNode) =>
+      serializeAstToDsl(target, baseUrl !== undefined ? { baseUrl } : undefined),
     onSuccess: (nextDsl, target) => {
       lastSyncedRef.current = target
       setDsl(nextDsl)

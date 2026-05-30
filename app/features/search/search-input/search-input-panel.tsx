@@ -26,6 +26,12 @@ export type SearchInputPanelProps = {
   // The keyword could not be parsed; reflect it on the box (warn border +
   // warn-coloured syntax hint). Only meaningful in keyword mode.
   invalid?: boolean
+  // Run the cross search from the box (keyword mode submit / Enter), mirroring
+  // the builder's "検索" button.
+  onSubmitSearch?: ((keyword: string) => void) | undefined
+  // A keyword search is resolving (parse → serialize → navigate); busies the box
+  // submit button.
+  searchPending?: boolean | undefined
 }
 
 const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
@@ -41,6 +47,8 @@ export const SearchInputPanel = ({
   dispatch,
   baseUrl,
   invalid = false,
+  onSubmitSearch,
+  searchPending = false,
 }: SearchInputPanelProps) => {
   const t = useT()
   const availability = useLlmAvailability()
@@ -84,9 +92,22 @@ export const SearchInputPanel = ({
     current: effectiveAiMode === "append" ? fromAdvanced(advancedState) : undefined,
   })
 
+  const generating = stream.state === "streaming"
+  // AI mode busies while generating; keyword mode busies while the search the
+  // box kicked off resolves.
+  const submitDisabled = isAi ? generating : searchPending
+  const submitLabel = isAi
+    ? (generating ? t("search.assistant.generating") : t("search.assistant.generateShort"))
+    : (searchPending ? t("search.a11y.searching") : t("search.a11y.submit"))
+
+  // The keyword box submit runs the cross search (same as the builder's button),
+  // not just a keyword commit — the box's "検索" otherwise looked inert.
   const handleSubmit = (value: string) => {
+    if (submitDisabled) return
     if (isAi) {
       if (value.trim().length > 0) void stream.start(value, startOptions())
+    } else if (onSubmitSearch) {
+      onSubmitSearch(value)
     } else {
       onKeywordChange(value)
     }
@@ -145,7 +166,8 @@ export const SearchInputPanel = ({
         value={isAi ? aiInput : keyword}
         placeholder={isAi ? t("search.assistant.placeholder") : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
-        submitLabel={isAi ? t("search.assistant.generateShort") : t("search.a11y.submit")}
+        submitLabel={submitLabel}
+        submitDisabled={submitDisabled}
         scope={isAi ? aiScopeValue : scope}
         scopeOptions={isAi ? aiScopeOptions : scopeOptions}
         disabledScopeOptions={isAi && appendDisabled ? [modeAppendLabel] : []}
@@ -224,7 +246,7 @@ export const SearchInputPanel = ({
             <Button
               kind="secondary"
               size="md"
-              disabled={aiInput.trim().length === 0}
+              disabled={aiInput.trim().length === 0 || generating}
               onClick={() => void stream.start(aiInput, startOptions())}
             >
               {t("search.assistant.regenerate")}

@@ -41,16 +41,18 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
       data-db={db}
       className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3"
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="text-fs-h2 font-bold text-ink m-0">{t(`search.scope.${db}`)}</h3>
-        <TextLink to={href}>
-          {t("search.results.cross.viewAll")} →
-        </TextLink>
+        <span className="shrink-0 whitespace-nowrap">
+          <TextLink to={href}>
+            {t("search.results.cross.viewAll")} →
+          </TextLink>
+        </span>
       </div>
       <div>
         <span
           aria-label={t("search.results.cross.countAria")}
-          className="font-mono tabular-nums text-fs-h1 font-semibold text-ink"
+          className="font-mono tabular-nums text-fs-h2 font-semibold text-ink"
         >
           {formatCount(entry.count)}
         </span>

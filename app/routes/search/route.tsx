@@ -1,5 +1,5 @@
 import { useMemo, useReducer, useState } from "react"
-import { useNavigate } from "react-router"
+import { useLoaderData, useNavigate } from "react-router"
 
 import {
   AdvancedBuilder,
@@ -14,12 +14,16 @@ import {
   QueryPreview,
   SearchInputPanel,
   serializeAstToDsl,
+  splitFreeText,
   SyncStatusChip,
+  toAdvanced,
   useCrossSearchSync,
+  useSearchPending,
 } from "~/features/search"
 import { searchApiBaseUrl } from "~/lib/api"
+import { pageTitleMeta } from "~/lib/content"
 import { useT } from "~/lib/i18n"
-import { SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
+import { dbSlugToScopeKey, SCOPE_KEYS, type ScopeKey, scopeKeyToDbSlug } from "~/lib/search-scope"
 import {
   Button,
   Callout,
@@ -28,20 +32,38 @@ import {
   SectionHeading,
 } from "~/ui"
 
+import { loader } from "./loader"
+
+export { loader }
+
 export const handle = {
   i18n: { en: "complete" },
+  titleSegments: ["Search"],
 } as const
+
+export const meta = pageTitleMeta
 
 const SearchRoute = () => {
   const t = useT()
   const navigate = useNavigate()
-  const [keyword, setKeyword] = useState("")
+  const data = useLoaderData<typeof loader>()
+  // `/search?q=<DSL>` pre-fills the builder: free text → keyword row, the rest →
+  // structured builder. Computed once at mount (the builder never rewrites its
+  // own URL, so loader data is stable for the session).
+  const [initState] = useState(() => {
+    if (!data.ast) return { keyword: data.q, advanced: createInitialState() }
+    const ft = splitFreeText(data.ast)
+
+    return { keyword: ft.keyword, advanced: toAdvanced(ft.rest) }
+  })
+  const [keyword, setKeyword] = useState(initState.keyword)
   const [submitParseError, setSubmitParseError] = useState(false)
-  const [scope, setScope] = useState<ScopeKey>("all")
-  const [advancedState, dispatch] = useReducer(advancedReducer, undefined, createInitialState)
+  const [scope, setScope] = useState<ScopeKey>(dbSlugToScopeKey(data.db))
+  const [advancedState, dispatch] = useReducer(advancedReducer, initState.advanced)
 
   const advancedAst = useMemo(() => fromAdvanced(advancedState), [advancedState])
   const sync = useCrossSearchSync(keyword, advancedAst, searchApiBaseUrl)
+  const search = useSearchPending()
 
   const scopeOptions = useMemo(
     () => SCOPE_KEYS.map((key) => t(`search.scope.${key}`)),
@@ -58,17 +80,19 @@ const SearchRoute = () => {
 
   const conditionCount = builderConditionCount(keyword, advancedState)
 
-  // The keyword box and AI commit their input into the builder; this button is
-  // the single point that executes the cross search by the builder's content.
-  const runSearch = async () => {
+  // The keyword box and AI commit their input into the builder; the box submit
+  // and the "検索" button both execute the cross search by the builder's content.
+  const runSearch = async (kw: string = keyword) => {
+    search.begin()
     let combined = advancedAst
-    const trimmed = keyword.trim()
+    const trimmed = kw.trim()
     if (trimmed.length > 0) {
       try {
         const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
         combined = mergeAstAnd(parsed, advancedAst)
       } catch {
         setSubmitParseError(true)
+        search.end()
 
         return
       }
@@ -85,6 +109,7 @@ const SearchRoute = () => {
     } catch {
       // Serialize is a system-side failure the user cannot fix; the live sync
       // chip surfaces it. Don't navigate and don't raise a warning here.
+      search.end()
     }
   }
 
@@ -135,6 +160,8 @@ const SearchRoute = () => {
           dispatch={dispatch}
           baseUrl={searchApiBaseUrl}
           invalid={hasError}
+          onSubmitSearch={(kw) => void runSearch(kw)}
+          searchPending={search.pending}
         />
       </Section>
       <Section padTop="md" padBottom="none">
@@ -182,8 +209,12 @@ const SearchRoute = () => {
             <Button kind="secondary" onClick={handleClear}>
               {t("search.actions.clear")}
             </Button>
-            <Button kind="primary" onClick={() => void runSearch()} disabled={hasError}>
-              {t("search.actions.submit")}
+            <Button
+              kind="primary"
+              onClick={() => void runSearch()}
+              disabled={hasError || search.pending}
+            >
+              {search.pending ? t("search.a11y.searching") : t("search.actions.submit")}
             </Button>
           </div>
         </Section>

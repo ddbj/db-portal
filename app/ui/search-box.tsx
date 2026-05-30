@@ -22,6 +22,7 @@ type SearchBoxProps = {
   trailing?: ReactNode
   ariaLabel?: string
   submitLabel?: string
+  submitDisabled?: boolean
   scopeAriaLabel?: string
   onSubmit?: (query: string, scope?: string) => void
 }
@@ -59,6 +60,7 @@ export const SearchBox = ({
   trailing,
   ariaLabel = "検索キーワード",
   submitLabel = "検索",
+  submitDisabled = false,
   scopeAriaLabel = "検索対象データベース",
   onSubmit,
 }: SearchBoxProps) => {
@@ -79,6 +81,7 @@ export const SearchBox = ({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
+    if (submitDisabled) return
     onSubmit?.(query, showScope ? scopeValue : undefined)
   }
 
@@ -181,9 +184,14 @@ export const SearchBox = ({
         )}
         <button
           type="submit"
+          disabled={submitDisabled}
+          aria-disabled={submitDisabled || undefined}
           className={cn(
-            "bg-brand text-white border-0 font-bold cursor-pointer hover:bg-brand-deep leading-none",
+            "bg-brand text-white border-0 font-bold leading-none",
             cls.button,
+            submitDisabled
+              ? "opacity-60 cursor-not-allowed"
+              : "cursor-pointer hover:bg-brand-deep",
           )}
         >
           {submitLabel}

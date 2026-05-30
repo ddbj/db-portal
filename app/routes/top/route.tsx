@@ -1,6 +1,8 @@
 import { FeaturedServices } from "~/features/services"
-import { HeroSection, ServiceGrid } from "~/features/top"
+import { ServiceGrid } from "~/features/top"
 import { NewsAside } from "~/shell"
+
+import { HeroSection } from "./hero-section"
 
 const TopRoute = () => (
   <>

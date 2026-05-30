@@ -42,8 +42,9 @@ DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LL
    │   event: error    data: { code, message }
    │ 15 秒間隔で `: heartbeat\n\n` を空コメントで出力
    ▼
-[Browser] useAssistantStream が done の AST をそのまま read-only preview に反映
-          (Advanced state への反映はユーザーの「適用」操作時、search.md § 提案の反映)
+[Browser] useAssistantStream が done の AST を受け取る
+          (/search はカードで提案レビュー → 「適用」、top / results は提案を見せず
+           serialize → /search/results へ遷移。search.md § 提案の反映)
 ```
 
 ## health check
@@ -143,7 +144,8 @@ Accept: text/event-stream
 Body:
   { "input": "<natural language>",
     "mode":  "new" | "append",        (省略時 new)
-    "current": "<現ビルダーの DSL>" }   (append のとき必須、new では無視)
+    "current": <現クエリの ParseNode AST> }  (append のとき必須、new では無視。
+                                              BFF が DSL に serialize して prompt に差し込む)
 
 Response: SSE
   event: message  data: <delta token>      (複数回、DSL 文字列の delta)
@@ -151,7 +153,7 @@ Response: SSE
   event: error    data: { "code", "message" }
 ```
 
-vLLM は自然文を **1 行の Advanced-Search DSL 文字列** に変換する (フルスペック: `AND` / `OR` / `NOT` / グルーピング)。BFF は完了後に DSL を抽出・検証し、`event: done` には `/db-portal/parse` が返した **ParseNode AST** を載せる。client はこの AST をそのまま read-only preview に反映し (`ProposalConditions`)、Advanced state への反映はユーザーの「適用」操作時に行う (`search.md` § 提案の反映)。`mode=append` のとき BFF は `current` を prompt に差し込み、vLLM が既存条件を保持したまま融合した完全な DSL を返す。
+vLLM は自然文を **1 行の Advanced-Search DSL 文字列** に変換する (フルスペック: `AND` / `OR` / `NOT` / グルーピング)。BFF は完了後に DSL を抽出・検証し、`event: done` には `/db-portal/parse` が返した **ParseNode AST** を載せる。client での反映は経路で分かれる: `/search` は read-only preview (`ProposalConditions`) に出して「適用」操作で Advanced state へ反映、top / results は提案を見せず AST を serialize して `/search/results` へ遷移する (`search.md` § 提案の反映)。`mode=append` のとき BFF は `current` を DSL に serialize して prompt に差し込み、vLLM が既存条件を保持したまま融合した完全な DSL を返す。results の `current` は現クエリ全体 (keyword + facet + 構造化条件) の AST。
 
 ### server 側 prompt 構築
 
@@ -189,11 +191,7 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 
 ### 障害時の UI 連動
 
-`event: error` を client (`useAssistantStream`) が受け取ったら:
-
-1. state を `error` にする
-2. `setProposal(null)` で既存提案をクリア
-3. SearchAssistant が toast を出す + 元の input を入力欄に戻す (内容ロストを避ける)
+`event: error` を client (`useAssistantStream`) が受け取ったら state を `error` にし、proposal は出さない (= 遷移しない)。`/search` の統合入力ではプロンプトを入力欄に残し、top / results の `NavigableSearchInput` は box 直下に inline のエラー文言 (`search.assistant.generateError`) を出して入力を保つ。いずれも内容ロストを避け、ユーザーが入力を変えて再送できる。
 
 client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStream` が `event: message` を受信して streaming token を貯め、`event: done` の data を ParseNode AST として受け取り proposal state に入れる (lift 不要、BFF が検証済み)。
 

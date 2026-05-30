@@ -9,6 +9,7 @@ import {
   type ServicesFacetState,
   useServicesList,
 } from "~/features/services"
+import { pageTitleMeta } from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
 import { PageTitle, Section } from "~/ui"
 
@@ -63,6 +64,8 @@ const ServicesRoute = () => {
   )
 }
 
-export const handle = { i18n: { en: "complete" } } as const
+export const handle = { i18n: { en: "complete" }, titleSegments: ["Services"] } as const
+
+export const meta = pageTitleMeta
 
 export default ServicesRoute

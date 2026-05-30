@@ -96,7 +96,7 @@ state 表現には次の prop 名を使う:
 
 各 primitive の Props 型 / class 骨格 / variant 一覧は **コードと `/_design` route が SSOT**。本書は各カテゴリで「何を担う primitive 群か」 と「特殊な制約」 のみ述べる。
 
-- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、`/search` のキーワード / AI モード切替トグルをボックス内に納める
+- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search / results で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、キーワード / AI モード切替トグルをボックス内に納める。`/search` は提案レビュー型の `SearchInputPanel`、top / results は生成→遷移型の `NavigableSearchInput` がこの `SearchBox` を包む (`search.md`)
 - **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
 - **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
 - **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Select` / `TextInput` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では両者を同じ size に揃えて高さを一致させる。詳細は次節の error state policy を参照
@@ -189,7 +189,7 @@ dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した 
 [wordmark] ............................ [nav] [SwitchLang] [|] [LoginButton]
 ```
 
-- wordmark: 左端、`/` への link。テキスト "DDBJ 刷新 (仮)" を brand-deep で render する暫定ロゴ
+- wordmark: 左端、`/` への link。`/bsi-logo.svg` (BSI = BioData Science Initiative) を render するロゴ
 - nav: 中央-右寄せ、active nav に `aria-current="page"` + `text-brand font-bold`
 - SwitchLang: lang 切替リンク (cookie 更新で URL 不変、`i18n.md`)
 - 縦区切り: `w-px h-4 bg-border-soft mx-2` (SwitchLang と LoginButton の間)
@@ -378,7 +378,7 @@ ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Hero (SearchBox + scope + examples + advanced link)         │
+│  Hero (NavigableSearchInput: keyword/AI + scope + examples)  │
 ├──────────────────────────────────┬──────────────────────────┤
 │  ServiceGrid (2x3 = 6 tiles)     │                          │
 │                                  │  NewsAside               │
@@ -388,37 +388,42 @@ ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した
 └──────────────────────────────────┴──────────────────────────┘
 ```
 
-`HeroSection` / `ServiceGrid` / `PopularResources` は `app/features/top/` 配下に置く (画面固有 component、`app/ui/` には入れない)。`NewsAside` は shell 共通 component を import する。
+`ServiceGrid` / `PopularResources` は `app/features/top/` 配下に置く (画面固有 component、`app/ui/` には入れない)。`HeroSection` は検索 box (`NavigableSearchInput`、`features/search`) を使うため **`app/routes/top/` 配下** に置く (`features/top` は `features/search` を import できないため、統合は route 層が担う)。`NewsAside` は shell 共通 component を import する。
 
 ### Hero section
 
 #### 構成
 
-- `SearchBox` (`size="md"`, `showSearchIcon`, `maxWidth=820`, scope selector あり)
+- `NavigableSearchInput` (`search-input/`、results と共有する太い検索 box。keyword / AI モードを 1 つの box で切り替える)
 - scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")
-- 下に共通 `Examples` (`例:` + chip 列、3 件): クリックで `q` に投入。`/search` keyword/AI モードや results と同じ primitive を共有する
+- keyword モードでは scope = DB scope、box 直下に共通 `Examples` (`例:` + chip 列、`top.hero.examples`)
 - 右端に「クエリビルダーで詳細条件を組む →」 リンク (`/search` への TextLink)
 
-#### onSubmit の挙動
+#### AI モード (top は new 固定)
+
+- `useLlmAvailability().ready` のときだけ box 内に「AI モード」トグルを出す (`llm.md`)
+- top は **新規生成 (new) 固定** で `allowAppend={false}`。new/append selector は出さず、scope スロットは DB scope のまま。送信ボタンは keyword/AI とも **「検索」**
+- AI モードに切り替えると検索例 chip が AI 用 (`search.assistant.examples`) に替わる
+- AI 入力 → 「検索」で DSL を生成 (SSE)、**提案を見せず** に検証済み AST を `serializeAstToDsl` で DSL 化し `/search/results?q=<dsl>&db=<scope>` へ遷移する
+
+#### keyword submit の挙動
 
 - 入力値 `q` と scope を受け、`/search/results?q=<encoded>` に navigate する
 - scope が `"all"` 以外なら `db=<slug>` を URL に付加 (`scopeKeyToDbSlug` で変換)
-- DSL parse / serialize は `/search` ルート側でのみ実行する (top の hero は simple query を URL に渡すだけ)
-- 空入力で submit された場合は `/search/results` (q 無し、scope に応じた `db` のみ) に遷移、`/search/results` 側が「examples を提案」表示
+- DSL parse / serialize は results / AI 生成側でのみ実行する (top の keyword は simple query を URL に渡すだけ)
+- 空入力で submit された場合は `/search/results` (q 無し、scope に応じた `db` のみ) に遷移
 
 #### i18n キー
 
 | key | ja | en |
 |---|---|---|
-| `top.hero.placeholder` | "キーワード、accession、学名で検索" | "Search by keyword, accession, or organism" |
-| `top.hero.submit` | "検索" | "Search" |
 | `top.hero.advancedLink` | "クエリビルダーで詳細条件を組む" | "Open the query builder" |
 | `top.hero.examplesLabel` | "例" | "Examples" |
-| `top.hero.examples` | (3 件配列) | (3 件配列) |
-| `top.hero.a11y.input` | "検索キーワード" | "Search keywords" |
-| `top.hero.a11y.scope` | "検索対象データベース" | "Database scope" |
+| `top.hero.examples` | (accession / 学名中心の配列) | (同) |
 
-Hero に独立した heading は置かない (SearchBox 自体が page の入口を兼ねる)。Header の wordmark がブランド表示を担う。
+box の placeholder / aria / 送信ラベル / AI 文言は `NavigableSearchInput` が `search.*` キーを引く (top 固有では持たない)。
+
+Hero に独立した heading は置かない (検索 box 自体が page の入口を兼ねる)。Header の wordmark がブランド表示を担う。
 
 ### Service tiles
 

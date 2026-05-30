@@ -88,6 +88,8 @@ route handle (静的 metadata) は **各 route component module の `export cons
 | `i18n.en` | `"complete"` / `"missing"` / `"partial"` | `<TranslationUnavailable />` バナー判定 |
 | `breadcrumbI18nKey` | string (例: `"breadcrumb.databases"`) | static breadcrumb segment |
 | `breadcrumbResolver` | string (resolver 名) | dynamic breadcrumb segment、`useBreadcrumb` の resolver dict で解決 |
+| `titleSegments` | `string[]` (例: `["Search", "Results"]`) | static document title segment (root→leaf)、`resolvePageTitle` が逆順 + `BSI` で組む (`i18n.md`「document title」) |
+| `titleResolver` | string (resolver 名) | dynamic document title segment、`resolvePageTitle` の resolver dict で解決 |
 
 複数 handle が混在してよい (例: `{ breadcrumbResolver: "database-content", i18n: { en: "complete" } }`)。`useMatches` で全 match の handle を走査するので、親 layout の handle と子 route の handle は両方有効。
 

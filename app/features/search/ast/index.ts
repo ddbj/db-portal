@@ -1,4 +1,5 @@
 export { canonicalizeAst } from "./canonicalize"
 export { astEquals } from "./equals"
+export { type FreeTextSplit, splitFreeText } from "./free-text"
 export { identityAst, isIdentityAst } from "./identity"
 export { mergeAstAnd } from "./merge"

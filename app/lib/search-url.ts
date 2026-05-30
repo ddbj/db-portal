@@ -50,7 +50,16 @@ export const writeSearchParams = (state: Partial<SearchUrlState>): URLSearchPara
   return params
 }
 
-export const buildSearchHref = (): string => "/search"
+export const buildSearchHref = (
+  state: Partial<Pick<SearchUrlState, "q" | "db">> = {},
+): string => {
+  const params = new URLSearchParams()
+  if (state.q) params.set("q", state.q)
+  if (state.db) params.set("db", state.db)
+  const search = params.toString()
+
+  return `/search${search ? `?${search}` : ""}`
+}
 
 export const buildResultsHref = (state: Partial<SearchUrlState>): string => {
   const params = writeSearchParams(state)

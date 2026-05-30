@@ -1,6 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react"
 import { useReducer, useState } from "react"
-import { describe, expect, test } from "vitest"
+import { describe, expect, test, vi } from "vitest"
 
 import {
   advancedReducer,
@@ -14,7 +14,14 @@ import { renderWithStub } from "../../../_helpers/render"
 import { llmHealth } from "../../../mocks/handlers"
 import { server } from "../../../mocks/server"
 
-const Harness = ({ initial, invalid = false }: { initial: AdvancedState; invalid?: boolean }) => {
+type HarnessProps = {
+  initial: AdvancedState
+  invalid?: boolean
+  onSubmitSearch?: (keyword: string) => void
+  searchPending?: boolean
+}
+
+const Harness = ({ initial, invalid = false, onSubmitSearch, searchPending }: HarnessProps) => {
   const [keyword, setKeyword] = useState("")
   const [advancedState, dispatch] = useReducer(advancedReducer, initial)
   const [scope, setScope] = useState("全データベース")
@@ -29,6 +36,8 @@ const Harness = ({ initial, invalid = false }: { initial: AdvancedState; invalid
       advancedState={advancedState}
       dispatch={dispatch}
       invalid={invalid}
+      onSubmitSearch={onSubmitSearch}
+      searchPending={searchPending}
     />
   )
 }
@@ -44,9 +53,15 @@ const stateWithCondition = (): AdvancedState => {
   }
 }
 
-const renderPanel = (initial: AdvancedState, invalid = false) =>
+const renderPanel = (
+  initial: AdvancedState,
+  invalid = false,
+  extra: Omit<HarnessProps, "initial" | "invalid"> = {},
+) =>
   renderWithStub({
-    routes: [{ path: "/", Component: () => <Harness initial={initial} invalid={invalid} /> }],
+    routes: [
+      { path: "/", Component: () => <Harness initial={initial} invalid={invalid} {...extra} /> },
+    ],
     initialEntries: ["/"],
   })
 
@@ -139,5 +154,30 @@ describe("SearchInputPanel keyword validation", () => {
       "true",
     )
     expect(screen.queryByText("キーワードの構文が正しくありません")).toBeNull()
+  })
+})
+
+describe("SearchInputPanel keyword submit", () => {
+  test("box submit runs the search (not just a keyword commit)", async () => {
+    server.use(llmHealth({ status: "unset" }))
+    const onSubmitSearch = vi.fn()
+    renderPanel(createInitialState(), false, { onSubmitSearch })
+
+    const box = await screen.findByRole("textbox", { name: "検索キーワード" })
+    fireEvent.change(box, { target: { value: "cancer" } })
+    fireEvent.click(screen.getByRole("button", { name: "検索" }))
+
+    expect(onSubmitSearch).toHaveBeenCalledWith("cancer")
+  })
+
+  test("searchPending busies the box submit button", async () => {
+    server.use(llmHealth({ status: "unset" }))
+    const onSubmitSearch = vi.fn()
+    renderPanel(createInitialState(), false, { onSubmitSearch, searchPending: true })
+
+    const submit = await screen.findByRole("button", { name: "検索中…" })
+    expect(submit).toBeDisabled()
+    fireEvent.click(submit)
+    expect(onSubmitSearch).not.toHaveBeenCalled()
   })
 })

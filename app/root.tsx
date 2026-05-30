@@ -20,6 +20,7 @@ import {
 } from "react-router"
 
 import { ErrorPage } from "~/features/errors"
+import { resolvePageTitle } from "~/lib/content"
 import { createI18nInstance, LangProvider } from "~/lib/i18n"
 import { parseLangCookie, serializeLangCookie } from "~/lib/i18n/lang-cookie.server"
 import { detectLangHint, resolveLang } from "~/lib/i18n/resolve-lang.server"
@@ -65,12 +66,13 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   return data(payload)
 }
 
-export const meta = ({ data: loaderData, location }: MetaArgs<typeof loader>) => {
+export const meta = ({ data: loaderData, location, matches }: MetaArgs<typeof loader>) => {
   const origin = loaderData?.portalOrigin ?? ""
   const path = location.pathname
   const href = (lang: Lang): string => `${origin}${path}?lang=${lang}`
+
   return [
-    { title: "DDBJ 刷新 (仮)" },
+    { title: resolvePageTitle(matches) },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
     { charSet: "utf-8" },
     { tagName: "link", rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

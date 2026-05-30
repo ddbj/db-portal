@@ -13,6 +13,7 @@ import {
   TagProgress,
   useSubmitState,
 } from "~/features/submit"
+import { pageTitleMeta } from "~/lib/content"
 import { useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
 import { Q1 as Q1Enum, Q2 as Q2Enum } from "~/schemas/submit"
@@ -21,7 +22,10 @@ import { PageTitle, Section, SectionHeading } from "~/ui"
 export const handle = {
   lang: undefined,
   i18n: { en: "complete" },
+  titleSegments: ["Submit"],
 } as const
+
+export const meta = pageTitleMeta
 
 const SubmitRoute = () => {
   const t = useT()

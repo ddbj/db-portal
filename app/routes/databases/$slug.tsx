@@ -1,13 +1,17 @@
 import { type LoaderFunctionArgs, useLoaderData } from "react-router"
 
+import { pageTitleMeta } from "~/lib/content"
 import { getDatabaseBySlug } from "~/lib/content/loader"
 import { type Lang, useLang, useT } from "~/lib/i18n"
 import { PageTitle, Section, SectionHeading, Tag, TextLink } from "~/ui"
 
 export const handle = {
   breadcrumbResolver: "database-content",
+  titleResolver: "database-content",
   i18n: { en: "complete" },
 } as const
+
+export const meta = pageTitleMeta
 
 export const loader = ({ params }: LoaderFunctionArgs): { slug: string } => {
   const slug = params.slug ?? ""

@@ -31,20 +31,29 @@ export {
 export {
   astEquals,
   canonicalizeAst,
+  type FreeTextSplit,
   identityAst,
   isIdentityAst,
   mergeAstAnd,
+  splitFreeText,
 } from "./ast"
-export { BuilderSummaryPanel, QueryPreview } from "./components"
+export {
+  BuilderSummaryPanel,
+  QueryPreview,
+  SwitchableQueryPreview,
+  type SwitchableQueryPreviewProps,
+} from "./components"
 export {
   type CrossSearchSyncOutcome,
   type CrossSearchSyncResult,
   DEBOUNCE_MS,
   type DebouncedSerializeResult,
   resolveCrossSearchSync,
+  type SearchPending,
   useCrossSearchSync,
   useDebouncedSerialize,
   useDebouncedValue,
+  useSearchPending,
 } from "./debounce"
 export {
   CrossResults,
@@ -56,6 +65,8 @@ export {
   type AiMode,
   type AiModeDefault,
   builderConditionCount,
+  NavigableSearchInput,
+  type NavigableSearchInputProps,
   resolveAiModeDefault,
   SearchInputPanel,
   type SearchInputPanelProps,

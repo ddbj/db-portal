@@ -58,10 +58,18 @@ const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
   return events
 }
 
-export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
+// `onDone` lets a caller act on the validated AST the moment it arrives (e.g.
+// serialize + navigate) without watching state in an effect. It is read through
+// a ref so a fresh closure each render never staleness-traps the stream loop.
+export const useAssistantStream = (
+  baseUrl?: string,
+  onDone?: (ast: ParseNode) => void,
+): AssistantStreamResult => {
   const [state, setState] = useState<AssistantState>("idle")
   const [proposal, setProposal] = useState<ParseNode | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
 
   const stop = useCallback(() => {
     controllerRef.current?.abort()
@@ -88,6 +96,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
       if (controller.signal.aborted) return
       setProposal(DEV_SAMPLE_PROPOSAL)
       setState("done")
+      onDoneRef.current?.(DEV_SAMPLE_PROPOSAL)
 
       return
     }
@@ -132,6 +141,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
             if (isParseNode(raw)) {
               setProposal(raw)
               setState("done")
+              onDoneRef.current?.(raw)
             } else {
               setState("error")
             }

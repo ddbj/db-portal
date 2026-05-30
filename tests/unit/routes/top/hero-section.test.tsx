@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react"
 import { describe, expect, test } from "vitest"
 
-import { HeroSection } from "~/features/top/hero-section"
+import { HeroSection } from "~/routes/top/hero-section"
 
 import { renderWithStub } from "../../_helpers/render"
 
@@ -22,11 +22,8 @@ describe("HeroSection", () => {
     expect(input).toHaveAttribute("placeholder", "キーワード、accession、学名で検索")
   })
 
-  test("HeroSection_searchBox_hasSearchIconAndMaxWidth", () => {
+  test("HeroSection_searchBox_showsSearchIconInKeywordMode", () => {
     const { container } = renderHero()
-    const wrapper = container.querySelector(".relative.w-full")
-    expect(wrapper).not.toBeNull()
-    expect((wrapper as HTMLElement).style.maxWidth).toBe("880px")
     const inputRow = container.querySelector(".flex-1.flex.items-center")
     expect(inputRow?.querySelector("svg")).not.toBeNull()
   })

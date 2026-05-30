@@ -2,7 +2,7 @@ import type { Resources } from "./ja"
 
 export const en: Resources = {
   common: {
-    siteName: "DDBJ 刷新 (仮)",
+    siteName: "BSI",
     loading: "Loading",
     error: "Error",
     close: "Close",
@@ -32,12 +32,9 @@ export const en: Resources = {
   },
   top: {
     hero: {
-      placeholder: "Search by keyword, accession, or organism",
-      submit: "Search",
       examplesLabel: "Examples",
       examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
       advancedLink: "Open the query builder",
-      a11y: { input: "Search keywords", scope: "Database scope" },
     },
     serviceGrid: { heading: "Services" },
     services: { heading: "Services", viewAll: "View all" },
@@ -571,6 +568,9 @@ export const en: Resources = {
       copied: "Copied",
       edit: "Edit in builder",
       clear: "Clear",
+      viewDsl: "DSL",
+      viewGraph: "Graph",
+      viewGroupLabel: "Preview view",
     },
     actions: {
       submit: "Search with these conditions",
@@ -660,6 +660,7 @@ export const en: Resources = {
       modeNew: "Generate new",
       modeAppend: "Add to existing",
       applyReplace: "Create with this",
+      generateError: "Could not generate a query. Adjust your input and try again.",
     },
     scope: {
       all: "All databases",
@@ -682,6 +683,7 @@ export const en: Resources = {
     a11y: {
       input: "Search keywords",
       submit: "Search",
+      searching: "Searching…",
       scope: "Database scope",
       builderConditions: "Query builder conditions",
       fieldSelector: "Search field",

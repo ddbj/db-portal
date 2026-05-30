@@ -9,6 +9,7 @@ import {
   serializeNewsFacetState,
   useNewsList,
 } from "~/features/news"
+import { pageTitleMeta } from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
 import { PageTitle, Section } from "~/ui"
 
@@ -63,6 +64,8 @@ const NewsRoute = () => {
   )
 }
 
-export const handle = { i18n: { en: "complete" } } as const
+export const handle = { i18n: { en: "complete" }, titleSegments: ["News"] } as const
+
+export const meta = pageTitleMeta
 
 export default NewsRoute

@@ -30,15 +30,9 @@ export type Resources = {
   }
   top: {
     hero: {
-      placeholder: string
-      submit: string
       examplesLabel: string
       examples: readonly string[]
       advancedLink: string
-      a11y: {
-        input: string
-        scope: string
-      }
     }
     serviceGrid: {
       heading: string
@@ -495,6 +489,9 @@ export type Resources = {
       copied: string
       edit: string
       clear: string
+      viewDsl: string
+      viewGraph: string
+      viewGroupLabel: string
     }
     actions: {
       submit: string
@@ -580,6 +577,7 @@ export type Resources = {
       modeNew: string
       modeAppend: string
       applyReplace: string
+      generateError: string
     }
     scope: {
       all: string
@@ -602,6 +600,7 @@ export type Resources = {
     a11y: {
       input: string
       submit: string
+      searching: string
       scope: string
       builderConditions: string
       fieldSelector: string
@@ -618,7 +617,7 @@ export type Resources = {
 
 export const ja: Resources = {
   common: {
-    siteName: "DDBJ 刷新 (仮)",
+    siteName: "BSI",
     loading: "読み込み中",
     error: "エラー",
     close: "閉じる",
@@ -648,12 +647,9 @@ export const ja: Resources = {
   },
   top: {
     hero: {
-      placeholder: "キーワード、accession、学名で検索",
-      submit: "検索",
       examplesLabel: "例",
       examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
       advancedLink: "クエリビルダーで詳細条件を組む",
-      a11y: { input: "検索キーワード", scope: "検索対象データベース" },
     },
     serviceGrid: { heading: "サービス" },
     services: { heading: "サービス", viewAll: "すべて見る" },
@@ -1187,6 +1183,9 @@ export const ja: Resources = {
       copied: "コピーしました",
       edit: "クエリビルダーで編集",
       clear: "クリア",
+      viewDsl: "DSL",
+      viewGraph: "グラフ",
+      viewGroupLabel: "プレビュー表示",
     },
     actions: {
       submit: "この条件で検索",
@@ -1276,6 +1275,7 @@ export const ja: Resources = {
       modeNew: "新規生成",
       modeAppend: "既存に追加",
       applyReplace: "この内容で作成",
+      generateError: "クエリの生成に失敗しました。入力を変えて再試行してください。",
     },
     scope: {
       all: "全データベース",
@@ -1298,6 +1298,7 @@ export const ja: Resources = {
     a11y: {
       input: "検索キーワード",
       submit: "検索",
+      searching: "検索中…",
       scope: "検索対象データベース",
       builderConditions: "クエリビルダーの条件一覧",
       fieldSelector: "検索フィールド",

@@ -18,6 +18,12 @@ export {
   validateAllDatabases,
   validateAllServices,
 } from "./loader"
+export {
+  buildTitle,
+  pageTitleMeta,
+  resolvePageTitle,
+  type TitleMatch,
+} from "./page-title"
 export type {
   Collection,
   DatabaseCollection,
