@@ -211,9 +211,6 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
     case "OPEN_EDIT_ROW":
       return { ...state, editing: { kind: "row", entryId: action.entryId } }
 
-    case "OPEN_CONFIRM_DELETE":
-      return { ...state, editing: { kind: "confirm-delete", entryId: action.entryId } }
-
     case "COMMIT_ROW_EDIT":
       return applyRowEditPatch(state, action.entryId, action.patch)
 

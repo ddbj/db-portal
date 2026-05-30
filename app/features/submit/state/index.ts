@@ -2,7 +2,6 @@ export { initialState, submitReducer } from "./reducer"
 export {
   countConfiguredRows,
   rowIsConfigured,
-  selectRowDetailSummary,
   selectSteps,
   selectValidations,
 } from "./selectors"

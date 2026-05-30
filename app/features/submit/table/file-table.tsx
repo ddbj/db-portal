@@ -2,7 +2,7 @@ import type { Access, FileEntry, FileTypeKind } from "~/schemas/submit"
 import { Label } from "~/ui"
 
 import { hasRowDetail } from "../modals/form-defs"
-import { rowIsConfigured, selectRowDetailSummary } from "../state/selectors"
+import { rowIsConfigured } from "../state/selectors"
 import type { UIState } from "../state/types"
 import { FileTableRow } from "./file-table-row"
 
@@ -11,13 +11,12 @@ type FileTableLabels = {
   columnFileType: string
   columnFilename: string
   columnAccess: string
-  columnDetail: string
   columnDelete: string
   empty: string
   accessAria: string
-  detailUnsetLabel: string
-  editDetailAria: string
   deleteAria: string
+  rowEditTitle: string
+  detailUnset: string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   accessLabel: (a: Access) => string
 }
@@ -26,16 +25,16 @@ type FileTableProps = {
   state: UIState
   labels: FileTableLabels
   onAccessChange: (entryId: string, value: Access) => void
-  onEditDetail: (entryId: string) => void
-  onRequestDelete: (entryId: string) => void
+  onRowClick: (entryId: string) => void
+  onDelete: (entryId: string) => void
 }
 
 export const FileTable = ({
   state,
   labels,
   onAccessChange,
-  onEditDetail,
-  onRequestDelete,
+  onRowClick,
+  onDelete,
 }: FileTableProps) => {
   const entries = state.submission.fileEntries
   const editingEntryId = state.editing?.kind === "row" ? state.editing.entryId : null
@@ -57,8 +56,7 @@ export const FileTable = ({
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnFileType}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnFilename}</Label></th>
             <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnAccess}</Label></th>
-            <th scope="col" className="px-3 py-2 text-left"><Label>{labels.columnDetail}</Label></th>
-            <th scope="col" className="px-3 py-2 text-left"><span className="sr-only">{labels.columnDelete}</span></th>
+            <th scope="col" className="px-3 py-2 text-right"><span className="sr-only">{labels.columnDelete}</span></th>
           </tr>
         </thead>
         <tbody className="text-fs-body">
@@ -68,21 +66,20 @@ export const FileTable = ({
               entry={entry}
               hasDetail={hasRowDetail(entry.fileTypeKind)}
               configured={rowIsConfigured(state, entry.id)}
-              detailSummary={selectRowDetailSummary(state, entry.id)}
               editing={editingEntryId === entry.id}
               cellLabels={{
                 accessAria: labels.accessAria,
-                detailUnsetLabel: labels.detailUnsetLabel,
-                editDetailAria: labels.editDetailAria,
                 deleteAria: labels.deleteAria,
+                rowEditTitle: labels.rowEditTitle,
+                unsetLabel: labels.detailUnset,
               }}
               vocab={{
                 fileTypeKindLabel: labels.fileTypeKindLabel(entry.fileTypeKind),
                 accessLabel: labels.accessLabel,
               }}
               onAccessChange={(value) => onAccessChange(entry.id, value)}
-              onEditDetail={() => onEditDetail(entry.id)}
-              onRequestDelete={() => onRequestDelete(entry.id)}
+              onRowClick={() => onRowClick(entry.id)}
+              onDelete={() => onDelete(entry.id)}
             />
           ))}
         </tbody>

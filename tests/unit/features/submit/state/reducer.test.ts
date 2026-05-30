@@ -345,11 +345,6 @@ describe("submitReducer editing actions", () => {
     expect(next.editing).toEqual({ kind: "row", entryId: "e1" })
   })
 
-  test("submitReducer_openConfirmDelete_setsConfirmDeleteEditing", () => {
-    const next = submitReducer(initialState, { type: "OPEN_CONFIRM_DELETE", entryId: "e1" })
-    expect(next.editing).toEqual({ kind: "confirm-delete", entryId: "e1" })
-  })
-
   test("submitReducer_closeModal_resetsEditing", () => {
     const opened: UIState = { ...initialState, editing: { kind: "row", entryId: "e1" } }
     const next = submitReducer(opened, { type: "CLOSE_MODAL" })

@@ -34,7 +34,7 @@ export const en: Resources = {
     hero: {
       examplesLabel: "Examples",
       examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
-      advancedLink: "Open the query builder",
+      advancedLink: "Advanced search",
     },
     serviceGrid: { heading: "Services" },
     services: { heading: "Services", viewAll: "View all" },
@@ -157,7 +157,7 @@ export const en: Resources = {
   },
   submit: {
     pageTitle: "Submission navigator",
-    pageSubtitle: "Describe your data and we will work out where each file should be deposited.",
+    pageSubtitle: "Add files and answer their nature on the left; the destinations and submission flow are derived on the right.",
     sections: {
       preconditions: "Submission basics",
       table: "Data files",
@@ -188,10 +188,16 @@ export const en: Resources = {
       columnFileType: "File type",
       columnFilename: "Filename",
       columnAccess: "Access",
-      columnDetail: "Data details",
       columnDelete: "Remove",
       detailUnset: "Set data details",
       empty: "No files yet. Add a file type to get started.",
+    },
+    detail: {
+      heading: "Data details",
+      empty: "No files need extra details.",
+    },
+    flowOverview: {
+      fileCount: "{{count}} files",
     },
     fileType: {
       "sequence-read": { label: "Sequence reads", ext: "FASTQ", hint: "Raw sequencing reads from a run." },
@@ -326,12 +332,6 @@ export const en: Resources = {
           metabolomics: { label: "Metabolomics", sub: "Small-molecule mass spectrometry" },
           proteomics: { label: "Proteomics", sub: "Protein mass spectrometry" },
         },
-      },
-      confirmDelete: {
-        title: "Remove this file?",
-        description: "This row and its data details will be removed.",
-        confirm: "Remove",
-        cancel: "Cancel",
       },
     },
     sequenceRead: {
@@ -481,6 +481,7 @@ export const en: Resources = {
       accessCell: "Access level",
       editDetail: "Edit data details",
       deleteRow: "Remove row",
+      gotoStep: "Go to registration step",
       modalClose: "Close dialog",
     },
   },

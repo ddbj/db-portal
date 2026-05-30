@@ -10,6 +10,7 @@ import { getSubmitMeta } from "../external-links"
 type FlowStepCardProps = {
   step: FlowStep
   index: number
+  anchorId: string
   groups: readonly FileGroup[]
   entries: readonly FileEntry[]
   serviceTitle: string
@@ -24,6 +25,7 @@ type FlowStepCardProps = {
 export const FlowStepCard = ({
   step,
   index,
+  anchorId,
   groups,
   entries,
   serviceTitle,
@@ -44,10 +46,11 @@ export const FlowStepCard = ({
 
   return (
     <li
+      id={anchorId}
       data-testid="flow-step"
       data-service={step.service}
       className={cn(
-        "border rounded-card flex flex-col gap-3 p-5",
+        "border rounded-card flex flex-col gap-3 p-5 scroll-mt-4",
         hasWarningOrError
           ? "bg-surface-subtle border-dashed border-border-soft"
           : "bg-surface border-border-soft shadow-card",

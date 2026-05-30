@@ -15,11 +15,19 @@ export {
 export const serviceName = (item: ServiceItem, lang: Lang): string =>
   item.name[lang] || item.name.ja || item.name.en
 
+const SENTENCE_TERMINATED = /[。．.！？!?…]$/
+const TRAILING_PUNCTUATION: Record<Lang, string> = { ja: "。", en: "." }
+
+const withTrailingPunctuation = (text: string, lang: Lang): string =>
+  SENTENCE_TERMINATED.test(text) ? text : text + TRAILING_PUNCTUATION[lang]
+
 export const serviceDescription = (item: ServiceItem, lang: Lang): string | undefined => {
   const picked = item.description[lang]
-  if (picked) return picked
+  if (picked) return withTrailingPunctuation(picked, lang)
+  if (item.description.ja) return withTrailingPunctuation(item.description.ja, "ja")
+  if (item.description.en) return withTrailingPunctuation(item.description.en, "en")
 
-  return item.description.ja || item.description.en || undefined
+  return undefined
 }
 
 export const serviceUrl = (item: ServiceItem, lang: Lang): string | undefined => {

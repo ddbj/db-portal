@@ -18,6 +18,7 @@ export {
   GlobeIcon,
   InfoIcon,
   SearchIcon,
+  TrashIcon,
   UserIcon,
 } from "./icons"
 export { InfoHint } from "./info-hint"

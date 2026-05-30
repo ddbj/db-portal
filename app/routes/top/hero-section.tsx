@@ -72,11 +72,11 @@ export const HeroSection = () => {
         onGenerated={(ast) => void handleGenerated(ast)}
         keywordExamples={examples}
         keywordExamplesLabel={t("top.hero.examplesLabel")}
+        examplesTrailing={
+          <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
+        }
         searchPending={search.pending}
       />
-      <div className="mt-4 flex items-center justify-end">
-        <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
-      </div>
     </section>
   )
 }

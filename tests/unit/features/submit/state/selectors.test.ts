@@ -5,7 +5,6 @@ import { initialState, submitReducer } from "../../../../../app/features/submit/
 import {
   countConfiguredRows,
   rowIsConfigured,
-  selectRowDetailSummary,
   selectSteps,
   selectValidations,
 } from "../../../../../app/features/submit/state/selectors"
@@ -177,76 +176,6 @@ describe("selectValidations", () => {
 
     expect(kinds).toContain("precondition-conflict")
     expect(kinds).toContain("dangling-group-id")
-  })
-})
-
-describe("selectRowDetailSummary", () => {
-  test("selectRowDetailSummary_unknownEntry_returnsEmpty", () => {
-    expect(selectRowDetailSummary(initialState, "nope")).toBe("")
-  })
-
-  test("selectRowDetailSummary_defaultRow_returnsEmpty", () => {
-    const state = addRow(initialState, "sequence-read", "e1", "g1")
-
-    expect(selectRowDetailSummary(state, "e1")).toBe("")
-  })
-
-  test("selectRowDetailSummary_nonDefaultGroupAndChip_joinsWithSlash", () => {
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "e1",
-      patch: {
-        groupType: "pair-end",
-        dataForm: "raw",
-        chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
-      },
-    })
-
-    expect(selectRowDetailSummary(state, "e1")).toBe("pair-end / mass-spec-domain:proteomics")
-  })
-
-  test("selectRowDetailSummary_capsChipsAtTwo", () => {
-    const seeded = addRow(initialState, "spatial-image", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "EDIT_ROW_CELL",
-      entryId: "e1",
-      patch: {
-        chipTags: [
-          { axis: "spatial-platform", value: "visium" },
-          { axis: "spatial-platform", value: "stereo-seq" },
-          { axis: "spatial-platform", value: "merfish" },
-        ],
-      },
-    })
-    const summary = selectRowDetailSummary(state, "e1")
-
-    expect(summary).toBe("spatial-platform:visium / spatial-platform:stereo-seq")
-    expect(summary).not.toContain("merfish")
-  })
-
-  test("selectRowDetailSummary_onlyDataFormDiffers_showsDataForm", () => {
-    // no group-type/chip difference, so the data-form fallback branch contributes
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "e1",
-      patch: { dataForm: "assembled", chipTags: [] },
-    })
-
-    expect(selectRowDetailSummary(state, "e1")).toBe("assembled")
-  })
-
-  test("selectRowDetailSummary_groupOrChipPresent_omitsDataFormFallback", () => {
-    // the data-form fallback only fires when parts are otherwise empty
-    const seeded = addRow(initialState, "sequence-read", "e1", "g1")
-    const state = submitReducer(seeded, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "e1",
-      patch: { dataForm: "assembled", chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] },
-    })
-
-    expect(selectRowDetailSummary(state, "e1")).toBe("mass-spec-domain:proteomics")
   })
 })
 

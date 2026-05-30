@@ -14,6 +14,7 @@ import {
   Tag,
 } from "~/ui"
 
+import { applyRadio, type Draft, initDraft, optionMatches, toggleCheck } from "./form-apply"
 import type { FormGroupDef, FormOptionDef } from "./form-defs"
 import { ROW_FORM_DEFS } from "./form-defs"
 import { PreviewCards } from "./preview-cards"
@@ -45,93 +46,6 @@ type EditRowModalProps = {
   onClose: () => void
   onCommit: (patch: { groupType: GroupType; dataForm: DataForm; chipTags: FileEntryChip[] }) => void
 }
-
-type Draft = {
-  groupType: GroupType
-  dataForm: DataForm
-  chipTags: FileEntryChip[]
-}
-
-const optionMatches = (option: FormOptionDef, draft: Draft): boolean => {
-  const { effect } = option
-  if (effect.groupType !== undefined && effect.groupType !== draft.groupType) return false
-  if (effect.dataForm !== undefined && effect.dataForm !== draft.dataForm) return false
-  const { chipAdd } = effect
-  if (chipAdd !== undefined) {
-    const exists = draft.chipTags.some(
-      (c) => c.axis === chipAdd.axis && c.value === chipAdd.value,
-    )
-    if (!exists) return false
-  }
-  if (effect.chipRemoveAxis !== undefined) {
-    const present = draft.chipTags.some((c) => c.axis === effect.chipRemoveAxis)
-    if (present) return false
-  }
-  return true
-}
-
-const applyRadio = (
-  draft: Draft,
-  option: FormOptionDef,
-  groupOptions: readonly FormOptionDef[],
-): Draft => {
-  let chipTags = draft.chipTags.slice()
-  for (const sibling of groupOptions) {
-    const sibChipAdd = sibling.effect.chipAdd
-    if (sibChipAdd !== undefined) {
-      chipTags = chipTags.filter(
-        (c) => !(c.axis === sibChipAdd.axis && c.value === sibChipAdd.value),
-      )
-    }
-  }
-  const { effect } = option
-  const { chipAdd } = effect
-  if (chipAdd !== undefined) {
-    chipTags = chipTags.filter((c) => c.axis !== chipAdd.axis)
-    chipTags.push(chipAdd)
-  }
-  if (effect.chipRemoveAxis !== undefined) {
-    chipTags = chipTags.filter((c) => c.axis !== effect.chipRemoveAxis)
-  }
-  return {
-    groupType: effect.groupType ?? draft.groupType,
-    dataForm: effect.dataForm ?? draft.dataForm,
-    chipTags,
-  }
-}
-
-const toggleCheck = (
-  draft: Draft,
-  option: FormOptionDef,
-  currentlyChecked: boolean,
-): Draft => {
-  let chipTags = draft.chipTags.slice()
-  const { effect } = option
-  const { chipAdd } = effect
-  if (currentlyChecked) {
-    if (chipAdd !== undefined) {
-      chipTags = chipTags.filter(
-        (c) => !(c.axis === chipAdd.axis && c.value === chipAdd.value),
-      )
-    }
-    return { ...draft, chipTags }
-  }
-  if (chipAdd !== undefined) {
-    chipTags = chipTags.filter((c) => c.axis !== chipAdd.axis)
-    chipTags.push(chipAdd)
-  }
-  return {
-    groupType: effect.groupType ?? draft.groupType,
-    dataForm: effect.dataForm ?? draft.dataForm,
-    chipTags,
-  }
-}
-
-const initDraft = (entry: FileEntry, group: FileGroup | undefined): Draft => ({
-  groupType: group?.groupType ?? "single",
-  dataForm: entry.dataForm,
-  chipTags: [...entry.chipTags],
-})
 
 export const EditRowModal = ({
   open,

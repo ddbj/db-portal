@@ -2,7 +2,6 @@ import type { DataForm, FileEntryChip, GroupType, Service } from "~/schemas/subm
 
 import type { UIState } from "../state/types"
 import type { SubmitDispatch } from "../state/use-submit-state"
-import { ConfirmDeleteModal } from "./confirm-delete-modal"
 import { EditRowModal } from "./edit-row-modal"
 import { hasRowDetail } from "./form-defs"
 
@@ -22,12 +21,6 @@ type ModalRouterLabels = {
     previewTitle: (service: Service) => string
     previewBody: (service: Service) => string
     serviceCode: (service: Service) => string
-  }
-  confirmDelete: {
-    title: string
-    description: string
-    confirm: string
-    cancel: string
   }
 }
 
@@ -79,23 +72,6 @@ export const ModalRouter = ({
         onClose={actions.closeModal}
         onCommit={(patch: { groupType: GroupType; dataForm: DataForm; chipTags: FileEntryChip[] }) =>
           actions.commitRowEdit(entry.id, patch)}
-      />
-    )
-  }
-
-  if (editing.kind === "confirm-delete") {
-    return (
-      <ConfirmDeleteModal
-        open={true}
-        labels={{
-          closeAriaLabel: labels.closeAriaLabel,
-          title: labels.confirmDelete.title,
-          description: labels.confirmDelete.description,
-          confirm: labels.confirmDelete.confirm,
-          cancel: labels.confirmDelete.cancel,
-        }}
-        onCancel={actions.closeModal}
-        onConfirm={() => actions.removeRow(editing.entryId)}
       />
     )
   }

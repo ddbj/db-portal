@@ -1,15 +1,14 @@
+import type { MouseEvent } from "react"
+
 import type { Access, FileEntry } from "~/schemas/submit"
 import { Access as AccessEnum } from "~/schemas/submit"
-import { CloseIcon, IconButton, Select, Tag } from "~/ui"
-
-import { RowSetTag } from "../components/row-set-tag"
-import { WarnDashedButton } from "../components/warn-dashed-button"
+import { cn, IconButton, Select, Tag, TrashIcon } from "~/ui"
 
 type CellLabels = {
   accessAria: string
-  detailUnsetLabel: string
-  editDetailAria: string
   deleteAria: string
+  rowEditTitle: string
+  unsetLabel: string
 }
 
 type VocabLabels = {
@@ -21,27 +20,31 @@ type FileTableRowProps = {
   entry: FileEntry
   hasDetail: boolean
   configured: boolean
-  detailSummary: string
   editing: boolean
   cellLabels: CellLabels
   vocab: VocabLabels
   onAccessChange: (value: Access) => void
-  onEditDetail: () => void
-  onRequestDelete: () => void
+  onRowClick: () => void
+  onDelete: () => void
+}
+
+const stop = (e: MouseEvent): void => {
+  e.stopPropagation()
 }
 
 export const FileTableRow = ({
   entry,
   hasDetail,
   configured,
-  detailSummary,
   editing,
   cellLabels,
   vocab,
   onAccessChange,
-  onEditDetail,
-  onRequestDelete,
+  onRowClick,
+  onDelete,
 }: FileTableRowProps) => {
+  const needsDetail = hasDetail && !configured
+
   const accessOptions = AccessEnum.options.map((a) => ({
     value: a,
     label: vocab.accessLabel(a),
@@ -51,15 +54,29 @@ export const FileTableRow = ({
     <tr
       data-testid="file-row"
       data-entry-id={entry.id}
-      className={editing ? "bg-brand-softer outline outline-1 outline-brand" : undefined}
+      onClick={hasDetail ? onRowClick : undefined}
+      title={hasDetail ? cellLabels.rowEditTitle : undefined}
+      className={cn(
+        hasDetail && "cursor-pointer",
+        editing
+          ? "bg-brand-softer outline outline-1 outline-brand"
+          : hasDetail
+            ? "hover:bg-surface-subtle"
+            : undefined,
+      )}
     >
       <td className="px-3 py-3 align-middle">
         <Tag kind="tag" size="sm">{vocab.fileTypeKindLabel}</Tag>
       </td>
       <td className="px-3 py-3 align-middle">
-        <span className="font-mono text-ink">{entry.filename}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-ink">{entry.filename}</span>
+          {needsDetail && (
+            <Tag kind="status" tone="warning" size="sm">{cellLabels.unsetLabel}</Tag>
+          )}
+        </div>
       </td>
-      <td className="px-3 py-3 align-middle">
+      <td className="px-3 py-3 align-middle" onClick={stop}>
         <Select
           ariaLabel={cellLabels.accessAria}
           options={accessOptions}
@@ -67,28 +84,9 @@ export const FileTableRow = ({
           onChange={(next) => onAccessChange(next as Access)}
         />
       </td>
-      <td className="px-3 py-3 align-middle">
-        {!hasDetail
-          ? <span className="text-ink-mid" aria-hidden="true">—</span>
-          : configured && detailSummary !== ""
-            ? (
-              <RowSetTag
-                summary={detailSummary}
-                ariaLabel={cellLabels.editDetailAria}
-                onClick={onEditDetail}
-              />
-            )
-            : (
-              <WarnDashedButton
-                label={cellLabels.detailUnsetLabel}
-                ariaLabel={cellLabels.editDetailAria}
-                onClick={onEditDetail}
-              />
-            )}
-      </td>
-      <td className="px-3 py-3 align-middle">
-        <IconButton ariaLabel={cellLabels.deleteAria} onClick={onRequestDelete} size={28}>
-          <CloseIcon size={16} />
+      <td className="px-3 py-3 align-middle text-right" onClick={stop}>
+        <IconButton ariaLabel={cellLabels.deleteAria} onClick={onDelete} size={28}>
+          <TrashIcon size={16} />
         </IconButton>
       </td>
     </tr>

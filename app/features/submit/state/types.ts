@@ -18,7 +18,6 @@ export type RowEditPatch = {
 export type Editing =
   | null
   | { kind: "row"; entryId: string }
-  | { kind: "confirm-delete"; entryId: string }
 
 export type UIState = {
   submission: Submission
@@ -48,7 +47,6 @@ export type Action =
     fileTypeKind: FileTypeKind
     entryId: string
   }
-  | { type: "OPEN_CONFIRM_DELETE"; entryId: string }
   | { type: "REMOVE_ROW"; entryId: string }
   | { type: "CLOSE_MODAL" }
 

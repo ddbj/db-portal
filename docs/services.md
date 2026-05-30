@@ -71,6 +71,19 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 
 `lastSyncSha` を services 側でも保持するのは、cache が News と独立に破損・消失しても、次回 sync の SHA 比較で自己回復できるようにするため。
 
+### 説明文の末尾句点 (表示時正規化)
+
+upstream の `description` は末尾に文末句点が付くもの・付かないものが混在する。portal は **表示時** に言語別の文末句点を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路でのみ行う。
+
+| 言語 | 補う句点 | 補完条件 |
+|---|---|---|
+| ja | `。` | 値が非空で、末尾が文末句読点 (`。 ． . ！ ？ ! ? …`) でないとき |
+| en | `.` | 同上 |
+
+- 末尾が既に上記いずれかの句読点なら据え置く (二重付与しない)。
+- 閉じ括弧 (`）` `)` 等) は文末扱いせず句点を補う。
+- 言語 fallback で別言語の値を表示する場合は、表示する値の言語規則で補う (ja 欠落で en を表示するなら `.`)。
+
 ## 分類語彙 → ServiceCategory 写像
 
 source ごとに語彙が異なる。portal は次の **source 別 mapping 表** で `ServiceCategory` に正規化する。`categories` は複数値で、写像結果を dedupe する。結果が空なら `["other"]`。

@@ -144,7 +144,7 @@ const SearchRoute = () => {
 
   return (
     <>
-      <PageTitle title={t("search.pageTitle")} subtitle={t("search.pageSubtitle")} />
+      <PageTitle title={t("search.pageTitle")} />
       <Section padTop="none" padBottom="none">
         <SearchInputPanel
           keyword={keyword}

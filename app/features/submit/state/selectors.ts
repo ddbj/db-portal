@@ -1,4 +1,4 @@
-import type { FileEntryChip, FlowStep } from "~/schemas/submit"
+import type { FlowStep } from "~/schemas/submit"
 import { isSubmissionEndpoint, TYPICAL_DATA_FORM_FOR_KIND, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/submit"
 
 import { isKindEnabled } from "../cascade"
@@ -35,26 +35,6 @@ export const selectValidations = (state: UIState): Validation[] => {
   }
 
   return validations
-}
-
-const formatChip = (chip: FileEntryChip): string => `${chip.axis}:${chip.value}`
-
-export const selectRowDetailSummary = (state: UIState, entryId: string): string => {
-  const entry = state.submission.fileEntries.find((e) => e.id === entryId)
-  if (!entry) return ""
-  const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
-  const parts: string[] = []
-  if (group !== undefined && group.groupType !== TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]) {
-    parts.push(group.groupType)
-  }
-  for (const chip of entry.chipTags.slice(0, 2)) {
-    parts.push(formatChip(chip))
-  }
-  if (parts.length === 0 && entry.dataForm !== TYPICAL_DATA_FORM_FOR_KIND[entry.fileTypeKind]) {
-    parts.push(entry.dataForm)
-  }
-
-  return parts.join(" / ")
 }
 
 export const rowIsConfigured = (state: UIState, entryId: string): boolean => {

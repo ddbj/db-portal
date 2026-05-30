@@ -20,7 +20,7 @@ export const FileTypeGrid = ({
   isEnabled,
   disabledReason,
 }: FileTypeGridProps) => (
-  <div className="grid grid-cols-3 gap-2">
+  <div className="grid grid-cols-2 gap-2">
     {FileTypeKindEnum.options.map((kind) => {
       const enabled = isEnabled(kind)
 

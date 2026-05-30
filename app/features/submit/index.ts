@@ -4,13 +4,13 @@ export { AccessionCode } from "./components/accession-code"
 export { ExternalLinkButton } from "./components/external-link-button"
 export { FileTypeIcon } from "./components/file-type-icon"
 export { FilesBlock } from "./components/files-block"
-export { RowSetTag } from "./components/row-set-tag"
 export { type Segment,SegmentedControl } from "./components/segmented-control"
 export { StepBadge } from "./components/step-badge"
 export { TagProgress } from "./components/tag-progress"
-export { WarnDashedButton } from "./components/warn-dashed-button"
+export { DataDetailPanel } from "./detail/data-detail-panel"
 export { getSubmitMeta, type ServiceSource, type SubmitMeta } from "./external-links"
 export { FlowEmptyState } from "./flow-cards/flow-empty-state"
+export { FlowOverview } from "./flow-cards/flow-overview"
 export { FlowStepCard } from "./flow-cards/flow-step-card"
 export { FlowStepCards } from "./flow-cards/flow-step-cards"
 export type { ServiceBadgeColor } from "./flow-rules"
@@ -20,7 +20,6 @@ export {
   hasChip,
   stepBadgeColor,
 } from "./flow-rules"
-export { ConfirmDeleteModal } from "./modals/confirm-delete-modal"
 export { EditRowModal } from "./modals/edit-row-modal"
 export type { FormGroupDef, FormOptionDef, RowFormDef } from "./modals/form-defs"
 export { ROW_FORM_DEFS } from "./modals/form-defs"
@@ -41,7 +40,6 @@ export {
   createEmptyUIState,
   initialState,
   rowIsConfigured,
-  selectRowDetailSummary,
   selectSteps,
   selectValidations,
   submitReducer,

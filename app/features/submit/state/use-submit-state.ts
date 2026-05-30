@@ -25,7 +25,6 @@ export type SubmitDispatch = {
   addToGroup: (groupId: string, fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   openEditRow: (entryId: string) => void
-  openConfirmDelete: (entryId: string) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
   removeRow: (entryId: string) => void
   closeModal: () => void
@@ -74,10 +73,6 @@ export const useSubmitState = (
     dispatch({ type: "OPEN_EDIT_ROW", entryId })
   }, [])
 
-  const openConfirmDelete = useCallback((entryId: string) => {
-    dispatch({ type: "OPEN_CONFIRM_DELETE", entryId })
-  }, [])
-
   const commitRowEdit = useCallback((entryId: string, patch: RowEditPatch) => {
     dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })
   }, [])
@@ -97,7 +92,6 @@ export const useSubmitState = (
     addToGroup,
     editRowCell,
     openEditRow,
-    openConfirmDelete,
     commitRowEdit,
     removeRow,
     closeModal,

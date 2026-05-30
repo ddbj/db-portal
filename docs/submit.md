@@ -32,7 +32,7 @@ UI 全体は前段フィルタを足した 3 段構造になる:
 │  中段: ファイルテーブル (Q3 = データファイル種別の行)        │
 │   - 各行 = 1 ファイル (FileEntry)                            │
 │   - 「ファイル種別を追加」ボタンは Q1/Q2 で enable/disable    │
-│   - 行内で access / データ詳細 chip を編集                    │
+│   - 行内編集は access のみ (詳細は下の DataDetailPanel / modal)│
 ├─────────────────────────────────────────────────────────────┤
 │  下段: Step カード列 (導出結果 = FlowStep)                   │
 │   - Step カード = 1 つの登録 step                           │
@@ -41,7 +41,7 @@ UI 全体は前段フィルタを足した 3 段構造になる:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段の入力を、中段の選択肢を狭めるために前段を調整する、という編集モデル。
+下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段の入力を、中段の選択肢を狭めるために前段を調整する、という編集モデル。この 3 段は画面では 2 pane に割り付く: 前段 + 中段 (入力) を左 pane、下段 (結果) を右 pane に置く (`## 画面構成`)。
 
 ### Cross-DB Tag / Intra-DB Tag
 
@@ -486,32 +486,35 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 
 ## 画面構成
 
-`/submit` は 3 段構造を 3 つの `<Section>` で表現する。
+`/submit` は 1 つの `<Section>` 内を左右 2 pane (左 5 : 右 7、登録フロー側を広めに取る 12 col grid) に割る。左 pane が **入力** (利用者がファイルとその来歴を答える)、右 pane が **結果** (導出された登録フロー)。狭い画面では左 → 右に縦積みする。各サブセクションの見出しは `SectionHeading` primitive (登録前提 / ファイルテーブル / データ詳細 / 登録フロー)。
 
 ```
-┌─ Header (active="submit") ───────────────────────────────────────┐
-├─ PageTitle "登録ナビゲーション" + subtitle ────────────────────────┤
+┌─ Header (active="submit") ───────────────────────────────────────────┐
+├─ PageTitle "登録ナビゲーション" + subtitle ────────────────────────────┤
 │
-├─ Section  登録前提 ───────────────────────────────────────────────┤
-│   ┌ Q1 登録種別 (SegmentedControl, role=radiogroup) ──────────────┐│
-│   └ Q2 生物ドメイン (SegmentedControl、Q1 で選択肢 disable) ───────┘│
+├─ Section (2 pane、左 5 : 右 7) ──────────────────────────────────────┤
+│  ┌ 左 pane: 入力 (5/12) ──────────┐  ┌ 右 pane: 登録フロー (7/12) ─────┐ │
+│  │ SectionHeading 登録前提         │  │ SectionHeading 登録フロー N 件   │ │
+│  │   Q1 登録種別 / Q2 生物ドメイン │  │ FlowOverview (step を横並び      │ │
+│  │ SectionHeading ファイルテーブル │  │   chip で一覧、click で該当       │ │
+│  │   FileTypeGrid (種別追加)       │  │   FlowStepCard へ scroll)        │ │
+│  │   FileTable (4 列)             │  │ FlowStepCards (FlowStep[])       │ │
+│  │ SectionHeading データ詳細       │  │ PartialFailureBanner (違反時のみ) │ │
+│  │   TagProgress (設定済 / 全行)   │  │                                 │ │
+│  │   DataDetailPanel (詳細質問を   │  │                                 │ │
+│  │     持つ行を最初から展開)       │  │                                 │ │
+│  └────────────────────────────────┘  └─────────────────────────────────┘ │
 │
-├─ Section  ファイルテーブル ───────────────────────────────────────┤
-│   ┌ FileTypeGrid (Q1/Q2 で各種別ボタンを aria-disabled + 理由 tip) ┐│
-│   └ FileTable (or empty placeholder) ───────────────────────────┘│
-│
-├─ Section  登録フロー ─────────────────────────────────────────────┤
-│   ┌ SectionHeading "登録フロー" count={steps.length} ───────────┐│
-│   ├ TagProgress (設定済 / 全行) ────────────────────────────────┤│
-│   ├ FlowStepCards (FlowStep[] → 並んだ card) ────────────────────┤│
-│   └ PartialFailureBanner (validation 違反時のみ) ───────────────┘│
-│
-├─ EditRowModal (overlay、editing 行のとき 1 つだけ open) ───────────┤
+├─ EditRowModal (overlay、行クリックで開く副編集 surface) ────────────────┤
 ```
 
-`Section` / `SegmentedControl` / `Modal` 等は `app/ui/` の primitive を使う (`docs/frontend.md` の「UI primitives」)。id は client mount 後に `crypto.randomUUID` で採番する (SSR hydration mismatch を避ける)。
+左 pane は上から「登録前提 → ファイルテーブル → データ詳細」の 3 セクション (各 `SectionHeading`) で入力導線を作り、右 pane は導出結果を「一覧 (FlowOverview) → 各 step 詳細 (FlowStepCard)」で見せる。`Section` / `SegmentedControl` / `Modal` 等は `app/ui/` の primitive を使う (`docs/frontend.md` の「UI primitives」)。id は client mount 後に `crypto.randomUUID` で採番する (SSR hydration mismatch を避ける)。
 
 前段で Q1/Q2 を変更して既存行の種別が disable になった場合、行は削除せず、`selectValidations` が `precondition-conflict` を出して該当行へ誘導する (整合崩れを破壊的に解決しない)。
+
+### 登録フロー一覧 (FlowOverview)
+
+右 pane 先頭の `FlowOverview` は `FlowStep[]` を service 物理順のまま **等幅ステーションの grid** にする。各ステーションは step 番号 badge・service 名・ファイル件数を持つボタンで、grid セルが pane 幅を埋めるよう伸び、折り返しても各行の左端が揃う (件数は "N ファイル" 表記で登録件数と区別する)。順序は番号 badge が表す。ステーションを click すると同順で並ぶ対応 `FlowStepCard` の anchor へ scroll する。一覧 (俯瞰) と本体 `FlowStepCards` (詳細) の間は横罫で仕切る。一覧は status・source・コネクタ・説明文を持たず俯瞰とナビゲーションに徹し、step の中身 (source・件数明細・note) は本体側に置いて重複させない。step ごとの warning・error は本体 `FlowStepCard` の配色・注意タグだけで示す。
 
 ### フロー・エクスプローラ (人がフローを確認する surface)
 
@@ -521,23 +524,25 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 
 ## ファイルテーブル UX
 
-ファイルテーブルは Cross-DB Tag の **fileTypeKind / access** の 2 軸 + ファイル名 (読み取り専用) + 「データ詳細」 chip cell の 4 列構成 (+ 削除アクション列)。`dataForm` / `chipTags` / `groupType` は「データ詳細」 chip cell の modal 内で編集する。
+ファイルテーブルは **fileTypeKind / filename / access + 削除** の 4 列。fileTypeKind (Tag、読み取り専用) / filename (自動採番、読み取り専用) / access (`Select`、行レベルで編集) / 削除 (ゴミ箱アイコンの `IconButton`)。flow-changing 詳細 (`dataForm` / `chipTags` / `groupType`) はテーブル列に出さず、テーブル下の `DataDetailPanel` (主) と行クリックで開く `EditRowModal` (副) で編集する。
 
 `fileTypeKind` は行追加時に固定し変更不可 (誤った種別は行削除 + 別ボタンで作り直す)。`access` は Q1 が default を注入する (Q1 = 公開 なら open 固定)。`filename` はユーザーが設定せず、行追加時に同種別の既存連番を読んで `{prefix}-{連番 (3 桁ゼロ埋め)}.{ext}` を自動採番し読み取り専用で表示する (連番は削除後の再追加でも衝突しないよう max+1 方式)。
 
-「データ詳細」 chip cell は種別ごとの controlled vocabulary を 1 click で編集する trigger。表示は 3 形態:
+flow-changing 詳細質問を持つ種別 (`### file 詳細質問の選別基準`) の行は、行全体が `EditRowModal` を開く click target になる (access `Select`・削除ボタンは click 伝播を止める)。質問を持たない種別 (`sequence-read` / `variant` / `expression-matrix` / `microarray-expression` / `nmr` / `metabolite-assignment`) の行は click target にならない。テーブルはどの種別でも同じ 4 列で、種別による列の出し分けをしない。詳細質問を持つ行のうち未設定 (`rowIsConfigured` が false) のものは、ファイル名の隣に `未設定` notify を出して `DataDetailPanel` / modal での入力を促す (設定済み・質問なしの行は notify を出さない)。
 
-- **flow 質問なし種別**: trigger を出さない (空セル)。`sequence-read` / `variant` / `expression-matrix` / `microarray-expression` / `nmr` / `metabolite-assignment` は flow-changing 軸を持たないため、データ詳細で問うことがない (`### file 詳細質問の選別基準`)
-- **未設定**: `WarnDashedButton` (warn 配色 + dashed border)
-- **設定済み**: `RowSetTag` (brand-soft 背景 + check icon + 短文サマリ)
-
-行削除は confirm modal を経由する。reducer は対象 entry を `memberFileIds` から除外し、空になった group は drop するが、残った同 group の sibling entry の `groupId` は触らない。同 group への 2 件目追加は `ADD_TO_GROUP` action を発火する。
+行削除 (ゴミ箱アイコン) は確認を挟まず即時に `REMOVE_ROW` を実行する。reducer は対象 entry を `memberFileIds` から除外し、空になった group は drop するが、残った同 group の sibling entry の `groupId` は触らない。同 group への 2 件目追加は `ADD_TO_GROUP` action を発火する。
 
 100 行以上でもデフォルト DOM レンダリングを維持する。virtualization は導入しない。
 
+### データ詳細パネル (DataDetailPanel)
+
+テーブルと進捗バー (`TagProgress`) の下に、flow-changing 詳細質問を持つ行を **最初から展開** する。各行は 種別 / filename / 設定状態 (`設定済み` / `未設定`) の見出しと、その種別の `RowFormDef` (`ROW_FORM_DEFS`) から引いた質問 (radio / check) を持つ。選択は即座に submission へ反映される (live commit、下書きを持たない)。質問を持たない種別は panel に現れない。`TagProgress` の母数はこの「詳細質問を持つ行」で、質問のない種別は設定対象が無いため完了として数える (`countConfiguredRows`)。
+
+`DataDetailPanel` と `EditRowModal` は同一の submission state を編集する 2 つの surface で、`form-apply` の純関数 (`initDraft` / `applyRadio` / `toggleCheck` / `optionMatches`) を共用する。
+
 ### Modal UX
 
-編集 modal は **1 つの `EditRowModal`** が `ROW_FORM_DEFS: Record<FileTypeKind, RowFormDef>` から該当種別の form definition を引いて描画する。種別を増やすときは form definition に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の責務は `FileGroup.groupType` の選択 / `FileEntry.dataForm` の override / `FileEntry.chipTags` の編集で、いずれも **flow-changing 軸に限る**。form definition が空 (質問なし) の種別はデータ詳細 trigger を出さず modal も開かない。`access` はテーブル列で編集し、`filename` は自動採番の読み取り専用。どちらも modal では扱わない。
+行クリックで開く `EditRowModal` は、`DataDetailPanel` と同じ flow-changing 軸を編集する副 surface。`ROW_FORM_DEFS: Record<FileTypeKind, RowFormDef>` から該当種別の form definition を引いて描画し、種別を増やすときは form definition に 1 エントリ追加すれば modal 側に分岐コードを書かずに済む。modal の責務は `FileGroup.groupType` の選択 / `FileEntry.dataForm` の override / `FileEntry.chipTags` の編集で、いずれも **flow-changing 軸に限る**。form definition が空 (質問なし) の種別は行が click target にならず modal も開かない。`access` はテーブル列、`filename` は自動採番の読み取り専用で、どちらも modal では扱わない。modal は下書き (draft) を持ち 保存 / キャンセルで確定するのに対し、`DataDetailPanel` は live commit で即時反映する点が違う。
 
 `ModalPreview` は仮 patch を当てた `Submission` で `deriveFlowSteps` を呼び、対象 entry を含む step を `PreviewCard` で render する。`Modal` primitive の focus trap が open/close 時の focus を制御する。
 

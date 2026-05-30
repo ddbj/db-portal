@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 
 import type { ParseNode } from "~/lib/api"
 import { useT } from "~/lib/i18n"
@@ -32,6 +32,9 @@ export type NavigableSearchInputProps = {
   // always shows the assistant prompt examples.
   keywordExamples?: readonly string[]
   keywordExamplesLabel?: string
+  // Rendered at the right end of the example chip row so it shares the line with
+  // the chips (the top hero uses it for the advanced-search link).
+  examplesTrailing?: ReactNode
   // A keyword search / post-generation navigation is in flight (owned by the
   // caller via useSearchPending). Busies the submit button.
   searchPending?: boolean | undefined
@@ -58,6 +61,7 @@ export const NavigableSearchInput = ({
   onGenerated,
   keywordExamples,
   keywordExamplesLabel,
+  examplesTrailing,
   searchPending = false,
 }: NavigableSearchInputProps) => {
   const t = useT()
@@ -193,12 +197,17 @@ export const NavigableSearchInput = ({
         </p>
       )}
 
-      <Examples
-        label={examplesLabel}
-        items={examplesItems}
-        onPick={isAi ? setAiInput : onKeywordChange}
-        mono={!isAi}
-      />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Examples
+          label={examplesLabel}
+          items={examplesItems}
+          onPick={isAi ? setAiInput : onKeywordChange}
+          mono={!isAi}
+        />
+        {examplesTrailing !== undefined && (
+          <div className="ml-auto">{examplesTrailing}</div>
+        )}
+      </div>
 
       {isAi && stream.state === "streaming" && (
         <div className="flex items-center gap-2 text-fs-label text-ink-mid">

@@ -191,10 +191,16 @@ export type Resources = {
       columnFileType: string
       columnFilename: string
       columnAccess: string
-      columnDetail: string
       columnDelete: string
       detailUnset: string
       empty: string
+    }
+    detail: {
+      heading: string
+      empty: string
+    }
+    flowOverview: {
+      fileCount: string
     }
     fileType: {
       "sequence-read": { label: string; ext: string; hint: string }
@@ -330,12 +336,6 @@ export type Resources = {
           proteomics: { label: string; sub: string }
         }
       }
-      confirmDelete: {
-        title: string
-        description: string
-        confirm: string
-        cancel: string
-      }
     }
     sequenceRead: {
       jga: { intro: string; dbclsPolicy: string }
@@ -408,6 +408,7 @@ export type Resources = {
       accessCell: string
       editDetail: string
       deleteRow: string
+      gotoStep: string
       modalClose: string
     }
   }
@@ -698,7 +699,7 @@ export const ja: Resources = {
     hero: {
       examplesLabel: "例",
       examples: ["BRCA1", "SARS-CoV-2", "\"Oryza sativa\"", "\"Cyprinus carpio\"", "PRJDB10452"],
-      advancedLink: "クエリビルダーで詳細条件を組む",
+      advancedLink: "詳細条件で検索",
     },
     serviceGrid: { heading: "サービス" },
     services: { heading: "サービス", viewAll: "すべて見る" },
@@ -821,7 +822,7 @@ export const ja: Resources = {
   },
   submit: {
     pageTitle: "登録ナビゲーション",
-    pageSubtitle: "手元のデータの性質を答えるだけで、どの登録先に何を出すかを導出します",
+    pageSubtitle: "左でファイルを追加して性質を答えると、右に登録先と登録フローを導出します。",
     sections: {
       preconditions: "登録前提",
       table: "ファイルテーブル",
@@ -852,10 +853,16 @@ export const ja: Resources = {
       columnFileType: "ファイル種別",
       columnFilename: "ファイル名",
       columnAccess: "公開区分",
-      columnDetail: "データ詳細",
       columnDelete: "削除",
       detailUnset: "未設定",
       empty: "上のボタンからファイル種別を追加してください",
+    },
+    detail: {
+      heading: "データ詳細",
+      empty: "追加の詳細設定が必要なファイルはありません",
+    },
+    flowOverview: {
+      fileCount: "{{count}} ファイル",
     },
     fileType: {
       "sequence-read": { label: "配列リード", ext: "FASTQ", hint: "シーケンサーが出力した生リード" },
@@ -990,12 +997,6 @@ export const ja: Resources = {
           metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
         },
-      },
-      confirmDelete: {
-        title: "行を削除しますか",
-        description: "この行とデータ詳細の設定が削除されます",
-        confirm: "削除",
-        cancel: "キャンセル",
       },
     },
     sequenceRead: {
@@ -1145,6 +1146,7 @@ export const ja: Resources = {
       accessCell: "公開区分",
       editDetail: "データ詳細を編集",
       deleteRow: "行を削除",
+      gotoStep: "登録ステップに移動",
       modalClose: "閉じる",
     },
   },

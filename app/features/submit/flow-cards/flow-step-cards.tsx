@@ -1,5 +1,6 @@
 import type { FileEntry, FileGroup, FlowStep, Service } from "~/schemas/submit"
 
+import { stepAnchorId } from "./anchor"
 import { FlowEmptyState } from "./flow-empty-state"
 import { FlowStepCard } from "./flow-step-card"
 
@@ -40,6 +41,7 @@ export const FlowStepCards = ({
           key={step.id}
           step={step}
           index={i + 1}
+          anchorId={stepAnchorId(i)}
           groups={groups}
           entries={entries}
           serviceTitle={serviceTitle(step.service)}
