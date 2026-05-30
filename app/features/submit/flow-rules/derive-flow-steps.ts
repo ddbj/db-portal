@@ -3,7 +3,7 @@ import { type FileEntry, type FlowStep, isDestinationService, type Service, type
 import { type EntryRouting, routeEntries } from "./interpreter"
 import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
 import { byServicePhysicalOrder } from "./ordering"
-import { detectRecipeGroups, jgaSubmissionSteps, magProjectSteps, sagSteps } from "./recipes"
+import { detectRecipeGroups, jgaSubmissionSteps, magProjectSteps, sagSteps, spatialSteps } from "./recipes"
 import { dedupeNotes, groupMembers, makeStep, mergeScopes, scopeOfEntries } from "./shared"
 
 // 薄インタプリタ: 同一 service の per-entry routing を 1 枚にまとめる
@@ -83,10 +83,8 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
     submission.fileEntries.filter((e) => recipeGroupIds.has(e.groupId)).map((e) => e.id),
   )
 
-  const routings = routeEntries(
-    submission,
-    submission.fileEntries.filter((e) => !recipeOwned.has(e.id)),
-  )
+  const plainEntries = submission.fileEntries.filter((e) => !recipeOwned.has(e.id))
+  const routings = routeEntries(submission, plainEntries)
   const jgaEntries = routings.filter((r) => r.service === "jga").map((r) => r.entry)
   const plainRoutings = routings.filter((r) => r.service !== "jga")
 
@@ -96,6 +94,7 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
     ...jgaSubmissionSteps(submission, jgaEntries),
     ...magProjectSteps(submission, magGroups),
     ...sagSteps(submission, sagGroups),
+    ...spatialSteps(plainEntries),
   ]
 
   return [...decorateMultiModal(steps, submission)].sort(byServicePhysicalOrder)

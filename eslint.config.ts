@@ -21,6 +21,7 @@ const ARBITRARY_CLASSNAME_RULE = {
 export default tseslint.config(
   {
     ignores: [
+      ".claude/",
       ".react-router/",
       "build/",
       "node_modules/",

@@ -1,6 +1,7 @@
 import type { Access, FileEntry, FileTypeKind } from "~/schemas/submit"
 import { Label } from "~/ui"
 
+import { hasRowDetail } from "../modals/form-defs"
 import { rowIsConfigured, selectRowDetailSummary } from "../state/selectors"
 import type { UIState } from "../state/types"
 import { FileTableRow } from "./file-table-row"
@@ -65,6 +66,7 @@ export const FileTable = ({
             <FileTableRow
               key={entry.id}
               entry={entry}
+              hasDetail={hasRowDetail(entry.fileTypeKind)}
               configured={rowIsConfigured(state, entry.id)}
               detailSummary={selectRowDetailSummary(state, entry.id)}
               editing={editingEntryId === entry.id}

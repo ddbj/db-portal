@@ -1,7 +1,6 @@
 export {
   type AiMode,
   type AiModeDefault,
-  applyProposalByMode,
   builderConditionCount,
   resolveAiModeDefault,
 } from "./ai-mode"

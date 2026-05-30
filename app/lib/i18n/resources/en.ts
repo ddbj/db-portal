@@ -300,52 +300,20 @@ export const en: Resources = {
       previewLabel: "Preview",
       previewFootnote: "Preview only. Submit from the service site.",
       formGroupLabels: {
-        structure: "Structure",
-        multiplex: "Multiplexing",
         form: "Data form",
-        annotationPair: "Annotation pairing",
-        provenance: "Provenance",
         target: "Target",
-        reference: "Reference",
         platform: "Platform",
         domain: "Domain",
-        method: "Method",
       },
       options: {
-        sequenceRead: {
-          singleEnd: { label: "Single-end", sub: "One read file per sample" },
-          pairEnd: { label: "Paired-end", sub: "Forward and reverse read files" },
-          tenx: { label: "10x", sub: "10x Genomics droplet reads" },
-          pacbio: { label: "PacBio", sub: "Long-read single-molecule data" },
-          perSample: { label: "Per sample", sub: "One run per sample" },
-          multiplex: { label: "Multiplexed", sub: "Multiple samples in one run" },
-        },
         sequenceNucleotide: {
           standalone: { label: "Standalone", sub: "Sequence on its own" },
-          hybrid: { label: "Hybrid assembly", sub: "Assembled from multiple platforms" },
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
-          annotationPair: { label: "With annotation", sub: "Paired with a feature table" },
-          firstParty: { label: "First party", sub: "Your own sequences" },
-          thirdParty: { label: "Third party (TPA)", sub: "Based on records submitted by others" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "With sequence", sub: "Paired with a nucleotide sequence" },
           standalone: { label: "Standalone", sub: "Annotation on its own" },
-          firstParty: { label: "First party", sub: "Your own annotation" },
-          thirdParty: { label: "Third party (TPA)", sub: "Based on records submitted by others" },
-        },
-        variant: {
-          withRef: { label: "With reference", sub: "Reference named in the VCF header" },
-          withoutRef: { label: "Without reference", sub: "No reference declared" },
-        },
-        expressionMatrix: {
-          standalone: { label: "Standalone", sub: "Matrix on its own" },
-          mageTab: { label: "MAGE-TAB", sub: "Matrix with MAGE-TAB metadata" },
-        },
-        microarray: {
-          singleColor: { label: "Single-color", sub: "One-channel array" },
-          twoColor: { label: "Two-color", sub: "Two-channel array" },
         },
         spatialTranscriptomics: {
           visium: { label: "Visium", sub: "10x Visium (Sequencing + DRA two-step)" },
@@ -360,16 +328,6 @@ export const en: Resources = {
         massSpectrometry: {
           metabolomics: { label: "Metabolomics", sub: "Small-molecule mass spectrometry" },
           proteomics: { label: "Proteomics", sub: "Protein mass spectrometry" },
-          standard: { label: "Standard", sub: "Conventional mass spectrometry" },
-          imaging: { label: "Imaging MS", sub: "Imaging mass spectrometry with tissue sections" },
-        },
-        nmr: {
-          metabolomics: { label: "Metabolomics", sub: "Small-molecule NMR" },
-          proteomics: { label: "Proteomics", sub: "Protein NMR" },
-        },
-        metaboliteAssignment: {
-          metabolomics: { label: "Metabolomics", sub: "Metabolite identifications" },
-          proteomics: { label: "Proteomics", sub: "Protein identifications" },
         },
       },
       confirmDelete: {
@@ -417,7 +375,6 @@ export const en: Resources = {
       notForReads: "Raw reads are not part of nucleotide sequence submission; submit them to DRA instead.",
     },
     variant: {
-      referenceByName: "The reference is named in the VCF header (such as GRCh37/38); no separate reference FASTA submission is needed.",
       jga: {
         intro: "Restricted-access human individual variants are deposited as JGA Analysis.",
         policyDelegated: "Policy approval for JGA is delegated to DBCLS/NBDC.",
@@ -509,6 +466,11 @@ export const en: Resources = {
       },
       ddbjTrad: {
         entry: "Deposit the SAG sequence as an MSS entry with data type=SAG.",
+      },
+    },
+    spatial: {
+      dra: {
+        raw: "Sequencing-based platforms (Visium / Stereo-seq) deposit their raw reads to DRA before the processed data goes to GEA (DRA + GEA two-step).",
       },
     },
     validations: {
@@ -709,16 +671,6 @@ export const en: Resources = {
       gea: "GEA",
       metabobank: "MetaboBank",
       taxonomy: "Taxonomy",
-    },
-    descriptions: {
-      trad: "DDBJ / ENA / GenBank nucleotide records",
-      sra: "Short-read sequence archive",
-      bioproject: "Research project metadata",
-      biosample: "Biological sample attributes",
-      jga: "Controlled-access human data",
-      gea: "Gene expression archive",
-      metabobank: "Metabolome data submissions",
-      taxonomy: "NCBI Taxonomy-based classification",
     },
     errors: {
       parseFailure: "Could not parse the query in the URL",

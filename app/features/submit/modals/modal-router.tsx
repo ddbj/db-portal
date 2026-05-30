@@ -4,6 +4,7 @@ import type { UIState } from "../state/types"
 import type { SubmitDispatch } from "../state/use-submit-state"
 import { ConfirmDeleteModal } from "./confirm-delete-modal"
 import { EditRowModal } from "./edit-row-modal"
+import { hasRowDetail } from "./form-defs"
 
 type ModalRouterLabels = {
   closeAriaLabel: string
@@ -49,6 +50,8 @@ export const ModalRouter = ({
   if (editing.kind === "row") {
     const entry = state.submission.fileEntries.find((e) => e.id === editing.entryId)
     if (!entry) return null
+    // flow-changing 軸を持たない種別は編集すべき詳細がないため modal を開かない (行ハイライトのみ)
+    if (!hasRowDetail(entry.fileTypeKind)) return null
     const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
     return (
       <EditRowModal

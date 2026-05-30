@@ -5,6 +5,7 @@ import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
 import { detectRecipeGroups } from "../../../app/features/submit/flow-rules/recipes"
 import {
   type FlowStep,
+  isSequencingSpatialPlatform,
   isSubmissionEndpoint,
   SERVICE_PHYSICAL_ORDER,
   type Submission,
@@ -166,6 +167,26 @@ test.prop([arbSubmission], RUNS)(
       const geaStep = steps.find((s) => s.service === "gea" && s.scope.entryIds.includes(e.id))
       expect(geaStep).toBeDefined()
       expect(geaStep!.scope.groupIds).toContain(e.groupId)
+    }
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_spatialPlatform_sequencingEntersDraAndGeaMicroarrayGeaOnly",
+  (submission) => {
+    const owned = recipeOwnedEntryIds(submission)
+    const steps = deriveFlowSteps(submission)
+    const geaIds = entryIdsOfService(steps, (s) => s.service === "gea")
+    const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
+    const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
+    for (const e of submission.fileEntries) {
+      if (owned.has(e.id) || !isSpatial(e.fileTypeKind)) continue
+      const sequencing = e.chipTags.some(
+        (c) => c.axis === "spatial-platform" && isSequencingSpatialPlatform(c.value),
+      )
+      // Sequencing 系 platform は DRA + GEA の 2 段、それ以外 (Microarray / 未指定) は GEA のみ
+      expect(geaIds.has(e.id)).toBe(true)
+      expect(draIds.has(e.id)).toBe(sequencing)
     }
   },
 )

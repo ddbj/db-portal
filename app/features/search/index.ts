@@ -17,10 +17,8 @@ export {
   toAdvanced,
 } from "./advanced"
 export {
-  applyProposalAst,
-  type AssistantCondition,
-  type AssistantProposal,
-  assistantProposalToAst,
+  type AiRequestMode,
+  type AssistantStartOptions,
   type AssistantState,
   type AssistantStreamResult,
   LLM_AVAILABILITY_STALE_MS,
@@ -57,7 +55,6 @@ export {
 export {
   type AiMode,
   type AiModeDefault,
-  applyProposalByMode,
   builderConditionCount,
   resolveAiModeDefault,
   SearchInputPanel,

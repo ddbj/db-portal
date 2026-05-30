@@ -3,10 +3,9 @@ import { useId, useState } from "react"
 import { useT } from "~/lib/i18n"
 import { Button, Chip, Label, SectionHeading, Tag, TextArea } from "~/ui"
 
-import type { AdvancedAction, AdvancedState } from "../advanced"
+import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
 import { useLlmAvailability } from "./llm-availability"
-import { useAssistantStream } from "./prompt-client"
-import { applyProposalAst } from "./proposal-apply"
+import { type AssistantStartOptions, useAssistantStream } from "./prompt-client"
 import { ProposalConditions } from "./proposal-conditions"
 
 export type SearchAssistantProps = {
@@ -26,10 +25,16 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   const rawExamples = t("search.assistant.examples", { returnObjects: true })
   const examplesList: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
 
+  // The per-DB assistant refines the current per-DB query, so it always runs in
+  // append mode (the model folds the request into the current builder AST).
+  const startOptions = (): AssistantStartOptions => ({
+    mode: "append",
+    current: fromAdvanced(advancedState),
+  })
+
   const handleApply = () => {
     if (!stream.proposal) return
-    const next = applyProposalAst(advancedState, stream.proposal)
-    dispatch({ type: "replaceRoot", root: next.root })
+    dispatch({ type: "replaceRoot", root: toAdvanced(stream.proposal).root })
     setInput("")
     stream.stop()
   }
@@ -80,7 +85,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
                   kind="primary"
                   size="sm"
                   disabled={input.trim().length === 0}
-                  onClick={() => void stream.start(input)}
+                  onClick={() => void stream.start(input, startOptions())}
                 >
                   {t("search.assistant.generate")}
                 </Button>
@@ -102,7 +107,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
                 kind="secondary"
                 size="md"
                 disabled={input.trim().length === 0}
-                onClick={() => void stream.start(input)}
+                onClick={() => void stream.start(input, startOptions())}
               >
                 {t("search.assistant.regenerate")}
               </Button>

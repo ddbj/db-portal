@@ -56,7 +56,7 @@ portal 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar �
 
 ### AI 検索アシスタントの位置付け
 
-AI 検索アシスタントは「自然言語入力 → Advanced builder の差分提案」 という UX を担う。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
+AI 検索アシスタントは「自然言語入力 → Advanced builder への提案 (新規生成 / 既存への融合)」 という UX を担う。提案はフルスペック DSL (`AND` / `OR` / `NOT` / グルーピング) を表す ParseNode AST。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
 
 server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では client 側 UI 配線のみ。
 
@@ -272,15 +272,14 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=5` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。
+`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
 
 各カードの内容:
 
-- title: i18n リソースの `search.scope.<db>`
-- description: 1 行 (i18n リソースの `search.descriptions.<db>`)
+- title: i18n リソースの `search.scope.<db>`。同じ行の右端に「結果一覧 →」 link を縦中央で並べる
 - count: `count ?? 0`、tabular-nums mono 26 px
-- 上位 hit: 最大 5 件 (accession + title + datePublished)
-- 「結果一覧 →」: `/search/results?q=<DSL>&db=<id>` への TextLink
+- 上位 hit: 最大 3 件 (accession + title + datePublished)
+- 「結果一覧 →」: `/search/results?q=<DSL>&db=<id>` への TextLink (title と同じ行の右端)
 - error フィールド (timeout 等) が立っているとき: count を `?` 表示 + 「再試行」 link
 
 `databases` は API 仕様で固定順 (`trad / sra / bioproject / biosample / jga / gea / metabobank / taxonomy`)。portal 側で並び替えない。
@@ -360,8 +359,8 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 | 1 以上 | append (既存に追加) | 選択可 |
 | 0 | new (新規生成) | 一覧に残すが disable (追加先が無い) |
 
-- **append**: 提案を現在の構造化条件に graft する (keyword は不変)
-- **new**: 現在の構造化条件を破棄して提案だけにする。keyword も初期化する (「新規」 の意味を保つため)
+- **append**: 現在のビルダー DSL を `current` として送り、モデルが既存条件を保持したまま融合した完全な DSL を返す。反映は融合済み AST で組み直す (keyword は不変)
+- **new**: `current` を送らず、提案だけの新規クエリにする。keyword も初期化する (「新規」 の意味を保つため)
 
 提案カード (`ProposalConditions`) は ParseNode AST (フルスペック DSL) を受け取り、**read-only 版のクエリビルダー** として描く。preview なので場所を取りすぎないよう、leaf は 1 行の節・group はインデント + 色付き縦スパイン + 演算子バッジ 1 個に畳む:
 
@@ -376,21 +375,20 @@ footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボ
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
 
-- `event: message` → 累積バッファに delta を貯める (内部表示なし)
-- `event: done` → data を `AssistantProposal` として parse し、ParseNode AST に lift して proposal state に反映、state = "done"
+- `event: message` → 累積バッファに delta を貯める (内部表示なし。中身は生成中の DSL 文字列)
+- `event: done` → data を ParseNode AST として受け取り proposal state に反映、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
 - `event: error` → state = "error"、toast を出す
 
 `AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
 
 ### 提案の反映
 
-client は SSE で受け取った flat な `AssistantProposal` を受信直後に ParseNode AST に変換し (`assistantProposalToAst`)、以降の表示・反映はすべて AST を SSOT とする。AST → Advanced state の反映は純粋関数で行う:
+client は `event: done` で受け取った ParseNode AST をそのまま proposal state の SSOT とする (BFF 検証済み)。生成モードは **生成前** に決まり、融合は **モデル側** が行う:
 
-- **append**: AST を `toAdvanced` で展開し、現在の root に graft する。OR が複数節を束ねるときは 1 group (innerCombinator=OR) に包んで AND root へ挿し、AND / 単一節はそのまま展開して append する
-- **new**: `toAdvanced(ast)` で root を組み直す。keyword も初期化する
-- free_text leaf は構造化ビルダーに乗らない (keyword 行が別管理) ため、反映時に drop する
+- **append**: 送信時に現在のビルダー DSL を `current` として BFF に渡す。vLLM は既存条件を保持したまま新しい要求を融合した完全な DSL を返すので、AST には既存条件が内包される
+- **new**: `current` を渡さない。vLLM は要求だけの新規 DSL を返す
 
-cross-search ビルダーの統合入力では生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
+反映 (ユーザーの「適用」操作時) は両モードとも純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL とし、反映時も free_text leaf は構造化ビルダーに乗らないため drop する。per-DB results の AI アシスタントも同じ契約 (現在の per-DB ビルダー DSL を `current` に渡す append、または new)。
 
 per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 

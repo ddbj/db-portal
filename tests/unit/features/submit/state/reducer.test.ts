@@ -247,7 +247,7 @@ describe("submitReducer EDIT_ROW_CELL", () => {
         groupId: "g-hijack",
         access: "restricted",
         dataForm: "assembled",
-        chipTags: [{ axis: "provenance", value: "third-party" }],
+        chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
       },
     })
     const entry = next.submission.fileEntries[0]!
@@ -257,7 +257,7 @@ describe("submitReducer EDIT_ROW_CELL", () => {
     // 上書き可能なフィールドは反映される
     expect(entry.access).toBe("restricted")
     expect(entry.dataForm).toBe("assembled")
-    expect(entry.chipTags).toEqual([{ axis: "provenance", value: "third-party" }])
+    expect(entry.chipTags).toEqual([{ axis: "mass-spec-domain", value: "proteomics" }])
   })
 
   test("submitReducer_editRowCell_doesNotOpenOrCloseModal", () => {

@@ -306,52 +306,20 @@ export type Resources = {
       previewLabel: string
       previewFootnote: string
       formGroupLabels: {
-        structure: string
-        multiplex: string
         form: string
-        annotationPair: string
-        provenance: string
         target: string
-        reference: string
         platform: string
         domain: string
-        method: string
       }
       options: {
-        sequenceRead: {
-          singleEnd: { label: string; sub: string }
-          pairEnd: { label: string; sub: string }
-          tenx: { label: string; sub: string }
-          pacbio: { label: string; sub: string }
-          perSample: { label: string; sub: string }
-          multiplex: { label: string; sub: string }
-        }
         sequenceNucleotide: {
           standalone: { label: string; sub: string }
-          hybrid: { label: string; sub: string }
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
-          annotationPair: { label: string; sub: string }
-          firstParty: { label: string; sub: string }
-          thirdParty: { label: string; sub: string }
         }
         sequenceAnnotation: {
           assemblyPair: { label: string; sub: string }
           standalone: { label: string; sub: string }
-          firstParty: { label: string; sub: string }
-          thirdParty: { label: string; sub: string }
-        }
-        variant: {
-          withRef: { label: string; sub: string }
-          withoutRef: { label: string; sub: string }
-        }
-        expressionMatrix: {
-          standalone: { label: string; sub: string }
-          mageTab: { label: string; sub: string }
-        }
-        microarray: {
-          singleColor: { label: string; sub: string }
-          twoColor: { label: string; sub: string }
         }
         spatialTranscriptomics: {
           visium: { label: string; sub: string }
@@ -364,16 +332,6 @@ export type Resources = {
           merfish: { label: string; sub: string }
         }
         massSpectrometry: {
-          metabolomics: { label: string; sub: string }
-          proteomics: { label: string; sub: string }
-          standard: { label: string; sub: string }
-          imaging: { label: string; sub: string }
-        }
-        nmr: {
-          metabolomics: { label: string; sub: string }
-          proteomics: { label: string; sub: string }
-        }
-        metaboliteAssignment: {
           metabolomics: { label: string; sub: string }
           proteomics: { label: string; sub: string }
         }
@@ -403,7 +361,6 @@ export type Resources = {
       notForReads: string
     }
     variant: {
-      referenceByName: string
       jga: { intro: string; policyDelegated: string }
       togovar: { intro: string }
       eva: { nonHuman: string }
@@ -442,6 +399,9 @@ export type Resources = {
       biosample: { misag: string; combined: string }
       dra: { run: string }
       ddbjTrad: { entry: string }
+    }
+    spatial: {
+      dra: { raw: string }
     }
     validations: {
       heading: string
@@ -623,16 +583,6 @@ export type Resources = {
     }
     scope: {
       all: string
-      trad: string
-      sra: string
-      bioproject: string
-      biosample: string
-      jga: string
-      gea: string
-      metabobank: string
-      taxonomy: string
-    }
-    descriptions: {
       trad: string
       sra: string
       bioproject: string
@@ -966,52 +916,20 @@ export const ja: Resources = {
       previewLabel: "プレビュー",
       previewFootnote: "この設定での登録フローのプレビューです",
       formGroupLabels: {
-        structure: "構造",
-        multiplex: "多重化",
         form: "データ形態",
-        annotationPair: "アノテーションのペア",
-        provenance: "由来",
         target: "対象",
-        reference: "リファレンス",
         platform: "プラットフォーム",
         domain: "分析ドメイン",
-        method: "測定手法",
       },
       options: {
-        sequenceRead: {
-          singleEnd: { label: "シングルエンド", sub: "片方向のリード" },
-          pairEnd: { label: "ペアエンド", sub: "両端からのリード" },
-          tenx: { label: "10x", sub: "10x Genomics 形式" },
-          pacbio: { label: "PacBio", sub: "ロングリード" },
-          perSample: { label: "サンプルごと", sub: "サンプル単位のリード" },
-          multiplex: { label: "多重化", sub: "複数サンプルを 1 ファイルに多重化" },
-        },
         sequenceNucleotide: {
           standalone: { label: "単独配列", sub: "アノテーションを伴わない配列" },
-          hybrid: { label: "ハイブリッド", sub: "複数プラットフォームのアセンブリ" },
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
-          annotationPair: { label: "アノテーションペア", sub: "アノテーションと対になる配列" },
-          firstParty: { label: "一次登録", sub: "自身が産生した配列" },
-          thirdParty: { label: "第三者 (TPA)", sub: "他者データを引用した配列" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },
           standalone: { label: "単独アノテーション", sub: "配列ファイルと別に登録" },
-          firstParty: { label: "一次登録", sub: "自身が作成したアノテーション" },
-          thirdParty: { label: "第三者 (TPA)", sub: "他者データへのアノテーション" },
-        },
-        variant: {
-          withRef: { label: "リファレンスあり", sub: "リファレンスを参照する" },
-          withoutRef: { label: "リファレンスなし", sub: "リファレンスを参照しない" },
-        },
-        expressionMatrix: {
-          standalone: { label: "単独マトリクス", sub: "発現マトリクスのみ" },
-          mageTab: { label: "MAGE-TAB", sub: "MAGE-TAB 形式の一式" },
-        },
-        microarray: {
-          singleColor: { label: "1 色法", sub: "シングルチャネル測定" },
-          twoColor: { label: "2 色法", sub: "デュアルチャネル測定" },
         },
         spatialTranscriptomics: {
           visium: { label: "Visium", sub: "10x Visium (Sequencing + DRA 2 段)" },
@@ -1026,16 +944,6 @@ export const ja: Resources = {
         massSpectrometry: {
           metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
-          standard: { label: "通常測定", sub: "一般的な質量分析" },
-          imaging: { label: "イメージング", sub: "imaging mass spec" },
-        },
-        nmr: {
-          metabolomics: { label: "メタボロミクス", sub: "代謝物の NMR" },
-          proteomics: { label: "プロテオミクス", sub: "タンパク質の NMR" },
-        },
-        metaboliteAssignment: {
-          metabolomics: { label: "メタボロミクス", sub: "代謝物の同定結果" },
-          proteomics: { label: "プロテオミクス", sub: "タンパク質の同定結果" },
         },
       },
       confirmDelete: {
@@ -1083,7 +991,6 @@ export const ja: Resources = {
       notForReads: "生リードは塩基配列登録の対象外です。配列リードは DRA に登録してください。",
     },
     variant: {
-      referenceByName: "reference は VCF ヘッダで GRCh37/38 などを名前参照するだけで、reference FASTA の別登録は不要です。",
       jga: {
         intro: "制限公開のヒト個人データの variant は、JGA の Analysis に登録します。",
         policyDelegated: "JGA の Policy 承認は DBCLS / NBDC に委譲されています。",
@@ -1175,6 +1082,11 @@ export const ja: Resources = {
       },
       ddbjTrad: {
         entry: "SAG 配列を、MSS の data type=SAG のエントリとして登録します。",
+      },
+    },
+    spatial: {
+      dra: {
+        raw: "シーケンス由来 (Visium / Stereo-seq) の生リードは、processed データ (GEA) より先に DRA に登録します (DRA + GEA の 2 段)。",
       },
     },
     validations: {
@@ -1375,16 +1287,6 @@ export const ja: Resources = {
       gea: "GEA",
       metabobank: "MetaboBank",
       taxonomy: "Taxonomy",
-    },
-    descriptions: {
-      trad: "DDBJ / ENA / GenBank の核酸配列レコード",
-      sra: "短鎖シーケンスリードのアーカイブ",
-      bioproject: "研究プロジェクトのメタデータ",
-      biosample: "生物サンプル単位の属性",
-      jga: "ヒト由来制限公開データ",
-      gea: "遺伝子発現アーカイブ",
-      metabobank: "メタボロームデータの登録",
-      taxonomy: "NCBI Taxonomy ベースの分類体系",
     },
     errors: {
       parseFailure: "URL のクエリを解析できませんでした",

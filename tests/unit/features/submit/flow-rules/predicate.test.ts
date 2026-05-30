@@ -153,7 +153,7 @@ describe("evalWhen atoms", () => {
 describe("evalWhen anyChip", () => {
   const chips: FileEntryChip[] = [
     { axis: "assembly-form", value: "mag" },
-    { axis: "provenance", value: "third-party" },
+    { axis: "spatial-platform", value: "visium" },
   ]
 
   test("evalWhen_anyChipAxisAndValueMatch_true", () => {
@@ -168,7 +168,7 @@ describe("evalWhen anyChip", () => {
 
   test("evalWhen_anyChipAxisOnlyWithMatchingAxis_true", () => {
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "provenance" } }, ctx)).toBe(true)
+    expect(evalWhen({ anyChip: { axis: "spatial-platform" } }, ctx)).toBe(true)
   })
 
   test("evalWhen_anyChipAxisOnlyWithNoMatchingAxis_false", () => {
@@ -177,9 +177,9 @@ describe("evalWhen anyChip", () => {
   })
 
   test("evalWhen_anyChipValueMatchesWrongAxis_false", () => {
-    // value "third-party" exists, but only on the provenance axis, not mass-spec-domain
+    // value "visium" exists, but only on the spatial-platform axis, not mass-spec-domain
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "mass-spec-domain", value: "third-party" } }, ctx)).toBe(false)
+    expect(evalWhen({ anyChip: { axis: "mass-spec-domain", value: "visium" } }, ctx)).toBe(false)
   })
 
   test("evalWhen_anyChipOnEmptyChipTags_false", () => {
@@ -263,24 +263,24 @@ describe("evalWhen combinators", () => {
   test("evalWhen_orOneTrue_true", () => {
     const ctx = mkCtx({ q1: "third-party", entry: mkEntry({ chipTags: [] }) })
     expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "provenance", value: "third-party" } }] }, ctx),
+      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
     ).toBe(true)
   })
 
   test("evalWhen_orAllFalse_false", () => {
     const ctx = mkCtx({ q1: "public", entry: mkEntry({ chipTags: [] }) })
     expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "provenance", value: "third-party" } }] }, ctx),
+      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
     ).toBe(false)
   })
 
   test("evalWhen_orSecondTrueFirstFalse_true", () => {
     const ctx = mkCtx({
       q1: "public",
-      entry: mkEntry({ chipTags: [{ axis: "provenance", value: "third-party" }] }),
+      entry: mkEntry({ chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] }),
     })
     expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "provenance", value: "third-party" } }] }, ctx),
+      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
     ).toBe(true)
   })
 

@@ -2,13 +2,11 @@ import { describe, expect, test } from "vitest"
 
 import type { AdvancedState } from "~/features/search"
 import {
-  applyProposalByMode,
   builderConditionCount,
   createCondition,
   createInitialState,
   resolveAiModeDefault,
 } from "~/features/search"
-import type { ParseNode } from "~/lib/api"
 
 const stateWith = (childCount: number): AdvancedState => {
   const base = createInitialState()
@@ -20,8 +18,6 @@ const stateWith = (childCount: number): AdvancedState => {
     },
   }
 }
-
-const proposal: ParseNode = { op: "eq", field: "organism_name", value: "Homo sapiens" }
 
 describe("builderConditionCount", () => {
   test("emptyKeyword_noChildren_isZero", () => {
@@ -60,30 +56,5 @@ describe("resolveAiModeDefault", () => {
 
   test("negativeGuard_treatedAsEmpty", () => {
     expect(resolveAiModeDefault(-1)).toEqual({ mode: "new", appendDisabled: true })
-  })
-})
-
-describe("applyProposalByMode", () => {
-  test("append_keepsExistingChildrenAndAddsProposal", () => {
-    const next = applyProposalByMode("append", stateWith(2), proposal)
-    expect(next.root.children).toHaveLength(3)
-  })
-
-  test("new_discardsExistingChildrenAndKeepsOnlyProposal", () => {
-    const next = applyProposalByMode("new", stateWith(2), proposal)
-    const conditions = next.root.children.filter((c) => c.kind === "condition")
-    expect(conditions).toHaveLength(1)
-    expect(conditions.map((c) => ({ field: c.field, op: c.op, value: c.value }))).toEqual([
-      { field: "organism_name", op: "eq", value: "Homo sapiens" },
-    ])
-  })
-
-  test("new_fromEmpty_producesSameConditionsAsAppendFromEmpty", () => {
-    const stripIds = (s: ReturnType<typeof applyProposalByMode>) =>
-      s.root.children.map((c) => (c.kind === "condition" ? { field: c.field, op: c.op, value: c.value } : c.kind))
-    const fromEmpty = applyProposalByMode("new", createInitialState(), proposal)
-    const appended = applyProposalByMode("append", createInitialState(), proposal)
-    expect(stripIds(fromEmpty)).toEqual(stripIds(appended))
-    expect(stripIds(fromEmpty)).toEqual([{ field: "organism_name", op: "eq", value: "Homo sapiens" }])
   })
 })

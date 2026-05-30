@@ -311,6 +311,84 @@ describe("deriveFlowSteps", () => {
     expect(trad.scope.entryIds).toEqual(["mag1"])
   })
 
+  test("deriveFlowSteps_visiumSpatialTranscriptomics_emitsDraAndGeaTwoStep", () => {
+    const submission: Submission = {
+      preconditions: { q1: "public", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "spatial-transcriptomics",
+          filename: "spt_001.tsv",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g1",
+          chipTags: [{ axis: "spatial-platform", value: "visium" }],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // Sequencing-type platform: raw reads to DRA (recipe) + processed to GEA (tier1)
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "dra", "gea"])
+    const dra = stepFor(steps, "dra")
+    expect(dra.origin).toBe("recipe")
+    expect(dra.scope.entryIds).toEqual(["e1"])
+    expect(stepFor(steps, "gea").scope.entryIds).toContain("e1")
+  })
+
+  test("deriveFlowSteps_xeniumSpatialTranscriptomics_emitsGeaOnly", () => {
+    const submission: Submission = {
+      preconditions: { q1: "public", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "spatial-transcriptomics",
+          filename: "spt_001.tsv",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g1",
+          chipTags: [{ axis: "spatial-platform", value: "xenium" }],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // Microarray-type platform: GEA only, no DRA pre-registration
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "gea"])
+    expect(steps.some((s) => s.service === "dra")).toBe(false)
+  })
+
+  test("deriveFlowSteps_merfishSpatialImage_emitsGeaWithGeneralistWarningNoDra", () => {
+    const submission: Submission = {
+      preconditions: { q1: "public", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "spatial-image",
+          filename: "img_001.tiff",
+          access: "open",
+          dataForm: "image",
+          groupId: "g1",
+          chipTags: [{ axis: "spatial-platform", value: "merfish" }],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // MERFISH images stay GEA-only (no DRA) and carry the external generalist-archive warning
+    expect(steps.some((s) => s.service === "dra")).toBe(false)
+    expect(warningKeys(stepFor(steps, "gea"))).toContain("submit.gea.spatialImage.largeImageGeneralist")
+  })
+
   test("deriveFlowSteps_emptySubmission_returnsNoSteps", () => {
     const submission: Submission = {
       preconditions: { q1: null, q2: null },

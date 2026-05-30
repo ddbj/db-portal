@@ -11,7 +11,7 @@ DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LL
 | LLM backend | vLLM (OpenAI compatible API) |
 | 接続 | server-side only (browser ↛ vLLM) |
 | 健全性判定 | `/api/llm/health` で `unset` / `ok` / `unreachable` の 3 状態 |
-| streaming | SSE pass-through (`event: message` / `event: done` / `event: error`)、15 秒間隔 heartbeat |
+| streaming | SSE pass-through (`event: message` / `event: done` / `event: error`)、15 秒間隔 heartbeat。`done` は BFF が `/db-portal/parse` で検証した ParseNode AST を載せる |
 | rate limit | per-IP 60 req/min + per-session 30 req/min (env で上書き可) |
 | 入出力 redaction | log は email / phone / クレジットカード / API key 風 token を `[REDACTED]` 化 |
 | 未設定時 | `DB_PORTAL_LLM_BASE_URL` が空のとき BFF は `{status: "unset"}` を返し、`/api/llm/search-assistant` は 503 `{error: "llm_unset"}`、UI は AI 補助機能を hide |
@@ -22,25 +22,28 @@ DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LL
 
 ```
 [Browser]
-   │ POST /api/llm/search-assistant (input: 自然文)
+   │ POST /api/llm/search-assistant ({ input, mode, current })
    │ Accept: text/event-stream
    ▼
 [BFF (server/llm/)]
    │ rate-limit check (per-IP, per-session)
    │ redaction (log のみ、prompt はそのまま vLLM へ)
    │ prompt 構築 (system + few-shot + user input)
+   │   mode=append のとき current (現ビルダー DSL) を "Current query:" として差し込む
    ▼
 [vLLM]
-   │ /v1/chat/completions (stream=true)
+   │ /v1/chat/completions (stream=true) → 1 行 DSL 文字列を生成
    ▼
 [BFF]
-   │ SSE pass-through:
+   │ delta は event: message でそのまま pass-through
+   │ 完了後: DSL 文字列を抽出 → 非対応の ~ / ^ を除去 → /db-portal/parse で検証
    │   event: message  data: <delta token>
-   │   event: done     data: <final JSON proposal>
+   │   event: done     data: <ParseNode AST (検証済み)>
    │   event: error    data: { code, message }
    │ 15 秒間隔で `: heartbeat\n\n` を空コメントで出力
    ▼
-[Browser] useAssistantStream が proposal を Advanced state に反映
+[Browser] useAssistantStream が done の AST をそのまま read-only preview に反映
+          (Advanced state への反映はユーザーの「適用」操作時、search.md § 提案の反映)
 ```
 
 ## health check
@@ -90,8 +93,8 @@ health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保�
 
 | event | 用途 | data |
 |---|---|---|
-| `message` | token streaming (vLLM の delta) | delta 文字列 (一連の連結で full text) |
-| `done` | 完了通知 | 最終 JSON (proposal 等、用途別 schema) |
+| `message` | token streaming (vLLM の delta) | delta 文字列 (一連の連結で full DSL 文字列) |
+| `done` | 完了通知 | 検証済み ParseNode AST (検索アシスタント。BFF が `/db-portal/parse` で得た木) |
 | `error` | エラー通知 | `{ "code": "string", "message": "string" }` |
 
 `event:` を省略した SSE は `message` 扱い。ただし portal は明示的に `event: message` / `event: done` / `event: error` のいずれかを出す (client 実装の単純化のため)。
@@ -123,9 +126,10 @@ stream を `start()` した直後に `: stream-open\n\n` を 1 度送出し、�
 
 - `upstream-status`: vLLM が 200 以外のステータスを返した
 - `upstream-disconnect`: streaming 中の切断 / fetch 例外 / その他予期しない upstream エラー
-- `no_json` / `invalid_json` / `schema_violation`: vLLM 出力の parse 失敗 (`server/llm/assistant/parse.ts`)
+- `no_dsl`: vLLM 出力から DSL 文字列を抽出できなかった (`server/llm/assistant/parse.ts`)
+- `invalid_dsl`: 抽出した DSL を `/db-portal/parse` が 400 で弾いた (許容外 field / 構文エラー)
 
-`message` は human readable な短文。
+`message` は human readable な短文。`invalid_dsl` は parse の problem `detail` を載せる。
 
 ## 検索アシスタント
 
@@ -137,37 +141,51 @@ Content-Type: application/json
 Accept: text/event-stream
 
 Body:
-  { "input": "<natural language>" }
+  { "input": "<natural language>",
+    "mode":  "new" | "append",        (省略時 new)
+    "current": "<現ビルダーの DSL>" }   (append のとき必須、new では無視)
 
 Response: SSE
-  event: message  data: <delta token>   (複数回)
-  event: done     data: <AssistantProposal JSON>
+  event: message  data: <delta token>      (複数回、DSL 文字列の delta)
+  event: done     data: <ParseNode AST>     (検証済み)
   event: error    data: { "code", "message" }
 ```
 
-`AssistantProposal` 型は `app/features/search/assistant/prompt-client.ts` の `AssistantProposal` (`{ combinator, conditions: AssistantCondition[] }`)。server 側で JSON を組み立て、client は `event: done` の data を parse して Advanced state に反映する。
+vLLM は自然文を **1 行の Advanced-Search DSL 文字列** に変換する (フルスペック: `AND` / `OR` / `NOT` / グルーピング)。BFF は完了後に DSL を抽出・検証し、`event: done` には `/db-portal/parse` が返した **ParseNode AST** を載せる。client はこの AST をそのまま read-only preview に反映し (`ProposalConditions`)、Advanced state への反映はユーザーの「適用」操作時に行う (`search.md` § 提案の反映)。`mode=append` のとき BFF は `current` を prompt に差し込み、vLLM が既存条件を保持したまま融合した完全な DSL を返す。
 
 ### server 側 prompt 構築
 
-`server/llm/assistant/prompt.ts` が `system prompt + few-shot examples + user input` の messages を組み立て、vLLM `/v1/chat/completions` (stream=true) を呼ぶ。
+`server/llm/assistant/prompt.ts` が `system prompt + few-shot examples + user input` の messages を組み立て、vLLM `/v1/chat/completions` (stream=true、temperature=0) を呼ぶ。
 
-system prompt の方針:
+system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 
-- 役割: 「DDBJ ポータルの検索ビルダ向けに、ユーザーの自然文を field/op/value の条件群と combinator (AND / OR) に変換する」
-- 出力 JSON schema (zod schema を文章で表現): `{ "combinator": "AND" | "OR", "conditions": [{ "field": "<advanced field id>", "op": "<advanced op id>", "value": "<string>" }] }`
-- few-shot 3-5 例 (single keyword / multi keyword AND / OR / field filter / range filter のカバレッジ)
-- 「JSON 以外を出力するな」 / 「`<advanced field id>` は portal の許容 enum から選べ」 等の制約
+- 役割: 「自然文 (日英) を DDBJ ポータルの Advanced-Search DSL の 1 行に変換する。DSL のみを出力 (説明・コードフェンス無し)」
+- 2 モード: `Current query:` が無ければ新規生成、有れば既存条件を完全保持して融合 (append)
+- 変換規約 (gold set で固定し PBT/eval で検証した規則):
+  - field は cross-DB の Tier 1/2 のみ (`identifier` / `title` / `description` / `organism_name` / `organism_id` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`)
+  - organism 通称→`organism_name` の学名、taxid→`organism_id`
+  - topic/disease/assay 語→`description` に標準英語・単数形 (空白あればクォート)
+  - submitter は原文・同言語のまま (翻訳しない)
+  - date は常に範囲 `[YYYY-MM-DD TO YYYY-MM-DD]` (両端必須、開区間は `0001-01-01` / `9999-12-31` 番兵、`*` 不可)。動詞で field 選択 (published→date_published / created・registered・submitted→date_created / modified・updated→date_modified)
+  - wildcard `*` は「で始まる/starts with」明示時のみ
+  - `AND` / `OR` / `NOT` は大文字、`NOT` は `AND`/`OR` の後、OR を他と AND する時は括弧、複数除外は `NOT (A OR B)`
+  - 非対応 (Tier-3 field・fuzzy `~`・boost `^`) は description に押し込まず省く
+- few-shot は両モード・上記の難所 (precedence / NOT / 日付番兵 / organism / append 融合) を実演する
 
-許容 enum の SSOT は `app/schemas/api-bff/llm.ts` の `ADVANCED_FIELDS` / `ADVANCED_OPS` / `ASSISTANT_COMBINATORS`。`server/llm/assistant/prompt.ts` がこれを `app/schemas/api-bff/` 経由で直接 import し、`app/features/search/types.ts` も同じ schema を re-export する。enum を増減すれば server / client の両方が同じ source を共有する。
+確定した prompt 文面と正解セット・反復記録は実験成果物 (`.claude/llm-experiment/`、git 管理外) を SSOT とする。許容 field/op の最終判定は **ddbj-search-api の allowlist** (`/db-portal/parse` が検証) が SSOT で、portal 側は `app/schemas/api-bff/llm.ts` の `ADVANCED_FIELDS` / `ADVANCED_OPS` と prompt の field 列を一致させる。
 
-### parse 失敗時
+### DSL 抽出・検証 (parse 失敗時)
 
-`server/llm/assistant/parse.ts` が vLLM 出力を JSON.parse + Zod 検証する。
+`server/llm/assistant/parse.ts` が vLLM 出力を 1 行 DSL に正規化し、`/db-portal/parse` で検証する。
 
-- JSON が含まれない → `event: error` で `{ code: "no_json", message }`
-- JSON.parse 失敗 → `event: error` で `{ code: "invalid_json", message }`
-- schema 違反 (`AssistantProposal.safeParse` 失敗) → `event: error` で `{ code: "schema_violation", message }`
-- 検証通過 → `event: done` で payload を流す
+- 出力からコードフェンス除去・先頭行抽出で DSL 候補を得る。空なら `event: error` `{ code: "no_dsl", message }`
+- 非対応の fuzzy `~N` / boost `^N` を除去する (モデルが稀に残すため)
+- `GET /db-portal/parse?q=<DSL>` (per-DB アシスタントは `&db=<id>`) を呼ぶ
+  - 200 → `event: done` に返却 AST を載せる
+  - 400 → `event: error` `{ code: "invalid_dsl", message: <problem detail> }`
+  - 5xx / network → 短い retry 後 `upstream-disconnect`
+
+`/db-portal/parse` の base URL は `DB_PORTAL_SEARCH_API_URL` (search API と共用、`server/lib/env.ts`)。
 
 ### 障害時の UI 連動
 
@@ -177,7 +195,7 @@ system prompt の方針:
 2. `setProposal(null)` で既存提案をクリア
 3. SearchAssistant が toast を出す + 元の input を入力欄に戻す (内容ロストを避ける)
 
-client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStream` が `event: message` を受信して streaming token を貯め、`event: done` の data を `AssistantProposal` として parse する。
+client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStream` が `event: message` を受信して streaming token を貯め、`event: done` の data を ParseNode AST として受け取り proposal state に入れる (lift 不要、BFF が検証済み)。
 
 ## rate limit
 
@@ -256,7 +274,7 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL` を空にすると「LLM 未設定で 
 
 | ファイル | 内容 |
 |---|---|
-| `tests/unit/server/llm/assistant-parse.test.ts` | 正常 JSON / 壊れた JSON / schema 違反の振り分け |
+| `tests/unit/server/llm/assistant-parse.test.ts` | DSL 抽出 (フェンス除去 / 先頭行) / fuzzy `~` ・ boost `^` strip / parse 200・400 の振り分け |
 | `tests/unit/server/llm/rate-limit.test.ts` | window 境界、per-IP + per-session 同時適用、cleanup |
 | `tests/unit/server/llm/redaction.test.ts` | email / phone / cc / token の正規表現 |
 

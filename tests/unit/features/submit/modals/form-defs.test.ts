@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { ROW_FORM_DEFS } from "../../../../../app/features/submit/modals/form-defs"
+import { hasRowDetail, ROW_FORM_DEFS } from "../../../../../app/features/submit/modals/form-defs"
 import {
   ChipAxis,
   DataForm,
@@ -42,10 +42,25 @@ describe("ROW_FORM_DEFS_kindCoverage", () => {
   })
 })
 
+// flow-changing 軸を持つ種別だけが file 詳細質問 (group) を持つ。残りは質問なし (空 def)
+const DETAIL_KINDS = new Set<FileTypeKind>([
+  "sequence-nucleotide",
+  "sequence-annotation",
+  "spatial-transcriptomics",
+  "spatial-image",
+  "mass-spectrometry",
+])
+
 describe("ROW_FORM_DEFS_groupStructure", () => {
-  test("ROW_FORM_DEFS_everyKind_hasAtLeastOneGroup", () => {
+  test("ROW_FORM_DEFS_onlyFlowChangingKinds_haveGroups", () => {
     for (const kind of KEYS) {
-      expect(ROW_FORM_DEFS[kind].groups.length).toBeGreaterThan(0)
+      expect(ROW_FORM_DEFS[kind].groups.length > 0).toBe(DETAIL_KINDS.has(kind))
+    }
+  })
+
+  test("hasRowDetail_matchesPresenceOfGroups", () => {
+    for (const kind of KEYS) {
+      expect(hasRowDetail(kind)).toBe(ROW_FORM_DEFS[kind].groups.length > 0)
     }
   })
 

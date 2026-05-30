@@ -66,12 +66,12 @@ export const DataForm = z.enum([
 ])
 export type DataForm = z.infer<typeof DataForm>
 
-// テーブル列・前段で表現できない、かつ出る service を変える (flow-changing) 細部区分を
+// テーブル列・前段で表現できない、かつ出る service / step を変える (flow-changing) 細部区分を
 // 行内 chip の {axis, value} ペアで表現する。出る service を変えない区分 (バリアントの
-// SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う
+// SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う。
+// 第三者 (TPA) は提出単位 (Q1) で決まる軸なので ChipAxis には持たない
 export const ChipAxis = z.enum([
   "assembly-form",
-  "provenance",
   "mass-spec-domain",
   "spatial-platform",
 ])
@@ -126,10 +126,16 @@ export const DEFAULT_FILENAME_FOR_KIND: Readonly<
 
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
-  "provenance": ["third-party"],
   "mass-spec-domain": ["proteomics", "metabolomics"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
 }
 
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>
   ALLOWED_CHIP_VALUES[axis].includes(value)
+
+// spatial-platform → GEA Submission Type の分類。Sequencing 系は生リードを DRA に出す
+// 2 段 (spatial recipe が DRA step を emit)。それ以外 (xenium / merfish) は GEA のみ
+export const SEQUENCING_SPATIAL_PLATFORMS: readonly string[] = ["visium", "stereo-seq"]
+
+export const isSequencingSpatialPlatform = (value: string): boolean =>
+  SEQUENCING_SPATIAL_PLATFORMS.includes(value)

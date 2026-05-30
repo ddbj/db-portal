@@ -29,27 +29,6 @@ export type AdvancedOp = typeof ADVANCED_OPS[number]
 
 export const SCALAR_OPS = ["eq", "contains", "wildcard"] as const
 
-export const ASSISTANT_COMBINATORS = ["AND", "OR"] as const
-
-export type AssistantCombinator = typeof ASSISTANT_COMBINATORS[number]
-
-export const AssistantConditionSchema = z.discriminatedUnion("op", [
-  z.object({
-    field: z.enum(ADVANCED_FIELDS),
-    op: z.enum(SCALAR_OPS),
-    value: z.string().min(1),
-  }),
-  z.object({
-    field: z.enum(ADVANCED_FIELDS),
-    op: z.literal("between"),
-    from: z.string().min(1),
-    to: z.string().min(1),
-  }),
-])
-export type AssistantCondition = z.infer<typeof AssistantConditionSchema>
-
-export const AssistantProposalSchema = z.object({
-  combinator: z.enum(ASSISTANT_COMBINATORS),
-  conditions: z.array(AssistantConditionSchema).min(1),
-})
-export type AssistantProposal = z.infer<typeof AssistantProposalSchema>
+// The search assistant emits a DSL string that the BFF validates into a
+// ParseNode AST (the `event: done` payload); see docs/llm.md. There is no flat
+// proposal schema — the AST is the shared shape (`~/lib/api` ParseNode).

@@ -4,9 +4,14 @@ import { useEffect, useId, useState } from "react"
 import { useT } from "~/lib/i18n"
 import { Button, cn, Examples, SearchBox } from "~/ui"
 
-import type { AdvancedAction, AdvancedState } from "../advanced"
-import { ProposalConditions, useAssistantStream, useLlmAvailability } from "../assistant"
-import { type AiMode, applyProposalByMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
+import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
+import {
+  type AssistantStartOptions,
+  ProposalConditions,
+  useAssistantStream,
+  useLlmAvailability,
+} from "../assistant"
+import { type AiMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
 
 export type SearchInputPanelProps = {
   keyword: string
@@ -72,9 +77,16 @@ export const SearchInputPanel = ({
     setMode(isAi ? "keyword" : "ai")
   }
 
+  // append sends the current builder AST so the model folds the request into it;
+  // new sends nothing and generates fresh.
+  const startOptions = (): AssistantStartOptions => ({
+    mode: effectiveAiMode,
+    current: effectiveAiMode === "append" ? fromAdvanced(advancedState) : undefined,
+  })
+
   const handleSubmit = (value: string) => {
     if (isAi) {
-      if (value.trim().length > 0) void stream.start(value)
+      if (value.trim().length > 0) void stream.start(value, startOptions())
     } else {
       onKeywordChange(value)
     }
@@ -82,8 +94,9 @@ export const SearchInputPanel = ({
 
   const applyProposal = (proposalMode: AiMode) => {
     if (stream.proposal === null) return
-    const next = applyProposalByMode(proposalMode, advancedState, stream.proposal)
-    dispatch({ type: "replaceRoot", root: next.root })
+    // The proposal AST already folds in the existing query for append, so both
+    // modes rebuild the builder from it; new also clears the keyword row.
+    dispatch({ type: "replaceRoot", root: toAdvanced(stream.proposal).root })
     if (proposalMode === "new") onKeywordChange("")
     setAiInput("")
     stream.reset()
@@ -212,7 +225,7 @@ export const SearchInputPanel = ({
               kind="secondary"
               size="md"
               disabled={aiInput.trim().length === 0}
-              onClick={() => void stream.start(aiInput)}
+              onClick={() => void stream.start(aiInput, startOptions())}
             >
               {t("search.assistant.regenerate")}
             </Button>

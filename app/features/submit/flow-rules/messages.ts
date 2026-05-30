@@ -22,6 +22,8 @@ export const ENGINE_MESSAGE_KEYS = {
   sagBiosampleCombined: "submit.sag.biosample.combined",
   sagDraRun: "submit.sag.dra.run",
   sagEntry: "submit.sag.ddbjTrad.entry",
+
+  spatialDraRaw: "submit.spatial.dra.raw",
 } as const
 
 export const ALL_ENGINE_MESSAGE_KEYS: readonly string[] = Object.values(ENGINE_MESSAGE_KEYS)

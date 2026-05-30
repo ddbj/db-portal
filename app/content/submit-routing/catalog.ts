@@ -76,7 +76,7 @@ const catalogData = {
           },
         },
         {
-          when: { or: [{ q1: "third-party" }, { anyChip: { axis: "provenance", value: "third-party" } }] },
+          when: { q1: "third-party" },
           emit: {
             service: "ddbj-trad",
             scope: "entry",
@@ -121,7 +121,7 @@ const catalogData = {
           },
         },
         {
-          when: { or: [{ q1: "third-party" }, { anyChip: { axis: "provenance", value: "third-party" } }] },
+          when: { q1: "third-party" },
           emit: {
             service: "ddbj-trad",
             scope: "entry",
@@ -155,11 +155,6 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.variant.jga.intro" },
-              {
-                kind: "info",
-                messageKey: "submit.variant.referenceByName",
-                whenAny: { groupType: "variation-with-reference" },
-              },
               { kind: "info", messageKey: "submit.variant.jga.policyDelegated" },
             ],
           },
@@ -171,11 +166,6 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.variant.togovar.intro" },
-              {
-                kind: "info",
-                messageKey: "submit.variant.referenceByName",
-                whenAny: { groupType: "variation-with-reference" },
-              },
             ],
           },
         },
@@ -186,11 +176,6 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.variant.eva.nonHuman" },
-              {
-                kind: "info",
-                messageKey: "submit.variant.referenceByName",
-                whenAny: { groupType: "variation-with-reference" },
-              },
             ],
           },
         },
@@ -234,7 +219,7 @@ const catalogData = {
     },
     {
       id: "spatial-transcriptomics",
-      candidateRepos: ["gea"],
+      candidateRepos: ["gea", "dra"],
       rules: [
         {
           when: { always: true },
@@ -260,7 +245,7 @@ const catalogData = {
     },
     {
       id: "spatial-image",
-      candidateRepos: ["gea"],
+      candidateRepos: ["gea", "dra"],
       rules: [
         {
           when: { always: true },
@@ -324,16 +309,8 @@ const catalogData = {
     },
     {
       id: "metabolite-assignment",
-      candidateRepos: ["metabobank", "jpost"],
+      candidateRepos: ["metabobank"],
       rules: [
-        {
-          when: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
-          emit: {
-            service: "jpost",
-            scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.jpost.proteomics" }],
-          },
-        },
         {
           when: { always: true },
           emit: {

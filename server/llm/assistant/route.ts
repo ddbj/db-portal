@@ -8,11 +8,14 @@ import { callVllmStreamRaw, createLlmClient, type LlmClient } from "../client"
 import { getActiveRateLimiter } from "../rate-limit"
 import { redactUserInput } from "../redaction"
 import { openSseStream, readVllmStream } from "../sse"
-import { parseAssistantOutput } from "./parse"
+import { parseModelOutput } from "./parse"
 import { buildAssistantMessages } from "./prompt"
+import { serializeAstToDsl } from "./search-api"
 
 const RequestBody = z.object({
   input: z.string().trim().min(1),
+  mode: z.enum(["new", "append"]).optional(),
+  current: z.unknown().optional(),
 })
 
 const clientIp = (req: Request): string =>
@@ -48,8 +51,9 @@ export const makeHandleSearchAssistant = (
         return
       }
     }
-    const safeInput = redactUserInput(parsedBody.data.input)
-    logger.debug("llm_assistant_request", { inputLength: safeInput.length })
+    const { input, mode, current } = parsedBody.data
+    const safeInput = redactUserInput(input)
+    logger.debug("llm_assistant_request", { inputLength: safeInput.length, mode: mode ?? "new" })
 
     const stream = openSseStream(res)
     stream.start()
@@ -58,7 +62,12 @@ export const makeHandleSearchAssistant = (
 
     let accumulated = ""
     try {
-      const messages = buildAssistantMessages({ userInput: parsedBody.data.input })
+      // append mode seeds the prompt with the current builder query (serialized
+      // by ddbj-search-api); a serialize failure degrades to fresh generation.
+      const currentDsl = mode === "append" && current !== undefined
+        ? await serializeAstToDsl(current, { env })
+        : undefined
+      const messages = buildAssistantMessages({ userInput: input, currentDsl })
       const upstreamResp = await callVllmStreamRaw(
         client,
         { messages, temperature: 0, stream: true },
@@ -84,14 +93,15 @@ export const makeHandleSearchAssistant = (
 
         return
       }
-      const parsedOutcome = parseAssistantOutput(accumulated)
-      if (!parsedOutcome.ok) {
-        stream.error(parsedOutcome.code, parsedOutcome.message)
+      const outcome = await parseModelOutput(accumulated, { env })
+      if (!outcome.ok) {
+        const code = outcome.code === "upstream" ? "upstream-disconnect" : outcome.code
+        stream.error(code, outcome.message)
         stream.close()
 
         return
       }
-      stream.done(JSON.stringify(parsedOutcome.proposal))
+      stream.done(JSON.stringify(outcome.ast))
     } catch (error) {
       const aborted = (error as { name?: string }).name === "AbortError"
       if (!aborted) {

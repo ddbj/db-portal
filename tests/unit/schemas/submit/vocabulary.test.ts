@@ -48,8 +48,8 @@ describe("vocabulary enum option counts", () => {
     expect(DataForm.options).toHaveLength(8)
   })
 
-  test("ChipAxis_hasFourOptions", () => {
-    expect(ChipAxis.options).toHaveLength(4)
+  test("ChipAxis_hasThreeOptions", () => {
+    expect(ChipAxis.options).toHaveLength(3)
   })
 })
 
@@ -254,7 +254,7 @@ describe("isAllowedChipValue", () => {
   test("isAllowedChipValue_valueFromAnotherAxis_rejected", () => {
     // "visium" は spatial-platform 専用で、他軸では許可されない
     expect(isAllowedChipValue("spatial-platform", "visium")).toBe(true)
-    expect(isAllowedChipValue("provenance", "visium")).toBe(false)
+    expect(isAllowedChipValue("mass-spec-domain", "visium")).toBe(false)
     expect(isAllowedChipValue("assembly-form", "visium")).toBe(false)
   })
 

@@ -3,7 +3,7 @@ import type { FileGroup, Submission } from "~/schemas/submit"
 import { groupMembers, hasChip } from "../shared"
 
 // named recipe は allowlist として固定し、勝手に増えないことを担保する (Tier1 骨抜き防止)
-export const RECIPE_ALLOWLIST = ["jga-submission", "mag-project", "sag"] as const
+export const RECIPE_ALLOWLIST = ["jga-submission", "mag-project", "sag", "spatial"] as const
 export type RecipeName = (typeof RECIPE_ALLOWLIST)[number]
 
 // 同一 group は assembly-form 値で mag-project / sag の一方にのみディスパッチする
@@ -26,3 +26,4 @@ export const detectRecipeGroups = (
 export { jgaSubmissionSteps } from "./jga-submission"
 export { magProjectSteps } from "./mag-project"
 export { sagSteps } from "./sag"
+export { spatialSteps } from "./spatial"

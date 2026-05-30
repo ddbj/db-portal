@@ -6,11 +6,10 @@ export {
   useLlmAvailability,
 } from "./llm-availability"
 export {
-  type AssistantCondition,
-  type AssistantProposal,
+  type AiRequestMode,
+  type AssistantStartOptions,
   type AssistantState,
   type AssistantStreamResult,
   useAssistantStream,
 } from "./prompt-client"
-export { applyProposalAst, assistantProposalToAst } from "./proposal-apply"
 export { ProposalConditions, type ProposalConditionsProps } from "./proposal-conditions"

@@ -19,6 +19,7 @@ type VocabLabels = {
 
 type FileTableRowProps = {
   entry: FileEntry
+  hasDetail: boolean
   configured: boolean
   detailSummary: string
   editing: boolean
@@ -31,6 +32,7 @@ type FileTableRowProps = {
 
 export const FileTableRow = ({
   entry,
+  hasDetail,
   configured,
   detailSummary,
   editing,
@@ -66,21 +68,23 @@ export const FileTableRow = ({
         />
       </td>
       <td className="px-3 py-3 align-middle">
-        {configured && detailSummary !== ""
-          ? (
-            <RowSetTag
-              summary={detailSummary}
-              ariaLabel={cellLabels.editDetailAria}
-              onClick={onEditDetail}
-            />
-          )
-          : (
-            <WarnDashedButton
-              label={cellLabels.detailUnsetLabel}
-              ariaLabel={cellLabels.editDetailAria}
-              onClick={onEditDetail}
-            />
-          )}
+        {!hasDetail
+          ? <span className="text-ink-mid" aria-hidden="true">—</span>
+          : configured && detailSummary !== ""
+            ? (
+              <RowSetTag
+                summary={detailSummary}
+                ariaLabel={cellLabels.editDetailAria}
+                onClick={onEditDetail}
+              />
+            )
+            : (
+              <WarnDashedButton
+                label={cellLabels.detailUnsetLabel}
+                ariaLabel={cellLabels.editDetailAria}
+                onClick={onEditDetail}
+              />
+            )}
       </td>
       <td className="px-3 py-3 align-middle">
         <IconButton ariaLabel={cellLabels.deleteAria} onClick={onRequestDelete} size={28}>

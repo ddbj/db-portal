@@ -8,7 +8,7 @@ const validEntry = {
   access: "restricted",
   dataForm: "raw",
   groupId: "g1",
-  chipTags: [{ axis: "provenance", value: "third-party" }],
+  chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
 }
 
 describe("FileEntry", () => {
@@ -45,7 +45,7 @@ describe("FileEntry", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,
-        chipTags: [{ axis: "provenance", value: "" }],
+        chipTags: [{ axis: "mass-spec-domain", value: "" }],
       }),
     ).toThrow()
   })
@@ -54,7 +54,7 @@ describe("FileEntry", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,
-        chipTags: [{ axis: "provenance", value: "first-party" }],
+        chipTags: [{ axis: "mass-spec-domain", value: "first-party" }],
       }),
     ).toThrow()
   })
@@ -63,7 +63,7 @@ describe("FileEntry", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,
-        chipTags: [{ axis: "haplotype-mode", value: "phased" }],
+        chipTags: [{ axis: "provenance", value: "third-party" }],
       }),
     ).toThrow()
   })

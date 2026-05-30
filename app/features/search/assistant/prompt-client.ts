@@ -1,47 +1,29 @@
 import { useCallback, useRef, useState } from "react"
 
 import { buildRequestInit, joinUrl, type ParseNode } from "~/lib/api"
-import { AssistantProposalSchema } from "~/schemas/api-bff/llm"
-
-import { assistantProposalToAst } from "./proposal-apply"
-
-export type { AssistantCondition, AssistantProposal } from "~/schemas/api-bff/llm"
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
 
-// Dev server only (never under vitest): return a canned query without hitting
-// the LLM endpoint so the proposal preview can be seen end to end. This sample
-// exercises the full DSL the renderer must handle — a phrase, an OR group, a
-// negated leaf, a negated group, a date range and a wildcard.
+// Dev server only (never under vitest): return a canned AST without hitting the
+// LLM endpoint so the proposal UI can be seen end to end.
 const DEV_STUB = import.meta.env.DEV && import.meta.env.MODE !== "test"
 
-const DEV_SAMPLE_AST: ParseNode = {
+const DEV_SAMPLE_PROPOSAL: ParseNode = {
   op: "AND",
   rules: [
-    { op: "free_text", value: "single cell", is_phrase: true },
-    {
-      op: "OR",
-      rules: [
-        { op: "eq", field: "organism_name", value: "Homo sapiens" },
-        { op: "eq", field: "organism_name", value: "Mus musculus" },
-      ],
-    },
-    { op: "NOT", rules: [{ op: "eq", field: "accessibility", value: "controlled-access" }] },
-    {
-      op: "NOT",
-      rules: [
-        {
-          op: "AND",
-          rules: [
-            { op: "contains", field: "title", value: "draft" },
-            { op: "wildcard", field: "identifier", value: "TMP*" },
-          ],
-        },
-      ],
-    },
+    { op: "contains", field: "organism_name", value: "Homo sapiens" },
+    { op: "contains", field: "title", value: "single cell" },
     { op: "between", field: "date_published", from: "2022-01-01", to: "2024-12-31" },
-    { op: "wildcard", field: "identifier", value: "PRJDB*" },
   ],
+}
+
+export type AiRequestMode = "new" | "append"
+
+export type AssistantStartOptions = {
+  mode?: AiRequestMode | undefined
+  // The current builder AST, sent in append mode so the model folds the new
+  // request into it (the BFF serializes it to DSL for the prompt).
+  current?: ParseNode | undefined
 }
 
 export type AssistantState = "idle" | "streaming" | "done" | "error"
@@ -49,10 +31,14 @@ export type AssistantState = "idle" | "streaming" | "done" | "error"
 export type AssistantStreamResult = {
   state: AssistantState
   proposal: ParseNode | null
-  start: (input: string) => Promise<void>
+  start: (input: string, options?: AssistantStartOptions) => Promise<void>
   stop: () => void
   reset: () => void
 }
+
+const isParseNode = (value: unknown): value is ParseNode =>
+  typeof value === "object" && value !== null
+  && typeof (value as { op?: unknown }).op === "string"
 
 const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
   const events: { event: string; data: string }[] = []
@@ -90,7 +76,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     setState("idle")
   }, [])
 
-  const start = useCallback(async (input: string) => {
+  const start = useCallback(async (input: string, options?: AssistantStartOptions) => {
     if (state === "streaming") return
     controllerRef.current?.abort()
     const controller = new AbortController()
@@ -100,7 +86,7 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     if (DEV_STUB) {
       await new Promise((resolve) => setTimeout(resolve, 600))
       if (controller.signal.aborted) return
-      setProposal(DEV_SAMPLE_AST)
+      setProposal(DEV_SAMPLE_PROPOSAL)
       setState("done")
 
       return
@@ -111,7 +97,11 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
         baseUrl,
         headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         signal: controller.signal,
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({
+          input,
+          ...(options?.mode ? { mode: options.mode } : {}),
+          ...(options?.current !== undefined ? { current: options.current } : {}),
+        }),
       })
       const response = await fetch(joinUrl(baseUrl, ASSISTANT_PATH), init)
       if (!response.ok || !response.body) {
@@ -139,9 +129,8 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
               setState("error")
               continue
             }
-            const parsed = AssistantProposalSchema.safeParse(raw)
-            if (parsed.success) {
-              setProposal(assistantProposalToAst(parsed.data))
+            if (isParseNode(raw)) {
+              setProposal(raw)
               setState("done")
             } else {
               setState("error")

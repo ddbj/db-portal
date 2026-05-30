@@ -1,14 +1,16 @@
-export {
-  type AssistantProposal,
-  AssistantProposalSchema,
-  parseAssistantOutput,
-  type ParseOutcome,
-} from "./assistant/parse"
+export { extractDsl, stripUnsupported } from "./assistant/dsl"
+export { type AstOutcome, parseModelOutput } from "./assistant/parse"
 export {
   type AssistantPromptInput,
   buildAssistantMessages,
 } from "./assistant/prompt"
 export { makeHandleSearchAssistant } from "./assistant/route"
+export {
+  type ParseAstOutcome,
+  parseDslToAst,
+  type SearchApiDeps,
+  serializeAstToDsl,
+} from "./assistant/search-api"
 export {
   callVllmModels,
   callVllmStreamRaw,

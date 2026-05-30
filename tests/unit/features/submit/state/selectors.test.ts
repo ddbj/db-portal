@@ -199,11 +199,11 @@ describe("selectRowDetailSummary", () => {
       patch: {
         groupType: "pair-end",
         dataForm: "raw",
-        chipTags: [{ axis: "provenance", value: "third-party" }],
+        chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
       },
     })
 
-    expect(selectRowDetailSummary(state, "e1")).toBe("pair-end / provenance:third-party")
+    expect(selectRowDetailSummary(state, "e1")).toBe("pair-end / mass-spec-domain:proteomics")
   })
 
   test("selectRowDetailSummary_capsChipsAtTwo", () => {
@@ -243,10 +243,10 @@ describe("selectRowDetailSummary", () => {
     const state = submitReducer(seeded, {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
-      patch: { dataForm: "assembled", chipTags: [{ axis: "provenance", value: "third-party" }] },
+      patch: { dataForm: "assembled", chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] },
     })
 
-    expect(selectRowDetailSummary(state, "e1")).toBe("provenance:third-party")
+    expect(selectRowDetailSummary(state, "e1")).toBe("mass-spec-domain:proteomics")
   })
 })
 
@@ -266,7 +266,7 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     const state = submitReducer(seeded, {
       type: "EDIT_ROW_CELL",
       entryId: "e1",
-      patch: { chipTags: [{ axis: "provenance", value: "third-party" }] },
+      patch: { chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] },
     })
 
     expect(rowIsConfigured(state, "e1")).toBe(true)
@@ -302,17 +302,22 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     expect(rowIsConfigured(state, "e1")).toBe(false)
   })
 
-  test("countConfiguredRows_mixOfConfiguredAndDefault_countsConfiguredOnly", () => {
-    let state = addRow(initialState, "sequence-read", "e1", "g1")
-    state = addRow(state, "sequence-read", "e2", "g2")
-    state = addRow(state, "variant", "e3", "g3")
+  test("countConfiguredRows_mixOfDetailAndNoDetailKinds_countsConfiguredAndNoDetailAsDone", () => {
+    let state = addRow(initialState, "sequence-nucleotide", "e1", "g1") // detail kind, configured below
+    state = addRow(state, "sequence-nucleotide", "e2", "g2") // detail kind, left fresh
+    state = addRow(state, "sequence-read", "e3", "g3") // no-detail kind, nothing to configure
     state = submitReducer(state, {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
-      patch: { groupType: "pair-end", dataForm: "raw", chipTags: [] },
+      patch: {
+        groupType: "mag-sag-chain",
+        dataForm: "assembled",
+        chipTags: [{ axis: "assembly-form", value: "mag" }],
+      },
     })
 
-    expect(countConfiguredRows(state)).toEqual({ configured: 1, total: 3 })
+    // e1 has detail set, e3 needs none; only the fresh detail-kind row e2 remains
+    expect(countConfiguredRows(state)).toEqual({ configured: 2, total: 3 })
   })
 
   test("countConfiguredRows_emptyState_isZeroOfZero", () => {

@@ -45,7 +45,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
   }
   try {
     if (params.db === null) {
-      const cross = await crossSearch({ q: params.q, topHits: 5 }, options)
+      const cross = await crossSearch({ q: params.q, topHits: 3 }, options)
 
       return { ...params, cross, perDb: null, ast, errorKey: null }
     }

@@ -3,6 +3,7 @@ import { isSubmissionEndpoint, TYPICAL_DATA_FORM_FOR_KIND, TYPICAL_GROUP_TYPE_FO
 
 import { isKindEnabled } from "../cascade"
 import { deriveFlowSteps } from "../flow-rules"
+import { hasRowDetail } from "../modals/form-defs"
 import type { UIState, Validation } from "./types"
 
 export const selectSteps = (state: UIState): FlowStep[] =>
@@ -71,7 +72,8 @@ export const countConfiguredRows = (state: UIState): { configured: number; total
   const total = state.submission.fileEntries.length
   let configured = 0
   for (const e of state.submission.fileEntries) {
-    if (rowIsConfigured(state, e.id)) configured++
+    // flow-changing 軸を持たない種別は設定するものがないため、設定済み (完了) として数える
+    if (!hasRowDetail(e.fileTypeKind) || rowIsConfigured(state, e.id)) configured++
   }
 
   return { configured, total }

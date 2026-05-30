@@ -1,67 +1,21 @@
-import {
-  type AssistantProposal,
-  AssistantProposalSchema,
-} from "../../../app/schemas/api-bff/llm"
+import { extractDsl, stripUnsupported } from "./dsl"
+import { parseDslToAst, type SearchApiDeps } from "./search-api"
 
-export { type AssistantProposal, AssistantProposalSchema }
+export type AstOutcome =
+  | { ok: true; ast: unknown; dsl: string }
+  | { ok: false; code: "no_dsl" | "invalid_dsl" | "upstream"; message: string }
 
-const extractJson = (text: string): string | undefined => {
-  const trimmed = text.trim()
-  if (trimmed.startsWith("{")) return trimmed
-  const start = trimmed.indexOf("{")
-  if (start === -1) return undefined
-  let depth = 0
-  let inString = false
-  let escape = false
-  for (let i = start; i < trimmed.length; i++) {
-    const ch = trimmed[i]
-    if (escape) {
-      escape = false
-      continue
-    }
-    if (inString) {
-      if (ch === "\\") escape = true
-      else if (ch === "\"") inString = false
-      continue
-    }
-    if (ch === "\"") inString = true
-    else if (ch === "{") depth += 1
-    else if (ch === "}") {
-      depth -= 1
-      if (depth === 0) return trimmed.slice(start, i + 1)
-    }
+// Normalise the model's raw completion to a single DSL line and validate it via
+// ddbj-search-api, returning the parsed AST (the wire payload for `event: done`).
+export const parseModelOutput = async (raw: string, deps: SearchApiDeps): Promise<AstOutcome> => {
+  const dsl = stripUnsupported(extractDsl(raw))
+  if (dsl.length === 0) {
+    return { ok: false, code: "no_dsl", message: "model output did not contain a DSL query" }
+  }
+  const outcome = await parseDslToAst(dsl, deps)
+  if (outcome.ok) {
+    return { ok: true, ast: outcome.ast, dsl }
   }
 
-  return undefined
-}
-
-export type ParseOutcome =
-  | { ok: true; proposal: AssistantProposal }
-  | { ok: false; code: "no_json" | "invalid_json" | "schema_violation"; message: string }
-
-export const parseAssistantOutput = (raw: string): ParseOutcome => {
-  const candidate = extractJson(raw)
-  if (!candidate) {
-    return { ok: false, code: "no_json", message: "model output did not contain a JSON object" }
-  }
-  let json: unknown
-  try {
-    json = JSON.parse(candidate)
-  } catch (error) {
-    return {
-      ok: false,
-      code: "invalid_json",
-      message: error instanceof Error ? error.message : "JSON parse failed",
-    }
-  }
-  const parsed = AssistantProposalSchema.safeParse(json)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      code: "schema_violation",
-      message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
-    }
-  }
-
-  return { ok: true, proposal: parsed.data }
+  return { ok: false, code: outcome.code, message: outcome.message }
 }

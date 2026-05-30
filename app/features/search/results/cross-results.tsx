@@ -33,20 +33,19 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   if (!isDbSlug(entry.db)) return null
   const db: DbSlug = entry.db
   const href = buildResultsHref({ q, db })
-  const hits = (entry.hits ?? []).slice(0, 5)
+  const hits = (entry.hits ?? []).slice(0, 3)
 
   return (
     <article
       data-testid="db-card"
       data-db={db}
-      className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3 relative"
+      className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3"
     >
-      <TextLink to={href}>
-        {t("search.results.cross.viewAll")} →
-      </TextLink>
-      <div>
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-fs-h2 font-bold text-ink m-0">{t(`search.scope.${db}`)}</h3>
-        <p className="text-fs-label text-ink-soft m-0 mt-1">{t(`search.descriptions.${db}`)}</p>
+        <TextLink to={href}>
+          {t("search.results.cross.viewAll")} →
+        </TextLink>
       </div>
       <div>
         <span
