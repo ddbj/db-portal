@@ -1,5 +1,6 @@
 import type { CSSProperties, KeyboardEvent } from "react"
 import { useEffect, useId, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 
 import { cn } from "./cn"
 import { ChevronDownIcon } from "./icons"
@@ -37,6 +38,10 @@ const sizeClass: Record<SelectSize, string> = {
 const normalize = (option: SelectOption): NormalizedOption =>
   typeof option === "string" ? { value: option, label: option } : option
 
+// The open menu renders in a body portal with fixed positioning so it escapes
+// the clipping / scroll of any overflow ancestor (e.g. a table card).
+type MenuPosition = { top: number; left: number; width: number }
+
 export const Select = ({
   ariaLabel,
   ariaDescribedby,
@@ -61,9 +66,11 @@ export const Select = ({
     const idx = normalizedOptions.findIndex((opt) => opt.value === currentValue)
     return idx >= 0 ? idx : 0
   })
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null)
 
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLUListElement | null>(null)
   const listboxId = useId()
   const optionIdBase = useId()
 
@@ -140,10 +147,35 @@ export const Select = ({
     }
   }
 
+  // Track the trigger rect while open so the portal menu follows it through
+  // scroll / resize instead of being clipped by an overflow ancestor.
+  useEffect(() => {
+    if (!open) {
+      setMenuPosition(null)
+      return
+    }
+    const measure = (): void => {
+      const trigger = triggerRef.current
+      if (trigger === null) return
+      const rect = trigger.getBoundingClientRect()
+      setMenuPosition({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    }
+    measure()
+    window.addEventListener("scroll", measure, true)
+    window.addEventListener("resize", measure)
+    return () => {
+      window.removeEventListener("scroll", measure, true)
+      window.removeEventListener("resize", measure)
+    }
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const onPointerDown = (e: MouseEvent | TouchEvent): void => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const insideTrigger = wrapperRef.current?.contains(target) ?? false
+      const insideMenu = menuRef.current?.contains(target) ?? false
+      if (!insideTrigger && !insideMenu) {
         setOpen(false)
       }
     }
@@ -156,6 +188,50 @@ export const Select = ({
   }, [open])
 
   const wrapperStyle: CSSProperties = { width: width ?? "auto" }
+
+  const menu = open && menuPosition !== null && typeof document !== "undefined"
+    ? createPortal(
+      <ul
+        ref={menuRef}
+        id={listboxId}
+        role="listbox"
+        aria-label={ariaLabel}
+        style={{
+          position: "fixed",
+          top: menuPosition.top,
+          left: menuPosition.left,
+          minWidth: menuPosition.width,
+        }}
+        className="z-50 bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-72 overflow-auto"
+      >
+        {normalizedOptions.map((opt, idx) => {
+          const selected = opt.value === currentValue
+          const active = idx === activeIndex
+          return (
+            <li key={opt.value} role="presentation">
+              <button
+                type="button"
+                id={`${optionIdBase}-${idx}`}
+                role="option"
+                aria-selected={selected}
+                tabIndex={-1}
+                onMouseEnter={() => setActiveIndex(idx)}
+                onClick={() => handleSelect(opt.value)}
+                className={cn(
+                  "w-full text-left px-3 py-2 text-fs-body cursor-pointer",
+                  active ? "bg-surface-subtle" : "",
+                  selected ? "text-brand-deep font-bold" : "text-ink",
+                )}
+              >
+                {opt.label}
+              </button>
+            </li>
+          )
+        })}
+      </ul>,
+      document.body,
+    )
+    : null
 
   return (
     <div ref={wrapperRef} className="relative inline-block" style={wrapperStyle}>
@@ -187,39 +263,7 @@ export const Select = ({
         <span className="flex-1 truncate">{triggerLabel}</span>
         <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
       </button>
-      {open && (
-        <ul
-          id={listboxId}
-          role="listbox"
-          aria-label={ariaLabel}
-          className="absolute z-20 top-full left-0 mt-1 min-w-full bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-72 overflow-auto"
-        >
-          {normalizedOptions.map((opt, idx) => {
-            const selected = opt.value === currentValue
-            const active = idx === activeIndex
-            return (
-              <li key={opt.value} role="presentation">
-                <button
-                  type="button"
-                  id={`${optionIdBase}-${idx}`}
-                  role="option"
-                  aria-selected={selected}
-                  tabIndex={-1}
-                  onMouseEnter={() => setActiveIndex(idx)}
-                  onClick={() => handleSelect(opt.value)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 text-fs-body cursor-pointer",
-                    active ? "bg-surface-subtle" : "",
-                    selected ? "text-brand-deep font-bold" : "text-ink",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+      {menu}
     </div>
   )
 }
