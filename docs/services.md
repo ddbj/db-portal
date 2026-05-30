@@ -165,6 +165,8 @@ News mirror が各 source の git HEAD 変化を検出し news を再構築し�
 
 複数選択は OR、異なる facet 同士は AND。chip は AppliedFilters に並べ、1 chip で 1 値を解除可能。一覧は name のアルファベット順 (既定昇順、Toolbar で昇順/降順切替)。News と異なり日付軸が無いため year facet・date sort は持たない。
 
+各オプションには件数 (facet count) を右端に添える。グループ G のオプション v の件数は、**G 以外の facet を適用した結果集合のうち v を持つ件数** とする (NCBI 流)。G 内での選択は G 自身の件数に影響せず、他グループでの絞り込みは件数に連動する。件数は cache 全件から client 側で集計する。ソース行には source 配色の色点 (ddbj=amber / dbcls=blue、`tailwind.css` の Source palette) を添えて視認性を上げる。
+
 URL params との同期 (`facet-url-state.ts`):
 
 ```

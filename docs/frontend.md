@@ -68,9 +68,9 @@ state 表現には次の prop 名を使う:
 
 | prop | 採用 primitive 例 | 例 |
 |---|---|---|
-| `kind` | Button / Tag / Chip | Button: `"primary" \| "secondary" \| "danger" \| "ghost" \| "link"` / Tag: `"brand" \| "source" \| "status"` / Chip: `"filter" \| "example"` |
+| `kind` | Button / Tag / Chip | Button: `"primary" \| "secondary" \| "danger" \| "ghost" \| "accent" \| "link"` (+ `pill` で全角丸) / Tag: `"brand" \| "source" \| "status"` / Chip: `"filter" \| "example"` |
 | `tone` | Tag (status) / Callout | `tone="critical"` / `tone="warn"` |
-| `size` | Button / Tag / SearchBox | `size="sm" \| "md" \| "lg"` |
+| `size` | Button / Tag / SearchBox / Select / TextInput | `size="sm" \| "md" \| "lg"` (Select / TextInput は固定高さで揃う variant、無指定は従来 padding) |
 | `mono` | Tag / Chip / Label | `mono` (boolean) |
 | `selected` | Chip / FacetRow | `selected` (boolean) |
 | `as` | Chip / SectionHeading | `as="a" \| "button"` / `as="h2" \| "h3"` |
@@ -96,11 +96,11 @@ state 表現には次の prop 名を使う:
 
 各 primitive の Props 型 / class 骨格 / variant 一覧は **コードと `/_design` route が SSOT**。本書は各カテゴリで「何を担う primitive 群か」 と「特殊な制約」 のみ述べる。
 
-- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)
+- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、`/search` のキーワード / AI モード切替トグルをボックス内に納める
 - **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
 - **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
-- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。詳細は次節の error state policy を参照
-- **Tags & Chips** (`tag.tsx` / `chip.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)
+- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Select` / `TextInput` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では両者を同じ size に揃えて高さを一致させる。詳細は次節の error state policy を参照
+- **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
 - **Modal** (`modal.tsx` / `modal-preview.tsx`): root + Header / Body / Footer / Preview / Card の家族。詳細は次節の Modal core を参照
@@ -396,7 +396,7 @@ ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した
 
 - `SearchBox` (`size="md"`, `showSearchIcon`, `maxWidth=820`, scope selector あり)
 - scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")
-- 下に example chip 列 (3 件): クリックで `q` に投入、submit と等価 (UX 試行で 3 件固定)
+- 下に共通 `Examples` (`例:` + chip 列、3 件): クリックで `q` に投入。`/search` keyword/AI モードや results と同じ primitive を共有する
 - 右端に「クエリビルダーで詳細条件を組む →」 リンク (`/search` への TextLink)
 
 #### onSubmit の挙動

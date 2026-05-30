@@ -1,9 +1,8 @@
 import { useT } from "~/lib/i18n"
-import { CloseIcon, IconButton, Label, Select, type SelectOption, TextInput } from "~/ui"
+import { Button, CloseIcon, IconButton, Label, Select, type SelectOption, TextInput } from "~/ui"
 
 import {
   ADVANCED_FIELDS,
-  type AdvancedCombinator,
   type AdvancedField,
   type AdvancedOp,
   FIELD_OPS,
@@ -12,31 +11,29 @@ import {
 } from "../types"
 import type { AdvancedCondition } from "./reducer"
 
-type CombinatorMode = "where" | "and" | "selectable"
-
-const COMBINATOR_VALUES: readonly AdvancedCombinator[] = ["AND", "OR", "NOT"]
-
 export type ConditionRowProps = {
   condition: AdvancedCondition
-  combinatorMode: CombinatorMode
+  excluded: boolean
+  canExclude: boolean
   removable: boolean
-  onCombinatorChange: (combinator: AdvancedCombinator) => void
   onFieldChange: (field: AdvancedField) => void
   onOpChange: (op: AdvancedOp) => void
   onValueChange: (value: string) => void
   onRangeChange: (range: { from?: string; to?: string }) => void
+  onToggleExclude: () => void
   onRemove: () => void
 }
 
 export const ConditionRow = ({
   condition,
-  combinatorMode,
+  excluded,
+  canExclude,
   removable,
-  onCombinatorChange,
   onFieldChange,
   onOpChange,
   onValueChange,
   onRangeChange,
+  onToggleExclude,
   onRemove,
 }: ConditionRowProps) => {
   const t = useT()
@@ -49,33 +46,11 @@ export const ConditionRow = ({
     value: field,
     label: t(`search.builder.field.${camelize(field)}`),
   }))
-  const combinatorOptions: SelectOption[] = COMBINATOR_VALUES.map((value) => ({
-    value,
-    label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or" | "not"}`),
-  }))
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="min-w-20">
-        {combinatorMode === "where"
-          ? <Label>{t("search.builder.where")}</Label>
-          : combinatorMode === "and"
-            ? <Label>{t("search.builder.combinator.and")}</Label>
-            : (
-              <Select
-                ariaLabel={t("search.a11y.builderConditions")}
-                options={combinatorOptions}
-                value={condition.combinator}
-                onChange={(next) => {
-                  if (COMBINATOR_VALUES.includes(next as AdvancedCombinator)) {
-                    onCombinatorChange(next as AdvancedCombinator)
-                  }
-                }}
-                width={92}
-              />
-            )}
-      </div>
       <Select
+        size="md"
         ariaLabel={t("search.a11y.fieldSelector")}
         options={fieldOptions}
         value={condition.field}
@@ -85,6 +60,7 @@ export const ConditionRow = ({
         width={184}
       />
       <Select
+        size="md"
         ariaLabel={t("search.a11y.opSelector")}
         options={opOptions}
         value={condition.op}
@@ -96,6 +72,7 @@ export const ConditionRow = ({
           <div className="flex items-center gap-2">
             <Label>{t("search.builder.rangeFromLabel")}</Label>
             <TextInput
+              size="md"
               type="date"
               ariaLabel={t("search.builder.rangeFromLabel")}
               value={condition.from}
@@ -106,6 +83,7 @@ export const ConditionRow = ({
             />
             <Label>{t("search.builder.rangeToLabel")}</Label>
             <TextInput
+              size="md"
               type="date"
               ariaLabel={t("search.builder.rangeToLabel")}
               value={condition.to}
@@ -118,6 +96,7 @@ export const ConditionRow = ({
         )
         : (
           <TextInput
+            size="md"
             ariaLabel={t("search.builder.valuePlaceholder")}
             value={condition.value}
             onChange={(event) => onValueChange(event.currentTarget.value)}
@@ -125,14 +104,41 @@ export const ConditionRow = ({
             width={232}
           />
         )}
-      <IconButton
-        ariaLabel={t("search.builder.removeCondition")}
-        onClick={onRemove}
-        disabled={!removable}
-      >
-        <CloseIcon size={14} />
-      </IconButton>
+      <span className="ml-auto flex items-center gap-1.5">
+        <ExcludeToggle excluded={excluded} disabled={!canExclude} onToggle={onToggleExclude} />
+        <IconButton
+          ariaLabel={t("search.builder.removeCondition")}
+          onClick={onRemove}
+          disabled={!removable}
+        >
+          <CloseIcon size={14} />
+        </IconButton>
+      </span>
     </div>
+  )
+}
+
+type ExcludeToggleProps = {
+  excluded: boolean
+  disabled: boolean
+  onToggle: () => void
+}
+
+// "除外 (NOT)" negates a single condition. It is the only per-row boolean control;
+// AND/OR is chosen once per group, so there is no per-row combinator picker.
+export const ExcludeToggle = ({ excluded, disabled, onToggle }: ExcludeToggleProps) => {
+  const t = useT()
+
+  return (
+    <Button
+      kind={excluded ? "danger" : "secondary"}
+      size="sm"
+      aria-pressed={excluded}
+      disabled={disabled}
+      onClick={onToggle}
+    >
+      {t("search.builder.exclude")}
+    </Button>
   )
 }
 

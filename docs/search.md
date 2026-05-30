@@ -106,7 +106,7 @@ API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系�
 - **Group**: 子を束ねる入れ物。親 group 内での結合子 + 子集合の内部結合 (`AND` / `OR`) + 子の配列
 - **Root**: 最上位 group。combinator は無視、子の数 0 から可
 
-各 group の最初の child だけ UI で結合子ラベルを固定表示し、値は固定で `AND` 扱い。表示文言は: 入れ子 group の先頭は常に `WHERE`、root の先頭は keyword 行が無ければ `WHERE`・あれば `AND` (`/search` で keyword 行が WHERE の anchor を担うため、root 先頭の構造化条件は `AND` 表示になり、削除も可能)。この root 先頭の `AND` 化は root group のみで、入れ子 group には波及しない。
+group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正規化して見せる: UI では「すべての条件に一致 (AND) / いずれかの条件に一致 (OR)」セレクタを group / root ごとに 1 つ出し (root は子が 2 件以上のとき)、行間にはその語を読み取り専用の連結語 (`かつ` / `または`) として表示する。各 condition / group の `combinator` は UI 上 **否定 (`NOT`) かどうか** だけを担い (行ごとの「除外」トグル)、`AND` / `OR` は AST 上 `innerCombinator` に吸収されるため per-row では選ばせない。reducer は root の最初の child の `combinator` を `AND` に固定する (`ensureFirstCombinatorAnd`) ので、root 先頭行は除外不可。`/search` で keyword 行があるときは、先頭の構造化条件が keyword と AND 結合する関係を `かつ` で示し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
 field の取り得る値 (`identifier` / `title` / `description` / `organism_id` / `organism_name` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`) は cross-DB でも安全な Tier 1/2 のみを採る (ddbj-search-api allowlist 準拠)。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field ごとに制限される (`FIELD_OPS`、ddbj-search-api の演算子マトリクスに対応): date 系は `between` のみ、`identifier` / `organism_id` は `eq` / `wildcard`、text 系は `eq` / `contains`。コードが SSOT。新規追加時は AdvancedField / FIELD_OPS の値と prompt (`llm.md`) を同時更新する。
 
@@ -158,8 +158,9 @@ reducer は immer を使わず手で immutable 更新する。
 
 Advanced builder の UI は state を受け取り、再帰的に ConditionRow / GroupRow を render する。
 
-- ConditionRow: combinator 選択 + field 選択 + op 選択 + value 入力 (text または date input 2 個) + 削除
-- GroupRow: 左 4 px brand バー + group ラベル + innerCombinator selector + 内側の再帰描画 + 削除
+- ConditionRow: field 選択 + op 選択 + value 入力 (text または date input 2 個) + 「除外 (NOT)」トグル + 削除。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃える
+- GroupRow: 左 4 px brand バー + group ラベル + 一致条件 selector (すべて / いずれか = `innerCombinator`) + 「除外」トグル + 内側の再帰描画 + 削除
+- root も子が 2 件以上で一致条件 selector を出す。行間に連結語 (`かつ` / `または`) を表示する
 - 末尾: 「+ 条件を追加」 / 「+ グループを追加」
 
 入力は `app/ui/` primitive 経由 (Select / TextInput / IconButton)。Advanced builder の value 入力で text input が必要なため `app/ui/text-input.tsx` を新規追加する。
@@ -333,19 +334,21 @@ queryKey は `["llm-availability"]`、`staleTime` は 5 分 (頻繁に poll し�
 
 `/search` (検索ビルダ) と per-DB results (`/search/results?db=<id>`) で表示する。cross-DB results (`/search/results` で `db` 未指定) では表示しない (AI 提案は Advanced builder への差分提案であり、cross-DB の表示文脈ではユーザの操作対象がないため)。
 
-`/search` では統合入力 (`SearchInputPanel`) の中に AI を畳み込み、キーワードモードと AI モードを「AI モード」 トグルで切り替える。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの textarea (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。
+`/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI モード」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI モード (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI モードでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。
 
 ### 生成モード (cross-search ビルダー)
 
-AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがある。AI モード入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
+AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがあり、**生成 prompt がモードで変わりうるため生成前に選ぶ**。UI は検索ボックス左の scope 選択スロット (キーワードモードでは DB scope = 全データベース等) を AI モードでそのまま流用し、`新規生成 / 既存に追加` を選ばせる。入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
 
-| 件数 | default | append |
+| 件数 | default | 既存に追加 |
 |---|---|---|
-| 1 以上 | append (既存に追加) | 有効 |
-| 0 | new (新規生成) | disable (追加先が無い) |
+| 1 以上 | append (既存に追加) | 選択可 |
+| 0 | new (新規生成) | 一覧に残すが disable (追加先が無い) |
 
 - **append**: 提案を現在の構造化条件に graft する (keyword は不変)
 - **new**: 現在の構造化条件を破棄して提案だけにする。keyword も初期化する (「新規」 の意味を保つため)
+
+提案カードは選択中のモードに従う単一の反映ボタンを出す (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。
 
 ### SSE 配線
 
@@ -367,7 +370,7 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 
 cross-search ビルダーの統合入力では適用先を生成モードで分岐する: **append** は現在の root に graft、**new** は空 state から組み立て直し keyword も初期化する。per-DB results の AI アシスタントは append 相当の単一挙動。
 
-「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。
+per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 
 ## search 固有の primitive 事情
 

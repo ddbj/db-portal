@@ -193,6 +193,8 @@ source 側で新しい tag が追加されたら fallback の `other` に落ち�
 
 複数選択は OR、異なる facet 同士は AND で結ぶ (NCBI 流の faceted search に準拠)。chip は AppliedFilters に並べ、1 chip で 1 値を解除可能。
 
+各オプションには件数 (facet count) を右端に添える。グループ G のオプション v の件数は、**G 以外の全 facet を適用した結果集合のうち v を持つ件数** とする。これにより G 内での選択は G 自身の件数に影響せず (グループ内 OR と整合)、他グループでの絞り込みは件数に連動する。件数は cache 全件 (当該言語で title を持つ item) から client 側で集計する。ソース行には source 配色の色点 (ddbj=amber / dbcls=blue、`tailwind.css` の Source palette) を添えて視認性を上げる。
+
 URL params との同期 (`facet-url-state.ts`):
 
 ```

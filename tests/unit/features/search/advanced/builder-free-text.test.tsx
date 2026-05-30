@@ -52,9 +52,16 @@ describe("AdvancedBuilder free-text row", () => {
 
   test("keyword_rendersFreeTextRowWithValue", () => {
     renderBuilder({ freeText: "cancer" })
-    const input = screen.getByRole("textbox", { name: "keyword" })
+    const input = screen.getByRole("textbox", { name: "キーワード" })
     expect(input).toHaveValue("cancer")
     expect(screen.queryByText("NO CONDITIONS")).toBeNull()
+  })
+
+  test("keyword_rowDescribesAllFieldsSearch", () => {
+    renderBuilder({ freeText: "cancer" })
+    // The keyword row reads "キーワード｜すべての項目から検索" — no cryptic "*" marker.
+    expect(screen.getByText("すべての項目から検索")).toBeInTheDocument()
+    expect(screen.queryByText("*")).toBeNull()
   })
 
   test("blankKeyword_noChildren_showsEmptyPlaceholder", () => {
@@ -65,7 +72,7 @@ describe("AdvancedBuilder free-text row", () => {
   test("editingFreeTextValue_callsOnFreeTextChange", () => {
     const onFreeTextChange = vi.fn()
     renderBuilder({ freeText: "cancer", onFreeTextChange })
-    fireEvent.change(screen.getByRole("textbox", { name: "keyword" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "キーワード" }), {
       target: { value: "tumor" },
     })
     expect(onFreeTextChange).toHaveBeenCalledWith("tumor")
@@ -78,16 +85,21 @@ describe("AdvancedBuilder free-text row", () => {
     expect(onFreeTextRemove).toHaveBeenCalledTimes(1)
   })
 
-  test("keywordWithStructured_firstStructuredRowLeadsWithAnd", () => {
+  test("keywordWithStructured_firstStructuredRowLeadsWithKatsu", () => {
     renderBuilder({ freeText: "cancer", state: stateWithCondition() })
-    // The keyword row keeps the sole WHERE; the structured leader becomes AND.
-    expect(screen.getAllByText("WHERE")).toHaveLength(1)
-    expect(screen.getByText("AND")).toBeInTheDocument()
+    // The keyword row anchors the query; the first structured row reads as joined
+    // with "かつ" (AND), and the SQL-flavoured "WHERE" is gone.
+    expect(screen.getByText("かつ")).toBeInTheDocument()
+    expect(screen.queryByText("WHERE")).toBeNull()
   })
 
-  test("structuredOnly_firstRowLeadsWithWhere", () => {
+  test("structuredOnly_firstRowHasNoConnector", () => {
     renderBuilder({ freeText: "", state: stateWithCondition() })
-    expect(screen.getByText("WHERE")).toBeInTheDocument()
+    // A single structured condition with no keyword leads with nothing — no
+    // connector word and no "WHERE".
+    expect(screen.queryByText("WHERE")).toBeNull()
+    expect(screen.queryByText("かつ")).toBeNull()
+    expect(screen.queryByText("または")).toBeNull()
   })
 
   test("keywordWithStructured_firstConditionIsRemovable", () => {

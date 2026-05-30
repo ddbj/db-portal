@@ -53,7 +53,7 @@
   --color-critical-fg:     #B73B2C;
   --color-critical-border: #F0BBB2;
 
-  /* Source palette (DDBJ amber vs DBCLS blue、source pill 専用) */
+  /* Source palette (DDBJ amber vs DBCLS blue、source pill / facet swatch 用) */
   --color-src-ddbj:       #A56712;  /* logo-derived amber (small chip / strong text 用) */
   --color-src-ddbj-soft:  #FBEFDF;
   --color-src-dbcls:      #004098;  /* royal blue (DBCLS site primary) */

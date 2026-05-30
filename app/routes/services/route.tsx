@@ -41,7 +41,12 @@ const ServicesRoute = () => {
       <PageTitle title={t("services.pageTitle")} />
       <Section padTop="sm" padBottom="lg">
         <div className="grid gap-8 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
-          <FacetPanel facet={facet} options={result.options} onChange={handleFacetChange} />
+          <FacetPanel
+            facet={facet}
+            options={result.options}
+            counts={result.counts}
+            onChange={handleFacetChange}
+          />
           <ServiceList
             lang={lang}
             facet={facet}

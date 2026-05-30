@@ -15,7 +15,9 @@ export {
 export { NewsList, type NewsListProps } from "./news-list"
 export { NewsRow } from "./news-row"
 export {
+  collectNewsFacetCounts,
   NEWS_PAGE_SIZE,
+  type NewsFacetCounts,
   type NewsFacetOptions,
   useNewsList,
   type UseNewsListResult,

@@ -1,5 +1,5 @@
 import type { Dispatch } from "react"
-import { useState } from "react"
+import { Fragment, useState } from "react"
 
 import { useT } from "~/lib/i18n"
 import {
@@ -13,14 +13,12 @@ import {
   TextInput,
 } from "~/ui"
 
-import type { AdvancedCombinator } from "../types"
-import { ConditionRow } from "./condition-row"
+import { ConditionRow, ExcludeToggle } from "./condition-row"
 import type {
   AdvancedAction,
   AdvancedGroup,
   AdvancedInnerCombinator,
   AdvancedNode,
-  AdvancedNodeId,
   AdvancedState,
 } from "./reducer"
 
@@ -46,7 +44,7 @@ export const AdvancedBuilder = ({
   const hasFreeText = freeText.trim().length > 0
   // Keep the row mounted while its input has focus so deleting to empty does
   // not yank the caret out from under the user; the trimmed predicate still
-  // drives the AND/WHERE lead label and the empty placeholder.
+  // drives the leading "かつ" connector and the empty placeholder.
   const keywordRowVisible = keywordWired && (hasFreeText || keywordFocused)
 
   if (root.children.length === 0 && !keywordRowVisible) {
@@ -78,6 +76,16 @@ export const AdvancedBuilder = ({
           onFocusChange={setKeywordFocused}
         />
       )}
+      {root.children.length >= 2 && (
+        <div className="flex items-center gap-2">
+          <Label>{t("search.builder.matchLabel")}</Label>
+          <MatchSelector
+            value={root.innerCombinator}
+            onChange={(innerCombinator) =>
+              dispatch({ type: "updateInnerCombinator", id: root.id, innerCombinator })}
+          />
+        </div>
+      )}
       <GroupChildren
         group={root}
         depth={0}
@@ -107,15 +115,11 @@ const FreeTextRow = ({ value, onChange, onRemove, onFocusChange }: FreeTextRowPr
   const t = useT()
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-button bg-brand-soft/40 px-2 py-1.5">
-      <div className="min-w-20">
-        <Label>{t("search.builder.where")}</Label>
-      </div>
-      <Tag kind="brand" mono>{t("search.builder.freeText.field")}</Tag>
-      <span aria-hidden className="font-mono text-fs-meta text-ink-soft">*</span>
-      <span className="sr-only">{t("search.builder.freeText.allFields")}</span>
-      <span className="text-fs-body-sm text-ink-soft">{t("search.builder.op.contains")}</span>
+    <div className="flex flex-wrap items-center gap-2 rounded-button bg-brand-soft/40 px-2.5 py-2">
+      <Tag kind="brand" mono size="sm">{t("search.builder.freeText.field")}</Tag>
+      <span className="text-fs-body-sm text-ink-mid">{t("search.builder.freeText.allFields")}</span>
       <TextInput
+        size="md"
         ariaLabel={t("search.builder.freeText.field")}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -124,11 +128,64 @@ const FreeTextRow = ({ value, onChange, onRemove, onFocusChange }: FreeTextRowPr
         placeholder={t("search.builder.freeText.placeholder")}
         width={232}
       />
-      <IconButton ariaLabel={t("search.builder.freeText.remove")} onClick={onRemove}>
-        <CloseIcon size={14} />
-      </IconButton>
+      <span className="ml-auto">
+        <IconButton ariaLabel={t("search.builder.freeText.remove")} onClick={onRemove}>
+          <CloseIcon size={14} />
+        </IconButton>
+      </span>
     </div>
   )
+}
+
+type MatchSelectorProps = {
+  value: AdvancedInnerCombinator
+  onChange: (value: AdvancedInnerCombinator) => void
+}
+
+// A single AND/OR control per group/root: "すべての条件に一致" (AND) or
+// "いずれかの条件に一致" (OR). It drives the group's innerCombinator, which is
+// what actually joins the conditions in the AST.
+const MatchSelector = ({ value, onChange }: MatchSelectorProps) => {
+  const t = useT()
+  const options: SelectOption[] = [
+    { value: "AND", label: t("search.builder.match.all") },
+    { value: "OR", label: t("search.builder.match.any") },
+  ]
+
+  return (
+    <Select
+      size="md"
+      ariaLabel={t("search.a11y.builderConditions")}
+      options={options}
+      value={value}
+      onChange={(next) => onChange(next as AdvancedInnerCombinator)}
+      width={200}
+    />
+  )
+}
+
+type ConnectorLineProps = {
+  index: number
+  leadWithAnd: boolean
+  innerCombinator: AdvancedInnerCombinator
+}
+
+// The read-only word shown between rows so the chosen AND/OR is visible inline.
+// The first row's connector is the keyword anchor ("かつ") when a keyword row is
+// present, and nothing otherwise.
+const ConnectorLine = ({ index, leadWithAnd, innerCombinator }: ConnectorLineProps) => {
+  const t = useT()
+  let word: string | null = null
+  if (index === 0) {
+    word = leadWithAnd ? t("search.builder.connector.and") : null
+  } else {
+    word = innerCombinator === "OR"
+      ? t("search.builder.connector.or")
+      : t("search.builder.connector.and")
+  }
+  if (word === null) return null
+
+  return <div className="text-fs-label text-ink-soft font-medium pl-0.5">{word}</div>
 }
 
 type GroupChildrenProps = {
@@ -141,49 +198,52 @@ type GroupChildrenProps = {
 const GroupChildren = ({ group, depth, dispatch, leadWithAnd = false }: GroupChildrenProps) => (
   <div className="flex flex-col gap-2">
     {group.children.map((child, index) => (
-      <NodeRow
-        key={child.id}
-        node={child}
-        index={index}
-        parentId={group.id}
-        depth={depth}
-        dispatch={dispatch}
-        leadWithAnd={leadWithAnd}
-      />
+      <Fragment key={child.id}>
+        <ConnectorLine index={index} leadWithAnd={leadWithAnd} innerCombinator={group.innerCombinator} />
+        <NodeRow
+          node={child}
+          index={index}
+          depth={depth}
+          dispatch={dispatch}
+          leadWithAnd={leadWithAnd}
+        />
+      </Fragment>
     ))}
   </div>
 )
 
-type LeadMode = "where" | "and"
-
-const leadModeFor = (index: number, leadWithAnd: boolean): LeadMode | null => {
-  if (index !== 0) return null
-
-  return leadWithAnd ? "and" : "where"
-}
-
 type NodeRowProps = {
   node: AdvancedNode
   index: number
-  parentId: AdvancedNodeId
   depth: number
   dispatch: Dispatch<AdvancedAction>
   leadWithAnd: boolean
 }
 
-const NodeRow = ({ node, index, parentId, depth, dispatch, leadWithAnd }: NodeRowProps) => {
-  const lead = leadModeFor(index, leadWithAnd)
+const NodeRow = ({ node, index, depth, dispatch, leadWithAnd }: NodeRowProps) => {
+  // The root's first child is pinned to AND by the reducer, so it cannot be
+  // negated; every other row can. The root's first structured condition stays
+  // removable only when a keyword row anchors the query.
+  const canExclude = !(depth === 0 && index === 0)
+  const removable = depth > 0 || index > 0 || leadWithAnd
+
   if (node.kind === "condition") {
     return (
       <ConditionRow
         condition={node}
-        combinatorMode={lead ?? "selectable"}
-        removable={depth > 0 || index > 0 || lead === "and"}
-        onCombinatorChange={(combinator) => handleCombinator(dispatch, node.id, parentId, combinator)}
+        excluded={node.combinator === "NOT"}
+        canExclude={canExclude}
+        removable={removable}
         onFieldChange={(field) => dispatch({ type: "updateField", id: node.id, field })}
         onOpChange={(op) => dispatch({ type: "updateOp", id: node.id, op })}
         onValueChange={(value) => dispatch({ type: "updateValue", id: node.id, value })}
         onRangeChange={(range) => dispatch({ type: "updateRange", id: node.id, ...range })}
+        onToggleExclude={() =>
+          dispatch({
+            type: "updateCombinator",
+            id: node.id,
+            combinator: node.combinator === "NOT" ? "AND" : "NOT",
+          })}
         onRemove={() => dispatch({ type: "removeNode", id: node.id })}
       />
     )
@@ -192,8 +252,7 @@ const NodeRow = ({ node, index, parentId, depth, dispatch, leadWithAnd }: NodeRo
   return (
     <GroupBlock
       group={node}
-      lead={lead}
-      parentId={parentId}
+      canExclude={canExclude}
       depth={depth}
       dispatch={dispatch}
     />
@@ -202,47 +261,34 @@ const NodeRow = ({ node, index, parentId, depth, dispatch, leadWithAnd }: NodeRo
 
 type GroupBlockProps = {
   group: AdvancedGroup
-  lead: LeadMode | null
-  parentId: AdvancedNodeId
+  canExclude: boolean
   depth: number
   dispatch: Dispatch<AdvancedAction>
 }
 
-const GroupBlock = ({ group, lead, parentId, depth, dispatch }: GroupBlockProps) => {
+const GroupBlock = ({ group, canExclude, depth, dispatch }: GroupBlockProps) => {
   const t = useT()
-  const innerOptions: SelectOption[] = (["AND", "OR"] as const).map((value) => ({
-    value,
-    label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or"}`),
-  }))
 
   return (
-    <div className="border-l-4 border-brand pl-3 flex flex-col gap-2">
+    <div className="rounded-button border border-border-soft border-l-4 border-l-brand bg-surface-subtle/40 p-2.5 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <Tag kind="brand" mono size="sm">{t("search.builder.group")}</Tag>
-        {lead === "where"
-          ? <Label>{t("search.builder.where")}</Label>
-          : lead === "and"
-            ? <Label>{t("search.builder.combinator.and")}</Label>
-            : (
-              <CombinatorPicker
-                combinator={group.combinator}
-                onChange={(combinator) => handleCombinator(dispatch, group.id, parentId, combinator)}
-              />
-            )}
-        <Label>{t("search.builder.combinator.and")} / {t("search.builder.combinator.or")}</Label>
-        <Select
-          ariaLabel={t("search.a11y.builderConditions")}
-          options={innerOptions}
+        <MatchSelector
           value={group.innerCombinator}
-          onChange={(next) =>
-            dispatch({
-              type: "updateInnerCombinator",
-              id: group.id,
-              innerCombinator: next as AdvancedInnerCombinator,
-            })}
-          width={88}
+          onChange={(innerCombinator) =>
+            dispatch({ type: "updateInnerCombinator", id: group.id, innerCombinator })}
         />
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-1.5">
+          <ExcludeToggle
+            excluded={group.combinator === "NOT"}
+            disabled={!canExclude}
+            onToggle={() =>
+              dispatch({
+                type: "updateCombinator",
+                id: group.id,
+                combinator: group.combinator === "NOT" ? "AND" : "NOT",
+              })}
+          />
           <Button
             kind="secondary"
             size="sm"
@@ -271,39 +317,4 @@ const GroupBlock = ({ group, lead, parentId, depth, dispatch }: GroupBlockProps)
       </div>
     </div>
   )
-}
-
-type CombinatorPickerProps = {
-  combinator: AdvancedCombinator
-  onChange: (combinator: AdvancedCombinator) => void
-}
-
-const CombinatorPicker = ({ combinator, onChange }: CombinatorPickerProps) => {
-  const t = useT()
-  const options: SelectOption[] = (["AND", "OR", "NOT"] as const).map((value) => ({
-    value,
-    label: t(`search.builder.combinator.${value.toLowerCase() as "and" | "or" | "not"}`),
-  }))
-
-  return (
-    <Select
-      ariaLabel={t("search.a11y.builderConditions")}
-      options={options}
-      value={combinator}
-      onChange={(next) => onChange(next as AdvancedCombinator)}
-      width={92}
-    />
-  )
-}
-
-const handleCombinator = (
-  dispatch: Dispatch<AdvancedAction>,
-  id: AdvancedNodeId,
-  parentId: AdvancedNodeId,
-  combinator: AdvancedCombinator,
-): void => {
-  dispatch({ type: "updateCombinator", id, combinator })
-  if (combinator === "AND" || combinator === "OR") {
-    dispatch({ type: "updateInnerCombinator", id: parentId, innerCombinator: combinator })
-  }
 }

@@ -14,20 +14,24 @@ import {
   toggleSource,
   toggleYear,
 } from "./facet-url-state"
-import type { NewsFacetOptions } from "./use-news-list"
+import type { NewsFacetCounts, NewsFacetOptions } from "./use-news-list"
 
 type FacetPanelProps = {
   facet: NewsFacetState
   options: NewsFacetOptions
+  counts: NewsFacetCounts
   onChange: (next: NewsFacetState) => void
 }
 
 const sourceDisplayLabel = (source: NewsSource): string =>
   source === "ddbj" ? "DDBJ" : "DBCLS"
 
+const sourceSwatch = (source: NewsSource): string =>
+  source === "ddbj" ? "var(--color-src-ddbj)" : "var(--color-src-dbcls)"
+
 const YEAR_INITIAL_COUNT = 5
 
-export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
+export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps) => {
   const t = useT()
   const [yearsExpanded, setYearsExpanded] = useState(false)
   const visibleYears = useMemo(() => {
@@ -87,6 +91,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
           <FacetRow
             key={category}
             label={t(categoryLabelKey(category))}
+            count={counts.category[category] ?? 0}
             checked={facet.category.includes(category)}
             onChange={() => onChange(toggleCategory(facet, category))}
           />
@@ -103,6 +108,8 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
           <FacetRow
             key={source}
             label={sourceDisplayLabel(source)}
+            swatch={sourceSwatch(source)}
+            count={counts.source[source] ?? 0}
             checked={facet.source.includes(source)}
             onChange={() => onChange(toggleSource(facet, source))}
           />
@@ -125,6 +132,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
             <FacetRow
               key={year}
               label={`${year}`}
+              count={counts.year[year] ?? 0}
               checked={facet.year.includes(year)}
               onChange={() => onChange(toggleYear(facet, year))}
               mono
@@ -144,6 +152,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
             <FacetRow
               key={service}
               label={service}
+              count={counts.service[service] ?? 0}
               checked={facet.service.includes(service)}
               onChange={() => onChange(toggleService(facet, service))}
               mono

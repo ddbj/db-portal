@@ -58,30 +58,62 @@ describe("SearchInputPanel AI mode", () => {
     expect(screen.queryByRole("button", { name: "AI モード" })).toBeNull()
   })
 
+  test("toggle_entersAiMode_swapsInputAndScopeToMode", async () => {
+    server.use(llmHealth({ status: "ok", model: "qwen" }))
+    renderPanel(createInitialState())
+    const toggle = await screen.findByRole("button", { name: "AI モード" })
+    expect(toggle).toHaveAttribute("aria-pressed", "false")
+    // The keyword box and its database scope picker are present in keyword mode.
+    expect(screen.getByRole("textbox", { name: "検索キーワード" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "検索対象データベース" })).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+
+    // AI mode swaps to the prompt input and repurposes the scope picker into the
+    // generation-mode picker.
+    expect(toggle).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("textbox", { name: "AI 検索アシスタントへの入力" })).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "検索キーワード" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "検索対象データベース" })).toBeNull()
+    expect(screen.getByRole("button", { name: "生成モード" })).toBeInTheDocument()
+  })
+
+  test("toggle_pressedAgain_returnsToKeywordInput", async () => {
+    server.use(llmHealth({ status: "ok", model: "qwen" }))
+    renderPanel(stateWithCondition())
+    const toggle = await screen.findByRole("button", { name: "AI モード" })
+    fireEvent.click(toggle)
+    expect(screen.getByRole("textbox", { name: "AI 検索アシスタントへの入力" })).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("textbox", { name: "検索キーワード" })).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "AI 検索アシスタントへの入力" })).toBeNull()
+  })
+
   test("emptyBuilder_entersAiMode_defaultsNewAndDisablesAppend", async () => {
     server.use(llmHealth({ status: "ok", model: "qwen" }))
     renderPanel(createInitialState())
     fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
-    const newBtn = screen.getByRole("button", { name: "新規生成" })
-    const appendBtn = screen.getByRole("button", { name: "既存に追加" })
-    expect(newBtn).toHaveAttribute("aria-pressed", "true")
-    expect(appendBtn).toBeDisabled()
+    // The mode is chosen before generating via the repurposed scope dropdown;
+    // an empty builder defaults to "新規生成" and "既存に追加" is listed but disabled.
+    const modeTrigger = screen.getByRole("button", { name: "生成モード" })
+    expect(modeTrigger).toHaveTextContent("新規生成")
+    fireEvent.click(modeTrigger)
+    const appendOption = screen.getByRole("option", { name: "既存に追加" })
+    expect(appendOption).toBeInTheDocument()
+    expect(appendOption).toBeDisabled()
   })
 
-  test("builderWithConditions_entersAiMode_defaultsAppend", async () => {
+  test("builderWithConditions_entersAiMode_defaultsAppendAndEnablesBoth", async () => {
     server.use(llmHealth({ status: "ok", model: "qwen" }))
     renderPanel(stateWithCondition())
     fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
-    const appendBtn = screen.getByRole("button", { name: "既存に追加" })
-    expect(appendBtn).not.toBeDisabled()
-    expect(appendBtn).toHaveAttribute("aria-pressed", "true")
-  })
-
-  test("exitAiMode_returnsToKeywordInput", async () => {
-    server.use(llmHealth({ status: "ok", model: "qwen" }))
-    renderPanel(stateWithCondition())
-    fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
-    fireEvent.click(screen.getByRole("button", { name: "AI モードを終了" }))
-    expect(screen.getByRole("textbox", { name: "検索キーワード" })).toBeInTheDocument()
+    const modeTrigger = screen.getByRole("button", { name: "生成モード" })
+    expect(modeTrigger).toHaveTextContent("既存に追加")
+    fireEvent.click(modeTrigger)
+    expect(screen.getByRole("option", { name: "新規生成" })).not.toBeDisabled()
+    expect(screen.getByRole("option", { name: "既存に追加" })).not.toBeDisabled()
   })
 })

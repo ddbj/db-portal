@@ -10,7 +10,6 @@ import {
   createInitialState,
   CrossResults,
   DEFAULT_PAGE,
-  ExamplesChip,
   FacetPanel,
   fromAdvanced,
   fromSidebar,
@@ -37,6 +36,7 @@ import {
 import {
   Button,
   Callout,
+  Examples,
   SearchBox,
   Section,
   SidebarHeading,
@@ -49,6 +49,8 @@ export { loader }
 export const handle = {
   i18n: { en: "complete" },
 } as const
+
+const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
 
 const SearchResultsRoute = () => {
   const data = useLoaderData<typeof loader>()
@@ -175,7 +177,12 @@ const SearchResultsRoute = () => {
       {data.q === ""
         ? (
           <Section padTop="block" padBottom="lg">
-            <ExamplesChip onPick={(item) => navigate(buildResultsHref({ q: item }))} />
+            <Examples
+              label={t("search.examples.label")}
+              items={toStringArray(t("search.examples.items", { returnObjects: true }))}
+              onPick={(item) => navigate(buildResultsHref({ q: item }))}
+              mono
+            />
           </Section>
         )
         : data.errorKey

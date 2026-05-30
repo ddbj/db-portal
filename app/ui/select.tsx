@@ -6,6 +6,8 @@ import { ChevronDownIcon } from "./icons"
 
 type SelectState = "default" | "warn"
 
+type SelectSize = "sm" | "md" | "lg"
+
 export type SelectOption = string | { value: string; label: string }
 
 type NormalizedOption = { value: string; label: string }
@@ -18,9 +20,18 @@ export type SelectProps = {
   defaultValue?: string
   onChange?: (value: string) => void
   width?: number
+  size?: SelectSize
   state?: SelectState
   disabled?: boolean
   id?: string
+}
+
+// Fixed heights so a sized Select lines up exactly with a sized TextInput; the
+// unsized default keeps the original compact padding for existing call sites.
+const sizeClass: Record<SelectSize, string> = {
+  sm: "h-7 text-fs-body-sm",
+  md: "h-8 text-fs-body",
+  lg: "h-9 text-fs-body",
 }
 
 const normalize = (option: SelectOption): NormalizedOption =>
@@ -34,6 +45,7 @@ export const Select = ({
   defaultValue,
   onChange,
   width,
+  size,
   state = "default",
   disabled = false,
   id,
@@ -163,7 +175,8 @@ export const Select = ({
         onClick={handleToggle}
         onKeyDown={handleKey}
         className={cn(
-          "w-full inline-flex items-center justify-between gap-2 text-fs-body leading-none py-1.5 pl-3 pr-2 rounded-button font-sans text-left cursor-pointer",
+          "w-full inline-flex items-center justify-between gap-2 leading-none pl-3 pr-2 rounded-button font-sans text-left cursor-pointer",
+          size === undefined ? "py-1.5 text-fs-body" : sizeClass[size],
           isWarn
             ? "border border-warn-border bg-warn-bg"
             : "border border-border-soft bg-surface",

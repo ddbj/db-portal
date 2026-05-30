@@ -21,8 +21,8 @@ export const SectionHeading = ({
   id,
 }: SectionHeadingProps) => (
   <div className="flex flex-col gap-1.5 mb-3">
-    <div className="flex items-baseline justify-between gap-3 flex-wrap">
-      <div className="flex items-baseline gap-2.5 min-w-0">
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center gap-2.5 min-w-0">
         {createElement(
           as,
           {

@@ -2,25 +2,11 @@ import type { Dispatch } from "react"
 import { useEffect, useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import {
-  Button,
-  Chip,
-  CloseIcon,
-  IconButton,
-  Label,
-  SearchBox,
-  Tag,
-  TextArea,
-} from "~/ui"
+import { Button, Examples, SearchBox, Tag } from "~/ui"
 
 import type { AdvancedAction, AdvancedState } from "../advanced"
 import { useAssistantStream, useLlmAvailability } from "../assistant"
-import {
-  type AiMode,
-  applyProposalByMode,
-  builderConditionCount,
-  resolveAiModeDefault,
-} from "./ai-mode"
+import { type AiMode, applyProposalByMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
 
 export type SearchInputPanelProps = {
   keyword: string
@@ -34,9 +20,7 @@ export type SearchInputPanelProps = {
   baseUrl?: string
 }
 
-const Sparkle = () => (
-  <span aria-hidden className="leading-none">✨</span>
-)
+const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
 
 export const SearchInputPanel = ({
   keyword,
@@ -55,9 +39,12 @@ export const SearchInputPanel = ({
   const [mode, setMode] = useState<"keyword" | "ai">("keyword")
   const [aiInput, setAiInput] = useState("")
   const [aiMode, setAiMode] = useState<AiMode>("new")
+  const isAi = mode === "ai"
 
   const count = builderConditionCount(keyword, advancedState)
   const appendDisabled = resolveAiModeDefault(count).appendDisabled
+  // The generation mode (new / append) is chosen before generating because the
+  // prompt differs per mode; with nothing to append to it falls back to "new".
   const effectiveAiMode: AiMode = appendDisabled ? "new" : aiMode
 
   const { reset: resetStream } = stream
@@ -70,192 +57,152 @@ export const SearchInputPanel = ({
     }
   }, [mode, availability.ready, resetStream])
 
-  const enterAiMode = () => {
-    setAiMode(resolveAiModeDefault(builderConditionCount(keyword, advancedState)).mode)
-    setMode("ai")
-  }
-
-  const exitAiMode = () => {
-    setMode("keyword")
+  // The single "AI モード" toggle enters AI mode and, pressed again, returns to
+  // the keyword input — discarding the prompt and any pending proposal.
+  const toggleMode = () => {
+    setAiInput("")
     stream.reset()
+    if (!isAi) setAiMode(resolveAiModeDefault(count).mode)
+    setMode(isAi ? "keyword" : "ai")
   }
 
-  const handleApply = () => {
+  const handleSubmit = (value: string) => {
+    if (isAi) {
+      if (value.trim().length > 0) void stream.start(value)
+    } else {
+      onKeywordChange(value)
+    }
+  }
+
+  const applyProposal = (proposalMode: AiMode) => {
     if (stream.proposal === null) return
-    const next = applyProposalByMode(effectiveAiMode, advancedState, stream.proposal)
+    const next = applyProposalByMode(proposalMode, advancedState, stream.proposal)
     dispatch({ type: "replaceRoot", root: next.root })
-    if (effectiveAiMode === "new") onKeywordChange("")
+    if (proposalMode === "new") onKeywordChange("")
     setAiInput("")
     stream.reset()
+    setMode("keyword")
   }
 
-  const handleReset = () => {
-    setAiInput("")
-    stream.reset()
+  const examplesItems = isAi
+    ? toStringArray(t("search.assistant.examples", { returnObjects: true }))
+    : toStringArray(t("search.examples.items", { returnObjects: true }))
+  const examplesLabel = isAi ? t("search.assistant.examplesLabel") : t("search.examples.label")
+
+  // The search box's scope dropdown is repurposed in AI mode to pick the
+  // generation mode; "既存に追加" stays listed but disabled with nothing to
+  // append to.
+  const modeNewLabel = t("search.assistant.modeNew")
+  const modeAppendLabel = t("search.assistant.modeAppend")
+  const aiScopeOptions = [modeNewLabel, modeAppendLabel]
+  const aiScopeValue = effectiveAiMode === "append" ? modeAppendLabel : modeNewLabel
+  const onAiScopeChange = (label: string) => {
+    if (label === modeNewLabel) setAiMode("new")
+    else if (label === modeAppendLabel) setAiMode("append")
   }
 
-  if (mode === "ai" && availability.ready) {
-    const rawExamples = t("search.assistant.examples", { returnObjects: true })
-    const examples: readonly string[] = Array.isArray(rawExamples) ? rawExamples : []
-
-    return (
-      <div className="flex flex-col gap-2.5">
-        <div className="rounded-card border border-brand/40 bg-surface flex flex-col shadow-card">
-          <div className="p-3 flex items-start gap-2.5">
-            <div className="flex-1 min-w-0">
-              <TextArea
-                ariaLabel={t("search.a11y.assistantInput")}
-                value={aiInput}
-                onChange={(event) => setAiInput(event.currentTarget.value)}
-                placeholder={t("search.assistant.placeholder")}
-                rows={2}
-              />
-            </div>
-            <span className="inline-flex items-center gap-2 shrink-0">
-              <Tag kind="brand"><Sparkle /> {t("search.assistant.enterMode")}</Tag>
-              <IconButton ariaLabel={t("search.assistant.exitMode")} onClick={exitAiMode}>
-                <CloseIcon size={14} />
-              </IconButton>
-            </span>
-          </div>
-          <div className="bg-surface-subtle border-t border-border-soft p-3 flex flex-wrap items-center gap-3">
-            <ModeToggle mode={effectiveAiMode} appendDisabled={appendDisabled} onChange={setAiMode} />
-            {effectiveAiMode === "append" && count > 0 && (
-              <span className="text-fs-meta text-ink-soft">
-                {t("search.assistant.modeHint", { count })}
-              </span>
-            )}
-            <span className="ml-auto">
-              {stream.state === "streaming"
-                ? (
-                  <Button kind="secondary" size="sm" onClick={stream.stop}>
-                    {t("search.a11y.assistantStop")}
-                  </Button>
-                )
-                : (
-                  <Button
-                    kind="primary"
-                    size="sm"
-                    disabled={aiInput.trim().length === 0}
-                    onClick={() => void stream.start(aiInput)}
-                  >
-                    <Sparkle /> {t("search.assistant.generate")}
-                  </Button>
-                )}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Label>{t("search.assistant.examplesLabel")}</Label>
-          {examples.map((example) => (
-            <Chip key={example} kind="example" as="button" onClick={() => setAiInput(example)}>
-              {example}
-            </Chip>
-          ))}
-        </div>
-        {stream.proposal !== null && (
-          <section
-            aria-label={t("search.assistant.proposalLabel")}
-            className="rounded-card border border-border-soft bg-surface p-3 flex flex-col gap-2"
-          >
-            <div className="flex items-center gap-2">
-              <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
-              <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
-            </div>
-            <ul className="list-none p-0 m-0 flex flex-col gap-1">
-              {stream.proposal.conditions.map((condition, index) => (
-                <li key={`${condition.field}-${index}`} className="text-fs-label text-ink-mid font-mono">
-                  <span className="text-brand-deep">{condition.field}</span>
-                  {" "}
-                  <span className="text-ink-soft">{condition.op}</span>
-                  {" "}
-                  <span className="text-ink font-semibold">
-                    {condition.op === "between"
-                      ? `${condition.from}..${condition.to}`
-                      : condition.value}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex justify-end gap-2">
-              <Button kind="secondary" size="sm" onClick={handleReset}>
-                {t("search.assistant.reset")}
-              </Button>
-              <Button kind="primary" size="sm" onClick={handleApply}>
-                {effectiveAiMode === "new"
-                  ? t("search.assistant.applyReplace")
-                  : t("search.assistant.apply")}
-              </Button>
-            </div>
-          </section>
-        )}
-      </div>
+  const aiToggle = availability.ready
+    ? (
+      <Button
+        kind={isAi ? "primary" : "accent"}
+        size="md"
+        pill
+        aria-pressed={isAi}
+        onClick={toggleMode}
+      >
+        {t("search.assistant.enterMode")}
+      </Button>
     )
-  }
+    : undefined
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex items-stretch gap-2.5">
-        <div className="flex-1 min-w-0">
-          <SearchBox
-            size="md"
-            maxWidth={9999}
-            showSearchIcon
-            value={keyword}
-            placeholder={t("search.searchBoxPlaceholder")}
-            ariaLabel={t("search.a11y.input")}
-            submitLabel={t("search.a11y.submit")}
-            scope={scope}
-            scopeOptions={scopeOptions}
-            scopeAriaLabel={scopeAriaLabel ?? t("search.a11y.scope")}
-            onScopeChange={onScopeChange}
-            onChange={onKeywordChange}
-            onSubmit={(value) => onKeywordChange(value)}
-          />
-        </div>
-        {availability.ready && (
-          <Button kind="secondary" onClick={enterAiMode}>
-            <Sparkle /> {t("search.assistant.enterMode")}
-          </Button>
+      <SearchBox
+        size="lg"
+        maxWidth={9999}
+        showSearchIcon={!isAi}
+        tone={isAi ? "ai" : "default"}
+        value={isAi ? aiInput : keyword}
+        placeholder={isAi ? t("search.assistant.placeholder") : t("search.searchBoxPlaceholder")}
+        ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
+        submitLabel={isAi ? t("search.assistant.generateShort") : t("search.a11y.submit")}
+        scope={isAi ? aiScopeValue : scope}
+        scopeOptions={isAi ? aiScopeOptions : scopeOptions}
+        disabledScopeOptions={isAi && appendDisabled ? [modeAppendLabel] : []}
+        scopeAriaLabel={isAi ? t("search.assistant.modeGroupLabel") : (scopeAriaLabel ?? t("search.a11y.scope"))}
+        onScopeChange={isAi ? onAiScopeChange : onScopeChange}
+        onChange={isAi ? setAiInput : onKeywordChange}
+        onSubmit={handleSubmit}
+        trailing={aiToggle}
+      />
+
+      {isAi
+        ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-fs-meta text-ink-soft m-0">{t("search.assistant.description")}</p>
+            {effectiveAiMode === "append" && count > 0 && (
+              <p className="text-fs-meta text-ink-soft m-0">
+                {t("search.assistant.modeHint", { count })}
+              </p>
+            )}
+          </div>
+        )
+        : (
+          <div className="text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-4 gap-y-1">
+            <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>
+            <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
+            <span>{t("search.syntax.advancedHint")}</span>
+          </div>
         )}
-      </div>
-      <div className="text-fs-meta text-ink-soft flex flex-wrap items-center gap-x-4 gap-y-1">
-        <code className="font-mono text-ink-mid">{t("search.syntax.spaceAnd")}</code>
-        <code className="font-mono text-ink-mid">{t("search.syntax.phrase")}</code>
-        <span>{t("search.syntax.advancedHint")}</span>
-      </div>
-    </div>
-  )
-}
 
-type ModeToggleProps = {
-  mode: AiMode
-  appendDisabled: boolean
-  onChange: (mode: AiMode) => void
-}
+      <Examples
+        label={examplesLabel}
+        items={examplesItems}
+        onPick={isAi ? setAiInput : onKeywordChange}
+      />
 
-const ModeToggle = ({ mode, appendDisabled, onChange }: ModeToggleProps) => {
-  const t = useT()
+      {isAi && stream.state === "streaming" && (
+        <div className="flex items-center gap-2 text-fs-label text-ink-mid">
+          <span>{t("search.assistant.generating")}</span>
+          <Button kind="secondary" size="sm" onClick={stream.stop}>
+            {t("search.a11y.assistantStop")}
+          </Button>
+        </div>
+      )}
 
-  return (
-    <div role="group" aria-label={t("search.assistant.modeGroupLabel")} className="inline-flex gap-1">
-      <Button
-        kind={mode === "new" ? "primary" : "secondary"}
-        size="sm"
-        aria-pressed={mode === "new"}
-        onClick={() => onChange("new")}
-      >
-        {t("search.assistant.modeNew")}
-      </Button>
-      <Button
-        kind={mode === "append" ? "primary" : "secondary"}
-        size="sm"
-        aria-pressed={mode === "append"}
-        disabled={appendDisabled}
-        onClick={() => onChange("append")}
-      >
-        {t("search.assistant.modeAppend")}
-      </Button>
+      {isAi && stream.proposal !== null && (
+        <section
+          aria-label={t("search.assistant.proposalLabel")}
+          className="rounded-card border border-brand/40 bg-surface p-3 flex flex-col gap-2.5 overflow-hidden"
+        >
+          <div className="flex items-center gap-2">
+            <Tag kind="brand" size="sm">{t("search.assistant.proposalLabel")}</Tag>
+            <span className="text-fs-label text-ink-mid">{t("search.assistant.proposalDescription")}</span>
+          </div>
+          <ul className="list-none p-0 m-0 flex flex-col gap-1">
+            {stream.proposal.conditions.map((condition, index) => (
+              <li key={`${condition.field}-${index}`} className="text-fs-label text-ink-mid font-mono">
+                <span className="text-brand-deep">{condition.field}</span>
+                {" "}
+                <span className="text-ink-soft">{condition.op}</span>
+                {" "}
+                <span className="text-ink font-semibold">
+                  {condition.op === "between"
+                    ? `${condition.from}..${condition.to}`
+                    : condition.value}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-end">
+            <Button kind="primary" size="sm" onClick={() => applyProposal(effectiveAiMode)}>
+              {effectiveAiMode === "new"
+                ? t("search.assistant.applyReplace")
+                : t("search.assistant.apply")}
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

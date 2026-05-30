@@ -8,7 +8,7 @@ import {
   scopeKeyToDbSlug,
 } from "~/lib/search-scope"
 import { buildResultsHref, buildSearchHref } from "~/lib/search-url"
-import { Chip, SearchBox, TextLink } from "~/ui"
+import { Examples, SearchBox, TextLink } from "~/ui"
 
 export const HeroSection = () => {
   const t = useT()
@@ -50,21 +50,8 @@ export const HeroSection = () => {
           void navigate(buildResultsHref({ q: next.trim(), db: scopeKeyToDbSlug(scope) }))
         }}
       />
-      <div className="mt-4 flex items-center gap-2 flex-wrap justify-center text-fs-body-sm text-ink-soft">
-        <span className="text-ink-mid">{t("top.hero.examplesLabel")}:</span>
-        <ul className="list-none p-0 m-0 flex items-center gap-2 flex-wrap">
-          {examples.map((example) => (
-            <li key={example} className="m-0">
-              <Chip
-                as="button"
-                kind="example"
-                onClick={() => setValue(example)}
-              >
-                {example}
-              </Chip>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-4 flex items-center gap-3 flex-wrap justify-center">
+        <Examples label={t("top.hero.examplesLabel")} items={examples} onPick={setValue} />
         <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
       </div>
     </section>

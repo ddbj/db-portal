@@ -36,7 +36,7 @@ export {
   isIdentityAst,
   mergeAstAnd,
 } from "./ast"
-export { BuilderSummaryPanel, ExamplesChip, QueryPreview } from "./components"
+export { BuilderSummaryPanel, QueryPreview } from "./components"
 export {
   type CrossSearchSyncOutcome,
   type CrossSearchSyncResult,

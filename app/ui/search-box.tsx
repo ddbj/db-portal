@@ -1,4 +1,4 @@
-import type { CSSProperties, FormEvent } from "react"
+import type { CSSProperties, FormEvent, ReactNode } from "react"
 import { useEffect, useId, useRef, useState } from "react"
 
 import { cn } from "./cn"
@@ -10,12 +10,15 @@ type SearchBoxProps = {
   placeholder?: string
   scope?: string
   scopeOptions?: readonly string[]
+  disabledScopeOptions?: readonly string[]
   onScopeChange?: (value: string) => void
   onChange?: (value: string) => void
   maxWidth?: number
   showSearchIcon?: boolean
   showScope?: boolean
   size?: "md" | "lg"
+  tone?: "default" | "ai"
+  trailing?: ReactNode
   ariaLabel?: string
   submitLabel?: string
   scopeAriaLabel?: string
@@ -43,12 +46,15 @@ export const SearchBox = ({
   placeholder = "キーワード、accession、学名で検索",
   scope = "全データベース",
   scopeOptions,
+  disabledScopeOptions,
   onScopeChange,
   onChange,
   maxWidth = 920,
   showSearchIcon = false,
   showScope = true,
   size = "md",
+  tone = "default",
+  trailing,
   ariaLabel = "検索キーワード",
   submitLabel = "検索",
   scopeAriaLabel = "検索対象データベース",
@@ -107,7 +113,12 @@ export const SearchBox = ({
       <form
         role="search"
         onSubmit={handleSubmit}
-        className="bg-surface border border-border-strong rounded-card flex items-stretch overflow-hidden shadow-card w-full"
+        className={cn(
+          "rounded-card flex items-stretch overflow-hidden shadow-card w-full border",
+          tone === "ai"
+            ? "bg-brand-soft/30 border-brand"
+            : "bg-surface border-border-strong",
+        )}
       >
         {showScope && (
           interactiveScope
@@ -160,6 +171,9 @@ export const SearchBox = ({
             )}
           />
         </div>
+        {trailing !== undefined && (
+          <div className="flex items-center pr-1.5 pl-0.5 shrink-0">{trailing}</div>
+        )}
         <button
           type="submit"
           className={cn(
@@ -179,16 +193,24 @@ export const SearchBox = ({
         >
           {scopeOptions.map((opt) => {
             const selected = opt === scopeValue
+            const optionDisabled = disabledScopeOptions?.includes(opt) ?? false
             return (
               <li key={opt} role="presentation">
                 <button
                   type="button"
                   role="option"
                   aria-selected={selected}
+                  aria-disabled={optionDisabled || undefined}
+                  disabled={optionDisabled}
                   onClick={() => handleScopeChange(opt)}
                   className={cn(
-                    "w-full text-left px-4 py-2 text-fs-body hover:bg-surface-subtle cursor-pointer",
-                    selected ? "text-brand font-bold" : "text-ink font-medium",
+                    "w-full text-left px-4 py-2 text-fs-body",
+                    optionDisabled
+                      ? "text-ink-soft opacity-50 cursor-not-allowed"
+                      : cn(
+                        "hover:bg-surface-subtle cursor-pointer",
+                        selected ? "text-brand font-bold" : "text-ink font-medium",
+                      ),
                   )}
                 >
                   {opt}

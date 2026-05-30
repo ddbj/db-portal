@@ -7,6 +7,19 @@ export type { AssistantCondition, AssistantProposal } from "~/schemas/api-bff/ll
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
 
+// Dev server only (never under vitest): return a canned proposal without hitting
+// the LLM endpoint so the proposal UI can be seen end to end.
+const DEV_STUB = import.meta.env.DEV && import.meta.env.MODE !== "test"
+
+const DEV_SAMPLE_PROPOSAL: AssistantProposal = {
+  combinator: "AND",
+  conditions: [
+    { field: "organism_name", op: "eq", value: "Homo sapiens" },
+    { field: "title", op: "contains", value: "single cell" },
+    { field: "date_published", op: "between", from: "2022-01-01", to: "2024-12-31" },
+  ],
+}
+
 export type AssistantState = "idle" | "streaming" | "done" | "error"
 
 export type AssistantStreamResult = {
@@ -60,6 +73,14 @@ export const useAssistantStream = (baseUrl?: string): AssistantStreamResult => {
     controllerRef.current = controller
     setState("streaming")
     setProposal(null)
+    if (DEV_STUB) {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      if (controller.signal.aborted) return
+      setProposal(DEV_SAMPLE_PROPOSAL)
+      setState("done")
+
+      return
+    }
     try {
       const init = buildRequestInit({
         method: "POST",

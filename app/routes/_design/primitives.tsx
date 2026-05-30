@@ -7,6 +7,7 @@ import {
   Callout,
   Chip,
   DateFacet,
+  Examples,
   FacetGroup,
   FacetRow,
   FmtCheck,
@@ -60,7 +61,7 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 
 const ButtonGallery = () => (
   <Block title="Button">
-    {(["primary", "secondary", "danger", "ghost"] as const).map((kind) => (
+    {(["primary", "secondary", "danger", "ghost", "accent"] as const).map((kind) => (
       <Row key={kind} label={`kind=${kind}`}>
         <Button kind={kind} size="sm">{kind} sm</Button>
         <Button kind={kind} size="md">{kind} md</Button>
@@ -68,6 +69,10 @@ const ButtonGallery = () => (
         <Button kind={kind} disabled>disabled</Button>
       </Row>
     ))}
+    <Row label="pill (rounded-full)">
+      <Button kind="accent" pill>accent pill</Button>
+      <Button kind="primary" pill aria-pressed>primary pill (pressed)</Button>
+    </Row>
     <Row label="kind=link">
       <Button kind="link">link</Button>
       <Button kind="link" disabled>disabled</Button>
@@ -198,6 +203,20 @@ const FormsGallery = () => (
         state="warn"
         width={200}
       />
+    </Row>
+    <Row label="Select size (sm / md / lg)">
+      <Select size="sm" ariaLabel="select-sm" options={["sm", "md", "lg"]} defaultValue="sm" width={120} />
+      <Select size="md" ariaLabel="select-md" options={["sm", "md", "lg"]} defaultValue="md" width={120} />
+      <Select size="lg" ariaLabel="select-lg" options={["sm", "md", "lg"]} defaultValue="lg" width={120} />
+    </Row>
+    <Row label="TextInput size (sm / md / lg)">
+      <TextInput size="sm" ariaLabel="ti-sm" placeholder="sm" width={120} />
+      <TextInput size="md" ariaLabel="ti-md" placeholder="md" width={120} />
+      <TextInput size="lg" ariaLabel="ti-lg" placeholder="lg" width={120} />
+    </Row>
+    <Row label="Select md + TextInput md (builder 調和 = 同じ高さ)">
+      <Select size="md" ariaLabel="harmony-select" options={["title", "organism_name"]} defaultValue="title" width={160} />
+      <TextInput size="md" ariaLabel="harmony-input" placeholder="値を入力" width={200} />
     </Row>
     <FormGroup num="1." label="ライブラリ構造" hint="単独 radio (sub なし vs sub あり)">
       <FmtRadio name="lib" label="pair-end (checked + sub なし)" defaultChecked />
@@ -472,6 +491,37 @@ const SearchBoxGallery = () => (
         onSubmit={() => undefined}
       />
     </Row>
+    <Row label="tone=ai + trailing + scope 流用 (生成モード、既存に追加 を disable)">
+      <SearchBox
+        size="lg"
+        showSearchIcon={false}
+        maxWidth={680}
+        tone="ai"
+        scope="新規生成"
+        scopeOptions={["新規生成", "既存に追加"]}
+        disabledScopeOptions={["既存に追加"]}
+        scopeAriaLabel="生成モード"
+        submitLabel="生成"
+        trailing={<Button kind="primary" size="md" pill aria-pressed>AI モード</Button>}
+        onSubmit={() => undefined}
+      />
+    </Row>
+  </Block>
+)
+
+const ExamplesGallery = () => (
+  <Block title="Examples">
+    <Row label="例: chips (sans)">
+      <Examples label="例" items={["cancer", "Homo sapiens", "PRJDB*"]} onPick={() => undefined} />
+    </Row>
+    <Row label="例: chips (mono)">
+      <Examples
+        label="例"
+        items={["title:\"single cell\"", "date_published:[2022-01-01 TO 2024-12-31]"]}
+        onPick={() => undefined}
+        mono
+      />
+    </Row>
   </Block>
 )
 
@@ -523,6 +573,7 @@ const DesignPrimitives = () => (
     <ButtonGallery />
     <TagGallery />
     <ChipGallery />
+    <ExamplesGallery />
     <HeadingGallery />
     <FormsGallery />
     <FacetGallery />

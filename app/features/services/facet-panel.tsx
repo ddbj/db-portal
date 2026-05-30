@@ -10,18 +10,22 @@ import {
   toggleCategory,
   toggleSource,
 } from "./facet-url-state"
-import type { ServicesFacetOptions } from "./use-services-list"
+import type { ServicesFacetCounts, ServicesFacetOptions } from "./use-services-list"
 
 type FacetPanelProps = {
   facet: ServicesFacetState
   options: ServicesFacetOptions
+  counts: ServicesFacetCounts
   onChange: (next: ServicesFacetState) => void
 }
 
 const sourceDisplayLabel = (source: ServiceSource): string =>
   source === "ddbj" ? "DDBJ" : "DBCLS"
 
-export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
+const sourceSwatch = (source: ServiceSource): string =>
+  source === "ddbj" ? "var(--color-src-ddbj)" : "var(--color-src-dbcls)"
+
+export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps) => {
   const t = useT()
 
   const applied: AppliedFilter[] = [
@@ -63,6 +67,7 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
             <FacetRow
               key={category}
               label={t(serviceCategoryLabelKey(category))}
+              count={counts.category[category] ?? 0}
               checked={facet.category.includes(category)}
               onChange={() => onChange(toggleCategory(facet, category))}
             />
@@ -81,6 +86,8 @@ export const FacetPanel = ({ facet, options, onChange }: FacetPanelProps) => {
             <FacetRow
               key={source}
               label={sourceDisplayLabel(source)}
+              swatch={sourceSwatch(source)}
+              count={counts.source[source] ?? 0}
               checked={facet.source.includes(source)}
               onChange={() => onChange(toggleSource(facet, source))}
             />

@@ -474,12 +474,16 @@ export type Resources = {
       }
       addCondition: string
       addGroup: string
-      where: string
-      combinator: {
+      matchLabel: string
+      match: {
+        all: string
+        any: string
+      }
+      connector: {
         and: string
         or: string
-        not: string
       }
+      exclude: string
       group: string
       removeCondition: string
       removeGroup: string
@@ -596,7 +600,7 @@ export type Resources = {
       apply: string
       reset: string
       enterMode: string
-      exitMode: string
+      generateShort: string
       modeGroupLabel: string
       modeNew: string
       modeAppend: string
@@ -1197,27 +1201,31 @@ export const ja: Resources = {
       },
       addCondition: "+ 条件を追加",
       addGroup: "+ グループを追加",
-      where: "WHERE",
-      combinator: {
-        and: "AND",
-        or: "OR",
-        not: "NOT",
+      matchLabel: "一致条件",
+      match: {
+        all: "すべての条件に一致",
+        any: "いずれかの条件に一致",
       },
+      connector: {
+        and: "かつ",
+        or: "または",
+      },
+      exclude: "除外",
       group: "グループ",
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
       field: {
-        identifier: "識別子 (identifier)",
-        title: "タイトル (title)",
-        description: "説明 (description)",
-        organismId: "生物種 ID (organism_id)",
-        organismName: "学名 (organism_name)",
-        accessibility: "公開区分 (accessibility)",
-        datePublished: "公開日 (date_published)",
-        dateModified: "更新日 (date_modified)",
-        dateCreated: "作成日 (date_created)",
-        submitter: "登録機関 (submitter)",
-        publication: "論文 (publication)",
+        identifier: "識別子",
+        title: "タイトル",
+        description: "説明",
+        organismId: "生物種 ID",
+        organismName: "学名",
+        accessibility: "公開区分",
+        datePublished: "公開日",
+        dateModified: "更新日",
+        dateCreated: "作成日",
+        submitter: "登録機関",
+        publication: "論文",
       },
       op: {
         eq: "= (完全一致)",
@@ -1231,8 +1239,8 @@ export const ja: Resources = {
       rangeToPlaceholder: "YYYY-MM-DD",
       valuePlaceholder: "値を入力",
       freeText: {
-        field: "keyword",
-        allFields: "全フィールド",
+        field: "キーワード",
+        allFields: "すべての項目から検索",
         placeholder: "キーワードを入力",
         remove: "キーワードを削除",
       },
@@ -1323,11 +1331,11 @@ export const ja: Resources = {
       apply: "クエリビルダーに追加",
       reset: "やり直す",
       enterMode: "AI モード",
-      exitMode: "AI モードを終了",
+      generateShort: "生成",
       modeGroupLabel: "生成モード",
       modeNew: "新規生成",
       modeAppend: "既存に追加",
-      modeHint: "現在のビルダー {{count}} 件を考慮します",
+      modeHint: "現在のビルダー {{count}} 件に追加します",
       applyReplace: "この内容で置き換える",
     },
     scope: {
@@ -1361,7 +1369,7 @@ export const ja: Resources = {
     },
     a11y: {
       input: "検索キーワード",
-      submit: "検索を実行",
+      submit: "検索",
       scope: "検索対象データベース",
       builderConditions: "クエリビルダーの条件一覧",
       fieldSelector: "検索フィールド",

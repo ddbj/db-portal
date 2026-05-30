@@ -10,6 +10,10 @@ export type LlmAvailability = {
 
 export const LLM_AVAILABILITY_STALE_MS = 5 * 60_000
 
+// Dev server only (never under vitest): surface the AI mode even when no LLM is
+// configured so the assistant flow can be exercised against a stubbed proposal.
+const DEV_STUB = import.meta.env.DEV && import.meta.env.MODE !== "test"
+
 export const llmAvailabilityFromHealth = (health: LlmHealth | undefined | null): LlmAvailability => {
   if (!health) return { ready: false, health: null }
   switch (health.status) {
@@ -27,7 +31,10 @@ export const useLlmAvailability = (): LlmAvailability => {
     queryKey: ["llm", "health"],
     queryFn: () => fetchLlmHealth(),
     staleTime: LLM_AVAILABILITY_STALE_MS,
+    enabled: !DEV_STUB,
   })
+
+  if (DEV_STUB) return { ready: true, health: { status: "ok", model: "dev-stub" } }
 
   return llmAvailabilityFromHealth(query.data ?? null)
 }
