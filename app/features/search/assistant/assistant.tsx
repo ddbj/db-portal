@@ -18,7 +18,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
   const availability = useLlmAvailability()
   const t = useT()
   const [input, setInput] = useState("")
-  const stream = useAssistantStream(baseUrl)
+  const stream = useAssistantStream(undefined)
   const headingId = useId()
   if (!availability.ready) return null
 
