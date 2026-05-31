@@ -18,9 +18,19 @@ type CatalogModule = {
 
 const main = async (): Promise<void> => {
   const vite = await createServer({
+    configFile: false,
     server: { middlewareMode: true },
     appType: "custom",
-    mode: process.env.NODE_ENV === "production" ? "production" : "development",
+    esbuild: {
+      jsx: "automatic",
+      jsxImportSource: "react",
+      jsxDev: process.env.NODE_ENV !== "production",
+    },
+    resolve: {
+      alias: {
+        "~": fileURLToPath(new URL("../app", import.meta.url)),
+      },
+    },
   })
   let hasFailure = false
   try {
