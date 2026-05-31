@@ -2075,7 +2075,7 @@ export interface components {
         DbPortalFacets: {
             /**
              * Type
-             * @description Entry count per database type (cross-type search only; null when not aggregated).
+             * @description Entry count per database type / subtype. Aggregated on cross-type search (database-type buckets) and on the db-portal db=sra / db=jga scopes (subtype buckets, e.g. sra-experiment / jga-dataset). Null when not aggregated.
              * @example [
              *       {
              *         "count": 1234,
@@ -3985,10 +3985,10 @@ export interface components {
             type: string;
             /**
              * Encodingformat
-             * @description Representation format of a Schema.org Distribution. "JSON" / "JSON-LD" / "XML" describe textual metadata payloads; "FASTQ" / "SRA" describe binary sequencing data downloads.
+             * @description Representation format of a Schema.org Distribution. "JSON" / "JSON-LD" / "XML" describe textual metadata payloads; "FASTQ" / "SRA" describe binary sequencing data downloads; "DATA" describes a directory landing page that lists analysis output files.
              * @enum {string}
              */
-            encodingFormat: "JSON" | "JSON-LD" | "XML" | "FASTQ" | "SRA";
+            encodingFormat: "JSON" | "JSON-LD" | "XML" | "FASTQ" | "SRA" | "DATA";
             /**
              * Contenturl
              * @description Download URL where the distribution can be retrieved.
@@ -4188,7 +4188,7 @@ export interface components {
         Facets: {
             /**
              * Type
-             * @description Entry count per database type (cross-type search only; null when not aggregated).
+             * @description Entry count per database type / subtype. Aggregated on cross-type search (database-type buckets) and on the db-portal db=sra / db=jga scopes (subtype buckets, e.g. sra-experiment / jga-dataset). Null when not aggregated.
              * @example [
              *       {
              *         "count": 1234,
@@ -4803,7 +4803,7 @@ export interface components {
             title?: string | null;
             /**
              * Agency
-             * @description Funding organizations (at least one).
+             * @description Funding organizations (zero or more). Empty when the source XML has no `Agency` element or all entries failed to parse.
              */
             agency: components["schemas"]["Organization"][];
         };
@@ -11217,7 +11217,7 @@ export interface operations {
     crossSearchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
                 /** @description Per-DB top hits count.  ``0`` returns count-only (``databases[i].hits`` is ``null``); ``1``-``50`` returns up to N hits per DB.  Hits are ordered by relevance (``_score`` desc) with ``identifier`` ascending as the tiebreaker; when ``q`` is omitted (``match_all``) all scores tie, so ``identifier`` ascending becomes the effective order.  Out of range (>50 or negative) returns 422. */
                 topHits?: number;
@@ -11227,6 +11227,8 @@ export interface operations {
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
                 facetsSize?: number | null;
+                /** @description When ``true``, drop each facet's own ``q`` filter from that facet's aggregation population (self-exclusion for multi-select sidebars); other conditions (other facets, free text, ``status``) still apply, and the hits themselves stay filtered by the full ``q``.  Default ``false`` keeps the population identical to the hits.  Compatible with ``cursor`` but not applied on the cursor path (the cursor token carries no AST).  See ``docs/db-portal-api-spec.md`` § 集計母集団と self-exclusion. */
+                facetSelfExclude?: boolean;
             };
             header?: never;
             path?: never;
@@ -11347,7 +11349,7 @@ export interface operations {
     searchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
                 /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``/db-portal/cross-search``. */
                 db?: components["schemas"]["DbPortalDb"] | null;
@@ -11365,6 +11367,8 @@ export interface operations {
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
                 facetsSize?: number | null;
+                /** @description When ``true``, drop each facet's own ``q`` filter from that facet's aggregation population (self-exclusion for multi-select sidebars); other conditions (other facets, free text, ``status``) still apply, and the hits themselves stay filtered by the full ``q``.  Default ``false`` keeps the population identical to the hits.  Compatible with ``cursor`` but not applied on the cursor path (the cursor token carries no AST).  See ``docs/db-portal-api-spec.md`` § 集計母集団と self-exclusion. */
+                facetSelfExclude?: boolean;
             };
             header?: never;
             path?: never;

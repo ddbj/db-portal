@@ -241,7 +241,7 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 - 極小 controlled-vocab (`objectType` 2 / `libraryLayout` 2 等) も、件数表示を揃えるため集計経路に一本化する
 - facet count (値ごとの件数) は静的リストでは得られず、集計でのみ出せる (NCBI 風の「値 + 件数」表示の要件)
 
-集計母集団は **検索ヒットと一致** させる (`q` 適用後、検索と同じ `status_mode`)。accession 完全一致で suppressed が解禁される場合は facet 集計も同じ母集団になる (`/facets` のような public_only 固定にしない)。`organism` の bucket は taxID (`organism.identifier`) で集計し、`organism_id:<taxID>` として再注入する (表示は学名ラベル、API の `OrganismFacetBucket.label` を使う)。
+集計母集団は **self-exclusion** を使う。各 facet `F` の bucket は「`q` のうち `F` 自身に対応するフィルタだけを除外し、他の facet・free text・text 行・range 行・保持条件はすべて適用した集合」から計算する。hits（検索結果本体）は従来どおり `q` 全フィルタ適用のまま。これにより organism を選んでも organism の他候補が候補一覧に残り、続けて追加選択できる。accession 完全一致で suppressed が解禁される場合の母集団は hits と同一 `status_mode` にする (`/facets` のような public_only 固定にしない)。`organism` の bucket は taxID (`organism.identifier`) で集計し、`organism_id:<taxID>` として再注入する (表示は学名ラベル、API の `OrganismFacetBucket.label` を使う)。
 
 ### API 契約: `/db-portal/*` の facet 集計
 
@@ -249,6 +249,7 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 
 - **`facets`**: 集計する facet 名のカンマ区切り (省略時は集計なし)。portal は scope の filter 構成テーブルの facet 行に対応する名前を送る (accessibility は送らない)。scope 外の facet は 400 `facet-not-applicable`、allowlist 外の名前は 422
 - **`facetsSize`**: bucket 上限 (1–1000、既定 100)。多値 facet (`package` / `model` / `rank` 等) の「もっと見る」で使う
+- **`facetSelfExclude`**: `true` を送ると各 facet の集計母集団から自身のフィルタを除外する (self-exclusion)。portal は常に `true` で呼ぶ。cursor path では非適用 (cursor に焼き込んだ query を母集団にするため)
 - **レスポンス `facets`** (`DbPortalFacets` = `Facets` 拡張): 各 facet が `{value, count}` 配列 (`organism` のみ `{value, count, label}`)。「集計対象外 = `null`」「0 件 = `[]`」。横断はトップレベル 1 セット (ES 6 DB union、organism / type のみ。trad / taxonomy は含まれない)
 - **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。portal の facet state はこのマッピングを持つ
 - **集計失敗時**: API は `facets=null` を返し検索結果は 200 のまま。portal は facet 非表示で degrade する

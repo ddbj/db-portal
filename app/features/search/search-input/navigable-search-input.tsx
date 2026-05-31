@@ -178,7 +178,7 @@ export const NavigableSearchInput = ({
         tone={isAi ? "ai" : "default"}
         invalid={keywordInvalid}
         value={isAi ? aiInput : keyword}
-        placeholder={isAi ? t("search.assistant.placeholder") : t("search.searchBoxPlaceholder")}
+        placeholder={isAi ? (effectiveAiMode === "append" ? t("search.assistant.placeholderAppend") : t("search.assistant.placeholderNew")) : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
         submitLabel={submitLabel}
         submitDisabled={submitDisabled}

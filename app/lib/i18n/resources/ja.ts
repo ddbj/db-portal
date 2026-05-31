@@ -592,7 +592,8 @@ export type Resources = {
       description: string
       descriptionNew: string
       descriptionAppend: string
-      placeholder: string
+      placeholderNew: string
+      placeholderAppend: string
       examplesLabel: string
       examplesNew: readonly string[]
       examplesAppend: readonly string[]
@@ -1319,7 +1320,8 @@ export const ja: Resources = {
       description: "自然文で条件を書くと、クエリビルダーへの追加候補を提案します。",
       descriptionNew: "自然文で書くと、新しいクエリの候補を提案します。",
       descriptionAppend: "自然文で書くと、現在の {{count}} 件に追加する条件を提案します。",
-      placeholder: "例: ヒトの 2022 年以降に公開されたがん関連の BioProject",
+      placeholderNew: "何を探していますか？",
+      placeholderAppend: "どう絞り込みますか？",
       examplesLabel: "例",
       examplesNew: [
         "シングルセル RNA-seq のヒト試料",

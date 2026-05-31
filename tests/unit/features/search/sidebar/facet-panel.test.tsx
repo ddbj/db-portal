@@ -97,3 +97,51 @@ describe("OrganismFacetSection tax id box", () => {
     expect(taxIdBox().value).toBe("")
   })
 })
+
+describe("FacetSection visibility", () => {
+  // accessibility is a non-organism facet rendered by FacetSection.
+  const accessibilityFacets = (
+    buckets: { value: string; count: number }[],
+  ): DbPortalFacets =>
+    ({ accessibility: buckets }) as DbPortalFacets
+
+  test("FacetSection_emptyBucketsNoSelected_isHidden", () => {
+    // FacetSection returns null when both buckets and selection are empty.
+    renderPanel(createInitialSearchFacetState(), accessibilityFacets([]))
+    expect(screen.queryByTestId("facet-accessibility")).toBeNull()
+  })
+
+  test("FacetSection_emptyBucketsWithSelected_showsSelectedCheckbox", () => {
+    // When the API returns no buckets but a value is already selected (e.g. the
+    // facet's own filter was excluded from the aggregation for another field and
+    // a transient empty response arrived), the selected value must stay visible
+    // so the user can deselect it.
+    const initial: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      facets: { accessibility: ["public-access"] },
+    }
+    renderPanel(initial, accessibilityFacets([]))
+    const group = screen.getByTestId("facet-accessibility")
+    expect(within(group).getByRole("checkbox", { name: /public-access/ })).toBeChecked()
+  })
+
+  test("FacetSection_withBuckets_rendersAllBucketsAsCheckboxes", () => {
+    const facets = accessibilityFacets([
+      { value: "public-access", count: 1000 },
+      { value: "controlled-access", count: 50 },
+    ])
+    renderPanel(createInitialSearchFacetState(), facets)
+    const group = screen.getByTestId("facet-accessibility")
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(2)
+  })
+
+  test("FacetSection_selectingBucket_marksItChecked", () => {
+    const facets = accessibilityFacets([
+      { value: "public-access", count: 1000 },
+      { value: "controlled-access", count: 50 },
+    ])
+    renderPanel(createInitialSearchFacetState(), facets)
+    fireEvent.click(screen.getByRole("checkbox", { name: /public-access/ }))
+    expect(screen.getByRole("checkbox", { name: /public-access/ })).toBeChecked()
+  })
+})

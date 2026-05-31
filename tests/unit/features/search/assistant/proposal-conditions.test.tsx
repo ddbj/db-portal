@@ -152,7 +152,7 @@ describe("ProposalConditions", () => {
     // Per-DB (Tier 3) fields are in the builder field catalog, so the chip
     // shows their localized label rather than the raw key.
     renderNode({ op: "eq", field: "library_strategy", value: "WGS" })
-    expect(screen.getByText("ライブラリ戦略")).toBeInTheDocument()
+    expect(screen.getByText("Library strategy")).toBeInTheDocument()
     expect(screen.getByText("WGS")).toBeInTheDocument()
   })
 

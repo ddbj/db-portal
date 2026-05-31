@@ -55,7 +55,7 @@ export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssi
             ariaLabel={t("search.a11y.assistantInput")}
             value={input}
             onChange={(event) => setInput(event.currentTarget.value)}
-            placeholder={t("search.assistant.placeholder")}
+            placeholder={t("search.assistant.placeholderAppend")}
             rows={3}
           />
         </div>

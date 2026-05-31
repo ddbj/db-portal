@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react"
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react"
 import { useLoaderData, useNavigate } from "react-router"
 
 import {
@@ -121,6 +121,14 @@ const SearchResultsRoute = () => {
       { replace: true, preventScrollReset: true },
     )
   }, searchApiBaseUrl, data.db)
+
+  const dispatchFacetWithFlush = useCallback(
+    (action: Parameters<typeof dispatchFacet>[0]) => {
+      dispatchFacet(action)
+      if (action.type === "toggleFacet") sync.flush()
+    },
+    [sync.flush],
+  )
 
   const handlePageChange = (nextPage: number) => {
     navigate(
@@ -293,7 +301,7 @@ const SearchResultsRoute = () => {
             ? (
               <Section padTop="sm" padBottom="lg">
                 <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                  <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} facets={data.facets} />
+                  <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={data.facets} />
                   <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                     {data.cross
                       ? <CrossResults q={data.q} response={data.cross} />

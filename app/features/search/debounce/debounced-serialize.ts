@@ -15,6 +15,7 @@ export type DebouncedSerializeResult = {
   status: SyncStatus
   dsl: string
   retry: () => void
+  flush: () => void
 }
 
 export const useDebouncedSerialize = (
@@ -26,6 +27,8 @@ export const useDebouncedSerialize = (
   const [status, setStatus] = useState<SyncStatus>("idle")
   const [dsl, setDsl] = useState<string>("")
   const lastSyncedRef = useRef<ParseNode>(ast)
+  const latestAstRef = useRef<ParseNode>(ast)
+  latestAstRef.current = ast
   const onSerializedRef = useRef(onSerialized)
   useEffect(() => {
     onSerializedRef.current = onSerialized
@@ -74,5 +77,13 @@ export const useDebouncedSerialize = (
     mutateRef.current(debounced)
   }, [debounced])
 
-  return { status, dsl, retry }
+  const flush = useCallback(() => {
+    const cur = latestAstRef.current
+    if (isIdentityAst(cur)) return
+    if (astEquals(lastSyncedRef.current, cur)) return
+    setStatus("syncing")
+    mutateRef.current(cur)
+  }, [])
+
+  return { status, dsl, retry, flush }
 }

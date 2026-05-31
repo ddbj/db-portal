@@ -671,7 +671,8 @@ export const en: Resources = {
       description: "Describe your need in natural language; the assistant proposes query builder conditions.",
       descriptionNew: "Describe it in natural language and get a fresh query suggestion.",
       descriptionAppend: "Describe it in natural language to get conditions added to your current {{count}}.",
-      placeholder: "Example: human cancer BioProjects published since 2022",
+      placeholderNew: "What are you looking for?",
+      placeholderAppend: "What would you like to add?",
       examplesLabel: "Examples",
       examplesNew: [
         "Human single-cell RNA-seq samples",

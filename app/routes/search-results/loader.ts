@@ -33,10 +33,14 @@ export type LoaderData = {
 
 const FACETS_SIZE = 100
 
-const facetParam = (db: DbSlug | null): { facets?: string; facetsSize?: number } => {
+const facetParam = (
+  db: DbSlug | null,
+): { facets?: string; facetsSize?: number; facetSelfExclude?: boolean } => {
   const facets = scopeFacetParam(db)
-
-  return facets === "" ? {} : { facets, facetsSize: FACETS_SIZE }
+  // Drop each facet's own q filter from its aggregation population so a
+  // multi-select facet keeps offering its other values; hits stay filtered by
+  // the full q (docs/search.md § 候補値・件数の出所).
+  return facets === "" ? {} : { facets, facetsSize: FACETS_SIZE, facetSelfExclude: true }
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {

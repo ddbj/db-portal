@@ -1,9 +1,68 @@
 import { http, HttpResponse, type RequestHandler } from "msw"
 
+import type { CrossSearchResponse, DbPortalFacets, DbSearchResponse, ParseResponse } from "~/lib/api"
 import type { UserInfo } from "~/lib/auth/types"
 import type { LlmHealth } from "~/schemas/api-bff/llm"
 import type { NewsList } from "~/schemas/api-bff/news"
 import type { ServiceList } from "~/schemas/api-bff/service"
+
+// ── db-portal search API mocks ──────────────────────────────────────────────
+
+export const minimalParseResponse = (q: string): ParseResponse => ({
+  ast: { op: "eq", field: "organism_id", value: q },
+})
+
+export const minimalCrossSearchResponse = (
+  facets: DbPortalFacets | null = null,
+): CrossSearchResponse => ({
+  databases: [{ db: "bioproject", count: 10, error: null }],
+  facets,
+})
+
+export const minimalDbSearchResponse = (
+  facets: DbPortalFacets | null = null,
+): DbSearchResponse => ({
+  total: 5,
+  hits: [],
+  hardLimitReached: false,
+  page: 1,
+  perPage: 20,
+  hasNext: false,
+  facets,
+})
+
+export const parseHandler = (
+  overrides: { response?: ParseResponse } = {},
+): RequestHandler =>
+  http.get("*/db-portal/parse", ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get("q") ?? "q"
+    return HttpResponse.json(overrides.response ?? minimalParseResponse(q))
+  })
+
+export const crossSearchHandler = (
+  overrides: {
+    response?: CrossSearchResponse
+    onRequest?: (url: URL) => void
+  } = {},
+): RequestHandler =>
+  http.get("*/db-portal/cross-search", ({ request }) => {
+    const url = new URL(request.url)
+    overrides.onRequest?.(url)
+    return HttpResponse.json(overrides.response ?? minimalCrossSearchResponse())
+  })
+
+export const dbSearchHandler = (
+  overrides: {
+    response?: DbSearchResponse
+    onRequest?: (url: URL) => void
+  } = {},
+): RequestHandler =>
+  http.get("*/db-portal/search", ({ request }) => {
+    const url = new URL(request.url)
+    overrides.onRequest?.(url)
+    return HttpResponse.json(overrides.response ?? minimalDbSearchResponse())
+  })
 
 const unsetHealth: LlmHealth = { status: "unset" }
 const emptyNews: NewsList = []
