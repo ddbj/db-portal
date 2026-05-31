@@ -58,7 +58,7 @@ export const makeHandleSearchAssistant = (
     const stream = openSseStream(res)
     stream.start()
     const abortController = new AbortController()
-    req.on("close", () => abortController.abort())
+    res.on("close", () => abortController.abort())
 
     let accumulated = ""
     try {
