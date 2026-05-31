@@ -8,8 +8,6 @@ services:
     volumes:
       - .:/app:rw
       - app-node_modules:/app/node_modules:rw
-      - news-cache:${DB_PORTAL_NEWS_CACHE_DIR:-/var/cache/db-portal/news}:rw
-      - news-repos:/app/repos:rw
     ports:
       - "${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
     environment:
@@ -34,13 +32,14 @@ services:
       - DB_PORTAL_LLM_TIMEOUT_MS=${DB_PORTAL_LLM_TIMEOUT_MS:-60000}
       - DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN=${DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN:-60}
       - DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN=${DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN:-30}
-      - DB_PORTAL_NEWS_REPOS_DIR=${DB_PORTAL_NEWS_REPOS_DIR:-./repos}
+      - DB_PORTAL_NEWS_REPOS_DIR=${DB_PORTAL_NEWS_REPOS_DIR:-./cache/repos}
       - DB_PORTAL_NEWS_DDBJ_REPO_URL=${DB_PORTAL_NEWS_DDBJ_REPO_URL:-https://github.com/ddbj/www.git}
       - DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH=${DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH:-main}
       - DB_PORTAL_NEWS_DBCLS_REPO_URL=${DB_PORTAL_NEWS_DBCLS_REPO_URL:-https://github.com/dbcls/website.git}
       - DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH=${DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH:-master}
       - DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS=${DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS:-1800}
-      - DB_PORTAL_NEWS_CACHE_DIR=${DB_PORTAL_NEWS_CACHE_DIR:-/var/cache/db-portal/news}
+      - DB_PORTAL_NEWS_CACHE_DIR=${DB_PORTAL_NEWS_CACHE_DIR:-./cache/news}
+      - DB_PORTAL_SERVICES_CACHE_DIR=${DB_PORTAL_SERVICES_CACHE_DIR:-./cache/services}
       - VITE_DB_PORTAL_SEARCH_API_URL=${DB_PORTAL_SEARCH_API_URL}
       - VITE_DB_PORTAL_KEYCLOAK_REALM_URL=${DB_PORTAL_KEYCLOAK_REALM_URL}
       - VITE_DB_PORTAL_KEYCLOAK_CLIENT_ID=${DB_PORTAL_KEYCLOAK_CLIENT_ID}
@@ -54,10 +53,6 @@ services:
 volumes:
   app-node_modules:
     name: ${DB_PORTAL_PREFIX}-node_modules
-  news-cache:
-    name: ${DB_PORTAL_PREFIX}-news-cache
-  news-repos:
-    name: ${DB_PORTAL_PREFIX}-news-repos
 
 networks:
   db-portal-network:
