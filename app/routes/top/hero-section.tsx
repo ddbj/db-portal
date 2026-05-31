@@ -67,6 +67,7 @@ export const HeroSection = () => {
         onScopeChange={handleScopeChange}
         baseUrl={searchApiBaseUrl}
         allowAppend={false}
+        hideScopeInAiMode
         onGenerated={(ast) => void handleGenerated(ast)}
         examplesTrailing={
           <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>

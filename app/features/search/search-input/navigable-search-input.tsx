@@ -36,6 +36,8 @@ export type NavigableSearchInputProps = {
   // A keyword search / post-generation navigation is in flight (owned by the
   // caller via useSearchPending). Busies the submit button.
   searchPending?: boolean | undefined
+  // Hide the DB scope selector when in AI mode (top page only).
+  hideScopeInAiMode?: boolean
 }
 
 const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
@@ -60,6 +62,7 @@ export const NavigableSearchInput = ({
   showExamples = true,
   examplesTrailing,
   searchPending = false,
+  hideScopeInAiMode = false,
 }: NavigableSearchInputProps) => {
   const t = useT()
   const availability = useLlmAvailability()
@@ -78,7 +81,7 @@ export const NavigableSearchInput = ({
     && !isIdentityAst(appendCurrentAst)
   const effectiveAiMode: AiMode = canAppend ? aiMode : "new"
 
-  const stream = useAssistantStream(baseUrl, (ast) => {
+  const stream = useAssistantStream(undefined, (ast) => {
     onGenerated(ast, pendingModeRef.current)
     setAiInput("")
     setMode("keyword")
@@ -182,6 +185,7 @@ export const NavigableSearchInput = ({
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
         submitLabel={submitLabel}
         submitDisabled={submitDisabled}
+        showScope={!(isAi && hideScopeInAiMode)}
         scope={boxScope}
         scopeOptions={boxScopeOptions}
         disabledScopeOptions={aiSelector && !canAppend ? [modeAppendLabel] : []}
