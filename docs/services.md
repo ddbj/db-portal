@@ -137,7 +137,7 @@ top page の services セクションは `featuredTop === true` の item だけ�
 | `ddbj` | `name` が whitelist に完全一致: `BioProject`, `BioSample`, `DDBJ`, `JGA`, `DRA`, `GEA`, `MetaboBank`, `TogoVar-repository` |
 | `dbcls` | `services_name_en` が `Togo` で始まる (掲載 true のもの) |
 
-DDBJ whitelist は BP / BS / Trad(=`DDBJ`) / JGA / DRA / GEA / MetaboBank / jVar(=`TogoVar-repository`) に対応する。
+DDBJ whitelist は BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank / jVar(=`TogoVar-repository`) に対応する。
 
 ## 取得フロー
 

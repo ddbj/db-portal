@@ -48,7 +48,6 @@ const SubmitRoute = () => {
   const accessLabel = (a: Access): string => t(`submit.access.${a}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
-  const externalCtaLabel = (s: Service): string => t(`submit.flow.${s}.cta`)
   const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRole(s)}`)
   const cardCopy = (s: Service) => {
     const card = getSubmitCard(s)
@@ -106,7 +105,7 @@ const SubmitRoute = () => {
   return (
     <>
       <PageTitle title={t("submit.pageTitle")} />
-      <Section padTop="sm" padBottom="lg">
+      <Section padTop="none" padBottom="lg">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10 items-start">
           <div className="flex flex-col gap-8 min-w-0 lg:col-span-5">
             <div>
@@ -238,9 +237,11 @@ const SubmitRoute = () => {
               prereqHeading={t("submit.flow.prereqHeading")}
               wizardHeading={t("submit.flow.wizardHeading")}
               prepareHeading={t("submit.flow.prepareHeading")}
+              filesHeading={t("submit.flow.filesHeading")}
+              gotchaHeading={t("submit.flow.gotchaHeading")}
               resolveNote={resolveNote}
               noteKindLabel={noteKindLabel}
-              externalCtaLabel={externalCtaLabel}
+              externalCtaLabel={t("submit.flow.ctaLabel")}
               sourceTagLabel={sourceTagLabel}
             />
             {validations.length > 0 && (

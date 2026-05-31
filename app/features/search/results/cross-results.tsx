@@ -1,11 +1,12 @@
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
 import { useT } from "~/lib/i18n"
-import { Label, TextLink } from "~/ui"
+import { Button, Label, TextLink } from "~/ui"
 
 import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
+import { entryHref, resolveDate } from "./result-fields"
 
 export type CrossResultsProps = {
   q: string
@@ -13,6 +14,25 @@ export type CrossResultsProps = {
 }
 
 type DbEntry = CrossSearchResponse["databases"][number]
+
+// Card display order for the cross-DB grid. The API returns databases in its
+// own fixed order; the portal presents them DDBJ-first.
+const CARD_ORDER: readonly DbSlug[] = [
+  "trad",
+  "bioproject",
+  "biosample",
+  "sra",
+  "jga",
+  "taxonomy",
+  "gea",
+  "metabobank",
+]
+
+const cardOrderIndex = (db: string): number => {
+  const index = CARD_ORDER.indexOf(db as DbSlug)
+
+  return index === -1 ? CARD_ORDER.length : index
+}
 
 const formatCount = (count: number | null): string => {
   if (count === null) return "?"
@@ -30,6 +50,7 @@ const formatHitDate = (value: string | null | undefined): string => {
 
 const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   const t = useT()
+  const navigate = useNavigate()
   if (!isDbSlug(entry.db)) return null
   const db: DbSlug = entry.db
   const href = buildResultsHref({ q, db })
@@ -49,18 +70,26 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
           </TextLink>
         </span>
       </div>
-      <div>
-        <span
-          aria-label={t("search.results.cross.countAria")}
-          className="font-mono tabular-nums text-fs-h2 font-semibold text-ink"
-        >
-          {formatCount(entry.count)}
-        </span>
-        {entry.error && (
-          <span className="ml-2 text-fs-label text-red">
-            {t("search.results.cross.error")}
-          </span>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {entry.error
+          ? (
+            <>
+              <span className="text-fs-label text-red">
+                {t("search.results.cross.error")}
+              </span>
+              <Button kind="secondary" size="sm" onClick={() => navigate(0)}>
+                {t("search.results.cross.retry")}
+              </Button>
+            </>
+          )
+          : (
+            <span
+              aria-label={t("search.results.cross.countAria")}
+              className="font-mono tabular-nums text-fs-h2 font-semibold text-ink"
+            >
+              {formatCount(entry.count)}
+            </span>
+          )}
       </div>
       <div className="border-t border-border-soft pt-3">
         <Label>{t("search.results.cross.topHits")}</Label>
@@ -77,21 +106,23 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                   key={hit.identifier}
                   className="grid grid-cols-[90px_1fr] gap-x-3"
                 >
-                  <span className="font-mono text-fs-label text-brand-deep">{hit.identifier}</span>
+                  <div className="min-w-0">
+                    <span className="font-mono text-fs-label text-brand-deep">{hit.identifier}</span>
+                    {resolveDate(hit) && (
+                      <div className="font-mono text-fs-micro text-ink-soft mt-0.5">
+                        {formatHitDate(resolveDate(hit))}
+                      </div>
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <Link
-                      to={`https://ddbj.nig.ac.jp/search/entry/${db}/${encodeURIComponent(hit.identifier)}`}
+                      to={entryHref(hit)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-fs-label text-ink no-underline hover:underline line-clamp-2"
                     >
                       {hit.title ?? hit.identifier}
                     </Link>
-                    {hit.datePublished && (
-                      <div className="font-mono text-fs-micro text-ink-soft mt-0.5">
-                        {formatHitDate(hit.datePublished)}
-                      </div>
-                    )}
                   </div>
                 </li>
               ))}
@@ -102,10 +133,16 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   )
 }
 
-export const CrossResults = ({ q, response }: CrossResultsProps) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {response.databases.map((entry) => (
-      <DbResultCard key={entry.db} entry={entry} q={q} />
-    ))}
-  </div>
-)
+export const CrossResults = ({ q, response }: CrossResultsProps) => {
+  const ordered = [...response.databases].sort(
+    (a, b) => cardOrderIndex(a.db) - cardOrderIndex(b.db),
+  )
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {ordered.map((entry) => (
+        <DbResultCard key={entry.db} entry={entry} q={q} />
+      ))}
+    </div>
+  )
+}

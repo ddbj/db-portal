@@ -1,4 +1,4 @@
-import { type Dispatch, useState } from "react"
+import { type Dispatch, useEffect, useRef, useState } from "react"
 
 import type { DbPortalFacets } from "~/lib/api"
 import { useT } from "~/lib/i18n"
@@ -41,6 +41,25 @@ const valueLabel = (row: FilterRow, value: string, buckets: readonly Bucket[]): 
   return buckets.find((b) => b.value === value)?.label ?? value
 }
 
+// Comma-separated taxID editor for the organism facet. The box and the bucket
+// checkboxes are two views of the same state.facets.organism, so the box parses
+// to the canonical selection: split on comma, trim, drop empties, dedupe (first
+// occurrence wins). Values absent from the buckets (minor taxIDs) survive too.
+const TAX_ID_SEP = ", "
+
+const parseTaxIds = (raw: string): string[] => {
+  const out: string[] = []
+  for (const part of raw.split(",")) {
+    const value = part.trim()
+    if (value !== "" && !out.includes(value)) out.push(value)
+  }
+
+  return out
+}
+
+const sameValues = (a: readonly string[], b: readonly string[]): boolean =>
+  a.length === b.length && a.every((value, i) => value === b[i])
+
 const FacetSection = ({
   row,
   selected,
@@ -79,6 +98,91 @@ const FacetSection = ({
         showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
         onShowMore={() => setExpanded((v) => !v)}
       >
+        {visible.map((bucket) => (
+          <FacetRow
+            key={bucket.value}
+            type="checkbox"
+            name={row.key}
+            label={bucketLabel(row, bucket)}
+            {...(bucket.count > 0 ? { count: bucket.count.toLocaleString("en-US") } : {})}
+            checked={selected.includes(bucket.value)}
+            onChange={() => onToggle(bucket.value)}
+          />
+        ))}
+      </FacetGroup>
+    </div>
+  )
+}
+
+// Organism facet variant: a Taxonomy ID text box above the bucket checkboxes,
+// two-way bound to the same selection. Selecting buckets fills the box; editing
+// the box (incl. minor taxIDs not in any bucket) drives the selection.
+const OrganismFacetSection = ({
+  row,
+  selected,
+  buckets,
+  onSetValues,
+  onToggle,
+  onClear,
+}: {
+  row: FilterRow
+  selected: readonly string[]
+  buckets: readonly Bucket[]
+  onSetValues: (values: string[]) => void
+  onToggle: (value: string) => void
+  onClear: () => void
+}) => {
+  const t = useT()
+  const [expanded, setExpanded] = useState(false)
+  const [raw, setRaw] = useState(() => selected.join(TAX_ID_SEP))
+  // The box pushes its own edits to the selection, which echoes back as a new
+  // `selected`; re-syncing the raw text on that echo would clobber in-progress
+  // typing (a trailing comma, a half-typed id). Track what we last pushed and
+  // only re-sync when the selection changes from outside (checkbox / clear /
+  // URL restore).
+  const lastSent = useRef<readonly string[]>(selected)
+  useEffect(() => {
+    if (sameValues(selected, lastSent.current)) return
+    lastSent.current = selected
+    setRaw(selected.join(TAX_ID_SEP))
+  }, [selected])
+
+  const onRawChange = (value: string): void => {
+    setRaw(value)
+    const values = parseTaxIds(value)
+    lastSent.current = values
+    onSetValues(values)
+  }
+
+  const shown = buckets.slice(0, expanded ? CAP : VISIBLE)
+  const shownValues = new Set(shown.map((b) => b.value))
+  const extras: Bucket[] = selected
+    .filter((v) => !shownValues.has(v))
+    .map((value) => ({ value, count: 0 }))
+  const visible = [...shown, ...extras]
+  const canToggle = buckets.length > VISIBLE
+  const taxIdLabel = t("search.facets.organismTaxId")
+
+  return (
+    <div data-testid={`facet-${row.key}`}>
+      <FacetGroup
+        label={t(`search.facets.field.${row.key}`)}
+        appliedCount={selected.length}
+        {...(selected.length > 0 ? { onClear } : {})}
+        showMore={canToggle}
+        showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
+        onShowMore={() => setExpanded((v) => !v)}
+      >
+        <li className="flex flex-col gap-1 py-1">
+          <span className="text-fs-label text-ink-mid">{taxIdLabel}</span>
+          <TextInput
+            ariaLabel={taxIdLabel}
+            size="sm"
+            mono
+            value={raw}
+            onChange={(e) => onRawChange(e.target.value)}
+          />
+        </li>
         {visible.map((bucket) => (
           <FacetRow
             key={bucket.value}
@@ -214,6 +318,19 @@ export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => 
       {rows.map((row) => {
         if (row.kind === "facet") {
           const selected = state.facets[row.key] ?? []
+          if (row.organism) {
+            return (
+              <OrganismFacetSection
+                key={row.key}
+                row={row}
+                selected={selected}
+                buckets={bucketsFor(facets, row)}
+                onSetValues={(values) => dispatch({ type: "setFacet", key: row.key, values })}
+                onToggle={(value) => dispatch({ type: "toggleFacet", key: row.key, value })}
+                onClear={() => dispatch({ type: "clearFacet", key: row.key })}
+              />
+            )
+          }
 
           return (
             <FacetSection

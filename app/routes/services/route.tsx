@@ -40,7 +40,7 @@ const ServicesRoute = () => {
   return (
     <>
       <PageTitle title={t("services.pageTitle")} />
-      <Section padTop="sm" padBottom="lg">
+      <Section padTop="none" padBottom="lg">
         <div className="grid gap-8 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
           <FacetPanel
             facet={facet}

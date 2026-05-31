@@ -59,7 +59,7 @@ export {
 export {
   CrossResults,
   PerDbResults,
-  ResultCard,
+  ResultRow,
   ResultsPagination,
 } from "./results"
 export {

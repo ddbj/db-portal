@@ -1,6 +1,6 @@
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, useT } from "~/lib/i18n"
-import { Callout, Select, type SelectOption, Tag } from "~/ui"
+import { Callout, InfoHint, Select, type SelectOption } from "~/ui"
 
 import {
   type DbSlug,
@@ -15,7 +15,7 @@ import {
   DEFAULT_SORT,
 } from "../url/url-params"
 import { ResultsPagination } from "./pagination"
-import { ResultCard } from "./result-card"
+import { ResultRow } from "./result-row"
 
 export type PerDbResultsProps = {
   db: DbSlug
@@ -85,48 +85,48 @@ export const PerDbResults = ({
             })}
         </p>
         {response.hardLimitReached && (
-          <Tag kind="status" tone="warning" size="sm">{t("search.results.perDb.hardLimit")}</Tag>
+          <InfoHint label={t("search.results.perDb.hardLimit")} />
         )}
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
-          <span>{t("search.results.sort.label")}</span>
-          <Select
-            ariaLabel={t("search.results.sort.label")}
-            options={sortOptions}
-            value={sort}
-            onChange={(next) => onSortChange(next as SortKey)}
-            width={148}
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
+            <span>{t("search.results.sort.label")}</span>
+            <Select
+              ariaLabel={t("search.results.sort.label")}
+              options={sortOptions}
+              value={sort}
+              onChange={(next) => onSortChange(next as SortKey)}
+              width={148}
+            />
+          </label>
+          <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
+            <span>{t("search.results.perPage.label")}</span>
+            <Select
+              ariaLabel={t("search.results.perPage.label")}
+              options={perPageOptions}
+              value={String(perPage)}
+              onChange={(next) => {
+                const parsed = Number.parseInt(next, 10)
+                if (PER_PAGE_VALUES.includes(parsed as PerPageValue)) {
+                  onPerPageChange(parsed as PerPageValue)
+                }
+              }}
+              width={80}
+            />
+          </label>
+          <ResultsPagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
           />
-        </label>
-        <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">
-          <span>{t("search.results.perPage.label")}</span>
-          <Select
-            ariaLabel={t("search.results.perPage.label")}
-            options={perPageOptions}
-            value={String(perPage)}
-            onChange={(next) => {
-              const parsed = Number.parseInt(next, 10)
-              if (PER_PAGE_VALUES.includes(parsed as PerPageValue)) {
-                onPerPageChange(parsed as PerPageValue)
-              }
-            }}
-            width={80}
-          />
-        </label>
-        <ResultsPagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+        </div>
       </div>
       {response.total === 0
         ? <Callout tone="info" role="status">{t("search.results.perDb.empty")}</Callout>
         : (
-          <ul className="list-none p-0 m-0 flex flex-col gap-3">
+          <ul className="list-none p-0 m-0">
             {response.hits.map((hit) => (
-              <li key={`${hit.type}-${hit.identifier}`}>
-                <ResultCard db={db} hit={hit} lang={lang} />
+              <li key={`${hit.type}-${hit.identifier}`} className="border-b border-border-soft last:border-b-0">
+                <ResultRow db={db} hit={hit} lang={lang} />
               </li>
             ))}
           </ul>

@@ -9,6 +9,7 @@ ES に実在する field (ddbj-search-converter の mapping) を起点に、各�
 - REST `/entries` の term / text 区分: ddbj-search-api `es/query.py` (`_TERM_FILTER_FIELDS` / `_TEXT_MATCH_FIELDS`)
 - Sidebar filter 行: `app/features/search/sidebar/facet-config.ts`
 - Advanced builder の field (scope 別カタログ): `app/features/search/advanced/field-catalog.ts` (`fieldsForScope` / `FIELD_OPS`)
+- 検索結果リストの表示 field (per-DB の見せ方 / detail link 生成): `app/features/search/results/result-fields.ts` (規約は `search.md` § Result row)
 
 ## 前提構造
 
@@ -38,7 +39,7 @@ ES common mapping (全 type に merge) 起点。「横断」= cross-DB の `q` �
 | title (text)                                       | `title`               | ○      | ○ (eq / contains) | —                                   | —                   |
 | description (text)                                 | `description`         | ○      | ○ (eq / contains) | —                                   | —                   |
 | organism.identifier (keyword)                      | `organism_id`         | ○      | ○ (eq / wildcard) | facet (全 ES DB)                    | organism            |
-| organism.name (text+keyword)                       | `organism_name`       | ○      | ○ (eq / contains) | text (trad のみ)                    | (organism の label) |
+| organism.name (text+keyword)                       | `organism_name`       | ○      | ○ (eq / contains) | text (cross + 6 ES + trad)          | (organism の label) |
 | accessibility (keyword)                            | `accessibility`       | ○      | ○ (eq)            | facet (cross + 6 ES)                | accessibility       |
 | datePublished (date)                               | `date_published`      | ○      | ○ (between)       | range (taxonomy 以外)               | —                   |
 | dateModified (date)                                | `date_modified`       | ○      | ○ (between)       | range (cross + 6 ES)                | —                   |

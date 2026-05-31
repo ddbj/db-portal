@@ -262,18 +262,21 @@ export type Resources = {
       wizardHeading: string
       prepareHeading: string
       roleTag: { destination: string; companion: string; external: string }
-      "bioproject": { title: string; description: string; cta: string }
-      "biosample": { title: string; description: string; cta: string }
-      "dra": { title: string; description: string; cta: string }
-      "jga": { title: string; description: string; cta: string }
-      "ddbj-trad": { title: string; description: string; cta: string }
-      "nsss": { title: string; description: string; cta: string }
-      "togovar": { title: string; description: string; cta: string }
-      "gea": { title: string; description: string; cta: string }
-      "metabobank": { title: string; description: string; cta: string }
-      "humandbs": { title: string; description: string; cta: string }
-      "jpost": { title: string; description: string; cta: string }
-      "eva": { title: string; description: string; cta: string }
+      ctaLabel: string
+      filesHeading: string
+      gotchaHeading: string
+      "bioproject": { title: string; description: string }
+      "biosample": { title: string; description: string }
+      "dra": { title: string; description: string }
+      "jga": { title: string; description: string }
+      "ddbj-trad": { title: string; description: string }
+      "nsss": { title: string; description: string }
+      "togovar": { title: string; description: string }
+      "gea": { title: string; description: string }
+      "metabobank": { title: string; description: string }
+      "humandbs": { title: string; description: string }
+      "jpost": { title: string; description: string }
+      "eva": { title: string; description: string }
     }
     origin: {
       tier1: string
@@ -494,10 +497,11 @@ export type Resources = {
       perPage: {
         label: string
       }
-      card: {
-        sequenceLength: string
-        publication: string
-        sameAs: string
+      row: {
+        controlled: string
+        host: string
+        geo: string
+        lineage: string
       }
     }
     facets: {
@@ -505,6 +509,7 @@ export type Resources = {
       appliedClearAll: string
       appliedPrefix: string
       organism: string
+      organismTaxId: string
       submitter: string
       studyType: string
       datePublished: string
@@ -902,18 +907,21 @@ export const ja: Resources = {
       wizardHeading: "外部サイトでの手順",
       prepareHeading: "準備するもの",
       roleTag: { destination: "登録先", companion: "準備", external: "外部窓口" },
-      "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねる随伴メタデータ", cta: "登録画面を開く" },
-      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴メタデータ", cta: "登録画面を開く" },
-      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先", cta: "登録を始める" },
-      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先", cta: "登録を始める" },
-      "ddbj-trad": { title: "DDBJ Trad", description: "塩基配列を一括登録する MSS", cta: "登録を始める" },
-      "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム", cta: "登録を始める" },
-      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先", cta: "登録を始める" },
-      "gea": { title: "GEA", description: "遺伝子発現データの登録先", cta: "登録を始める" },
-      "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先", cta: "登録を始める" },
-      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (DBCLS 運営)", cta: "ポリシー申請に進む" },
-      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先 (DDBJ 外)", cta: "jPOST へ進む" },
-      "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)", cta: "EVA へ進む" },
+      ctaLabel: "登録サイトを開く",
+      filesHeading: "対象ファイル",
+      gotchaHeading: "ポイント",
+      "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねる随伴メタデータ" },
+      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴メタデータ" },
+      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },
+      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先" },
+      "ddbj-trad": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
+      "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム" },
+      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先" },
+      "gea": { title: "GEA", description: "遺伝子発現データの登録先" },
+      "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
+      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (DBCLS 運営)" },
+      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先 (DDBJ 外)" },
+      "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)" },
     },
     origin: {
       tier1: "ルール由来",
@@ -940,7 +948,7 @@ export const ja: Resources = {
         misagPackage: "SAG は MAG とは別の MISAG package で扱います。",
       },
       tpa: {
-        intro: "第三者 (TPA) の配列・アノテーションは、DDBJ Trad (MSS) で受け付けます。",
+        intro: "第三者 (TPA) の配列・アノテーションは、DDBJ (MSS) で受け付けます。",
         primaryAccessionRequired: "TPA には、引用元となる INSDC accession の指定が必須です。",
       },
       assemblyAnnotation: {
@@ -948,13 +956,13 @@ export const ja: Resources = {
         filenamePairing: "配列ファイルとアノテーションファイルは、拡張子を除いてファイル名を一致させます。",
       },
       annotation: {
-        intro: "組み上げ済み配列へのアノテーションは、DDBJ Trad (MSS) で登録します。",
+        intro: "組み上げ済み配列へのアノテーションは、DDBJ (MSS) で登録します。",
         needsSequencePair: "単独のアノテーション行には、対応する配列ファイルのペアが必要です。",
       },
     },
     nsss: {
       intro: "少数・短い塩基配列は、Web 登録システム NSSS (Nucleotide Sequence Submission System) で登録します。",
-      specialToMss: "大規模配列・完成ゲノム・WGS / TSA / TLS / EST / HTG / TPA などは NSSS の対象外です。DDBJ Trad (MSS) で登録してください。",
+      specialToMss: "大規模配列・完成ゲノム・WGS / TSA / TLS / EST / HTG / TPA などは NSSS の対象外です。DDBJ (MSS) で登録してください。",
       notForReads: "生リードは塩基配列登録の対象外です。配列リードは DRA に登録してください。",
     },
     variant: {
@@ -1196,8 +1204,8 @@ export const ja: Resources = {
         viewAll: "結果一覧",
         topHits: "上位ヒット",
         noTopHits: "上位ヒットはありません",
-        retry: "再試行",
-        error: "このデータベースの集計に失敗しました",
+        retry: "再読み込み",
+        error: "一時的に集計できませんでした",
         countAria: "ヒット件数",
       },
       perDb: {
@@ -1216,10 +1224,11 @@ export const ja: Resources = {
       perPage: {
         label: "1 ページあたり",
       },
-      card: {
-        sequenceLength: "塩基数",
-        publication: "論文",
-        sameAs: "関連 ID",
+      row: {
+        controlled: "アクセス制限",
+        host: "宿主",
+        geo: "地域",
+        lineage: "系統",
       },
     },
     facets: {
@@ -1227,6 +1236,7 @@ export const ja: Resources = {
       appliedClearAll: "すべて解除",
       appliedPrefix: "適用中",
       organism: "生物種",
+      organismTaxId: "生物種 ID",
       submitter: "登録機関",
       studyType: "研究タイプ",
       datePublished: "公開日",
@@ -1339,7 +1349,7 @@ export const ja: Resources = {
     },
     scope: {
       all: "全データベース",
-      trad: "DDBJ (Trad)",
+      trad: "DDBJ",
       sra: "SRA",
       bioproject: "BioProject",
       biosample: "BioSample",

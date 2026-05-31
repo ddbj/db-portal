@@ -51,6 +51,10 @@ const organism: FilterRow = {
   facetName: "organism",
   organism: true,
 }
+// Free-text search on organism.name, paired with the taxID organism facet so a
+// name-based DSL (organism_name:...) round-trips into the sidebar instead of
+// falling through to the Advanced builder.
+const organismName = text("organismName", "organism_name")
 const submitter = text("submitter", "submitter")
 const datePublished: FilterRow = {
   key: "datePublished",
@@ -86,9 +90,10 @@ const dateCreated: FilterRow = {
 const esDateRanges: readonly FilterRow[] = [datePublished, dateModified, dateCreated]
 
 export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
-  cross: [organism, accessibility, name, publication, ...esDateRanges],
+  cross: [organism, organismName, accessibility, name, publication, ...esDateRanges],
   bioproject: [
     organism,
+    organismName,
     accessibility,
     facet("objectType", "object_type", "objectType"),
     facet("relevance", "relevance", "relevance"),
@@ -103,6 +108,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
   biosample: [
     organism,
+    organismName,
     accessibility,
     facet("package", "package", "package"),
     facet("model", "model", "model"),
@@ -118,6 +124,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
   sra: [
     organism,
+    organismName,
     accessibility,
     facet("type", "type", "type"),
     facet("libraryStrategy", "library_strategy", "libraryStrategy"),
@@ -139,6 +146,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
   jga: [
     organism,
+    organismName,
     accessibility,
     facet("type", "type", "type"),
     facet("studyType", "study_type", "studyType"),
@@ -154,6 +162,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
   gea: [
     organism,
+    organismName,
     accessibility,
     facet("experimentType", "experiment_type", "experimentType"),
     submitter,
@@ -163,6 +172,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
   metabobank: [
     organism,
+    organismName,
     accessibility,
     facet("experimentType", "experiment_type", "experimentType"),
     facet("studyType", "study_type", "studyType"),
@@ -178,7 +188,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
     facet("molecularType", "molecular_type", "molecularType"),
     text("featureGeneName", "feature_gene_name"),
     text("referenceJournal", "reference_journal"),
-    text("organismName", "organism_name"),
+    organismName,
     datePublished,
     sequenceLength,
   ],

@@ -29,6 +29,7 @@ export type SearchFacetState = {
 
 export type SearchFacetAction =
   | { type: "toggleFacet"; key: string; value: string }
+  | { type: "setFacet"; key: string; values: string[] }
   | { type: "clearFacet"; key: string }
   | { type: "setText"; key: string; value: string }
   | { type: "setDateRange"; key: string; active: DateRangeKey; from: string; to: string }
@@ -84,6 +85,8 @@ export const searchFacetReducer = (
         ...state,
         facets: { ...state.facets, [action.key]: toggle(state.facets[action.key], action.value) },
       }
+    case "setFacet":
+      return { ...state, facets: { ...state.facets, [action.key]: action.values } }
     case "clearFacet":
       return { ...state, facets: { ...state.facets, [action.key]: [] } }
     case "setText":

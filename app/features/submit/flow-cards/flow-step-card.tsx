@@ -1,5 +1,5 @@
 import type { FileEntry, FileGroup, FlowStep } from "~/schemas/submit"
-import { Button, Callout, ChevronDownIcon, cn, Tag } from "~/ui"
+import { Button, Callout, cn, InfoIcon, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
@@ -25,7 +25,9 @@ type FlowStepCardProps = {
   wizardHeading: string
   prepare: readonly string[]
   prepareHeading: string
+  filesHeading: string
   gotcha?: string | undefined
+  gotchaHeading: string
   issuedNote?: string | undefined
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
@@ -50,7 +52,9 @@ export const FlowStepCard = ({
   wizardHeading,
   prepare,
   prepareHeading,
+  filesHeading,
   gotcha,
+  gotchaHeading,
   issuedNote,
   resolveNote,
   noteKindLabel,
@@ -111,7 +115,20 @@ export const FlowStepCard = ({
       )}
 
       {(scopeGroups.length > 0 || scopeEntries.length > 0) && (
-        <FilesBlock groups={scopeGroups} entries={scopeEntries} />
+        <FilesBlock groups={scopeGroups} entries={scopeEntries} heading={filesHeading} />
+      )}
+
+      {prepare.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <p className={sectionHeadingClass}>{prepareHeading}</p>
+          <ul className="flex flex-col gap-1 m-0 pl-5">
+            {prepare.map((p, i) => (
+              <li key={i} className="text-fs-body-sm text-ink-mid leading-relaxed list-disc">
+                {p}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {wizardSteps.length > 0 && (
@@ -130,24 +147,8 @@ export const FlowStepCard = ({
         </section>
       )}
 
-      {prepare.length > 0 && (
-        <details className="group border-t border-border-soft pt-3">
-          <summary className="inline-flex items-center gap-1.5 cursor-pointer select-none rounded-button -mx-1 px-1 py-0.5 text-fs-label font-semibold text-brand-deep list-none marker:hidden hover:bg-surface-subtle">
-            <ChevronDownIcon
-              size={14}
-              className="-rotate-90 transition-transform group-open:rotate-0"
-            />
-            {prepareHeading}
-            <span className="font-normal text-ink-soft">({prepare.length})</span>
-          </summary>
-          <ul className="flex flex-col gap-1 m-0 pl-5 mt-2">
-            {prepare.map((p, i) => (
-              <li key={i} className="text-fs-body-sm text-ink-mid leading-relaxed list-disc">
-                {p}
-              </li>
-            ))}
-          </ul>
-        </details>
+      {wizardSteps.length > 0 && (
+        <hr className="w-full border-0 border-t border-border-soft m-0" />
       )}
 
       {step.notes.length > 0 && (
@@ -175,9 +176,15 @@ export const FlowStepCard = ({
       )}
 
       {gotcha !== undefined && gotcha.length > 0 && (
-        <p className="text-fs-body-sm text-ink-soft leading-relaxed m-0 border-l-2 border-warn-border pl-3">
-          {gotcha}
-        </p>
+        <Callout tone="info">
+          <span className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5 font-bold text-ink">
+              <InfoIcon size={14} className="shrink-0" />
+              {gotchaHeading}
+            </span>
+            <span className="text-ink-mid">{gotcha}</span>
+          </span>
+        </Callout>
       )}
 
       {externalUrl !== undefined && (

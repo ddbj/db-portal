@@ -211,13 +211,13 @@ scope (cross / 各 DB) ごとに出す行は次のとおり。facet は ddbj-sea
 
 | scope | facet | text | range |
 |---|---|---|---|
-| cross | organism, accessibility | name, publication | datePublished, dateModified, dateCreated |
-| bioproject | organism, accessibility, objectType, relevance | submitter, name, publication, projectType, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
-| biosample | organism, accessibility, package, model | submitter, name, host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
-| sra | organism, accessibility, type, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | submitter, name, publication, libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
-| jga | organism, accessibility, type, studyType, datasetType, vendor | submitter, name, publication, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
-| gea | organism, accessibility, experimentType | submitter, name, publication | datePublished, dateModified, dateCreated |
-| metabobank | organism, accessibility, experimentType, studyType, submissionType | submitter, name, publication | datePublished, dateModified, dateCreated |
+| cross | organism, accessibility | organismName, name, publication | datePublished, dateModified, dateCreated |
+| bioproject | organism, accessibility, objectType, relevance | organismName, submitter, name, publication, projectType, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
+| biosample | organism, accessibility, package, model | organismName, submitter, name, host, strain, isolate, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
+| sra | organism, accessibility, type, libraryStrategy, librarySource, librarySelection, platform, libraryLayout, instrumentModel, analysisType | organismName, submitter, name, publication, libraryName, libraryConstructionProtocol, geoLocName, collectionDate, derivedFromId | datePublished, dateModified, dateCreated |
+| jga | organism, accessibility, type, studyType, datasetType, vendor | organismName, submitter, name, publication, grantTitle, grantAgency, externalLinkLabel | datePublished, dateModified, dateCreated |
+| gea | organism, accessibility, experimentType | organismName, submitter, name, publication | datePublished, dateModified, dateCreated |
+| metabobank | organism, accessibility, experimentType, studyType, submissionType | organismName, submitter, name, publication | datePublished, dateModified, dateCreated |
 | trad | division, molecularType | featureGeneName, referenceJournal, organismName | datePublished, sequenceLength |
 | taxonomy | rank, kingdom | lineage, phylum, class, order, family, genus, species, commonName | — |
 
@@ -229,8 +229,9 @@ scope (cross / 各 DB) ごとに出す行は次のとおり。facet は ddbj-sea
 - **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` / `derivedFromId` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
 - **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは ES 6 DB で text 入力 (`submitter` の contains)。Solr backed (trad / taxonomy) は degenerate のため出さない。
 - **taxonomy の `organism` は出さない**: tax_id が doc 同一性で facet が degenerate (API も taxonomy facet を rank / kingdom のみに限定)。taxonomy の生物種軸は text 入力 (`species` / `commonName` 等) で扱う。
+- **`organism` filter は taxID と学名の 2 系統**: organism facet (cross + ES 6 DB) は bucket チェックボックス (taxID = `organism_id`、件数付き、表示は学名ラベル) の上に Taxonomy ID text box を持つ。両者は同じ選択状態 (taxID 群) の双方向同期する別表現で、text box では bucket に現れない minor な taxID もカンマ区切りで直接入力できる (bucket 外の値も sidebar から指定可能にする)。これとは別軸で学名の contains 検索を `organismName` text 行 (cross + ES 6 DB + trad) として持つ。AST 上は facet/Taxonomy ID box が `organism_id`、text 行が `organism_name` を emit し、Taxonomy ID box は facet 選択の表示専用エディタで AST マッピングは facet 行のまま不変 (§ AST 変換)。
 - **accessibility は 2 値 enum facet**: public-access / controlled-access。API の `_COMMON_FACET` で全 ES scope 集計可能なので、cross + ES 6 DB の sidebar に facet として出す (Solr trad / taxonomy は field 不在で出さない)。
-- **name / publication / dateModified / dateCreated は共通 field の網羅追加**: 全 ES scope に name (text) と dateModified / dateCreated (range) を、publication が merge される scope (biosample 除く) + cross に publication (text) を出す。keyword box / Advanced builder と重複する分は許容 (sidebar = `/search/results` で唯一編集できる filter のため、横断可 field も sidebar から到達できるようにする)。
+- **name / publication / organismName / dateModified / dateCreated は共通 field の網羅追加**: 全 ES scope に name (text)・organismName (text)・dateModified / dateCreated (range) を、publication が merge される scope (biosample 除く) + cross に publication (text) を出す。keyword box / Advanced builder と重複する分は許容 (sidebar = `/search/results` で唯一編集できる filter のため、横断可 field も sidebar から到達できるようにする)。`organism_name` はこの方針から漏れていた横断可 field で、これにより `organism_name:…` の DSL が Advanced builder に落ちず sidebar の学名 text 行に round-trip する。
 
 ### 候補値・件数の出所 = API facet 集計
 
@@ -360,11 +361,11 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 - title: i18n リソースの `search.scope.<db>`。同じ行の右端に「結果一覧 →」 link を縦中央で並べる
 - count: `count ?? 0`、tabular-nums mono 26 px
-- 上位 hit: 最大 3 件 (accession + title + datePublished)
+- 上位 hit: 最大 3 件。左列に accession + その下に日付、右列に title。日付は datePublished → dateModified → dateCreated の fallback (per-DB 行と共通)
 - 「結果一覧 →」: `/search/results?q=<DSL>&db=<id>` への TextLink (title と同じ行の右端)
-- error フィールド (timeout 等) が立っているとき: count を `?` 表示 + 「再試行」 link
+- error フィールド (timeout 等の一時的な部分失敗) が立っているとき: count を出さず、一時障害メッセージ (`search.results.cross.error`) + 「再読み込み」 (`navigate(0)`、`search.results.cross.retry`) を表示する。error は恒久的な検索不可ではなく再読み込みで回復しうるため、「失敗」ではなく一時性が伝わる文言にする
 
-`databases` は API 仕様で固定順 (`trad / sra / bioproject / biosample / jga / gea / metabobank / taxonomy`)。portal 側で並び替えない。
+`databases` は API 仕様で固定順 (`trad / sra / bioproject / biosample / jga / gea / metabobank / taxonomy`) で返るが、カードは portal 側で表示順 (`DDBJ (trad) / BioProject / BioSample / SRA / JGA / Taxonomy / GEA / MetaboBank`) に並び替えて出す (コードが SSOT、`cross-results.tsx` の `CARD_ORDER`)。
 
 cross-DB でも左に Sidebar を出す。構成は cross scope の filter (organism / datePublished、[§ Sidebar facet](#sidebar-facet))。Tier 1 のみで Tier 3 は出さない (横断で `field-not-available-in-cross-db` になるため)。
 
@@ -381,18 +382,47 @@ cross-DB と同じ 2 ペイン (検索 box + preview は共通ヘッダ、[§ �
 | 列 | 幅 | 内容 |
 |---|---|---|
 | Sidebar | `--spacing-sidebar` (256 px) | `SidebarHeading` + `AppliedFilters` + scope の filter 構成 (facet / text / range 行) ([§ Sidebar facet](#sidebar-facet)) |
-| Main | flex-1 | ResultsToolbar (件数 + sort + perPage + pagination) + record card list + ResultsToolbar (bottom pagination のみ) |
+| Main | flex-1 | ResultsToolbar (件数 + sort + perPage + pagination) + ResultRow の区切り線リスト (ヘアライン区切り、カード枠・影なし) + ResultsToolbar (bottom pagination のみ) |
 
-#### Result card
+#### Result row
 
-- 上 row: accession (mono brand-deep) + `·` + datePublished + 種類別 Tag (organism、SRA は libraryStrategy、BioProject は projectType (`string[]` を join 表示)、Trad は molecularType / division。per-DB により tag 種類差)
-- title: 16 px bold
-- excerpt: description / abstract (2 行 clamp)
-- 下 row: 登録機関 (submitter / organization) を mono brand pill 風 Tag で
+per-DB の 1 ヒットを、全 DB 共通の 4 段スケルトンで描く (カードではなく区切り線リスト)。DB 差は内部分岐 (`result-fields.ts` のマッピング) で表し、DB ごとにコンポーネントを分けない。
 
-Tier 1 必須 field (identifier / type) は API 契約で常に非空。portal 側で空チェックを行わない (空が来たら API 側の不正データとして UI 上 broken な見た目で可視化される)。Tier 2 (study type / organization 等) は optional chaining で安全に扱い、値が空なら row 自体を非表示。
+1. ID 行: identifier (mono brand-deep) + datePublished + subtype/rank バッジ + controlled-access バッジ
+2. title: 黒の太字リンク (なければ identifier)。外部 entry を新規タブで開く
+3. excerpt: description を 2 行 clamp (description を持たない DB は出さない)
+4. メタ行: 登録機関 (organization[0].name) → organism → DB 固有 chip
 
-DB ごとの差分は内部分岐で表現する (DB ごとに `result-card-bioproject.tsx` のように分けない)。
+表示は「値があれば出す」。identifier 以外はすべて optional 扱いで、空 / null の field は描かない (skeleton / placeholder を出さない)。Tier 1 必須 field (identifier / type) は API 契約で常に非空なので portal 側で空チェックしない。
+
+日付は datePublished → dateModified → dateCreated の順で最初に存在する値を出す (どれも無ければ日付を出さない)。順序は `resolveDate` に集約し、cross-DB の上位 hit と共用する。
+
+detail link は hit の `url` ではなく identifier + 細粒度 `type` から自前生成する (API response 形が変わっても portal 側で URL を保証する):
+
+| DB | URL |
+|---|---|
+| ES 6 DB | `https://ddbj.nig.ac.jp/search/entry/{type}/{identifier}` (`type` = `sra-analysis` 等の細粒度) |
+| trad | `https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number={identifier}` |
+| taxonomy | `https://ddbj.nig.ac.jp/tx_search/{identifier}?view=info` |
+
+##### DB 別の表示 field
+
+メタ行に出す DB 固有 field の規約 (値があるときだけ)。chip は値の語彙で 2 質感に分ける: controlled / identifier / numeric は mono の chip、submitter 自由記述 (free-form) は淡色の控えめ chip。
+
+| DB | subtype/rank バッジ | organism | excerpt | DB 固有メタ (chip) |
+|---|---|---|---|---|
+| bioproject | Umbrella のとき | あれば | あり | projectType / relevance |
+| biosample | — | あれば (主役) | あり | model / host / strain / isolate / geoLocName |
+| sra | entity subtype | sample のみ | run 以外 | experiment: libraryStrategy / librarySource / platform / instrumentModel、analysis: analysisType、sample: geoLocName |
+| jga | entity subtype | 出さない | あり (dac は無) | study: studyType、dataset: datasetType |
+| gea | — | 出さない | あり | experimentType |
+| metabobank | — | 出さない | あり | experimentType / studyType |
+| trad | — | あれば | 無し (Solr が null) | molecularType / division / sequenceLength (bp) |
+| taxonomy | rank | 出さない | 無し | commonName / japaneseName (title 補助) + lineage |
+
+- organism は jga (常に Homo sapiens で識別力ゼロ) と taxonomy (organism = その taxon 自身) では出さない。
+- free-form (experimentType / studyType / datasetType / host / strain / geoLocName 等) は submitter 自由記述で表記揺れが大きいため、見出しにせず控えめ chip に留める。
+- controlled-access (実質 JGA のみ) は警告色バッジで示す。`status` / `accessibility` / `isPartOf` / `type` / `publication` / `grant` / `externalLink` / `dbXrefs` / `sameAs` / `distribution` / `properties` はリスト行に出さない (常時同値・冗長・詳細画面向き)。
 
 #### Pagination
 
@@ -406,7 +436,7 @@ DB ごとの差分は内部分岐で表現する (DB ごとに `result-card-biop
 
 ResultsToolbar は結果リストの上下に置く。上は件数 + sort + perPage + pagination、下は pagination のみ。
 
-`hardLimitReached === true` のとき件数の横に Tag 「上位 10000 件まで」 を出す (API 仕様、ES / Solr のハードリミット表示)。
+`hardLimitReached === true` のとき件数の横に ⓘ アイコン (`InfoHint`) を出し、hover / click で「上位 10,000 件まで表示しています」を tooltip 表示する (API 仕様、ES / Solr のハードリミット表示)。
 
 ### 結果領域の a11y
 

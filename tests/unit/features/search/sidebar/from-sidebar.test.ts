@@ -6,6 +6,7 @@ import type { ParseNode } from "~/lib/api"
 type EqNode = { op: "eq"; field: string; value: string }
 type ContainsNode = { op: "contains"; field: string; value: string }
 type OrNode = { op: "OR"; rules: ParseNode[] }
+type AndNode = { op: "AND"; rules: ParseNode[] }
 type BetweenNode = { op: "between"; field: string; from: string; to: string }
 
 const expectEq = (node: ParseNode): EqNode => {
@@ -24,6 +25,12 @@ const expectOr = (node: ParseNode): OrNode => {
   if (node.op !== "OR") throw new Error(`expected OR, got ${node.op}`)
 
   return node as OrNode
+}
+
+const expectAnd = (node: ParseNode): AndNode => {
+  if (node.op !== "AND") throw new Error(`expected AND, got ${node.op}`)
+
+  return node as AndNode
 }
 
 const expectBetween = (node: ParseNode): BetweenNode => {
@@ -59,6 +66,25 @@ describe("fromSidebar", () => {
     const first = expectEq(or.rules[0] as ParseNode)
     expect(first.field).toBe("organism_id")
     expect(first.value).toBe("9606")
+  })
+
+  test("organismNameText_emitsContainsInCross", () => {
+    // organism_name is now a cross-scope text row, so the sidebar emits it.
+    const contains = expectContains(fromSidebar(withText("organismName", "Homo sapiens"), { db: null }))
+    expect(contains.field).toBe("organism_name")
+    expect(contains.value).toBe("Homo sapiens")
+  })
+
+  test("organismFacetAndNameText_coexistInCross", () => {
+    const state: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      facets: { organism: ["9606"] },
+      texts: { organismName: "Homo sapiens" },
+    }
+    const ast = expectAnd(fromSidebar(state, { db: null }))
+    const fields = ast.rules.map((rule) => (rule as { field?: string }).field)
+    expect(fields).toContain("organism_id")
+    expect(fields).toContain("organism_name")
   })
 
   test("enumFacetEmittedOnlyForOwningDb", () => {

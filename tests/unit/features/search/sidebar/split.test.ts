@@ -12,6 +12,8 @@ import type { ParseNode } from "~/lib/api"
 
 const organismLeaf = (value: string): ParseNode => ({ op: "eq", field: "organism_id", value })
 
+const organismNameLeaf = (value: string): ParseNode => ({ op: "contains", field: "organism_name", value })
+
 const FIXED_NOW = new Date("2024-06-15T00:00:00Z")
 
 const presetBetween = (key: "1y" | "5y" | "10y"): ParseNode => {
@@ -32,6 +34,41 @@ describe("splitForSidebar", () => {
     const ast: ParseNode = { op: "OR", rules: [organismLeaf("9606"), organismLeaf("10090")] }
     const { sidebar } = splitForSidebar(ast)
     expect(sidebar.facets.organism).toEqual(["9606", "10090"])
+  })
+
+  test("extractsOrganismNameAsTextInCross", () => {
+    const { sidebar, rest } = splitForSidebar(organismNameLeaf("Homo sapiens"), null)
+    expect(sidebar.texts.organismName).toBe("Homo sapiens")
+    expect(isIdentityAst(rest)).toBe(true)
+  })
+
+  test("extractsOrganismNameAsTextInEsScope", () => {
+    const { sidebar, rest } = splitForSidebar(organismNameLeaf("Homo sapiens"), "bioproject")
+    expect(sidebar.texts.organismName).toBe("Homo sapiens")
+    expect(isIdentityAst(rest)).toBe(true)
+  })
+
+  test("organismIdAndNameSplitToSeparateAxes", () => {
+    // organism_id lands on the facet, organism_name on its own text row — the two
+    // organism axes do not collide.
+    const ast: ParseNode = {
+      op: "AND",
+      rules: [organismLeaf("9606"), organismNameLeaf("Homo sapiens")],
+    }
+    const { sidebar, rest } = splitForSidebar(ast, null)
+    expect(sidebar.facets.organism).toEqual(["9606"])
+    expect(sidebar.texts.organismName).toBe("Homo sapiens")
+    expect(isIdentityAst(rest)).toBe(true)
+  })
+
+  test("organismNameTextRoundTrip", () => {
+    const state: SearchFacetState = {
+      ...createInitialSearchFacetState(),
+      texts: { organismName: "Homo sapiens" },
+    }
+    const ast = fromSidebar(state, { db: null }, FIXED_NOW)
+    const { sidebar } = splitForSidebar(ast, null, FIXED_NOW)
+    expect(sidebar.texts.organismName).toBe("Homo sapiens")
   })
 
   test("extractsTextField", () => {

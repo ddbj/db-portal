@@ -4,7 +4,7 @@ import type { ServiceSource } from "../../app/schemas/api-bff/service"
 
 export const DDBJ_BASE_URL = "https://www.ddbj.nig.ac.jp"
 
-/** featuredTop となる DDBJ サービスの `name` 完全一致 whitelist (BP / BS / Trad / JGA / DRA / GEA / MetaboBank / jVar)。 */
+/** featuredTop となる DDBJ サービスの `name` 完全一致 whitelist (BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank / jVar)。 */
 export const DDBJ_FEATURED_NAMES: ReadonlySet<string> = new Set([
   "BioProject",
   "BioSample",

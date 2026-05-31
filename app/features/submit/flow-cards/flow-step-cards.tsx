@@ -24,9 +24,11 @@ type FlowStepCardsProps = {
   prereqHeading: string
   wizardHeading: string
   prepareHeading: string
+  filesHeading: string
+  gotchaHeading: string
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
-  externalCtaLabel: (service: Service) => string
+  externalCtaLabel: string
   sourceTagLabel: (source: "DDBJ" | "DBCLS") => string
 }
 
@@ -42,6 +44,8 @@ export const FlowStepCards = ({
   prereqHeading,
   wizardHeading,
   prepareHeading,
+  filesHeading,
+  gotchaHeading,
   resolveNote,
   noteKindLabel,
   externalCtaLabel,
@@ -87,11 +91,13 @@ export const FlowStepCards = ({
             wizardHeading={wizardHeading}
             prepare={copy.prepare}
             prepareHeading={prepareHeading}
+            filesHeading={filesHeading}
             gotcha={copy.gotcha}
+            gotchaHeading={gotchaHeading}
             issuedNote={copy.issuedNote}
             resolveNote={resolveNote}
             noteKindLabel={noteKindLabel}
-            externalCtaLabel={externalCtaLabel(step.service)}
+            externalCtaLabel={externalCtaLabel}
             sourceTagLabel={sourceTagLabel}
           />
         )

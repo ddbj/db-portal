@@ -261,15 +261,17 @@ const SearchResultsRoute = () => {
             />
           </div>
         )}
-        <div className="mt-2">
-          <SyncStatusChip status={sync.status} />
-        </div>
+        {(sync.status === "syncing" || sync.status === "failed") && (
+          <div className="mt-2">
+            <SyncStatusChip status={sync.status} />
+          </div>
+        )}
       </Section>
       {data.q === ""
         ? null
         : data.errorKey
           ? (
-            <Section padTop="block" padBottom="lg">
+            <Section padTop="sm" padBottom="lg">
               <Callout
                 tone="warn"
                 role="status"
@@ -289,7 +291,7 @@ const SearchResultsRoute = () => {
           )
           : data.cross || (data.perDb && data.db)
             ? (
-              <Section padTop="block" padBottom="lg">
+              <Section padTop="sm" padBottom="lg">
                 <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
                   <FacetPanel state={facetState} dispatch={dispatchFacet} db={data.db} facets={data.facets} />
                   <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">

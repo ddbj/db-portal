@@ -42,7 +42,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "ポリシー承認には数日〜数週間かかることがあり、承認されるまで JGA への登録は始められません。", en: "Policy approval can take several days to weeks, and JGA submission cannot begin until it is granted." },
-    issuedNote: { ja: "承認時に JGAP###### という形式のポリシーアクセッション番号が発行されます。この番号は JGA Dataset メタデータから参照する必須項目です。", en: "Upon approval, you will receive a JGAP accession number (e.g., JGAP000001) which is mandatory reference metadata for JGA Dataset registration." },
+    issuedNote: { ja: "ポリシー承認時に Policy ID (JGAP######) が発行され、JGA Dataset から参照します (論文引用 ID ではありません)。", en: "Policy approval issues a Policy ID (JGAP######) referenced by your JGA Dataset (not a citation ID)." },
   },
   "bioproject": {
     wizardSteps: {
@@ -74,7 +74,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "公開設定は「即日公開」か「データと同時公開」の 2 択で、単独の非公開設定はできません (非公開期間が必要なら「データと同時」を選びます)。", en: "Release is either immediate or tied to the linked data; there is no private-only option (choose the linked option if you need an embargo period)." },
-    issuedNote: { ja: "登録すると BioProject アクセッション (PRJDB######) が発行され、以降の登録で参照します。", en: "Registration issues a BioProject accession (PRJDB######) that later submissions reference." },
+    issuedNote: { ja: "登録すると BioProject ID (PRJDB######) が発行されます。論文引用に使います。", en: "Registration issues a BioProject ID (PRJDB######), used for publication citation." },
   },
   "biosample": {
     wizardSteps: {
@@ -102,7 +102,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "1 回の登録で扱えるサンプルは最大 1,000 件で、すべて同じパッケージに統一する必要があります。", en: "A single submission allows up to 1,000 samples, all of which must use the same package." },
-    issuedNote: { ja: "登録すると BioSample アクセッション (SAMD######) が発行され、データ登録で参照します。", en: "Registration issues a BioSample accession (SAMD######) that your data submissions reference." },
+    issuedNote: { ja: "登録すると BioSample ID (SAMD########) が発行されます。論文引用に使います。", en: "Registration issues a BioSample ID (SAMD########), used for publication citation." },
   },
   "dra": {
     wizardSteps: {
@@ -132,7 +132,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "DRA は制限公開に対応しません。ヒトの制限公開データは JGA へ、非ヒトは公開予定日 (embargo) で非公開期間を設定します。", en: "DRA does not support restricted access: send restricted human data to JGA, or set an embargo date for non-human data." },
-    issuedNote: { ja: "登録完了後、論文引用に必須のアクセッション番号 (DRR = Run、DRX = Experiment、DRZ = Analysis) が発行されます。", en: "Upon successful registration, you will receive accession numbers (DRR for Run, DRX for Experiment, DRZ for Analysis) required for publication citation." },
+    issuedNote: { ja: "登録すると DRA アクセッション番号 (DRR = Run、DRX = Experiment、DRZ = Analysis) が発行されます。論文引用に使います。", en: "Registration issues DRA accession numbers (DRR = Run, DRX = Experiment, DRZ = Analysis), used for publication citation." },
   },
   "jga": {
     wizardSteps: {
@@ -164,6 +164,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "データのアップロードは Policy 承認後にのみ可能で、承認には数日〜数週間かかることがあります。", en: "You can upload data only after Policy approval, which can take several days to weeks." },
+    issuedNote: { ja: "登録すると Dataset ID (JGAD######) を含む各種アクセッションが発行されます。論文には Dataset ID を使います。", en: "Registration issues several accessions including a Dataset ID (JGAD######); cite the Dataset ID in publications." },
   },
   "ddbj-trad": {
     wizardSteps: {
@@ -195,6 +196,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "登録ファイル (配列・アノテーション) を自分で作成する必要があり、査定で修正のメール往復が複数回に及ぶことがあります。", en: "You build the submission files (sequence and annotation) yourself, and curator review often involves several rounds of email corrections." },
+    issuedNote: { ja: "登録すると 配列アクセッション番号 (AP###### 等) が発行されます。論文引用に使います (申込時の受付番号とは別物です)。", en: "Registration issues sequence accession numbers (e.g., AP######), used for publication citation (distinct from the application receipt ID)." },
   },
   "nsss": {
     wizardSteps: {
@@ -226,6 +228,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "小規模・非完成の配列が対象です。EST/TSA/WGS や完成ゲノム、配列数 100 超などは MSS に回されます。", en: "Intended for small, non-complete sequences; EST/TSA/WGS, complete genomes, or more than 100 sequences are routed to MSS instead." },
+    issuedNote: { ja: "登録すると 配列アクセッション番号 (AB 型) が発行されます。論文引用に使います。", en: "Registration issues sequence accession numbers (AB-style), used for publication citation." },
   },
   "togovar": {
     wizardSteps: {
@@ -259,6 +262,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "ヒト由来データでは、個人を特定できる情報をメタデータから必ず除去してください。", en: "For human-derived data, you must remove any personally identifiable information from the metadata." },
+    issuedNote: { ja: "登録すると 研究 ID (dstd######) が発行されます。論文引用に使います。", en: "Registration issues a study ID (dstd######), used for publication citation." },
   },
   "gea": {
     wizardSteps: {
@@ -290,6 +294,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "Microarray と Sequencing は別々の submission に分けます。NGS 由来は生リードを先に DRA へ登録します。", en: "Keep Microarray and Sequencing in separate submissions; for NGS data, register the raw reads in DRA first." },
+    issuedNote: { ja: "登録すると 発現実験 ID (E-GEAD-n) が発行されます。論文引用に使います。", en: "Registration issues an experiment ID (E-GEAD-n), used for publication citation." },
   },
   "metabobank": {
     wizardSteps: {
@@ -335,7 +340,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "登録は申し込みフォームを送ったあと、DDBJ 担当者からのメール返信を待って進みます。", en: "Submission proceeds after you send the application form and receive a reply from DDBJ staff." },
-    issuedNote: { ja: "登録完了後、MetaboBank 研究論文での引用用 ID（MTBKS####）が発行されます。", en: "Upon completion, you will receive an accession number (MTBKS####) for citation in publications." },
+    issuedNote: { ja: "登録すると 研究 ID (MTBKS####) が発行されます。論文引用に使います。", en: "Registration issues a study ID (MTBKS####), used for publication citation." },
   },
   "jpost": {
     wizardSteps: {
@@ -369,6 +374,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "jPOST は DDBJ 外のサービスで、登録操作はすべて jpostdb.org 上で行います。", en: "jPOST is a service outside DDBJ; all submission steps are completed on jpostdb.org." },
+    issuedNote: { ja: "登録すると プロテオーム ID (JPST######) が jPOST から発行されます。論文引用に使います。", en: "jPOST issues a proteome ID (JPST######), used for publication citation." },
   },
   "eva": {
     wizardSteps: {
@@ -400,5 +406,6 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
       ],
     },
     gotcha: { ja: "EVA は EBI が運用する DDBJ 外のサービスで、登録手続きは EVA 側で完結させます。", en: "EVA is operated by EBI outside DDBJ; complete the submission process on the EVA site." },
+    issuedNote: { ja: "登録すると プロジェクト ID (PRJEB########) が EBI EVA から発行されます。論文引用に使います。", en: "EBI EVA issues a project ID (PRJEB########), used for publication citation." },
   },
 }
