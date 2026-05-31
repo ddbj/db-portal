@@ -20,6 +20,7 @@ const main = async (): Promise<void> => {
   const vite = await createServer({
     server: { middlewareMode: true },
     appType: "custom",
+    mode: process.env.NODE_ENV === "production" ? "production" : "development",
   })
   let hasFailure = false
   try {
