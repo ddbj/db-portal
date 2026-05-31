@@ -261,7 +261,7 @@ export type Resources = {
       prereqHeading: string
       wizardHeading: string
       prepareHeading: string
-      roleTag: { destination: string; companion: string; external: string }
+      roleTag: { destination: string; companion: string; external: string; gate: string }
       ctaLabel: string
       filesHeading: string
       gotchaHeading: string
@@ -906,7 +906,7 @@ export const ja: Resources = {
       prereqHeading: "先に済ませること",
       wizardHeading: "外部サイトでの手順",
       prepareHeading: "準備するもの",
-      roleTag: { destination: "登録先", companion: "準備", external: "外部窓口" },
+      roleTag: { destination: "登録先", companion: "準備", external: "外部登録先", gate: "申請窓口" },
       ctaLabel: "登録サイトを開く",
       filesHeading: "対象ファイル",
       gotchaHeading: "ポイント",

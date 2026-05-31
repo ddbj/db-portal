@@ -19,7 +19,7 @@ import {
 import { pageTitleMeta } from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
-import { Q1 as Q1Enum, Q2 as Q2Enum, serviceRole } from "~/schemas/submit"
+import { Q1 as Q1Enum, Q2 as Q2Enum, serviceRoleTagKey } from "~/schemas/submit"
 import { PageTitle, Section, SectionHeading } from "~/ui"
 
 export const handle = {
@@ -48,7 +48,7 @@ const SubmitRoute = () => {
   const accessLabel = (a: Access): string => t(`submit.access.${a}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
-  const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRole(s)}`)
+  const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRoleTagKey(s)}`)
   const cardCopy = (s: Service) => {
     const card = getSubmitCard(s)
 

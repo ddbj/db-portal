@@ -72,6 +72,16 @@ export const isExternalService = (service: Service): boolean =>
 export const isSubmissionEndpoint = (service: Service): boolean =>
   ENDPOINT_SET.has(service)
 
+// 役割タグの表示キー。external のうち登録エンドポイント (jpost/eva) は「外部登録先」、
+// エンドポイントでない前提ゲート (humandbs) は「申請窓口」として表示語を分ける。
+export type ServiceRoleTagKey = ServiceRole | "gate"
+export const serviceRoleTagKey = (service: Service): ServiceRoleTagKey => {
+  const role = SERVICE_ROLE[service]
+  if (role !== "external") return role
+
+  return isSubmissionEndpoint(service) ? "external" : "gate"
+}
+
 export const ServiceBadgeColor = z.enum(["emerald", "amber", "rose"])
 export type ServiceBadgeColor = z.infer<typeof ServiceBadgeColor>
 

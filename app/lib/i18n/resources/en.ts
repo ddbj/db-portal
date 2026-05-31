@@ -258,7 +258,7 @@ export const en: Resources = {
       prereqHeading: "Before this step",
       wizardHeading: "On the external site",
       prepareHeading: "What to prepare",
-      roleTag: { destination: "Destination", companion: "Prepare", external: "External" },
+      roleTag: { destination: "Destination", companion: "Prepare", external: "External repository", gate: "Application gate" },
       ctaLabel: "Open submission site",
       filesHeading: "Files for this step",
       gotchaHeading: "Good to know",

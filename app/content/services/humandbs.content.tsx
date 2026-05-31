@@ -9,7 +9,7 @@ export default {
   },
   submit: {
     service: "humandbs",
-    externalUrl: "https://humandbs.dbcls.jp/nbdc/application/",
+    externalUrl: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
     source: "DBCLS",
     accessionPlaceholders: [],
   },

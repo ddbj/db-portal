@@ -7,6 +7,7 @@ import {
   isCompanionService,
   isDestinationService,
   isExternalService,
+  isSubmissionEndpoint,
   Service,
   SERVICE_DEPENDENCIES,
   SERVICE_DEPENDENCY_ORDER,
@@ -14,6 +15,7 @@ import {
   serviceBadgeColor,
   ServiceRole,
   serviceRole,
+  serviceRoleTagKey,
 } from "../../../../app/schemas/submit"
 
 const ALL_SERVICES = Service.options
@@ -182,5 +184,25 @@ describe("SERVICE_DEPENDENCY_ORDER", () => {
     const idx = (s: Service) => SERVICE_DEPENDENCY_ORDER.indexOf(s)
     expect(idx("bioproject")).toBeLessThan(idx("biosample"))
     expect(idx("biosample")).toBeLessThan(idx("dra"))
+  })
+})
+
+describe("serviceRoleTagKey", () => {
+  test("serviceRoleTagKey_nonExternalRolesUnchanged", () => {
+    for (const s of ALL_SERVICES.filter((x) => SERVICE_ROLE[x] !== "external")) {
+      expect(serviceRoleTagKey(s)).toBe(SERVICE_ROLE[s])
+    }
+  })
+
+  test("serviceRoleTagKey_splitsPolicyGateFromExternalRepositories", () => {
+    expect(serviceRoleTagKey("humandbs")).toBe("gate")
+    expect(serviceRoleTagKey("jpost")).toBe("external")
+    expect(serviceRoleTagKey("eva")).toBe("external")
+  })
+
+  test("serviceRoleTagKey_neverGateForSubmissionEndpoint", () => {
+    for (const s of ALL_SERVICES.filter(isSubmissionEndpoint)) {
+      expect(serviceRoleTagKey(s)).not.toBe("gate")
+    }
   })
 })
