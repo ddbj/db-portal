@@ -9,6 +9,7 @@ import {
   setSort,
 } from "./facet-url-state"
 import { NewsRow } from "./news-row"
+import { NEWS_PAGE_SIZE } from "./use-news-list"
 
 export type NewsListProps = {
   lang: Lang
@@ -19,7 +20,6 @@ export type NewsListProps = {
   total: number
   visibleItems: readonly NewsItem[]
   totalPages: number
-  pageSize?: number
 }
 
 export const NewsList = ({
@@ -31,31 +31,48 @@ export const NewsList = ({
   total,
   visibleItems,
   totalPages,
-  pageSize = 10,
 }: NewsListProps) => {
   const t = useT()
-  const rangeStart = total === 0 ? 0 : (facet.page - 1) * pageSize + 1
-  const rangeEnd = Math.min(facet.page * pageSize, total)
-  const showFooter = total > 0
+  const rangeStart = total === 0 ? 0 : (facet.page - 1) * NEWS_PAGE_SIZE + 1
+  const rangeEnd = Math.min(facet.page * NEWS_PAGE_SIZE, total)
 
   return (
     <div className="flex-1 min-w-0 flex flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-border-soft py-2.5 min-h-heading-row">
-        <p className="text-fs-meta text-ink-soft m-0">
-          {t("news.toolbar.count", { count: total })}
+      <header className="flex flex-wrap items-center gap-3 border-b border-border-soft py-2.5 min-h-heading-row">
+        <p
+          className="text-fs-meta text-ink-soft m-0 font-mono"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {total === 0
+            ? t("news.toolbar.count", { count: 0 })
+            : `${rangeStart}–${rangeEnd} / ${total.toLocaleString()} ${t("common.countSuffix")}`}
         </p>
-        <label className="flex items-center gap-2 text-fs-meta text-ink-soft">
-          <span>{t("news.toolbar.sort")}</span>
-          <Select
-            ariaLabel={t("news.toolbar.sort")}
-            value={facet.sort}
-            onChange={(next) => onChange(setSort(facet, next as NewsFacetState["sort"]))}
-            options={[
-              { value: "newest", label: t("news.toolbar.sortNewest") },
-              { value: "oldest", label: t("news.toolbar.sortOldest") },
-            ]}
-          />
-        </label>
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-fs-meta text-ink-soft">
+            <span>{t("news.toolbar.sort")}</span>
+            <Select
+              ariaLabel={t("news.toolbar.sort")}
+              value={facet.sort}
+              onChange={(next) => onChange(setSort(facet, next as NewsFacetState["sort"]))}
+              options={[
+                { value: "newest", label: t("news.toolbar.sortNewest") },
+                { value: "oldest", label: t("news.toolbar.sortOldest") },
+              ]}
+            />
+          </label>
+          {totalPages > 1 && (
+            <Pagination
+              page={facet.page}
+              totalPages={totalPages}
+              onPageChange={(page) => onChange(setPage(facet, page))}
+              ariaLabel={t("a11y.paginationNav")}
+              prevLabel={t("a11y.paginationPrev")}
+              nextLabel={t("a11y.paginationNext")}
+              jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
+            />
+          )}
+        </div>
       </header>
       {loading && (
         <p className="text-ink-soft text-fs-body py-4" role="status">
@@ -77,22 +94,17 @@ export const NewsList = ({
           ))}
         </ul>
       )}
-      {showFooter && (
-        <footer className="flex items-center justify-between gap-4 border-t border-border-soft py-4">
-          <p className="text-fs-meta text-ink-soft m-0 font-mono">
-            {`${rangeStart}–${rangeEnd} / ${total.toLocaleString()} ${t("common.countSuffix")}`}
-          </p>
-          {totalPages > 1 && (
-            <Pagination
-              page={facet.page}
-              totalPages={totalPages}
-              onPageChange={(page) => onChange(setPage(facet, page))}
-              ariaLabel={t("a11y.paginationNav")}
-              prevLabel={t("a11y.paginationPrev")}
-              nextLabel={t("a11y.paginationNext")}
-              jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
-            />
-          )}
+      {totalPages > 1 && (
+        <footer className="flex justify-end border-t border-border-soft py-4">
+          <Pagination
+            page={facet.page}
+            totalPages={totalPages}
+            onPageChange={(page) => onChange(setPage(facet, page))}
+            ariaLabel={t("a11y.paginationNav")}
+            prevLabel={t("a11y.paginationPrev")}
+            nextLabel={t("a11y.paginationNext")}
+            jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
+          />
         </footer>
       )}
     </div>

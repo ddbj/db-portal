@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useId } from "react"
 
-import { fetchNews, newsItemSummary, newsItemTitle } from "~/lib/api/news"
+import { fetchNews, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { categoryLabelKey, formatDate, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
 
@@ -58,11 +58,23 @@ export const NewsAside = () => {
                 <Tag kind="source" name={n.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
                 <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
               </div>
-              <TextLink to={`/news#${n.id}`} weight="bold">
-                <span className="text-ink text-fs-body leading-snug">
-                  {newsItemTitle(n, lang)}
-                </span>
-              </TextLink>
+              {(() => {
+                const externalUrl = newsItemUrl(n, lang)
+
+                return externalUrl !== undefined
+                  ? (
+                    <TextLink href={externalUrl} external weight="bold">
+                      <span className="text-ink text-fs-body leading-snug">
+                        {newsItemTitle(n, lang)}
+                      </span>
+                    </TextLink>
+                  )
+                  : (
+                    <span className="text-ink text-fs-body font-semibold leading-snug">
+                      {newsItemTitle(n, lang)}
+                    </span>
+                  )
+              })()}
               {summary !== undefined && summary !== "" && (
                 <p className="text-ink-soft text-fs-label leading-relaxed mt-0.5 m-0 line-clamp-1">
                   {summary}

@@ -15,7 +15,7 @@ import type { Lang } from "~/lib/i18n/use-lang"
 
 import { type ServicesFacetState } from "./facet-url-state"
 
-const PAGE_SIZE = 30
+const PAGE_SIZE = 20
 
 const matchesSource = (item: ServiceItem, facet: ServicesFacetState): boolean =>
   facet.source.length === 0 || facet.source.includes(item.source)
