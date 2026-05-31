@@ -25,7 +25,7 @@ const isProd = process.env.NODE_ENV === "production"
 const app = express()
 app.disable("x-powered-by")
 app.set("trust proxy", "loopback")
-app.use(securityHeaders({ env: env.DB_PORTAL_ENV }))
+app.use(securityHeaders({ env: env.DB_PORTAL_ENV, searchApiUrl: env.DB_PORTAL_SEARCH_API_URL }))
 app.use(express.json({ limit: "1mb" }))
 
 const llmClient = createLlmClient(env)
