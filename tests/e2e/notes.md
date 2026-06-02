@@ -122,14 +122,18 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 |---|---|
 | E-SEARCH-01 (不正 DSL) | URL を直接組み立てて navigation (server / API は通常運転) |
 | E-SEARCH-02 (cross-search 5xx) | `page.route()` で network intercept、staging API レスポンスを差し替える |
+| E-SEARCH-04 (per-DB search 5xx) | `page.route()` で `/db-portal/search` を 5xx に差し替える (errorKey:db 経路) |
 | E-AUTH-01 (state 不一致) | URL を直接組み立てる (`/api/auth/callback?code=x&state=evil`) |
-| E-AUTH-02 (token refresh 失敗) | unit テスト側で吸収。e2e は session expire 後の 401 表示確認のみ |
-| E-LLM-01 (vLLM 停止) | LLM unset 環境 (dev) でしか再現できない。e2e では `/api/llm/health` の status が `unreachable` または `unset` のときに UI 非表示を確認する形に |
-| E-LLM-02 (SSE 切断) | `page.route()` で response を途中切断 |
-| E-NEWS-01 (GitHub API 障害) | server 側挙動なので staging では再現困難。unit テストで吸収、e2e は `/api/news` が常に 200 を返すことだけ確認 |
-| E-NEWS-02 (front matter 不正) | mirror 側 unit で吸収 |
-| E-CONTENT-01 (未知 slug) | URL を直接 navigation (`/databases/unknown-slug`) |
-| E-CONTENT-02 (翻訳未完成) | handle.i18n.en === "missing" の fixture を持つ database content で確認 |
+| E-AUTH-03 (code/state 欠落) | URL を直接組み立てる (`/api/auth/callback` に code か state を欠落) → 400 invalid_request |
+| E-AUTH-04 (session 失効) | store に無い sid cookie を craft して `/api/me` 401 + Header 復帰を確認 (refresh token 機構が無いため refresh 失敗自体は再現しない) |
+| E-LLM-01 (vLLM 停止) | `/api/llm/health` の status が `unreachable` / `unset` のとき UI 非表示を確認。`page.route()` で health を固定 |
+| E-LLM-02 / E-LLM-03 (SSE 切断 / error) | `page.route()` で `event: error` を流し、inline alert + 入力保持を確認 (toast は実装に無い) |
+| E-LLM-06 (rate limit 429) | `page.route()` で `/api/llm/search-assistant` を 429 に差し替える |
+| E-TOP-02 (hero AI toggle 非表示) | `page.route()` で health を `unset` に固定 |
+| E-NEWS-01 (一覧 0 件) | `page.route()` で `/api/news` を `[]` に差し替え、empty 状態 (error banner 不在) を確認 |
+| E-CONTENT-01 (未知 slug) | URL を直接 navigation (`/databases/unknown-slug`) → loader が `Response(404)` |
+| E-CONTENT-02 (翻訳未完成) | 現状 i18n.en=complete 固定で再現不可。**定義のみ** (partially-translated DB が現れるまで)。banner ロジックは unit (`shell/translation-unavailable`) で吸収 |
+| E-FLOW-02 (汎用 404) | URL を直接 navigation (`/totally-unknown`) → no-match で root ErrorBoundary |
 
 `page.route()` は外部境界 mock の一種で、e2e の「実物を叩く」 原則から逸脱するが、staging で再現不可能な障害シナリオのみ許容する。妥当性確認の境界としては unit + msw 側を主、e2e 側は補助とする。
 

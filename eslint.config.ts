@@ -24,6 +24,7 @@ export default tseslint.config(
       ".claude/",
       ".react-router/",
       "build/",
+      "cache/",
       "node_modules/",
       "playwright-report/",
       "repos/",

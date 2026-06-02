@@ -187,9 +187,10 @@ export const dbclsDateFromSlug = (slug: string): string | undefined => {
   const [, y, mo, d, nStr] = m
   if (!y || !mo || !d || !nStr) return undefined
   const seq = Math.max(parseInt(nStr, 10) - 1, 0)
-  const hours = Math.min(Math.floor(seq / 3600), 23)
-  const minutes = Math.floor((seq % 3600) / 60)
-  const seconds = seq % 60
+  const sod = Math.min(seq, 86399)
+  const hours = Math.floor(sod / 3600)
+  const minutes = Math.floor((sod % 3600) / 60)
+  const seconds = sod % 60
   const jstIso = `${y}-${mo}-${d}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}+09:00`
   if (!isIsoDatetime(jstIso)) return undefined
 

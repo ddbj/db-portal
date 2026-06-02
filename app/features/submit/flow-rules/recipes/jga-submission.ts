@@ -17,7 +17,7 @@ export const jgaSubmissionSteps = (
 
   for (const dg of datasetGroups) {
     const dataGroupIds = new Set<string>([dg.id, ...dg.linkedGroupIds])
-    const members = jgaEntries.filter((e) => dataGroupIds.has(e.groupId))
+    const members = jgaEntries.filter((e) => dataGroupIds.has(e.groupId) && !covered.has(e.id))
     if (members.length === 0) continue
     members.forEach((e) => covered.add(e.id))
     steps.push(

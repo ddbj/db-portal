@@ -1,6 +1,11 @@
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
-const PHONE_RE = /(?:\+?\d{1,3}[-\s]?)?(?:\(?\d{2,4}\)?[-\s]?)?\d{2,4}[-\s]?\d{3,4}/g
-const CCNUM_RE = /\b(?:\d[ -]*?){13,19}\b/g
+// 先頭の国番号 (+CC) を 1 単位として取り込み、各桁グループを単一の区切り
+// ([-\s]) で連結する。区切りは必ず数字に続くため、英字の周辺テキストへ
+// 食い込まない。有効桁数の閾値判定は isLikelyPhone が担う。
+const PHONE_RE = /\+?\d{1,4}(?:[-\s]\d{1,4})+/g
+// 先頭が "+" のときは国際電話のダイヤルプレフィックスとみなし、カード番号と
+// しては扱わない (電話は PHONE_RE 側で redact する)。
+const CCNUM_RE = /(?<!\+)\b(?:\d[ -]*?){13,19}\b/g
 const TOKEN_RE = /\b(?:sk|pk|ghp|gho|github_pat|api_key)[-_][A-Za-z0-9_-]{16,}\b/g
 
 const PHONE_MIN_DIGITS = 9
