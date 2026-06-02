@@ -10,7 +10,7 @@ db-portal/
 │   ├── root.tsx                 HTML shell、i18n provider、QueryClient provider
 │   ├── routes.ts                config-based routing の宣言 (URL 全構造の SSOT)
 │   ├── routes/                  route component の置き場 (file 名 ≠ URL)
-│   ├── features/                画面横断ロジック (search / submit / news / top / errors)
+│   ├── features/                画面横断ロジック (search / submit / news / services / top / errors)
 │   ├── shell/                   Header / Footer / NotificationBar / NewsAside / Breadcrumb
 │   ├── ui/                      Tailwind primitives (Button / Card / Tag / Callout / Modal …)
 │   ├── lib/                     純粋ユーティリティ (api / i18n / auth client / content / query)
@@ -167,11 +167,11 @@ React Router v7 framework mode (`react-router.config.ts` で `{ ssr: true }`) �
 
 | フェーズ | 実行環境 | 触れていいもの |
 |---|---|---|
-| Server render | Node | `app/` 全部 + `server/` の `lib` / `auth` (cookie 経由で session 解決) |
+| Server render | Node | `app/` 全部 (`server/` への直接 import は不可、BFF へは `fetch(/api/*)` 経由) |
 | Client hydration | Browser | `app/` 全部 (browser API のみ)、`server/` 不可 |
-| Loader / Action | Node (RR) | `app/` 全部 + `server/` の `lib` / `auth` (`fetch` で `/api/*` を叩くより、内部で直接 import するほうが overhead が少ない) |
+| Loader / Action | Node (RR) | `app/` 全部 (`server/` への直接 import は不可、BFF へは `fetch(/api/*)` 経由) |
 
-ローダーで `fetch("/api/me")` を呼ぶか、`server/api/me.ts` の関数を直接 import するかは Node 上では後者でも動く。ただし、内部関数を直接呼ぶと server zones を超えて import することになる (`app → server` 禁止)。そのため次のルールで分離する。
+`app` から `server/` への直接 import は ESLint (`no-restricted-paths`) で禁止する。共用境界は `app/schemas` のみで、それ以外の `server/` モジュールは `app/` から触れない。Node 上では `server/api/me.ts` の関数を直接 import しても動くが、それを許すと server zones を超えた import になるため、次のルールで分離する。
 
 - Server route handler 経由 (`POST /api/*`): client / server 両方から呼べる正規 API
 - `server/` 内部関数: server adapter から組み立てる内部実装、`app/` からは触れない
@@ -268,12 +268,10 @@ AST 表現は `app/lib/api/search-types.ts` の `ParseNode` alias を SSOT と�
 [Server] /api/me
         │
         ▼ in-memory session store
-  { tokens: { idToken }, userInfo, expiresAt (sliding 30 min) }
+  idToken (logout 用) + userInfo + 失効時刻 (sliding TTL)
 ```
 
-session の `idToken` は logout 時の `id_token_hint` 用にのみ保持する。詳細 `auth.md`。
-
-詳細 `auth.md`。
+session store は logout 時の `id_token_hint` 用 idToken・ユーザー情報・失効時刻 (アクセスごとに延長) を保持する。保持フィールドの詳細は `auth.md` と `server/auth/session-store.ts` を参照。
 
 ### LLM
 
@@ -317,13 +315,24 @@ Mock は外部境界 (HTTP / OIDC / FS / 時刻 / 乱数) のみ。内部関数 
 
 `server/lib/security.ts` が全 HTTP レスポンスに次の headers を付与する (Express middleware として `server/index.ts` で mount):
 
-| Header | 値 | 適用範囲 |
+| Header | 契約 | 適用範囲 |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | dev を除く全 response (`server/lib/security.ts` で `env !== "dev"` のとき付与) |
+| `Content-Security-Policy` | nonce ベースの厳格 CSP (下記 directive 表)。directive 文字列の SSOT は `server/lib/security.ts` | dev を除く全 response (`env !== "dev"` のとき付与) |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | production のみ (`DB_PORTAL_ENV=production`) |
 | `X-Frame-Options` | `DENY` | 全 response |
 | `X-Content-Type-Options` | `nosniff` | 全 response |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | 全 response |
+
+CSP の各 directive が満たす契約 (具体値は `server/lib/security.ts` を SSOT とする):
+
+| directive | 契約 |
+|---|---|
+| `default-src` / `base-uri` / `form-action` | `'self'` に限定 |
+| `script-src` | `'self'` + per-request の `'nonce-{nonce}'` のみ (`'unsafe-inline'` なし) |
+| `style-src` | `'self'` + `'unsafe-inline'` |
+| `img-src` / `font-src` | `'self'` + `data:` |
+| `connect-src` | `'self'`。`DB_PORTAL_SEARCH_API_URL` 設定時は ddbj-search-api の origin を `security.ts` が動的付与 |
+| `frame-ancestors` | `'none'` (clickjacking 遮断) |
 
 CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成して middleware が `res.locals.cspNonce` に置き、root loader が `<Scripts>` / `<Links>` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
 

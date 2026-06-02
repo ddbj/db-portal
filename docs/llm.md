@@ -76,7 +76,7 @@ server 起動時に env を確認する。
 
 「成功」 の判定: `GET {DB_PORTAL_LLM_BASE_URL}/v1/models` が 200 を返し、response body の `data[]` に `DB_PORTAL_LLM_MODEL` が含まれる。models endpoint の timeout は `min(DB_PORTAL_LLM_TIMEOUT_MS, 10s)` で打ち切る。
 
-health 状態は `server/llm/health.ts` の `setLatestHealth` で memory に保持し、`/api/llm/health` handler はそれを返すだけ (request ごとに vLLM を叩かない)。env 空 (`unset`) のときは polling timer も立ち上げない。
+health 状態は `server/llm/health.ts` の `setActiveHealth` で memory に保持し、`/api/llm/health` handler は `getActiveHealth` の値を返すだけ (request ごとに vLLM を叩かない)。env 空 (`unset`) のときは polling timer も立ち上げない。
 
 ### client での消費
 
@@ -163,18 +163,10 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 
 - 役割: 「自然文 (日英) を DDBJ ポータルの Advanced-Search DSL の 1 行に変換する。DSL のみを出力 (説明・コードフェンス無し)」
 - 2 モード: `Current query:` が無ければ新規生成、有れば既存条件を完全保持して融合 (append)
-- 変換規約 (gold set で固定し PBT/eval で検証した規則):
-  - field は cross-DB の Tier 1/2 のみ (`identifier` / `title` / `description` / `organism_name` / `organism_id` / `accessibility` / `date_published` / `date_modified` / `date_created` / `submitter` / `publication`)
-  - organism 通称→`organism_name` の学名、taxid→`organism_id`
-  - topic/disease/assay 語→`description` に標準英語・単数形 (空白あればクォート)
-  - submitter は原文・同言語のまま (翻訳しない)
-  - date は常に範囲 `[YYYY-MM-DD TO YYYY-MM-DD]` (両端必須、開区間は `0001-01-01` / `9999-12-31` 番兵、`*` 不可)。動詞で field 選択 (published→date_published / created・registered・submitted→date_created / modified・updated→date_modified)
-  - wildcard `*` は「で始まる/starts with」明示時のみ
-  - `AND` / `OR` / `NOT` は大文字、`NOT` は `AND`/`OR` の後、OR を他と AND する時は括弧、複数除外は `NOT (A OR B)`
-  - 非対応 (Tier-3 field・fuzzy `~`・boost `^`) は description に押し込まず省く
-- few-shot は両モード・上記の難所 (precedence / NOT / 日付番兵 / organism / append 融合) を実演する
+- 出力は常に最低 1 条件を持つ 1 行 DSL。非対応の入力 (許容 field 外・fuzzy `~`・boost `^`) は description に押し込まず省き、残りから最も近い valid query を組む
+- few-shot は両モード・難所 (precedence / NOT / 日付番兵 / organism / append 融合) を実演する
 
-確定した prompt 文面と正解セット・反復記録は実験成果物 (`.claude/llm-experiment/`、git 管理外) を SSOT とする。許容 field/op の最終判定は **ddbj-search-api の allowlist** (`/db-portal/parse` が検証) が SSOT で、portal 側は `app/schemas/api-bff/llm.ts` の `ADVANCED_FIELDS` / `ADVANCED_OPS` と prompt の field 列を一致させる。
+変換規約 (allowed field・organism 通称→学名・date 範囲と番兵・`AND`/`OR`/`NOT` の precedence と括弧・非対応文字の扱い) の SSOT は `server/llm/assistant/prompt.ts` の `SYSTEM_PROMPT` と few-shot。許容 field/op は `app/schemas/api-bff/llm.ts` の `ADVANCED_FIELDS` / `ADVANCED_OPS`、最終判定は **ddbj-search-api の allowlist** (`/db-portal/parse` が検証) が SSOT。prompt の field 列は `ADVANCED_FIELDS` と一致させる。
 
 ### DSL 抽出・検証 (parse 失敗時)
 
@@ -204,7 +196,7 @@ client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStr
 | per-IP | 60 req/min | `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` |
 | per-session (sid cookie) | 30 req/min | `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` |
 
-`per-IP` は cookie / session が無い request に対する fallback。`per-session` は cookie あり時に追加で適用 (両方適用、厳しい方が効く)。
+`per-IP` は全 request に常時適用する。`per-session` は cookie (`sid`) を持つ request にのみ追加で評価する (両方適用、先に超過した軸で 429)。
 
 ### アルゴリズム
 

@@ -54,7 +54,7 @@ Cross-DB Tag は前段フィルタ / テーブル列 / 行内 chip で表現、I
 
 ### file 詳細質問の選別基準
 
-行の「データ詳細」file 質問 (DataDetailPanel) に持ってよいのは、**その答えで導出される `FlowStep[]` が変わる (flow-changing) 軸だけ** とする。具体的には destination service の集合が変わる・必須 step が増減する (recipe 起動)・scope の束ね方が変わる軸を指す。出る service / step を変えない細部は file 質問にせず、登録先が決まってから Step カード内 Intra-DB Tag (pulldown) で埋める (この panel は未着手)。利用者は「フローが変わる問い」だけをテーブルで答え、各 DB の細部は後で埋める、という負荷分散になる。
+行の「データ詳細」file 質問 (DataDetailPanel) に持ってよいのは、**その答えで導出される `FlowStep[]` が変わる (flow-changing) 軸だけ** とする。具体的には destination service の集合が変わる・必須 step が増減する (recipe 起動)・scope の束ね方が変わる軸を指す。出る service / step を変えない細部は file 質問にせず、登録先が決まってから Step カード内 Intra-DB Tag (pulldown) で埋める。利用者は「フローが変わる問い」だけをテーブルで答え、各 DB の細部は後で埋める、という負荷分散になる。
 
 判定の物差し (この基準は DDBJ 公式の登録手順が flow 分岐に使っている軸と一致させる。値の根拠は `ddbj.nig.ac.jp` のソース):
 
@@ -62,7 +62,7 @@ Cross-DB Tag は前段フィルタ / テーブル列 / 行内 chip で表現、I
 |---|---|---|
 | flow-changing・**前段**で判定 | Q2 ヒト/非ヒト (variant→TogoVar/EVA, reads→DRA/JGA) / access 公開区分 (JGA 分岐) / Q1 第三者 (TPA→MSS) | 前段 Q1/Q2・access 列 |
 | flow-changing・**file ごと**に判定 | `assembly-form` MAG/SAG (DRA 多段 recipe) / `mass-spec-domain=proteomics` (MetaboBank→jPOST) / `spatial-platform` (Sequencing→DRA+GEA / Microarray→GEA / MERFISH 画像→外部 archive) / 配列+アノテのペア (MSS 1 step に束ねる scope) | データ詳細 (file 質問) |
-| service / step 不変・DB 内部の細部 | reads の single/paired/10x/多重化 (DRA Library Layout・Instrument・BioSample 粒度) / 発現の MAGE-TAB・アレイ single/two-color (GEA 内の形式・IDF/SDRF) / variant の reference 有無・SNP/SV (TogoVar 内登録種別) / 質量分析の測定方式・MSI イメージング (MetaboBank 内のファイル差) / hybrid アセンブリ (sequencing platform 属性) / MSS data type の WGS/TSA/TLS/EST/HTG/HTC/GSS / BS package / DRA Library Strategy | Step カードの Intra-DB Tag pulldown (未着手) |
+| service / step 不変・DB 内部の細部 | reads の single/paired/10x/多重化 (DRA Library Layout・Instrument・BioSample 粒度) / 発現の MAGE-TAB・アレイ single/two-color (GEA 内の形式・IDF/SDRF) / variant の reference 有無・SNP/SV (TogoVar 内登録種別) / 質量分析の測定方式・MSI イメージング (MetaboBank 内のファイル差) / hybrid アセンブリ (sequencing platform 属性) / MSS data type の WGS/TSA/TLS/EST/HTG/HTC/GSS / BS package / DRA Library Strategy | Step カードの Intra-DB Tag pulldown |
 
 file 質問は「flow-changing・file ごと」の軸だけを持つ。該当軸が無い種別 (`sequence-read` / `variant` / `expression-matrix` / `microarray-expression` / `nmr` / `metabolite-assignment`) は **file 質問を持たず、データ詳細セルを出さない** (行先は前段 Q1/Q2 + access 列で確定する)。TPA は Q1 のみの軸とし per-file chip を持たない (1 提出まるごと第三者を前提とする)。
 
@@ -230,7 +230,7 @@ GroupType による分岐のうち、単一 group で完結するものは Tier1
 
 ## Tier2 recipe 詳細
 
-named recipe (`jga-submission` / `mag-project` / `sag`、allowlist 固定) は、薄インタプリタが確定した service+scope と `emit.scope=group` の group フラグを受け、その上に group 間グラフ探索・複数 destination 横断・複数 companion 生成を足す。各 recipe は §経路導出と不変量 の既定 companion (entry ≥ 1 で BioProject 1 + BioSample 1) を上書き / 拡張する。
+named recipe (`jga-submission` / `mag-project` / `sag` / `spatial`、allowlist 固定) は、薄インタプリタが確定した service+scope と `emit.scope=group` の group フラグを受け、その上に group 間グラフ探索・複数 destination 横断・複数 companion 生成を足す。各 recipe は §経路導出と不変量 の既定 companion (entry ≥ 1 で BioProject 1 + BioSample 1) を上書き / 拡張する。
 
 ### jga-submission
 
@@ -317,12 +317,12 @@ MAG との差分: package (MIMAG ↔ MISAG) / 生物名 (metagenome 由来 ↔ �
 
 トリガー: `spatial-transcriptomics` / `spatial-image` の entry で `spatial-platform` chip を持つもの。
 
-platform → Submission Type 分類 (`_gea/spatial-gene-expression.md`):
+platform → Submission Type 分類 (`_gea/spatial-gene-expression.md`)。対応 platform 値は `ALLOWED_CHIP_VALUES['spatial-platform']` が SSOT で、Sequencing 系の判定は `isSequencingSpatialPlatform` (`SEQUENCING_SPATIAL_PLATFORMS`) が SSOT:
 
-| 分類 | platform | emit |
+| 分類 | 判定 | emit |
 |---|---|---|
-| Sequencing | visium / stereo-seq (暫定) / geomx (暫定) | DRA Run (生リード) + GEA (processed) の 2 step |
-| Microarray | xenium / merfish | GEA のみ (DRA 無し) |
+| Sequencing | `SEQUENCING_SPATIAL_PLATFORMS` に含まれる platform (Visium / Stereo-seq 系) | DRA Run (生リード) + GEA (processed) の 2 step |
+| それ以外 (Microarray) | Sequencing 系でない platform (Xenium / MERFISH 系) | GEA のみ (DRA 無し) |
 
 emit する FlowStep:
 
@@ -338,7 +338,7 @@ companion: 既定どおり BioProject 1 + BioSample 1。MERFISH 画像の Genera
 
 ### recipe 共通の不変量
 
-§経路導出と不変量 の新設不変量に足す、3 recipe 横断の性質:
+§経路導出と不変量 の構造不変量に足す、`RECIPE_ALLOWLIST` の全 recipe 横断の性質:
 
 - **recipe-companion-override**: `jga-submission` は BioProject/BioSample をともに抑制、`mag-project`/`sag` は BioProject を単一に保ち BioSample のみ複数に拡張する (BP 分裂禁止)
 - **recipe-no-orphan-destination**: recipe 適用後も全 entry が destination service step に入る (`no-orphan-destination` を recipe 出力でも維持)
@@ -353,15 +353,16 @@ submit 状態を表現する型は `app/schemas/submit/*.ts` を参照する (�
 
 ```
 Submission
-  ├─ preconditions { q1, q2 }          前段カスケードの選択 (q2 が生物軸)
-  ├─ fileEntries: FileEntry[]
-  │    └─ FileEntry { id, fileTypeKind, access, dataForm, groupId, chipTags[] }
-  ├─ fileGroups: FileGroup[]
-  │    └─ FileGroup { id, groupType, memberFileIds[], linkedGroupIds[] }
-  └─ notes: string
+  ├─ preconditions          前段カスケードの選択 (q2 が生物軸)
+  ├─ fileEntries: FileEntry[]   テーブルの行 (1 行 = 1 ファイル)
+  ├─ fileGroups: FileGroup[]    論理的に 1 単位を成すファイルの束ね
+  └─ notes
+
+  FileEntry ──(groupId)──▶ FileGroup     縦: file → group の所属
+  FileGroup ──(linkedGroupIds)──▶ FileGroup  横: group 間の参照 (Tier2 recipe が探索)
 
 (導出)
-FlowStep { id, service, scope { groupIds[], entryIds[] }, notes[] }
+deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission を変更しない)
 ```
 
 - `FileEntry.groupId` は所属する FileGroup の id (必須)。種別追加時に default で 1 ファイル = 1 group の単純 group が自動生成される
@@ -401,7 +402,7 @@ FlowStep { id, service, scope { groupIds[], entryIds[] }, notes[] }
 5. **順序 (依存順)**: ステップ依存グラフ (`### ステップ依存とカード順序`) のトポロジカル順。前提ステップが依存ステップより前に出る。前提ゲート (Policy: humandbs、jga の前) → 随伴 (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva)
 6. **id 一意 / scope 非空 / scope ⊆ submission entries**
 
-**新設不変量** (再設計で守るべき性質):
+**構造不変量** (no-orphan-destination 等):
 
 | 不変量 | 防ぐ事故 |
 |---|---|
@@ -469,7 +470,7 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 | Visium | Sequencing | 要 (DRA + GEA) | fastq/bam を DRA、GEX matrix 等を GEA |
 | Xenium | Microarray (A-GEAD-246) | 不要 (GEA のみ) | raw も processed も GEA |
 | MERFISH / MERSCOPE | Microarray (A-GEAD-247) | 不要 (GEA のみ) | 大容量画像・.vzg は GEA 受入不可。spatial-image は外部 Generalist archive 誘導 note を付ける (`### spatial`) |
-| Stereo-seq / Slide-seq / GeoMx | (DDBJ 未文書) | (暫定) | 公式に登録経路の記載なし。暫定で Sequencing 扱い (DRA+GEA) とし、根拠は `## 設計判断` に残す |
+| Stereo-seq | (DDBJ 未文書) | 要 (DRA + GEA) | 公式に登録経路の記載なし。`SEQUENCING_SPATIAL_PLATFORMS` に含め Sequencing 扱い (DRA+GEA) とし、根拠は `## 設計判断` に残す |
 
 ### Step カードのバッジ色 (3 色)
 
@@ -537,7 +538,7 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 - **companion** (bioproject/biosample): 「別個の登録先ではなく、フローの中で随伴して埋めるメタデータ」と明示する準備物中心の軽量カード。多くの登録ウィザードの最初のタブで作成/参照する位置づけ
 - **external** (humandbs/jpost/eva): DDBJ 外の窓口。Policy ゲート (humandbs) は「先に済ませる前提」を強調し、jpost/eva は「専門リポジトリへの誘導」を述べる
 
-登録後に発行される accession は、利用者が登録前にはまだ持っていないため **カードの主要素にしない** (旧「アクセッション: <codes>」行は廃止)。一方で「登録すると論文引用 ID が得られる」ことは登録の動機になるため、引用 ID を発行する全 service (`submit-routing/cards` で `issuedNote` を持つ destination・companion・external) は、外部リンク脇に muted で「登録すると <論文引用 ID> が発行されます」と統一文で予告する (発行物が複数ある JGA 等は論文に書く ID を 1 つ示す)。先に取得が要る ID (Policy の JGAP) は同じ `issuedNote` で「承認すると発行され後段が参照する (論文引用 ID ではない)」と予告する。誘導ボタンのラベルは、登録は外部サイトで行うという一点で全 service 共通 (service ごとに「始める / 開く / 進む」を使い分けない) とし、i18n の単一キーで持つ。
+登録後に発行される accession は、利用者が登録前にはまだ持っていないため **カードの主要素にしない**。一方で「登録すると論文引用 ID が得られる」ことは登録の動機になるため、引用 ID を発行する全 service (`submit-routing/cards` で `issuedNote` を持つ destination・companion・external) は、外部リンク脇に muted で「登録すると <論文引用 ID> が発行されます」と統一文で予告する (発行物が複数ある JGA 等は論文に書く ID を 1 つ示す)。先に取得が要る ID (Policy の JGAP) は同じ `issuedNote` で「承認すると発行され後段が参照する (論文引用 ID ではない)」と予告する。誘導ボタンのラベルは、登録は外部サイトで行うという一点で全 service 共通 (service ごとに「始める / 開く / 進む」を使い分けない) とし、i18n の単一キーで持つ。
 
 ### ステップ依存とカード順序
 
@@ -621,8 +622,8 @@ canonical 1 ソース (DDBJ 由来、内部整合を機械検証)
 - **塩基配列の窓口は MSS と NSSS の 2 つ**: 「DDBJ」の登録先 DB は 1 つだが投入窓口が 2 つある。`ddbj-trad` = MSS (Mass Submission System、ファイル送付、大規模・完成ゲノム・NSSS 非対応種別)、`nsss` = NSSS (Web 登録、小規模・非完成・公式が第一に勧める初心者向け)。両者を別 destination service として持ち、種別 (WGS/TSA/TLS/EST/HTG/HTC/GSS/TPA は MSS) と完成度で振り分ける (`### MSS / NSSS の振り分け`)。リードは対象外で DRA に回る。db-portal は実ファイルを読まないため、配列長・配列数・Feature 数に依存する境界は Step note で案内し、規模を確定する flow-changing 軸を入れるかは別途判断する
 - **変異の登録先はヒト/非ヒトと制限公開で割れる**: 公開ヒト → `togovar` (TogoVar-repository)、制限公開ヒト → `jga`、非ヒト (公開/制限問わず) → `eva` (EBI EVA)。TogoVar はヒト専用なので非ヒトを TogoVar に流して警告で済ませず、`eva` を実際に emit する。短いバリアント (≤ 50 bp) と構造バリアント (> 50 bp) は TogoVar・EVA いずれも**同 service 内の登録種別差**であり出る service を変えないため、データ詳細 chip でなく Step カードの Intra-DB Tag (登録種別 pulldown) で扱う。reference 配列の有無も DDBJ 公式に routing 軸が無く同 service 内の扱いなので同じく file 質問にしない (行先は Q2 ヒト/非ヒト + access で確定し、`variant` は file 質問を持たない)。非ヒト構造バリアントの旧 DGVa は EBI EVA に統合済みで、独立 service にはしない (EVA に集約)。TogoVar の reference assembly 制約 (GRCh37/38 等) は一次情報で確認できていないため hard-constraint として書かず、必要なら登録時の validator に委ねる
 - **proteomics は jPOST (DDBJ 外)、ただし生の質量分析のみ**: 質量分析のうち proteomics (プロテオーム) は MetaboBank でなく `jpost` (jPOSTrepo) に出す。metabolomics / NMR / MSI イメージングは `metabobank`。proteomics は出る service が変わる flow-changing なので `mass-spec-domain=proteomics` を warning note でなく `jpost` の emit に接続する。**proteomics 分岐が意味を持つのは生の質量分析 (`mass-spectrometry`) だけ**であり、NMR は metabolomics 専用 (MetaboBank が NMR を受け jPOST は受けない、`_metabobank/datafile-e.md`)、`metabolite-assignment` (MAF) も metabolomics の成果物で jPOST 経路を持たない。したがって `nmr` / `metabolite-assignment` は `mass-spec-domain` 質問を持たず MetaboBank 一択とする (両種別に proteomics→jpost 分岐は置かない)。MSI イメージングは MetaboBank 内のファイル要求差 (出る service は不変) なので groupType `imaging-ms` で構造を表し data-detail chip 値にはしない
-- **空間 Tx の platform は recipe で実 DRA step を出す**: `spatial-platform` は GEA Submission Type (Sequencing/Microarray) と DRA 2 段の要否を変える flow-changing 軸なので、note 止まりにせず Tier2 `spatial` recipe で **Sequencing platform に実際の DRA step を emit** する (`### spatial`)。値域は実運用頻度で決め、少なくとも Visium / Xenium / MERFISH を持つ (Xenium は頻出)。公式未文書の platform (Stereo-seq / Slide-seq / GeoMx) は暫定で Sequencing 扱いとし根拠を明記する。MERFISH の大容量画像は GEA 受付不可だが、外部 Generalist archive は DDBJ service でないため step 化せず GEA step の誘導 note で表す
-- **`assembly-form` は MAG/SAG 派生チェーン専用の軸**: `assembly-form` が routing で意味を持つのは `mag-sag-chain` group での MAG/SAG ディスパッチ (DRA 多段を生む flow-changing) だけ。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj-trad` 行きで出る service を変えないため、これらは `assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う。チェーン内の段階 (生リード/primary/binned/MAG) は構造情報 (group membership・`derived_from`) であって「アセンブリ形態」ではないため、軸名・値域が段階と種別を混同しない形に整える (現行値 `raw` 等の命名はこの観点で見直す)
+- **空間 Tx の platform は recipe で実 DRA step を出す**: `spatial-platform` は GEA Submission Type (Sequencing/Microarray) と DRA 2 段の要否を変える flow-changing 軸なので、note 止まりにせず Tier2 `spatial` recipe で **Sequencing platform に実際の DRA step を emit** する (`### spatial`)。platform の値域は `ALLOWED_CHIP_VALUES['spatial-platform']` が SSOT で、Sequencing 系 (`SEQUENCING_SPATIAL_PLATFORMS`) のみ DRA + GEA の 2 段、それ以外 (Microarray 系) は GEA のみになる。MERFISH の大容量画像は GEA 受付不可だが、外部 Generalist archive は DDBJ service でないため step 化せず GEA step の誘導 note で表す
+- **`assembly-form` は MAG/SAG 派生チェーン専用の軸**: `assembly-form` が routing で意味を持つのは `mag-sag-chain` group での MAG/SAG ディスパッチ (DRA 多段を生む flow-changing) だけ。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj-trad` 行きで出る service を変えないため、これらは `assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う。チェーン内の段階 (生リード/primary/binned/MAG) は構造情報 (group membership・`derived_from`) で表す。`assembly-form` は登録の段階を表す軸ではなく、MAG/SAG という派生種別を表す軸であり、routing のディスパッチに効くのは `mag` / `sag` の値である
 - **第三者 (TPA) は提出単位 (Q1) で扱い per-file では問わない**: 配列系の TPA → `ddbj-trad` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)、メタボローム再解析 → `metabobank`。TPA か否かは 1 提出まるごとで決まる軸なので前段 Q1 だけで判定し、per-file の `provenance` 質問・chip は持たない (Q1 と二重に問わない)。種別で割れるため Q1 = 第三者 で振り分け不能な種別は Q3 で disable される
 - **`assembly-annotation` は 1 step**: 配列 + アノテーションは MSS の 1 ファイルペアであり、配列登録 step とアノテ step に分けない
 - **MAG ≠ SAG**: 別パッケージ (MIMAG / MISAG) で、1 つの GroupType に束ねない。MAG の段階間リンクは単一 BioProject を共有しつつ BioSample `derived_from` の放射状で表し、直列 chain ではない。MAG は生リードを DRA に出す多段が必須 (flow-changing) だが、SAG は公式上 DRA が任意なので MAG と同列の多段固定にはせず、DRA を任意扱いにする (`_ddbj/single-amplified-genome.md` に DRA 必須の記載なし)

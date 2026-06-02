@@ -1,9 +1,7 @@
 import type { ChatMessage } from "../client"
 
 // Converts a natural-language search request into ONE line of Advanced-Search
-// DSL. The rules and few-shot below are the converged result of the prompt
-// experiment (validation harness + gold set live under .claude/llm-experiment/).
-// The model emits a DSL string; the BFF validates it via /db-portal/parse.
+// DSL. The model emits a DSL string; the BFF validates it via /db-portal/parse.
 const SYSTEM_PROMPT =
   `You convert a natural-language search request (Japanese or English) into ONE line of DDBJ portal Advanced-Search DSL. Output ONLY the DSL line — no prose, no explanation, no code fences.
 
@@ -48,8 +46,8 @@ const FEW_SHOT_EXAMPLES: { prior: string; user: string; assistant: string }[] = 
   { prior: "organism_name:\"Homo sapiens\"", user: "ラットも対象に加えたい", assistant: "organism_name:\"Homo sapiens\" OR organism_name:\"Rattus norvegicus\"" },
 ]
 
-// Mirror the experiment's user-message format exactly: a "Current query:" line
-// only when there is one, so the model behaves the same as during tuning.
+// Prepend the "Current query:" line only when a value is given. The model uses
+// the presence of this line to choose between append and fresh generation.
 const formatUser = (input: string, currentDsl?: string): string =>
   currentDsl && currentDsl.trim().length > 0
     ? `Current query: ${currentDsl.trim()}\nRequest: ${input}`

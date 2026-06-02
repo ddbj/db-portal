@@ -24,6 +24,7 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 | `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 |
 | `app/lib/api/search.ts` | `crossSearch` / `dbSearch` / `parseQuery` / `serializeAst` の wrapper |
 | `app/lib/api/news.ts` | BFF `/api/news` の wrapper。Zod schema (`NewsItem` / `NewsList` / `NewsSource` / `NewsCategory` / `NewsCache`) は `app/schemas/api-bff/news.ts` に置き、ここで re-export |
+| `app/lib/api/services.ts` | BFF `/api/services` の wrapper。Zod schema (`ServiceItem` / `ServiceList` / `ServiceSource` / `ServiceCategory` / `ServiceCache`) は `app/schemas/api-bff/service.ts` に置き、ここで re-export |
 | `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `isLlmAvailable`。`LlmHealth` Zod schema は `app/schemas/api-bff/llm.ts` に置き、ここで re-export |
 | `app/lib/api/search-types.ts` | `ParseNode` alias (`-Input` / `-Output` ハイフン名を隠す) |
 | `app/lib/api/index.ts` | 上記の re-export |
@@ -53,11 +54,9 @@ UI 層がこのハイフン名を意識しなくて済むよう、`app/lib/api/s
 
 UI コードでは `ParseNode` だけを import する。serialize 呼び出し層で `ParseNodeInput` に変換する境界を 1 箇所に絞る。
 
-### narrowing の効き方
-
 `ParseNode` は discriminator (`op` フィールド) を持つので、`switch (n.op)` で各 leaf / BoolOp に narrow される (`free_text` / `eq` / `contains` / `wildcard` / `between` / `AND` / `OR` / `NOT` の 8 分岐)。Pydantic v2 の `Field(alias="from")` を持つ field も `n.from` でアクセスできる (TypeScript 側に reserved word の制約はない)。
 
-### alias を経由する利点
+alias を経由することで次が成立する:
 
 - ハイフン入りの型名 (`DbPortalParseBoolOp-Output`) を UI 層に露出させない
 - Input/Output の切り替えを 1 箇所で管理する
@@ -73,6 +72,8 @@ UI コードでは `ParseNode` だけを import する。serialize 呼び出し�
 dev / staging は同じ openapi 配置 (staging API) を共有する。Production リリース直前にだけ production URL で `gen:api-types` を回し、staging との型差分を確認する。env の全体方針は `development.md` を参照。
 
 ## operation 型補完の運用
+
+現状の operation は GET / POST + query parameter のみで構成され、`openapi-fetch` のような外部 wrapper への依存を持たず、`paths` 型を直接読む薄い fetch wrapper だけで型補完を成立させる。
 
 ### fetch wrapper
 
@@ -99,10 +100,6 @@ dev / staging は同じ openapi 配置 (staging API) を共有する。Productio
 | `instance` | Problem の `instance` (任意) |
 
 `isAPIError(value)` の type guard で `instanceof APIError` を扱う。TanStack Query の `queries.retry` は `shouldRetry` を使って `APIError` の status が 5xx のときだけ最大 2 回 retry。`mutations.retry` は `0` (debounced serialize は 1 度で fail し、SyncStatusChip の再試行 button から手動 retry する想定)。
-
-### openapi-fetch 等の外部ライブラリ採用判断
-
-複雑な operation (path parameter / multipart 等) が増えた場合、`openapi-fetch` のような外部 wrapper への乗り換えを検討する余地はある。判断は実装中に operation 数と複雑度を見て行う。
 
 ## 差分検知の運用
 

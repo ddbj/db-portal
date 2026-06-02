@@ -38,7 +38,7 @@ XSS で token が漏れない (JS から到達できない) こと、Safari ITP 
 - Header にユーザー名表示 (`GET /api/me`)
 - `useAuth` hook + `<RequireAuth>` wrapper を構造として提供
 
-mutation 系 API を portal に追加するときは CSRF token / Origin check を同時に導入する (現状は mutation が無いので攻撃面が薄い)。
+portal は read-only で mutation API を持たないため、CSRF 防御は cookie の `SameSite=Lax` のみで足りる。
 
 ## Cookie 仕様
 
@@ -86,10 +86,28 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 | Method | Path | 役割 |
 |---|---|---|
 | GET | `/api/auth/login` | Keycloak の authorize URL にリダイレクト (PKCE code_challenge を生成) |
-| GET | `/api/auth/callback` | Keycloak からの redirect 受信、code → token 交換、`sid` 発行、ホームへリダイレクト |
-| GET | `/api/auth/logout` | Keycloak の `end_session_endpoint` にリダイレクト |
-| GET | `/api/auth/logout-callback` | Keycloak からの redirect 受信、session 削除、cookie clear |
+| GET | `/api/auth/callback` | Keycloak からの redirect 受信、code → token 交換、`sid` 発行、`returnTo` へリダイレクト |
+| GET | `/api/auth/logout` | session entry の id_token を取り Keycloak の `end_session_endpoint` にリダイレクト |
+| GET | `/api/auth/logout-callback` | Keycloak からの redirect 受信、session 削除、cookie clear、`returnTo` へリダイレクト |
 | GET | `/api/me` | 現在の session の userInfo を返す。session なしなら 401 |
+
+各 path が Express handler か RR route fallback かの境界:
+
+| path | 種別 |
+|---|---|
+| `/api/auth/login` | Express handler |
+| `/api/auth/callback` | Express handler |
+| `/api/auth/logout` | Express handler |
+| `/api/auth/logout-callback` | Express handler |
+| `/auth/callback`、`/auth/silent-callback`、`/auth/logout-callback` | RR route (薄い page、BFF を素通りした場合の fallback) |
+
+Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。`*` ワイルドカードは production で禁止 (本書「Redirect URI の運用」 節)。
+
+Express handler で完結させる利点:
+
+- callback 処理 (state 検証 / code 交換 / cookie 発行) は server 専用、zones 上 `app → server` 直接 import を避けるため Express で処理してから redirect する
+- RR route 側 (loader / component) を OIDC 詳細から完全に切り離す
+- Keycloak から見ると redirect_uri が固定、RR の routing 変更に影響を受けない
 
 ### Login
 
@@ -117,7 +135,7 @@ session entry 全体を log に出すケースは作らない。debug 用に log
 | `exp` | 現在時刻より未来 (clock skew は 0 秒) | 同上 |
 | `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
 
-payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、JWKS 署名再検証を後から差し込める構造に保つ (upstream の信頼境界が変わって token endpoint からの direct 受信が成り立たなくなった場合への備え)。
+payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse する。署名再検証を TLS server validation に委ねる代わりに、token の意味的な claim (発行者 / 宛先 / 有効期限) を payload 側で必ず検証することで、direct 受信の前提が崩れた token を弾く。
 
 ### Logout
 
@@ -127,37 +145,17 @@ payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse し、JWKS �
 4. BFF が `sid` から session を削除し `Set-Cookie: sid=; Max-Age=0` を返す
 5. ホームへ 302
 
-### endpoint 配置の境界
-
-| path | 種別 | 役割 |
-|---|---|---|
-| `/api/auth/login` | Express handler | pendingLogin を作り authorize URL へ 302 |
-| `/api/auth/callback` | Express handler | state 検証 + code → token 交換 + session set + Set-Cookie + 302 returnTo |
-| `/api/auth/logout` | Express handler | session entry の id_token を取り `end_session_endpoint` へ 302 |
-| `/api/auth/logout-callback` | Express handler | session 削除 + Set-Cookie clear + 302 returnTo |
-| `/auth/callback`、`/auth/silent-callback`、`/auth/logout-callback` | RR route (薄い page) | BFF を素通りした場合の fallback。通常は 302 で抜けるので render されない |
-
-Keycloak client の `Valid Redirect URIs` は `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/callback` および `<DB_PORTAL_PORTAL_ORIGIN>/api/auth/logout-callback` のみを許可する。`*` ワイルドカードは production で禁止 (本書「Redirect URI の運用」 節)。
-
-Express handler で完結させる利点:
-
-- callback 処理 (state 検証 / code 交換 / cookie 発行) は server 専用、zones 上 `app → server` 直接 import を避けるため Express で処理してから redirect する
-- RR route 側 (loader / component) を OIDC 詳細から完全に切り離す
-- Keycloak から見ると redirect_uri が固定、RR の routing 変更に影響を受けない
-
 ### Pending login store
 
 login flow 中の `state` / `code_verifier` / `returnTo` を server 側 in-memory に持つ。
 
 - TTL 10 分、1 分間隔で cleanup
 - `take(state)` は **1 回限り消費** (replay 防止)
-- multi-instance 化が必要になれば session store と同じ抽象境界で redis 化
+- in-memory 単一プロセス前提 (session store と同じ抽象境界)
 
 ### State CSRF と returnTo の二重防御
 
-#### State CSRF
-
-OIDC `state` parameter は authorization request と callback の対応を結ぶ CSRF token として機能する:
+**State CSRF**: OIDC `state` parameter は authorization request と callback の対応を結ぶ CSRF token として機能する:
 
 1. login 時に乱数から `state` を生成し pending store に積む
 2. Keycloak が callback で `state` を echo back
@@ -166,9 +164,7 @@ OIDC `state` parameter は authorization request と callback の対応を結ぶ
 
 これにより攻撃者が用意した callback URL を被害者に踏ませても拒否され、同じ code を 2 回交換できない。
 
-#### returnTo
-
-login / logout の `return_to` query は内部 navigation 用。ユーザーが任意の URL を入れられるので、二重に検証する:
+**returnTo**: login / logout の `return_to` query は内部 navigation 用。ユーザーが任意の URL を入れられるので、二重に検証する:
 
 | 層 | 検証内容 |
 |---|---|
@@ -181,12 +177,12 @@ server 側の再検証は「クライアント側 helper を経由しない直�
 
 `app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は薄い fallback page として置く。通常フローでは BFF が 302 で抜けるため画面は表示されない。表示されるのは次のいずれか:
 
-- Keycloak client config が旧 redirect_uri (`/auth/callback`) を保持しており、BFF を素通りした
+- BFF を素通りして `/auth/callback` を直叩きした (BFF 302 を経由しない経路)
 - BFF handler が 5xx で returnTo 302 まで到達せず、RR が `/auth/callback` 自体を render した
 
 これらの fallback page は単に「サインイン処理中」 / 「サインアウトしました」 を表示し、ホームへの link を置く。loader は持たない (`app → server` zones を尊重)。
 
-silent-callback は OIDC silent renew (iframe 経由 SSO check) の互換用。機能としては不要だが、既存仕様との互換のため空 page を残す。
+silent-callback は iframe silent renew を採用しないため空 page だが、`/auth/silent-callback` への直叩きが error にならないよう route ごと placeholder として置く。
 
 ## `/api/me` 仕様
 

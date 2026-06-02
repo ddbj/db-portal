@@ -99,7 +99,10 @@ state 表現には次の prop 名を使う:
 - **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search / results で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、キーワード / AI モード切替トグルをボックス内に納める。`/search` は提案レビュー型の `SearchInputPanel`、top / results は生成→遷移型の `NavigableSearchInput` がこの `SearchBox` を包む (`search.md`)
 - **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
 - **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
-- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `combobox.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Combobox` は固定リストから選ぶだけの `Select` と違い **editable + 絞り込み**: input にタイプすると候補が前方/部分一致で絞られ、候補に無い値も自由入力で確定できる (検索ビルダーの facet 値入力。候補に件数バッジ、`value` と表示 `label` を分離可能で organism の学名表示等に使う)。menu は `Select` と同じく body portal + fixed positioning で overflow を抜ける。`Select` / `TextInput` / `Combobox` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では揃えて高さを一致させる。詳細は次節の error state policy を参照
+- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `combobox.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Combobox` は `Select` と異なる editable な派生で、共通制約は次の通り。詳細は次節の error state policy を参照
+  - `Select`: 固定リストから 1 つ選ぶ。menu は body portal + fixed positioning で overflow を抜ける
+  - `Combobox`: editable + 絞り込み。input にタイプすると候補が前方/部分一致で絞られ、候補に無い値も自由入力で確定できる (検索ビルダーの facet 値入力)。候補に件数バッジ、`value` と表示 `label` を分離可能で organism の学名表示等に使う。menu は `Select` と同じ portal 方式
+  - `Select` / `TextInput` / `Combobox` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では高さを揃える
 - **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
@@ -277,7 +280,7 @@ sessionStorage は client 専用。SSR では「全件未読」前提で全件�
 
 ### NewsAside
 
-トップページ右ペイン専用 (sticky positioning)。ヘッダー高さを除いた viewport 高さに追従し、最新 5 件の compact news list を表示する (`NEWS_LIMIT` 定数で SSOT)。
+トップページ右ペイン専用 (sticky positioning)。ヘッダー高さを除いた viewport 高さに追従し、最新 N 件の compact news list を表示する (現状 5 件、`NEWS_LIMIT` 定数が SSOT)。
 
 #### 表示
 
@@ -290,7 +293,7 @@ sessionStorage は client 専用。SSR では「全件未読」前提で全件�
 
 #### 取得
 
-`app/lib/api/news.ts` の `fetchNews` を TanStack Query で呼び、上位 8 件を slice する (limit は client 側責任)。hook は `app/shell/news-aside.tsx` 内に置く (features を import すると zones を超えるため)。
+`app/lib/api/news.ts` の `fetchNews` を TanStack Query で呼び、最新 N 件 (`NEWS_LIMIT`) を slice する (limit は client 側責任)。fetch は `app/shell/news-aside.tsx` 内で行う (features を import すると zones を超えるため)。
 
 ### Breadcrumb
 
@@ -374,30 +377,29 @@ shell が直接消費するキー namespace は `common` / `nav` / `breadcrumb` 
 
 ### 全体構成
 
-ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した上で、TopRoute は `<main>` に Hero section と「ServiceGrid + PopularResources の左カラム / NewsAside の右カラム」 の 2-col grid (`lg` 以降は `1fr right-pane`) を組み立てる。NewsAside は **トップページのみ** で aside カラムに表示する。`ShellLayout` は NewsAside を embed せず、トップ route 側で explicit に呼ぶことで layout の単一責務を保つ。
+ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した上で、TopRoute は `<main>` に Hero section と「ServiceGrid + FeaturedServices の左カラム / NewsAside の右カラム」 の 2-col grid を組み立てる。NewsAside は **トップページのみ** で aside カラムに表示する。`ShellLayout` は NewsAside を embed せず、トップ route 側で explicit に呼ぶことで layout の単一責務を保つ。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Hero (NavigableSearchInput: keyword/AI + scope + examples)  │
 ├──────────────────────────────────┬──────────────────────────┤
-│  ServiceGrid (2x3 = 6 tiles)     │                          │
+│  ServiceGrid (primary tiles)     │                          │
 │                                  │  NewsAside               │
-│  PopularResources                │  (sticky, 8 items)       │
-│    DDBJ group (3 cols × 3)       │                          │
-│    DBCLS group (3 cols × 2)      │                          │
+│  FeaturedServices                │  (sticky, 最新 N 件)      │
+│    (name 順 compact list)        │                          │
 └──────────────────────────────────┴──────────────────────────┘
 ```
 
-`ServiceGrid` / `PopularResources` は `app/features/top/` 配下に置く (画面固有 component、`app/ui/` には入れない)。`HeroSection` は検索 box (`NavigableSearchInput`、`features/search`) を使うため **`app/routes/top/` 配下** に置く (`features/top` は `features/search` を import できないため、統合は route 層が担う)。`NewsAside` は shell 共通 component を import する。
+`ServiceGrid` は `app/features/top/` 配下、`FeaturedServices` は `app/features/services/` 配下に置く (画面固有 component、`app/ui/` には入れない)。`HeroSection` は検索 box (`NavigableSearchInput`、`features/search`) を使うため **`app/routes/top/` 配下** に置く。zones の制約上 `features/top` は `features/search` を import できず、検索 box とサービスタイルの統合は route 層が担う。`NewsAside` は shell 共通 component を import する。
 
 ### Hero section
 
 #### 構成
 
 - `NavigableSearchInput` (`search-input/`、results と共有する太い検索 box。keyword / AI モードを 1 つの box で切り替える)
-- scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")
-- keyword モードでは scope = DB scope、box 直下に共通 `Examples` (`例:` + chip 列、`top.hero.examples`)
-- 右端に「クエリビルダーで詳細条件を組む →」 リンク (`/search` への TextLink)
+- scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")。scope ラベルは `search.scope.*` キーから引く
+- keyword モードでは scope = DB scope、box 直下に共通 `Examples` (`例:` + chip 列。例文言は `NavigableSearchInput` が `search.*` キーから引く)
+- 検索例の trailing に「詳細条件で検索 →」リンク (`/search` への TextLink、`top.hero.advancedLink`)
 
 #### AI モード (top は new 固定)
 
@@ -415,13 +417,13 @@ ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した
 
 #### i18n キー
 
-| key | ja | en |
-|---|---|---|
-| `top.hero.advancedLink` | "クエリビルダーで詳細条件を組む" | "Open the query builder" |
-| `top.hero.examplesLabel` | "例" | "Examples" |
-| `top.hero.examples` | (accession / 学名中心の配列) | (同) |
+`top` namespace が hero 固有に持つのは詳細検索リンク 1 キーのみ。実文言は i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`) が SSOT。
 
-box の placeholder / aria / 送信ラベル / AI 文言は `NavigableSearchInput` が `search.*` キーを引く (top 固有では持たない)。
+| key | 用途 |
+|---|---|
+| `top.hero.advancedLink` | 検索例 trailing の `/search` への誘導リンク文言 |
+
+box の placeholder / aria / 送信ラベル / 検索例 / AI 文言は `NavigableSearchInput` が `search.*` キーを引く (top 固有では持たない)。
 
 Hero に独立した heading は置かない (検索 box 自体が page の入口を兼ねる)。Header の wordmark がブランド表示を担う。
 
@@ -444,21 +446,24 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 #### データソース
 
-`GET /api/services?featured=true` を client-side の TanStack Query で取得する (services mirror。データ生成・featuredTop 規約は `services.md`)。`SectionHeading "Services"` (`top.services.heading`) を上に出し、DDBJ・DBCLS を混在させた **name アルファベット順の list** で表示する (source 別の group / card / monogram / icon は持たない)。query key は `/services` 一覧と共有する。
+services mirror を client-side の TanStack Query で取得し、`featuredTop` の entry を抽出する (データ生成・featuredTop 規約は `services.md`)。`SectionHeading` (`top.services.heading`) と「すべて見る」link を上に出し、DDBJ・DBCLS を混在させた **name アルファベット順の compact list** で表示する。query key は `/services` 一覧と共有する。
 
 #### 行 design
 
-- `/services` 一覧と同じ `service-row.tsx` を再利用 (`services.md` の「UI 統合」)。1 行 = name (url があれば外部 link) + 1 行 description + 右に source Tag + category Tag。icon・monogram は持たない
-- facet / pagination は top page には出さない (一覧は `/services` に誘導)
+- 専用の compact row を内部に持つ。1 行 = name (url があれば外部 link) + 同行に 1 行 ellipsis の description。source Tag / category Tag / icon は持たない (詳細な一覧表示は `/services` に誘導)
+- facet / pagination は top page には出さない
 
 #### i18n キー
 
-| key | ja | en |
-|---|---|---|
-| `top.serviceGrid.heading` | "サービス" | "Services" |
-| `top.services.heading` | "サービス" | "Services" |
+実文言は i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`) が SSOT。
 
-`top.serviceGrid.heading` は資源として宣言してあるが、現状の `ServiceGrid` 実装 (portal 内 navigation の primary tiles) は内側に heading を render しない。name / description / category ラベルは service mirror の data と i18n (`services.category.*`) から解決する。
+| key | 用途 |
+|---|---|
+| `top.serviceGrid.heading` | ServiceGrid 用 heading の資源 (現状 grid は内側に heading を render しない) |
+| `top.services.heading` | FeaturedServices の `SectionHeading` |
+| `top.services.viewAll` | FeaturedServices の `/services` への「すべて見る」link |
+
+name / description は service mirror の data から、category ラベルは i18n (`services.category.*`) から解決する。
 
 ### NewsAside / NotificationBar
 
@@ -498,8 +503,8 @@ app/content/
 │   ├── bioproject/index.content.tsx   → /databases/bioproject
 │   └── biosample/index.content.tsx    → /databases/biosample
 └── services/
-    ├── bioproject.content.tsx          BioProject (top + submit 兼任)
-    ├── biosample.content.tsx           BioSample (top + submit 兼任)
+    ├── bioproject.content.tsx          BioProject (submit-only)
+    ├── biosample.content.tsx           BioSample (submit-only)
     ├── search.content.tsx              portal 内検索 (top primary tile)
     ├── submit-nav.content.tsx          portal 内登録ナビ (top primary tile)
     ├── supercomputer.content.tsx       NIG スパコン (top primary tile, external)
@@ -567,22 +572,19 @@ portal 内 navigation の Service tiles (トップ左 main の primary tiles) �
 | `source` | `"DDBJ" \| "DBCLS"` または null | tag 表示用 |
 | `accessionPlaceholders` | 文字列配列 | step カード上の placeholder 例 |
 
-`submit-only` の entry (humandbs / dbcls / jpost / eva / dgva 等) は `top` を持たず、`link` も持たない (submit 外部 CTA でだけ参照される)。
+`submit-only` の entry (humandbs / jpost / eva 等) は `top` を持たず、`link` も持たない (submit 外部 CTA でだけ参照される)。
 
 ### Loader 公開 API
 
-| 関数 | 返却 |
-|---|---|
-| `getDatabaseBySlug(slug)` | `DatabaseContent \| undefined` |
-| `listDatabases()` | `readonly DatabaseContent[]` |
-| `validateAllDatabases()` | `ValidationResult<DatabaseContent>` |
-| `getServiceById(id)` | `ServiceContent \| undefined` |
-| `listServices()` | `readonly ServiceContent[]` |
-| `listServicesByTopCategory(category)` | `readonly ServiceContent[]` (`top.order` 昇順) |
-| `getServiceBySubmit(service)` | `ServiceContent \| undefined` (submit Service enum 値で逆引き) |
-| `validateAllServices()` | `ValidationResult<ServiceContent>` |
+`app/lib/content/loader.ts` が公開する操作 (シグネチャは同ファイルが SSOT):
 
-CLI (`scripts/validate-content.ts`) は両 `validateAll*` を順に呼び、どちらかが失敗すれば `process.exit(1)` する。
+- slug / id 引き: database を slug で、service を id で 1 件取得 (未知は `undefined`)
+- 一覧: database / service の全件取得
+- top category 別一覧: 指定 top category を持つ service を `top.order` 昇順で取得
+- submit 逆引き: submit `Service` enum 値から service entry を逆引き
+- validateAll: database / service それぞれを Zod parse し直し、結果を返す
+
+CLI (`scripts/validate-content.ts`) は database / service の validateAll を順に呼び、どちらかが失敗すれば `process.exit(1)` する。
 
 ### 起動時 fail-fast
 
@@ -594,38 +596,25 @@ server プロセスを `node server/index.ts` のように直接起動した場�
 
 ### Breadcrumb 自動生成
 
-#### 方針
+Content 側に breadcrumb を **書かない**。Route handle に i18n キー (static) または resolver 名 (dynamic) を持たせ、`app/lib/content/breadcrumb.ts` の `useBreadcrumb` が `useMatches` を走査して構築する。shell 側 (`app/shell/breadcrumb.tsx`) は hook の結果を `<nav aria-label>` で wrap するだけの薄い UI 層。これにより content で breadcrumb を二重に書かずに済み、route 構造の変更に自動追従し、i18n ラベルは locale ファイルに集約される。
 
-Content 側に breadcrumb を **書かない**。Route handle に i18n キー (または resolver 名) を持たせ、`useBreadcrumb` hook が `useMatches` を走査して構築する。shell 側 (`app/shell/breadcrumb.tsx`) は hook の結果を `<nav aria-label>` で wrap するだけの薄い UI 層。
-
-#### Static / Dynamic ラベル
+handle の 2 系統と用途:
 
 | handle | ラベル解決 | 用途 |
 |---|---|---|
 | `breadcrumbI18nKey: "breadcrumb.databases"` | `t(key)` | 中間 segment (例: "データベース") |
 | `breadcrumbResolver: "database-content"` | resolver 関数で `{ label, href }` | 末尾 segment (例: BP の title を content から引く) |
 
-`breadcrumbI18nKey` に存在しないキー (typo 等) が渡されたとき、hook は i18next default に従いキー文字列そのものをラベルとして返す (item は skip しない)。typo を visible に出すことで dev で早期に気付かせるための挙動。
+`breadcrumbI18nKey` に存在しないキー (typo 等) が渡されたとき、hook は i18next default に従いキー文字列そのものをラベルとして返す (item は skip しない)。typo を visible に出すことで dev で早期に気付かせる。
 
-#### useBreadcrumb hook
+`useBreadcrumb` の不変量 (型は `breadcrumb.ts` が SSOT):
 
-`app/lib/content/breadcrumb.ts` の `useBreadcrumb(options?)` に集約する。
-
-- 引数 `options.resolvers` は resolver 名 → resolver 関数の dict
-- resolver 関数の入力: `{ data, pathname, params }`
-- resolver の出力: `{ label, href }` または `null` (`null` を返した match は item を生やさない)
-
-hook は `useMatches` を順に走査し、handle に `breadcrumbI18nKey` / `breadcrumbResolver` を持つ match を処理して **handle 由来の `BreadcrumbItem[]`** を返す (Home entry は含まない)。resolver は features/lib のヘルパに依存しないよう、shell 側で `~/lib/content/loader` の `listDatabases` / `getServiceById` を直接読んで組み立てる。
-
-#### 表示しないケース
+- handle 駆動: `useMatches` を順に走査し、handle に `breadcrumbI18nKey` (static) か `breadcrumbResolver` (dynamic) を持つ match だけを処理する
+- static は i18n キーをそのままラベル化、dynamic は呼び出し側が渡した resolver 名 → resolver dict から関数を引いてラベルと href を解決する
+- resolver が `null` を返した match は item を生やさない (該当 entry を breadcrumb から落とす)
+- 返すのは **handle 由来の item 列のみ** (Home entry は含まない)。resolver は features/lib のヘルパに依存しないよう、shell 側で `~/lib/content/loader` の database / service lookup を直接読んで組み立てる
 
 shell の `<Breadcrumb />` wrapper が hook の出力を受け取り、先頭に Home entry を prepend する。prepend 後の合計が 0-1 件 (= Home のみ、handle item 0 件) のとき、何も render しない (`null`)。top page で breadcrumb が冗長になるのを避けるため。
-
-#### 利点
-
-- Content (`*.content.tsx`) で breadcrumb を書く必要がない (二重ソースなし)
-- Route 構造を変えると breadcrumb も自動追従
-- i18n ラベルは locale ファイルに集約 (翻訳が一箇所に集まる)
 
 ### TSX fragment スコープ
 
@@ -690,23 +679,23 @@ Shell:
 
 - nav 項目 / active 判定 / SwitchLang / LoginButton 出し分け
 - NotificationBar の表示順 / 個別 close で他 bar 残存 / 全件 close で section 消失 / sessionStorage 永続化
-- NewsAside の 5 件 list / 「すべて見る」 link / source / category Tag
+- NewsAside の 最新 N 件 (`NEWS_LIMIT`) list / 「すべて見る」 link / source / category Tag
 - Breadcrumb の 0-1 件 null / handle 駆動描画
 - TranslationUnavailable の表示条件 / ja URL で非表示
 - ShellLayout の組み立て / skip link
 
 Top route:
 
-- 2-col grid 構成、HeroSection / ServiceGrid / PopularResources / NewsAside の存在
+- 2-col grid 構成、HeroSection / ServiceGrid / FeaturedServices / NewsAside の存在
 - ServiceGrid が `top.order` 順に並ぶ
 - ServiceCard の internal / external 切替
-- PopularResources の DDBJ / DBCLS 群振り分けと monogram 表示
+- FeaturedServices が featuredTop を name 順 list で表示 (name + description のみ)
 
 Content system:
 
 - 不正な fixture で `validateAll*` が `errors` を返す、`getDatabaseBySlug` / `getServiceById` が存在しない id で `undefined`
 - DatabaseContent の parse + `body.ja` / `body.en` の render
-- submit `Service` enum の全 14 件が submit usage 付きの service entry を持つ (= flow card で URL が落ちない不変量)
+- submit `Service` enum の全値が submit usage 付きの service entry を持つ (= flow card で URL が落ちない不変量)
 
 ### PBT
 

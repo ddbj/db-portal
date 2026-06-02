@@ -11,7 +11,7 @@ DDBJ の登録・検索サービスへの統合ポータル。検索 (横断 / D
 | バリデーション | Zod |
 | 型自動生成 | `openapi-typescript` (ddbj-search-api `openapi.json`) |
 | 認証 | DDBJ Account (Keycloak) BFF + HttpOnly cookie |
-| LLM | 自前 vLLM (Qwen 32B AWQ @ L40S) を BFF 経由で利用 |
+| LLM | 自前 vLLM (OpenAI 互換 API) を BFF 経由で利用 (model は `DB_PORTAL_LLM_MODEL`、詳細は `docs/llm.md`) |
 | サーバ | Express + `@react-router/express` (SSR) |
 | テスト | Vitest + fast-check (PBT) + Playwright (E2E) |
 | Lint | ESLint (`@stylistic` + `eslint-plugin-import` の `no-restricted-paths`) |
@@ -61,6 +61,7 @@ docker compose exec app npm run check:last-updated
 **機能**
 
 - [search.md](docs/search.md) — 検索 UI / Advanced builder / Sidebar facet / AI アシスタント
+- [search-fields.md](docs/search-fields.md) — 検索フィールド一覧
 - [submit.md](docs/submit.md) — 登録ナビゲーション / controlled vocab / FlowStep
 - [news.md](docs/news.md) — ddbj/www mirror + cache + NotificationBar 振り分け
 - [services.md](docs/services.md) — services 一覧 mirror (news clone 再利用) + cache + /services / top 掲載

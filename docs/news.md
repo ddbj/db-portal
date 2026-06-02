@@ -47,7 +47,7 @@ Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と c
 | `featured` | `global.yml` の `top_news` slug whitelist に一致 → NotificationBar 表示対象 (default false) |
 | `publishedAt` | ISO 8601、ddbj は front matter の `date`、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成 (`publishedAtFromSlug`) |
 | `retireTime` | optional、NotificationBar 表示終了基準 |
-| `title.{ja,en}` | 該当言語側に title (片言語のみのとき他言語は空文字)。`published: false` の言語は title を空文字にする (この片言語は item を pair から落とす条件にも使う) |
+| `title.{ja,en}` | 該当言語の front matter title (片言語のみのとき他言語は空文字)。`published` の扱いは「正規化」節を参照 |
 | `summary.{ja,en}` | 本文 markdown の先頭から `extractSummary` で抽出 (180 文字以内、`#` heading / link 等の markdown 装飾は除去)。front matter には summary を持たない |
 | `url.{ja,en}` | source / lang / slug から組み立てた外部 URL (片言語のみのとき省略) |
 | `db` | 関連 DB の slug 配列 (facet で使う) |
@@ -62,34 +62,16 @@ Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と c
 | `lastFetchedAt` | ISO 8601 |
 | `items` | `NewsItem[]` |
 
-### ja/en pair の id
+### pairing と url
 
-source ごとに slug 規則が異なる。`server/news/sources.ts` の `slugFromFilename` (`SourceParseConfig`) に各規則を畳み込み、同一 slug の ja / en をペアリングして 1 件の `NewsItem` にする。
+file 名から slug を取り出す規則は source ごとに異なり、`pair.ts` の `slugFromFilename` が SSOT (ddbj は en file 末尾の `-e` を削って ja と揃える、dbcls は `YYYY-MM-DD-postN`)。同一 slug の ja / en を 1 件の `NewsItem` にペアリングする。片方の言語しか無ければ反対側の title は空文字で持ち、UI 側で fallback する (`newsItemTitle` helper)。
 
-ddbj/www:
-
-- `_news/ja/1996-06-21.md` → slug `1996-06-21`
-- `_news/en/1996-06-21-e.md` → slug `1996-06-21` (en file の末尾 `-e` のみを削除、ja side は無修正)
-- `_news/ja/2024-04-01_2.md` → slug `2024-04-01_2`
-- `_news/en/2024-04-01_2-e.md` → slug `2024-04-01_2`
-
-dbcls/website (Jekyll `_posts` 形式、`YYYY-MM-DD-post{N}.md`):
-
-- `_posts/ja/2024-04-01-post1.md` → slug `2024-04-01-post1`
-- `_posts/en/2024-04-01-post1.md` → slug `2024-04-01-post1` (suffix なし)
-
-片方の言語しか無ければ title.en (もしくは title.ja) を空文字で持ち、UI 側で fallback する (`newsItemTitle` helper)。
-
-### url の組み立て
-
-front matter に明示的な URL は無い。portal は source / lang / slug から `server/news/sources.ts` の `urlBuilder` で組み立てる。
+front matter に明示的な URL は無く、portal が source / lang / slug から組み立てる (`sources.ts` の `urlBuilder`)。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
 | source | URL pattern (ja) | URL pattern (en) |
 |---|---|---|
 | ddbj | `https://www.ddbj.nig.ac.jp/news/ja/${slug}.html` | `https://www.ddbj.nig.ac.jp/news/en/${slug}-e.html` |
 | dbcls | `https://dbcls.rois.ac.jp/ja/${YYYY}/${MM}/${DD}/postN.html` | `https://dbcls.rois.ac.jp/en/${YYYY}/${MM}/${DD}/postN.html` |
-
-dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
 ## 取得フロー
 
@@ -118,11 +100,7 @@ dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が�
 
 ### 全件再構築
 
-1. `repos/<src>/<pathByLang[lang]>` 配下の `*.md` を `fs.readdir` で列挙
-2. 各 markdown を `fs.readFile` → `parseRawArticle` で `RawArticle` に
-3. `pairToNewsItems` で ja/en pair → `NewsItem` の配列を作る
-4. ddbj source は `repos/ddbj-www/_data/global.yml` を `loadFeaturedWhitelist` で読み、`isFeaturedSlug` で各 NewsItem に `featured` フラグを付与 (DBCLS 側は常に false)
-5. `cache.replaceItemsForSource(source, items, newSha)` で **当該 source の items のみを差し替え**、他 source の items は保持したまま、in-memory + disk 両方を atomic 更新
+当該 source の `{ja,en}` 配下の md を全件読み直し、同一 slug の ja/en を pair して `NewsItem` 配列を作り直す。ddbj source は `global.yml` の whitelist に一致した item に `featured` を付ける (dbcls は常に false)。最後に **当該 source の items のみを atomic に差し替える** (他 source の items は保持、in-memory + disk 両方)。各ステップの関数構成は `server/news/` の `rebuildForSource` を参照する。
 
 ### 正規化 (normalize)
 
@@ -134,7 +112,7 @@ dbcls は slug `YYYY-MM-DD-postN` を分解して埋め込む。該当 file が�
 - `db` → `db` (文字列を全て `.toLowerCase().trim()` してから dedupe、`agd  ` のような余分な空白も除去)
 - `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像)
 - `lang` → 受信時に自明 (`_news/ja` か `_news/en` か、dbcls なら `_posts/ja` / `_posts/en`)
-- `published` → `false` のとき、その言語側を pair から落とす。両言語共に `published: false` の slug は最終的な item に含めない
+- `published` → 両言語側が共に欠落または `published: false` の slug だけを item から落とす。片方でも公開されていれば item を残す (未公開側の front matter title はそのまま写る)
 
 front matter の `category:` field は source 側で Jekyll の layout 用に使われており、portal の `NewsCategory` 分類とは別物。portal の `category` は `tags` 配列からの写像のみで決定する。
 
@@ -221,7 +199,7 @@ URL params との同期 (`facet-url-state.ts`):
 
 ### NotificationBar / NewsAside
 
-NotificationBar (top page 上部、全 featured を新しい順に stack、個別 close 可) と NewsAside (top page 右ペイン、最新 5 件 compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
+NotificationBar (top page 上部、全 featured を新しい順に stack、個別 close 可) と NewsAside (top page 右ペイン、最新 N 件 (`NEWS_LIMIT`) の compact list) の表示仕様は `frontend.md` の「Shell」 を参照。
 
 news data source 側の補足: NotificationBar 掲載対象は **`featured` フラグ** (= `global.yml` の `top_news` slug whitelist に該当) で判定する。category とは独立した軸で、category が `announcement` であっても featured でなければ NotificationBar に出さない。逆に featured なら category を問わず出る (ddbj 側のみ運用、`global.yml` メンテナで決まる)。
 

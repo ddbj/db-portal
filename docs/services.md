@@ -13,7 +13,7 @@ DDBJ・DBCLS が提供する各サービスの一覧を、upstream の実デー�
 | 更新契機 | News mirror が source の git HEAD 変化を検出した直後に、その source 分を再構築 (services 独自のポーリングは持たない) |
 | cache 永続化 | `<DB_PORTAL_SERVICES_CACHE_DIR>/services.json`、起動時に load して即応答可 |
 | schema migration | disk cache に `schemaVersion` を持たせ、不一致なら空 cache から再構築 |
-| source 分割 | DDBJ = `services.yml` の `provider == "DDBJ"`、DBCLS = `services.json` の `掲載 == true` (両者は重複しない) |
+| source 分割 | `ddbj` = `<clone>/ddbj-www/_data/services.yml` の `items[]` から `provider === "DDBJ"`、`dbcls` = `<clone>/dbcls-website/json/services.json` (配列) から `data[0]` ヘッダ行を除いた `掲載` が truthy の行。両 source は disjoint |
 | 正規化 | 各 source の分類語彙を `ServiceCategory` enum に写像 (source 別 mapping 表)、原語彙は `rawCategories` で保持 |
 | featuredTop | top page 掲載対象フラグ。DDBJ は name whitelist、DBCLS は name の `Togo` prefix |
 | sort | `/services` 一覧・top page いずれも name のアルファベット順 (既定昇順) |
@@ -21,12 +21,9 @@ DDBJ・DBCLS が提供する各サービスの一覧を、upstream の実デー�
 
 ## source 分割 (重複回避)
 
-| source | 取得元ファイル | 対象条件 |
-|---|---|---|
-| `ddbj` | `<clone>/ddbj-www/_data/services.yml` の `items[]` | `provider === "DDBJ"` |
-| `dbcls` | `<clone>/dbcls-website/json/services.json` (配列) | `data[0]` (ヘッダ行) を除外し `掲載 === true` |
+取得元ファイルと対象条件は方針表に集約する。2 source が disjoint なのは、`services.yml` 由来の entry を `provider === "DDBJ"` で絞るため。`services.yml` には `provider: DBCLS` の entry (TogoVar / GGGenome / CRISPRdirect / RefEx / NBDC Human Database 等) も含まれるが、この filter で落ちるので `services.json` 側 (DBCLS) と二重計上されない。
 
-`services.yml` には `provider: DBCLS` の entry (TogoVar / GGGenome / CRISPRdirect / RefEx / NBDC Human Database 等) も含まれるが、`provider === "DDBJ"` filter で落ちるため `services.json` 側と二重計上されない。`掲載 === true` の真偽は boolean / 文字列 (`"True"` 等) の双方を許容して判定する。
+`掲載` の判定は truthy 規約 (boolean `true`、または文字列 `"true"` / `"1"` を真とする) に従う。
 
 ## データモデル
 
@@ -50,7 +47,7 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 
 | フィールド | 内容 |
 |---|---|
-| `id` | `${source}-${nameSlug}` 形式 (nameSlug = en 名を lowercase、非英数を `-`、連続 `-` 圧縮、前後 trim) |
+| `id` | `${source}-${nameSlug(en 名)}` 形式。`nameSlug` は en 名を slug 化し、不変量 `^[a-z0-9-]+$` を満たす (生成規則は `server/services/normalize.ts` が SSOT、性質は PBT が固定) |
 | `source` | `"ddbj"` / `"dbcls"` |
 | `name.{ja,en}` | サービス名。DDBJ は `formal_name`(優先)/`name`、DBCLS は `services_name_{ja,en}` (欠落側は空文字) |
 | `description.{ja,en}` | 1 行説明。DDBJ は `description`、DBCLS は `explanation` (欠落側は空文字) |
@@ -70,19 +67,6 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 | `items` | `ServiceItem[]` |
 
 `lastSyncSha` を services 側でも保持するのは、cache が News と独立に破損・消失しても、次回 sync の SHA 比較で自己回復できるようにするため。
-
-### 説明文の末尾句点 (表示時正規化)
-
-upstream の `description` は末尾に文末句点が付くもの・付かないものが混在する。portal は **表示時** に言語別の文末句点を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路でのみ行う。
-
-| 言語 | 補う句点 | 補完条件 |
-|---|---|---|
-| ja | `。` | 値が非空で、末尾が文末句読点 (`。 ． . ！ ？ ! ? …`) でないとき |
-| en | `.` | 同上 |
-
-- 末尾が既に上記いずれかの句読点なら据え置く (二重付与しない)。
-- 閉じ括弧 (`）` `)` 等) は文末扱いせず句点を補う。
-- 言語 fallback で別言語の値を表示する場合は、表示する値の言語規則で補う (ja 欠落で en を表示するなら `.`)。
 
 ## 分類語彙 → ServiceCategory 写像
 
@@ -117,9 +101,7 @@ source ごとに語彙が異なる。portal は次の **source 別 mapping 表**
 
 domain 系 (Genome / Gene / Gene expression / Disease) は機能軸の `ServiceCategory` に対応しないため `categories` に寄与させない (原値は `rawCategories` に残す)。`User_1..4` は使わない。
 
-#### 表示名の上書き
-
-upstream の `services_name_*` が冗長 / 和名表記のものは、portal 側の上書き表 (`server/services/sources.ts` の `DBCLS_NAME_OVERRIDES`、key = upstream の `services_name_en`) で簡潔な表示名に揃える。id / featuredTop も上書き後の名前から導出する。
+表示名の上書き: upstream の `services_name_*` が冗長 / 和名表記のものは、portal 側の上書き表 (`server/services/sources.ts` の `DBCLS_NAME_OVERRIDES`、key = upstream の `services_name_en`) で簡潔な表示名に揃える。id / featuredTop も上書き後の名前から導出する。
 
 | upstream `services_name_en` | 表示名 (ja / en) |
 |---|---|
@@ -152,7 +134,7 @@ DDBJ whitelist は BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank / jVar(=`TogoVa
 News mirror が各 source の git HEAD 変化を検出し news を再構築した直後、同じ `(source, localDir, sha)` で services の再構築フックを呼ぶ。services 側は:
 
 1. 自身の `lastSyncSha[source]` と受領 `sha` を比較し、差分が無ければ no-op
-2. 差分があれば該当 source のファイル (`services.yml` / `services.json`) を read → 正規化 → `cache.replaceItemsForSource(source, items, sha)` で当該 source の items のみ差し替え (他 source は保持)、in-memory + disk を atomic 更新
+2. 差分があれば該当 source のファイル (`services.yml` / `services.json`) を read → 正規化し、当該 source の items のみを差し替える (他 source の items は保持)。in-memory state と disk cache を atomic に更新する (`server/services/cache.ts`)
 3. ファイル read / parse 失敗は warn にとどめ、当該 source の既存 items は維持する
 
 ## /api/services エンドポイント
@@ -178,7 +160,7 @@ News mirror が各 source の git HEAD 変化を検出し news を再構築し�
 
 複数選択は OR、異なる facet 同士は AND。chip は AppliedFilters に並べ、1 chip で 1 値を解除可能。一覧は name のアルファベット順 (既定昇順、Toolbar で昇順/降順切替)。News と異なり日付軸が無いため year facet・date sort は持たない。
 
-各オプションには件数 (facet count) を右端に添える。グループ G のオプション v の件数は、**G 以外の facet を適用した結果集合のうち v を持つ件数** とする (NCBI 流)。G 内での選択は G 自身の件数に影響せず、他グループでの絞り込みは件数に連動する。件数は cache 全件から client 側で集計する。ソース行には source 配色の色点 (ddbj=amber / dbcls=blue、`tailwind.css` の Source palette) を添えて視認性を上げる。
+facet count (self-exclusion 集計) とソース行の source 色点は News と同じ規約に従う (`news.md` の「facet 設計」が SSOT)。
 
 URL params との同期 (`facet-url-state.ts`):
 
@@ -187,6 +169,19 @@ URL params との同期 (`facet-url-state.ts`):
 ```
 
 `,` separated。順序は alphabet sort で安定化する。
+
+## 説明文の末尾句点 (表示時正規化)
+
+upstream の `description` は末尾に文末句点が付くもの・付かないものが混在する。portal は **表示時** に言語別の文末句点を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路でのみ行う。
+
+| 言語 | 補う句点 | 補完条件 |
+|---|---|---|
+| ja | `。` | 値が非空で、末尾が文末句読点 (`。 ． . ！ ？ ! ? …`) でないとき |
+| en | `.` | 同上 |
+
+- 末尾が既に上記いずれかの句読点なら据え置く (二重付与しない)。
+- 閉じ括弧 (`）` `)` 等) は文末扱いせず句点を補う。
+- 言語 fallback で別言語の値を表示する場合は、表示する値の言語規則で補う (ja 欠落で en を表示するなら `.`)。
 
 ## UI 統合
 

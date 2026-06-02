@@ -31,8 +31,9 @@ env ファイル (`env.dev` / `env.staging` / `env.production`) は git 管理�
        ├─ /api/me
        ├─ /api/auth/*
        ├─ /api/news
-       ├─ /api/llm/*
-       ├─ /api/search/serialize
+       ├─ /api/services
+       ├─ /api/llm/health
+       ├─ POST /api/llm/search-assistant
        ├─ /sitemap.xml
        └─ /robots.txt
 ```
@@ -151,7 +152,7 @@ mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 
 症状: `/api/llm/health` が `{status: "unreachable", reason: ...}` を返す、search assistant が UI に表示されない。
 
-切り分け: vLLM endpoint への疎通 (`/v1/models`)、log の `llm_health` 推移。
+切り分け: vLLM endpoint への疎通 (`/v1/models`)、log の `llm_health_transition` 推移。
 
 | 原因 | 対応軸 |
 |---|---|
@@ -160,34 +161,28 @@ mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 | timeout (`DB_PORTAL_LLM_TIMEOUT_MS` 不足) | env 上書きで増やす |
 | `DB_PORTAL_LLM_BASE_URL` 空 | env を見直す (production / staging では空にしない) |
 
-復旧後、health monitor が次の 5 分間隔で `ok` 検知 → `llm_health_changed` log を吐く → UI 側で次の health 取得で再表示。
+復旧後、health monitor が次の 5 分間隔で `ok` 検知 → `llm_health_transition` log を吐く → UI 側で次の health 取得で再表示。
 
 ### LLM rate limit が誤発火
 
-症状: 「アシスタント生成が `429` を返す」、log に `llm_rate_limited` 多発。
+症状: 「アシスタント生成が `429` を返す」。rate limit に当たると route は `429` + JSON `{error: "rate_limited"}` を返すのみで、専用 log event は出ない。
 
-`DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` (default 60) / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` (default 30) を env に追加して上書きする。共有 NAT 環境 (大学・研究所) からのアクセスは per-IP の上限に集中するので、必要なら per-IP を 120-300 程度まで緩める。緩める前後で log の `llm_rate_limited` 頻度を比較する。
+`DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` (default 60) / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` (default 30) を env に追加して上書きする。共有 NAT 環境 (大学・研究所) からのアクセスは per-IP の上限に集中するので、必要なら per-IP を 120-300 程度まで緩める。緩める前後で `POST /api/llm/search-assistant` の `429` 応答 (`error: "rate_limited"`) の発生頻度を比較する。
 
 ### 認証関連エラー
 
-#### state 不一致 (`oidc_callback_failed: invalid_state`)
-
-- 想定: 攻撃者が偽 callback URL を踏ませようとした (`auth.md`) / ユーザが古い browser tab で callback に到達
-- 対応: ユーザに最新 tab でリトライ依頼。多発する場合は Keycloak 側で redirect URI 設定変更がないか確認
-
-#### token refresh 失敗 (`auth_session_refresh_failed`)
-
-- 想定: Keycloak 側 SSO session が idle / max を超えた、portal 再起動で session 消失
-- 対応: 自動的に session が破棄され 401 が返る。UI 側は再ログイン promote される。多発する場合は Keycloak `Client Session Max` (`auth.md`) が短すぎないか確認
-
-#### login が redirect ループする
-
-- 想定: `DB_PORTAL_PORTAL_ORIGIN` と Keycloak `Valid Redirect URIs` が不一致 (`auth.md`)
-- 対応: `.env` の `DB_PORTAL_PORTAL_ORIGIN` と Keycloak 管理画面の URI を突き合わせる
+- **state 不一致** (`auth_callback_invalid_state`)
+  - 想定: 攻撃者が偽 callback URL を踏ませようとした (`auth.md`) / ユーザが古い browser tab で callback に到達
+  - 対応: ユーザに最新 tab でリトライ依頼。多発する場合は Keycloak 側で redirect URI 設定変更がないか確認
+- **login が redirect ループする**
+  - 想定: `DB_PORTAL_PORTAL_ORIGIN` と Keycloak `Valid Redirect URIs` が不一致 (`auth.md`)
+  - 対応: `.env` の `DB_PORTAL_PORTAL_ORIGIN` と Keycloak 管理画面の URI を突き合わせる
 
 ### session が頻繁に切れる
 
-session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。これは仕様 (`auth.md`)。
+症状: 操作中に `/api/me` が `401` を返し、UI が再ログインを促す。
+
+session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。portal は id_token のみを保持し token refresh フローを持たないため (`auth.md`)、session 期限切れ・portal 再起動・Keycloak SSO session idle 超過のいずれでも単に session が破棄されて `401` になる。これは仕様。
 
 - 「思ったより早く切れる」: `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` env で延長 (例 7200 = 2h)。Keycloak の `Client Session Idle` も同時に揃えること (短い方で実効 TTL が決まるため)
 - 「すべての user が同時に切れた」: server が再起動したため (in-memory session、永続化なし)。deploy timing と log の `server_listening` 時刻を突合
@@ -221,7 +216,7 @@ Keycloak client は public client (`auth.md`) のため client secret は存在�
 1. NIG 担当から新 API key を取得
 2. host 上 `.env.production.local` の `DB_PORTAL_LLM_API_KEY` を更新
 3. `.env` を再生成して container を `--force-recreate app` で再起動
-4. log で `llm_health_changed: ok` を確認
+4. log で `llm_health_transition` の `to: "ok"` を確認
 
 ### e2e テストユーザー password
 
