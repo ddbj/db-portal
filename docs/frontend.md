@@ -18,7 +18,7 @@
 
 トークン名 (`brand`, `fs-h2`, `section-md`, `tracking-tag`, `leading-snug` …) と意味の対応は `app/styles/tailwind.css` のコメントを参照する。本書では token 名で primitive の class を語り、px 値は書かない。
 
-### 設計原則
+### 設計原則と規約
 
 #### トークン参照のみ
 
@@ -52,39 +52,33 @@
 
 色だけで意味を伝えない: status の意味は text label が担保し (色のみで状態を区別しない)、tone (色) は補強とする。error / warning / 完了など状態を強調する面では AlertIcon / CheckIcon 等の icon・shape も併用して salience を上げる。
 
-#### zones
+#### zones とファイル構成
 
-`app/ui/` は他の zone を import しない (`architecture.md`)。`app/ui/` 内部の primitive 同士は import 可。util (`cn` helper や icon 集約) も `app/ui/` 配下に置く。
-
-### ファイル構成
-
-`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`Header` のような chrome は `app/shell/` 側 (本書「Shell」)。
-
-### 共通規約
+`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`app/ui/` は他の zone を import せず (`architecture.md`)、内部の primitive 同士・util (`cn` helper や icon 集約) は `app/ui/` 配下で閉じる。`Header` のような chrome は `app/shell/` 側 (本書「Shell」)。
 
 #### variant prop の表現
 
-state 表現には次の prop 名を使う:
+見た目の差は `className` でなく semantic prop で表す。prop 名は primitive 横断で意味を固定する。取り得る値はコードと `/_design` が SSOT で、本書には列挙しない:
 
-| prop | 採用 primitive 例 | 例 |
+| prop | 採用 primitive 例 | 何を表すか |
 |---|---|---|
-| `kind` | Button / Tag / Chip | Button: `"primary" \| "secondary" \| "danger" \| "ghost" \| "accent" \| "link"` (+ `pill` で全角丸) / Tag: `"brand" \| "source" \| "status"` / Chip: `"filter" \| "example"` |
-| `tone` | Tag (status) / Callout | `tone="critical"` / `tone="warn"` |
-| `size` | Button / Tag / SearchBox / Select / TextInput | `size="sm" \| "md" \| "lg"` (Select / TextInput は固定高さで揃う variant、無指定は従来 padding) |
-| `mono` | Tag / Chip / Label | `mono` (boolean) |
-| `selected` | Chip / FacetRow | `selected` (boolean) |
-| `as` | Chip / SectionHeading | `as="a" \| "button"` / `as="h2" \| "h3"` |
+| `kind` | Button / Tag / Chip | 用途・役割の種別 (primary 操作か danger か、Tag の分類軸、Chip の出自) |
+| `tone` | Tag (status) / Callout | 状態の強さ (critical / warn 等の色付け) |
+| `size` | Button / Tag / SearchBox / Select / TextInput | 寸法段階。Select / TextInput / Combobox は固定高さ variant を持ち query builder の行高を揃える |
+| `mono` | Tag / Chip / Label | 等幅表示 (識別子・コード片) |
+| `selected` | Chip / FacetRow | 選択状態 |
+| `as` | Chip / SectionHeading | 描画する HTML 要素の切替 (リンクかボタンか、見出しレベル) |
 
-新しい variant を増やすときは本書の対応セクションと `app/ui/` の primitive 定義を同時に更新する。
+prop 名と意味はこの規約に従い、値の増減は `app/ui/` の primitive 定義で行う。
 
 #### state 網羅
 
 各 primitive で次の state を必ず実装 + テストする:
 
 - default
-- hover (clickable な場合; ホバーで色変化はしない、bundle 仕様)
+- hover (clickable な場合; ホバーで色変化はしない方針)
 - focus (global `:focus-visible` の yellow ring を頼る)
-- disabled (`aria-disabled="true"` + `disabled` HTML 属性 + opacity 0.55 + `cursor-not-allowed`)
+- disabled (`aria-disabled="true"` + `disabled` HTML 属性。視覚的な無効化の見た目値はコード + `/_design` が SSOT)
 - checked / selected (該当 primitive)
 - loading (該当 primitive)
 
@@ -96,14 +90,14 @@ state 表現には次の prop 名を使う:
 
 各 primitive の Props 型 / class 骨格 / variant 一覧は **コードと `/_design` route が SSOT**。本書は各カテゴリで「何を担う primitive 群か」 と「特殊な制約」 のみ述べる。
 
-- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search / results で共通利用する一体型検索 input。`PageTitle` は 3px brand 左バーを持たない (バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と `tone="ai"` (brand 着色) を持ち、キーワード / AI モード切替トグルをボックス内に納める。`/search` は提案レビュー型の `SearchInputPanel`、top / results は生成→遷移型の `NavigableSearchInput` がこの `SearchBox` を包む (`search.md`)
-- **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` の token (`"none" \| "sm" \| "mid" \| "block" \| "md" \| "lg"`、実装は `app/styles/tailwind.css` の `@theme` の `--spacing-section-*` が SSOT) で個別に上下 padding を選ぶ
-- **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は **brand 左バー付き**、sidebar 用 `SidebarHeading` は **バー無し** で見た目を切る。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
-- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `combobox.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` の代替となる custom popover combobox (`Select`)。`Combobox` は `Select` と異なる editable な派生で、共通制約は次の通り。詳細は次節の error state policy を参照
-  - `Select`: 固定リストから 1 つ選ぶ。menu は body portal + fixed positioning で overflow を抜ける
-  - `Combobox`: editable + 絞り込み。input にタイプすると候補が前方/部分一致で絞られ、候補に無い値も自由入力で確定できる (検索ビルダーの facet 値入力)。候補に件数バッジ、`value` と表示 `label` を分離可能で organism の学名表示等に使う。menu は `Select` と同じ portal 方式
-  - `Select` / `TextInput` / `Combobox` は `size` (sm/md/lg) で固定高さの variant を持ち、query builder では高さを揃える
-- **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Tag` は `kind: tag / brand / source / status` の discriminated union、`Chip` は `as: a | button` の 2 系統 (URL push か 状態変更か)。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
+- **Chrome** (`page.tsx` / `page-title.tsx` / `search-box.tsx`): ページ全体の wrapper、H1 + eyebrow、Top / Search / results で共通利用する一体型検索 input。`PageTitle` は左バーを持たない (左バーは `SectionHeading` の予約)。`SearchBox` は `trailing` slot (検索ボタン左の差し込み) と AI モードの brand 着色を持ち、キーワード / AI モード切替トグルをボックス内に納める。`/search` は提案レビュー型の `SearchInputPanel`、top / results は生成→遷移型の `NavigableSearchInput` がこの `SearchBox` を包む (`search.md`)
+- **Layout** (`section.tsx`): 垂直リズム + 中央寄せ + 横余白を担う wrapper。`padTop` / `padBottom` で上下 padding を個別に選ぶ (段階の token は `app/styles/tailwind.css` の `@theme` `--spacing-section-*` が SSOT)
+- **Headings & Labels** (`section-heading.tsx` / `sidebar-heading.tsx` / `sidebar-group-label.tsx` / `label.tsx`): main column 用 `SectionHeading` は装飾の左バー付き、sidebar 用 `SidebarHeading` はバー無しで、main column と sidebar を視覚的に切り分ける規約。`Label` の `color` prop は token 表現外の動的色 (source palette 等) を受け取る逃げ道
+- **Forms** (`button.tsx` / `icon-button.tsx` / `text-input.tsx` / `text-area.tsx` / `select.tsx` / `combobox.tsx` / `form-group.tsx` / `fmt-radio.tsx` / `fmt-check.tsx`): native `<button>` / `<input>` の thin wrapper、および native `<select>` を代替する custom popover の `Select` / `Combobox`。error state policy は次節:
+  - `Select`: 固定リストから 1 つ選ぶ
+  - `Combobox`: editable な派生。候補を前方/部分一致で絞りつつ、候補に無い値も自由入力で確定できる (facet 集計に出ない正当な値を排除しない、検索ビルダーの facet 値入力)。`value` と表示 `label` を分離でき organism の学名表示等に使う
+  - `Select` / `TextInput` / `Combobox` は固定高さ variant を持ち query builder の行高を揃える
+- **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Chip` は `as` で URL push (link) か状態変更 (button) かを切り替える。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
 - **Modal** (`modal.tsx` / `modal-preview.tsx`): root + Header / Body / Footer / Preview / Card の家族。詳細は次節の Modal core を参照
@@ -113,51 +107,41 @@ state 表現には次の prop 名を使う:
 
 入力 primitive (`Button` を除く form control: TextInput / TextArea / Select / Combobox / FmtRadio / FmtCheck) は、`state="warn"` のような視覚的エラー表現と、screen reader 向けの aria 関連付けを **同時に satisfy する**:
 
-- `aria-invalid` は **state ベース** で primitive 側が自動付与する (`state="warn"` のとき `aria-invalid="true"`、default のとき false / 未設定)
+- `aria-invalid` は **state ベース** で primitive 側が自動付与する (`state="warn"` のとき true、default で false)
 - `aria-describedby` は consumer 側 (`FormGroup` の `errorId` / `hintId` など) が渡せるよう prop を開ける
 - error message を表示する側 (`FormGroup` の hint 領域や Callout) は **必ず id を持ち**、その id を input の `aria-describedby` に流す
-- placeholder は色情報のみで状態を示さない (placeholder text を error message として使わない)
+- placeholder は状態を示さない (placeholder text を error message に使わない)。surface 上でコントラスト比 4.5:1 を満たす
 
-`FormGroup` 自身は `<fieldset>` + `<legend>` で実装し、`num` + `label` を `<legend>` 内に置く。これにより radio / checkbox 群が単一の質問グループとして screen reader に announce される。1 input (TextInput 等) を子に持つ場合も `<fieldset>` で囲んで問題ない。
-
-placeholder の色は global stylesheet (`app/styles/tailwind.css`) で `::placeholder { color: var(--color-ink-soft) }` を一括指定し、surface (white) 上でコントラスト比 4.5:1 を満たす。
-
-`IconButton` の default size は AA 基準を満たす 26px。touch 主体の文脈 (mobile-first 画面、tap 連打が想定される UI) では consumer 側で `size={44}` を渡す。
+`FormGroup` 自身は `<fieldset>` + `<legend>` で実装し、`num` + `label` を `<legend>` 内に置く。これにより radio / checkbox 群が単一の質問グループとして screen reader に announce される。1 input (TextInput 等) を子に持つ場合も `<fieldset>` で囲んで問題ない。`IconButton` は AA の target size を満たす default を持ち、touch 主体の文脈では consumer 側で大きい `size` を渡す。具体の色値・サイズ値はコード + `/_design` が SSOT。
 
 ### Modal: core 挙動
 
-`Modal` (root) の挙動は code に書きにくい横断ポリシーなのでここで固定する:
+`Modal` (root) は dialog として横断的に次を保証する。focus 候補の selector・寸法・scroll lock の実装は `app/ui/modal.tsx`、視覚は `/_design` が SSOT:
 
-- `open=false` のとき何も render しない (mount 状態は親が制御)
-- Esc キーで `onClose` 発火 (`closeOnEscape={false}` で無効化)
-- overlay click で `onClose` 発火 (dialog 内部 click は伝播停止扱い、pointerdown / click を組合せて drag-out closure を防ぐ。`closeOnOverlay={false}` で無効化)
-- focus trap: open 時に dialog 内最初の focusable に focus 移動、Tab / Shift+Tab で dialog 内を循環、close 時に trigger 要素に focus 復元
-- `role="dialog"` + `aria-modal="true"` + `aria-labelledby={ariaLabelledby}` + `aria-describedby={ariaDescribedby}` (渡された場合)
-- `width` の default は 820、`maxWidth` は `calc(100% - 64px)` で viewport を超えないようにする
-- open 時に `document.body.style.overflow = "hidden"` で背景スクロールを抑止し、close 時に復元する
+- `open=false` で何も render しない (mount は親が制御)
+- focus を dialog 内に閉じ込める (open で内部先頭へ移動、Tab / Shift+Tab で循環、close で trigger に復元)。外部 dependency を増やさず自前実装する
+- Esc キー・overlay click で `onClose` (それぞれ `closeOnEscape={false}` / `closeOnOverlay={false}` で無効化、overlay は pointerdown / click 併用で drag-out closure を防ぐ)
+- `role="dialog"` + `aria-modal="true"` + `aria-labelledby` (+ 渡されれば `aria-describedby`)
+- open 中は背景スクロールを抑止し close で復元する
 
-focus trap は外部 dependency を増やさず自前実装する (focus 候補は `:not([disabled]):not([aria-hidden])` の `button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])`、Tab で末尾→先頭・Shift+Tab で先頭→末尾を巻き戻す)。
-
-`ModalPreview` は `<aside>` で render し、`flex-[0_0_44%]` で 2-col modal 内の右 44% 幅を取る (`ModalBody cols={2}` と組合わせる)。2-col modal の右側に「その操作で組まれる結果」 を予測表示する用途。
+`ModalPreview` は 2-col modal の右ペイン (`ModalBody cols={2}` と組合わせ、「その操作で組まれる結果」 を予測表示する `<aside>`)。
 
 ### トークン utility 生成と arbitrary value の許容範囲
 
-Tailwind v4 は `@theme` 宣言から utility class を自動生成する (`--color-brand` → `bg-brand` / `text-brand` / `border-brand`、`--spacing-section-md` → `p-section-md` / `m-section-md`、`--text-fs-h2` → `text-fs-h2`、`--tracking-tag` → `tracking-tag`、`--leading-snug` → `leading-snug`、`--radius-card` → `rounded-card`、`--shadow-card` → `shadow-card`)。token の意味は `app/styles/tailwind.css` のコメントに添える。
+Tailwind v4 は `@theme` 宣言から utility class を自動生成する (`--color-brand` → `bg-brand` / `text-brand` 等)。生成規則と各 token の意味は `app/styles/tailwind.css` のコメントが SSOT。
 
-`app/ui/` 内で arbitrary value を書くケース:
+`app/{ui,shell}/` で arbitrary value を許容するのは次の範囲 (物理強制は下記「ESLint による物理強制」):
 
-- 1px / 3px などの hairline・accent ライン (`border-l-[3px]` 等) で、token 化する価値が薄い細部値
-- 1 箇所限定の layout 値 (`SearchBox` scope の `min-w-[140px]`、`ModalPreview` の `flex-[0_0_44%]` など)
-- `style={{ color, fontSize, maxWidth }}` で動的に渡される値
+- token 化する価値が薄い hairline・accent ラインなどの細部値
+- 1 箇所限定の layout 値
+- `style={{}}` で動的に渡される値
+- `app/shell/` の vh / rem 単位 (`@theme` で表現しづらい単位)
 
-`app/shell/` でも次は許容: vh / rem 単位 (`min-h-[60vh]` / `max-w-[10rem]` 等、`@theme` で表現しづらい単位)。「複数箇所で同じ値が出てきた」 「サイズ感を全体で揃えたい」 と感じたら `@theme` に token を追加して移行する。
+「複数箇所で同じ値が出てきた」 「サイズ感を全体で揃えたい」 と感じたら `@theme` に token を追加して移行する。
 
 ### ESLint による物理強制
 
-逸脱検出は `eslint.config.ts` が SSOT:
-
-- `app/{features,routes,content}/`: 生 hex / arbitrary value 禁止、`react/forbid-elements` で生 `button` / `a` / `input` / `select` / `textarea` 禁止 (primitive 経由を強制)
-- `app/{ui,shell}/`: 細部値 / vh / rem を許容、生 hex のみ禁止
+逸脱検出は `eslint.config.ts` が SSOT。zone 別の生 hex / arbitrary value 禁止は `architecture.md` の「デザイントークンの物理強制」が扱う。primitive 利用に固有なのは `react/forbid-elements` で、`app/{features,routes,content}/` で生 `button` / `a` / `input` / `select` / `textarea` を禁止して primitive 経由を強制する (`app/{ui,shell}/` は native 要素を組み立てるため除外)。
 
 ### 視覚確認
 
@@ -193,12 +177,12 @@ dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した 
 ```
 
 - wordmark: 左端、`/` への link。`/bsi-logo.svg` (BSI = BioData Science Initiative) を render するロゴ
-- nav: 中央-右寄せ、active nav に `aria-current="page"` + `text-brand font-bold`
+- nav: 中央-右寄せ、active nav に `aria-current="page"`
 - SwitchLang: lang 切替リンク (cookie 更新で URL 不変、`i18n.md`)
-- 縦区切り: `w-px h-4 bg-border-soft mx-2` (SwitchLang と LoginButton の間)
+- SwitchLang と LoginButton の間に縦区切り
 - LoginButton: 認証 state を見て「ログイン / ログアウト」を出し分け
 
-背景は `surface` (白)、下に `1px solid border-soft` の境界。紫ベタ / グラデーション / 上端帯は使わない。
+背景は `surface` (白) で下端に境界線を引く。紫ベタ / グラデーション / 上端帯は使わない。見た目値は `app/shell/header.tsx` が SSOT。
 
 #### nav 構成
 
@@ -234,66 +218,33 @@ returnTo はクライアントから渡す。`buildLoginUrl(returnTo?)` / `build
 
 ### NotificationBar
 
+トップページ上部の featured news スタック。表示仕様はここに集約する (`news.md` はデータ源の補足のみ)。レイアウト・close の実装・sessionStorage key・SSR hydration の詳細は `app/shell/notification-bar.tsx`、視覚は `/_design` が SSOT。
+
 #### 表示条件
 
-NotificationBar は **トップページ (`pathname === "/"`) のみ** で render される。`/api/news` から取得した news のうち以下を満たすものを **新しい順に全件 stack 表示**:
+**トップページ (`pathname === "/"`) のみ** で render し、`/api/news` の news のうち次を満たすものを表示する:
 
-- `featured === true` (featured whitelist で marked)
-- `retireTime` が無いか、現在時刻が `retireTime` 未満
-- 表示済みリスト (`dismissedIds` を sessionStorage に保持) に含まれていない
+- `featured === true` (featured whitelist で marked、`news.md`)
+- `retireTime` が無いか現在時刻が `retireTime` 未満
+- その session で dismiss 済みでない
 
 #### 順序
 
-`publishedAt` 降順 (新しい順) で縦に積む。優先度フィールドは持たない (時系列のみで決定)。
+`publishedAt` 降順 (新しい順) に縦に積む。優先度フィールドは持たず時系列のみで決定する。
 
-#### close 動作
+#### close と永続化
 
-各 bar の close button (× IconButton) を押すと:
+各 bar の close で当該 bar のみ即時に消え、全件 close で section ごと消える。dismiss 済みは **sessionStorage** に保持する。cookie だと長期で抑制されすぎ、localStorage だと永久に閉じてしまうため、「tab を閉じるまで再表示しない・次の session では再評価」 を満たす sessionStorage を選ぶ。
 
-1. sessionStorage の `dbPortal.notificationBar.dismissed` にその `newsId` を追加
-2. 該当 bar のみ即時に消え、残りの bar はそのまま表示
-3. 全件 close すると section ごと消える
+#### a11y / SSR
 
-sessionStorage を採用するのは「tab を閉じるまでは再表示しない、次の session では再評価」 の挙動が望ましいため (cookie だと長期で抑制されすぎる、localStorage だと永久に閉じてしまう)。
-
-#### レイアウト / スタイル
-
-各 bar の中身:
-
-```
-[Tag status critical "重要"]  [mono date]  [title link]  ............................. [詳細 →]  [× close]
-```
-
-- section 全体: 画面端から左右 8px、header / Breadcrumb 間も上下 8px、bar 間も 8px gap
-- 各 bar: `surface-subtle` 背景 + 四方 `border-soft` 1px + `radius-button`、`content-max` で中央寄せ、bar 内左右 padding 16px
-- Tag は `kind="status" tone="critical"`、size sm
-- date: mono `text-ink-soft text-fs-label`
-- title: `text-ink font-medium`、hover で underline
-- 「詳細 →」: `app/ui/text-link.tsx` 経由で news 詳細 URL へ
-- × close: `app/ui/icon-button.tsx`、`ariaLabel={t("notificationBar.close")}` (全 bar 共通 label)
-
-a11y 上、section landmark (`role="region"`) は 1 つに留め、各 bar は `<article aria-label={title}>` で個別識別する。
-
-#### SSR hydration
-
-sessionStorage は client 専用。SSR では「全件未読」前提で全件表示し、hydration 後に sessionStorage を読んで dismissed を反映する。これにより hydration mismatch を避けつつ、SSR でも初回 paint で notification が見える。
+section landmark (`role="region"`) は 1 つに留め、各 bar は `<article aria-label={title}>` で個別識別する。sessionStorage は client 専用なので SSR では全件表示し、hydration 後に dismissed を反映する (hydration mismatch を避けつつ初回 paint で表示する)。
 
 ### NewsAside
 
-トップページ右ペイン専用 (sticky positioning)。ヘッダー高さを除いた viewport 高さに追従し、最新 N 件の compact news list を表示する (現状 5 件、`NEWS_LIMIT` 定数が SSOT)。
+トップページ右ペイン専用 (sticky)。最新 N 件 (`NEWS_LIMIT` 定数が SSOT、現状 5 件) の compact news list を表示する。heading (`SectionHeading` + 「すべて見る」 link)・各 row の構成・スタイルは `app/shell/news-aside.tsx`、視覚は `/_design` が SSOT。
 
-#### 表示
-
-- heading: `SectionHeading` で `t("newsAside.heading")` (= "お知らせ")、右に `t("newsAside.viewAll")` link
-- 各 row:
-  - 日付 (mono, `text-ink-soft text-fs-label`)
-  - `Tag kind="source" name="DDBJ"`
-  - `Tag kind="tag"` (category、例 "リリース")
-  - title link (1 行 ellipsis)
-
-#### 取得
-
-`app/lib/api/news.ts` の `fetchNews` を TanStack Query で呼び、最新 N 件 (`NEWS_LIMIT`) を slice する (limit は client 側責任)。fetch は `app/shell/news-aside.tsx` 内で行う (features を import すると zones を超えるため)。
+`app/lib/api/news.ts` の `fetchNews` を TanStack Query で呼び、client 側で `NEWS_LIMIT` 件に slice する (limit は client 側責任)。fetch を `app/shell/news-aside.tsx` 内で行うのは、features を import すると zones を超えるため (`architecture.md`)。
 
 ### Breadcrumb
 
@@ -311,22 +262,7 @@ route handle 規約は `architecture.md` の「route handle 規約」 を参照�
 
 #### 表示位置
 
-`ShellLayout` 内で Header と main の間、NotificationBar の **下**、Breadcrumb の **上** に出す (banner 性質、route content より上)。
-
-#### 構成
-
-```
-[i icon] {t("translationUnavailable.title")}
-         {t("translationUnavailable.description")}
-                                           [Switch to Japanese link]
-```
-
-- 背景: `surface-subtle`、border `border-soft`
-- title: `text-ink font-semibold text-fs-body`
-- description: `text-ink-mid text-fs-body-sm`
-- Switch link: `/api/set-lang` に POST する fetcher Form (cookie 更新 / URL 不変)
-
-`Callout tone="info"` を流用してもよいが、action link を含めたいので shell 側に専用 component として置く。
+`ShellLayout` 内で Header と main の間、NotificationBar の **下**、Breadcrumb の **上** に出す (banner 性質、route content より上)。バナー本体の構成・スタイルは `app/shell/translation-unavailable.tsx`、視覚は `/_design` が SSOT。`Callout tone="info"` 相当だが、ja への Switch link (`/api/set-lang` に POST する fetcher Form、cookie 更新 / URL 不変) を含めるため shell 側の専用 component とする。
 
 #### missing key の挙動
 
@@ -437,10 +373,10 @@ Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `Li
 
 #### グリッドと card design
 
-- `grid-cols-2 gap-3`
-- 各 card: 56×56 icon (`surface-subtle` bg, brand fg) + title (17px bold) + description (13px ink-soft)
+grid のレイアウト・寸法は `app/features/top/service-grid.tsx` / `service-card.tsx`、視覚は `/_design` が SSOT。規約として固定するのは:
+
 - icon は service entry の `id` に応じた dedicated SVG を `app/features/top/service-icon.tsx` の switch から選ぶ (各 service 専用デザイン)
-- 外部リンク card には右上に `ExternalIcon` (12px) を visual hint として表示
+- 外部リンク card には `ExternalIcon` を visual hint として表示する
 
 ### Services (top page)
 

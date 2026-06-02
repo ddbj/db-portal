@@ -27,7 +27,7 @@ DDBJ・DBCLS が提供する各サービスの一覧を、upstream の実デー�
 
 ## データモデル
 
-Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`) と client (`app/lib/api/services.ts`) で共用する境界 (`architecture.md`)。
+Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`) と client (`app/lib/api/services.ts`) で共用する境界 (`architecture.md`)。各フィールドの型と source 別の写し方 (name / description / url を DDBJ / DBCLS のどの field から取るか、相対 URL の絶対化) は `server/services/normalize.ts` が SSOT。
 
 ### ServiceCategory
 
@@ -43,30 +43,12 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 | `visualization` | 可視化・教材 |
 | `other` | その他 (写像結果が空のときの fallback) |
 
-### ServiceItem の主要フィールド
+### 不変量・規約として固定するフィールド
 
-| フィールド | 内容 |
-|---|---|
-| `id` | `${source}-${nameSlug(en 名)}` 形式。`nameSlug` は en 名を slug 化し、不変量 `^[a-z0-9-]+$` を満たす (生成規則は `server/services/normalize.ts` が SSOT、性質は PBT が固定) |
-| `source` | `"ddbj"` / `"dbcls"` |
-| `name.{ja,en}` | サービス名。DDBJ は `name` (ja/en 同値)、DBCLS は `services_name_{ja,en}` (欠落側は空文字) |
-| `description.{ja,en}` | 1 行説明。DDBJ は `description`、DBCLS は `explanation_{ja,en}` (欠落側は空文字) |
-| `url.{ja,en}` | サービスの実 URL。DDBJ は `service_link` (相対は `https://www.ddbj.nig.ac.jp` で絶対化)、DBCLS は単一 `URL` を両言語に |
-| `categories` | `ServiceCategory[]` (複数値、dedupe、空なら `["other"]`) |
-| `rawCategories` | 写像前の原語彙 (DDBJ tag / DBCLS Category ラベル) |
-| `featuredTop` | top page 掲載対象 (default false) |
-| `provider` | DDBJ 側のみ保持 (optional) |
-
-### ServiceCache の主要フィールド
-
-| フィールド | 内容 |
-|---|---|
-| `schemaVersion` | `2` で固定 (schema / 正規化出力の更新時に bump して旧 cache を破棄する) |
-| `lastSyncSha` | source ごとの git HEAD SHA。News から受け取り、services 自身の再構築 guard に使う |
-| `lastFetchedAt` | ISO 8601 |
-| `items` | `ServiceItem[]` |
-
-`lastSyncSha` を services 側でも保持するのは、cache が News と独立に破損・消失しても、次回 sync の SHA 比較で自己回復できるようにするため。
+- `id`: `${source}-${nameSlug(en 名)}` 形式で、不変量 `^[a-z0-9-]+$` を満たす (生成は `normalize.ts`、性質は PBT が固定)
+- `categories`: 写像結果の `ServiceCategory[]` (複数値・dedupe、空なら `["other"]`)、`rawCategories`: 写像前の原語彙 (DDBJ tag / DBCLS Category ラベル)
+- `featuredTop`: top page 掲載対象フラグ (default false、判定は `## featuredTop`)
+- `ServiceCache.schemaVersion`: 不一致なら空 cache から再構築 (方針表)。`lastSyncSha` (source ごとの git HEAD SHA) を services 側でも保持するのは、cache が News と独立に破損・消失しても次回 sync の SHA 比較で自己回復できるようにするため
 
 ## 分類語彙 → ServiceCategory 写像
 
@@ -108,7 +90,7 @@ domain 系 (Genome / Gene / Gene expression / Disease) は機能軸の `ServiceC
 | `TogoDX/human` | `TogoDX` / `TogoDX` |
 | `TogoTV` (ja: 統合TV) | `TogoTV` / `TogoTV` |
 
-source 側で新語彙が追加されたら写像対象外となり、`categories` が空になれば `other` に落ちる (UI を壊さない)。新語彙を取り込む場合は本表と `tests/unit/server/services/normalize.test.ts` / `tests/pbt/server/services/normalize-mapping.pbt.test.ts` を同時更新する。
+source 側で新語彙が追加されたら写像対象外となり、`categories` が空になれば `other` に落ちる (UI を壊さない)。
 
 ## featuredTop (top page 掲載対象)
 
@@ -123,19 +105,9 @@ DDBJ whitelist は BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank / jVar(=`TogoVa
 
 ## 取得フロー
 
-### 起動時
+起動時は `server/services/cache.ts` が disk cache を読んで即応答可能になり (不在 / schemaVersion 不一致 / parse 失敗のいずれも空 cache から start)、initial sync を待たない。以降は services 独自のポーリングを持たず、**News mirror が各 source の git HEAD 変化を検出して news を再構築した直後**、同じ source の services 再構築フックが呼ばれる。
 
-1. `server/services/cache.ts` が `<DB_PORTAL_SERVICES_CACHE_DIR>/services.json` を読む (不在 / schemaVersion 不一致 / parse 失敗のいずれも空 cache から start)
-2. 即座に `/api/services` を応答可能 (initial sync を待たない)
-3. 以降は News mirror の sync フックで再構築される
-
-### 再構築 (News sync フック)
-
-News mirror が各 source の git HEAD 変化を検出し news を再構築した直後、同じ `(source, localDir, sha)` で services の再構築フックを呼ぶ。services 側は:
-
-1. 自身の `lastSyncSha[source]` と受領 `sha` を比較し、差分が無ければ no-op
-2. 差分があれば該当 source のファイル (`services.yml` / `services.json`) を read → 正規化し、当該 source の items のみを差し替える (他 source の items は保持)。in-memory state と disk cache を atomic に更新する (`server/services/cache.ts`)
-3. ファイル read / parse 失敗は warn にとどめ、当該 source の既存 items は維持する
+services 側は受領 `sha` を `lastSyncSha[source]` と比較し、差分があるときだけ当該 source のファイル (`services.yml` / `services.json`) を read → 正規化して **その source の items のみ**を差し替える (他 source の items は保持、in-memory + disk cache を atomic に更新)。ファイル read / parse 失敗は warn にとどめ既存 items を維持する。手順は `server/services/cache.ts` / `mirror.ts` が SSOT。
 
 ## /api/services エンドポイント
 
@@ -172,30 +144,11 @@ URL params との同期 (`facet-url-state.ts`):
 
 ## 説明文の末尾句点 (表示時正規化)
 
-upstream の `description` は末尾に文末句点が付くもの・付かないものが混在する。portal は **表示時** に言語別の文末句点を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路でのみ行う。
-
-| 言語 | 補う句点 | 補完条件 |
-|---|---|---|
-| ja | `。` | 値が非空で、末尾が文末句読点 (`。 ． . ！ ？ ! ? …`) でないとき |
-| en | `.` | 同上 |
-
-- 末尾が既に上記いずれかの句読点なら据え置く (二重付与しない)。
-- 閉じ括弧 (`）` `)` 等) は文末扱いせず句点を補う。
-- 言語 fallback で別言語の値を表示する場合は、表示する値の言語規則で補う (ja 欠落で en を表示するなら `.`)。
+upstream の `description` は末尾の文末句点が付くもの・付かないもので混在する。portal は **表示時** に言語別の文末句点 (ja `。` / en `.`) を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路 (`serviceDescription`、`app/lib/api/services.ts`) でのみ行う。既に句点があるとき据え置く・閉じ括弧の扱い・fallback 言語の規則はコードが SSOT。
 
 ## UI 統合
 
-`/services` 一覧は `app/features/services/` 配下で実装する (News の構成に準拠):
-
-| ファイル | 役割 |
-|---|---|
-| `service-list.tsx` | Toolbar + list + Pagination の組立て |
-| `service-row.tsx` | 1 行 (name / description / source Tag / category Tag、icon なし) |
-| `facet-panel.tsx` | category / source の 2 FacetGroup の配置 |
-| `facet-url-state.ts` | facet ↔ URL params の双方向 helper (純粋関数) |
-| `use-services-list.ts` | TanStack Query で /api/services を取得、facet 適用・name sort・pagination |
-
-`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用する。`ServiceCategory` → i18n key の写像 helper は `app/lib/i18n` に置く。
+`/services` 一覧は `app/features/services/` 配下で実装する (News の構成に準拠。Toolbar + list + Pagination、category / source の 2 FacetGroup、facet ↔ URL params の純粋関数 helper、TanStack Query での取得 + facet 適用 + name sort + pagination)。component 構成は同ディレクトリのコードが SSOT。`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用し、`ServiceCategory` → i18n key の写像 helper は `app/lib/i18n` に置く。
 
 top page の services セクションは `/services` 一覧と同じ query key (`["services"]`) で `/api/services` を取得し (全件 fetch を共有)、client 側で `featuredTop === true` の item だけに絞り、DDBJ・DBCLS 混在のアルファベット順 list で表示する (facet / pagination なし、icon なし)。詳細は `frontend.md` の「Top route」。
 

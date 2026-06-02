@@ -124,21 +124,11 @@ group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正�
 
 各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
-field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる (Solr backed の trad / taxonomy 専用 field は除く)。具体の field 一覧は `field-catalog.ts` の `CATALOG` / `fieldsForScope` (および `search-fields.md` の field 軸) を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値 (`eq` / `contains` / `wildcard` / `between`) は field の型ごとに制限される (ddbj-search-api の演算子マトリクスに対応): date は `between` のみ、`identifier` 系は `eq` / `wildcard`、text 系は `eq` / `contains`、enum 系は `eq` のみ。コードが SSOT (`field-catalog.ts` の `fieldsForScope` / `FIELD_OPS`)。新規追加時は field-catalog の値と prompt (`llm.md`) を同時更新する。
+field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる (Solr backed の trad / taxonomy 専用 field は除く)。具体の field 一覧は `field-catalog.ts` の `CATALOG` / `fieldsForScope` (および `search-fields.md` の field 軸) を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。コードは `field-catalog.ts` の `fieldsForScope` / `FIELD_OPS` が SSOT。
 
 ### reducer の責務
 
-| action | 効果 |
-|---|---|
-| 追加系 (`addCondition` / `addGroup`) | 指定 group に新 condition / group を append (否定なし = `combinator: AND` で seed) |
-| 削除 (`removeNode`) | id の node を木から外す。root は不可 |
-| 内部結合更新 (`updateInnerCombinator`) | group / root の `AND` / `OR` を切替 (AND/OR トグル) |
-| 否定更新 (`updateCombinator`) | node の `combinator` を `AND` / `NOT` で切替。condition では述語ドロップダウンが op (`updateOp`) と否定 (`updateCombinator`) を同時に発行し、group ではヘッダの否定トグルが使う |
-| condition 更新 (`updateField` / `updateOp` / `updateValue` / `updateRange`) | field / op / value / range を変更。date field 切替時は op = `between` も自動切替。否定状態 (`combinator`) は保持 |
-| 復元 (`replaceRoot`) | URL 復元時に root を新規 group で置換 |
-| 全消去 (`clear`) | root を空に戻す |
-
-reducer は immer を使わず手で immutable 更新する。`combinator` が取り得る意味のある値は `AND` (否定なし) / `NOT` (否定) のみで、先頭 child を固定する処理は持たない。
+Advanced builder の state 遷移 (追加 / 削除 / 内部結合の AND・OR 切替 / 否定の AND・NOT 切替 / field・op・value・range 更新 / URL 復元時の root 置換 / 全消去) は `advanced/reducer.ts` が SSOT。action 名と効果の対応はコードを参照する。`combinator` が取り得る意味のある値は `AND` (否定なし) / `NOT` (否定) のみで、先頭 child を固定する処理は持たない (`### 状態モデル`)。
 
 ### 不変量 (PBT)
 
@@ -150,21 +140,11 @@ reducer は immer を使わず手で immutable 更新する。`combinator` が�
 
 ### AST 変換 (Advanced ↔ AST)
 
-`fromAdvanced` の挙動:
+`fromAdvanced` (Advanced state → AST) と `toAdvanced` (AST → Advanced state) は `advanced/from-advanced.ts` / `advanced/to-advanced.ts` が SSOT。変換が満たす性質は下記 round-trip 不変量で固定する。規約として述べる要点:
 
-- root の children を combinator ごとに見て、AND / OR / NOT を flatten した BoolOp を組む
-- combinator 切替の境界で BoolOp が入れ子になる
-- 子なし root は **identityAst** (空 AST) を返す
-- condition は op に応じて LeafValue / LeafRange を作る (`eq` / `contains` / `wildcard` で LeafValue、`between` で LeafRange)
-- 空入力 (`value === ""`、または range の from / to のいずれかが空) は無視する
-
-`toAdvanced` の挙動:
-
-- AST の構造を root group に再帰的に展開
-- `FreeText` は Simple query 側に渡し、Advanced builder には載せない
-- BoolOp は AdvancedGroup または「子の combinator を上書き」 に展開 (parent BoolOp(AND, [a,b]) → root group with innerCombinator=AND, children=[a,b] 等)
-- 入れ子 BoolOp は子 AdvancedGroup として展開
-- BoolOp(NOT, [a]) は子の `combinator = "NOT"` 設定として展開
+- 空入力 (`value === ""`、range の from / to いずれか空) は無視し、子なし root は `identityAst` (空 AST) を返す
+- `FreeText` は Advanced builder に載せない (Simple query / keyword 行が扱う)
+- Advanced builder が表現できない構造 (OR/NOT に内包された free_text 等) は `toAdvanced` で drop し、保持 state 側に倒す (`### URL → state の復元`)
 
 ### round-trip 不変量 (PBT)
 
@@ -178,9 +158,9 @@ Advanced builder の UI は state を受け取り、再帰的に ConditionRow / 
 
 - ConditionRow: field 選択 + **述語選択** (op と否定をペアにした単一ドロップダウン: `を含む` / `を含まない` / `と一致` / `と一致しない` 等。日本語は助詞+動詞で `を含む` と対称にし、英語は自己説明的な `equals` / `does not equal` を採る) + value 入力 (text / date input 2 個 / facet combobox のいずれか) + 削除 (×)。独立した「除外」トグルは持たない。field ラベルは平易な日本語のみ (技術 field 名は query preview / DSL に出る)。Select と value 入力は同じ高さ variant で揃え、`[項目] [述語] [値]` が 1 行で日本語の一文として読み下せるようにする
 - value 入力の出し分け: date field / `between` は FROM/TO の date input、選択中 scope で facet を持つ field ([§ Sidebar facet](#sidebar-facet) の facet 行と同じ判定 = `rowByDslField`) は **facet combobox** (pull-down + テキスト絞り込み)、それ以外は free text。facet combobox は候補から選べるが **editable** で、候補に無い値も自由入力できる (facet 集計に出ない正当な値を排除しない)。候補は scope の facet 集計から得る (件数付き、organism は学名表示で taxID を確定値にする)。集計が未取得 / 失敗のときは候補ゼロの combobox になり free text と同等に振る舞う
-- GroupRow: 左 4 px brand バー + group ラベル + `AND` / `OR` トグル (`innerCombinator`) + 否定 (`NOT`) トグル + 内側の再帰描画 + 削除
+- GroupRow: brand バー + group ラベル + `AND` / `OR` トグル (`innerCombinator`) + 否定 (`NOT`) トグル + 内側の再帰描画 + 削除
 - root も子が 2 件以上で `AND` / `OR` トグルを出す。行間に連結語 (`かつ` / `または`) は出さず、左ブランチガイドで束ねる
-- keyword 行: 「おもな項目を全文検索」 と正直に表示し、ⓘ (`InfoHint`) のホバー / フォーカス / クリックで対象 5 field (`identifier` / `title` / `name` / `description` / `organism.name`) をツールチップ表示する。`brand-soft` で着色し、AI モードの検索ボックスと面色を揃える
+- keyword 行: 「おもな項目を全文検索」 と正直に表示し、ⓘ (`InfoHint`) のホバー / フォーカス / クリックで対象 5 field (`identifier` / `title` / `name` / `description` / `organism.name`) をツールチップ表示する。AI モードの検索ボックスと面色を揃える
 - 末尾: 「+ 条件を追加」 / 「+ グループを追加」
 
 入力は `app/ui/` primitive 経由 (Select / TextInput / Combobox / IconButton)。facetable な field の value 入力は editable な絞り込み combobox (`app/ui/combobox.tsx`) を使う。
@@ -287,11 +267,12 @@ date 行 (datePublished / dateModified / dateCreated) は「すべて / 1年 / 5
 Sidebar は state から `app/ui/` の FacetGroup / FacetRow / TextInput / DateFacet を render する。
 
 - AppliedFilters: 適用中の行を chip 化 (label + 値、× で個別解除、「すべて解除」 button で `clear`)
-- facet 行: FacetGroup + FacetRow (checkbox / radio) + 件数。候補が多い field は折りたたみ時 8 件、展開時は上限 20 件まで表示し、「もっと見る / 折りたたむ」をトグルする (選択中の値は上限を超えても常に表示。21 件目以降は sidebar に出さず keyword / builder で扱う)
+- facet 行: FacetGroup + FacetRow (checkbox / radio) + 件数。候補が多い field は折りたたみ、「もっと見る / 折りたたむ」で上限まで展開する。選択中の値は上限を超えても常に表示し、上限を超える候補は sidebar に出さず keyword / builder で扱う (折りたたみ / 展開の件数しきい値はコードが SSOT)
 - text 行: ラベル + TextInput (1 行)
-- range 行: date 行は「すべて / 1 年 / 5 年 / 10 年」プリセット + 「日付を指定」(FROM/TO date input) の組 ([§ date レンジの状態](#date-レンジの状態))、sequenceLength は数値 FROM/TO (横並びで欄を伸縮させ sidebar 幅に収める)
-- focus 表現: 入力欄 (text / date) はフォーカス時に角丸を保ったまま枠線を brand 色にする (global の黄色 outline は出さない)
+- range 行: date 行は「すべて / 1 年 / 5 年 / 10 年」プリセット + 「日付を指定」(FROM/TO date input) の組 ([§ date レンジの状態](#date-レンジの状態))、sequenceLength は数値 FROM/TO
 - 出す行は scope の filter 構成 (`SCOPE_FILTERS`) に従う (Solr degenerate の行は描かない)
+
+入力欄の focus 表現などの見た目は `app/ui/` primitive と `/_design` が SSOT。
 
 ## AST merge
 
@@ -338,7 +319,7 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 ## 検索結果 UI
 
-cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`) + SyncStatusChip、さらに下に `[ facet サイドバー | 結果 ]` の grid (`sm:grid-cols-[var(--spacing-sidebar)_1fr]`)。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
+cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`) + SyncStatusChip、さらに下に `[ facet サイドバー | 結果 ]` の 2-col grid。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
 
 検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
@@ -354,9 +335,9 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 各カードの内容:
 
-- title: i18n リソースの `search.scope.<db>`。同じ行の右端に「結果一覧 →」 link を縦中央で並べる
-- count: `count ?? 0`、tabular-nums mono 26 px
-- 上位 hit: 最大 3 件。左列に accession + その下に日付、右列に title。日付は datePublished → dateModified → dateCreated の fallback (per-DB 行と共通)
+- title: i18n リソースの `search.scope.<db>`。同じ行の右端に「結果一覧 →」 link を並べる
+- count: `count ?? 0`
+- 上位 hit: 最大 3 件。accession + 日付 + title を出す。日付は datePublished → dateModified → dateCreated の fallback (per-DB 行と共通)
 - 「結果一覧 →」: `/search/results?q=<DSL>&db=<id>` への TextLink (title と同じ行の右端)
 - error フィールド (timeout 等の一時的な部分失敗) が立っているとき: count を出さず、一時障害メッセージ (`search.results.cross.error`) + 「再読み込み」 (`navigate(0)`、`search.results.cross.retry`) を表示する。error は恒久的な検索不可ではなく再読み込みで回復しうるため、「失敗」ではなく一時性が伝わる文言にする
 
@@ -376,15 +357,15 @@ cross-DB と同じ 2 ペイン (検索 box + preview は共通ヘッダ、[§ �
 
 | 列 | 幅 | 内容 |
 |---|---|---|
-| Sidebar | `--spacing-sidebar` (256 px) | `SidebarHeading` + `AppliedFilters` + scope の filter 構成 (facet / text / range 行) ([§ Sidebar facet](#sidebar-facet)) |
+| Sidebar | `--spacing-sidebar` token | `SidebarHeading` + `AppliedFilters` + scope の filter 構成 (facet / text / range 行) ([§ Sidebar facet](#sidebar-facet)) |
 | Main | flex-1 | ResultsToolbar (件数 + sort + perPage + pagination) + ResultRow の区切り線リスト (ヘアライン区切り、カード枠・影なし) + ResultsToolbar (bottom pagination のみ) |
 
 #### Result row
 
 per-DB の 1 ヒットを、全 DB 共通の 4 段スケルトンで描く (カードではなく区切り線リスト)。DB 差は内部分岐 (`result-fields.ts` のマッピング) で表し、DB ごとにコンポーネントを分けない。
 
-1. ID 行: identifier (mono brand-deep) + datePublished + subtype/rank バッジ + controlled-access バッジ
-2. title: 黒の太字リンク (なければ identifier)。外部 entry を新規タブで開く
+1. ID 行: identifier + datePublished + subtype/rank バッジ + controlled-access バッジ
+2. title: リンク (なければ identifier)。外部 entry を新規タブで開く
 3. excerpt: description を 2 行 clamp (description を持たない DB は出さない)
 4. メタ行: 登録機関 (organization[0].name) → organism → DB 固有 chip
 
@@ -476,12 +457,7 @@ AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2
 - **new**: `current` を送らず、提案だけの新規クエリにする。keyword も初期化する (「新規」 の意味を保つため)
 - **例プロンプト chip**: new / append で別 set を出す (new = 一からのクエリを記述する例、append = 既存結果を絞る / 除外する例で NOT の使い方も示す)
 
-提案カード (`ProposalConditions`) は ParseNode AST (フルスペック DSL) を受け取り、**read-only 版のクエリビルダー** として描く。preview なので場所を取りすぎないよう、leaf は 1 行の節・group はインデント + 色付き縦スパイン + 演算子バッジ 1 個に畳む:
-
-- leaf 節は **ビルダーと同じ平易な日本語** (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、`fieldLabelKey` / `predicateLabelKey` をビルダーと共有する。日付 (`between`) は範囲 (`from 〜 to`)、free_text は「キーワード」節 (phrase は値を引用符で囲み「フレーズ」を添える) として描く。allowlist 外の field は素の field 名を fallback 表示する
-- `BoolOp(AND/OR)` は **1 group = 1 演算子バッジ** (`AND すべてに一致` / `OR いずれかに一致`) + 縦スパインでネストを示す (行間に連結語は出さない)
-- `BoolOp(NOT)` は中身で分岐する: **値 / 範囲 leaf 1 個**を包むときは否定述語に畳む (「と一致しない」「の期間外」、バッジを出さない)。**group や free_text** を包むときは赤い `NOT 除外` バッジ + 赤スパインで示す
-- 生の `field op value` は見せない (allowlist 外 field の fallback のみ素の名前)
+提案カード (`ProposalConditions`、`assistant/proposal-conditions.tsx`) は ParseNode AST (フルスペック DSL) を **read-only 版のクエリビルダー** として描く。leaf 節はビルダーと同じ平易な日本語 (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、`fieldLabelKey` / `predicateLabelKey` をビルダーと共有する。生の `field op value` は見せない (allowlist 外 field のみ素の field 名を fallback)。`BoolOp` のネスト・否定 (AND/OR の演算子バッジ、値/範囲 leaf を包む NOT は否定述語に畳み、group / free_text を包む NOT は除外バッジで示す) の描画規則はコードが SSOT。
 
 footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボタン。反映ボタンは選択中のモードに従う (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。`/search` の統合入力と、results / top の切替可能プレビューが同じ `ProposalConditions` を使う (results / top は提案カードとしては出さず、preview のグラフ view としてのみ描く)。
 

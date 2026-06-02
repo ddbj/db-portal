@@ -26,45 +26,20 @@ Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と c
 
 ### NewsCategory
 
-`NewsCategory` enum の 6 値。UI の分配判定 (NotificationBar / facet) で使う。
+`NewsCategory` enum の 6 値で UI の分配判定 (NotificationBar / facet) に使う: `announcement` (告知・お知らせ・プレスリリース) / `data-release` (データ公開・リリース) / `maintenance` (メンテナンス・障害) / `event` (イベント・募集) / `service` (サービス紹介・更新、DBCLS 起点) / `other` (default fallback)。値は `tags` からの写像で決まる (`## tag → NewsCategory 写像`)。
 
-| 値 | 意味 |
-|---|---|
-| `announcement` | 告知・お知らせ・プレスリリース |
-| `data-release` | データ公開・リリース |
-| `maintenance` | メンテナンス・障害 |
-| `event` | イベント・募集 |
-| `service` | サービス紹介・更新 (DBCLS 起点) |
-| `other` | その他 (default fallback) |
+### NewsItem / NewsCache
 
-### NewsItem の主要フィールド
+各フィールドの型と source 別の写し方は `app/schemas/api-bff/news.ts` が SSOT、正規化の詳細は `## 取得フロー` の「正規化」 と `server/news/normalize.ts`。規約として固定するのは:
 
-| フィールド | 内容 |
-|---|---|
-| `id` | `${source}-${slug}` 形式、ja/en 共通の pairId として機能 |
-| `source` | `"ddbj"` / `"dbcls"` |
-| `category` | 正規化後の `NewsCategory` |
-| `featured` | `global.yml` の `top_news` slug whitelist に一致 → NotificationBar 表示対象 (default false) |
-| `publishedAt` | ISO 8601、ddbj は front matter の `date`、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成 (`publishedAtFromSlug`) |
-| `retireTime` | optional、NotificationBar 表示終了基準 |
-| `title.{ja,en}` | 該当言語の front matter title (片言語のみのとき他言語は空文字)。`published` の扱いは「正規化」節を参照 |
-| `summary.{ja,en}` | 本文 markdown の先頭から `extractSummary` で抽出 (180 文字以内、`#` heading / link 等の markdown 装飾は除去)。front matter には summary を持たない |
-| `url.{ja,en}` | source / lang / slug から組み立てた外部 URL (片言語のみのとき省略) |
-| `db` | 関連 DB の slug 配列 (facet で使う) |
-| `rawTags.{ja,en}` | 原 tag 配列 (写像前) |
-
-### NewsCache の主要フィールド
-
-| フィールド | 内容 |
-|---|---|
-| `schemaVersion` | `3` で固定 (schema 更新時に bump して旧 cache を破棄する) |
-| `lastSyncSha` | source ごとの git HEAD SHA |
-| `lastFetchedAt` | ISO 8601 |
-| `items` | `NewsItem[]` |
+- `NewsItem.id`: `${source}-${slug}` 形式で、ja/en 共通の pairId として機能する (`### pairing と url`)
+- `featured`: `global.yml` の `top_news` slug whitelist に一致したとき true (NotificationBar 掲載対象、default false)
+- `summary.{ja,en}`: front matter には持たず本文 markdown 先頭から `extractSummary` で抽出する (180 文字以内、markdown 装飾を除去)
+- `NewsCache.schemaVersion`: `3` で固定 (不一致なら空 cache から再構築、`## cache の schema migration`)、`lastSyncSha` は source ごとの git HEAD SHA
 
 ### pairing と url
 
-file 名から slug を取り出す規則は source ごとに異なり、`pair.ts` の `slugFromFilename` が SSOT (ddbj は en file 末尾の `-e` を削って ja と揃える、dbcls は `YYYY-MM-DD-postN`)。同一 slug の ja / en を 1 件の `NewsItem` にペアリングする。片方の言語しか無ければ反対側の title は空文字で持ち、UI 側で fallback する (`newsItemTitle` helper)。
+file 名から slug を取り出す規則は source ごとに異なり、`pair.ts` の `slugFromFilename` が SSOT。同一 slug の ja / en を 1 件の `NewsItem` にペアリングし、片方の言語しか無ければ反対側の title は空文字で持ち UI 側で fallback する (`newsItemTitle` helper)。
 
 front matter に明示的な URL は無く、portal が source / lang / slug から組み立てる (`sources.ts` の `urlBuilder`)。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
@@ -75,48 +50,19 @@ front matter に明示的な URL は無く、portal が source / lang / slug か
 
 ## 取得フロー
 
-### 起動時
+起動時は disk cache を即 load して応答可能にし (file 不在 / schemaVersion 不一致 / parse 失敗のいずれも空 cache から start、cold start を遅らせない)、直後に initial sync (clone or pull) する。以降は **30 分間隔** (`DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS`) で source ごと独立にポーリングする。git clone / fetch / reset の手順は `server/news/git-sync.ts` が SSOT。
 
-1. `server/news/cache.ts` が `<DB_PORTAL_NEWS_CACHE_DIR>/news.json` を読む
-   - file が無い / `schemaVersion` 不一致 / parse 失敗のいずれも空 cache から start
-2. 即座に `/api/news` を応答可能 (initial sync を待たない、cold start を遅らせない)
-3. `server/news/git-sync.ts` で `./repos/{ddbj-www, dbcls-website}/` を確認:
-   - 存在しなければ `git clone --depth 1 --branch <branch> <url>`
-   - 存在すれば `git fetch --depth 1 origin <branch> && git reset --hard origin/<branch>`
-4. `git rev-parse HEAD` で HEAD SHA を取得、cache の `lastSyncSha[source]` と比較
-   - 一致なら no-op
-   - 不一致なら全件再構築
-5. 以降 `setInterval(tickAll, intervalMs)` で polling
-
-### ポーリング (tickAll)
-
-各 source に対し独立に:
-
-1. `git fetch + reset --hard origin/<branch>`
-2. `git rev-parse HEAD` で新 SHA 取得
-3. SHA が `lastSyncSha[source]` と一致なら no-op、不一致なら全件再構築
-
-`git pull` (HTTPS) は GitHub の REST API rate limit と別枠で動作するため、認証なしでも 30 分間隔は余裕。pull 失敗 (network エラー / branch 不在 / 破損) は warn log にとどめ、既存 cache は維持する。
-
-### 全件再構築
-
-当該 source の `{ja,en}` 配下の md を全件読み直し、同一 slug の ja/en を pair して `NewsItem` 配列を作り直す。ddbj source は `global.yml` の whitelist に一致した item に `featured` を付ける (dbcls は常に false)。最後に **当該 source の items のみを atomic に差し替える** (他 source の items は保持、in-memory + disk 両方)。各ステップの関数構成は `server/news/` の `rebuildForSource` を参照する。
+変更検出は `git rev-parse HEAD` を pull 前後で比較し、SHA が `lastSyncSha[source]` と一致なら no-op、不一致なら **当該 source の {ja,en} md を全件読み直して再構築**する (1000-2600 件規模で十分速く、partial update の追跡コストを避ける)。ddbj source は `global.yml` の whitelist に一致した item に `featured` を付ける (dbcls は常に false)。最後に当該 source の items のみを atomic に差し替える (他 source の items は保持、in-memory + disk 両方)。pull 失敗 (network / branch 不在 / 破損) は warn にとどめ既存 cache を維持する。`git pull` は HTTPS の git protocol で動き GitHub REST API rate limit とは別枠なので、認証なしでも 30 分間隔は余裕。
 
 ### 正規化 (normalize)
 
-各 markdown の front matter を YAML として parse し、NewsItem に写す。
+各 markdown の front matter を YAML として parse し NewsItem に写す。field ごとの写し方は `server/news/normalize.ts` が SSOT。規約として固定するのは:
 
-- `title` → `title.{ja|en}` (該当言語側に格納)
-- `date` → `publishedAt` (ddbj は front matter の `date` をそのまま、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成する。post 連番を時刻に写し、同一日付の post を安定 sort できる順序にする)
-- `retire_time` → `retireTime`
-- `db` → `db` (文字列を全て `.toLowerCase().trim()` してから dedupe、`agd  ` のような余分な空白も除去)
-- `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像)
-- `lang` → 受信時に自明 (`_news/ja` か `_news/en` か、dbcls なら `_posts/ja` / `_posts/en`)
-- `published` → 両言語側が共に欠落または `published: false` の slug だけを item から落とす。片方でも公開されていれば item を残す (未公開側の front matter title はそのまま写る)
-
-front matter の `category:` field は source 側で Jekyll の layout 用に使われており、portal の `NewsCategory` 分類とは別物。portal の `category` は `tags` 配列からの写像のみで決定する。
-
-`summary.{ja,en}` は front matter には無く、本文 markdown の先頭から `extractSummary` で抽出する (heading / link 等を strip し、180 文字でカット)。
+- `published`: 両言語側が共に欠落または `published: false` の slug だけを item から落とす。片方でも公開されていれば残す (未公開側の title はそのまま写る)
+- front matter の `category:` field は source 側の Jekyll layout 用で、portal の `NewsCategory` 分類とは **別物**。portal の `category` は `tags` 配列からの写像のみで決定する (`## tag → NewsCategory 写像`)
+- `db`: 文字列を全て `.toLowerCase().trim()` してから dedupe する (`agd  ` のような余分な空白も除去)。facet の「サービス」 軸で使う
+- `publishedAt`: ddbj は front matter の `date`、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成する (同一日付の post を安定 sort できる順序にする)
+- `summary`: 本文 markdown 先頭から `extractSummary` で抽出する (heading / link 等を strip、180 文字でカット)
 
 ## tag → NewsCategory 写像
 
@@ -150,13 +96,7 @@ front matter の `tags` で使われている実値:
 
 ### 写像ルール
 
-1. ja / en の `rawTags` を 1 配列に結合
-2. 各 tag を `trim.toLowerCase` で正規化し、source 別 mapping 表を引く
-3. 最初にマッチした enum を採用、マッチが無ければ `other` (default fallback)
-
-`retireTime` を過ぎた item の `category` は変えない。NotificationBar 側で `featured && retireTime > now` を見て表示から外す。
-
-source 側で新しい tag が追加されたら fallback の `other` に落ちる (UI を壊さない)。新 tag を category に取り込みたい場合は本表と `tests/unit/server/news/normalize.test.ts` の table を同時更新する。
+ja / en の `rawTags` を結合し、各 tag を `trim.toLowerCase` 正規化して source 別 mapping 表を first-match で引き、マッチが無ければ `other` (default fallback) を採る (`server/news/normalize.ts`)。`retireTime` を過ぎた item の `category` は変えない (NotificationBar 側で `featured && retireTime > now` を見て表示から外す)。source 側で新しい tag が追加されたら `other` に落ちる (UI を壊さない)。
 
 ## facet 設計
 
@@ -171,7 +111,7 @@ source 側で新しい tag が追加されたら fallback の `other` に落ち�
 
 複数選択は OR、異なる facet 同士は AND で結ぶ (NCBI 流の faceted search に準拠)。chip は AppliedFilters に並べ、1 chip で 1 値を解除可能。
 
-各オプションには件数 (facet count) を右端に添える。グループ G のオプション v の件数は、**G 以外の全 facet を適用した結果集合のうち v を持つ件数** とする。これにより G 内での選択は G 自身の件数に影響せず (グループ内 OR と整合)、他グループでの絞り込みは件数に連動する。件数は cache 全件 (当該言語で title を持つ item) から client 側で集計する。ソース行には source 配色の色点 (ddbj=amber / dbcls=blue、`tailwind.css` の Source palette) を添えて視認性を上げる。
+各オプションには件数 (facet count) を右端に添える。グループ G のオプション v の件数は、**G 以外の全 facet を適用した結果集合のうち v を持つ件数** とする。これにより G 内での選択は G 自身の件数に影響せず (グループ内 OR と整合)、他グループでの絞り込みは件数に連動する。件数は cache 全件 (当該言語で title を持つ item) から client 側で集計する。ソース行に添える source 配色の色点など見た目は `app/features/news/` と `app/styles/tailwind.css` の Source palette が SSOT。
 
 URL params との同期 (`facet-url-state.ts`):
 
@@ -205,31 +145,13 @@ news data source 側の補足: NotificationBar 掲載対象は **`featured` フ�
 
 ### /news 一覧 + facet
 
-`app/features/news/` 配下で実装する (`architecture.md` zones に準拠して `app/features/` 内に閉じる)。次の責務に分割する:
+`app/features/news/` 配下で実装する (`architecture.md` zones に準拠して `app/features/` 内に閉じる。Toolbar + NewsList + Pagination、4 グループの FacetGroup、facet ↔ URL params の純粋関数 helper、TanStack Query での取得 + facet 適用)。component 構成は同ディレクトリのコードが SSOT。`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用し、`NewsCategory` → i18n key の写像 helper (`categoryLabelKey`) は `app/lib/i18n/category-label.ts` が SSOT。
 
-| ファイル | 役割 |
-|---|---|
-| `news-list.tsx` | Toolbar + NewsList + Pagination の組立て |
-| `news-row.tsx` | 1 行 (date / title / featured バッジ / source / category Tag) |
-| `facet-panel.tsx` | 4 グループ FacetGroup (category / source / year / service) の配置 |
-| `facet-url-state.ts` | facet ↔ URL params の双方向 helper (純粋関数) |
-| `use-news-list.ts` | TanStack Query で /api/news を取得、facet 適用 |
-
-`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用する。`NewsCategory` → i18n key の写像 helper (`categoryLabelKey`) は `app/lib/i18n/category-label.ts` が SSOT。
-
-routing 側 (`app/routes/news/route.tsx`) は loader を持たず、URL から facet state を組み立てて `useNewsList(lang, facet)` に渡すだけ。lang は cookie で決まる (`i18n.md`)。
-
-pagination は `app/ui/pagination.tsx` を使い、1 page 20 件 (`NEWS_PAGE_SIZE`)、URL に `?page=` で反映する。facet と pagination を同時に変えた場合は URL を 1 回で更新する。
+routing 側 (`app/routes/news/route.tsx`) は loader を持たず、URL から facet state を組み立てて `useNewsList(lang, facet)` に渡す (lang は cookie、`i18n.md`)。pagination は 1 page 20 件 (`NEWS_PAGE_SIZE`)、URL に `?page=` で反映し、facet と pagination を同時に変えた場合は URL を 1 回で更新する。
 
 ## cache の schema migration
 
-`NewsCache.schemaVersion` を `z.literal(3)` で固定する。schema を更新する際は次の運用を取る:
-
-1. `app/schemas/api-bff/news.ts` の `schemaVersion` を `4` に上げ、新 field を追加
-2. server 起動時、disk cache が `schemaVersion: 3` (旧) なら `safeParse` 失敗 → 空 cache から再構築 (起動直後 initial sync で全件取得)
-3. 旧 file は上書き保存される (古い schema を後方互換で持たない、シンプル化優先)
-
-`tests/unit/server/news/cache.test.ts` の "schema mismatch" ケースで「任意の旧 cache file を渡しても、起動が成功し空 cache から復元される」 挙動を担保する。
+`NewsCache.schemaVersion` を `3` に固定する。schema を更新するときは `schemaVersion` を bump して新 field を追加すると、起動時に旧 cache は parse 失敗 → 空 cache から再構築される (起動直後の initial sync で全件取得)。旧 schema を後方互換で持たない (シンプル化優先)。`tests/unit/server/news/cache.test.ts` の "schema mismatch" ケースが「任意の旧 cache file を渡しても起動が成功し空 cache から復元される」 ことを担保する。
 
 ## 環境変数
 
