@@ -32,64 +32,66 @@ field は **全 DB 共通** (converter common mapping) と **DB ごと** (type-s
 
 ES common mapping (全 type に merge) 起点。「横断」= cross-DB の `q` に載せられるか (DSL Tier1/2 = 可、Tier3 = per-DB のみ)。
 
+単一 DB 指定 (`db=...`) では、その DB に実在しない field を `q` に載せると API が `field-not-available-for-db` (422) を返す。共通 field でこれに該当するのは条件付き merge の `publication` のみ (biosample に publication nested が不在なため `db=biosample` で 422)。Tier3 field は所属 DB (§ DB ごと field) 以外で 422、横断 (cross) で Tier3 を載せた場合は別エラー `field-not-available-in-cross-db` (400)。merge される DB は各行の備考、Tier3 の所属 DB は § DB ごと field を参照。db-portal の builder / filter は各 scope で有効な field しか供給しないため、通常これらは踏まない。
+
 op / type は DSL field type から機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。どの scope の Sidebar / facet にどの field が出るかは `facet-config.ts` (`SCOPE_FILTERS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
 
-| ES field (type)                                    | DSL field             | 横断   | 備考 (条件付き merge / subtype 所在) |
-| -------------------------------------------------- | --------------------- | ------ | ------------------------------------ |
-| identifier (keyword)                               | `identifier`          | ○      | —                                    |
-| name (text+keyword)                                | `name`                | ○      | keyword box 既定 field の 1 つ       |
-| title (text)                                       | `title`               | ○      | keyword box 既定 field の 1 つ       |
-| description (text)                                 | `description`         | ○      | keyword box 既定 field の 1 つ       |
-| organism.identifier (keyword)                      | `organism_id`         | ○      | —                                    |
-| organism.name (text+keyword)                       | `organism_name`       | ○      | keyword box 既定 field の 1 つ       |
-| accessibility (keyword)                            | `accessibility`       | ○      | —                                    |
-| datePublished (date)                               | `date_published`      | ○      | —                                    |
-| dateModified (date)                                | `date_modified`       | ○      | —                                    |
-| dateCreated (date)                                 | `date_created`        | ○      | —                                    |
-| organization.name (nested text)                    | `submitter`           | ○      | —                                    |
+| ES field (type)                                    | DSL field             | 横断   | 備考 (条件付き merge / subtype 所在)                            |
+| -------------------------------------------------- | --------------------- | ------ | --------------------------------------------------------------- |
+| identifier (keyword)                               | `identifier`          | ○      | —                                                               |
+| name (text+keyword)                                | `name`                | ○      | keyword box 既定 field の 1 つ                                  |
+| title (text)                                       | `title`               | ○      | keyword box 既定 field の 1 つ                                  |
+| description (text)                                 | `description`         | ○      | keyword box 既定 field の 1 つ                                  |
+| organism.identifier (keyword)                      | `organism_id`         | ○      | —                                                               |
+| organism.name (text+keyword)                       | `organism_name`       | ○      | keyword box 既定 field の 1 つ                                  |
+| accessibility (keyword)                            | `accessibility`       | ○      | —                                                               |
+| datePublished (date)                               | `date_published`      | ○      | —                                                               |
+| dateModified (date)                                | `date_modified`       | ○      | —                                                               |
+| dateCreated (date)                                 | `date_created`        | ○      | —                                                               |
+| organization.name (nested text)                    | `submitter`           | ○      | —                                                               |
 | publication.title (nested text)                    | `publication`         | ○      | bioproject / sra 全 / gea / metabobank / jga-study にのみ merge |
-| grant.title (nested text)                          | `grant_title`         | per-DB | bioproject / jga-study にのみ merge  |
-| grant.agency.name (2-level nested)                 | `grant_agency`        | per-DB | bioproject / jga-study にのみ merge  |
-| externalLink.label (nested)                        | `external_link_label` | per-DB | bioproject / 全 jga にのみ merge     |
-| type (keyword)                                     | `type`                | per-DB | subtype 識別子 (例 `sra-experiment` / `jga-dataset`) |
-| isPartOf (keyword)                                 | —                     | —      | 粗い DB 区分。絞り込みは scope selector が担う (filter 非対象) |
-| status (keyword)                                   | —                     | —      | router が内部注入 (parameter 非露出) |
-| url / properties / dbXrefs / distribution / sameAs | —                     | —      | `index:False` / `enabled:False` で検索対象外 |
+| grant.title (nested text)                          | `grant_title`         | per-DB | bioproject / jga-study にのみ merge                             |
+| grant.agency.name (2-level nested)                 | `grant_agency`        | per-DB | bioproject / jga-study にのみ merge                             |
+| externalLink.label (nested)                        | `external_link_label` | per-DB | bioproject / 全 jga にのみ merge                                |
+| type (keyword)                                     | `type`                | per-DB | subtype 識別子 (例 `sra-experiment` / `jga-dataset`)            |
+| isPartOf (keyword)                                 | —                     | —      | 粗い DB 区分。絞り込みは scope selector が担う (filter 非対象)  |
+| status (keyword)                                   | —                     | —      | router が内部注入 (parameter 非露出)                            |
+| url / properties / dbXrefs / distribution / sameAs | —                     | —      | `index:False` / `enabled:False` で検索対象外                    |
 
 ## DB ごと field (ES 6 DB)
 
 DSL field type (enum / text / identifier) から op を機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。enum / text の区分は REST `/entries` の term / text 区分に従う。どの scope の Sidebar / facet にどの field が出るかは `facet-config.ts` (`SCOPE_FILTERS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
 
-| DB         | ES field (type)                                  | DSL field                                        | type       | subtype 所在    |
-| ---------- | ------------------------------------------------ | ------------------------------------------------ | ---------- | --------------- |
-| bioproject | objectType (keyword)                             | `object_type`                                    | enum       | —               |
-|            | projectType (text+keyword)                       | `project_type`                                   | text       | —               |
-|            | relevance (keyword)                              | `relevance`                                      | enum       | —               |
-| biosample  | package.name (keyword)                           | `package`                                        | enum       | —               |
-|            | model (keyword)                                  | `model`                                          | enum       | —               |
-|            | host (text+keyword)                              | `host`                                           | text       | —               |
-|            | strain / isolate (text)                          | `strain` / `isolate`                             | text       | —               |
-|            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | —               |
-|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | —               |
-| sra        | type (keyword)                                   | `type`                                           | enum       | —               |
-|            | libraryStrategy (text+keyword)                   | `library_strategy`                               | enum       | sra-experiment  |
-|            | librarySource (text+keyword)                     | `library_source`                                 | enum       | sra-experiment  |
-|            | librarySelection (text+keyword)                  | `library_selection`                              | enum       | sra-experiment  |
-|            | libraryLayout (text+keyword)                     | `library_layout`                                 | enum       | sra-experiment  |
-|            | platform (text+keyword)                          | `platform`                                       | enum       | sra-experiment  |
-|            | instrumentModel (text+keyword)                   | `instrument_model`                               | enum       | sra-experiment  |
-|            | analysisType (text+keyword)                      | `analysis_type`                                  | enum       | sra-analysis    |
-|            | libraryName / libraryConstructionProtocol (text) | `library_name` / `library_construction_protocol` | text       | sra-experiment  |
-|            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | sra-sample      |
-|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | sra-sample      |
-| jga        | type (keyword)                                   | `type`                                           | enum       | —               |
-|            | studyType (text+keyword)                         | `study_type`                                     | enum       | —               |
-|            | datasetType (text+keyword)                       | `dataset_type`                                   | enum       | —               |
-|            | vendor (text+keyword)                            | `vendor`                                         | text       | —               |
-| gea        | experimentType (text+keyword)                    | `experiment_type`                                | enum       | —               |
-| metabobank | studyType (text+keyword)                         | `study_type`                                     | enum       | —               |
-|            | experimentType (text+keyword)                    | `experiment_type`                                | enum       | —               |
-|            | submissionType (text+keyword)                    | `submission_type`                                | enum       | —               |
+| DB         | ES field (type)                                  | DSL field                                        | type       | subtype 所在   |
+| ---------- | ------------------------------------------------ | ------------------------------------------------ | ---------- | -------------- |
+| bioproject | objectType (keyword)                             | `object_type`                                    | enum       | —              |
+|            | projectType (text+keyword)                       | `project_type`                                   | text       | —              |
+|            | relevance (keyword)                              | `relevance`                                      | enum       | —              |
+| biosample  | package.name (keyword)                           | `package`                                        | enum       | —              |
+|            | model (keyword)                                  | `model`                                          | enum       | —              |
+|            | host (text+keyword)                              | `host`                                           | text       | —              |
+|            | strain / isolate (text)                          | `strain` / `isolate`                             | text       | —              |
+|            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | —              |
+|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | —              |
+| sra        | type (keyword)                                   | `type`                                           | enum       | —              |
+|            | libraryStrategy (text+keyword)                   | `library_strategy`                               | enum       | sra-experiment |
+|            | librarySource (text+keyword)                     | `library_source`                                 | enum       | sra-experiment |
+|            | librarySelection (text+keyword)                  | `library_selection`                              | enum       | sra-experiment |
+|            | libraryLayout (text+keyword)                     | `library_layout`                                 | enum       | sra-experiment |
+|            | platform (text+keyword)                          | `platform`                                       | enum       | sra-experiment |
+|            | instrumentModel (text+keyword)                   | `instrument_model`                               | enum       | sra-experiment |
+|            | analysisType (text+keyword)                      | `analysis_type`                                  | enum       | sra-analysis   |
+|            | libraryName / libraryConstructionProtocol (text) | `library_name` / `library_construction_protocol` | text       | sra-experiment |
+|            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | sra-sample     |
+|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | sra-sample     |
+| jga        | type (keyword)                                   | `type`                                           | enum       | —              |
+|            | studyType (text+keyword)                         | `study_type`                                     | enum       | —              |
+|            | datasetType (text+keyword)                       | `dataset_type`                                   | enum       | —              |
+|            | vendor (text+keyword)                            | `vendor`                                         | text       | —              |
+| gea        | experimentType (text+keyword)                    | `experiment_type`                                | enum       | —              |
+| metabobank | studyType (text+keyword)                         | `study_type`                                     | enum       | —              |
+|            | experimentType (text+keyword)                    | `experiment_type`                                | enum       | —              |
+|            | submissionType (text+keyword)                    | `submission_type`                                | enum       | —              |
 
 - `type` は subtype 識別子。SRA subtype = sra-submission / sra-study / sra-experiment / sra-run / sra-sample / sra-analysis、JGA subtype = jga-study / jga-dataset / jga-policy / jga-dac。`db=sra` / `db=jga` は subtype 横断なので、対応しない subtype の doc では空 bucket になり自然に脱落する。
 - trad / taxonomy (Solr) の field は ARSA / TXSearch schema を参照 (本書の ES 対応表の対象外)。
