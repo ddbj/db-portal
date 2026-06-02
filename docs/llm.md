@@ -113,7 +113,7 @@ health 状態は `server/llm/health.ts` の `setActiveHealth` で memory に保�
 - `health.status === "unset"` → `{ ready: false, reason: "unset" }`
 - `health.status === "unreachable"` → `{ ready: true, reason: health.reason, health }` (UI は表示し、送信時の SSE error 経路で fail を通知する)
 
-`SearchAssistant` component は `availability.ready` が false (= `unset`) なら何も render しない。`unreachable` のときは UI は出るが、送信時に SSE の `event: error` が `upstream-disconnect` などで流れて toast 経由でエラーが伝わる。
+`SearchAssistant` component は `availability.ready` が false (= `unset`) なら何も render しない。`unreachable` のときは UI は出るが、送信時に SSE の `event: error` が `upstream-disconnect` などで流れ、box 直下の inline エラー文言 (`search.assistant.generateError`) でエラーが伝わる。
 
 ## SSE 仕様
 
@@ -135,9 +135,9 @@ stream を `start()` した直後に `: stream-open\n\n` を 1 度送出し、�
 
 | 状況 | server 動作 | client 動作 |
 |---|---|---|
-| vLLM が 200 以外を返した | `event: error` で `{ code: "upstream-status", message }` を流して close | toast 表示 + 入力欄に内容を戻す |
+| vLLM が 200 以外を返した | `event: error` で `{ code: "upstream-status", message }` を流して close | inline エラー文言を表示 + 入力を保持 |
 | vLLM が socket close | `event: error` で `{ code: "upstream-disconnect", ... }` | 同上 |
-| BFF rate limit 超過 | HTTP 429 で JSON `{ error: "rate_limited" }` (SSE 開始前) | toast 「しばらくしてから再試行してください」 |
+| BFF rate limit 超過 | HTTP 429 で JSON `{ error: "rate_limited" }` (SSE 開始前) | 他のエラーと同じ inline エラー文言を表示 (専用文言なし) |
 | client が `AbortController.abort` | server は upstream stream を abort、close | UI は idle に戻す |
 
 `event: error` を出した後は server 側で stream を close する。client は同じ event id を再 subscribe しない (毎回新しい POST を発行)。
@@ -241,7 +241,7 @@ Content-Type: application/json
 { "error": "rate_limited", "axis": "ip" | "session" }
 ```
 
-client は toast 「しばらくしてから再試行してください」 を出す。SSE 開始前なので `event: error` 経路は通らない。
+client は HTTP status が ok でないことを検知し、他のエラーと同じ inline エラー文言 (`search.assistant.generateError`) を出す (rate limit 専用の文言は持たない)。SSE 開始前なので `event: error` 経路は通らず、HTTP status で判定する。
 
 ### client IP の取得
 

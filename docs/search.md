@@ -491,7 +491,7 @@ footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボ
 
 - `event: message` → client では消費しない (delta は server 側で蓄積され `done` の完全な AST に集約される。client は生成途中の表示を持たない)
 - `event: done` → data を ParseNode AST として受け取り proposal state に反映、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
-- `event: error` → state = "error"、toast を出す
+- `event: error` → state = "error"、box 直下に inline エラー文言 (`search.assistant.generateError`) を出す (入力は保持)
 
 `AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
 
