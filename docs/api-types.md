@@ -79,7 +79,7 @@ dev / staging は同じ openapi 配置 (staging API) を共有する。Productio
 
 `app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する型付き fetch wrapper。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、client.ts が直接 env を参照しない)。
 
-`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `fields` / `includeProperties` 等、operation ごとに有効な subset) を `options.query` で渡す。
+`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `keywordOperator` / `facets` 等、operation ごとに有効な subset) を `options.query` で渡す。
 
 呼び出し側は通常 `app/lib/api/search.ts` の thin wrapper を経由する (`crossSearch` / `dbSearch` / `parseQuery` / `serializeAst`)。`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は wrapper を経由する。
 

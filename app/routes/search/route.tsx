@@ -162,7 +162,6 @@ const SearchRoute = () => {
           }}
           advancedState={advancedState}
           dispatch={dispatch}
-          baseUrl={searchApiBaseUrl}
           invalid={hasError}
           onSubmitSearch={(kw) => void runSearch(kw)}
           searchPending={search.pending}

@@ -185,7 +185,7 @@ Loader / Action は HTTP を経由する。Same-process でも `fetch(new URL("/
 | BFF 責務 | エンドポイント | client が直接アクセスする外部に対する遮蔽点 |
 |---|---|---|
 | OIDC token 管理 | `/api/auth/*`、`/api/me` | Keycloak token は browser に出さない (`auth.md`) |
-| LLM ストリーミング | `/api/llm/health`、`POST /api/llm/*` | vLLM の URL / API key を browser に出さない、SSE は BFF で pass-through |
+| LLM ストリーミング | `GET /api/llm/health`、`POST /api/llm/search-assistant` | vLLM の URL / API key を browser に出さない、SSE は BFF で pass-through |
 | News mirror | `GET /api/news` | ddbj/www の commit を polling し、disk cache を経由して browser へ提供 |
 | Services mirror | `GET /api/services` | News mirror の clone を再利用し、services データを正規化・disk cache 経由で browser へ提供 (`services.md`) |
 
@@ -280,7 +280,7 @@ session store は logout 時の `id_token_hint` 用 idToken・ユーザー情報
   useLlmAvailability → BFF /api/llm/health の結果で UI を hide/show
         │
         ▼ available 時
-  POST /api/llm/* (SSE)
+  POST /api/llm/search-assistant (SSE)
         │
         ▼
 [Server] vLLM へ pass-through (event: message / done / error)
@@ -347,7 +347,7 @@ URL × lang × hreflang の表現は i18n と一体なので、SSOT を `i18n.md
 
 ### 404 ページ
 
-URL に該当 route が無い場合 / loader が `throw new Response(null, { status: 404 })` を呼んだ場合は、`app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
+URL に該当 route が無い場合 / loader が `throw new Response("Not Found", { status: 404 })` を呼んだ場合は、`app/root.tsx` の `ErrorBoundary` が 404 専用 UI を render する。Shell (Header / Footer) はそのまま、main 領域に i18n キー `errors.notFound.{title,description,backToTop}` を引いた説明 + ホームへの戻りリンクを描画する。
 
 404 以外の error (5xx) は同じ ErrorBoundary が `errors.generic.{title,description}` を表示する。Stack trace は UI に出さない (env を問わず常に hide)。
 

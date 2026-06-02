@@ -65,7 +65,6 @@ export const HeroSection = () => {
         scope={scopeLabel}
         scopeOptions={scopeOptions}
         onScopeChange={handleScopeChange}
-        baseUrl={searchApiBaseUrl}
         allowAppend={false}
         hideScopeInAiMode
         onGenerated={(ast) => void handleGenerated(ast)}

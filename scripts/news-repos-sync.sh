@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Clone (if absent) or fast-forward (if present) the upstream Jekyll repositories
+# Clone (if absent) or hard-reset to the remote tip (if present) the upstream Jekyll repositories
 # that back the news mirror. Runs the two sources in parallel.
 #
 # Layout:
 #   ./repos/ddbj-www       (ddbj/www, main)
 #   ./repos/dbcls-website  (dbcls/website, master)
 #
-# Override via env if needed (same defaults as compose.yml / env.dev).
+# Override via env if needed. Note: the repos-dir default below (./repos) differs from
+# compose.yml / env.dev (./cache/repos); the repo URLs and branches match.
 
 repos_dir="${DB_PORTAL_NEWS_REPOS_DIR:-./repos}"
 

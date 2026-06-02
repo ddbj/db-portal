@@ -73,7 +73,7 @@ export const createCondition = (
   id: newId(),
   combinator: "AND",
   field: "title",
-  op: "eq",
+  op: "contains",
   value: "",
   from: "",
   to: "",

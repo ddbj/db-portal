@@ -26,7 +26,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
    │
    ▼
 [podman: ${DB_PORTAL_PREFIX}-app]
-   │  command: npm start  =  validate:content + tsx server/index.ts
+   │  command: sh -c "npm run build && npm start"  (build → start; npm start = validate:content + tsx server/index.ts)
    │
    ├─ SSR: React Router v7 framework mode (build/server/index.js)
    └─ BFF: Express endpoints
@@ -40,7 +40,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
        └─ /robots.txt
 ```
 
-`server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では事前 build した `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。
+`server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では起動時に build した (`npm run build`) `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。
 
 リバースプロキシ側 (NIG infra) は `X-Forwarded-Proto` / `X-Forwarded-Host` / `X-Forwarded-For` を付与する。Express の `trust proxy` は `loopback` を設定済 (`server/index.ts`)。許可しない上流からの `X-Forwarded-*` は無視される。
 
@@ -59,6 +59,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
 - `npm run typecheck`
 - `npm run lint`
 - `npm test -- --run` (unit + PBT)
+- `npm audit --audit-level=high --omit=dev` (production 依存の高深刻度脆弱性で fail)
 
 deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行しない。e2e は staging へ手動 trigger (`tests/e2e/notes.md`)、openapi 差分検知はリリース直前に手動で叩く、`lastUpdated` の整合チェックは `npm run check:last-updated` をリリース前に手動で叩く。
 
@@ -70,7 +71,7 @@ production の `openapi.json` と portal が知っている型 (`app/lib/api/ope
 
 `npm start` (= `validate:content` + `tsx server/index.ts`) で起動。次の順で初期化する:
 
-1. `validate:content`: `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` を Zod parse。1 件でも fail すると **exit 1** で起動失敗 (build / runtime 両方で fail-fast)
+1. `validate:content`: `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` を Zod parse し、加えて submit-routing カタログ (`app/content/submit-routing/catalog.ts` の `validateSubmitRouting`) も検証。1 件でも fail すると **exit 1** で起動失敗 (build / runtime 両方で fail-fast)
 2. `server/lib/env.ts` の `parseServerEnv` で env を Zod 検証。必須 env が無いと exit
 3. Express server を listen (`server_listening` log)
 4. News mirror が起動 (`createNewsMirror.mirror.start`): disk cache を即時 load して以降は `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
@@ -116,7 +117,7 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 | `featured_whitelist_yaml_parse_failed` | warn | featured whitelist YAML の parse に失敗 |
 | `featured_whitelist_schema_mismatch` | warn | featured whitelist の schema が不一致 |
 | `llm_health_transition` | info | vLLM 接続状態が遷移 (`ok` ↔ `unreachable` ↔ `unset`) |
-| `llm_assistant_request` | info | search-assistant SSE 開始 |
+| `llm_assistant_request` | debug | search-assistant SSE 開始 (debug のため dev のみ出力) |
 | `llm_assistant_failed` | warn | search-assistant 中に upstream または parse 系の失敗 |
 
 `accessToken` / `refreshToken` / `idToken` / `cookie` / `Cookie` / `authorization` / `Authorization` の各フィールドは `[REDACTED]` に置換されて log に出る (`auth.md`)。session entry を丸ごと log に出すケースは作らない。

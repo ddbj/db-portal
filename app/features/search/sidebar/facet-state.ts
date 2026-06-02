@@ -21,7 +21,7 @@ export type SearchFacetState = {
   // free-text inputs: row key → value
   texts: Record<string, string>
   // date range rows (date_published / date_modified / date_created): row key →
-  // preset (all / 1y / 5y / 10y) + FROM/TO. Each dateRange row has its own slot.
+  // preset (all / 1y / 5y / 10y) or "custom" + FROM/TO. Each dateRange row has its own slot.
   dateRanges: Record<string, DateRangeFilter>
   // numeric ranges (e.g. sequence_length): row key → { from, to }
   ranges: Record<string, NumberRange>

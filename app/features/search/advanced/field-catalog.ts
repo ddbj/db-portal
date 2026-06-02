@@ -9,12 +9,14 @@ import type { AdvancedOp } from "~/schemas/api-bff/llm"
 // trad / taxonomy Tier 3 fields are sidebar-only and intentionally omitted here.
 export type FieldKind = "identifier" | "text" | "enum" | "date"
 
-// Operators each kind accepts, mirroring OPERATOR_BY_KIND in the API allowlist.
-// Picking an unlisted operator yields a 400, so the builder restricts the
-// operator choices to a field's kind.
+// Operators the builder offers per field kind — the UI affordance set, a subset
+// of what the API allowlist (search/dsl/allowlist.py, OPERATOR_BY_KIND) accepts
+// for each kind, restricted to ops that are representable in the DSL. text omits
+// the redundant eq (the API folds it into contains); date stays range-only
+// (between) by UI design though the API also allows an exact-date eq.
 const KIND_OPS: Record<FieldKind, readonly AdvancedOp[]> = {
   identifier: ["eq", "wildcard"],
-  text: ["eq", "contains"],
+  text: ["contains", "wildcard"],
   enum: ["eq"],
   date: ["between"],
 }

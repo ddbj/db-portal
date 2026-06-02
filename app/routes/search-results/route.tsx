@@ -251,7 +251,6 @@ const SearchResultsRoute = () => {
           scope={scopeLabel}
           scopeOptions={scopeOptions}
           onScopeChange={handleScopeChange}
-          baseUrl={searchApiBaseUrl}
           invalid={keywordParseError}
           allowAppend
           appendCurrentAst={data.ast ?? undefined}

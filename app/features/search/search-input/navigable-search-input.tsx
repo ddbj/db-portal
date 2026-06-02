@@ -17,7 +17,6 @@ export type NavigableSearchInputProps = {
   scopeOptions: readonly string[]
   onScopeChange: (label: string) => void
   scopeAriaLabel?: string
-  baseUrl?: string
   // The keyword could not be parsed; reflect it on the box. Keyword mode only.
   invalid?: boolean
   // Offer the "append to existing" generation mode. Off (top page) pins AI to
@@ -54,7 +53,6 @@ export const NavigableSearchInput = ({
   scopeOptions,
   onScopeChange,
   scopeAriaLabel,
-  baseUrl,
   invalid = false,
   allowAppend,
   appendCurrentAst,

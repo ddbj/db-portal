@@ -49,8 +49,8 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 |---|---|
 | `id` | `${source}-${nameSlug(en 名)}` 形式。`nameSlug` は en 名を slug 化し、不変量 `^[a-z0-9-]+$` を満たす (生成規則は `server/services/normalize.ts` が SSOT、性質は PBT が固定) |
 | `source` | `"ddbj"` / `"dbcls"` |
-| `name.{ja,en}` | サービス名。DDBJ は `formal_name`(優先)/`name`、DBCLS は `services_name_{ja,en}` (欠落側は空文字) |
-| `description.{ja,en}` | 1 行説明。DDBJ は `description`、DBCLS は `explanation` (欠落側は空文字) |
+| `name.{ja,en}` | サービス名。DDBJ は `name` (ja/en 同値)、DBCLS は `services_name_{ja,en}` (欠落側は空文字) |
+| `description.{ja,en}` | 1 行説明。DDBJ は `description`、DBCLS は `explanation_{ja,en}` (欠落側は空文字) |
 | `url.{ja,en}` | サービスの実 URL。DDBJ は `service_link` (相対は `https://www.ddbj.nig.ac.jp` で絶対化)、DBCLS は単一 `URL` を両言語に |
 | `categories` | `ServiceCategory[]` (複数値、dedupe、空なら `["other"]`) |
 | `rawCategories` | 写像前の原語彙 (DDBJ tag / DBCLS Category ラベル) |
@@ -197,7 +197,7 @@ upstream の `description` は末尾に文末句点が付くもの・付かな�
 
 `AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用する。`ServiceCategory` → i18n key の写像 helper は `app/lib/i18n` に置く。
 
-top page の services セクションは `/api/services?featured=true` を取得し、DDBJ・DBCLS 混在のアルファベット順 list で表示する (facet / pagination なし、icon なし)。詳細は `frontend.md` の「Top route」。
+top page の services セクションは `/services` 一覧と同じ query key (`["services"]`) で `/api/services` を取得し (全件 fetch を共有)、client 側で `featuredTop === true` の item だけに絞り、DDBJ・DBCLS 混在のアルファベット順 list で表示する (facet / pagination なし、icon なし)。詳細は `frontend.md` の「Top route」。
 
 ## 環境変数
 

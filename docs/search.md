@@ -440,7 +440,7 @@ ResultsToolbar は結果リストの上下に置く。上は件数 + sort + perP
 - main 結果 wrapper (cross-DB / per-DB 共通) に `role="region"` + `aria-label={t("search.a11y.resultsRegion")}`
 - 件数表示 (ResultsToolbar 左の `<total> 件中 <start>-<end>`) に `aria-live="polite"` + `aria-atomic="true"` を付け、loader 完了で件数が announce される
 - 「結果なし」 / parse error / cross / db error の Callout には `aria-live="polite"`
-- 「同期中」 / 「同期失敗」 を表す SyncStatusChip は `role="status"` (= 暗黙の `aria-live="polite"`)
+- 「同期中」 / 「同期失敗」 を表す SyncStatusChip は視覚バッジのみで、現状 `role` / `aria-live` は付けていない (SR への announce は今後の改善余地。付けるなら chip か wrapper に `role="status"`)
 
 assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更新では使わない (キーストロークごとに発火する debounce sync が SR を邪魔するため)。重大エラーの限定箇所のみ assertive に倒す。
 
@@ -489,7 +489,7 @@ footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボ
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
 
-- `event: message` → 累積バッファに delta を貯める (内部表示なし。中身は生成中の DSL 文字列)
+- `event: message` → client では消費しない (delta は server 側で蓄積され `done` の完全な AST に集約される。client は生成途中の表示を持たない)
 - `event: done` → data を ParseNode AST として受け取り proposal state に反映、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
 - `event: error` → state = "error"、toast を出す
 

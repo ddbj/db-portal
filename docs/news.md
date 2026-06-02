@@ -107,7 +107,7 @@ front matter に明示的な URL は無く、portal が source / lang / slug か
 各 markdown の front matter を YAML として parse し、NewsItem に写す。
 
 - `title` → `title.{ja|en}` (該当言語側に格納)
-- `date` → `publishedAt` (ddbj は front matter の `date` をそのまま、dbcls は file slug `YYYY-MM-DD-postN` から JST 00:00 を合成する)
+- `date` → `publishedAt` (ddbj は front matter の `date` をそのまま、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成する。post 連番を時刻に写し、同一日付の post を安定 sort できる順序にする)
 - `retire_time` → `retireTime`
 - `db` → `db` (文字列を全て `.toLowerCase().trim()` してから dedupe、`agd  ` のような余分な空白も除去)
 - `tags` → `rawTags.{ja|en}` (原文配列のまま) + `category` (写像)

@@ -57,7 +57,7 @@ describe("field operators and membership", () => {
   test("operator sets follow the field kind", () => {
     expect(FIELD_OPS.accessibility).toEqual(["eq"]) // enum
     expect(FIELD_OPS.identifier).toEqual(["eq", "wildcard"]) // identifier
-    expect(FIELD_OPS.title).toEqual(["eq", "contains"]) // text
+    expect(FIELD_OPS.title).toEqual(["contains", "wildcard"]) // text
     expect(FIELD_OPS.date_published).toEqual(["between"]) // date
     expect(FIELD_OPS.library_strategy).toEqual(["eq"]) // Tier 3 enum
   })

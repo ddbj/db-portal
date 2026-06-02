@@ -318,6 +318,7 @@ dev 環境では `DB_PORTAL_LLM_BASE_URL` を空にすると「LLM 未設定で 
 | ファイル | 内容 |
 |---|---|
 | `tests/pbt/server/llm/redaction-coverage.pbt.test.ts` | 任意の文字列に PII を挿入しても全パターン redact される |
+| `tests/pbt/server/llm/dsl-strip.pbt.test.ts` | 任意の文字列から fuzzy `~` / boost `^` を除去しても残留しない / 非対応文字を含まない入力は trim のみで不変 |
 
 ## 追加機能の組み入れ方
 

@@ -169,7 +169,7 @@ login flow 中の `state` / `code_verifier` / `returnTo` を server 側 in-memor
 | 層 | 検証内容 |
 |---|---|
 | `app/lib/auth/login-url.ts` (client / loader 両用 helper) | `/` 始まり + `//` / `/\` 不可、違反は `/` に正規化 |
-| `server/auth/` handler | 同条件 + URL parse で host / scheme が portal origin と一致するか再判定、違反は `/` に正規化 |
+| `server/auth/` handler | client helper と同一の検証 (`/` 始まり + `//` / `/\` 不可) を `normalizeReturnTo` で独立に再適用、違反は `/` に正規化 |
 
 server 側の再検証は「クライアント側 helper を経由しない直叩き」 (例: 攻撃者が手書きで `/api/auth/login?return_to=//evil` を組む) を遮断するために必須。
 

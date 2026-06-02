@@ -57,7 +57,7 @@ docker compose up -d --build
 各環境で値が変わる env 変数の一覧 (一部):
 
 - `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV`: 環境識別子 (compose の container_name / image / volume / network 名に展開される)
-- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev`、staging / production は `npm start`
+- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev`、staging / production は `sh -c "npm run build && npm start"` (起動時に build してから start)
 - `DB_PORTAL_APP_PORT`: host 側 listen port (環境ごとに異なる)
 - `DB_PORTAL_APP_INTERNAL_PORT`: container 内 listen port (`vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む。dev は 3000)
 - `DB_PORTAL_PORTAL_ORIGIN`: portal 自身の origin (redirect_uri 計算 / `<base>` 等の起点)
@@ -72,7 +72,7 @@ docker compose up -d --build
 
 ### Secret の扱い
 
-- `.gitignore` に `.env.*.local` を含める
+- `.gitignore` は `.env` / `.env.*` を ignore し、`env.dev` / `env.staging` / `env.production` だけ allowlist (`!`) で commit する (`.env.production.local` 等の local secret は `.env.*` で ignore される)
 - production の secret は `env.production` で `CHANGE_ME` プレースホルダとして commit され、実値は deploy 時に `.env.production.local` から merge して上書き (詳細は `deployment.md`)
 - 開発者は staging key を使う、production key は触らない
 - News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`news.md`)
@@ -241,7 +241,7 @@ docker compose exec app npm audit --audit-level=high --omit=dev
 docker compose exec app npm run news:repos:sync
 ```
 
-これで `./repos/{ddbj-www,dbcls-website}/` を `git pull` (もしくは shallow clone) する (`news.md`)。
+これで `DB_PORTAL_NEWS_REPOS_DIR` 配下 (compose / env のデフォルトでは `./cache/repos/{ddbj-www,dbcls-website}/`) を最新化する (present なら `git fetch` + `reset --hard`、absent なら shallow clone) (`news.md`)。
 
 加えて、リリース直前 / 大きい変更時には以下も手元で確認する:
 

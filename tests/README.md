@@ -241,7 +241,9 @@ tests/
 │   ├── arbitraries/
 │   ├── content/services/
 │   ├── features/
+│   │   ├── news/             ← news facet 不変量
 │   │   ├── search/
+│   │   ├── services/         ← services facet / facet URL state 不変量
 │   │   └── submit/
 │   ├── lib/                ← env / api / content / i18n の PBT
 │   ├── server/             ← api / auth / lib / llm / news の PBT

@@ -28,8 +28,12 @@ playwright-report/
 test-results/
 tests/e2e/.auth/
 
+# Stray screenshots dropped at the repo root (e.g. playwright-cli --filename)
+/*.png
+
 # Runtime cache (news/services/repos mirror data)
 cache/
+repos/
 
 # OS / editor noise
 .DS_Store

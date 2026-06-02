@@ -38,7 +38,7 @@ const stateWithCondition = (): AdvancedState => {
   return {
     root: {
       ...base.root,
-      children: [createCondition({ field: "organism_name", op: "eq", value: "Homo sapiens" })],
+      children: [createCondition({ field: "organism_name", op: "contains", value: "Homo sapiens" })],
     },
   }
 }

@@ -20,13 +20,13 @@ export default function handleRequest(
     : handleBrowserRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext)
 }
 
-function handleBotRequest(
+const handleBotRequest = (
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
   loadContext: AppLoadContext,
-) {
+) => {
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const nonce = loadContext.cspNonce
@@ -55,13 +55,13 @@ function handleBotRequest(
   })
 }
 
-function handleBrowserRequest(
+const handleBrowserRequest = (
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
   loadContext: AppLoadContext,
-) {
+) => {
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const nonce = loadContext.cspNonce

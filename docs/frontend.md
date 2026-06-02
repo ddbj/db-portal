@@ -355,7 +355,7 @@ Page
 ```
 
 - `Page` は `app/ui/page.tsx` (font / color baseline)
-- `Header` は内部で `useLocation` + `useLang` から active nav を導出 (props で渡さない)
+- `Header` は内部で `useLocation().pathname` から active nav を導出 (`computeActiveNav` で path 判定、props で渡さない)
 - `main` に `id="main"` を付け、`SkipLink` の遷移先にする
 - `SkipLink` は Header の **上** に置く sr-only な link で、Tab で focus したときだけ可視化する
 
@@ -584,7 +584,7 @@ portal 内 navigation の Service tiles (トップ左 main の primary tiles) �
 - submit 逆引き: submit `Service` enum 値から service entry を逆引き
 - validateAll: database / service それぞれを Zod parse し直し、結果を返す
 
-CLI (`scripts/validate-content.ts`) は database / service の validateAll を順に呼び、どちらかが失敗すれば `process.exit(1)` する。
+CLI (`scripts/validate-content.ts`) は database / service の validateAll に加えて submit-routing catalog (`validateSubmitRouting`) を順に呼び、いずれかが失敗すれば `process.exit(1)` する。
 
 ### 起動時 fail-fast
 
@@ -661,7 +661,7 @@ route 単位の翻訳完了状態を `handle.i18n.en` (`"complete"` / `"missing"
 
 | フェーズ | 何が起きるか |
 |---|---|
-| Build 時 | `validate:content` が全 collection (databases + services) を Zod parse、1 件でも失敗で fail |
+| Build 時 | `validate:content` が全 collection (databases + services) と submit-routing catalog を Zod parse、1 件でも失敗で fail |
 | 起動時 | `loader.ts` が `import.meta.glob` で eager load + parse、1 件でも失敗で server / dev が起動失敗 |
 | Runtime | `getDatabaseBySlug` / `getServiceById` / `listServicesByTopCategory` は in-memory lookup (1 度だけ初期化) |
 

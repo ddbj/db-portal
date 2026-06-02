@@ -3,7 +3,7 @@ import type { FileEntry, FileGroup, FlowStep, Submission } from "~/schemas/submi
 import { ENGINE_MESSAGE_KEYS as MK } from "../messages"
 import { groupMembers, makeStep, scopeOfEntries } from "../shared"
 
-// mag-sag-chain group の member を assembly-form chip で 4 段に振り分ける
+// mag-sag-chain group の member を assembly-form chip で 3 段 (raw / analysis / mag) に振り分ける
 const classify = (members: readonly FileEntry[]) => {
   const raw: FileEntry[] = []
   const analysis: FileEntry[] = []

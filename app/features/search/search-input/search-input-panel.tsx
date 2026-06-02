@@ -22,7 +22,6 @@ export type SearchInputPanelProps = {
   scopeAriaLabel?: string
   advancedState: AdvancedState
   dispatch: Dispatch<AdvancedAction>
-  baseUrl?: string
   // The keyword could not be parsed; reflect it on the box (warn border +
   // warn-coloured syntax hint). Only meaningful in keyword mode.
   invalid?: boolean
@@ -45,7 +44,6 @@ export const SearchInputPanel = ({
   scopeAriaLabel,
   advancedState,
   dispatch,
-  baseUrl,
   invalid = false,
   onSubmitSearch,
   searchPending = false,

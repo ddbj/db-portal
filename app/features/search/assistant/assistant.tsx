@@ -11,10 +11,9 @@ import { ProposalConditions } from "./proposal-conditions"
 export type SearchAssistantProps = {
   advancedState: AdvancedState
   dispatch: (action: AdvancedAction) => void
-  baseUrl?: string
 }
 
-export const SearchAssistant = ({ advancedState, dispatch, baseUrl }: SearchAssistantProps) => {
+export const SearchAssistant = ({ advancedState, dispatch }: SearchAssistantProps) => {
   const availability = useLlmAvailability()
   const t = useT()
   const [input, setInput] = useState("")
