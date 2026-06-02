@@ -3,7 +3,6 @@ import { expect, test } from "./helpers"
 test.describe("Services Domain", () => {
   test("S-SERVICES-01: /services で一覧表示と facet group", async ({ page }) => {
     await page.goto("/services")
-    await page.waitForLoadState("networkidle")
 
     await expect(
       page.getByRole("heading", { name: /サービス|Services/i, level: 1 }),
@@ -27,13 +26,12 @@ test.describe("Services Domain", () => {
 
   test("S-SERVICES-02: facet で絞り込み、URL に反映", async ({ page }) => {
     await page.goto("/services")
-    await page.waitForLoadState("networkidle")
 
     const facetPanel = page.getByRole("region", { name: /絞り込み|Refine/i })
     await expect(facetPanel).toBeVisible({ timeout: 15_000 })
 
-    await facetPanel.getByRole("checkbox", { name: /検索|Search/i }).first().check()
-    await facetPanel.getByRole("checkbox", { name: "DBCLS" }).first().check()
+    await facetPanel.getByRole("checkbox", { name: /検索|Search/i }).first().click()
+    await facetPanel.getByRole("checkbox", { name: "DBCLS" }).first().click()
 
     // params は source → category の順、値は alphabet sort
     await expect(page).toHaveURL(/\/services\?source=dbcls&category=search/, {
@@ -60,7 +58,6 @@ test.describe("Services Domain", () => {
 
   test("S-SERVICES-03: トップに featuredTop の services list", async ({ page }) => {
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const servicesHeading = page.getByRole("heading", {
       name: /サービス|Services/i,
@@ -96,7 +93,6 @@ test.describe("Services Domain", () => {
       }),
     )
     await page.goto("/services")
-    await page.waitForLoadState("networkidle")
 
     // 一覧 0 件でも h1 が描画される
     await expect(

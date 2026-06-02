@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test"
 
 import { USER_STORAGE_STATE } from "./fixtures/users"
 
-const baseURL = process.env.DB_PORTAL_PORTAL_ORIGIN ?? "https://portal-staging.ddbj.nig.ac.jp"
+const baseURL = process.env.DB_PORTAL_PORTAL_ORIGIN ?? "https://bsi-staging.nig.ac.jp"
 
 export default defineConfig({
   testDir: ".",
@@ -16,6 +16,8 @@ export default defineConfig({
   outputDir: "../../test-results",
   use: {
     baseURL,
+    locale: "ja-JP",
+    extraHTTPHeaders: { "Accept-Language": "ja" },
     trace: "on-first-retry",
   },
   projects: [

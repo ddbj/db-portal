@@ -295,7 +295,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   3. 1 件目の行の公開区分 combobox (`公開区分`) を `制限公開` に変更、2 件目は `公開` のまま
 - **期待**:
   - 1 件目 (制限公開 ∧ Q2=ヒト) は JGA scope に入り `data-service="jga"` カードが、2 件目 (公開) は `data-service="dra"` カードが両方描画される
-  - JGA カードに `submit.sequenceRead.jga.intro` / `submit.sequenceRead.jga.dbclsPolicy` 由来の note 文 (DBCLS で Policy 承認 (JGAP) を取得する旨) が表示される
+  - 制限公開ヒトの Policy 申請・承認は `data-service="humandbs"` カードの note (`submit.jga.policyApplication` / `submit.jga.nbdcPolicy` 由来、独自ポリシーは DBCLS 登録で JGAP を発行する旨) に表示される (jga-submission recipe が JGA ルーティング時に humandbs ステップを生成し、Policy 文言はそこへ集約する。jga カード自体は `submit.jga.dataset.intro` のみ)
   - 同一 entry が JGA と DRA の両方の scope に出ないこと (1 件目は jga カードの対象ファイルにのみ、2 件目は dra カードの対象ファイルにのみ現れる)
 - **備考**: Q1=`公開データの登録` でも行 access を `制限公開` にできるが、JGA 分岐の起点は `access=restricted ∧ Q2=human`。S-SUBMIT-09 は同じ JGA 経路を Q1=`制限公開データを含む登録` 起点で前提ゲートまで含めて検証する。
 
@@ -734,7 +734,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - status が 302
   - `Location` ヘッダの origin が Keycloak realm (`https://idp-staging.ddbj.nig.ac.jp`)、path が `/realms/master/protocol/openid-connect/auth`
-  - query が `response_type=code`、`code_challenge_method=S256`、非空の `code_challenge`、`scope=openid profile email`、`client_id=db-portal-staging` (e2e は staging を叩くため `DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-staging`、`db-portal-dev` は dev 専用)、`/api/auth/callback` で終わる `redirect_uri`、非空の `state` を持つ
+  - query が `response_type=code`、`code_challenge_method=S256`、非空の `code_challenge`、`scope=openid profile email`、`client_id=db-portal-dev` (staging は dev と同じ realm の `db-portal-dev` client を共用する。`DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-dev`)、`/api/auth/callback` で終わる `redirect_uri`、非空の `state` を持つ
   - レスポンスに `Set-Cookie: sid=...` が含まれない (この時点では session 未発行)
 - **備考**: `state` / `code_verifier` は pending store に 10 分 TTL で保存される (`PENDING_TTL_MS`)。authorize URL 自体に `code_verifier` は載らない (PKCE)。
 
@@ -761,7 +761,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   2. 続いて `/api/auth/logout-callback` までのリダイレクトチェーンを完走させる
 - **期待**:
   - logout レスポンスが 302、`Location` の origin が Keycloak realm (`https://idp-staging.ddbj.nig.ac.jp`)、path が `/realms/master/protocol/openid-connect/logout`
-  - query が `id_token_hint`、`client_id=db-portal-staging` (staging では `DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-staging`)、`/api/auth/logout-callback` で終わる (URL エンコードされた `return_to=/` を含む) `post_logout_redirect_uri` を持つ
+  - query が `id_token_hint`、`client_id=db-portal-dev` (staging は dev と同じ realm の `db-portal-dev` client を共用する。`DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-dev`)、`/api/auth/logout-callback` で終わる (URL エンコードされた `return_to=/` を含む) `post_logout_redirect_uri` を持つ
   - チェーン完走後、`/api/auth/logout-callback` のレスポンスが `Set-Cookie: sid=; Max-Age=0`(`HttpOnly`/`SameSite=Lax`/`Path=/`) を返す
   - その後の `GET /api/me` が 401 を返す
 - **備考**: session が無い状態で `/api/auth/logout` を叩いた場合は Keycloak へ飛ばず、cookie clear + `return_to` への 302 のみとなる (routes.ts の no-session 分岐)。本シナリオは session を持つ正常系に限定する。

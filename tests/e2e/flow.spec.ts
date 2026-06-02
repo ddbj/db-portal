@@ -11,7 +11,6 @@ test.describe("Flow (cross-cutting) Domain", () => {
     await keyword.press("Enter")
 
     await expect(page).toHaveURL(/\/search\/results\?q=cancer$/, { timeout: 15_000 })
-    await page.waitForLoadState("networkidle")
     await expect(page.getByTestId("db-card").first()).toBeVisible({ timeout: 20_000 })
 
     // 手順 3: BioProject カードの「結果一覧」 link → /search/results?q=cancer&db=bioproject。
@@ -23,7 +22,6 @@ test.describe("Flow (cross-cutting) Domain", () => {
     await expect(page).toHaveURL(/\/search\/results\?q=cancer&db=bioproject$/, {
       timeout: 15_000,
     })
-    await page.waitForLoadState("networkidle")
 
     // 手順 4: /databases/bioproject を開く (検索結果 route とは loader を共有しないホップ)。
     await page.goto("/databases/bioproject")
@@ -40,7 +38,6 @@ test.describe("Flow (cross-cutting) Domain", () => {
     await expect(page).toHaveURL(/\/search\/results\?q=cancer&db=bioproject$/, {
       timeout: 15_000,
     })
-    await page.waitForLoadState("networkidle")
     await expect(
       page.getByRole("textbox", { name: /検索キーワード|Search keywords/ }).first(),
     ).toHaveValue(/cancer/, { timeout: 20_000 })

@@ -26,6 +26,12 @@ COPY package.json package-lock.json* .npmrc ./
 RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi && \
     chmod -R a+rwX node_modules
 
+# Playwright e2e browser + OS deps. Browsers live in a fixed, world-readable path
+# (PLAYWRIGHT_BROWSERS_PATH) so the dev container can run them as an arbitrary host UID.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npx playwright install --with-deps chromium && \
+    chmod -R a+rX /ms-playwright
+
 COPY . .
 
 # Writable HOME for arbitrary UID (dev containers run as host UID:GID).

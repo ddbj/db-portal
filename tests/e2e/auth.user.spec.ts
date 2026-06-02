@@ -24,7 +24,10 @@ test.describe("Auth Domain (authenticated)", () => {
   })
 
   test("S-AUTH-03: ログアウトで Header が「ログイン」 に戻る", async ({ page }) => {
-    await page.goto("/")
+    // 共有 storageState session を logout で壊すと並行する他 user spec が連鎖失敗する
+    // (S-AUTH-06 と同じ分離方針)。自前の fresh session を立ててから logout を検証する。
+    await page.context().clearCookies()
+    await loginViaKeycloak(page, "/")
 
     const logoutLink = page.getByRole("link", { name: LOGOUT_LINK }).first()
     await expect(logoutLink).toBeVisible({ timeout: 10_000 })
@@ -77,6 +80,12 @@ test.describe("Auth Domain (authenticated)", () => {
   test("S-AUTH-06: `/api/auth/logout` が end_session_endpoint に 302 し session を破棄", async ({
     page,
   }) => {
+    // user project は fullyParallel で 1 つの storageState session を共有するため、
+    // logout で共有 session を壊すと並行する他 user spec が連鎖失敗する。自前の
+    // fresh session を立ててから logout を検証し、順序非依存にする。
+    await page.context().clearCookies()
+    await loginViaKeycloak(page, "/")
+
     const logoutResponse = await page.request.get("/api/auth/logout?return_to=/", {
       maxRedirects: 0,
     })
@@ -88,7 +97,7 @@ test.describe("Auth Domain (authenticated)", () => {
     expect(locationUrl.origin).toBe("https://idp-staging.ddbj.nig.ac.jp")
     expect(locationUrl.pathname).toBe("/realms/master/protocol/openid-connect/logout")
     expect(locationUrl.searchParams.get("id_token_hint")).toBeTruthy()
-    expect(locationUrl.searchParams.get("client_id")).toBe("db-portal-staging")
+    expect(locationUrl.searchParams.get("client_id")).toBe("db-portal-dev")
     const postLogoutRedirect = locationUrl.searchParams.get("post_logout_redirect_uri") ?? ""
     expect(postLogoutRedirect).toContain("/api/auth/logout-callback")
     expect(postLogoutRedirect).toContain("return_to=%2F")

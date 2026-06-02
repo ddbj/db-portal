@@ -8,13 +8,13 @@ e2e は **staging URL に対して実行** する。dev (Docker) に対しては
 
 | env | 用途 | baseURL |
 |---|---|---|
-| `DB_PORTAL_PORTAL_ORIGIN` | `playwright.config.ts` が参照 | `https://portal-staging.ddbj.nig.ac.jp` (省略時 default) |
+| `DB_PORTAL_PORTAL_ORIGIN` | `playwright.config.ts` が参照 | `https://bsi-staging.nig.ac.jp` (省略時 default) |
 
 staging に向けて回す場合 (リリースマネージャの手元 / 作業環境):
 
 ```bash
 docker compose exec app sh -c '
-  DB_PORTAL_PORTAL_ORIGIN=https://portal-staging.ddbj.nig.ac.jp \
+  DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
   DB_PORTAL_E2E_USER_PASSWORD=<staging test user password> \
   npm run test:e2e
 '
@@ -121,8 +121,8 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 | シナリオ | 再現方法 |
 |---|---|
 | E-SEARCH-01 (不正 DSL) | URL を直接組み立てて navigation (server / API は通常運転) |
-| E-SEARCH-02 (cross-search 5xx) | `page.route()` で network intercept、staging API レスポンスを差し替える |
-| E-SEARCH-04 (per-DB search 5xx) | `page.route()` で `/db-portal/search` を 5xx に差し替える (errorKey:db 経路) |
+| E-SEARCH-02 (cross-search 5xx) | **e2e では skip**。cross-search は SSR route loader (`app/routes/search-results/loader.ts`) が upstream を server-side fetch するため browser `page.route()` では intercept できない。errorKey:`cross` → crossSearchFailure 経路は loader の unit/msw で固定する |
+| E-SEARCH-04 (per-DB search 5xx) | **e2e では skip**。per-DB search も同 SSR loader の server-side fetch のため `page.route()` 不可。errorKey:`db` → dbSearchFailure 経路は loader の unit/msw で固定する |
 | E-AUTH-01 (state 不一致) | URL を直接組み立てる (`/api/auth/callback?code=x&state=evil`) |
 | E-AUTH-03 (code/state 欠落) | URL を直接組み立てる (`/api/auth/callback` に code か state を欠落) → 400 invalid_request |
 | E-AUTH-04 (session 失効) | store に無い sid cookie を craft して `/api/me` 401 + Header 復帰を確認 (refresh token 機構が無いため refresh 失敗自体は再現しない) |
@@ -153,7 +153,7 @@ e2e は CI から自動実行しない。リリース判定の前にリリース
 
 ```bash
 docker compose exec app sh -c '
-  DB_PORTAL_PORTAL_ORIGIN=https://portal-staging.ddbj.nig.ac.jp \
+  DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
   DB_PORTAL_E2E_USER_PASSWORD=<staging test user password> \
   npm run test:e2e
 '

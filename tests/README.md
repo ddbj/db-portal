@@ -91,7 +91,7 @@ Playwright
 
 ### 環境
 
-- 対象: staging deploy 済の db-portal (`portal-staging.ddbj.nig.ac.jp`)
+- 対象: staging deploy 済の db-portal (`bsi-staging.nig.ac.jp`)
 - 外部依存も実物を叩く:
   - ddbj-search-api staging (`ddbj-staging.nig.ac.jp/search/api`)
   - Keycloak staging (`idp-staging.ddbj.nig.ac.jp`)

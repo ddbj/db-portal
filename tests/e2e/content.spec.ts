@@ -3,7 +3,6 @@ import { expect, test } from "./helpers"
 test.describe("Content (Databases) Domain", () => {
   test("S-CONTENT-01: /databases/bioproject ja 表示と breadcrumb", async ({ page }) => {
     await page.goto("/databases/bioproject")
-    await page.waitForLoadState("networkidle")
 
     await expect(page.locator("html")).toHaveAttribute("lang", "ja")
     await expect(page.getByRole("heading", { level: 1, name: "BioProject" })).toBeVisible()
@@ -44,7 +43,6 @@ test.describe("Content (Databases) Domain", () => {
     expect(setCookie).toMatch(/Max-Age=31536000/)
 
     await page.goto("/databases/bioproject?lang=en")
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/\/databases\/bioproject$/)
 
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
@@ -64,14 +62,12 @@ test.describe("Content (Databases) Domain", () => {
 
     // lang cookie は永続。?lang 無しで別 DB を訪問しても en が維持される
     await page.goto("/databases/biosample")
-    await page.waitForLoadState("networkidle")
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
     await expect(page.getByRole("heading", { level: 2, name: "External links" })).toBeVisible()
   })
 
   test("S-CONTENT-03: /databases/biosample ja 表示", async ({ page }) => {
     await page.goto("/databases/biosample")
-    await page.waitForLoadState("networkidle")
 
     await expect(page.getByRole("heading", { level: 1, name: "BioSample" })).toBeVisible()
     await expect(page.getByText(/BioSample とは/)).toBeVisible()
@@ -93,7 +89,6 @@ test.describe("Content (Databases) Domain", () => {
 
   test("S-CONTENT-04: 実 route 構成どおりの breadcrumb chain", async ({ page }) => {
     await page.goto("/databases/bioproject")
-    await page.waitForLoadState("networkidle")
 
     const jaCrumb = page.getByRole("navigation", { name: "パンくずリスト" })
     await expect(jaCrumb.locator("li")).toHaveCount(2)
@@ -103,7 +98,6 @@ test.describe("Content (Databases) Domain", () => {
     await expect(jaCrumb.getByText("データベース", { exact: true })).toHaveCount(0)
 
     await page.goto("/databases/bioproject?lang=en")
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/\/databases\/bioproject$/)
 
     const enCrumb = page.getByRole("navigation", { name: "Breadcrumb" })
@@ -116,18 +110,15 @@ test.describe("Content (Databases) Domain", () => {
 
   test("S-CONTENT-05: データベース詳細の document title が reverse-breadcrumb", async ({ page }) => {
     await page.goto("/databases/bioproject")
-    await page.waitForLoadState("networkidle")
     expect(await page.title()).toBe("BioProject | Databases | BSI")
 
     await page.goto("/databases/bioproject?lang=en")
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/\/databases\/bioproject$/)
     expect(await page.title()).toBe("BioProject | Databases | BSI")
   })
 
   test("S-CONTENT-06: 外部リンクの属性と最終更新日の locale 整形", async ({ page }) => {
     await page.goto("/databases/bioproject")
-    await page.waitForLoadState("networkidle")
 
     const externalLinks: readonly (readonly [string, string])[] = [
       ["NCBI BioProject", "https://www.ncbi.nlm.nih.gov/bioproject/"],
@@ -145,7 +136,6 @@ test.describe("Content (Databases) Domain", () => {
     await expect(page.locator("time[datetime='2026-05-25T00:00:00Z']")).toHaveText("2026年5月25日")
 
     await page.goto("/databases/bioproject?lang=en")
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/\/databases\/bioproject$/)
     const enTime = page.locator("time[datetime='2026-05-25T00:00:00Z']")
     await expect(enTime).toHaveAttribute("datetime", "2026-05-25T00:00:00Z")
@@ -173,7 +163,6 @@ test.describe("Content (Databases) Domain", () => {
     )
 
     await page.goto("/databases/bioproject?lang=en")
-    await page.waitForLoadState("networkidle")
 
     const banner = page.getByTestId("translation-unavailable")
     await expect(banner).toHaveCount(1)

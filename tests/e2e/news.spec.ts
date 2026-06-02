@@ -31,7 +31,6 @@ const isNonIncreasing = (values: readonly string[]): boolean => {
 test.describe("News Domain", () => {
   test("S-NEWS-01: /news で一覧と 4 facet グループが表示される", async ({ page }) => {
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     await expect(
       page.getByRole("heading", { name: "お知らせ・ニュース", level: 1 }),
@@ -53,19 +52,18 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-02: facet 選択が URL params と AppliedFilters chip に反映される", async ({ page }) => {
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     await page
       .getByRole("checkbox", { name: /データ公開/ })
       .first()
-      .check()
+      .click()
     await expect(page).toHaveURL(/category=data-release/, { timeout: 10_000 })
 
     const yearFacet = page.getByRole("checkbox", { name: /^2024/ }).first()
     const hasYear = await yearFacet.isVisible().catch(() => false)
     test.skip(!hasYear, "2024 が cache に実出現しない期間")
 
-    await yearFacet.check()
+    await yearFacet.click()
     await expect(page).toHaveURL(/year=2024/, { timeout: 10_000 })
     await expect(page).toHaveURL(/category=data-release/)
 
@@ -85,7 +83,6 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-03: トップで featured が NotificationBar に stack 表示される", async ({ page }) => {
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
     const hasBar = await bar.isVisible().catch(() => false)
@@ -109,7 +106,6 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-04: トップ右 aside に最新ニュースと「すべて見る」リンク", async ({ page }) => {
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const aside = page.getByRole("complementary", { name: "お知らせ" })
     await expect(aside).toBeVisible({ timeout: 10_000 })
@@ -123,15 +119,17 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-05: facet 絞り込みで実 result set・range・chip が変化する (staging 実データ)", async ({ page }) => {
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     const count = page.locator("p[aria-live='polite']").first()
     await expect(count).toBeVisible()
+    // 件数表示はクライアント fetch 完了後に "N–M / TOTAL 件" になる。読込前に読むと
+    // total=0 を拾い restored 比較が壊れるため、件数が確定するまで待つ。
+    await expect(count).toHaveText(/\d+–\d+ \/ [\d,]+ 件/, { timeout: 15_000 })
 
     const baseTotal = await readCountTotal(count)
 
     const dataRelease = page.getByRole("checkbox", { name: /データ公開/ }).first()
-    await dataRelease.check()
+    await dataRelease.click()
     await expect(page).toHaveURL(/category=data-release/, { timeout: 10_000 })
 
     const filteredTotal = await readCountTotal(count)
@@ -151,7 +149,7 @@ test.describe("News Domain", () => {
     ).toBeVisible()
 
     // OFF に戻すと総件数が復元、AppliedFilters が消える
-    await dataRelease.uncheck()
+    await dataRelease.click()
     await expect(page).not.toHaveURL(/category=/, { timeout: 10_000 })
     const restored = await readCountTotal(count)
     expect(restored).toBe(baseTotal)
@@ -186,7 +184,6 @@ test.describe("News Domain", () => {
       .map((n) => n.title.ja ?? n.title.en ?? "")
 
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
     await expect(bar).toBeVisible({ timeout: 10_000 })
@@ -203,10 +200,11 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-07: /news 一覧が date 降順で、pagination が URL に反映される", async ({ page }) => {
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     const count = page.locator("p[aria-live='polite']").first()
     await expect(count).toBeVisible()
+    // 読込前に読むと total=0 を拾い skip 判定を誤るため、件数確定まで待つ。
+    await expect(count).toHaveText(/\d+–\d+ \/ [\d,]+ 件/, { timeout: 15_000 })
     const total = await readCountTotal(count)
 
     test.skip(total <= 20, "2 ページ以上 (21 件以上) を返さない期間")
@@ -245,7 +243,6 @@ test.describe("News Domain", () => {
 
   test("S-NEWS-08: 言語切替 (cookie) で ja/en pairing と fallback が反映される", async ({ page }) => {
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     const firstRow = newsRows(page).first()
     await expect(firstRow).toBeVisible({ timeout: 15_000 })
@@ -256,7 +253,6 @@ test.describe("News Domain", () => {
     const enRes = await page.goto("/news?lang=en")
     expect(enRes?.status()).toBe(200)
     await expect(page).toHaveURL(/\/news$/)
-    await page.waitForLoadState("networkidle")
 
     const enRow = newsRows(page).first()
     await expect(enRow).toBeVisible({ timeout: 15_000 })
@@ -272,13 +268,11 @@ test.describe("News Domain", () => {
 
     // 再読込でも en が cookie で維持される
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
   })
 
   test("S-NEWS-09: トップ aside の件数が NEWS_LIMIT と一致する", async ({ page }) => {
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const aside = page.getByRole("complementary", { name: "お知らせ" })
     await expect(aside).toBeVisible({ timeout: 10_000 })
@@ -309,7 +303,6 @@ test.describe("News Domain", () => {
       }),
     )
     await page.goto("/news")
-    await page.waitForLoadState("networkidle")
 
     await expect(
       page.getByRole("heading", { name: "お知らせ・ニュース", level: 1 }),
@@ -321,7 +314,6 @@ test.describe("News Domain", () => {
 
   test("E-NEWS-02: NotificationBar の dismiss が reload を跨いで sessionStorage で保持される", async ({ page }) => {
     await page.goto("/")
-    await page.waitForLoadState("networkidle")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
     const hasBar = await bar.isVisible().catch(() => false)
@@ -357,7 +349,6 @@ test.describe("News Domain", () => {
 
     // reload 後も閉じた bar は再表示されず、残りは表示
     await page.reload()
-    await page.waitForLoadState("networkidle")
     await expect(bar.getByRole("article")).toHaveCount(initialCount - 1, { timeout: 10_000 })
     await expect(
       bar.getByRole("article", { name: closedLabel, exact: true }),
@@ -368,7 +359,6 @@ test.describe("News Domain", () => {
     if (freshContext) {
       const freshPage = await freshContext.newPage()
       await freshPage.goto("/")
-      await freshPage.waitForLoadState("networkidle")
       const freshBar = freshPage.getByRole("region", { name: "重要なお知らせ" })
       await expect(freshBar.getByRole("article")).toHaveCount(initialCount, { timeout: 10_000 })
       await freshContext.close()

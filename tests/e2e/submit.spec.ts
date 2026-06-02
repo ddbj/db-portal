@@ -174,7 +174,7 @@ test.describe("Submit Domain", () => {
 
     const jgaCard = flowStep(page, "jga")
     await expect(jgaCard).toContainText("JGA に登録")
-    await expect(jgaCard).toContainText(/DBCLS で Policy 承認 \(JGAP\)/)
+    await expect(flowStep(page, "humandbs")).toContainText(/独自ポリシーは DBCLS 登録で JGAP を発行/)
 
     await expect(jgaCard).toContainText("read-001.fastq")
     await expect(jgaCard).not.toContainText("read-002.fastq")
@@ -203,10 +203,10 @@ test.describe("Submit Domain", () => {
     await page.getByRole("option", { name: "seq-001.fasta" }).click()
 
     await expect(annItem.getByText("設定済み", { exact: true })).toBeVisible()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta" })).toHaveCount(0)
+    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
 
     await annItem.getByRole("radio", { name: /単独アノテーション/ }).check()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta" })).toHaveCount(1)
+    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
   })
 
   test("S-SUBMIT-06: 行削除でフローカードが減る (確認ダイアログ無し)", async ({ page }) => {
@@ -339,17 +339,17 @@ test.describe("Submit Domain", () => {
 
     await partnerSelect.click()
     await page.getByRole("option", { name: "seq-001.fasta" }).click()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta" })).toHaveCount(0)
+    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
     await expect(annItem.getByText("設定済み", { exact: true })).toBeVisible()
 
     await partnerSelect.click()
     await page.getByRole("option", { name: "seq-002.fasta" }).click()
-    await expect(detailItems(page).filter({ hasText: "seq-002.fasta" })).toHaveCount(0)
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta" })).toHaveCount(1)
+    await expect(detailItems(page).filter({ hasText: "seq-002.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
+    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
 
     await annItem.getByRole("radio", { name: /単独アノテーション/ }).check()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta" })).toHaveCount(1)
-    await expect(detailItems(page).filter({ hasText: "seq-002.fasta" })).toHaveCount(1)
+    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
+    await expect(detailItems(page).filter({ hasText: "seq-002.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
   })
 
   test("S-SUBMIT-12: Q1 変更で既存行が前提矛盾になり確認事項に出る", async ({ page }) => {

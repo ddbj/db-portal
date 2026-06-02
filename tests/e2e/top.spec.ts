@@ -11,10 +11,12 @@ const HERO_PLACEHOLDER_EN = "Search by keyword, accession, or organism"
 const heroInput = (page: Page) =>
   page.getByRole("textbox", { name: /検索キーワード|Search keywords/ })
 
-// The 6 primary-service tiles render as <li> inside the ServiceGrid's first <ul>
-// in <main>; FeaturedServices rows live in a sibling <ul>, so scope to the grid.
+// The page has two <main> landmarks: the shell wraps everything in <main id="main">
+// (its hero example-chips render a <ul>), and the top route nests a content-column
+// <main>. The ServiceGrid's <ul> is the first list inside the inner (last) main;
+// FeaturedServices rows live in a sibling <ul>.
 const serviceTiles = (page: Page) =>
-  page.getByRole("main").getByRole("list").first().getByRole("listitem")
+  page.getByRole("main").last().getByRole("list").first().getByRole("listitem")
 
 test.describe("Top Domain", () => {
   test("S-TOP-01: ja トップ訪問で hero + service tile + FeaturedServices + NewsAside が表示", async ({ page }) => {
@@ -42,7 +44,7 @@ test.describe("Top Domain", () => {
     await expect(serviceTiles(page)).toHaveCount(6)
 
     // FeaturedServices: "サービス" heading + view-all → /services, ≥1 row.
-    await expect(page.getByRole("heading", { name: "サービス" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "サービス", level: 2 })).toBeVisible()
     const servicesViewAll = page.getByRole("link", { name: "すべて見る" }).first()
     await expect(servicesViewAll).toHaveAttribute("href", "/services")
 
@@ -85,7 +87,7 @@ test.describe("Top Domain", () => {
     const advancedLink = page.getByRole("link", { name: "Advanced search" })
     await expect(advancedLink).toHaveAttribute("href", "/search")
 
-    await expect(page.getByRole("heading", { name: "Services" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Services", level: 2 })).toBeVisible()
     const servicesViewAll = page.getByRole("link", { name: "View all" }).first()
     await expect(servicesViewAll).toHaveAttribute("href", "/services")
 
@@ -124,7 +126,7 @@ test.describe("Top Domain", () => {
     await expect(page).toHaveURL(/\/$/)
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
     await expect(heroInput(page)).toHaveAttribute("placeholder", HERO_PLACEHOLDER_EN)
-    await expect(page.getByRole("heading", { name: "Services" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Services", level: 2 })).toBeVisible()
     await expect(page.getByRole("complementary", { name: "Announcements" })).toBeVisible()
   })
 
@@ -141,12 +143,12 @@ test.describe("Top Domain", () => {
     await expect(serviceTiles(page).first()).toBeVisible()
 
     // FeaturedServices: "サービス" heading + ≥1 row + view-all → /services.
-    await expect(page.getByRole("heading", { name: "サービス" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "サービス", level: 2 })).toBeVisible()
     const servicesViewAll = page.getByRole("link", { name: "すべて見る" }).first()
     await expect(servicesViewAll).toHaveAttribute("href", "/services")
 
     // The featured list lives in a sibling <ul> after the grid; require ≥1 row.
-    const featuredList = page.getByRole("main").getByRole("list").nth(1)
+    const featuredList = page.getByRole("main").last().getByRole("list").nth(1)
     await expect(featuredList.getByRole("listitem").first()).toBeVisible({ timeout: 15_000 })
   })
 
@@ -185,7 +187,7 @@ test.describe("Top Domain", () => {
     // Hero input, 6 service tiles, FeaturedServices section all render normally.
     await expect(heroInput(page)).toBeVisible()
     await expect(serviceTiles(page)).toHaveCount(6)
-    await expect(page.getByRole("heading", { name: "サービス" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "サービス", level: 2 })).toBeVisible()
 
     await expect(page.getByRole("alert")).toHaveCount(0)
   })

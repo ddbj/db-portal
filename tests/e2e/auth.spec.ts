@@ -35,7 +35,7 @@ test.describe("Auth Domain (anonymous)", () => {
     expect(params.get("code_challenge_method")).toBe("S256")
     expect(params.get("code_challenge") ?? "").not.toBe("")
     expect(params.get("scope")).toBe("openid profile email")
-    expect(params.get("client_id")).toBe("db-portal-staging")
+    expect(params.get("client_id")).toBe("db-portal-dev")
     expect(params.get("redirect_uri") ?? "").toMatch(/\/api\/auth\/callback$/)
     expect(params.get("state") ?? "").not.toBe("")
 

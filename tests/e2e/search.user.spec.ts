@@ -9,7 +9,6 @@ test.describe("Search Domain (authenticated)", () => {
     test.skip(body.status !== "ok", "vLLM not ok")
 
     await page.goto("/search/results?q=cancer&db=bioproject")
-    await page.waitForLoadState("networkidle")
 
     // AI モード toggle (search.assistant.enterMode) は health=ok のときだけ出る。
     const aiToggle = page

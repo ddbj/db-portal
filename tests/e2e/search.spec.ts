@@ -29,7 +29,6 @@ test.describe("Search Domain", () => {
 
   test("S-SEARCH-02: cross-DB 結果のヒット数カードが 8 枚固定で描画", async ({ page }) => {
     await page.goto("/search/results?q=cancer")
-    await page.waitForLoadState("networkidle")
 
     const cards = page.getByTestId("db-card")
     await expect(cards).toHaveCount(8, { timeout: 20_000 })
@@ -44,13 +43,11 @@ test.describe("Search Domain", () => {
 
   test("S-SEARCH-03: cross → per-DB 遷移と sidebar / 2 ペイン構造", async ({ page }) => {
     await page.goto("/search/results?q=cancer")
-    await page.waitForLoadState("networkidle")
 
     const card = page.locator('[data-testid="db-card"][data-db="bioproject"]')
     await card.getByRole("link", { name: /結果一覧|Open results/ }).click()
 
     await expect(page).toHaveURL(/\/search\/results\?q=cancer&db=bioproject$/, { timeout: 15_000 })
-    await page.waitForLoadState("networkidle")
 
     const sidebar = page.locator("aside").filter({ hasText: /絞り込み|Filters/ })
     await expect(sidebar).toBeVisible({ timeout: 15_000 })
@@ -105,7 +102,6 @@ test.describe("Search Domain", () => {
 
   test("S-SEARCH-05: Sidebar facet トグル → ?q= 即時更新 (replace)", async ({ page }) => {
     await page.goto("/search/results?q=cancer&db=bioproject")
-    await page.waitForLoadState("networkidle")
 
     const checkbox = page
       .getByTestId("facet-organism")
@@ -128,7 +124,6 @@ test.describe("Search Domain", () => {
     await page.goto(
       "/search/results?q=organism_id%3A9606%20AND%20date_published%3A%5B2022-01-01%20TO%202024-12-31%5D&db=bioproject",
     )
-    await page.waitForLoadState("networkidle")
 
     const preview = page.getByLabel(/クエリプレビュー|Query preview/).first()
     await expect(preview).toBeVisible({ timeout: 15_000 })
@@ -145,7 +140,6 @@ test.describe("Search Domain", () => {
 
   test("S-SEARCH-07: per-DB の pagination / perPage / sort が実 /db-portal/search 契約を通る", async ({ page }) => {
     await page.goto("/search/results?q=cancer&db=bioproject")
-    await page.waitForLoadState("networkidle")
 
     const summary = page.getByText(/件中|of /).first()
     await expect(summary).toBeVisible({ timeout: 20_000 })
@@ -153,7 +147,6 @@ test.describe("Search Domain", () => {
     // perPage 50
     await page.getByRole("combobox", { name: /1 ページあたり|Per page/ }).click()
     await page.getByRole("option", { name: "50" }).click()
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/perPage=50/, { timeout: 15_000 })
     expect(new URL(page.url()).searchParams.get("page")).toBeNull()
     await expect(page.getByText(/1-50|1-\d/).first()).toBeVisible({ timeout: 15_000 })
@@ -161,13 +154,11 @@ test.describe("Search Domain", () => {
     // sort 新しい順 (date_desc)
     await page.getByRole("combobox", { name: /並び替え|Sort/ }).click()
     await page.getByRole("option", { name: /新しい順|Newest first/ }).click()
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/sort=date_desc/, { timeout: 15_000 })
     expect(new URL(page.url()).searchParams.get("page")).toBeNull()
 
     // pagination 次へ
     await page.getByRole("button", { name: /次のページ|Next page/ }).first().click()
-    await page.waitForLoadState("networkidle")
     await expect(page).toHaveURL(/page=2/, { timeout: 15_000 })
     await expect(page.getByText(/\b51-|51 件/).first()).toBeVisible({ timeout: 15_000 })
   })
@@ -176,7 +167,6 @@ test.describe("Search Domain", () => {
     await page.goto(
       "/search/results?q=object_type%3A%22BioProject%22%20AND%20cancer&db=bioproject",
     )
-    await page.waitForLoadState("networkidle")
 
     await expect(
       page.getByText(/クエリを解析できませんでした|Could not parse the query/),
@@ -199,7 +189,6 @@ test.describe("Search Domain", () => {
     await page.goto(
       "/search/results?q=organism_id%3A9606%20AND%20date_published%3A%5B2022-01-01%20TO%202024-12-31%5D&db=bioproject",
     )
-    await page.waitForLoadState("networkidle")
 
     const organism = page.getByTestId("facet-organism")
     await expect(organism).toBeVisible({ timeout: 15_000 })
@@ -221,7 +210,9 @@ test.describe("Search Domain", () => {
       .first()
     await expect(dateGroup.getByRole("textbox", { name: /開始日/ })).toHaveValue("2022-01-01")
     await expect(dateGroup.getByRole("textbox", { name: /終了日/ })).toHaveValue("2024-12-31")
-    await expect(dateGroup.getByRole("button", { name: /解除/ })).toBeVisible()
+    await expect(
+      dateGroup.getByRole("button", { name: /^(解除|Clear)$/ }).last(),
+    ).toBeVisible()
 
     await expect(
       page.getByRole("region", { name: /検索結果|Search results/ }),
@@ -230,7 +221,6 @@ test.describe("Search Domain", () => {
 
   test("S-SEARCH-10: cross-DB カードの count 数値と上位 hit が実 API データで描画される", async ({ page }) => {
     await page.goto("/search/results?q=cancer")
-    await page.waitForLoadState("networkidle")
 
     await expect(page.getByTestId("db-card")).toHaveCount(8, { timeout: 20_000 })
 
@@ -265,6 +255,10 @@ test.describe("Search Domain", () => {
   })
 
   test("E-SEARCH-02: cross-search 5xx で横断検索失敗 Callout", async ({ page }) => {
+    test.skip(
+      true,
+      "cross-search は SSR route loader が upstream を server-side fetch するため browser page.route() では 5xx を注入できない。errorKey:\"cross\" → crossSearchFailure 経路は loader の unit/msw で固定する",
+    )
     await page.route("**/db-portal/cross-search**", (route) =>
       route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
     )
@@ -297,7 +291,6 @@ test.describe("Search Domain", () => {
     ).toBeVisible()
 
     await page.goto("/search/results?q=cancer&db=bioproject")
-    await page.waitForLoadState("networkidle")
     await expect(page.getByRole("search")).toBeVisible({ timeout: 15_000 })
     await expect(
       page.getByRole("button", { name: /AI モード|AI mode/ }),
@@ -305,6 +298,10 @@ test.describe("Search Domain", () => {
   })
 
   test("E-SEARCH-04: per-DB search 5xx で errorKey:db の Callout (cross とは別文言)", async ({ page }) => {
+    test.skip(
+      true,
+      "per-DB search も SSR route loader が server-side fetch するため browser page.route() で 5xx を注入できない。errorKey:\"db\" → dbSearchFailure 経路は loader の unit/msw で固定する",
+    )
     await page.route("**/db-portal/search**", (route) =>
       route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
     )
