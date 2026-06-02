@@ -1,5 +1,5 @@
 import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType } from "~/schemas/submit"
-import { Callout, FmtCheck, FmtRadio, FormGroup, Select, Tag } from "~/ui"
+import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Select, Tag } from "~/ui"
 
 import { applyRadio, initDraft, optionMatches, toggleCheck } from "./form-apply"
 import { hasRowDetail, ROW_FORM_DEFS } from "./form-defs"
@@ -87,8 +87,22 @@ export const DataDetailPanel = ({
               <span className="font-mono text-fs-micro text-ink-mid truncate">{entry.filename}</span>
               <span className="ml-auto shrink-0">
                 {configured
-                  ? <Tag kind="status" tone="success">{labels.configured}</Tag>
-                  : <Tag kind="status" tone="warning">{labels.unset}</Tag>}
+                  ? (
+                    <Tag kind="status" tone="success">
+                      <span className="inline-flex items-center gap-1">
+                        <CheckIcon size={11} aria-hidden />
+                        {labels.configured}
+                      </span>
+                    </Tag>
+                  )
+                  : (
+                    <Tag kind="status" tone="warning">
+                      <span className="inline-flex items-center gap-1">
+                        <AlertIcon size={11} aria-hidden />
+                        {labels.unset}
+                      </span>
+                    </Tag>
+                  )}
               </span>
             </div>
             {def.groups.map((g) => (

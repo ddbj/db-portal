@@ -80,3 +80,24 @@ export const InfoIcon = ({ size = 14, title, ...rest }: IconProps) => (
     <circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none" />
   </svg>
 )
+
+export const AlertIcon = ({ size = 16, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <path d="M12 4 L21 19.5 H3 Z" />
+    <line x1="12" y1="10" x2="12" y2="14" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+)
+
+export const CheckIcon = ({ size = 16, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <polyline points="4 12 9.5 17.5 20 6.5" />
+  </svg>
+)
+
+export const ArrowLeftIcon = ({ size = 14, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <line x1="20" y1="12" x2="4" y2="12" />
+    <polyline points="11 5 4 12 11 19" />
+  </svg>
+)

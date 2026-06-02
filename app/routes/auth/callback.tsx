@@ -1,7 +1,5 @@
-import { Link } from "react-router"
-
 import { useT } from "~/lib/i18n"
-import { PageTitle } from "~/ui"
+import { ArrowLeftIcon, PageTitle, TextLink } from "~/ui"
 
 const AuthCallback = () => {
   const t = useT()
@@ -13,9 +11,10 @@ const AuthCallback = () => {
         subtitle={t("auth.callback.description")}
       />
       <div className="px-page-gutter pb-section-md">
-        <Link to="/" className="text-brand underline">
+        <TextLink to="/" weight="bold">
+          <ArrowLeftIcon size={14} aria-hidden />
           {t("auth.callback.backHome")}
-        </Link>
+        </TextLink>
       </div>
     </main>
   )

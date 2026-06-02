@@ -1,7 +1,7 @@
 import type { NewsItem } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import type { Lang } from "~/lib/i18n/use-lang"
-import { Pagination, SearchIcon, Select } from "~/ui"
+import { AlertIcon, Pagination, SearchIcon, Select } from "~/ui"
 
 import {
   type NewsFacetState,
@@ -80,7 +80,8 @@ export const NewsList = ({
         </p>
       )}
       {!loading && error && (
-        <p className="text-red text-fs-body py-4" role="alert">
+        <p className="text-red text-fs-body py-4 flex items-center gap-2" role="alert">
+          <AlertIcon size={16} aria-hidden className="shrink-0" />
           {t("news.list.error")}
         </p>
       )}

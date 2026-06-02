@@ -1,5 +1,5 @@
 import { useT } from "~/lib/i18n/use-t"
-import { PageTitle, TextLink } from "~/ui"
+import { ArrowLeftIcon, PageTitle, TextLink } from "~/ui"
 
 export type ErrorKind = "not-found" | "generic"
 
@@ -20,6 +20,7 @@ export const ErrorPage = ({ kind }: ErrorPageProps) => {
       <div className="px-page-gutter pb-section-md">
         <div className="max-w-content-max mx-auto">
           <TextLink to="/" weight="bold">
+            <ArrowLeftIcon size={14} aria-hidden />
             {t(`${ns}.backToTop`)}
           </TextLink>
         </div>

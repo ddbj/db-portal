@@ -1,5 +1,5 @@
 import type { FileEntry, FileGroup, FlowStep } from "~/schemas/submit"
-import { Button, Callout, cn, Tag } from "~/ui"
+import { AlertIcon, Button, Callout, cn, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
@@ -167,7 +167,10 @@ export const FlowStepCard = ({
                   tone="warn"
                   role={note.kind === "error" ? "alert" : "note"}
                 >
-                  {resolveNote(note.messageKey)}
+                  <span className="flex items-start gap-1.5">
+                    <AlertIcon size={14} aria-hidden className="shrink-0 mt-0.5" />
+                    <span>{resolveNote(note.messageKey)}</span>
+                  </span>
                 </Callout>
               </li>
             )

@@ -1,6 +1,6 @@
 import type { Access, FileEntry } from "~/schemas/submit"
 import { Access as AccessEnum } from "~/schemas/submit"
-import { IconButton, Select, Tag, TrashIcon } from "~/ui"
+import { AlertIcon, IconButton, Select, Tag, TrashIcon } from "~/ui"
 
 type CellLabels = {
   accessAria: string
@@ -48,7 +48,12 @@ export const FileTableRow = ({
         <div className="flex items-center gap-2">
           <span className="font-mono text-ink">{entry.filename}</span>
           {needsDetail && (
-            <Tag kind="status" tone="warning" size="sm">{cellLabels.unsetLabel}</Tag>
+            <Tag kind="status" tone="warning" size="sm">
+              <span className="inline-flex items-center gap-1">
+                <AlertIcon size={10} aria-hidden />
+                {cellLabels.unsetLabel}
+              </span>
+            </Tag>
           )}
         </div>
       </td>

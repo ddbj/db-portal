@@ -13,6 +13,9 @@ export { FmtRadio } from "./fmt-radio"
 export { FormGroup } from "./form-group"
 export { IconButton } from "./icon-button"
 export {
+  AlertIcon,
+  ArrowLeftIcon,
+  CheckIcon,
   ChevronDownIcon,
   CloseIcon,
   ExternalIcon,

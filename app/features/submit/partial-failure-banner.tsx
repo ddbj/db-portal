@@ -1,4 +1,4 @@
-import { Button, Callout } from "~/ui"
+import { AlertIcon, Button, Callout } from "~/ui"
 
 import type { Validation } from "./state/types"
 
@@ -23,7 +23,10 @@ export const PartialFailureBanner = ({
   return (
     <div data-testid="partial-failure-banner">
       <Callout tone="warn" role="alert">
-        <p className="font-semibold m-0">{headingText}</p>
+        <p className="font-semibold m-0 flex items-center gap-1.5">
+          <AlertIcon size={15} aria-hidden className="shrink-0" />
+          {headingText}
+        </p>
         <ul className="mt-2 flex flex-col gap-1 m-0 list-disc list-inside p-0">
           {validations.map((v, i) => {
             const idx = rowIndexOf(v.entryId)
