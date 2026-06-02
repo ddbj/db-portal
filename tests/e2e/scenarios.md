@@ -162,7 +162,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SEARCH-11: per-DB results の AI append 生成が現クエリを保持して navigate する
 
 - **ペルソナ**: P-USER
-- **前提**: LLM health=ok の環境 (`/api/llm/health` が `{ status: "ok", model: ... }`)。`/search/results?q=cancer&db=bioproject` を開き `networkidle` まで待つ
+- **前提**: `page.route` で `/api/llm/health`=ok と `/api/llm/search-assistant` の SSE (`event: done`、organism_name leaf) を mock 固定し、`/search/results?q=cancer&db=bioproject` を開く
 - **手順**:
   1. 検索ボックス内 (`role="search"`) の `AI モード` (`search.assistant.enterMode`) toggle button (`aria-pressed="false"`) をクリック → `aria-pressed="true"` になり box が AI tone に変わる
   2. AI モードの scope セレクタ (`search.assistant.modeGroupLabel`「生成モード」) で `既存に追加` (`search.assistant.modeAppend`) が選択可能であること (append は `appendCurrentAst = data.ast` が non-identity のとき有効)
@@ -172,7 +172,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `event: done` 後、生成された AST を `serializeAstToDsl` (scope=`bioproject`) で DSL 化し `/search/results` へ `navigate(push)` する
   - 遷移後の `?q=` に元の `cancer` (free_text) が **残ったまま**、新条件 (`date_published` 等) が AND 追加されている (append は server 側で `current = data.ast` に融合される)
   - `db=bioproject` は保持される
-- **備考**: health-gated。`/api/llm/health` が `ok` でない (staging で vLLM 未稼働) 場合は AI モード toggle 自体が出ないため skip する (LLM 依存、定義のみ until vLLM health=ok)。`/search` (replaceRoot 経路) の生成は別コードパスで、results の append→serialize→loader 再 split を踏むのは本シナリオのみ。
+- **備考**: vLLM の生成揺れ/timeout を除くため SSE を mock 固定する (health-gate skip なし)。append 融合 → serialize (実 `/db-portal/serialize`) → navigate は実物を通す。`/search` (replaceRoot 経路) の生成は別コードパスで、results の append→serialize→loader 再 split を踏むのは本シナリオのみ。
 
 ### E-SEARCH-01: 不正 DSL の URL で parse 失敗 Callout
 
@@ -189,14 +189,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### E-SEARCH-02: cross-search 5xx で横断検索失敗 Callout
 
 - **ペルソナ**: P-ANON
-- **前提**: `page.route()` で `/db-portal/cross-search` を 503 に差し替える (staging API レスポンスを intercept、`notes.md §7`)
-- **手順**:
-  1. `/search/results?q=cancer` を開く
-- **期待**:
-  - loader が `params.db === null` 経路で 5xx を catch し `errorKey: "cross"` を返す
-  - `tone="warn"` + `role="status"` の `Callout` に `search.errors.crossSearchFailure`(「横断検索に失敗しました」) が表示される
-  - 右端の `再試行` button (`search.sync.retry`) で `navigate(0)` 再 loader が走る
-- **備考**: query 系は TanStack retry 2 回後に失敗。E-SEARCH-04 (per-DB 5xx) と文言を出し分ける (cross = `crossSearchFailure` / db = `dbSearchFailure`)。
+- **カバレッジ**: e2e 対象外。cross-search は SSR route loader が upstream を server-side fetch するため、browser の `page.route()` では upstream 5xx を注入できず、失敗経路を e2e で再現できない。loader の error 分岐は unit/msw で固定する。
+- **担保**: `tests/unit/routes/search-results.loader.test.ts` の `crossSearch_networkError_returnsCrossErrorKey` が、`/db-portal/cross-search` 500 → loader が `params.db === null` 経路で catch し `errorKey: "cross"` を返すことを assert。UI 側の warn `Callout` + 再試行 button の描画は E-SEARCH-01 (parse 失敗 Callout) と共通経路。
+- **備考**: cross = `crossSearchFailure` / db = `dbSearchFailure` の文言出し分けは E-SEARCH-04 と対で固定。
 
 ### E-SEARCH-03: LLM unset で AI モード toggle が非表示
 
@@ -213,14 +208,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### E-SEARCH-04: per-DB search 5xx で errorKey:db の Callout (cross とは別文言)
 
 - **ペルソナ**: P-ANON
-- **前提**: `page.route()` で `/db-portal/search` を 503 に差し替える (`notes.md §7`)。`/db-portal/parse` は通常運転 (parse は成功させ、search だけ落とす)
-- **手順**:
-  1. `/search/results?q=cancer&db=bioproject` を開く
-- **期待**:
-  - loader が `params.db !== null` 経路で 5xx を catch し `errorKey: "db"` を返す (三項分岐 `params.db === null ? "cross" : "db"` の db 側)
-  - `tone="warn"` + `role="status"` の `Callout` に `search.errors.dbSearchFailure`(「検索に失敗しました」) が表示される (cross の `crossSearchFailure`「横断検索に失敗しました」 とは別文言)
-  - 右端の `再試行` button (`search.sync.retry`) で `navigate(0)` 再 loader が走る
-- **備考**: cross 5xx (E-SEARCH-02) のみでは loader の三項分岐が逆になる / 文言が入れ替わる regression を検出できないため db 経路を追加。`db` を含む URL であることが db 側分岐の前提。
+- **カバレッジ**: e2e 対象外。per-DB search も SSR route loader が server-side fetch するため、`page.route()` で 5xx を注入できない (E-SEARCH-02 と同じ理由)。
+- **担保**: `tests/unit/routes/search-results.loader.test.ts` の `dbSearch_networkError_returnsDbErrorKey` が、`/db-portal/search` 500 → loader が `params.db !== null` 経路で `errorKey: "db"` を返すことを assert。
+- **備考**: cross (E-SEARCH-02) と db を対で固定することで、loader の三項分岐 `params.db === null ? "cross" : "db"` の逆転 / 文言入れ替わり (`crossSearchFailure` ⇄ `dbSearchFailure`) regression を unit 層で検出する。
 
 ## Submit Domain
 
@@ -488,7 +478,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-NEWS-02: facet 選択が URL params と AppliedFilters chip に反映される
 
 - **ペルソナ**: P-ANON
-- **前提**: `/news` を開く
+- **前提**: `/api/news` を fixture (data-release 3 件 [うち 2 件 2024 / 1 件 2023] + announcement 1 件) に `page.route` で固定し `/news` を開く
 - **手順**:
   1. 「種別」グループの「データ公開」FacetRow checkbox を ON にする
   2. 「年」グループの「2024」FacetRow checkbox を ON にする
@@ -497,12 +487,12 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 遷移は `navigate(..., { replace: true })` なので履歴が積まれない (戻るで `/news` 直前ページに戻る)
   - AppliedFilters に chip が 2 つ表示される (「種別: データ公開」「年: 2024」)
   - 各 chip の解除ボタンで対応 facet が外れ、URL から該当 param が消える
-- **備考**: 「2024」FacetRow が cache に実出現しない期間は別の実在年で代替する。chip ラベルの値は ja の category label (`データ公開`) であり URL 値 (`data-release`) とは異なる。
+- **備考**: fixture 固定で 2024 年 facet / データ公開 種別 facet の実出現を保証する (データ依存 skip なし)。chip ラベルの値は ja の category label (`データ公開`) であり URL 値 (`data-release`) とは異なる。
 
 ### S-NEWS-03: トップで featured が NotificationBar に stack 表示される
 
 - **ペルソナ**: P-ANON
-- **前提**: `/api/news` に `featured===true` かつ `retireTime` 未経過 (または `retireTime` 無し) の item が 1 件以上含まれる
+- **前提**: `/api/news` を fixture (featured 2 件 + 非 featured 1 件) に `page.route` で固定し `/` を開く
 - **手順**:
   1. `/` を開く
 - **期待**:
@@ -510,7 +500,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - その中に featured item ごとの `article[aria-label="<title>"]` が `publishedAt` 降順 (新しい順) に縦 stack される
   - 各 article に「重要」critical Tag、`publishedAt` の日付、title、`external` の「詳細」TextLink (`newsItemUrl` が `url[lang] ?? url.ja ?? url.en` で URL を解決できる場合に表示)、「通知を閉じる」IconButton が含まれる
   - `featured===false` の item や `retireTime` 経過済の item は描画されない
-- **備考**: featured item が 0 件 (全件 retire 済 / whitelist 空) の期間は `section[role=region]` 自体が描画されない。featured 元データは `ddbj/www/_data/global.yml` の `top_news` whitelist 由来で、staging の mirror 状態に依存する。
+- **備考**: fixture 固定で featured 2 件を保証する (データ依存 skip なし)。featured 0 件時に bar が描画されないこと、および実 mirror → global.yml → bar の貫通は S-NEWS-06 が担保する。
 
 ### S-NEWS-04: トップ右 aside に最新ニュースと「すべて見る」リンク
 
@@ -550,12 +540,12 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - NotificationBar (`section[role="region"][aria-label="重要なお知らせ"]`) 内の `article[aria-label]` の title 集合が、手順 1 で得た featured item (retireTime 未経過分) の title 集合と一致する
   - bar の並び順が `publishedAt` 降順である
   - featured 化されていない同名 title が `/news` の通常 row としてのみ現れ、NotificationBar には出ない (featured と category が独立軸であることの確認)
-- **備考**: git mirror + normalize + pairing + `featured.ts` の whitelist 突合という統合経路を検証する。unit mock では再現できない。whitelist 該当 item が 0 件の期間は定義のみ (featured item が GET /api/news に 1 件以上現れるまで実行不可)。
+- **備考**: git mirror + normalize + pairing + `featured.ts` の whitelist 突合という統合経路を検証する。news ドメインで唯一 `/api/news` を mock しない実データシナリオ。whitelist 該当 featured が 0 件の期間も skip せず、その場合は「NotificationBar が描画されない」ことを貫通の一部として assert する。
 
 ### S-NEWS-07: /news 一覧が date 降順で、pagination が URL に反映される
 
 - **ペルソナ**: P-ANON
-- **前提**: `/news` を開く、`/api/news` が 21 件以上 (2 ページ以上) を返す
+- **前提**: `/api/news` を fixture (25 件、publishedAt 厳密降順) に `page.route` で固定し `/news` を開く
 - **手順**:
   1. 1 ページ目の `NewsRow` の日付列を上から順に読み取る
   2. count 行の range 表示を確認する
@@ -615,7 +605,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### E-NEWS-02: NotificationBar の dismiss が reload を跨いで sessionStorage で保持される
 
 - **ペルソナ**: P-ANON
-- **前提**: `/` に featured bar が 2 件以上表示される状態 (S-NEWS-03 と同条件)、sessionStorage clear 済
+- **前提**: `/api/news` を fixture (featured 3 件) に `page.route` で固定 (新規 context も同 fixture を route する)、sessionStorage clear 済
 - **手順**:
   1. `/` を開き、featured bar が 2 件以上見えることを確認する
   2. 1 件目の bar の「通知を閉じる」IconButton を click する
@@ -626,7 +616,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 閉じた id が sessionStorage key `dbPortal.notificationBar.dismissed` に文字列配列として保存される
   - 手順 3 の reload 後も閉じた bar は再表示されず、残りの bar は表示される (SSR shell hydration → client rehydrate のタイミングを跨いで保持)
   - 手順 4 の新 context では sessionStorage が空のため、閉じた bar も含めて全 featured bar が再表示される
-- **備考**: dismiss + sessionStorage の往復は unit でも検証するが、本シナリオは実 shell の hydration 順序を跨いだ回帰 (jsdom unit が隠す効果順) を捕捉する。featured bar が 2 件未満の期間は定義のみ (2 件以上 featured が表示されるまで実行不可)。
+- **備考**: dismiss + sessionStorage の往復は unit でも検証するが、本シナリオは実 shell の hydration 順序を跨いだ回帰 (jsdom unit が隠す効果順) を捕捉する。fixture 固定で featured 3 件を保証する (データ依存 skip なし)。
 
 ## Services Domain
 
@@ -820,7 +810,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 ### S-LLM-01: /search で AI モード生成 → proposal が in-place 表示される
 
 - **ペルソナ**: P-USER
-- **前提**: `/api/llm/health` が `{status:"ok",model}` を返す環境 (vLLM 到達可能)
+- **前提**: `page.route` で `/api/llm/health`=ok と `/api/llm/search-assistant` の SSE (`event: done`) を mock 固定する
 - **手順**:
   1. `/search` を開く
   2. 検索ボックス右端の「AI モード」 button (`aria-pressed="false"`) をクリック
@@ -832,7 +822,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - 生成中は送信ボタンが `生成中…` / `Generating…` になり、「提案の生成を停止」 button (`search.a11y.assistantStop`) が表示される
   - 完了後、proposal `<section>` (`getByRole("region", { name: /AI による生成結果|AI-generated query/ })`、見出しは `h2`) が描画され、`ProposalConditions` に条件が並ぶ
   - 「クエリビルダーに追加」 / 「この内容で作成」 button と「再生成」 button が表示される
-- **備考**: health-gated。`/api/llm/health` が `ok` のときのみ実行可能 (vLLM staging `l40s-03:3200` 到達時)。SSE 完了まで 5-30 秒かかるため `toBeVisible({ timeout: 30_000 })`。SSE 画面は network idle にならないので polling で待つ (notes.md §6)。
+- **備考**: SSE を mock 固定するため vLLM 非依存で決定的 (health-gate skip なし)。SearchInputPanel は `done` で proposal を in-place 描画する (NavigableSearchInput と違い navigate しない)。
 
 ### S-LLM-02: /api/llm/health が ok のとき AI モードトグルが表示される
 
@@ -850,7 +840,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 ### S-LLM-03: /search の proposal を Apply → Advanced builder が再構築される
 
 - **ペルソナ**: P-ANON
-- **前提**: `/api/llm/health` が `{status:"ok",model}`。`/search` を開き、Advanced builder は空 (keyword 行なし、`root.children` 0 件) の初期状態
+- **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`、organism_name leaf) を mock 固定。`/search` を開き、Advanced builder は空 (keyword 行なし、`root.children` 0 件) の初期状態
 - **手順**:
   1. 「AI モード」 button をクリックして AI モードに入る
   2. AI 入力欄に `Homo sapiens single cell published between 2022 and 2024` を入力し、`生成` をクリック
@@ -861,7 +851,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - `event: done` の AST が `dispatch({ type: "replaceRoot" })` で Advanced builder に反映され、proposal が条件として並んだ通りに builder 行が描画される
   - Apply 後、モードが keyword に戻り (「AI モード」 button が `aria-pressed="false"`)、AI 入力欄が消える
   - keyword 行は `new` モードのためクリアされる
-- **備考**: health-gated。proposal の AST 内容はモデル出力依存なので、行の存在・件数 (`>= 1`) と builder への反映有無を assert し、特定 field/value への厳密一致は assert しない。
+- **備考**: SSE を mock 固定するため決定的 (health-gate skip なし)。done AST は固定値だが、行の存在・件数 (`>= 1`) と builder への反映有無のみ assert し、特定 field/value への厳密一致は assert しない (mock 値に過度に結合しない)。
 
 ### E-LLM-01: health=unreachable のとき AI モードトグルは表示される (送信時のみ失敗)
 
@@ -948,14 +938,14 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 ### E-LLM-07: PII を含む prompt でも done が返り、proposal に redaction マーカーが出ない
 
 - **ペルソナ**: P-USER
-- **前提**: `/api/llm/health` が `{status:"ok",model}` を返す環境 (vLLM 到達可能)
+- **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`) を mock 固定する
 - **手順**:
   1. `/search` を開き「AI モード」に入る
   2. AI 入力欄に email / 電話番号を含む文 (例: `contact me at user@example.com about human cancer rna-seq`) を入力し `生成` をクリック
 - **期待**:
-  - `/api/llm/search-assistant` が `200` を返し `event: done` まで到達する (prompt は vLLM に redaction 前で送られるため正常生成される)
-  - proposal `<section>` の描画テキストに `[REDACTED_EMAIL]` / `[REDACTED_PHONE]` 等の redaction マーカーが含まれない (redaction は server log 専用で UI には出ない)
-- **備考**: health-gated。redaction の masking 自体は unit / PBT で検証する範囲で、本 e2e は「log 専用 redaction が UI/生成結果に漏れない」 ことだけを確認する低優先シナリオ。S-LLM-01 の happy path と大きく重なる。
+  - PII を含む prompt でも生成は完了し (mock SSE が `event: done` を返す)、proposal `<section>` が描画される
+  - proposal の描画テキストに `[REDACTED_EMAIL]` / `[REDACTED_PHONE]` 等の redaction マーカーが含まれない (redaction は server log 専用で UI には出ない)
+- **備考**: SSE を mock 固定 (health-gate skip なし)。redaction の masking 自体は `server/llm/redaction` の unit / PBT で担保し、本 e2e は mock done を描画した proposal に `[REDACTED*]` が混ざらない UI 経路のみを確認する低優先シナリオ。S-LLM-01 の happy path と大きく重なる。
 
 
 ## Top Domain
@@ -1071,7 +1061,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 ### E-TOP-03: hero AI モード generate → serialize → 結果ページ遷移
 
 - **ペルソナ**: P-USER
-- **前提**: `/api/llm/health` が `{ status: "ok", ... }`、vLLM + ddbj-search-api `/serialize` 到達可能
+- **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`) を mock 固定。ddbj-search-api `/serialize` + 検索は実物 (到達可能)
 - **手順**:
   1. `/` を訪問
   2. hero の「AI モード」 トグル (`aria-pressed=false`) を click → `aria-pressed=true` に変わる
@@ -1082,7 +1072,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - 生成された AST が `serializeAstToDsl` で DSL 化され、`/search/results?q=<非空 DSL>` に navigate する (top では proposal は表示せず直接遷移)
   - scope が非 all の場合は `&db=<slug>` も付く
   - 検索結果が表示される
-- **備考**: vLLM health=ok を要する health-gated シナリオ。portal で唯一 LLM 出力を search-api serializer に直接渡す経路で、どちらの契約破壊も mock では検出不可。serialize 失敗時は top ページに留まり遷移しない (`search.end()`) — staging では再現困難のため unit で吸収。SSE は network idle にならないため `expect(...).toBeVisible()` polling と `waitForResponse` で待機 (notes.md §6)。
+- **備考**: vLLM 生成は mock 固定 (health-gate skip なし) だが、done AST → ddbj-search-api `/serialize` → 非空 DSL → navigate → 結果領域は実物を通すため、LLM 出力を serializer に渡す契約 (portal で唯一の経路) は引き続き e2e で検証する。serialize 失敗時に top に留まる分岐 (`search.end()`) は staging では再現困難のため unit で吸収。
 
 ## Content (Databases) Domain
 
@@ -1179,17 +1169,9 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - root ErrorBoundary が not-found 表示 (`<h1>` が `/ページが見つかりません|not found/i` に一致)
   - トップへ戻る link が表示される
 
-### E-CONTENT-02: 翻訳未完成の en データベース route で TranslationUnavailable バナー表示
+### E-CONTENT-02: 翻訳未完成バナー — e2e 取り下げ
 
-- **ペルソナ**: P-ANON
-- **前提**: handle.i18n.en が `"missing"` または `"partial"` であるデータベース route (= 未翻訳のデータベースコンテンツ)
-- **手順**:
-  1. 当該データベース route を `?lang=en` で訪問 (redirect 後)
-- **期待**:
-  - `data-testid="translation-unavailable"` 要素 (`role="status"` / `aria-live="polite"`) が 1 件描画される
-  - バナー内に `translationUnavailable.title` / `translationUnavailable.description` のテキストと、`translationUnavailable.switchToJa` の submit button (`POST /api/set-lang`、hidden `lang=ja`) が表示される
-  - ja 訪問時 (`lang !== "en"`) は同要素が 0 件
-- **備考**: 定義のみ (現状 infeasible)。`$slug.tsx` は全 slug に対し `handle.i18n.en = "complete"` を hardcode しており、出荷済みの 2 件 (bioproject / biosample) は ja/en とも完訳のため、実データベース route でこのバナーを描画する経路が存在しない。バナーのロジックは synthetic handle を用いた `shell/translation-unavailable.test.tsx` で網羅済み。未翻訳のデータベースが追加され route handle が `partial` / `missing` に下がった時点で本 e2e を有効化する
+`TranslationUnavailable` バナーは route handle の `i18n.en` が `"missing"` / `"partial"` のときだけ描画される。`$slug.tsx` は全 slug に `handle.i18n.en = "complete"` を hardcode しており、出荷済みの bioproject / biosample も ja/en 完訳のため、実データベース route にバナー描画経路が存在しない (= e2e で再現できる状態を作れない)。バナーのロジック (`role="status"` / `aria-live="polite"` / `translationUnavailable.title` / `description` / `POST /api/set-lang` の switch button) は synthetic handle を用いた `tests/unit/shell/translation-unavailable.test.tsx` で担保する。未翻訳データベースが追加され handle が `partial` / `missing` に下がった時点で e2e 化を再検討する。
 
 
 ## Flow (cross-cutting) Domain

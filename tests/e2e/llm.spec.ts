@@ -6,10 +6,6 @@ const generateError = /クエリの生成に失敗しました|Could not generat
 const fieldSelector = /検索フィールド|Search field/
 const proposalHeading = /AI による生成結果|AI-generated query/
 
-// Real-vLLM scenarios share the per-IP / per-session rate limit; run them
-// serially so the LLM domain never fans out parallel generations.
-test.describe.configure({ mode: "serial" })
-
 test.describe("LLM Domain", () => {
   test("S-LLM-02: /api/llm/health が ok のとき AI モードトグルが表示される", async ({ page }) => {
     const health = await page.request.get("/api/llm/health")
@@ -36,9 +32,22 @@ test.describe("LLM Domain", () => {
   })
 
   test("S-LLM-03: /search の proposal を Apply → Advanced builder が再構築される", async ({ page }) => {
-    const health = await page.request.get("/api/llm/health")
-    const body = (await health.json()) as { status: string }
-    test.skip(body.status !== "ok", "vLLM not ok")
+    await page.route("**/api/llm/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", model: "e2e" }),
+      }),
+    )
+    await page.route("**/api/llm/search-assistant", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body:
+          ": stream-open\n\n"
+          + `event: done\ndata: ${JSON.stringify({ op: "contains", field: "organism_name", value: "Homo sapiens" })}\n\n`,
+      }),
+    )
 
     await page.goto("/search")
 

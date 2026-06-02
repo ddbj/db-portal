@@ -254,23 +254,6 @@ test.describe("Search Domain", () => {
     await expect(callout.getByRole("button", { name: /再試行|Retry/ })).toBeVisible()
   })
 
-  test("E-SEARCH-02: cross-search 5xx で横断検索失敗 Callout", async ({ page }) => {
-    test.skip(
-      true,
-      "cross-search は SSR route loader が upstream を server-side fetch するため browser page.route() では 5xx を注入できない。errorKey:\"cross\" → crossSearchFailure 経路は loader の unit/msw で固定する",
-    )
-    await page.route("**/db-portal/cross-search**", (route) =>
-      route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
-    )
-    await page.goto("/search/results?q=cancer")
-
-    const callout = page.getByRole("status").filter({
-      hasText: /横断検索に失敗しました|Cross-database search failed/,
-    })
-    await expect(callout).toBeVisible({ timeout: 15_000 })
-    await expect(callout.getByRole("button", { name: /再試行|Retry/ })).toBeVisible()
-  })
-
   test("E-SEARCH-03: LLM unset で AI モード toggle が非表示", async ({ page }) => {
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
@@ -294,27 +277,6 @@ test.describe("Search Domain", () => {
     await expect(page.getByRole("search")).toBeVisible({ timeout: 15_000 })
     await expect(
       page.getByRole("button", { name: /AI モード|AI mode/ }),
-    ).toHaveCount(0)
-  })
-
-  test("E-SEARCH-04: per-DB search 5xx で errorKey:db の Callout (cross とは別文言)", async ({ page }) => {
-    test.skip(
-      true,
-      "per-DB search も SSR route loader が server-side fetch するため browser page.route() で 5xx を注入できない。errorKey:\"db\" → dbSearchFailure 経路は loader の unit/msw で固定する",
-    )
-    await page.route("**/db-portal/search**", (route) =>
-      route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
-    )
-    await page.goto("/search/results?q=cancer&db=bioproject")
-
-    const callout = page.getByRole("status").filter({
-      hasText: /^検索に失敗しました|^Search failed/,
-    })
-    await expect(callout).toBeVisible({ timeout: 15_000 })
-    await expect(callout.getByRole("button", { name: /再試行|Retry/ })).toBeVisible()
-    // The cross-search wording must NOT appear (db path, not cross path).
-    await expect(
-      page.getByText(/横断検索に失敗しました|Cross-database search failed/),
     ).toHaveCount(0)
   })
 })

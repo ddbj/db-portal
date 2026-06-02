@@ -155,25 +155,4 @@ test.describe("Content (Databases) Domain", () => {
       "/",
     )
   })
-
-  test("E-CONTENT-02: 翻訳未完成の en データベース route で TranslationUnavailable バナー表示", async ({ page }) => {
-    test.skip(
-      true,
-      "定義のみ (現状 infeasible)。$slug.tsx は全 slug に handle.i18n.en = \"complete\" を hardcode しており、実データベース route でバナーを描画する経路が存在しない。banner ロジックは shell/translation-unavailable.test.tsx で網羅済み",
-    )
-
-    await page.goto("/databases/bioproject?lang=en")
-
-    const banner = page.getByTestId("translation-unavailable")
-    await expect(banner).toHaveCount(1)
-    await expect(banner).toHaveAttribute("role", "status")
-    await expect(banner).toHaveAttribute("aria-live", "polite")
-    await expect(banner.getByText("This page is not yet translated")).toBeVisible()
-    await expect(
-      banner.getByText("Showing the Japanese version. An English translation is planned."),
-    ).toBeVisible()
-    await expect(
-      banner.getByRole("button", { name: "Switch to Japanese version" }),
-    ).toBeVisible()
-  })
 })

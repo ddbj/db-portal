@@ -28,6 +28,44 @@ const isNonIncreasing = (values: readonly string[]): boolean => {
   return true
 }
 
+// Behaviour-level news scenarios (facets / featured bar / pagination / dismiss)
+// pin /api/news to fixtures so coverage no longer depends on what the staging
+// cache happens to hold. /api/news is client-fetched (TanStack useQuery), so the
+// browser route intercepts it; the real mirror → global.yml → cache pipeline is
+// still exercised end-to-end by S-NEWS-06.
+type NewsCat =
+  | "announcement" | "data-release" | "maintenance" | "event" | "service" | "other"
+
+const newsItem = (o: {
+  id: string
+  publishedAt: string
+  category?: NewsCat
+  source?: "ddbj" | "dbcls"
+  featured?: boolean
+  retireTime?: string
+  title?: { ja: string; en: string }
+}): Record<string, unknown> => ({
+  id: o.id,
+  source: o.source ?? "ddbj",
+  category: o.category ?? "announcement",
+  featured: o.featured ?? false,
+  publishedAt: o.publishedAt,
+  ...(o.retireTime ? { retireTime: o.retireTime } : {}),
+  title: o.title ?? { ja: `お知らせ ${o.id}`, en: `News ${o.id}` },
+  db: [],
+  rawTags: { ja: [], en: [] },
+})
+
+const mockNews = async (page: Page, items: readonly unknown[]): Promise<void> => {
+  await page.route("**/api/news", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(items),
+    }),
+  )
+}
+
 test.describe("News Domain", () => {
   test("S-NEWS-01: /news で一覧と 4 facet グループが表示される", async ({ page }) => {
     await page.goto("/news")
@@ -51,6 +89,12 @@ test.describe("News Domain", () => {
   })
 
   test("S-NEWS-02: facet 選択が URL params と AppliedFilters chip に反映される", async ({ page }) => {
+    await mockNews(page, [
+      newsItem({ id: "dr-2024-a", category: "data-release", publishedAt: "2024-09-15T12:00:00Z" }),
+      newsItem({ id: "dr-2024-b", category: "data-release", publishedAt: "2024-06-15T12:00:00Z" }),
+      newsItem({ id: "dr-2023", category: "data-release", publishedAt: "2023-06-15T12:00:00Z" }),
+      newsItem({ id: "ann-2023", category: "announcement", publishedAt: "2023-03-15T12:00:00Z" }),
+    ])
     await page.goto("/news")
 
     await page
@@ -60,8 +104,7 @@ test.describe("News Domain", () => {
     await expect(page).toHaveURL(/category=data-release/, { timeout: 10_000 })
 
     const yearFacet = page.getByRole("checkbox", { name: /^2024/ }).first()
-    const hasYear = await yearFacet.isVisible().catch(() => false)
-    test.skip(!hasYear, "2024 が cache に実出現しない期間")
+    await expect(yearFacet).toBeVisible({ timeout: 10_000 })
 
     await yearFacet.click()
     await expect(page).toHaveURL(/year=2024/, { timeout: 10_000 })
@@ -82,14 +125,19 @@ test.describe("News Domain", () => {
   })
 
   test("S-NEWS-03: トップで featured が NotificationBar に stack 表示される", async ({ page }) => {
+    await mockNews(page, [
+      newsItem({ id: "feat-new", featured: true, category: "maintenance", publishedAt: "2024-09-20T12:00:00Z" }),
+      newsItem({ id: "feat-old", featured: true, category: "announcement", publishedAt: "2024-05-10T12:00:00Z" }),
+      newsItem({ id: "plain", featured: false, category: "data-release", publishedAt: "2024-08-01T12:00:00Z" }),
+    ])
     await page.goto("/")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
-    const hasBar = await bar.isVisible().catch(() => false)
-    test.skip(!hasBar, "featured item が 0 件の期間は region 自体が描画されない")
+    await expect(bar).toBeVisible({ timeout: 10_000 })
 
     const articles = bar.getByRole("article")
-    await expect(articles.first()).toBeVisible()
+    // 非 featured は bar に出ない: featured 2 件だけが stack される。
+    await expect(articles).toHaveCount(2)
     // 各 article に「重要」Tag / 日付 / title / 閉じるボタン
     await expect(bar.getByText("重要").first()).toBeVisible()
     await expect(
@@ -174,11 +222,6 @@ test.describe("News Domain", () => {
       .filter((n) => n.featured === true)
       .filter((n) => !n.retireTime || Date.parse(n.retireTime) > now)
 
-    test.skip(
-      featured.length === 0,
-      "whitelist 該当 featured item が GET /api/news に 1 件も現れない期間は定義のみ",
-    )
-
     const expectedTitles = [...featured]
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
       .map((n) => n.title.ja ?? n.title.en ?? "")
@@ -186,9 +229,17 @@ test.describe("News Domain", () => {
     await page.goto("/")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
-    await expect(bar).toBeVisible({ timeout: 10_000 })
-
     const articles = bar.getByRole("article")
+
+    // 実 cache の whitelist 該当 featured が 0 件でも貫通は検証できる:
+    // 0 件 → mirror → global.yml → bar の経路は bar を一切描画しない
+    // (NotificationBar が null を返す)。データ有無に依らず skip しない。
+    if (expectedTitles.length === 0) {
+      await expect(bar).toHaveCount(0)
+      return
+    }
+
+    await expect(bar).toBeVisible({ timeout: 10_000 })
     await expect(articles).toHaveCount(expectedTitles.length)
 
     const renderedLabels = await articles.evaluateAll((nodes) =>
@@ -199,15 +250,20 @@ test.describe("News Domain", () => {
   })
 
   test("S-NEWS-07: /news 一覧が date 降順で、pagination が URL に反映される", async ({ page }) => {
+    // 25 件 → 2 ページ (page1=20, page2=5)。publishedAt を 1 日ずつ厳密降順に。
+    const base = Date.parse("2024-12-31T12:00:00Z")
+    await mockNews(page, Array.from({ length: 25 }, (_, i) =>
+      newsItem({
+        id: `news-${String(i).padStart(2, "0")}`,
+        publishedAt: new Date(base - i * 86_400_000).toISOString(),
+      }),
+    ))
     await page.goto("/news")
 
     const count = page.locator("p[aria-live='polite']").first()
     await expect(count).toBeVisible()
-    // 読込前に読むと total=0 を拾い skip 判定を誤るため、件数確定まで待つ。
     await expect(count).toHaveText(/\d+–\d+ \/ [\d,]+ 件/, { timeout: 15_000 })
-    const total = await readCountTotal(count)
-
-    test.skip(total <= 20, "2 ページ以上 (21 件以上) を返さない期間")
+    expect(await readCountTotal(count)).toBe(25)
 
     const readDates = async (): Promise<string[]> => {
       const cells = page.locator("ul > li span.font-mono").first()
@@ -313,16 +369,19 @@ test.describe("News Domain", () => {
   })
 
   test("E-NEWS-02: NotificationBar の dismiss が reload を跨いで sessionStorage で保持される", async ({ page }) => {
+    const featured = [
+      newsItem({ id: "feat-1", featured: true, publishedAt: "2024-09-20T12:00:00Z" }),
+      newsItem({ id: "feat-2", featured: true, publishedAt: "2024-07-10T12:00:00Z" }),
+      newsItem({ id: "feat-3", featured: true, publishedAt: "2024-05-01T12:00:00Z" }),
+    ]
+    await mockNews(page, featured)
     await page.goto("/")
 
     const bar = page.getByRole("region", { name: "重要なお知らせ" })
-    const hasBar = await bar.isVisible().catch(() => false)
+    await expect(bar).toBeVisible({ timeout: 10_000 })
     const articles = bar.getByRole("article")
-    const initialCount = hasBar ? await articles.count() : 0
-    test.skip(
-      initialCount < 2,
-      "featured bar が 2 件未満の期間は定義のみ (2 件以上 featured が表示されるまで実行不可)",
-    )
+    const initialCount = await articles.count()
+    expect(initialCount).toBe(featured.length)
 
     const firstLabel = await articles.first().getAttribute("aria-label")
     expect(firstLabel).not.toBeNull()
@@ -358,6 +417,7 @@ test.describe("News Domain", () => {
     const freshContext = await page.context().browser()?.newContext()
     if (freshContext) {
       const freshPage = await freshContext.newPage()
+      await mockNews(freshPage, featured)
       await freshPage.goto("/")
       const freshBar = freshPage.getByRole("region", { name: "重要なお知らせ" })
       await expect(freshBar.getByRole("article")).toHaveCount(initialCount, { timeout: 10_000 })

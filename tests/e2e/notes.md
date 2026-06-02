@@ -121,8 +121,8 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 | シナリオ | 再現方法 |
 |---|---|
 | E-SEARCH-01 (不正 DSL) | URL を直接組み立てて navigation (server / API は通常運転) |
-| E-SEARCH-02 (cross-search 5xx) | **e2e では skip**。cross-search は SSR route loader (`app/routes/search-results/loader.ts`) が upstream を server-side fetch するため browser `page.route()` では intercept できない。errorKey:`cross` → crossSearchFailure 経路は loader の unit/msw で固定する |
-| E-SEARCH-04 (per-DB search 5xx) | **e2e では skip**。per-DB search も同 SSR loader の server-side fetch のため `page.route()` 不可。errorKey:`db` → dbSearchFailure 経路は loader の unit/msw で固定する |
+| E-SEARCH-02 (cross-search 5xx) | **e2e 対象外** (skip stub 削除済)。cross-search は SSR route loader (`app/routes/search-results/loader.ts`) が upstream を server-side fetch するため browser `page.route()` では intercept できない。errorKey:`cross` は loader unit `crossSearch_networkError_returnsCrossErrorKey` (`tests/unit/routes/search-results.loader.test.ts`) で固定 |
+| E-SEARCH-04 (per-DB search 5xx) | **e2e 対象外** (skip stub 削除済)。同 SSR loader の server-side fetch のため `page.route()` 不可。errorKey:`db` は loader unit `dbSearch_networkError_returnsDbErrorKey` で固定 |
 | E-AUTH-01 (state 不一致) | URL を直接組み立てる (`/api/auth/callback?code=x&state=evil`) |
 | E-AUTH-03 (code/state 欠落) | URL を直接組み立てる (`/api/auth/callback` に code か state を欠落) → 400 invalid_request |
 | E-AUTH-04 (session 失効) | store に無い sid cookie を craft して `/api/me` 401 + Header 復帰を確認 (refresh token 機構が無いため refresh 失敗自体は再現しない) |
@@ -132,10 +132,10 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 | E-TOP-02 (hero AI toggle 非表示) | `page.route()` で health を `unset` に固定 |
 | E-NEWS-01 (一覧 0 件) | `page.route()` で `/api/news` を `[]` に差し替え、empty 状態 (error banner 不在) を確認 |
 | E-CONTENT-01 (未知 slug) | URL を直接 navigation (`/databases/unknown-slug`) → loader が `Response(404)` |
-| E-CONTENT-02 (翻訳未完成) | 現状 i18n.en=complete 固定で再現不可。**定義のみ** (partially-translated DB が現れるまで)。banner ロジックは unit (`shell/translation-unavailable`) で吸収 |
+| E-CONTENT-02 (翻訳未完成) | **e2e 取り下げ** (skip stub 削除済)。i18n.en=complete 固定で再現経路が無い。banner ロジックは unit (`tests/unit/shell/translation-unavailable.test.tsx`、role=status / aria-live / switch button まで) で担保 |
 | E-FLOW-02 (汎用 404) | URL を直接 navigation (`/totally-unknown`) → no-match で root ErrorBoundary |
 
-`page.route()` は外部境界 mock の一種で、e2e の「実物を叩く」 原則から逸脱するが、staging で再現不可能な障害シナリオのみ許容する。妥当性確認の境界としては unit + msw 側を主、e2e 側は補助とする。
+`page.route()` は client-fetch される API 境界 (`/api/news` / `/api/llm/*`) を fixture に固定する mock 手段。staging の cache 内容や vLLM の生成揺れに依存して silent skip していたシナリオ (異常系に加え、S-NEWS-02/03/07・E-NEWS-02 の facet/featured/pagination/dismiss、LLM 生成系) をこの方式で決定化する。E-NEWS-01 / E-LLM-01〜06 が確立した流儀。一方、SSR route loader を通る経路 (cross/per-DB search の 5xx) は server-side fetch のため browser からは intercept できず unit/msw 側で担保し、実 pipeline を貫通で見る S-NEWS-06・実 search/submit サービスを叩く検索系は引き続き「実物を叩く」 integration として残す。
 
 ## 8. スクリーンショット / trace
 

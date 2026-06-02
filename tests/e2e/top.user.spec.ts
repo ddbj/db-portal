@@ -1,12 +1,25 @@
 import { expect, test } from "@playwright/test"
 
-test.describe.configure({ mode: "serial" })
-
 test.describe("Top Domain (authenticated)", () => {
   test("E-TOP-03: hero AI モード generate → serialize → 結果ページ遷移", async ({ page }) => {
-    const healthResponse = await page.request.get("/api/llm/health")
-    const health = (await healthResponse.json()) as { status: string }
-    test.skip(health.status !== "ok", `vLLM not ok: ${health.status}`)
+    // hero の AI 生成は vLLM 非依存にするため health=ok と SSE(done) を mock 固定する。
+    // done AST の serialize (/db-portal/serialize、実) → navigate → 結果領域は実物を通す。
+    await page.route("**/api/llm/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", model: "e2e" }),
+      }),
+    )
+    await page.route("**/api/llm/search-assistant", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body:
+          ": stream-open\n\n"
+          + `event: done\ndata: ${JSON.stringify({ op: "contains", field: "organism_name", value: "Homo sapiens" })}\n\n`,
+      }),
+    )
 
     await page.goto("/")
 

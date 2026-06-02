@@ -127,6 +127,15 @@ describe("search-results loader: degrade", () => {
     expect(data.errorKey).toBe("parse")
   })
 
+  test("crossSearch_networkError_returnsCrossErrorKey", async () => {
+    server.use(
+      parseHandler(),
+      http.get("*/db-portal/cross-search", () => new HttpResponse(null, { status: 500 })),
+    )
+    const data = await buildLoader("?q=cancer") as { errorKey: unknown }
+    expect(data.errorKey).toBe("cross")
+  })
+
   test("dbSearch_networkError_returnsDbErrorKey", async () => {
     server.use(
       parseHandler(),

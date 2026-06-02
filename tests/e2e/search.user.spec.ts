@@ -1,12 +1,32 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("Search Domain (authenticated)", () => {
-  test.describe.configure({ mode: "serial" })
-
   test("S-SEARCH-11: per-DB results の AI append 生成が現クエリを保持して navigate する", async ({ page }) => {
-    const health = await page.request.get("/api/llm/health")
-    const body = (await health.json()) as { status?: string }
-    test.skip(body.status !== "ok", "vLLM not ok")
+    // vLLM の生成揺れ/timeout に依存しないよう health=ok と SSE(done) を mock 固定する。
+    // append は server 側で現クエリ (cancer) と融合した AST を done で返す設計なので、
+    // mock も融合済み AND AST (free_text:cancer + organism_name:Homo sapiens) を返す。
+    // この done AST の serialize → navigate (現クエリ保持) は実コードを通す。
+    await page.route("**/api/llm/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", model: "e2e" }),
+      }),
+    )
+    const appendedAst = {
+      op: "AND",
+      rules: [
+        { op: "free_text", value: "cancer" },
+        { op: "contains", field: "organism_name", value: "Homo sapiens" },
+      ],
+    }
+    await page.route("**/api/llm/search-assistant", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body: `: stream-open\n\nevent: done\ndata: ${JSON.stringify(appendedAst)}\n\n`,
+      }),
+    )
 
     await page.goto("/search/results?q=cancer&db=bioproject")
 
@@ -44,11 +64,16 @@ test.describe("Search Domain (authenticated)", () => {
 
     // done 後、生成 AST を DSL 化し /search/results へ navigate(push)。元の cancer
     // (free_text) は残ったまま、新条件が AND 追加され、db=bioproject は保持される。
+    // 初期 URL (q=cancer) ではなく、append 融合後 (cancer を含みつつ q !== "cancer")
+    // へ navigate したことを待つ。db=bioproject は保持される。
     await page.waitForURL(
-      (url) =>
-        url.pathname.endsWith("/search/results")
-        && /(^|&)q=[^&]*cancer/.test(url.search)
-        && /(^|&)db=bioproject(&|$)/.test(url.search),
+      (url) => {
+        if (!url.pathname.endsWith("/search/results")) return false
+        const q = url.searchParams.get("q") ?? ""
+
+        return q.includes("cancer") && q !== "cancer"
+          && url.searchParams.get("db") === "bioproject"
+      },
       { timeout: 60_000 },
     )
 

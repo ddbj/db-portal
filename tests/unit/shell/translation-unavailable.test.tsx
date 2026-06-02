@@ -72,7 +72,13 @@ describe("TranslationUnavailable", () => {
       ],
       "/en/databases/bioproject",
     )
+    const banner = screen.getByRole("status")
+    expect(banner).toHaveAttribute("aria-live", "polite")
+    expect(banner).toHaveAttribute("data-testid", "translation-unavailable")
     expect(screen.getByText(/not yet translated/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Switch to Japanese/i }),
+    ).toBeInTheDocument()
   })
 
   test("TranslationUnavailable_switchButton_postsJaToSetLang", () => {
