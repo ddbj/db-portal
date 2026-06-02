@@ -96,6 +96,7 @@ const FacetSection = ({
         {...(selected.length > 0 ? { onClear } : {})}
         showMore={canToggle}
         showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
+        expanded={expanded}
         onShowMore={() => setExpanded((v) => !v)}
       >
         {visible.map((bucket) => (
@@ -171,6 +172,7 @@ const OrganismFacetSection = ({
         {...(selected.length > 0 ? { onClear } : {})}
         showMore={canToggle}
         showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
+        expanded={expanded}
         onShowMore={() => setExpanded((v) => !v)}
       >
         <li className="flex flex-col gap-1 py-1">

@@ -20,6 +20,19 @@ describe("TextLink", () => {
     expect(link).not.toHaveAttribute("target")
   })
 
+  test("TextLink_internal_withoutArrow_rendersNoIcon", () => {
+    renderTextLink(<TextLink to="/news">news</TextLink>)
+    expect(screen.getByRole("link", { name: /news/ }).querySelector("svg")).toBeNull()
+  })
+
+  test("TextLink_arrow_rendersTrailingDecorativeIconWithoutChangingName", () => {
+    renderTextLink(<TextLink to="/news" arrow>news</TextLink>)
+    const link = screen.getByRole("link", { name: "news" })
+    const icon = link.querySelector("svg")
+    expect(icon).not.toBeNull()
+    expect(icon).toHaveAttribute("aria-hidden", "true")
+  })
+
   test("TextLink_external_setsTargetAndRelAndSrLabelAndIcon", () => {
     renderTextLink(
       <TextLink href="https://example.com" external>

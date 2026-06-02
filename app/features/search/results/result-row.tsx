@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 
 import { type Lang, useT } from "~/lib/i18n"
-import { Tag } from "~/ui"
+import { ExternalIcon, Tag } from "~/ui"
 
 import type { DbSlug } from "../types"
 import {
@@ -90,6 +90,7 @@ export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
         {subtitle && (
           <span className="ml-2.5 align-baseline text-fs-body-sm font-medium text-ink-soft">{subtitle}</span>
         )}
+        <ExternalIcon size={13} aria-hidden className="ml-1 inline align-middle text-ink-soft" />
         <span className="sr-only"> ({t("common.detail")})</span>
       </Link>
 

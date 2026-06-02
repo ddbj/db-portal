@@ -119,6 +119,11 @@ export const SearchAssistant = ({ advancedState, dispatch }: SearchAssistantProp
             </div>
           </section>
         )}
+        {stream.state === "error" && (
+          <p role="alert" className="border-t border-border-soft p-3 m-0 text-fs-label text-warn-fg">
+            {t("search.assistant.generateError")}
+          </p>
+        )}
       </div>
     </section>
   )

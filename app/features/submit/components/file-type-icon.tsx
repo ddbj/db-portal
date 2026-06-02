@@ -45,9 +45,15 @@ const variantIcon: IconBody = (color) => (
 
 const matrixIcon: IconBody = (color) => (
   <g fill={color}>
-    <rect x="3" y="10" width="3" height="7" />
-    <rect x="8.5" y="6" width="3" height="11" />
-    <rect x="14" y="3" width="3" height="14" />
+    <rect x="3" y="3" width="4" height="4" rx="0.5" opacity="0.9" />
+    <rect x="8" y="3" width="4" height="4" rx="0.5" opacity="0.35" />
+    <rect x="13" y="3" width="4" height="4" rx="0.5" opacity="0.6" />
+    <rect x="3" y="8" width="4" height="4" rx="0.5" opacity="0.4" />
+    <rect x="8" y="8" width="4" height="4" rx="0.5" opacity="0.8" />
+    <rect x="13" y="8" width="4" height="4" rx="0.5" opacity="0.3" />
+    <rect x="3" y="13" width="4" height="4" rx="0.5" opacity="0.55" />
+    <rect x="8" y="13" width="4" height="4" rx="0.5" opacity="0.85" />
+    <rect x="13" y="13" width="4" height="4" rx="0.5" opacity="0.45" />
   </g>
 )
 
@@ -83,9 +89,12 @@ const imageIcon: IconBody = (color) => (
 )
 
 const massSpecIcon: IconBody = (color) => (
-  <g stroke={color} strokeWidth="1.5" fill="none" strokeLinejoin="round">
-    <path d="M 8 3 L 8 9 L 4 15 Q 4 17 6 17 L 14 17 Q 16 17 16 15 L 12 9 L 12 3 Z" />
-    <line x1="7" y1="3" x2="13" y2="3" />
+  <g stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="16" x2="17" y2="16" />
+    <line x1="5" y1="16" x2="5" y2="11" />
+    <line x1="8" y1="16" x2="8" y2="4" />
+    <line x1="11" y1="16" x2="11" y2="9" />
+    <line x1="14" y1="16" x2="14" y2="6" />
   </g>
 )
 

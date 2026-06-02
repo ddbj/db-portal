@@ -2,11 +2,12 @@ import type { ReactNode } from "react"
 import { Link, type To } from "react-router"
 
 import { cn } from "./cn"
-import { ExternalIcon } from "./icons"
+import { ChevronDownIcon, ExternalIcon } from "./icons"
 
 type TextLinkBase = {
   children: ReactNode
   weight?: "normal" | "semibold" | "bold"
+  arrow?: boolean
 }
 
 export type TextLinkProps =
@@ -44,6 +45,7 @@ export const TextLink = (props: TextLinkProps) => {
   return (
     <Link to={props.to} className={className}>
       {children}
+      {props.arrow && <ChevronDownIcon size={12} aria-hidden className="-rotate-90" />}
     </Link>
   )
 }

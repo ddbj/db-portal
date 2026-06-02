@@ -1,3 +1,4 @@
+import { CloseIcon } from "./icons"
 import { Label } from "./label"
 
 export type AppliedFilter = {
@@ -50,9 +51,9 @@ export const AppliedFilters = ({
                 type="button"
                 aria-label={`${f.label}: ${f.value} を解除`}
                 onClick={f.onClear}
-                className="px-2 bg-transparent border-0 border-l border-border-soft cursor-pointer text-ink-soft text-fs-body leading-none inline-flex items-center justify-center"
+                className="px-2 bg-transparent border-0 border-l border-border-soft cursor-pointer text-ink-soft inline-flex items-center justify-center hover:text-ink"
               >
-                ×
+                <CloseIcon size={12} aria-hidden />
               </button>
             )}
           </li>

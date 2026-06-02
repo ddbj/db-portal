@@ -69,7 +69,7 @@ export const HeroSection = () => {
         hideScopeInAiMode
         onGenerated={(ast) => void handleGenerated(ast)}
         examplesTrailing={
-          <TextLink to={buildSearchHref()}>{t("top.hero.advancedLink")} →</TextLink>
+          <TextLink to={buildSearchHref()} arrow>{t("top.hero.advancedLink")}</TextLink>
         }
         searchPending={search.pending}
       />

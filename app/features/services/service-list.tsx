@@ -1,7 +1,7 @@
 import type { ServiceItem } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import type { Lang } from "~/lib/i18n/use-lang"
-import { Pagination, Select } from "~/ui"
+import { Pagination, SearchIcon, Select } from "~/ui"
 
 import {
   type ServicesFacetState,
@@ -85,7 +85,10 @@ export const ServiceList = ({
         </p>
       )}
       {!loading && !error && visibleItems.length === 0 && (
-        <p className="text-ink-soft text-fs-body py-4">{t("services.list.empty")}</p>
+        <p className="text-ink-soft text-fs-body py-4 flex items-center gap-2">
+          <SearchIcon size={16} aria-hidden className="text-ink-softer shrink-0" />
+          {t("services.list.empty")}
+        </p>
       )}
       {visibleItems.length > 0 && (
         <ul className="list-none p-0 m-0">

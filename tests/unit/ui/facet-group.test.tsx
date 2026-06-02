@@ -60,7 +60,7 @@ describe("FacetGroup", () => {
         <li>row</li>
       </FacetGroup>,
     )
-    const button = screen.getByRole("button", { name: "+ さらに表示" })
+    const button = screen.getByRole("button", { name: "さらに表示" })
     fireEvent.click(button)
     expect(onShowMore).toHaveBeenCalledTimes(1)
   })

@@ -49,7 +49,7 @@ describe("HeroSection", () => {
 
   test("HeroSection_advancedLink_pointsToSearch", () => {
     renderHero()
-    const link = screen.getByRole("link", { name: /→/ })
+    const link = screen.getByRole("link", { name: /詳細条件で検索/ })
     expect(link).toHaveAttribute("href", "/search")
   })
 

@@ -26,8 +26,8 @@ export const NewsAside = () => {
         as="h2"
         id={headingId}
         action={
-          <TextLink to="/news">
-            {t("newsAside.viewAll")} →
+          <TextLink to="/news" arrow>
+            {t("newsAside.viewAll")}
           </TextLink>
         }
       >

@@ -63,7 +63,7 @@ export const FeaturedServices = ({ lang: explicitLang }: FeaturedServicesProps =
     <section>
       <SectionHeading
         as="h2"
-        action={<TextLink to="/services">{t("top.services.viewAll")} →</TextLink>}
+        action={<TextLink to="/services" arrow>{t("top.services.viewAll")}</TextLink>}
       >
         {t("top.services.heading")}
       </SectionHeading>

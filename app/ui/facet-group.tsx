@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+import { cn } from "./cn"
+import { ChevronDownIcon } from "./icons"
 import { SidebarGroupLabel } from "./sidebar-group-label"
 
 type FacetGroupProps = {
@@ -8,6 +10,7 @@ type FacetGroupProps = {
   onClear?: () => void
   showMore?: boolean
   showMoreLabel?: string
+  expanded?: boolean
   onShowMore?: () => void
   children: ReactNode
 }
@@ -17,7 +20,8 @@ export const FacetGroup = ({
   appliedCount = 0,
   onClear,
   showMore = false,
-  showMoreLabel = "+ さらに表示",
+  showMoreLabel = "さらに表示",
+  expanded = false,
   onShowMore,
   children,
 }: FacetGroupProps) => (
@@ -42,8 +46,9 @@ export const FacetGroup = ({
       <button
         type="button"
         onClick={onShowMore}
-        className="bg-transparent border-0 text-brand text-fs-label cursor-pointer pt-1.5 font-semibold font-sans"
+        className="bg-transparent border-0 text-brand text-fs-label cursor-pointer pt-1.5 font-semibold font-sans inline-flex items-center gap-1"
       >
+        <ChevronDownIcon size={11} aria-hidden className={cn("transition-transform", expanded && "rotate-180")} />
         {showMoreLabel}
       </button>
     )}

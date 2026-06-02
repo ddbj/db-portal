@@ -50,7 +50,7 @@
 - modal は `role="dialog"` + `aria-modal="true"` + `aria-labelledby`
 - table は `<caption className="sr-only">` + `<th scope="col" / scope="row">`
 
-色だけで意味を伝えない: status critical / warning は text label + icon / shape を併用する。
+色だけで意味を伝えない: status (critical / warning / success) は text label で意味を担保し、tone (色) は補強に留める。色のみで状態を区別する UI は作らない。
 
 #### zones
 

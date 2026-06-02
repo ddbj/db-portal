@@ -1,5 +1,5 @@
 import type { FileEntry, FileGroup, FlowStep } from "~/schemas/submit"
-import { Button, Callout, cn, InfoIcon, Tag } from "~/ui"
+import { Button, Callout, cn, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
@@ -178,8 +178,7 @@ export const FlowStepCard = ({
       {gotcha !== undefined && gotcha.length > 0 && (
         <Callout tone="info">
           <span className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 font-bold text-ink">
-              <InfoIcon size={14} className="shrink-0" />
+            <span className="font-bold text-ink">
               {gotchaHeading}
             </span>
             <span className="text-ink-mid">{gotcha}</span>
