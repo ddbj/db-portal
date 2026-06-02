@@ -1,0 +1,30 @@
+services:
+  vllm:
+    image: docker.io/vllm/vllm-openai:${DB_PORTAL_LLM_IMAGE_TAG}
+    container_name: db-portal-llm
+    restart: unless-stopped
+    ports:
+      - "${DB_PORTAL_LLM_HOST_PORT:-3200}:8000"
+    devices:
+      - nvidia.com/gpu=${DB_PORTAL_LLM_GPU_DEVICE:-0}
+    ipc: host
+    volumes:
+      - ${DB_PORTAL_LLM_HF_HOME}:/root/.cache/huggingface
+      - ./entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      DB_PORTAL_LLM_MODEL: ${DB_PORTAL_LLM_MODEL}
+      DB_PORTAL_LLM_API_KEY: ${DB_PORTAL_LLM_API_KEY:-}
+      DB_PORTAL_LLM_MAX_MODEL_LEN: ${DB_PORTAL_LLM_MAX_MODEL_LEN:-8192}
+      DB_PORTAL_LLM_GPU_MEMORY_UTILIZATION: ${DB_PORTAL_LLM_GPU_MEMORY_UTILIZATION:-0.92}
+      DB_PORTAL_LLM_QUANTIZATION: ${DB_PORTAL_LLM_QUANTIZATION:-}
+      DB_PORTAL_LLM_SERVED_MODEL_NAME: ${DB_PORTAL_LLM_SERVED_MODEL_NAME:-}
+      DB_PORTAL_LLM_TOKENIZER_MODE: ${DB_PORTAL_LLM_TOKENIZER_MODE:-}
+      DB_PORTAL_LLM_CONFIG_FORMAT: ${DB_PORTAL_LLM_CONFIG_FORMAT:-}
+      DB_PORTAL_LLM_LOAD_FORMAT: ${DB_PORTAL_LLM_LOAD_FORMAT:-}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 600s

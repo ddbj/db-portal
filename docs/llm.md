@@ -18,6 +18,33 @@ DDBJ ポータルの LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LL
 | 未到達時 | health check が失敗のとき `{status: "unreachable", reason}`、UI は表示したまま (送信時に error event が流れる) |
 | 用途 | AI 検索アシスタント (`/api/llm/search-assistant`) |
 
+## サービング基盤
+
+vLLM 本体は portal app とは別の GPU node で動く shared infra で、staging / production の app が同一インスタンスを共有する。app は接続するだけで、起動・モデル・GPU 割当は GPU node 側の責務。serving の構成・起動定義は `llm/` (`compose.yml` + `entrypoint.sh` + `README.md`)、serving 用 env は「環境変数」節の serving 表。
+
+| 項目 | 値 |
+|---|---|
+| ランタイム | vLLM (OpenAI 互換 API)、podman-compose 起動 |
+| イメージ | `docker.io/vllm/vllm-openai:<固定タグ>` (`latest` 禁止、再現性確保) |
+| モデル | `Qwen/Qwen2.5-32B-Instruct-AWQ` |
+| 量子化 | AWQ INT4 (model config から自動検出、`DB_PORTAL_LLM_QUANTIZATION` は空) |
+| context length | 8,192 tokens (`DB_PORTAL_LLM_MAX_MODEL_LEN`) |
+| GPU | 単一 GPU (`DB_PORTAL_LLM_GPU_DEVICE`、`gpu-memory-utilization` 0.92) |
+| ネットワーク | 内部 LAN のみ、`--api-key` Bearer 認証 (公開 port / base URL は env と運用メモ) |
+| restart policy | `unless-stopped`、container healthcheck で `GET /health` を監視 |
+
+GPU を増設する場合は `--tensor-parallel-size` で対応する (現状 1 枚なので未指定)。
+
+## デプロイ構成
+
+vLLM は portal app の deploy clone とは別に、GPU node 上にリポジトリを独立 checkout し、その `llm/` で起動する。app の deploy とは別ライフサイクルで、1 つの vLLM を staging / production の app が共有する。具体的な host / clone path / API key 同期手順は git 管理外の運用メモが持つ。
+
+- vLLM は staging / production を兼ねる単一インスタンスなので、container 名は環境 prefix を付けず `db-portal-llm` で固定する。
+- GPU node の `.env` は app と同じ env テンプレート由来 (`cp env.staging .env`)。app 用変数 (Keycloak / Search / News 等) は GPU node では未使用で、`DB_PORTAL_LLM_*` のみ参照する。
+- `DB_PORTAL_LLM_API_KEY` は app node と GPU node で同値にする。app が Bearer として送り、vLLM が検証する。
+- HF cache (`DB_PORTAL_LLM_HF_HOME`) は GPU node ローカルディスクに置く。共有 FS (Lustre) 上は overlayfs 非対応 / mmap が遅く不可。
+- モデル / イメージ更新は GPU node の `.env` を書き換えて `podman-compose down && up -d`。cold start は cache 無しで数分かかる。手順は `llm/README.md`。
+
 ## データフロー
 
 ```
@@ -245,7 +272,9 @@ PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で次の不変量�
 
 ## 環境変数
 
-`DB_PORTAL_` prefix で統一する (`server/lib/env.ts` で Zod 検証)。server-only (`VITE_` 接頭辞は付けない、secret は client bundle に出さない)。
+`DB_PORTAL_` prefix で統一する。app が読む BFF 変数は `server/lib/env.ts` で Zod 検証する (server-only、`VITE_` 接頭辞は付けず secret を client bundle に出さない)。serving 変数 (2 つ目の表) は GPU node の `llm/compose.yml` + `entrypoint.sh` だけが読み、app は参照しない。
+
+### BFF (app が参照)
 
 | 変数 | デフォルト | 用途 |
 |---|---|---|
@@ -257,6 +286,22 @@ PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で次の不変量�
 | `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` | `30` | per-session rate limit (req / 分) |
 
 dev 環境では `DB_PORTAL_LLM_BASE_URL` を空にすると「LLM 未設定で AI 補助が消える状態」、dummy URL にすると「unreachable」 状態の挙動確認に使える。staging / production では実環境の vLLM URL + API key を設定する。
+
+### serving (GPU node の vLLM)
+
+`DB_PORTAL_LLM_MODEL` / `DB_PORTAL_LLM_API_KEY` は BFF と serving で共有する (同じ .env の 1 変数を app と vLLM の両方が参照)。以下は serving 専用で、app node の `.env` にも同居するが app は使わない。dev は GPU が無く vLLM を起動しないので `env.dev` には serving 変数を置かない。
+
+| 変数 | デフォルト | 用途 |
+|---|---|---|
+| `DB_PORTAL_LLM_IMAGE_TAG` | (必須) | `vllm/vllm-openai:<tag>` の検証済み固定タグ。`latest` 禁止 |
+| `DB_PORTAL_LLM_GPU_DEVICE` | `0` | CDI device `nvidia.com/gpu=<n>` の index |
+| `DB_PORTAL_LLM_HOST_PORT` | `3200` | host bind port (container 8000 へ) |
+| `DB_PORTAL_LLM_MAX_MODEL_LEN` | `8192` | context window。VRAM 圧迫時は下げる |
+| `DB_PORTAL_LLM_GPU_MEMORY_UTILIZATION` | `0.92` | VRAM 割当 (weights + KV cache) |
+| `DB_PORTAL_LLM_HF_HOME` | (必須) | HuggingFace cache パス。GPU node ローカルディスクに置く (共有 FS 不可) |
+| `DB_PORTAL_LLM_SERVED_MODEL_NAME` | (空) | OpenAI API 上の別名。空なら `DB_PORTAL_LLM_MODEL` のまま |
+| `DB_PORTAL_LLM_QUANTIZATION` | (空) | 量子化方式。空なら model config から自動検出 (AWQ) |
+| `DB_PORTAL_LLM_TOKENIZER_MODE` / `DB_PORTAL_LLM_CONFIG_FORMAT` / `DB_PORTAL_LLM_LOAD_FORMAT` | (空) | 非 HF 形式モデル用。HF 形式は空 |
 
 ## テスト
 

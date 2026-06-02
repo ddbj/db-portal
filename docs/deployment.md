@@ -14,6 +14,8 @@ production / staging への deploy を **podman + podman-compose による NIG �
 
 env ファイル (`env.dev` / `env.staging` / `env.production`) は git 管理。production 側の secret は `CHANGE_ME` プレースホルダで commit し、実値は deploy 先 host 上の `.env.<env>.local` を起動時に `.env` に merge して上書きする (`.gitignore` の `.env.*.local` で実値は git に出ない)。
 
+LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、GPU node に portal リポジトリを独立 checkout し `llm/` で起動する。staging / production の app は同一 vLLM インスタンスを共有する。具体的な host / path は git 管理外、構成・起動・運用は `llm.md` (SSOT) と `llm/README.md`。
+
 ## 起動アーキ (production / staging 共通)
 
 ```
@@ -156,7 +158,7 @@ mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 
 | 原因 | 対応軸 |
 |---|---|
-| vLLM プロセス停止 | NIG GPU host 上で vLLM サービス再起動 (NIG 担当に連絡) |
+| vLLM プロセス停止 | GPU node の `llm/` で `podman-compose up -d` を確認・再起動 (`llm.md` / `llm/README.md`) |
 | network 障害 | NIG infra 障害を確認 |
 | timeout (`DB_PORTAL_LLM_TIMEOUT_MS` 不足) | env 上書きで増やす |
 | `DB_PORTAL_LLM_BASE_URL` 空 | env を見直す (production / staging では空にしない) |
