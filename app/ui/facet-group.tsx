@@ -49,7 +49,7 @@ export const FacetGroup = ({
         className="bg-transparent border-0 text-brand text-fs-label cursor-pointer pt-1.5 font-semibold font-sans inline-flex items-center gap-1"
       >
         <ChevronDownIcon size={11} aria-hidden className={cn("transition-transform", expanded && "rotate-180")} />
-        {showMoreLabel}
+        <span className="min-w-20 text-left">{showMoreLabel}</span>
       </button>
     )}
   </div>

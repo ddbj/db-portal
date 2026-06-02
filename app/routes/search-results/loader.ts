@@ -18,17 +18,24 @@ import {
   parseQuery,
 } from "~/lib/api"
 
+// The heavy search resolves through this union so the route's single <Await>
+// has one render path: a successful cross/per-DB payload, a folded error, or
+// an empty query that renders no grid.
+export type SearchResult =
+  | { kind: "cross"; cross: CrossSearchResponse; facets: DbPortalFacets | null }
+  | { kind: "perDb"; perDb: DbSearchResponse; facets: DbPortalFacets | null }
+  | { kind: "error"; errorKey: "cross" | "db" }
+  | { kind: "empty" }
+
 export type LoaderData = {
   q: string
   db: DbSlug | null
   page: number
   perPage: PerPageValue
   sort: SortKey
-  cross: CrossSearchResponse | null
-  perDb: DbSearchResponse | null
-  facets: DbPortalFacets | null
   ast: ParseNode | null
-  errorKey: "parse" | "cross" | "db" | null
+  parseError: boolean
+  results: Promise<SearchResult>
 }
 
 const FACETS_SIZE = 100
@@ -49,7 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
   const envBaseUrl = process.env.DB_PORTAL_SEARCH_API_URL
   const options = envBaseUrl ? { baseUrl: envBaseUrl } : {}
   if (params.q === "") {
-    return { ...params, cross: null, perDb: null, facets: null, ast: null, errorKey: null }
+    return { ...params, ast: null, parseError: false, results: Promise.resolve({ kind: "empty" }) }
   }
   let ast: ParseNode | null = null
   try {
@@ -61,19 +68,19 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
     )
     ast = parsed.ast
   } catch {
-    return { ...params, cross: null, perDb: null, facets: null, ast: null, errorKey: "parse" }
+    return { ...params, ast: null, parseError: true, results: Promise.resolve({ kind: "empty" }) }
   }
-  try {
-    if (params.db === null) {
-      const cross = await crossSearch(
-        { q: params.q, topHits: 3, ...facetParam(null) },
-        options,
-      )
-
-      return { ...params, cross, perDb: null, facets: cross.facets ?? null, ast, errorKey: null }
-    }
+  // Defer the search so the route paints its shell and skeleton at once, then
+  // fills the grid when this resolves. Parse stays awaited above: its ast drives
+  // the keyword box and facet sidebar, which render before the results arrive.
+  let results: Promise<SearchResult>
+  if (params.db === null) {
+    results = crossSearch({ q: params.q, topHits: 3, ...facetParam(null) }, options)
+      .then((cross): SearchResult => ({ kind: "cross", cross, facets: cross.facets ?? null }))
+      .catch((): SearchResult => ({ kind: "error", errorKey: "cross" }))
+  } else {
     const apiSort = sortKeyToApiSort(params.sort)
-    const perDb = await dbSearch(
+    results = dbSearch(
       {
         q: params.q,
         db: params.db,
@@ -84,16 +91,9 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
       },
       options,
     )
-
-    return { ...params, cross: null, perDb, facets: perDb.facets ?? null, ast, errorKey: null }
-  } catch {
-    return {
-      ...params,
-      cross: null,
-      perDb: null,
-      facets: null,
-      ast,
-      errorKey: params.db === null ? "cross" : "db",
-    }
+      .then((perDb): SearchResult => ({ kind: "perDb", perDb, facets: perDb.facets ?? null }))
+      .catch((): SearchResult => ({ kind: "error", errorKey: "db" }))
   }
+
+  return { ...params, ast, parseError: false, results }
 }

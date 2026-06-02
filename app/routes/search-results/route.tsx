@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react"
-import { useLoaderData, useNavigate } from "react-router"
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useState } from "react"
+import { Await, useLoaderData, useNavigate } from "react-router"
 
 import {
   advancedReducer,
@@ -20,6 +20,7 @@ import {
   PerDbResults,
   type PerPageValue,
   searchFacetReducer,
+  SearchResultsSkeleton,
   serializeAstToDsl,
   type SortKey,
   splitForSidebar,
@@ -41,7 +42,7 @@ import {
 } from "~/lib/search-scope"
 import { Button, Callout, Section } from "~/ui"
 
-import { loader } from "./loader"
+import { loader, type SearchResult } from "./loader"
 
 export { loader }
 
@@ -241,6 +242,12 @@ const SearchResultsRoute = () => {
     )
   }
 
+  const retryAction = (
+    <Button kind="secondary" size="sm" onClick={() => navigate(0)}>
+      {t("search.sync.retry")}
+    </Button>
+  )
+
   return (
     <>
       <Section padTop="mid" padBottom="none">
@@ -276,54 +283,65 @@ const SearchResultsRoute = () => {
       </Section>
       {data.q === ""
         ? null
-        : data.errorKey
+        : data.parseError
           ? (
             <Section padTop="sm" padBottom="lg">
-              <Callout
-                tone="warn"
-                role="status"
-                action={
-                  <Button kind="secondary" size="sm" onClick={() => navigate(0)}>
-                    {t("search.sync.retry")}
-                  </Button>
-                }
-              >
-                {data.errorKey === "parse"
-                  ? t("search.errors.parseFailure")
-                  : data.errorKey === "cross"
-                    ? t("search.errors.crossSearchFailure")
-                    : t("search.errors.dbSearchFailure")}
+              <Callout tone="warn" role="status" action={retryAction}>
+                {t("search.errors.parseFailure")}
               </Callout>
             </Section>
           )
-          : data.cross || (data.perDb && data.db)
-            ? (
-              <Section padTop="sm" padBottom="lg">
-                <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                  <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={data.facets} />
-                  <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
-                    {data.cross
-                      ? <CrossResults q={data.q} response={data.cross} />
-                      : data.perDb && data.db
-                        ? (
-                          <PerDbResults
-                            db={data.db}
-                            response={data.perDb}
-                            lang={lang}
-                            page={data.page}
-                            perPage={data.perPage}
-                            sort={data.sort}
-                            onPageChange={handlePageChange}
-                            onPerPageChange={handlePerPageChange}
-                            onSortChange={handleSortChange}
-                          />
-                        )
-                        : null}
-                  </div>
-                </div>
-              </Section>
-            )
-            : null}
+          : (
+            <Suspense
+              fallback={
+                <Section padTop="sm" padBottom="lg">
+                  <SearchResultsSkeleton db={data.db} />
+                </Section>
+              }
+            >
+              <Await resolve={data.results}>
+                {(result: SearchResult) =>
+                  result.kind === "error"
+                    ? (
+                      <Section padTop="sm" padBottom="lg">
+                        <Callout tone="warn" role="status" action={retryAction}>
+                          {result.errorKey === "cross"
+                            ? t("search.errors.crossSearchFailure")
+                            : t("search.errors.dbSearchFailure")}
+                        </Callout>
+                      </Section>
+                    )
+                    : result.kind === "empty"
+                      ? null
+                      : (
+                        <Section padTop="sm" padBottom="lg">
+                          <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                            <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={result.facets} />
+                            <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
+                              {result.kind === "cross"
+                                ? <CrossResults q={data.q} response={result.cross} />
+                                : data.db
+                                  ? (
+                                    <PerDbResults
+                                      db={data.db}
+                                      response={result.perDb}
+                                      lang={lang}
+                                      page={data.page}
+                                      perPage={data.perPage}
+                                      sort={data.sort}
+                                      onPageChange={handlePageChange}
+                                      onPerPageChange={handlePerPageChange}
+                                      onSortChange={handleSortChange}
+                                    />
+                                  )
+                                  : null}
+                            </div>
+                          </div>
+                        </Section>
+                      )}
+              </Await>
+            </Suspense>
+          )}
     </>
   )
 }

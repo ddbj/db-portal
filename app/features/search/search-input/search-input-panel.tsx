@@ -2,7 +2,7 @@ import type { Dispatch } from "react"
 import { useEffect, useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, cn, Examples, SearchBox } from "~/ui"
+import { Button, cn, Examples, SearchBox, StableLabel } from "~/ui"
 
 import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
 import {
@@ -255,9 +255,11 @@ export const SearchInputPanel = ({
               {t("search.assistant.regenerate")}
             </Button>
             <Button kind="primary" size="md" onClick={() => applyProposal(effectiveAiMode)}>
-              {effectiveAiMode === "new"
-                ? t("search.assistant.applyReplace")
-                : t("search.assistant.apply")}
+              <StableLabel reserve={[t("search.assistant.applyReplace"), t("search.assistant.apply")]}>
+                {effectiveAiMode === "new"
+                  ? t("search.assistant.applyReplace")
+                  : t("search.assistant.apply")}
+              </StableLabel>
             </Button>
           </div>
         </section>

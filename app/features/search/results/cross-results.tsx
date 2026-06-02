@@ -17,7 +17,7 @@ type DbEntry = CrossSearchResponse["databases"][number]
 
 // Card display order for the cross-DB grid. The API returns databases in its
 // own fixed order; the portal presents them DDBJ-first.
-const CARD_ORDER: readonly DbSlug[] = [
+export const CARD_ORDER: readonly DbSlug[] = [
   "trad",
   "bioproject",
   "biosample",

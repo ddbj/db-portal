@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw"
 import type { LoaderFunctionArgs } from "react-router"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
-import { loader } from "~/routes/search-results/loader"
+import { loader, type LoaderData } from "~/routes/search-results/loader"
 
 import {
   crossSearchHandler,
@@ -13,7 +13,7 @@ import {
 } from "../mocks/handlers"
 import { server } from "../mocks/server"
 
-const buildLoader = (search: string, env?: string): Promise<unknown> => {
+const buildLoader = (search: string, env?: string): Promise<LoaderData> => {
   const url = `http://localhost/search/results${search}`
   const request = new Request(url)
   if (env !== undefined) process.env.DB_PORTAL_SEARCH_API_URL = env
@@ -44,7 +44,8 @@ describe("search-results loader: facetSelfExclude", () => {
         }),
       }),
     )
-    await buildLoader("?q=organism_id:9606")
+    const data = await buildLoader("?q=organism_id:9606")
+    await data.results
     expect(capturedUrl?.searchParams.get("facetSelfExclude")).toBe("true")
   })
 
@@ -62,11 +63,12 @@ describe("search-results loader: facetSelfExclude", () => {
         }),
       }),
     )
-    await buildLoader("?q=organism_id:9606&db=biosample")
+    const data = await buildLoader("?q=organism_id:9606&db=biosample")
+    await data.results
     expect(capturedUrl?.searchParams.get("facetSelfExclude")).toBe("true")
   })
 
-  test("crossSearch_facetsInResponse_propagatedToLoaderData", async () => {
+  test("crossSearch_facetsInResponse_propagatedToResult", async () => {
     const facets = {
       organism: [
         { value: "9606", count: 500, label: "Homo sapiens" },
@@ -77,11 +79,11 @@ describe("search-results loader: facetSelfExclude", () => {
       parseHandler(),
       crossSearchHandler({ response: minimalCrossSearchResponse(facets) }),
     )
-    const data = await buildLoader("?q=organism_id:9606") as { facets: unknown }
-    expect(data.facets).toEqual(facets)
+    const result = await (await buildLoader("?q=organism_id:9606")).results
+    expect(result).toMatchObject({ kind: "cross", facets })
   })
 
-  test("dbSearch_facetsInResponse_propagatedToLoaderData", async () => {
+  test("dbSearch_facetsInResponse_propagatedToResult", async () => {
     const facets = {
       accessibility: [
         { value: "public-access", count: 300 },
@@ -92,29 +94,28 @@ describe("search-results loader: facetSelfExclude", () => {
       parseHandler(),
       dbSearchHandler({ response: minimalDbSearchResponse(facets) }),
     )
-    const data = await buildLoader("?q=organism_id:9606&db=biosample") as { facets: unknown }
-    expect(data.facets).toEqual(facets)
+    const result = await (await buildLoader("?q=organism_id:9606&db=biosample")).results
+    expect(result).toMatchObject({ kind: "perDb", facets })
   })
 })
 
 describe("search-results loader: degrade", () => {
-  test("emptyQuery_returnsFacetsNull", async () => {
-    const data = await buildLoader("?q=") as { facets: unknown; errorKey: unknown }
-    expect(data.facets).toBeNull()
-    expect(data.errorKey).toBeNull()
+  test("emptyQuery_resolvesEmpty", async () => {
+    const data = await buildLoader("?q=")
+    expect(data.parseError).toBe(false)
+    expect(await data.results).toEqual({ kind: "empty" })
   })
 
-  test("crossSearch_apiReturnsNullFacets_loaderDataFacetsNull", async () => {
+  test("crossSearch_apiReturnsNullFacets_resultFacetsNull", async () => {
     server.use(
       parseHandler(),
       crossSearchHandler({ response: minimalCrossSearchResponse(null) }),
     )
-    const data = await buildLoader("?q=cancer") as { facets: unknown; errorKey: unknown }
-    expect(data.facets).toBeNull()
-    expect(data.errorKey).toBeNull()
+    const result = await (await buildLoader("?q=cancer")).results
+    expect(result).toMatchObject({ kind: "cross", facets: null })
   })
 
-  test("parseError_returnsParseErrorKey", async () => {
+  test("parseError_setsParseErrorFlag", async () => {
     server.use(
       http.get("*/db-portal/parse", () =>
         new HttpResponse(JSON.stringify({ type: "unexpected-token" }), {
@@ -123,25 +124,25 @@ describe("search-results loader: degrade", () => {
         }),
       ),
     )
-    const data = await buildLoader("?q=:::invalid") as { errorKey: unknown }
-    expect(data.errorKey).toBe("parse")
+    const data = await buildLoader("?q=:::invalid")
+    expect(data.parseError).toBe(true)
   })
 
-  test("crossSearch_networkError_returnsCrossErrorKey", async () => {
+  test("crossSearch_networkError_resolvesCrossError", async () => {
     server.use(
       parseHandler(),
       http.get("*/db-portal/cross-search", () => new HttpResponse(null, { status: 500 })),
     )
-    const data = await buildLoader("?q=cancer") as { errorKey: unknown }
-    expect(data.errorKey).toBe("cross")
+    const result = await (await buildLoader("?q=cancer")).results
+    expect(result).toEqual({ kind: "error", errorKey: "cross" })
   })
 
-  test("dbSearch_networkError_returnsDbErrorKey", async () => {
+  test("dbSearch_networkError_resolvesDbError", async () => {
     server.use(
       parseHandler(),
       http.get("*/db-portal/search", () => new HttpResponse(null, { status: 500 })),
     )
-    const data = await buildLoader("?q=cancer&db=biosample") as { errorKey: unknown; hits: unknown }
-    expect(data.errorKey).toBe("db")
+    const result = await (await buildLoader("?q=cancer&db=biosample")).results
+    expect(result).toEqual({ kind: "error", errorKey: "db" })
   })
 })

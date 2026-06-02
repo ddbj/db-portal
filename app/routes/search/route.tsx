@@ -31,6 +31,7 @@ import {
   PageTitle,
   Section,
   SectionHeading,
+  StableLabel,
 } from "~/ui"
 
 import { loader } from "./loader"
@@ -219,7 +220,9 @@ const SearchRoute = () => {
               onClick={() => void runSearch()}
               disabled={hasError || search.pending}
             >
-              {search.pending ? t("search.a11y.searching") : t("search.actions.submit")}
+              <StableLabel reserve={[t("search.actions.submit"), t("search.a11y.searching")]}>
+                {search.pending ? t("search.a11y.searching") : t("search.actions.submit")}
+              </StableLabel>
             </Button>
           </div>
         </Section>

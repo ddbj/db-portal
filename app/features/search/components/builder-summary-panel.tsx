@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button } from "~/ui"
+import { Button, StableLabel } from "~/ui"
 
 export type BuilderSummaryPanelProps = {
   dsl: string
@@ -44,7 +44,9 @@ export const BuilderSummaryPanel = ({ dsl, onClear, onEdit }: BuilderSummaryPane
           </Button>
         )}
         <Button kind="secondary" size="sm" onClick={handleCopy} disabled={!dsl}>
-          {copied ? t("search.preview.copied") : t("search.preview.copy")}
+          <StableLabel reserve={[t("search.preview.copy"), t("search.preview.copied")]}>
+            {copied ? t("search.preview.copied") : t("search.preview.copy")}
+          </StableLabel>
         </Button>
       </div>
     </div>

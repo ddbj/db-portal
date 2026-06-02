@@ -31,13 +31,13 @@ const sizeClass = {
   md: {
     input: "py-2 text-fs-body",
     scope: "py-1.5 text-fs-body-sm",
-    button: "px-6 text-fs-body",
+    button: "px-6 text-fs-body min-w-32",
     icon: 14,
   },
   lg: {
     input: "py-3 text-fs-body",
     scope: "py-3 text-fs-body-sm",
-    button: "px-7 text-fs-body",
+    button: "px-7 text-fs-body min-w-36",
     icon: 16,
   },
 } as const

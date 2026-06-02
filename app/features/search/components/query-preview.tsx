@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useT } from "~/lib/i18n"
-import { Button, Label } from "~/ui"
+import { Button, Label, StableLabel } from "~/ui"
 
 export type QueryPreviewProps = {
   dsl: string
@@ -45,7 +45,9 @@ export const QueryPreview = ({ dsl, onClear, onEdit }: QueryPreviewProps) => {
           </Button>
         )}
         <Button kind="secondary" size="sm" onClick={handleCopy} disabled={!dsl}>
-          {copied ? t("search.preview.copied") : t("search.preview.copy")}
+          <StableLabel reserve={[t("search.preview.copy"), t("search.preview.copied")]}>
+            {copied ? t("search.preview.copied") : t("search.preview.copy")}
+          </StableLabel>
         </Button>
       </span>
     </div>

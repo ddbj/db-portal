@@ -106,7 +106,7 @@ system 側の serialize / 同期失敗 (ユーザーが直せない) は **こ�
 
 `/search/results` のキーワードボックスでも、submit 時の keyword parse が失敗したらボックスを invalid 表示にし、box 直下に構文エラー文言を出す。遷移はせずその場で直せる。results / top の box は構文ヒント (スペース=AND 等) や AI モードの補助文を出さない (それらは `/search` ビルダーのみ)。
 
-`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が `errorKey: "parse"` を data として返し、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。
+`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が parse 失敗を同期フラグ (`parseError`) として返し (parse は loader 内で await するので即座に確定する)、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。検索本体 (cross / per-DB) の失敗は deferred な結果側で `<Callout>` に落とす (§ cross-DB 結果の error)。
 
 API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が失敗を表示する。
 
@@ -321,6 +321,8 @@ merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ�
 
 cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`) + SyncStatusChip、さらに下に `[ facet サイドバー | 結果 ]` の 2-col grid。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
 
+重い検索 (`cross-search` / per-DB `search`) は loader から **await せず deferred Promise** で返す。route は検索 box・プレビュー・facet サイドバー枠・結果 skeleton を即描画し、検索が解決した時点でグリッドを一斉に埋める (cross-search は 1 リクエストなので、各カードが個別に時間差で入るのではなくまとめて確定する)。`?q=` の **parse だけは await** する — その AST がキーワードボックス・facet サイドバーの復元と parse 失敗判定に要るため。これで top / 前ページからの遷移を待たせず、ロード中であることを skeleton で可視化する。この loading skeleton はロード中のプレースホルダで、ロード後に各フィールドを「値があれば出す」方針 (フィールド単位の skeleton は出さない、§ cross-DB 結果) とはレイヤーが別。
+
 検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
 送信ボタンは実行中ビジー表示にする: キーワード検索の解決中 (parse → serialize → navigate → loader、`useSearchPending` が `useNavigation` で追跡) は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。`/search` ビルダーの box submit も同じく検索を実行し (旧来は keyword をコミットするだけで無反応だった)、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
@@ -331,7 +333,7 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、SSR で完結)。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
+`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、結果は deferred で返す → [§ 検索結果 UI](#検索結果-ui))。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
 
 各カードの内容:
 
