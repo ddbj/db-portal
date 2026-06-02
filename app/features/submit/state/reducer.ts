@@ -1,15 +1,12 @@
-import type { Access, FileEntry, FileGroup, Q1, Submission } from "~/schemas/submit"
+import type { Access, FileEntry, FileGroup, Submission } from "~/schemas/submit"
 import {
-  DEFAULT_FILENAME_FOR_KIND,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
 
+import { defaultAccessFor } from "../access"
 import { isQ2Enabled } from "../cascade"
 import type { Action, RowEditPatch, UIState } from "./types"
-
-// Q1 が行レベル Access の default を注入する (公開 / 第三者解析は open、制限公開含むは restricted)
-const accessDefaultForQ1 = (q1: Q1 | null): Access => (q1 === "restricted" ? "restricted" : "open")
 
 const replaceEntry = (
   entries: readonly FileEntry[],
@@ -32,37 +29,14 @@ const newGroupFor = (fileTypeKind: FileEntry["fileTypeKind"], groupId: string): 
   linkedGroupIds: [],
 })
 
-// 同 fileTypeKind の既存 filename から連番を読み取り max+1 を 3 桁ゼロ埋めした default 名を返す
-// (削除後の再追加でも衝突しないよう max 方式)
-export const defaultFilenameFor = (
-  entries: readonly FileEntry[],
-  fileTypeKind: FileEntry["fileTypeKind"],
-): string => {
-  const { prefix, ext } = DEFAULT_FILENAME_FOR_KIND[fileTypeKind]
-  const re = new RegExp(`^${prefix}-(\\d+)`)
-  let maxN = 0
-  for (const entry of entries) {
-    if (entry.fileTypeKind !== fileTypeKind) continue
-    const match = entry.filename.match(re)
-    if (match?.[1] !== undefined) {
-      const n = Number.parseInt(match[1], 10)
-      if (Number.isFinite(n) && n > maxN) maxN = n
-    }
-  }
-
-  return `${prefix}-${String(maxN + 1).padStart(3, "0")}.${ext}`
-}
-
 const newEntryFor = (
   fileTypeKind: FileEntry["fileTypeKind"],
   entryId: string,
   groupId: string,
-  filename: string,
   access: Access,
 ): FileEntry => ({
   id: entryId,
   fileTypeKind,
-  filename,
   access,
   dataForm: TYPICAL_DATA_FORM_FOR_KIND[fileTypeKind],
   groupId,
@@ -133,54 +107,63 @@ const applyRowEditPatch = (
     ? replaceEntry(submission.fileEntries, entryId, entryPatch)
     : submission.fileEntries
 
-  return { submission: { ...submission, fileEntries, fileGroups } }
+  let next: Submission = { ...submission, fileEntries, fileGroups }
+  // アノテーションが assembly-annotation に入るとき、単独 FASTA を自動でペアにする
+  if (entry.fileTypeKind === "sequence-annotation" && patch.groupType === "assembly-annotation") {
+    next = attachPartner(next, entry.groupId, entry.id)
+  }
+
+  return { submission: next }
 }
 
-// アノテーション行の相方 FASTA を選ぶ。既存の相方は単独 group へ戻し、選んだ FASTA を
-// annotation の group へ移して group を assembly-annotation にする
-const setPairPartner = (
-  state: UIState,
+// 単独 (single group) の FASTA を annotation の group に取り込み assembly-annotation にする。相方が無ければ無変更
+const attachPartner = (
+  submission: Submission,
+  annotationGroupId: string,
   annotationEntryId: string,
-  partnerEntryId: string,
-  releasedGroupId: string,
-): UIState => {
-  const annotation = state.submission.fileEntries.find((e) => e.id === annotationEntryId)
-  const newPartner = state.submission.fileEntries.find((e) => e.id === partnerEntryId)
-  if (annotation === undefined || newPartner === undefined) return state
-  const annotationGroupId = annotation.groupId
-  if (newPartner.groupId === annotationGroupId) return state
-
-  const submission = detachPartner(state.submission, annotationGroupId, annotationEntryId, releasedGroupId)
-  const oldPartnerGroupId = newPartner.groupId
+): Submission => {
+  const fasta = submission.fileEntries.find(
+    (e) => e.fileTypeKind === "sequence-nucleotide"
+      && e.id !== annotationEntryId
+      && e.groupId !== annotationGroupId
+      && submission.fileGroups.find((g) => g.id === e.groupId)?.groupType === "single",
+  )
+  if (fasta === undefined) return submission
+  const oldGroupId = fasta.groupId
 
   const fileEntries = submission.fileEntries.map((e) =>
-    e.id === newPartner.id ? { ...e, groupId: annotationGroupId } : e,
+    e.id === fasta.id ? { ...e, groupId: annotationGroupId } : e,
   )
   const fileGroups = submission.fileGroups
     .map((g): FileGroup => {
-      if (g.id === oldPartnerGroupId) {
-        return { ...g, memberFileIds: g.memberFileIds.filter((id) => id !== newPartner.id) }
+      if (g.id === oldGroupId) {
+        return { ...g, memberFileIds: g.memberFileIds.filter((id) => id !== fasta.id) }
       }
       if (g.id === annotationGroupId) {
         return {
           ...g,
           groupType: "assembly-annotation",
-          memberFileIds: [...g.memberFileIds.filter((id) => id !== newPartner.id), newPartner.id],
+          memberFileIds: [...g.memberFileIds.filter((id) => id !== fasta.id), fasta.id],
         }
       }
       return g
     })
     .filter((g) => g.memberFileIds.length > 0)
 
-  return { submission: { ...submission, fileEntries, fileGroups } }
+  return { ...submission, fileEntries, fileGroups }
 }
 
 const setPreconditions = (state: UIState, patch: Partial<Submission["preconditions"]>): UIState => {
   const next = { ...state.submission.preconditions, ...patch }
   // Q1 変更で現在の Q2 が disable になったら Q2 を解除する (整合崩れを破壊的に解決しない)
   if (next.q2 !== null && !isQ2Enabled(next.q1, next.q2)) next.q2 = null
+  // access は Q1/Q2 由来の default に追従する (公開 / 第三者 → 全 open、公開+制限 → Q2 で default)
+  const fileEntries = state.submission.fileEntries.map((e) => ({
+    ...e,
+    access: defaultAccessFor(next.q1, next.q2, e.fileTypeKind),
+  }))
 
-  return { submission: { ...state.submission, preconditions: next } }
+  return { submission: { ...state.submission, preconditions: next, fileEntries } }
 }
 
 const addRow = (
@@ -189,10 +172,34 @@ const addRow = (
   entryId: string,
   groupId: string,
 ): UIState => {
+  const { q1, q2 } = state.submission.preconditions
+  const access = defaultAccessFor(q1, q2, fileTypeKind)
+
+  // FASTA 追加時、相方 FASTA 待ちの assembly-annotation group があればそこへ取り込む
+  if (fileTypeKind === "sequence-nucleotide") {
+    const waiting = state.submission.fileGroups.find(
+      (g) => g.groupType === "assembly-annotation"
+        && !state.submission.fileEntries.some(
+          (e) => e.groupId === g.id && e.fileTypeKind === "sequence-nucleotide",
+        ),
+    )
+    if (waiting !== undefined) {
+      const joined = newEntryFor(fileTypeKind, entryId, waiting.id, access)
+
+      return {
+        submission: {
+          ...state.submission,
+          fileEntries: [...state.submission.fileEntries, joined],
+          fileGroups: state.submission.fileGroups.map((g) =>
+            g.id === waiting.id ? { ...g, memberFileIds: [...g.memberFileIds, joined.id] } : g,
+          ),
+        },
+      }
+    }
+  }
+
   const group = newGroupFor(fileTypeKind, groupId)
-  const filename = defaultFilenameFor(state.submission.fileEntries, fileTypeKind)
-  const access = accessDefaultForQ1(state.submission.preconditions.q1)
-  const entry = newEntryFor(fileTypeKind, entryId, groupId, filename, access)
+  const entry = newEntryFor(fileTypeKind, entryId, groupId, access)
 
   return {
     submission: {
@@ -253,9 +260,6 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
 
     case "COMMIT_ROW_EDIT":
       return applyRowEditPatch(state, action.entryId, action.patch, action.releasedGroupId)
-
-    case "SET_PAIR_PARTNER":
-      return setPairPartner(state, action.annotationEntryId, action.partnerEntryId, action.releasedGroupId)
 
     case "REMOVE_ROW":
       return removeRow(state, action.entryId)

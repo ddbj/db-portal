@@ -14,7 +14,6 @@ import type {
 const mkEntry = (over: Partial<FileEntry> = {}): FileEntry => ({
   id: "e1",
   fileTypeKind: "sequence-read",
-  filename: "read_0001.fastq",
   access: "open",
   dataForm: "raw",
   groupId: "g1",

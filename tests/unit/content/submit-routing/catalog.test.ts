@@ -44,7 +44,7 @@ describe("submit routing catalog", () => {
   })
 
   test("recipeAllowlist_isFixed", () => {
-    expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "mag-project", "sag", "spatial"])
+    expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial"])
   })
 
   test("catalog_q1AndQ2Repos_areDestinationServices", () => {

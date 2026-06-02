@@ -46,6 +46,7 @@ export const SwitchableQueryPreview = (
         <Label>{t("search.preview.label")}</Label>
         <Segmented
           ariaLabel={t("search.preview.viewGroupLabel")}
+          equalWidth
           options={[
             { value: "dsl", label: t("search.preview.viewDsl") },
             { value: "graph", label: t("search.preview.viewGraph") },

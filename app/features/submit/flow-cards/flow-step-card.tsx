@@ -1,4 +1,4 @@
-import type { FileEntry, FileGroup, FlowStep } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind, FlowStep } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
@@ -14,8 +14,8 @@ type FlowStepCardProps = {
   step: FlowStep
   index: number
   anchorId: string
-  groups: readonly FileGroup[]
   entries: readonly FileEntry[]
+  fileTypeKindLabel: (kind: FileTypeKind) => string
   serviceTitle: string
   serviceDescription: string
   roleLabel: string
@@ -41,8 +41,8 @@ export const FlowStepCard = ({
   step,
   index,
   anchorId,
-  groups,
   entries,
+  fileTypeKindLabel,
   serviceTitle,
   serviceDescription,
   roleLabel,
@@ -62,7 +62,6 @@ export const FlowStepCard = ({
   sourceTagLabel,
 }: FlowStepCardProps) => {
   const hasWarningOrError = step.notes.some((n) => n.kind === "warning" || n.kind === "error")
-  const scopeGroups = groups.filter((g) => step.scope.groupIds.includes(g.id))
   const scopeEntries = entries.filter((e) => step.scope.entryIds.includes(e.id))
   const meta = getSubmitMeta(step.service)
   const externalUrl = meta?.externalUrl
@@ -114,8 +113,8 @@ export const FlowStepCard = ({
         </section>
       )}
 
-      {(scopeGroups.length > 0 || scopeEntries.length > 0) && (
-        <FilesBlock groups={scopeGroups} entries={scopeEntries} heading={filesHeading} />
+      {scopeEntries.length > 0 && (
+        <FilesBlock entries={scopeEntries} heading={filesHeading} fileTypeKindLabel={fileTypeKindLabel} />
       )}
 
       {prepare.length > 0 && (

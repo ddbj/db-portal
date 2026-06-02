@@ -16,7 +16,6 @@ export type FileEntryChip = z.infer<typeof FileEntryChip>
 export const FileEntry = z.object({
   id: z.string().min(1),
   fileTypeKind: FileTypeKind,
-  filename: z.string().default(""),
   access: Access,
   dataForm: DataForm,
   groupId: z.string().min(1),

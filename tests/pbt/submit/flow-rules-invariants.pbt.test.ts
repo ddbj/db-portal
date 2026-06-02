@@ -2,7 +2,6 @@ import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
-import { detectRecipeGroups } from "../../../app/features/submit/flow-rules/recipes"
 import {
   type FlowStep,
   isSequencingSpatialPlatform,
@@ -22,13 +21,6 @@ const entryIdsOfService = (steps: readonly FlowStep[], pred: (s: FlowStep) => bo
   }
 
   return ids
-}
-
-const recipeOwnedEntryIds = (submission: Submission): Set<string> => {
-  const { magGroups, sagGroups } = detectRecipeGroups(submission)
-  const gids = new Set([...magGroups, ...sagGroups].map((g) => g.id))
-
-  return new Set(submission.fileEntries.filter((e) => gids.has(e.groupId)).map((e) => e.id))
 }
 
 test.prop([arbSubmission], RUNS)(
@@ -67,8 +59,6 @@ test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_plainSubmission_yieldsExactlyOneBioprojectAndBiosample",
   (submission) => {
     fc.pre(submission.fileEntries.length > 0)
-    const { magGroups, sagGroups } = detectRecipeGroups(submission)
-    fc.pre(magGroups.length === 0 && sagGroups.length === 0)
     const steps = deriveFlowSteps(submission)
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
     fc.pre(submission.fileEntries.some((e) => !jgaIds.has(e.id)))
@@ -83,10 +73,9 @@ test.prop([arbSubmission], RUNS)(
     const steps = deriveFlowSteps(submission)
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
     const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
-    const owned = recipeOwnedEntryIds(submission)
     const q2 = submission.preconditions.q2
     for (const e of submission.fileEntries) {
-      if (e.fileTypeKind !== "sequence-read" || owned.has(e.id)) continue
+      if (e.fileTypeKind !== "sequence-read") continue
       // JGA はヒト個人のみ。restricted でも非ヒト (metagenome 含む) は DRA(embargo) に行く
       const toJga = e.access === "restricted" && q2 === "human"
       if (toJga) {
@@ -159,11 +148,10 @@ test.prop([arbSubmission], RUNS)(
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_spatialGroupKind_stepCoversWholeGroup",
   (submission) => {
-    const owned = recipeOwnedEntryIds(submission)
     const steps = deriveFlowSteps(submission)
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
-      if (owned.has(e.id) || !isSpatial(e.fileTypeKind)) continue
+      if (!isSpatial(e.fileTypeKind)) continue
       const geaStep = steps.find((s) => s.service === "gea" && s.scope.entryIds.includes(e.id))
       expect(geaStep).toBeDefined()
       expect(geaStep!.scope.groupIds).toContain(e.groupId)
@@ -174,13 +162,12 @@ test.prop([arbSubmission], RUNS)(
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_spatialPlatform_sequencingEntersDraAndGeaMicroarrayGeaOnly",
   (submission) => {
-    const owned = recipeOwnedEntryIds(submission)
     const steps = deriveFlowSteps(submission)
     const geaIds = entryIdsOfService(steps, (s) => s.service === "gea")
     const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
-      if (owned.has(e.id) || !isSpatial(e.fileTypeKind)) continue
+      if (!isSpatial(e.fileTypeKind)) continue
       const sequencing = e.chipTags.some(
         (c) => c.axis === "spatial-platform" && isSequencingSpatialPlatform(c.value),
       )

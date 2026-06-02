@@ -6,32 +6,25 @@ import { expect, test } from "./helpers"
 // label + sub の連結になる。識別は部分一致 (regex) で行う。
 const Q1_PUBLIC = /公開データの登録/
 const Q1_RESTRICTED = /制限公開データを含む登録/
+const Q1_THIRD = /第三者データの解析登録/
 // "ヒト" は "ヒト以外の真核生物" の前方一致になるため sub 文言で曖昧さを排除する。
 const Q2_HUMAN = /ヒト個人由来のデータ/
 const Q2_EUKARYOTE = /ヒト以外の真核生物/
 
 const selectQ1 = async (page: Page, name: RegExp): Promise<void> => {
-  await page
-    .getByRole("radiogroup", { name: "登録種別" })
-    .getByRole("radio", { name })
-    .check()
+  await page.getByRole("radiogroup", { name: "登録種別" }).getByRole("radio", { name }).check()
 }
 
 const selectQ2 = async (page: Page, name: RegExp): Promise<void> => {
-  await page
-    .getByRole("radiogroup", { name: "生物ドメイン" })
-    .getByRole("radio", { name })
-    .check()
+  await page.getByRole("radiogroup", { name: "生物ドメイン" }).getByRole("radio", { name }).check()
 }
 
-const addFileType = async (page: Page, label: string, times = 1): Promise<void> => {
-  const button = page.getByRole("button", { name: label })
-  for (let i = 0; i < times; i++) {
-    await button.click()
-  }
-}
+const kindButton = (page: Page, label: string) =>
+  page.locator("#submit-kind-selection").getByRole("button", { name: label, exact: true })
 
-const fileRows = (page: Page) => page.locator('[data-testid="file-row"]')
+const toggleKind = async (page: Page, label: string): Promise<void> => {
+  await kindButton(page, label).click()
+}
 
 const flowSteps = (page: Page) => page.locator('[data-testid="flow-step"]')
 
@@ -40,87 +33,55 @@ const flowStep = (page: Page, service: string) =>
 
 const detailItems = (page: Page) => page.locator('[data-testid="detail-item"]')
 
+const detailItemWith = (page: Page, radio: RegExp) =>
+  detailItems(page).filter({ has: page.getByRole("radio", { name: radio }) })
+
 const validationBanner = (page: Page) => page.getByText(/確認事項が \d+ 件あります/)
 
 test.describe("Submit Domain", () => {
-  test("S-SUBMIT-01: /submit 初期表示 (Q2 未選択で全ボタン disabled)", async ({ page }) => {
+  test("S-SUBMIT-01: 初期表示 (Q2 未選択で種別トグル disabled)", async ({ page }) => {
     await page.goto("/submit")
 
-    await expect(page.getByRole("link", { name: "登録" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    )
+    await expect(page.getByRole("link", { name: "登録" })).toHaveAttribute("aria-current", "page")
     await expect(
       page.getByRole("heading", { level: 1, name: "登録ナビゲーション" }),
     ).toBeVisible()
+    await expect(page.getByRole("heading", { name: "登録するデータの種類" })).toBeVisible()
 
     await expect(
-      page
-        .getByRole("radiogroup", { name: "登録種別" })
-        .getByRole("radio", { name: Q1_PUBLIC }),
+      page.getByRole("radiogroup", { name: "登録種別" }).getByRole("radio", { name: Q1_PUBLIC }),
     ).toBeChecked()
-
     const q2group = page.getByRole("radiogroup", { name: "生物ドメイン" })
     for (const radio of await q2group.getByRole("radio").all()) {
       await expect(radio).not.toBeChecked()
     }
 
-    const fileTypeLabels = [
-      "配列リード (FASTQ)",
-      "FASTA 塩基配列 (FASTA)",
-      "配列アノテーション (GFF)",
-      "バリアント (VCF)",
-      "発現マトリクス (TSV)",
-      "マイクロアレイ発現 (CEL)",
-      "空間トランスクリプトーム (TSV)",
-      "空間画像 (TIFF)",
-      "質量分析 (mzML)",
-      "NMR (nmrML)",
-      "代謝物アサインメント (TSV)",
-    ]
-    for (const label of fileTypeLabels) {
-      await expect(page.getByRole("button", { name: label })).toBeDisabled()
+    // Q2 未選択では allowedRepos が空なので全種別トグルが disabled
+    for (const label of ["配列リード", "FASTA 塩基配列", "バリアント", "発現マトリクス", "質量分析", "NMR"]) {
+      await expect(kindButton(page, label)).toBeDisabled()
     }
 
-    await expect(
-      page.getByText("上のボタンからファイル種別を追加してください"),
-    ).toBeVisible()
+    await expect(flowSteps(page)).toHaveCount(0)
     await expect(
       page.getByText("ファイルを追加すると、ここに登録フローが表示されます"),
     ).toBeVisible()
-    await expect(flowSteps(page)).toHaveCount(0)
-    await expect(page.locator('[data-testid="flow-overview"]')).toHaveCount(0)
     await expect(validationBanner(page)).toHaveCount(0)
   })
 
-  test("S-SUBMIT-02: Q2 選択後の配列リードで BioProject/BioSample/DRA が組まれる", async ({ page }) => {
+  test("S-SUBMIT-02: 配列リードのトグルで BioProject/BioSample/DRA が組まれる", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)")
+    await toggleKind(page, "配列リード")
 
-    await expect(fileRows(page)).toHaveCount(1)
-    const row = fileRows(page).first()
-    await expect(row.getByText("read-001.fastq")).toBeVisible()
-    await expect(row.getByRole("combobox", { name: "公開区分" })).toHaveText(/公開/)
-
+    await expect(kindButton(page, "配列リード")).toHaveAttribute("aria-pressed", "true")
     await expect(flowSteps(page)).toHaveCount(3)
     await expect(flowSteps(page).nth(0)).toHaveAttribute("data-service", "bioproject")
     await expect(flowSteps(page).nth(1)).toHaveAttribute("data-service", "biosample")
     await expect(flowSteps(page).nth(2)).toHaveAttribute("data-service", "dra")
 
-    await expect(flowStep(page, "bioproject").getByText("随伴", { exact: true })).toBeVisible()
-    await expect(flowStep(page, "biosample").getByText("随伴", { exact: true })).toBeVisible()
     await expect(flowStep(page, "dra").getByText("登録先", { exact: true })).toBeVisible()
+    await expect(flowStep(page, "dra").getByText("配列リード", { exact: true })).toBeVisible()
 
-    const draCard = flowStep(page, "dra")
-    await expect(draCard.getByText("DDBJ", { exact: true })).toBeVisible()
-    const popupPromise = page.waitForEvent("popup")
-    await draCard.getByRole("button", { name: "登録サイトを開く" }).click()
-    const popup = await popupPromise
-    expect(popup).toBeTruthy()
-    await popup.close()
-
-    await expect(page.locator('[data-testid="flow-overview"]')).toBeVisible()
     await expect(
       page
         .locator('[data-testid="flow-overview"]')
@@ -128,154 +89,105 @@ test.describe("Submit Domain", () => {
     ).toHaveCount(3)
   })
 
-  test("S-SUBMIT-03: 同一 Q1/Q2 下の混在行で複数 destination が並ぶ", async ({ page }) => {
+  test("S-SUBMIT-03: 複数種別で複数 destination が並ぶ", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)", 2)
-    await addFileType(page, "バリアント (VCF)")
-    await addFileType(page, "発現マトリクス (TSV)")
-
-    await expect(fileRows(page)).toHaveCount(4)
-    for (const filename of ["read-001.fastq", "read-002.fastq", "var-001.vcf", "mtx-001.tsv"]) {
-      await expect(page.getByText(filename, { exact: true }).first()).toBeVisible()
-    }
+    await toggleKind(page, "配列リード")
+    await toggleKind(page, "バリアント")
+    await toggleKind(page, "発現マトリクス")
 
     await expect(flowStep(page, "bioproject")).toHaveCount(1)
     await expect(flowStep(page, "biosample")).toHaveCount(1)
     await expect(flowStep(page, "dra")).toHaveCount(1)
     await expect(flowStep(page, "eva")).toHaveCount(1)
     await expect(flowStep(page, "gea")).toHaveCount(1)
-
-    await expect(page.locator('[data-testid="tag-progress"]')).toContainText("4 / 4")
-
-    await expect(page.getByRole("heading", { name: "データ詳細" })).toBeVisible()
-    await expect(detailItems(page)).toHaveCount(0)
-    await expect(
-      page.getByText("追加の詳細設定が必要なファイルはありません"),
-    ).toBeVisible()
   })
 
-  test("S-SUBMIT-04: open / restricted の分岐 (Q1/Q2 と行 access)", async ({ page }) => {
+  test("S-SUBMIT-04: 公開+制限で種別別 access トグルが出て JGA/DRA を分岐", async ({ page }) => {
     await page.goto("/submit")
+    await selectQ1(page, Q1_RESTRICTED)
     await selectQ2(page, Q2_HUMAN)
-    await addFileType(page, "配列リード (FASTQ)", 2)
+    await toggleKind(page, "配列リード")
 
-    const firstAccess = fileRows(page).nth(0).getByRole("combobox", { name: "公開区分" })
-    await firstAccess.click()
-    await page.getByRole("option", { name: "制限公開" }).click()
-    await expect(firstAccess).toHaveText(/制限公開/)
-
-    await expect(
-      fileRows(page).nth(1).getByRole("combobox", { name: "公開区分" }),
-    ).toHaveText(/公開/)
-
+    const access = page.getByRole("combobox", { name: "配列リード 公開区分" })
+    await expect(access).toBeVisible()
+    // ヒトの access-sensitive 種別は default 制限公開
+    await expect(access).toHaveText(/制限公開/)
     await expect(flowStep(page, "jga")).toHaveCount(1)
+    await expect(flowStep(page, "humandbs")).toHaveCount(1)
+
+    // 公開に倒すと DRA へ
+    await access.click()
+    await page.getByRole("option", { name: "公開", exact: true }).click()
     await expect(flowStep(page, "dra")).toHaveCount(1)
-
-    const jgaCard = flowStep(page, "jga")
-    await expect(jgaCard).toContainText("JGA に登録")
-    await expect(flowStep(page, "humandbs")).toContainText(/独自ポリシーは DBCLS 登録で JGAP を発行/)
-
-    await expect(jgaCard).toContainText("read-001.fastq")
-    await expect(jgaCard).not.toContainText("read-002.fastq")
-    await expect(flowStep(page, "dra")).toContainText("read-002.fastq")
-    await expect(flowStep(page, "dra")).not.toContainText("read-001.fastq")
+    await expect(flowStep(page, "jga")).toHaveCount(0)
   })
 
-  test("S-SUBMIT-05: live-commit 詳細パネルで配列ペアを設定する", async ({ page }) => {
+  test("S-SUBMIT-05: 配列+アノテーションの自動ペア (拡張子・採番なし)", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "FASTA 塩基配列 (FASTA)")
-    await addFileType(page, "配列アノテーション (GFF)")
+    await toggleKind(page, "FASTA 塩基配列")
+    await toggleKind(page, "配列アノテーション")
 
-    const annItem = detailItems(page).filter({ hasText: "ann-001.gff" })
+    const annItem = detailItemWith(page, /配列ペア/)
     await expect(annItem).toHaveCount(1)
+    // live-commit: 保存ボタンやダイアログは無い
     await expect(page.getByRole("button", { name: /保存/ })).toHaveCount(0)
     await expect(page.getByRole("dialog")).toHaveCount(0)
 
     await annItem.getByRole("radio", { name: /配列ペア/ }).check()
-
-    const partnerSelect = annItem.getByRole("combobox", { name: "ペアにする配列" })
-    await expect(partnerSelect).toBeVisible()
-    await expect(partnerSelect).toHaveAttribute("aria-invalid", "true")
-
-    await partnerSelect.click()
-    await page.getByRole("option", { name: "seq-001.fasta" }).click()
-
+    // 単独 FASTA が自動でペアになり 設定済み (相方選択 UI は無い)
     await expect(annItem.getByText("設定済み", { exact: true })).toBeVisible()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
+    await expect(annItem.getByRole("combobox", { name: "ペアにする配列" })).toHaveCount(0)
+    await expect(flowStep(page, "ddbj-trad")).toHaveCount(1)
 
+    // 単独アノテーションに戻すと FASTA が単独詳細項目として復活する
     await annItem.getByRole("radio", { name: /単独アノテーション/ }).check()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
+    await expect(detailItemWith(page, /単独配列/)).toHaveCount(1)
   })
 
-  test("S-SUBMIT-06: 行削除でフローカードが減る (確認ダイアログ無し)", async ({ page }) => {
+  test("S-SUBMIT-06: 種別トグル off でフローカードが減る", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)")
-    await addFileType(page, "発現マトリクス (TSV)")
-    await expect(fileRows(page)).toHaveCount(2)
+    await toggleKind(page, "配列リード")
+    await toggleKind(page, "発現マトリクス")
+    await expect(flowStep(page, "gea")).toHaveCount(1)
 
-    const mtxRow = fileRows(page).filter({ hasText: "mtx-001.tsv" })
-    await mtxRow.getByRole("button", { name: "行を削除" }).click()
-
-    await expect(page.getByRole("dialog")).toHaveCount(0)
-    await expect(fileRows(page)).toHaveCount(1)
+    await toggleKind(page, "発現マトリクス")
+    await expect(kindButton(page, "発現マトリクス")).toHaveAttribute("aria-pressed", "false")
     await expect(flowStep(page, "gea")).toHaveCount(0)
-    await expect(flowStep(page, "bioproject")).toHaveCount(1)
-    await expect(flowStep(page, "biosample")).toHaveCount(1)
     await expect(flowStep(page, "dra")).toHaveCount(1)
     await expect(validationBanner(page)).toHaveCount(0)
   })
 
-  test("S-SUBMIT-07: カスケードの enable/disable 遷移", async ({ page }) => {
+  test("S-SUBMIT-07: カスケードの enable/disable", async ({ page }) => {
     await page.goto("/submit")
-
-    const fastqButton = page.getByRole("button", { name: "配列リード (FASTQ)" })
-    await expect(fastqButton).toBeDisabled()
-    await expect(fastqButton).toHaveAttribute("title", "登録種別を選択してください")
+    const reads = kindButton(page, "配列リード")
+    await expect(reads).toBeDisabled()
+    await expect(reads).toHaveAttribute("title", "登録種別を選択してください")
 
     await selectQ2(page, Q2_EUKARYOTE)
-    await expect(fastqButton).toBeEnabled()
-    await expect(page.getByRole("button", { name: "バリアント (VCF)" })).toBeEnabled()
-    await expect(page.getByRole("button", { name: "発現マトリクス (TSV)" })).toBeEnabled()
+    await expect(reads).toBeEnabled()
+    await expect(kindButton(page, "バリアント")).toBeEnabled()
 
-    await selectQ1(page, Q1_RESTRICTED)
-
-    const q2group = page.getByRole("radiogroup", { name: "生物ドメイン" })
-    await expect(q2group.getByRole("radio", { name: Q2_EUKARYOTE })).toBeDisabled()
-    await expect(q2group.getByRole("radio", { name: /原核生物/ })).toBeDisabled()
-    await expect(q2group.getByRole("radio", { name: /ファージ・ウイルス/ })).toBeDisabled()
-    await expect(q2group.getByRole("radio", { name: /環境サンプル/ })).toBeDisabled()
-    await expect(q2group.getByRole("radio", { name: Q2_HUMAN })).toBeEnabled()
-    await expect(
-      q2group
-        .getByRole("radio", { name: Q2_EUKARYOTE })
-        .locator("xpath=ancestor::label[1]"),
-    ).toHaveAttribute(
-      "title",
-      "選択した登録種別では、この生物ドメインは登録先を持ちません",
-    )
-
-    await expect(q2group.getByRole("radio", { name: Q2_EUKARYOTE })).not.toBeChecked()
-    await expect(fastqButton).toBeDisabled()
-    await expect(fastqButton).toHaveAttribute("title", "登録種別を選択してください")
+    // 第三者 (ddbj-trad / metabobank) では variant / expression は登録先が無く disable
+    await selectQ1(page, Q1_THIRD)
+    await expect(kindButton(page, "バリアント")).toBeDisabled()
+    await expect(kindButton(page, "発現マトリクス")).toBeDisabled()
+    await expect(kindButton(page, "FASTA 塩基配列")).toBeEnabled()
   })
 
-  test("S-SUBMIT-08: 質量分析の proteomics → jPOST / metabolomics → MetaboBank の外部分岐", async ({ page }) => {
+  test("S-SUBMIT-08: 質量分析 proteomics→jPOST / metabolomics→MetaboBank", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "質量分析 (mzML)")
+    await toggleKind(page, "質量分析")
 
-    const msItem = detailItems(page).filter({ hasText: "ms-001.mzML" })
+    const msItem = detailItemWith(page, /プロテオミクス/)
     await expect(msItem).toHaveCount(1)
 
     await msItem.getByRole("radio", { name: /プロテオミクス/ }).check()
     await expect(flowStep(page, "jpost")).toHaveCount(1)
     await expect(flowStep(page, "jpost").getByText("外部登録先", { exact: true })).toBeVisible()
-    await expect(flowStep(page, "jpost")).toContainText("jPOST に登録")
-    await expect(flowStep(page, "bioproject")).toHaveCount(1)
-    await expect(flowStep(page, "biosample")).toHaveCount(1)
 
     await msItem.getByRole("radio", { name: /メタボロミクス/ }).check()
     await expect(flowStep(page, "jpost")).toHaveCount(0)
@@ -288,16 +200,11 @@ test.describe("Submit Domain", () => {
     await page.goto("/submit")
     await selectQ1(page, Q1_RESTRICTED)
     await selectQ2(page, Q2_HUMAN)
-    await addFileType(page, "配列リード (FASTQ)")
-
-    await expect(
-      fileRows(page).first().getByRole("combobox", { name: "公開区分" }),
-    ).toHaveText(/制限公開/)
+    await toggleKind(page, "配列リード")
 
     await expect(flowStep(page, "humandbs")).toHaveCount(1)
     await expect(flowStep(page, "jga")).toHaveCount(1)
     await expect(flowStep(page, "humandbs").getByText("申請窓口", { exact: true })).toBeVisible()
-    await expect(flowStep(page, "jga").getByText("登録先", { exact: true })).toBeVisible()
 
     const services = await flowSteps(page).evaluateAll((nodes) =>
       nodes.map((n) => n.getAttribute("data-service")),
@@ -308,82 +215,26 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "biosample")).toHaveCount(0)
   })
 
-  test("S-SUBMIT-10: 複数行追加後の即時削除でカードが連動する", async ({ page }) => {
-    await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)", 2)
-    await expect(fileRows(page)).toHaveCount(2)
-
-    const secondRow = fileRows(page).filter({ hasText: "read-002.fastq" })
-    await secondRow.getByRole("button", { name: "行を削除" }).click()
-
-    await expect(page.getByRole("dialog")).toHaveCount(0)
-    await expect(fileRows(page)).toHaveCount(1)
-
-    await expect(flowStep(page, "bioproject")).toHaveCount(1)
-    await expect(flowStep(page, "biosample")).toHaveCount(1)
-    await expect(flowStep(page, "dra")).toHaveCount(1)
-    await expect(flowStep(page, "dra")).toContainText("read-001.fastq")
-    await expect(flowStep(page, "dra")).not.toContainText("read-002.fastq")
-  })
-
-  test("S-SUBMIT-11: 配列ペアの相方変更と解消のライフサイクル", async ({ page }) => {
-    await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "FASTA 塩基配列 (FASTA)", 2)
-    await addFileType(page, "配列アノテーション (GFF)")
-
-    const annItem = detailItems(page).filter({ hasText: "ann-001.gff" })
-    await annItem.getByRole("radio", { name: /配列ペア/ }).check()
-    const partnerSelect = annItem.getByRole("combobox", { name: "ペアにする配列" })
-
-    await partnerSelect.click()
-    await page.getByRole("option", { name: "seq-001.fasta" }).click()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
-    await expect(annItem.getByText("設定済み", { exact: true })).toBeVisible()
-
-    await partnerSelect.click()
-    await page.getByRole("option", { name: "seq-002.fasta" }).click()
-    await expect(detailItems(page).filter({ hasText: "seq-002.fasta", hasNotText: "ann-001.gff" })).toHaveCount(0)
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
-
-    await annItem.getByRole("radio", { name: /単独アノテーション/ }).check()
-    await expect(detailItems(page).filter({ hasText: "seq-001.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
-    await expect(detailItems(page).filter({ hasText: "seq-002.fasta", hasNotText: "ann-001.gff" })).toHaveCount(1)
-  })
-
-  test("S-SUBMIT-12: Q1 変更で既存行が前提矛盾になり確認事項に出る", async ({ page }) => {
+  test("S-SUBMIT-12: Q1 変更で選択済み種別が前提矛盾になり確認事項に出る", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_HUMAN)
-    await addFileType(page, "発現マトリクス (TSV)")
+    await toggleKind(page, "発現マトリクス")
     await expect(flowStep(page, "gea")).toHaveCount(1)
 
-    await selectQ1(page, Q1_RESTRICTED)
+    await selectQ1(page, Q1_THIRD)
 
+    // 選択は解除されず、第三者では発現マトリクスが登録先を持たないため disable + 確認事項
     await expect(
-      page
-        .getByRole("radiogroup", { name: "生物ドメイン" })
-        .getByRole("radio", { name: Q2_HUMAN }),
+      page.getByRole("radiogroup", { name: "生物ドメイン" }).getByRole("radio", { name: Q2_HUMAN }),
     ).toBeChecked()
-    await expect(fileRows(page)).toHaveCount(1)
-
-    const mtxButton = page.getByRole("button", { name: "発現マトリクス (TSV)" })
-    await expect(mtxButton).toBeDisabled()
-    await expect(mtxButton).toHaveAttribute(
-      "title",
-      "選択した登録種別と生物ドメインの組み合わせでは、登録先がありません",
-    )
-
+    await expect(kindButton(page, "発現マトリクス")).toBeDisabled()
     await expect(validationBanner(page)).toBeVisible()
-    await expect(
-      page.getByText("登録前提と矛盾する種別の行があります"),
-    ).toBeVisible()
   })
 
   test("S-SUBMIT-13: FlowOverview のステーションクリックで該当カードへスクロール", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)")
+    await toggleKind(page, "配列リード")
     await expect(flowSteps(page)).toHaveCount(3)
 
     await page
@@ -394,75 +245,26 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "dra")).toBeInViewport()
   })
 
-  test("E-SUBMIT-01: 未設定の詳細行が notify Tag と warning tone で示される", async ({ page }) => {
+  test("E-SUBMIT-01: 未設定の詳細種別が notify で示される", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "空間トランスクリプトーム (TSV)")
+    await toggleKind(page, "空間トランスクリプトーム")
 
-    const row = fileRows(page).filter({ hasText: "spt-001.tsv" })
-    await expect(row.getByText("未設定", { exact: true })).toBeVisible()
-
-    const sptItem = detailItems(page).filter({ hasText: "spt-001.tsv" })
-    await expect(sptItem.getByText("未設定", { exact: true })).toBeVisible()
-
+    const item = detailItemWith(page, /Visium/)
+    await expect(item.getByText("未設定", { exact: true })).toBeVisible()
     await expect(validationBanner(page)).toHaveCount(0)
   })
 
-  test("E-SUBMIT-03: 100 行追加でも UI が応答する", async ({ page }) => {
+  test("E-SUBMIT-04: spatial Visium で DRA + GEA の 2 段", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)", 100)
+    await toggleKind(page, "空間トランスクリプトーム")
 
-    await expect(fileRows(page)).toHaveCount(100, { timeout: 20_000 })
+    const item = detailItemWith(page, /Visium/)
+    await item.getByRole("radio", { name: /Visium/ }).check()
 
-    await expect(flowStep(page, "bioproject")).toHaveCount(1)
-    await expect(flowStep(page, "biosample")).toHaveCount(1)
-    await expect(flowStep(page, "dra")).toHaveCount(1)
-    await expect(flowStep(page, "dra")).toContainText("read-100.fastq")
-
-    const lastRow = fileRows(page).filter({ hasText: "read-100.fastq" })
-    await lastRow.getByRole("button", { name: "行を削除" }).click()
-    await expect(fileRows(page)).toHaveCount(99)
-  })
-
-  test("E-SUBMIT-04: spatial-transcriptomics の platform 未確定で no-destination 相当を確認", async ({ page }) => {
-    await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "空間トランスクリプトーム (TSV)")
-
-    const row = fileRows(page).filter({ hasText: "spt-001.tsv" })
-    const sptItem = detailItems(page).filter({ hasText: "spt-001.tsv" })
-    await expect(row.getByText("未設定", { exact: true })).toBeVisible()
-    await expect(sptItem.getByText("未設定", { exact: true })).toBeVisible()
-    await expect(validationBanner(page)).toHaveCount(0)
-
-    await sptItem.getByRole("radio", { name: /Visium/ }).check()
-
-    await expect(sptItem.getByText("未設定", { exact: true })).toHaveCount(0)
-    await expect(sptItem.getByText("設定済み", { exact: true })).toBeVisible()
+    await expect(item.getByText("設定済み", { exact: true })).toBeVisible()
     await expect(flowStep(page, "gea")).toHaveCount(1)
     await expect(flowStep(page, "dra")).toHaveCount(1)
-  })
-
-  test("E-SUBMIT-05: 削除後の連番ギャップで自動採番が衝突しない", async ({ page }) => {
-    await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
-    await addFileType(page, "配列リード (FASTQ)", 3)
-    await expect(fileRows(page)).toHaveCount(3)
-
-    await fileRows(page)
-      .filter({ hasText: "read-002.fastq" })
-      .getByRole("button", { name: "行を削除" })
-      .click()
-
-    await expect(fileRows(page)).toHaveCount(2)
-    await expect(fileRows(page).filter({ hasText: "read-001.fastq" })).toHaveCount(1)
-    await expect(fileRows(page).filter({ hasText: "read-003.fastq" })).toHaveCount(1)
-
-    await addFileType(page, "配列リード (FASTQ)")
-
-    await expect(fileRows(page)).toHaveCount(3)
-    await expect(fileRows(page).filter({ hasText: "read-004.fastq" })).toHaveCount(1)
-    await expect(fileRows(page).filter({ hasText: "read-002.fastq" })).toHaveCount(0)
   })
 })

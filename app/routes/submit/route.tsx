@@ -1,8 +1,9 @@
 import {
+  accessToggleVisible,
   countConfiguredRows,
   DataDetailPanel,
-  FileTable,
   FileTypeGrid,
+  FileTypeIcon,
   FlowOverview,
   FlowStepCards,
   getSubmitCard,
@@ -19,8 +20,8 @@ import {
 import { pageTitleMeta } from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
-import { Q1 as Q1Enum, Q2 as Q2Enum, serviceRoleTagKey } from "~/schemas/submit"
-import { PageTitle, Section, SectionHeading } from "~/ui"
+import { Access as AccessEnum, Q1 as Q1Enum, Q2 as Q2Enum, serviceRoleTagKey } from "~/schemas/submit"
+import { PageTitle, Section, SectionHeading, Select } from "~/ui"
 
 export const handle = {
   lang: undefined,
@@ -43,7 +44,6 @@ const SubmitRoute = () => {
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
   const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}.label`)
-  const fileTypeKindExt = (k: FileTypeKind): string => t(`submit.fileType.${k}.ext`)
   const fileTypeKindHint = (k: FileTypeKind): string => t(`submit.fileType.${k}.hint`)
   const accessLabel = (a: Access): string => t(`submit.access.${a}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
@@ -92,14 +92,27 @@ const SubmitRoute = () => {
     ? t("submit.preconditions.q1Required")
     : t("submit.preconditions.kindDisabledReason")
 
+  const selectedKinds = new Set(state.submission.fileEntries.map((e) => e.fileTypeKind))
+  const onToggleKind = (k: FileTypeKind): void => {
+    const existing = state.submission.fileEntries.find((e) => e.fileTypeKind === k)
+    if (existing) actions.removeRow(existing.id)
+    else actions.addRow(k)
+  }
+  const accessEntries = state.submission.fileEntries.filter((e) =>
+    accessToggleVisible(q1, q2, e.fileTypeKind),
+  )
+  const accessOptions = AccessEnum.options.map((a) => ({ value: a, label: accessLabel(a) }))
+
   const rowIndexOf = (entryId: string): number =>
     state.submission.fileEntries.findIndex((e) => e.id === entryId)
+  const jumpLabel = (oneBased: number): string => {
+    const entry = state.submission.fileEntries[oneBased - 1]
 
-  const scrollToRow = (entryId: string): void => {
+    return entry ? fileTypeKindLabel(entry.fileTypeKind) : ""
+  }
+  const scrollToKinds = (): void => {
     if (typeof document === "undefined") return
-    document
-      .querySelector(`[data-testid="file-row"][data-entry-id="${entryId}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    document.getElementById("submit-kind-selection")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   return (
@@ -138,39 +151,49 @@ const SubmitRoute = () => {
               </div>
             </div>
 
-            <div>
+            <div id="submit-kind-selection">
               <SectionHeading>{t("submit.sections.table")}</SectionHeading>
               <p className="text-fs-body-sm text-ink-mid mt-0 mb-4 leading-relaxed">
                 {t("submit.table.headingDescription")}
               </p>
-              <div className="mb-6">
-                <FileTypeGrid
-                  onClick={actions.addRow}
-                  getLabel={fileTypeKindLabel}
-                  getExt={fileTypeKindExt}
-                  getHint={fileTypeKindHint}
-                  isEnabled={(k) => isKindEnabled(q1, q2, k)}
-                  disabledReason={gridDisabledReason}
-                />
-              </div>
-              <FileTable
-                state={state}
-                labels={{
-                  caption: t("submit.table.caption"),
-                  columnFileType: t("submit.table.columnFileType"),
-                  columnFilename: t("submit.table.columnFilename"),
-                  columnAccess: t("submit.table.columnAccess"),
-                  columnDelete: t("submit.table.columnDelete"),
-                  empty: t("submit.table.empty"),
-                  accessAria: t("submit.a11y.accessCell"),
-                  deleteAria: t("submit.a11y.deleteRow"),
-                  detailUnset: t("submit.table.detailUnset"),
-                  fileTypeKindLabel,
-                  accessLabel,
-                }}
-                onAccessChange={(entryId, value) => actions.editRowCell(entryId, { access: value })}
-                onDelete={actions.removeRow}
+              <FileTypeGrid
+                onToggle={onToggleKind}
+                getLabel={fileTypeKindLabel}
+                getHint={fileTypeKindHint}
+                isSelected={(k) => selectedKinds.has(k)}
+                isEnabled={(k) => isKindEnabled(q1, q2, k)}
+                disabledReason={gridDisabledReason}
               />
+              {accessEntries.length > 0 && (
+                <div className="mt-5 flex flex-col gap-2">
+                  <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-1">
+                    {t("submit.access.heading")}
+                  </p>
+                  {accessEntries.map((e) => (
+                    <div
+                      key={e.id}
+                      className="flex items-center justify-between gap-3 border border-border-soft rounded-card bg-surface px-3 py-2"
+                    >
+                      <span className="inline-flex items-center gap-2 min-w-0">
+                        <span className="text-brand-deep shrink-0 inline-flex items-center">
+                          <FileTypeIcon fileTypeKind={e.fileTypeKind} size={16} />
+                        </span>
+                        <span className="text-fs-body-sm text-ink truncate">
+                          {fileTypeKindLabel(e.fileTypeKind)}
+                        </span>
+                      </span>
+                      <div className="shrink-0 w-36">
+                        <Select
+                          ariaLabel={`${fileTypeKindLabel(e.fileTypeKind)} ${t("submit.access.heading")}`}
+                          options={accessOptions}
+                          value={e.access}
+                          onChange={(next) => actions.editRowCell(e.id, { access: next as Access })}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {total > 0 && (
@@ -190,9 +213,7 @@ const SubmitRoute = () => {
                       empty: t("submit.detail.empty"),
                       configured: t("submit.detail.statusReady"),
                       unset: t("submit.table.detailUnset"),
-                      pairPartnerLabel: t("submit.detail.pairPartnerLabel"),
-                      pairPartnerPlaceholder: t("submit.detail.pairPartnerPlaceholder"),
-                      pairPartnerEmpty: t("submit.detail.pairPartnerEmpty"),
+                      pairNeedsFasta: t("submit.detail.pairNeedsFasta"),
                       fileTypeKindLabel,
                       groupLabel: (labelKey: string) => t(labelKey),
                       optionLabel: (labelKey: string) => t(labelKey),
@@ -200,7 +221,6 @@ const SubmitRoute = () => {
                     }}
                     isConfigured={(entryId) => rowIsConfigured(state, entryId)}
                     onCommit={actions.commitRowEdit}
-                    onSetPairPartner={actions.setPairPartner}
                   />
                 </div>
               </div>
@@ -227,8 +247,8 @@ const SubmitRoute = () => {
             )}
             <FlowStepCards
               steps={steps}
-              groups={state.submission.fileGroups}
               entries={state.submission.fileEntries}
+              fileTypeKindLabel={fileTypeKindLabel}
               emptyMessage={t("submit.flow.empty")}
               serviceTitle={serviceTitle}
               serviceDescription={serviceDescription}
@@ -249,9 +269,9 @@ const SubmitRoute = () => {
                 validations={validations}
                 rowIndexOf={rowIndexOf}
                 headingText={validationHeading}
-                rowLabel={(index) => t("submit.validations.rowReference", { index })}
+                rowLabel={jumpLabel}
                 validationLabel={(v) => t(`submit.validations.${v.kind}`)}
-                onJumpToRow={scrollToRow}
+                onJumpToRow={() => scrollToKinds()}
               />
             )}
           </div>

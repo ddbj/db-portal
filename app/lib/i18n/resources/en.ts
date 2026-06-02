@@ -157,7 +157,7 @@ export const en: Resources = {
     pageTitle: "Submission navigator",
     sections: {
       preconditions: "Submission basics",
-      table: "Data files",
+      table: "Select data types",
       flow: "Submission flow",
     },
     preconditions: {
@@ -180,21 +180,14 @@ export const en: Resources = {
       },
     },
     table: {
-      caption: "One row per file. Add a file type, then fill in its details.",
-      headingDescription: "List each file you plan to submit and set its access level and data details.",
-      columnFileType: "File type",
-      columnFilename: "Filename",
-      columnAccess: "Access",
-      columnDelete: "Remove",
+      headingDescription: "Select the kinds of data you have (set the access level per type when the submission includes restricted data).",
       detailUnset: "Set data details",
-      empty: "No files yet. Add a file type to get started.",
+      empty: "Select your data types from the buttons above.",
     },
     detail: {
       heading: "Data details",
       empty: "No files need extra details.",
-      pairPartnerLabel: "Paired sequence",
-      pairPartnerPlaceholder: "Select a sequence",
-      pairPartnerEmpty: "Add a FASTA nucleotide row first.",
+      pairNeedsFasta: "Select the FASTA nucleotide type first.",
       statusReady: "Ready",
       formGroupLabels: {
         form: "Data form",
@@ -232,19 +225,20 @@ export const en: Resources = {
       fileCount: "{{count}} files",
     },
     fileType: {
-      "sequence-read": { label: "Sequence reads", ext: "FASTQ", hint: "Raw sequencing reads from a run." },
-      "sequence-nucleotide": { label: "Nucleotide sequences", ext: "FASTA", hint: "Assembled or annotated nucleotide sequences." },
-      "sequence-annotation": { label: "Sequence annotation", ext: "GFF", hint: "Feature table for a nucleotide sequence." },
-      "variant": { label: "Variants", ext: "VCF", hint: "Variant calls against a reference genome." },
-      "expression-matrix": { label: "Expression matrix", ext: "TSV", hint: "Gene expression quantification matrix." },
-      "microarray-expression": { label: "Microarray expression", ext: "CEL", hint: "Microarray expression measurements." },
-      "spatial-transcriptomics": { label: "Spatial transcriptomics", ext: "TSV", hint: "Expression with spatial coordinates." },
-      "spatial-image": { label: "Spatial image", ext: "TIFF", hint: "Tissue image for spatial data." },
-      "mass-spectrometry": { label: "Mass spectrometry", ext: "mzML", hint: "Mass spectrometry measurements." },
-      "nmr": { label: "NMR", ext: "nmrML", hint: "Nuclear magnetic resonance measurements." },
-      "metabolite-assignment": { label: "Metabolite assignment", ext: "TSV", hint: "Identified metabolites and their assignments." },
+      "sequence-read": { label: "Sequence reads", hint: "Raw sequencing reads from a run." },
+      "sequence-nucleotide": { label: "Nucleotide sequences", hint: "Assembled or annotated nucleotide sequences." },
+      "sequence-annotation": { label: "Sequence annotation", hint: "Feature table for a nucleotide sequence." },
+      "variant": { label: "Variants", hint: "Variant calls against a reference genome." },
+      "expression-matrix": { label: "Expression matrix", hint: "Gene expression quantification matrix." },
+      "microarray-expression": { label: "Microarray expression", hint: "Microarray expression measurements." },
+      "spatial-transcriptomics": { label: "Spatial transcriptomics", hint: "Expression with spatial coordinates." },
+      "spatial-image": { label: "Spatial image", hint: "Tissue image for spatial data." },
+      "mass-spectrometry": { label: "Mass spectrometry", hint: "Mass spectrometry measurements." },
+      "nmr": { label: "NMR", hint: "Nuclear magnetic resonance measurements." },
+      "metabolite-assignment": { label: "Metabolite assignment", hint: "Identified metabolites and their assignments." },
     },
     access: {
+      "heading": "Access level",
       "open": "Open",
       "restricted": "Restricted",
     },
@@ -305,7 +299,7 @@ export const en: Resources = {
       },
       assemblyAnnotation: {
         intro: "Sequence and annotation are submitted together as one file pair in a single MSS step.",
-        filenamePairing: "The sequence and annotation files must share the same name apart from their extensions.",
+        filenamePairing: "Submit the sequence and annotation files together as one matched pair.",
       },
       annotation: {
         intro: "Annotation for assembled sequences is submitted through DDBJ (MSS).",
@@ -375,41 +369,6 @@ export const en: Resources = {
     },
     biosample: {
       intro: "A BioSample is created alongside your submission; the actual sample count and organism are set in each step.",
-    },
-    multiModal: {
-      warning: "This file group mixes more than one file type.",
-    },
-    mag: {
-      bioproject: {
-        intro: "All stages of the MAG reference one shared BioProject (type=Metagenome).",
-      },
-      biosample: {
-        metagenome: "The BioSample for the original metagenome sample.",
-        binned: "The binned sample derives from the metagenome sample via derived_from.",
-        mag: "The MAG sample derives from the metagenome sample via derived_from.",
-      },
-      dra: {
-        run: "Deposit the raw reads as a DRA Run.",
-        analysis: "Deposit the primary and binned assemblies as DRA Analysis (De Novo Assembly).",
-      },
-      ddbjTrad: {
-        envGenome: "Deposit the MAG genome as a genome entry in the ENV division of MSS.",
-      },
-    },
-    sag: {
-      bioproject: {
-        intro: "A shared BioProject ties the SAGs together.",
-      },
-      biosample: {
-        misag: "Register the single-cell SAG sample with the MISAG package, using the actual organism name.",
-        combined: "When there are multiple cells, a combined SAG sample ties the individual SAGs together via derived_from.",
-      },
-      dra: {
-        run: "Optionally deposit the SAG raw reads as a DRA Run.",
-      },
-      ddbjTrad: {
-        entry: "Deposit the SAG sequence as an MSS entry with data type=SAG.",
-      },
     },
     spatial: {
       dra: {

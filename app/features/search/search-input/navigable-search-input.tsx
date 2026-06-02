@@ -111,6 +111,13 @@ export const NavigableSearchInput = ({
     : searchPending
       ? t("search.a11y.searching")
       : t("search.a11y.submit")
+  // The submit may show 検索 / 検索中… / 生成中…; reserve the widest so the box
+  // never resizes when the label changes.
+  const submitReserve = [
+    t("search.a11y.submit"),
+    t("search.a11y.searching"),
+    t("search.assistant.generating"),
+  ]
 
   const handleSubmit = (value: string) => {
     if (submitDisabled) return
@@ -182,6 +189,7 @@ export const NavigableSearchInput = ({
         placeholder={isAi ? (effectiveAiMode === "append" ? t("search.assistant.placeholderAppend") : t("search.assistant.placeholderNew")) : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
         submitLabel={submitLabel}
+        submitReserve={submitReserve}
         submitDisabled={submitDisabled}
         showScope={!(isAi && hideScopeInAiMode)}
         scope={boxScope}

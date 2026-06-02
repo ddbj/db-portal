@@ -33,9 +33,9 @@ const kindsOf = (state: UIState, kind: string): boolean =>
 
 describe("selectValidations", () => {
   test("selectValidations_kindDisabledByPrecond_reportsPreconditionConflict", () => {
-    // restricted forces JGA-only repos; expression-matrix (gea only) is disabled under restricted/human
-    expect(isKindEnabled("restricted", "human", "expression-matrix")).toBe(false)
-    const state = addRow(withPrecond("restricted", "human"), "expression-matrix", "e1", "g1")
+    // 第三者 (repos = ddbj-trad / metabobank) では expression-matrix (gea) は disable される
+    expect(isKindEnabled("third-party", "human", "expression-matrix")).toBe(false)
+    const state = addRow(withPrecond("third-party", "human"), "expression-matrix", "e1", "g1")
 
     expect(selectValidations(state)).toContainEqual({ kind: "precondition-conflict", entryId: "e1" })
   })
@@ -64,7 +64,6 @@ describe("selectValidations", () => {
         {
           id: "e1",
           fileTypeKind: "sequence-read",
-          filename: "read-001.fastq",
           access: "open",
           dataForm: "raw",
           groupId: "ghost",
@@ -109,7 +108,6 @@ describe("selectValidations", () => {
               {
                 id: "e0",
                 fileTypeKind: kind,
-                filename: "f.dat",
                 access,
                 dataForm: "raw",
                 groupId: "g0",
@@ -135,7 +133,6 @@ describe("selectValidations", () => {
         {
           id: "e0",
           fileTypeKind: "sequence-nucleotide",
-          filename: "seq-001.fasta",
           access: "open",
           dataForm: "assembled",
           groupId: "g0",
@@ -157,13 +154,12 @@ describe("selectValidations", () => {
   test("selectValidations_oneRowManyDefects_reportsEachIndependently", () => {
     // a single entry can trip multiple validation kinds at once
     const state = stateOf({
-      preconditions: { q1: "restricted", q2: "human" },
+      preconditions: { q1: "third-party", q2: "human" },
       fileEntries: [
         {
           id: "e1",
           fileTypeKind: "expression-matrix",
-          filename: "mtx-001.tsv",
-          access: "restricted",
+          access: "open",
           dataForm: "matrix",
           groupId: "ghost",
           chipTags: [],
@@ -242,20 +238,15 @@ describe("rowIsConfigured / countConfiguredRows", () => {
   })
 
   const pairedState = (): UIState => {
-    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
-    state = addRow(state, "sequence-nucleotide", "fa", "g-fa")
-    state = submitReducer(state, {
+    let state = addRow(initialState, "sequence-nucleotide", "fa", "g-fa")
+    state = addRow(state, "sequence-annotation", "ann", "g-ann")
+
+    // アノテーションで「配列ペア」を commit すると単独 FASTA が自動でペアになる
+    return submitReducer(state, {
       type: "COMMIT_ROW_EDIT",
       entryId: "ann",
       patch: { groupType: "assembly-annotation" },
       releasedGroupId: "rel-a",
-    })
-
-    return submitReducer(state, {
-      type: "SET_PAIR_PARTNER",
-      annotationEntryId: "ann",
-      partnerEntryId: "fa",
-      releasedGroupId: "rel-b",
     })
   }
 

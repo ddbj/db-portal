@@ -54,7 +54,6 @@ const SubmitFlowExplorer = () => {
         {
           id,
           fileTypeKind: kind,
-          filename: `${kind}.dat`,
           access: q1 === "restricted" ? "restricted" : "open",
           dataForm: TYPICAL_DATA_FORM_FOR_KIND[kind],
           groupId,

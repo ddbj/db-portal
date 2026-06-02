@@ -107,23 +107,6 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
   "metabolite-assignment": "single",
 }
 
-// 行追加時に自動採番する default filename の種別ごとの prefix と拡張子
-export const DEFAULT_FILENAME_FOR_KIND: Readonly<
-  Record<FileTypeKind, { prefix: string; ext: string }>
-> = {
-  "sequence-read": { prefix: "read", ext: "fastq" },
-  "sequence-nucleotide": { prefix: "seq", ext: "fasta" },
-  "sequence-annotation": { prefix: "ann", ext: "gff" },
-  "variant": { prefix: "var", ext: "vcf" },
-  "expression-matrix": { prefix: "mtx", ext: "tsv" },
-  "microarray-expression": { prefix: "arr", ext: "cel" },
-  "spatial-transcriptomics": { prefix: "spt", ext: "tsv" },
-  "spatial-image": { prefix: "img", ext: "tiff" },
-  "mass-spectrometry": { prefix: "ms", ext: "mzML" },
-  "nmr": { prefix: "nmr", ext: "nmrML" },
-  "metabolite-assignment": { prefix: "maf", ext: "tsv" },
-}
-
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
   "mass-spec-domain": ["proteomics", "metabolomics"],

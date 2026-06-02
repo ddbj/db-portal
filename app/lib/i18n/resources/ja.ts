@@ -183,21 +183,14 @@ export type Resources = {
       }
     }
     table: {
-      caption: string
       headingDescription: string
-      columnFileType: string
-      columnFilename: string
-      columnAccess: string
-      columnDelete: string
       detailUnset: string
       empty: string
     }
     detail: {
       heading: string
       empty: string
-      pairPartnerLabel: string
-      pairPartnerPlaceholder: string
-      pairPartnerEmpty: string
+      pairNeedsFasta: string
       statusReady: string
       formGroupLabels: {
         form: string
@@ -235,19 +228,20 @@ export type Resources = {
       fileCount: string
     }
     fileType: {
-      "sequence-read": { label: string; ext: string; hint: string }
-      "sequence-nucleotide": { label: string; ext: string; hint: string }
-      "sequence-annotation": { label: string; ext: string; hint: string }
-      "variant": { label: string; ext: string; hint: string }
-      "expression-matrix": { label: string; ext: string; hint: string }
-      "microarray-expression": { label: string; ext: string; hint: string }
-      "spatial-transcriptomics": { label: string; ext: string; hint: string }
-      "spatial-image": { label: string; ext: string; hint: string }
-      "mass-spectrometry": { label: string; ext: string; hint: string }
-      "nmr": { label: string; ext: string; hint: string }
-      "metabolite-assignment": { label: string; ext: string; hint: string }
+      "sequence-read": { label: string; hint: string }
+      "sequence-nucleotide": { label: string; hint: string }
+      "sequence-annotation": { label: string; hint: string }
+      "variant": { label: string; hint: string }
+      "expression-matrix": { label: string; hint: string }
+      "microarray-expression": { label: string; hint: string }
+      "spatial-transcriptomics": { label: string; hint: string }
+      "spatial-image": { label: string; hint: string }
+      "mass-spectrometry": { label: string; hint: string }
+      "nmr": { label: string; hint: string }
+      "metabolite-assignment": { label: string; hint: string }
     }
     access: {
+      "heading": string
       "open": string
       "restricted": string
     }
@@ -327,19 +321,6 @@ export type Resources = {
     }
     bioproject: { intro: string }
     biosample: { intro: string }
-    multiModal: { warning: string }
-    mag: {
-      bioproject: { intro: string }
-      biosample: { metagenome: string; binned: string; mag: string }
-      dra: { run: string; analysis: string }
-      ddbjTrad: { envGenome: string }
-    }
-    sag: {
-      bioproject: { intro: string }
-      biosample: { misag: string; combined: string }
-      dra: { run: string }
-      ddbjTrad: { entry: string }
-    }
     spatial: {
       dra: { raw: string }
     }
@@ -809,7 +790,7 @@ export const ja: Resources = {
     pageTitle: "登録ナビゲーション",
     sections: {
       preconditions: "登録前提",
-      table: "ファイルテーブル",
+      table: "登録するデータの種類",
       flow: "登録フロー",
     },
     preconditions: {
@@ -832,21 +813,14 @@ export const ja: Resources = {
       },
     },
     table: {
-      caption: "登録するデータファイルの一覧",
-      headingDescription: "ファイルの種別と公開区分を行ごとに入力します",
-      columnFileType: "ファイル種別",
-      columnFilename: "ファイル名",
-      columnAccess: "公開区分",
-      columnDelete: "削除",
+      headingDescription: "手元にあるデータの種類を選びます (公開+制限のときは種別ごとに公開区分も指定します)",
       detailUnset: "未設定",
-      empty: "上のボタンからファイル種別を追加してください",
+      empty: "上のボタンからデータの種類を選んでください",
     },
     detail: {
       heading: "データ詳細",
       empty: "追加の詳細設定が必要なファイルはありません",
-      pairPartnerLabel: "ペアにする配列",
-      pairPartnerPlaceholder: "配列を選択",
-      pairPartnerEmpty: "先に FASTA 塩基配列の行を追加してください",
+      pairNeedsFasta: "先に FASTA 塩基配列を選んでください",
       statusReady: "設定済み",
       formGroupLabels: {
         form: "データ形態",
@@ -884,19 +858,20 @@ export const ja: Resources = {
       fileCount: "{{count}} ファイル",
     },
     fileType: {
-      "sequence-read": { label: "配列リード", ext: "FASTQ", hint: "シーケンサーが出力した生リード" },
-      "sequence-nucleotide": { label: "FASTA 塩基配列", ext: "FASTA", hint: "組み上げ済みの塩基配列" },
-      "sequence-annotation": { label: "配列アノテーション", ext: "GFF", hint: "配列に付与する feature 情報" },
-      "variant": { label: "バリアント", ext: "VCF", hint: "変異・多型の一覧" },
-      "expression-matrix": { label: "発現マトリクス", ext: "TSV", hint: "遺伝子発現の数値マトリクス" },
-      "microarray-expression": { label: "マイクロアレイ発現", ext: "CEL", hint: "マイクロアレイによる発現測定" },
-      "spatial-transcriptomics": { label: "空間トランスクリプトーム", ext: "TSV", hint: "空間座標に対応した発現データ" },
-      "spatial-image": { label: "空間画像", ext: "TIFF", hint: "空間トランスクリプトームの組織画像" },
-      "mass-spectrometry": { label: "質量分析", ext: "mzML", hint: "質量分析計の測定データ" },
-      "nmr": { label: "NMR", ext: "nmrML", hint: "核磁気共鳴の測定データ" },
-      "metabolite-assignment": { label: "代謝物アサインメント", ext: "TSV", hint: "代謝物の同定結果テーブル" },
+      "sequence-read": { label: "配列リード", hint: "シーケンサーが出力した生リード" },
+      "sequence-nucleotide": { label: "FASTA 塩基配列", hint: "組み上げ済みの塩基配列" },
+      "sequence-annotation": { label: "配列アノテーション", hint: "配列に付与する feature 情報" },
+      "variant": { label: "バリアント", hint: "変異・多型の一覧" },
+      "expression-matrix": { label: "発現マトリクス", hint: "遺伝子発現の数値マトリクス" },
+      "microarray-expression": { label: "マイクロアレイ発現", hint: "マイクロアレイによる発現測定" },
+      "spatial-transcriptomics": { label: "空間トランスクリプトーム", hint: "空間座標に対応した発現データ" },
+      "spatial-image": { label: "空間画像", hint: "空間トランスクリプトームの組織画像" },
+      "mass-spectrometry": { label: "質量分析", hint: "質量分析計の測定データ" },
+      "nmr": { label: "NMR", hint: "核磁気共鳴の測定データ" },
+      "metabolite-assignment": { label: "代謝物アサインメント", hint: "代謝物の同定結果テーブル" },
     },
     access: {
+      "heading": "公開区分",
       "open": "公開",
       "restricted": "制限公開",
     },
@@ -957,7 +932,7 @@ export const ja: Resources = {
       },
       assemblyAnnotation: {
         intro: "配列とアノテーションは、MSS の 1 ファイルペアとして同一 step で登録します。",
-        filenamePairing: "配列ファイルとアノテーションファイルは、拡張子を除いてファイル名を一致させます。",
+        filenamePairing: "配列ファイルとアノテーションファイルは、対応づけて 1 つのペアとして提出します。",
       },
       annotation: {
         intro: "組み上げ済み配列へのアノテーションは、DDBJ (MSS) で登録します。",
@@ -1027,41 +1002,6 @@ export const ja: Resources = {
     },
     biosample: {
       intro: "サンプルを束ねる BioSample が随伴して作成されます。実サンプル数・生物種は各 step で入力します。",
-    },
-    multiModal: {
-      warning: "1 つのファイルグループに複数の種別が混在しています。",
-    },
-    mag: {
-      bioproject: {
-        intro: "MAG の全段が、共通の BioProject (type=Metagenome) を参照します。",
-      },
-      biosample: {
-        metagenome: "元のメタゲノムサンプルの BioSample です。",
-        binned: "Binned サンプルは、メタゲノムサンプルから derived_from で派生します。",
-        mag: "MAG サンプルは、メタゲノムサンプルから derived_from で派生します。",
-      },
-      dra: {
-        run: "生リードを DRA Run として登録します。",
-        analysis: "プライマリ・Binned アセンブリを、DRA Analysis (De Novo Assembly) として登録します。",
-      },
-      ddbjTrad: {
-        envGenome: "MAG ゲノムを、MSS の ENV division のゲノムエントリとして登録します。",
-      },
-    },
-    sag: {
-      bioproject: {
-        intro: "SAG を束ねる共通の BioProject です。",
-      },
-      biosample: {
-        misag: "一細胞の SAG サンプルを、MISAG package で登録します (実生物種名を用います)。",
-        combined: "複数細胞のときは、個別 SAG を derived_from で束ねる結合 SAG サンプルです。",
-      },
-      dra: {
-        run: "SAG の生リードを、任意で DRA Run として登録します。",
-      },
-      ddbjTrad: {
-        entry: "SAG 配列を、MSS の data type=SAG のエントリとして登録します。",
-      },
     },
     spatial: {
       dra: {

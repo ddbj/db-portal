@@ -23,7 +23,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "sequence-read",
-          filename: "read_001.fastq",
           access: "open",
           dataForm: "raw",
           groupId: "g1",
@@ -58,7 +57,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "sequence-read",
-          filename: "read_001.fastq",
           access: "restricted",
           dataForm: "raw",
           groupId: "g1",
@@ -93,7 +91,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "sequence-nucleotide",
-          filename: "seq_001.fasta",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",
@@ -124,7 +121,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "variant",
-          filename: "var_001.vcf",
           access: "open",
           dataForm: "variant-call",
           groupId: "g1",
@@ -156,7 +152,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "variant",
-          filename: "var_001.vcf",
           access: "open",
           dataForm: "variant-call",
           groupId: "g1",
@@ -184,7 +179,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "variant",
-          filename: "var_001.vcf",
           access: "restricted",
           dataForm: "variant-call",
           groupId: "g1",
@@ -211,7 +205,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "variant",
-          filename: "var_001.vcf",
           access: "open",
           dataForm: "variant-call",
           groupId: "g1",
@@ -237,7 +230,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "variant",
-          filename: "var_001.vcf",
           access: "restricted",
           dataForm: "variant-call",
           groupId: "g1",
@@ -256,23 +248,21 @@ describe("deriveFlowSteps", () => {
     expect(steps.some((s) => s.service === "togovar")).toBe(false)
   })
 
-  test("deriveFlowSteps_magSagChainWithMagChip_emitsRecipeOriginSteps", () => {
+  test("deriveFlowSteps_magChip_routesAssemblyToDdbjTradViaTier1WithDefaultCompanion", () => {
     const submission: Submission = {
       preconditions: { q1: "public", q2: "metagenome" },
       fileEntries: [
         {
           id: "raw1",
           fileTypeKind: "sequence-read",
-          filename: "read_001.fastq",
           access: "open",
           dataForm: "raw",
-          groupId: "g1",
-          chipTags: [{ axis: "assembly-form", value: "raw" }],
+          groupId: "g0",
+          chipTags: [],
         },
         {
           id: "mag1",
           fileTypeKind: "sequence-nucleotide",
-          filename: "seq_001.fasta",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",
@@ -280,35 +270,24 @@ describe("deriveFlowSteps", () => {
         },
       ],
       fileGroups: [
-        {
-          id: "g1",
-          groupType: "mag-sag-chain",
-          memberFileIds: ["raw1", "mag1"],
-          linkedGroupIds: [],
-        },
+        { id: "g0", groupType: "single", memberFileIds: ["raw1"], linkedGroupIds: [] },
+        { id: "g1", groupType: "single", memberFileIds: ["mag1"], linkedGroupIds: [] },
       ],
       notes: "",
     }
 
     const steps = deriveFlowSteps(submission)
 
-    // every step originates from the named mag-project recipe, not tier1/tier2
-    expect(steps.every((s) => s.origin === "recipe")).toBe(true)
-    // recipe bypasses the interpreter, so no default bioproject/biosample pair leaks in
-    expect(steps.some((s) => s.id === "tier2-bioproject")).toBe(false)
-    expect(steps.some((s) => s.id === "tier2-biosample")).toBe(false)
-
-    expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
-    // the recipe fans biosample into metagenome / binned / mag rows
-    expect(steps.filter((s) => s.service === "biosample").length).toBeGreaterThan(1)
-    expect(steps.some((s) => s.service === "dra")).toBe(true)
-    expect(steps.some((s) => s.service === "ddbj-trad")).toBe(true)
-
-    // raw read goes to a DRA run; the MAG assembly goes to ddbj-trad
+    // 典型に絞る: MAG は Tier1 の assembly-form chip → ddbj-trad 単一 step に簡約 (多段 recipe は持たない)
+    const trad = stepFor(steps, "ddbj-trad")
+    expect(trad.origin).toBe("tier1")
+    expect(trad.scope.entryIds).toEqual(["mag1"])
+    // 生リードは通常の sequence-read routing で DRA へ
     const draRun = steps.find((s) => s.service === "dra")!
     expect(draRun.scope.entryIds).toEqual(["raw1"])
-    const trad = stepFor(steps, "ddbj-trad")
-    expect(trad.scope.entryIds).toEqual(["mag1"])
+    // companion は既定どおり 1 + 1 (recipe による複数 BioSample 分裂はしない)
+    expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
+    expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
   })
 
   test("deriveFlowSteps_visiumSpatialTranscriptomics_emitsDraAndGeaTwoStep", () => {
@@ -318,7 +297,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "spatial-transcriptomics",
-          filename: "spt_001.tsv",
           access: "open",
           dataForm: "matrix",
           groupId: "g1",
@@ -346,7 +324,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "spatial-transcriptomics",
-          filename: "spt_001.tsv",
           access: "open",
           dataForm: "matrix",
           groupId: "g1",
@@ -371,7 +348,6 @@ describe("deriveFlowSteps", () => {
         {
           id: "e1",
           fileTypeKind: "spatial-image",
-          filename: "img_001.tiff",
           access: "open",
           dataForm: "image",
           groupId: "g1",

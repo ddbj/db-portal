@@ -19,7 +19,6 @@ const singleNucleotide = (
   const entry: FileEntry = {
     id: "e1",
     fileTypeKind: "sequence-nucleotide",
-    filename: "seq_001.fasta",
     access: "open",
     dataForm: "assembled",
     groupId: "g1",
@@ -74,7 +73,6 @@ describe("MSS/NSSS split", () => {
         {
           id: "raw1",
           fileTypeKind: "sequence-read",
-          filename: "read_001.fastq",
           access: "open",
           dataForm: "raw",
           groupId: "g1",
@@ -83,7 +81,6 @@ describe("MSS/NSSS split", () => {
         {
           id: "mag1",
           fileTypeKind: "sequence-nucleotide",
-          filename: "mag_001.fasta",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",

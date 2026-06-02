@@ -12,10 +12,10 @@ import {
 } from "../../../../app/schemas/submit"
 
 describe("submit cascade", () => {
-  test("isQ2Enabled_restrictedNonHuman_disabled", () => {
-    // JGA はヒト個人のみ。メタゲノム/環境を含む非ヒトは制限公開でも JGA に入らず disable
-    for (const q2 of ["eukaryote", "prokaryote", "virus", "metagenome"] as const) {
-      expect(isQ2Enabled("restricted", q2)).toBe(false)
+  test("isQ2Enabled_restrictedAllQ2_enabled", () => {
+    // 公開+制限 の repos は公開系 ∪ JGA = 全 destination なので、全 Q2 が enable される
+    for (const q2 of Q2.options) {
+      expect(isQ2Enabled("restricted", q2)).toBe(true)
     }
   })
 
@@ -30,10 +30,9 @@ describe("submit cascade", () => {
     }
   })
 
-  test("enabledKinds_restrictedHuman_onlyJgaCapableKinds", () => {
-    expect(new Set(enabledKinds("restricted", "human"))).toEqual(
-      new Set(["sequence-read", "variant", "microarray-expression"]),
-    )
+  test("enabledKinds_restrictedHuman_allEleven", () => {
+    // repos 拡張により公開+制限でも全種別が選べる (公開分は open、制限分は種別別 access で扱う)
+    expect(new Set(enabledKinds("restricted", "human"))).toEqual(new Set(FileTypeKind.options))
   })
 
   test("enabledKinds_thirdParty_onlyTradAndMetabobankKinds", () => {
@@ -52,9 +51,9 @@ describe("submit cascade", () => {
     expect(new Set(enabledKinds("public", "human"))).toEqual(new Set(FileTypeKind.options))
   })
 
-  test("cascade_restrictedEukaryote_isUnreachableDeadEnd", () => {
-    // Q2 disable により到達不能。到達できたとしても allowedRepos は空
-    expect(allowedRepos("restricted", "eukaryote")).toEqual([])
+  test("cascade_restrictedEukaryote_isReachable", () => {
+    // 公開+制限 の repos 拡張で制限公開×非ヒトも到達可能になる (非ヒト制限公開は DRA embargo)
+    expect(allowedRepos("restricted", "eukaryote").length).toBeGreaterThan(0)
   })
 
   // cascade-no-deadend: 到達可能な (q1,q2) では必ず 1 種別以上 enable される
@@ -81,7 +80,6 @@ describe("submit cascade", () => {
               {
                 id: "e0",
                 fileTypeKind: kind,
-                filename: "f",
                 access,
                 dataForm: "raw",
                 groupId: "g0",

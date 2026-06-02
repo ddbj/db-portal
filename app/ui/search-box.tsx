@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from "react"
 
 import { cn } from "./cn"
 import { ChevronDownIcon, SearchIcon } from "./icons"
+import { StableLabel } from "./stable-label"
 
 type SearchBoxProps = {
   value?: string | undefined
@@ -22,6 +23,9 @@ type SearchBoxProps = {
   trailing?: ReactNode
   ariaLabel?: string
   submitLabel?: string
+  // Every label the submit button can show; the widest reserves its width so a
+  // label swap (検索 ↔ 検索中…) leaves the button width unchanged.
+  submitReserve?: readonly string[]
   submitDisabled?: boolean
   scopeAriaLabel?: string
   onSubmit?: (query: string, scope?: string) => void
@@ -31,13 +35,13 @@ const sizeClass = {
   md: {
     input: "py-2 text-fs-body",
     scope: "py-1.5 text-fs-body-sm",
-    button: "px-6 text-fs-body min-w-32",
+    button: "px-6 text-fs-body",
     icon: 14,
   },
   lg: {
     input: "py-3 text-fs-body",
     scope: "py-3 text-fs-body-sm",
-    button: "px-7 text-fs-body min-w-36",
+    button: "px-7 text-fs-body",
     icon: 16,
   },
 } as const
@@ -60,6 +64,7 @@ export const SearchBox = ({
   trailing,
   ariaLabel = "検索キーワード",
   submitLabel = "検索",
+  submitReserve,
   submitDisabled = false,
   scopeAriaLabel = "検索対象データベース",
   onSubmit,
@@ -194,7 +199,9 @@ export const SearchBox = ({
               : "cursor-pointer hover:bg-brand-deep",
           )}
         >
-          {submitLabel}
+          {submitReserve && submitReserve.length > 0
+            ? <StableLabel reserve={submitReserve}>{submitLabel}</StableLabel>
+            : submitLabel}
         </button>
       </form>
       {interactiveScope && scopeOpen && scopeOptions !== undefined && (

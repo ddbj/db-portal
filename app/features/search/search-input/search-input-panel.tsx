@@ -97,6 +97,14 @@ export const SearchInputPanel = ({
   const submitLabel = isAi
     ? (generating ? t("search.assistant.generating") : t("search.assistant.generateShort"))
     : (searchPending ? t("search.a11y.searching") : t("search.a11y.submit"))
+  // Reserve the widest of every label the submit can show (検索 / 検索中… / 生成 /
+  // 生成中…) so toggling mode or busy state never resizes the box.
+  const submitReserve = [
+    t("search.a11y.submit"),
+    t("search.a11y.searching"),
+    t("search.assistant.generateShort"),
+    t("search.assistant.generating"),
+  ]
 
   // The keyword box submit runs the cross search (same as the builder's button),
   // not just a keyword commit — the box's "検索" otherwise looked inert.
@@ -169,6 +177,7 @@ export const SearchInputPanel = ({
         placeholder={isAi ? (effectiveAiMode === "append" ? t("search.assistant.placeholderAppend") : t("search.assistant.placeholderNew")) : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
         submitLabel={submitLabel}
+        submitReserve={submitReserve}
         submitDisabled={submitDisabled}
         scope={isAi ? aiScopeValue : scope}
         scopeOptions={isAi ? aiScopeOptions : scopeOptions}

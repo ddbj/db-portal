@@ -5,7 +5,6 @@ import {
   ALLOWED_CHIP_VALUES,
   ChipAxis,
   DataForm,
-  DEFAULT_FILENAME_FOR_KIND,
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
@@ -156,43 +155,6 @@ describe("TYPICAL_GROUP_TYPE_FOR_KIND", () => {
 
   test("TYPICAL_GROUP_TYPE_FOR_KIND_hasNoKeyOutsideFileTypeKind", () => {
     for (const key of Object.keys(TYPICAL_GROUP_TYPE_FOR_KIND)) {
-      expect(() => FileTypeKind.parse(key)).not.toThrow()
-    }
-  })
-})
-
-describe("DEFAULT_FILENAME_FOR_KIND", () => {
-  test.each(FileTypeKind.options)(
-    "DEFAULT_FILENAME_FOR_KIND_%s_hasNonEmptyPrefixAndExt",
-    (kind) => {
-      const def = DEFAULT_FILENAME_FOR_KIND[kind]
-      expect(def).toBeDefined()
-      expect(typeof def.prefix).toBe("string")
-      expect(def.prefix.length).toBeGreaterThan(0)
-      expect(typeof def.ext).toBe("string")
-      expect(def.ext.length).toBeGreaterThan(0)
-    },
-  )
-
-  test.each(FileTypeKind.options)(
-    "DEFAULT_FILENAME_FOR_KIND_%s_prefixAndExtHaveNoDotOrSlash",
-    (kind) => {
-      const def = DEFAULT_FILENAME_FOR_KIND[kind]
-      expect(def.prefix).not.toContain(".")
-      expect(def.prefix).not.toContain("/")
-      expect(def.ext).not.toContain(".")
-      expect(def.ext).not.toContain("/")
-    },
-  )
-
-  test("DEFAULT_FILENAME_FOR_KIND_coversExactlyAllFileTypeKinds", () => {
-    expect(Object.keys(DEFAULT_FILENAME_FOR_KIND).sort()).toEqual(
-      [...FileTypeKind.options].sort(),
-    )
-  })
-
-  test("DEFAULT_FILENAME_FOR_KIND_hasNoKeyOutsideFileTypeKind", () => {
-    for (const key of Object.keys(DEFAULT_FILENAME_FOR_KIND)) {
       expect(() => FileTypeKind.parse(key)).not.toThrow()
     }
   })

@@ -4,19 +4,19 @@ import { FileTypeKind as FileTypeKindEnum } from "~/schemas/submit"
 import { FileTypeButton } from "./file-type-button"
 
 type FileTypeGridProps = {
-  onClick: (fileTypeKind: FileTypeKind) => void
+  onToggle: (fileTypeKind: FileTypeKind) => void
   getLabel: (fileTypeKind: FileTypeKind) => string
-  getExt: (fileTypeKind: FileTypeKind) => string
   getHint: (fileTypeKind: FileTypeKind) => string
+  isSelected: (fileTypeKind: FileTypeKind) => boolean
   isEnabled: (fileTypeKind: FileTypeKind) => boolean
   disabledReason: string
 }
 
 export const FileTypeGrid = ({
-  onClick,
+  onToggle,
   getLabel,
-  getExt,
   getHint,
+  isSelected,
   isEnabled,
   disabledReason,
 }: FileTypeGridProps) => (
@@ -29,11 +29,11 @@ export const FileTypeGrid = ({
           key={kind}
           fileTypeKind={kind}
           label={getLabel(kind)}
-          ext={getExt(kind)}
           hint={getHint(kind)}
+          selected={isSelected(kind)}
           disabled={!enabled}
           disabledReason={disabledReason}
-          onClick={() => onClick(kind)}
+          onClick={() => onToggle(kind)}
         />
       )
     })}

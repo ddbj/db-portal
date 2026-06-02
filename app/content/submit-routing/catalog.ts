@@ -9,7 +9,7 @@ const catalogData = {
   // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
   q1Options: [
     { id: "public", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "restricted", repos: ["jga"] },
+    { id: "restricted", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank", "jga"] },
     { id: "third-party", repos: ["ddbj-trad", "metabobank"] },
   ],
   q2Options: [
@@ -57,10 +57,10 @@ const catalogData = {
       candidateRepos: ["ddbj-trad", "nsss", "dra"],
       rules: [
         {
-          when: { and: [{ groupType: "mag-sag-chain" }, { anyChip: { axis: "assembly-form", value: "mag" } }] },
+          when: { anyChip: { axis: "assembly-form", value: "mag" } },
           emit: {
             service: "ddbj-trad",
-            scope: "group",
+            scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.ddbjTrad.mag.envGenomeEntry" },
               { kind: "warning", messageKey: "submit.ddbjTrad.mag.rawReadsToDraRequired" },
@@ -68,10 +68,10 @@ const catalogData = {
           },
         },
         {
-          when: { and: [{ groupType: "mag-sag-chain" }, { anyChip: { axis: "assembly-form", value: "sag" } }] },
+          when: { anyChip: { axis: "assembly-form", value: "sag" } },
           emit: {
             service: "ddbj-trad",
-            scope: "group",
+            scope: "entry",
             notes: [{ kind: "info", messageKey: "submit.ddbjTrad.sag.misagPackage" }],
           },
         },

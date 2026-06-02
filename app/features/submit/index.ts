@@ -1,3 +1,4 @@
+export { accessToggleVisible, defaultAccessFor, isAccessSensitiveKind } from "./access"
 export { FileTypeGrid } from "./buttons/file-type-grid"
 export { allowedRepos, enabledKinds, isKindEnabled, isQ2Enabled } from "./cascade"
 export { ExternalLinkButton } from "./components/external-link-button"
@@ -40,5 +41,3 @@ export {
   submitReducer,
   useSubmitState,
 } from "./state"
-export { FileTable } from "./table/file-table"
-export { FileTableRow } from "./table/file-table-row"

@@ -35,12 +35,6 @@ export type Action =
   | { type: "ADD_ROW"; fileTypeKind: FileTypeKind; entryId: string; groupId: string }
   | { type: "EDIT_ROW_CELL"; entryId: string; patch: Partial<FileEntry> }
   | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch; releasedGroupId: string }
-  | {
-    type: "SET_PAIR_PARTNER"
-    annotationEntryId: string
-    partnerEntryId: string
-    releasedGroupId: string
-  }
   | { type: "REMOVE_ROW"; entryId: string }
 
 const emptySubmission = (): Submission => ({

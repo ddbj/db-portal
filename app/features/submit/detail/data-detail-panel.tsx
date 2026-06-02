@@ -1,5 +1,5 @@
 import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType } from "~/schemas/submit"
-import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Select, Tag } from "~/ui"
+import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Tag } from "~/ui"
 
 import { applyRadio, initDraft, optionMatches, toggleCheck } from "./form-apply"
 import { hasRowDetail, ROW_FORM_DEFS } from "./form-defs"
@@ -10,9 +10,7 @@ type DataDetailPanelLabels = {
   empty: string
   configured: string
   unset: string
-  pairPartnerLabel: string
-  pairPartnerPlaceholder: string
-  pairPartnerEmpty: string
+  pairNeedsFasta: string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   groupLabel: (labelKey: string) => string
   optionLabel: (labelKey: string) => string
@@ -25,7 +23,6 @@ type DataDetailPanelProps = {
   labels: DataDetailPanelLabels
   isConfigured: (entryId: string) => boolean
   onCommit: (entryId: string, patch: DataDetailPatch) => void
-  onSetPairPartner: (annotationEntryId: string, partnerEntryId: string) => void
 }
 
 const PAIR_GROUP_TYPE: GroupType = "assembly-annotation"
@@ -36,11 +33,10 @@ export const DataDetailPanel = ({
   labels,
   isConfigured,
   onCommit,
-  onSetPairPartner,
 }: DataDetailPanelProps) => {
   const groupOf = (entry: FileEntry): FileGroup | undefined =>
     groups.find((g) => g.id === entry.groupId)
-  // 相方に選ばれた FASTA はアノテーション側で管理するため panel に質問を出さない
+  // 相方に取り込まれた FASTA はアノテーション側で管理するため panel に質問を出さない
   const isPairedPartner = (entry: FileEntry): boolean =>
     entry.fileTypeKind === "sequence-nucleotide" && groupOf(entry)?.groupType === PAIR_GROUP_TYPE
 
@@ -57,23 +53,14 @@ export const DataDetailPanel = ({
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)
-        const showPairPicker = entry.fileTypeKind === "sequence-annotation"
+        // 配列ペアを選んだが相方 FASTA が未選択のとき入力を促す
+        const needsFasta = entry.fileTypeKind === "sequence-annotation"
           && draft.groupType === PAIR_GROUP_TYPE
-
-        const currentPartner = entries.find(
-          (e) => e.id !== entry.id
-            && e.groupId === entry.groupId
-            && e.fileTypeKind === "sequence-nucleotide",
-        )
-        const candidateFasta = entries.filter(
-          (e) => e.fileTypeKind === "sequence-nucleotide" && groupOf(e)?.groupType === "single",
-        )
-        const noCandidates = currentPartner === undefined && candidateFasta.length === 0
-        const partnerOptions = [
-          { value: "", label: labels.pairPartnerPlaceholder },
-          ...(currentPartner === undefined ? [] : [{ value: currentPartner.id, label: currentPartner.filename }]),
-          ...candidateFasta.map((c) => ({ value: c.id, label: c.filename })),
-        ]
+          && !entries.some(
+            (e) => e.id !== entry.id
+              && e.groupId === entry.groupId
+              && e.fileTypeKind === "sequence-nucleotide",
+          )
 
         return (
           <li
@@ -84,7 +71,6 @@ export const DataDetailPanel = ({
           >
             <div className="flex items-center gap-2 flex-wrap">
               <Tag kind="tag" size="sm">{labels.fileTypeKindLabel(entry.fileTypeKind)}</Tag>
-              <span className="font-mono text-fs-micro text-ink-mid truncate">{entry.filename}</span>
               <span className="ml-auto shrink-0">
                 {configured
                   ? (
@@ -138,23 +124,8 @@ export const DataDetailPanel = ({
                 })}
               </FormGroup>
             ))}
-            {showPairPicker && (
-              <div className="flex flex-col gap-1.5 pl-1 -mt-1.5">
-                <span className="text-fs-label font-medium text-ink">{labels.pairPartnerLabel}</span>
-                <Select
-                  ariaLabel={labels.pairPartnerLabel}
-                  options={partnerOptions}
-                  value={currentPartner?.id ?? ""}
-                  state={currentPartner === undefined ? "warn" : "default"}
-                  disabled={noCandidates}
-                  onChange={(next) => {
-                    if (next !== "") onSetPairPartner(entry.id, next)
-                  }}
-                />
-                {noCandidates && (
-                  <span className="text-fs-micro text-ink-mid">{labels.pairPartnerEmpty}</span>
-                )}
-              </div>
+            {needsFasta && (
+              <span className="text-fs-micro text-ink-mid">{labels.pairNeedsFasta}</span>
             )}
           </li>
         )

@@ -33,7 +33,6 @@ const arbChipTag = fc.constantFrom(...allowedChipPairs)
 
 type EntryShape = {
   fileTypeKind: typeof FileTypeKind._type
-  filename: string
   access: typeof Access._type
   dataForm: typeof DataForm._type
   groupIdx: number
@@ -54,7 +53,6 @@ const arbSubmissionShape: fc.Arbitrary<SubmissionShape> = fc.record({
   entries: fc.array(
     fc.record({
       fileTypeKind: arbFileTypeKind,
-      filename: fc.string({ minLength: 0, maxLength: 24 }),
       access: arbAccess,
       dataForm: arbDataForm,
       groupIdx: fc.integer({ min: 0, max: 6 }),
@@ -85,7 +83,6 @@ export const arbSubmission: fc.Arbitrary<Submission> = arbSubmissionShape.map(
       return {
         id: entryIdOf(i),
         fileTypeKind: e.fileTypeKind,
-        filename: e.filename,
         access: e.access,
         dataForm: e.dataForm,
         groupId,

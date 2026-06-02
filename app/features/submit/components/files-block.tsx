@@ -1,45 +1,34 @@
-import type { FileEntry, FileGroup } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind } from "~/schemas/submit"
+
+import { FileTypeIcon } from "./file-type-icon"
 
 type FilesBlockProps = {
-  groups: readonly FileGroup[]
   entries: readonly FileEntry[]
   heading: string
+  fileTypeKindLabel: (kind: FileTypeKind) => string
 }
 
-// scope 内のファイルを列挙する。group スコープは group 単位 (member を束ねて) で、
-// entry スコープ (group 無し) はファイルを 1 件ずつフラットに並べる。
-export const FilesBlock = ({ groups, entries, heading }: FilesBlockProps) => {
-  if (groups.length === 0 && entries.length === 0) return null
-
-  const rows = groups.length > 0
-    ? groups.map((group) => ({
-      key: group.id,
-      filenames: entries.filter((e) => e.groupId === group.id).map((e) => e.filename),
-    }))
-    : entries.map((entry) => ({ key: entry.id, filenames: [entry.filename] }))
+// scope 内の対象データを種別 (ラベル + アイコン) で示す。1 種別 = 1 entry なので種別で一意。
+export const FilesBlock = ({ entries, heading, fileTypeKindLabel }: FilesBlockProps) => {
+  if (entries.length === 0) return null
+  const kinds = [...new Set(entries.map((e) => e.fileTypeKind))]
 
   return (
     <section className="flex flex-col gap-2">
       <p className="text-fs-label font-bold text-ink-mid m-0">{heading}</p>
-      <ol className="flex flex-col gap-2 m-0 list-none p-0">
-        {rows.map((row, idx) => (
+      <ul className="flex flex-wrap gap-2 m-0 list-none p-0">
+        {kinds.map((kind) => (
           <li
-            key={row.key}
-            className="flex items-start gap-3 bg-surface-subtle border border-border-soft rounded-button px-3 py-2"
+            key={kind}
+            className="inline-flex items-center gap-1.5 bg-surface-subtle border border-border-soft rounded-button px-2.5 py-1.5"
           >
-            <span className="font-mono text-fs-micro font-bold text-ink-mid shrink-0">
-              {idx + 1}/{rows.length}
+            <span className="text-brand-deep shrink-0 inline-flex items-center">
+              <FileTypeIcon fileTypeKind={kind} size={14} />
             </span>
-            <span className="flex flex-col gap-0.5 min-w-0">
-              {row.filenames.map((filename, i) => (
-                <span key={i} className="font-mono text-fs-micro text-ink">
-                  {filename}
-                </span>
-              ))}
-            </span>
+            <span className="text-fs-micro text-ink">{fileTypeKindLabel(kind)}</span>
           </li>
         ))}
-      </ol>
+      </ul>
     </section>
   )
 }

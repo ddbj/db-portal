@@ -24,7 +24,6 @@ export type SubmitDispatch = {
   addRow: (fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
-  setPairPartner: (annotationEntryId: string, partnerEntryId: string) => void
   removeRow: (entryId: string) => void
 }
 
@@ -64,10 +63,6 @@ export const useSubmitState = (
     dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch, releasedGroupId: newId() })
   }, [newId])
 
-  const setPairPartner = useCallback((annotationEntryId: string, partnerEntryId: string) => {
-    dispatch({ type: "SET_PAIR_PARTNER", annotationEntryId, partnerEntryId, releasedGroupId: newId() })
-  }, [newId])
-
   const removeRow = useCallback((entryId: string) => {
     dispatch({ type: "REMOVE_ROW", entryId })
   }, [])
@@ -78,7 +73,6 @@ export const useSubmitState = (
     addRow,
     editRowCell,
     commitRowEdit,
-    setPairPartner,
     removeRow,
   }
 

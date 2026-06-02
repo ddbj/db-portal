@@ -1,4 +1,4 @@
-import type { FileEntry, FileGroup, FlowStep, Service } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
 import { isDestinationService, stepPrerequisites } from "~/schemas/submit"
 
 import { stepAnchorId } from "./anchor"
@@ -14,8 +14,8 @@ type CardCopy = {
 
 type FlowStepCardsProps = {
   steps: readonly FlowStep[]
-  groups: readonly FileGroup[]
   entries: readonly FileEntry[]
+  fileTypeKindLabel: (kind: FileTypeKind) => string
   emptyMessage: string
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
@@ -34,8 +34,8 @@ type FlowStepCardsProps = {
 
 export const FlowStepCards = ({
   steps,
-  groups,
   entries,
+  fileTypeKindLabel,
   emptyMessage,
   serviceTitle,
   serviceDescription,
@@ -88,8 +88,8 @@ export const FlowStepCards = ({
             step={step}
             index={i + 1}
             anchorId={stepAnchorId(i)}
-            groups={groups}
             entries={entries}
+            fileTypeKindLabel={fileTypeKindLabel}
             serviceTitle={serviceTitle(step.service)}
             serviceDescription={serviceDescription(step.service)}
             roleLabel={roleLabel(step.service)}

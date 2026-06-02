@@ -1,51 +1,22 @@
-import type { FileEntry, FlowStep, Submission } from "~/schemas/submit"
+import type { FileEntry, FlowStep } from "~/schemas/submit"
 
 import { ENGINE_MESSAGE_KEYS as MK } from "../messages"
-import { makeStep, scopeOfEntries, sortUnique } from "../shared"
+import { makeStep, scopeOfEntries } from "../shared"
 
-// 制限公開ヒト個人データ・ヒト関連メタゲノムを Policy 単位の Dataset に束ねる。
-// Dataset は jga-dataset group の明示を前提とし、束ねられない jga entry は単一の default Dataset に入れる。
-export const jgaSubmissionSteps = (
-  submission: Submission,
-  jgaEntries: readonly FileEntry[],
-): FlowStep[] => {
+// 制限公開ヒト個人データを JGA に出すための前提ゲート (humandbs) と JGA 登録 step を足す。
+// JGA は BioProject/BioSample を使わないため、derive-flow-steps が jga entry を companion 対象から
+// 外すことで既定 companion を抑制する。
+export const jgaSubmissionSteps = (jgaEntries: readonly FileEntry[]): FlowStep[] => {
   if (jgaEntries.length === 0) return []
+  const scope = scopeOfEntries(jgaEntries)
 
-  const datasetGroups = submission.fileGroups.filter((g) => g.groupType === "jga-dataset")
-  const steps: FlowStep[] = []
-  const covered = new Set<string>()
-
-  for (const dg of datasetGroups) {
-    const dataGroupIds = new Set<string>([dg.id, ...dg.linkedGroupIds])
-    const members = jgaEntries.filter((e) => dataGroupIds.has(e.groupId) && !covered.has(e.id))
-    if (members.length === 0) continue
-    members.forEach((e) => covered.add(e.id))
-    steps.push(
-      makeStep(`recipe-jga-dataset-${dg.id}`, "jga", "recipe", {
-        entryIds: sortUnique(members.map((e) => e.id)),
-        groupIds: sortUnique([dg.id, ...members.map((e) => e.groupId)]),
-      }, [{ kind: "info", messageKey: MK.jgaDatasetIntro }]),
-    )
-  }
-
-  const remaining = jgaEntries.filter((e) => !covered.has(e.id))
-  if (remaining.length > 0) {
-    steps.push(
-      makeStep("recipe-jga-dataset-default", "jga", "recipe", scopeOfEntries(remaining), [
-        { kind: "info", messageKey: MK.jgaDatasetIntro },
-      ]),
-    )
-  }
-
-  // 提供申請 (NBDC ヒトデータベース / HumanDBs) と利用制限ポリシー (NBDC 標準 / 独自 JGAP) は
-  // 同一プラットフォームで完結するため、1 つの Policy 前提ステップ (humandbs) に統合する。
-  const allScope = scopeOfEntries(jgaEntries)
-  steps.push(
-    makeStep("recipe-jga-policy", "humandbs", "recipe", allScope, [
+  return [
+    makeStep("recipe-jga-policy", "humandbs", "recipe", scope, [
       { kind: "info", messageKey: MK.jgaPolicyApplication },
       { kind: "info", messageKey: MK.jgaNbdcPolicy },
     ]),
-  )
-
-  return steps
+    makeStep("recipe-jga", "jga", "recipe", scope, [
+      { kind: "info", messageKey: MK.jgaDatasetIntro },
+    ]),
+  ]
 }

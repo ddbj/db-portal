@@ -21,7 +21,6 @@ type ActionStep =
   | { kind: "add"; fileTypeKind: FileTypeKind }
   | { kind: "edit-access"; entryIdx: number; access: Access }
   | { kind: "commit-group-type"; entryIdx: number; groupType: GroupTypeValue }
-  | { kind: "pair"; annotationIdx: number; partnerIdx: number }
   | { kind: "remove"; entryIdx: number }
 
 type GroupTypeValue = (typeof GroupType.options)[number]
@@ -39,18 +38,13 @@ const arbStep: fc.Arbitrary<ActionStep> = fc.oneof(
     groupType: arbGroupType,
   }),
   fc.record({
-    kind: fc.constant("pair" as const),
-    annotationIdx: fc.integer({ min: 0, max: 9 }),
-    partnerIdx: fc.integer({ min: 0, max: 9 }),
-  }),
-  fc.record({
     kind: fc.constant("remove" as const),
     entryIdx: fc.integer({ min: 0, max: 9 }),
   }),
 )
 
 // 各 step を、entry / group id を機械的に採番した実 Action 列へ変換する。
-// ADD_ROW は新 group を作り、COMMIT_ROW_EDIT / SET_PAIR_PARTNER は解放用の fresh group id を伴う。
+// ADD_ROW は新 group を作り、COMMIT_ROW_EDIT は解放用の fresh group id を伴う。
 const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
   const acts: Action[] = []
   let entryCounter = 0
@@ -74,16 +68,6 @@ const stepsToActions = (steps: readonly ActionStep[]): Action[] => {
         type: "COMMIT_ROW_EDIT",
         entryId: id,
         patch: { groupType: step.groupType },
-        releasedGroupId: `rel${relCounter++}`,
-      })
-    } else if (step.kind === "pair") {
-      if (knownEntryIds.length === 0) continue
-      const annotationEntryId = knownEntryIds[step.annotationIdx % knownEntryIds.length]!
-      const partnerEntryId = knownEntryIds[step.partnerIdx % knownEntryIds.length]!
-      acts.push({
-        type: "SET_PAIR_PARTNER",
-        annotationEntryId,
-        partnerEntryId,
         releasedGroupId: `rel${relCounter++}`,
       })
     } else {

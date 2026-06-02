@@ -3,25 +3,10 @@
 export const ENGINE_MESSAGE_KEYS = {
   bioprojectIntro: "submit.bioproject.intro",
   biosampleIntro: "submit.biosample.intro",
-  multiModalWarning: "submit.multiModal.warning",
 
   jgaDatasetIntro: "submit.jga.dataset.intro",
   jgaPolicyApplication: "submit.jga.policyApplication",
   jgaNbdcPolicy: "submit.jga.nbdcPolicy",
-
-  magBioproject: "submit.mag.bioproject.intro",
-  magBiosampleMetagenome: "submit.mag.biosample.metagenome",
-  magBiosampleBinned: "submit.mag.biosample.binned",
-  magBiosampleMag: "submit.mag.biosample.mag",
-  magDraRun: "submit.mag.dra.run",
-  magDraAnalysis: "submit.mag.dra.analysis",
-  magEnvGenome: "submit.mag.ddbjTrad.envGenome",
-
-  sagBioproject: "submit.sag.bioproject.intro",
-  sagBiosampleMisag: "submit.sag.biosample.misag",
-  sagBiosampleCombined: "submit.sag.biosample.combined",
-  sagDraRun: "submit.sag.dra.run",
-  sagEntry: "submit.sag.ddbjTrad.entry",
 
   spatialDraRaw: "submit.spatial.dra.raw",
 } as const
