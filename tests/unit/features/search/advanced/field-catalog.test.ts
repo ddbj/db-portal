@@ -43,11 +43,24 @@ describe("fieldsForScope", () => {
     expect(fieldsForScope("taxonomy")).toEqual(CROSS_FIELDS)
   })
 
-  test("every scope includes all cross fields", () => {
+  test("publication is a cross field everywhere except biosample", () => {
+    // publication.title nested is not merged into biosample, so single-DB biosample
+    // is rejected by the API (field-not-available-for-db); the builder must drop it.
+    expect(CROSS_FIELDS).toContain("publication")
+    expect(fieldsForScope("biosample")).not.toContain("publication")
+    for (const db of DB_SLUGS) {
+      if (db === "biosample") continue
+      expect(fieldsForScope(db)).toContain("publication")
+    }
+  })
+
+  test("every scope includes all cross fields, minus per-DB exclusions", () => {
     for (const db of DB_SLUGS) {
       const scoped = fieldsForScope(db)
       for (const field of CROSS_FIELDS) {
-        expect(scoped).toContain(field)
+        // biosample is the sole exclusion: publication.title nested is absent there.
+        const excluded = db === "biosample" && field === "publication"
+        expect(scoped.includes(field)).toBe(!excluded)
       }
     }
   })

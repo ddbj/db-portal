@@ -60,7 +60,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `data-db="bioproject"` カード内の `結果一覧` link をクリック
 - **期待**:
   - URL が `/search/results?q=cancer&db=bioproject` に変わる
-  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-submitter` の facet/text 行と、公開日/更新日/作成日 の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ trad scope 専用で bioproject には無い) が描画される
+  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-organization` の facet/text 行と、公開日/更新日/作成日 の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ trad scope 専用で bioproject には無い) が描画される
   - main 結果領域に `role="region"` + `aria-label="検索結果"` (`search.a11y.resultsRegion`) の wrapper があり、`PerDbResults` の区切り線リストが入る
   - 上部に `NavigableSearchInput` の太い検索ボックス、その下に `SwitchableQueryPreview` (`search.preview.label`「クエリプレビュー」) が出る
   - **AI 検索アシスタント専用の右ペイン (region) は存在しない**。AI は検索ボックス内の「AI モード」 toggle に集約される (S-SEARCH-11 / E-SEARCH-03 参照)

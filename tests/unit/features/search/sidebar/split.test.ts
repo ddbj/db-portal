@@ -72,9 +72,10 @@ describe("splitForSidebar", () => {
   })
 
   test("extractsTextField", () => {
+    // DSL field submitter maps back to the organization sidebar row.
     const ast: ParseNode = { op: "contains", field: "submitter", value: "RIKEN" }
     const { sidebar, rest } = splitForSidebar(ast, "bioproject")
-    expect(sidebar.texts.submitter).toBe("RIKEN")
+    expect(sidebar.texts.organization).toBe("RIKEN")
     expect(isIdentityAst(rest)).toBe(true)
   })
 

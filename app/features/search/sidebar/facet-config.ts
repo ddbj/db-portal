@@ -55,7 +55,13 @@ const organism: FilterRow = {
 // name-based DSL (organism_name:...) round-trips into the sidebar instead of
 // falling through to the Advanced builder.
 const organismName = text("organismName", "organism_name")
-const submitter = text("submitter", "submitter")
+// organization.name (nested text) を絞り込む行。DSL field 名は API allowlist の submitter。
+const organization = text("organization", "submitter")
+// Tier 1 identity / text fields. identifier は keyword exact (op eq)、title / description は
+// keyword box 既定 field と同じ analyzed match (contains)。全 ES scope + cross に出る。
+const identifier = text("identifier", "identifier", "eq")
+const title = text("title", "title")
+const description = text("description", "description")
 const datePublished: FilterRow = {
   key: "datePublished",
   kind: "dateRange",
@@ -89,14 +95,25 @@ const dateCreated: FilterRow = {
 // ES scopes expose all three date ranges; Solr (trad) keeps only date_published.
 const esDateRanges: readonly FilterRow[] = [datePublished, dateModified, dateCreated]
 
+// Common Tier 1/2 rows shared by cross and every ES scope (identity / text +
+// the organism facet + accessibility). publication is appended per scope since
+// it is not merged into biosample; Solr scopes (trad / taxonomy) keep their own
+// curated rows and do not reuse this head.
+const esCommonHead: readonly FilterRow[] = [
+  organism,
+  organismName,
+  accessibility,
+  organization,
+  identifier,
+  title,
+  name,
+  description,
+]
+
 export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
-  cross: [organism, organismName, accessibility, name, publication, ...esDateRanges],
+  cross: [...esCommonHead, publication, ...esDateRanges],
   bioproject: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     publication,
     facet("objectType", "object_type", "objectType"),
     facet("relevance", "relevance", "relevance"),
@@ -106,12 +123,10 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
     text("externalLinkLabel", "external_link_label"),
     ...esDateRanges,
   ],
+  // biosample omits publication: the publication.title nested field is not merged
+  // there, so the API rejects publication for db=biosample (422).
   biosample: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     facet("package", "package", "package"),
     facet("model", "model", "model"),
     text("host", "host"),
@@ -123,11 +138,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
     ...esDateRanges,
   ],
   sra: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     publication,
     facet("type", "type", "type"),
     facet("libraryStrategy", "library_strategy", "libraryStrategy"),
@@ -145,11 +156,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
     ...esDateRanges,
   ],
   jga: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     publication,
     facet("type", "type", "type"),
     facet("studyType", "study_type", "studyType"),
@@ -161,21 +168,13 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
     ...esDateRanges,
   ],
   gea: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     publication,
     facet("experimentType", "experiment_type", "experimentType"),
     ...esDateRanges,
   ],
   metabobank: [
-    organism,
-    organismName,
-    accessibility,
-    submitter,
-    name,
+    ...esCommonHead,
     publication,
     facet("experimentType", "experiment_type", "experimentType"),
     facet("studyType", "study_type", "studyType"),

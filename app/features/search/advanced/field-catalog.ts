@@ -26,6 +26,10 @@ type FieldDef = {
   // "cross" = allowlist Tier 1/2 (every scope). A DB list = allowlist Tier 3,
   // offered only when one of those DBs is the active scope.
   scope: "cross" | readonly DbSlug[]
+  // A cross field whose ES (nested) field is absent from these DBs: single-DB
+  // mode there is rejected by the API with field-not-available-for-db (422), so
+  // the builder must not offer it in those scopes.
+  excludeDb?: readonly DbSlug[]
   // i18n suffix under search.builder.field (camelCase; field keys are snake_case).
   labelKey: string
 }
@@ -42,8 +46,10 @@ const CATALOG = {
   date_published: { kind: "date", scope: "cross", labelKey: "datePublished" },
   date_modified: { kind: "date", scope: "cross", labelKey: "dateModified" },
   date_created: { kind: "date", scope: "cross", labelKey: "dateCreated" },
-  submitter: { kind: "text", scope: "cross", labelKey: "submitter" },
-  publication: { kind: "text", scope: "cross", labelKey: "publication" },
+  submitter: { kind: "text", scope: "cross", labelKey: "organization" },
+  // publication.title nested は biosample に merge されておらず、single-DB biosample では
+  // API が field-not-available-for-db (422) を返すため biosample scope では offer しない。
+  publication: { kind: "text", scope: "cross", excludeDb: ["biosample"], labelKey: "publication" },
   // === Tier 3 BioProject ===
   object_type: { kind: "enum", scope: ["bioproject"], labelKey: "objectType" },
   project_type: { kind: "text", scope: ["bioproject"], labelKey: "projectType" },
@@ -100,13 +106,18 @@ export const isDateField = (field: AdvancedField): boolean => CATALOG[field].kin
 export const isAdvancedField = (value: string): value is AdvancedField =>
   Object.prototype.hasOwnProperty.call(CATALOG, value)
 
-// Fields the builder offers when `db` is the active scope: cross fields always,
-// plus the per-DB fields whose DB list includes `db`. Cross scope (db null)
-// yields cross fields only.
+// Fields the builder offers when `db` is the active scope: cross fields (minus any
+// excludeDb match for this db), plus the per-DB fields whose DB list includes `db`.
+// Cross scope (db null) yields all cross fields.
 export const fieldsForScope = (db: DbSlug | null): readonly AdvancedField[] =>
   FIELD_KEYS.filter((field) => {
-    const scope: "cross" | readonly DbSlug[] = CATALOG[field].scope
-    if (scope === "cross") return true
+    const def = CATALOG[field]
+    const scope: "cross" | readonly DbSlug[] = def.scope
+    if (scope === "cross") {
+      const excludeDb: readonly DbSlug[] = "excludeDb" in def ? def.excludeDb : []
+
+      return db === null || !excludeDb.includes(db)
+    }
 
     return db !== null && scope.includes(db)
   })

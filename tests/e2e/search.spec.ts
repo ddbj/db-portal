@@ -53,7 +53,7 @@ test.describe("Search Domain", () => {
     await expect(sidebar).toBeVisible({ timeout: 15_000 })
     await expect(sidebar.getByTestId("facet-organism")).toBeVisible()
     await expect(sidebar.getByTestId("facet-objectType")).toBeVisible()
-    await expect(sidebar.getByTestId("text-submitter")).toBeVisible()
+    await expect(sidebar.getByTestId("text-organization")).toBeVisible()
 
     await expect(
       page.getByRole("region", { name: /検索結果|Search results/ }),

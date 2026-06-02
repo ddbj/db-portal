@@ -97,16 +97,26 @@ describe("fromSidebar", () => {
   })
 
   test("textFieldEmitsContainsForOwningScope", () => {
-    const state = withText("submitter", "RIKEN")
-    // submitter is not a cross-scope row.
+    const state = withText("host", "Homo sapiens")
+    // host is a biosample-only text row; cross must not emit it.
     expect(isIdentityAst(fromSidebar(state, { db: null }))).toBe(true)
-    const contains = expectContains(fromSidebar(state, { db: "bioproject" }))
-    expect(contains.field).toBe("submitter")
-    expect(contains.value).toBe("RIKEN")
+    const contains = expectContains(fromSidebar(state, { db: "biosample" }))
+    expect(contains.field).toBe("host")
+    expect(contains.value).toBe("Homo sapiens")
+  })
+
+  test("organizationTextEmitsInCrossAndPerDb", () => {
+    // organization (DSL field submitter) is a Tier 2 cross row: it emits in both
+    // cross and per-DB scopes, always under the API field name submitter.
+    const state = withText("organization", "RIKEN")
+    const cross = expectContains(fromSidebar(state, { db: null }))
+    expect(cross.field).toBe("submitter")
+    expect(cross.value).toBe("RIKEN")
+    expect(expectContains(fromSidebar(state, { db: "bioproject" })).field).toBe("submitter")
   })
 
   test("blankTextIgnored", () => {
-    expect(isIdentityAst(fromSidebar(withText("submitter", "   "), { db: "bioproject" }))).toBe(true)
+    expect(isIdentityAst(fromSidebar(withText("organization", "   "), { db: "bioproject" }))).toBe(true)
   })
 
   test("dateRangePreset_returnsBetween", () => {

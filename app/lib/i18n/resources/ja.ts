@@ -401,7 +401,7 @@ export type Resources = {
         datePublished: string
         dateModified: string
         dateCreated: string
-        submitter: string
+        organization: string
         publication: string
         objectType: string
         projectType: string
@@ -515,7 +515,10 @@ export type Resources = {
       datePublished: string
       field: {
         organism: string
-        submitter: string
+        organization: string
+        identifier: string
+        title: string
+        description: string
         accessibility: string
         name: string
         publication: string
@@ -1129,7 +1132,7 @@ export const ja: Resources = {
         datePublished: "公開日",
         dateModified: "更新日",
         dateCreated: "作成日",
-        submitter: "登録機関",
+        organization: "登録機関",
         publication: "論文",
         objectType: "BioProject type",
         projectType: "Project type",
@@ -1243,7 +1246,10 @@ export const ja: Resources = {
       datePublished: "公開日",
       field: {
         organism: "生物種",
-        submitter: "登録機関",
+        organization: "登録機関",
+        identifier: "識別子",
+        title: "タイトル",
+        description: "説明",
         accessibility: "公開区分",
         name: "名称",
         publication: "論文",

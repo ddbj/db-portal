@@ -57,25 +57,25 @@ const objectTypeArb = fc.constantFrom("BioProject", "UmbrellaBioProject")
 const bioprojectStateArb = fc.record({
   organism: fc.uniqueArray(taxIdArb, { maxLength: 3 }),
   objectType: fc.uniqueArray(objectTypeArb, { maxLength: 2 }),
-  submitter: fc.option(tokenArb, { nil: "" }),
-}).map(({ organism, objectType, submitter }): { state: SearchFacetState; submitter: string } => ({
+  organization: fc.option(tokenArb, { nil: "" }),
+}).map(({ organism, objectType, organization }): { state: SearchFacetState; organization: string } => ({
   state: {
     ...createInitialSearchFacetState(),
     facets: { organism, objectType },
-    ...(submitter === "" ? {} : { texts: { submitter } }),
+    ...(organization === "" ? {} : { texts: { organization } }),
   },
-  submitter,
+  organization,
 }))
 
 describe("sidebar round-trip", () => {
   it("fromSidebar→splitForSidebar recovers facets and text for the scope", () => {
     fc.assert(
-      fc.property(bioprojectStateArb, ({ state, submitter }) => {
+      fc.property(bioprojectStateArb, ({ state, organization }) => {
         const ast = fromSidebar(state, { db: "bioproject" })
         const { sidebar } = splitForSidebar(ast, "bioproject")
         expect(sorted(sidebar.facets.organism ?? [])).toEqual(sorted(state.facets.organism ?? []))
         expect(sorted(sidebar.facets.objectType ?? [])).toEqual(sorted(state.facets.objectType ?? []))
-        expect(sidebar.texts.submitter ?? "").toEqual(submitter)
+        expect(sidebar.texts.organization ?? "").toEqual(organization)
       }),
     )
   })
