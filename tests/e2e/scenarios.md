@@ -60,25 +60,26 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `data-db="bioproject"` カード内の `結果一覧` link をクリック
 - **期待**:
   - URL が `/search/results?q=cancer&db=bioproject` に変わる
-  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-submitter` / `range`/date 行など) が描画される
+  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-submitter` の facet/text 行と、公開日/更新日/作成日 の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ trad scope 専用で bioproject には無い) が描画される
   - main 結果領域に `role="region"` + `aria-label="検索結果"` (`search.a11y.resultsRegion`) の wrapper があり、`PerDbResults` の区切り線リストが入る
   - 上部に `NavigableSearchInput` の太い検索ボックス、その下に `SwitchableQueryPreview` (`search.preview.label`「クエリプレビュー」) が出る
   - **AI 検索アシスタント専用の右ペイン (region) は存在しない**。AI は検索ボックス内の「AI モード」 toggle に集約される (S-SEARCH-11 / E-SEARCH-03 参照)
 - **備考**: 旧版が assert していた「右 pane に AI 検索アシスタント region」 は現行 UI に存在しないため削除。AI は box 内 toggle へ realign。
 
-### S-SEARCH-04: Advanced builder → `?q=` 更新と検索実行
+### S-SEARCH-04: Advanced builder → `?q=` 更新と検索実行 (生物種 ID + 学名 の 2 条件)
 
 - **ペルソナ**: P-ANON
 - **前提**: `/search` を開く
 - **手順**:
-  1. 「+ 条件を追加」 で条件行を 1 つ追加し、field=学名 (`organism`)、述語=`と一致`、value=`Homo sapiens` を入力
-  2. ライブプレビュー (`search.preview.label` 相当の `QueryPreview`) に DSL が反映されるのを待つ (debounce 700 ms)
-  3. ページ下部の `この条件で検索` (`search.actions.submit`) button をクリック
+  1. 「+ 条件を追加」 (`search.builder.addCondition`) で条件行を 1 つ追加し、field セレクタ (`search.a11y.fieldSelector`「検索フィールド」) で `生物種 ID` (`organism_id`、`search.builder.field.organismId`)、述語セレクタ (`search.a11y.predicateSelector`「条件の演算子」) で `と一致` (`search.builder.predicate.eq`、identifier kind の default op)、値の Combobox (`search.builder.valuePlaceholder`「値を入力」) に taxID `9606` を入力 (organism facet の `Homo sapiens (9606)` 候補を選んでも可、いずれも taxID `9606` を commit する)
+  2. もう一度「+ 条件を追加」 で 2 行目を追加し、field=`学名` (`organism_name`、`search.builder.field.organismName`)、述語=`を含む` (`search.builder.predicate.contains`、text kind)、値の TextInput (`値を入力`) に `Homo sapiens` を入力
+  3. ライブプレビュー (`QueryPreview`) に DSL が反映されるのを待つ (debounce 700 ms)
+  4. ページ下部の `この条件で検索` (`search.actions.submit`) button をクリック
 - **期待**:
-  - 入力確定後、debounce 700 ms 以内に `/db-portal/serialize` が呼ばれ `QueryPreview` の `<code>` に `organism_id:` を含む DSL が表示される (organism facet は taxID = `organism_id` を emit する)
-  - `この条件で検索` クリックで `/search/results?q=...` に `navigate(push)` され、`?q=` の DSL に `organism` 条件が含まれる
+  - 入力確定後、debounce 700 ms 以内に `/db-portal/serialize` が呼ばれ、`QueryPreview` の `<code>` (`aria-label="クエリプレビュー"`) の DSL に `organism_id:9606` (identifier 行は taxID を emit) と `organism_name:`（text 行は学名文字列を emit) の双方が含まれる
+  - `この条件で検索` クリックで `/search/results?q=...` に `navigate(push)` され、`?q=` の DSL に `organism_id` 条件と `organism_name` 条件が両方乗る
   - serialize / parse は scope (`db`) を渡して呼ばれる (cross では `db` 省略)
-- **備考**: 旧版の `mergeAstAnd` / `date_published:[…]` 文字列断定は portal 内部実装への過度な依存だったため、外向きに観測可能な「`?q=` に organism 条件が乗る」「QueryPreview に DSL が出る」 へ tighten。DSL 文字列の正確な形は serialize API (ddbj-search-api 側) が SSOT。
+- **備考**: identifier field (生物種 ID, `organism_id`, 述語 `と一致`) は値を facet aggregation backed の Combobox で受け taxID を commit、text field (学名, `organism_name`, 述語 `を含む`) は値を素の TextInput で受け文字列を emit する。両 field kind を 1 シナリオで往復させ、value 入力 affordance (combobox vs text) と emit される DSL field (`organism_id:` vs `organism_name:`) の差を同時に固定する。Combobox は editable なので候補が無くても taxID 直接入力で commit できる。DSL 文字列の正確な形は serialize API (ddbj-search-api 側) が SSOT。
 
 ### S-SEARCH-05: Sidebar facet トグル → `?q=` 即時更新 (replace)
 
@@ -107,7 +108,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SEARCH-07: per-DB の pagination / perPage / sort が実 `/db-portal/search` 契約を通る
 
 - **ペルソナ**: P-ANON
-- **前提**: `/search/results?q=cancer&db=bioproject` を開き、`networkidle` まで待つ。`PerDbResults` の件数表示 (`role` 属性付き `aria-live="polite"` の `<p>`) が `N 件中 1-20` 形式で出ていること
+- **前提**: `/search/results?q=cancer&db=bioproject` を開き、`networkidle` まで待つ。`PerDbResults` の件数表示 (`aria-live="polite"` / `aria-atomic="true"` の `<p>`、明示 `role` 属性は持たないので aria-live か可視テキストで参照) が `N 件中 1-20` 形式で出ていること
 - **手順**:
   1. ResultsToolbar の `1 ページあたり` (`search.results.perPage.label`) の `Select` で `50` を選ぶ
   2. 件数表示が再計算されるのを待つ
@@ -142,7 +143,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - `splitForSidebar` が `organism_id` leaf を facet 行に、`date_published` between を date 行に抜き取る
   - `data-testid="facet-organism"` 内で taxID `9606` に対応する bucket checkbox が `checked` (bucket に無い場合も生物種 ID text box (`aria-label="生物種 ID"`) に `9606` が表示される)
-  - 公開日 (`search.facets.field.datePublished`) の date 行が `custom` レンジで `2022-01-01` / `2024-12-31` を FROM/TO に表示し、`AppliedFilters` に該当 chip が出る (`appliedCount=1`)
+  - 公開日 (`search.facets.field.datePublished`) の date 行が `custom` レンジで `2022-01-01` / `2024-12-31` を FROM/TO に表示する (`DateFacet` に `appliedCount=1` が渡り `FacetGroup` ヘッダーに `解除` button が出る)。date レンジは `FacetPanel` の `applied[]` (facet/text/numberRange のみ) に含まれないため `AppliedFilters` には chip が出ない
   - main の `role="region"`「検索結果」 内に per-DB record list が描画される
 - **備考**: URL は絶対 between しか持たないため、プリセット (1y/5y/10y) と一致しなければ `custom` 扱いで復元される。S-SEARCH-06 がキーワード box 復元のみだったのを sidebar 面へ拡張。
 
@@ -165,7 +166,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. 検索ボックス内 (`role="search"`) の `AI モード` (`search.assistant.enterMode`) toggle button (`aria-pressed="false"`) をクリック → `aria-pressed="true"` になり box が AI tone に変わる
   2. AI モードの scope セレクタ (`search.assistant.modeGroupLabel`「生成モード」) で `既存に追加` (`search.assistant.modeAppend`) が選択可能であること (append は `appendCurrentAst = data.ast` が non-identity のとき有効)
-  3. `aria-label="AI 検索アシスタントへの入力"` の input に `2023 年以降に公開されたものに限定する` と入力し、`生成` で送信
+  3. `aria-label="AI 検索アシスタントへの入力"` の input に `2023 年以降に公開されたものに限定する` と入力し、Enter で送信 (NavigableSearchInput の AI モード送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
   4. `page.waitForResponse((r) => r.url().includes("/api/llm/search-assistant") && r.status() === 200)` で SSE 完了を待つ
 - **期待**:
   - `event: done` 後、生成された AST を `serializeAstToDsl` (scope=`bioproject`) で DSL 化し `/search/results` へ `navigate(push)` する
@@ -281,7 +282,8 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `[data-testid="file-row"]` が 4 件、ファイル名は `read-001.fastq` / `read-002.fastq` / `var-001.vcf` / `mtx-001.tsv`
   - 登録フローに `bioproject` 1 件 + `biosample` 1 件 (organism 別に分裂しない、各 1 件のみ) が随伴し、destination として `dra` (配列リード) / `eva` (非ヒト variant) / `gea` (発現マトリクス) のカードが描画される
   - `[data-testid="flow-step"]` の `bioproject` / `biosample` がそれぞれ 1 件だけであることを確認 (`Umbrella BioProject` のような集約カードは存在しない)
-  - 入力状況 (TagProgress) は flow-changing な質問を持つ行のみを母数にカウントする (`{configured} / {total}` 表示、配列リード・バリアント・発現マトリクスは質問が無く total に含まれないため、この構成では total=0 で詳細 section は非表示)
+  - 入力状況 (TagProgress) は全行を母数 (`total`) にカウントし、詳細質問を持たない種別 (配列リード・バリアント・発現マトリクス) は設定するものが無いため自動的に configured 扱いになる (`{configured} / {total}` 表示)。この構成では `total=4` / `configured=4` で `4 / 4` と表示される
+  - `データ詳細` section (`submit.detail.heading` SectionHeading + TagProgress + DataDetailPanel) は `total > 0` のため表示される。ただし詳細質問を持つ行が無いので DataDetailPanel は `[data-testid="detail-item"]` を 1 件も描画せず、`追加の詳細設定が必要なファイルはありません` (`submit.detail.empty`) の info callout のみを表示する
 
 ### S-SUBMIT-04: open / restricted の分岐 (Q1/Q2 と行 access)
 
@@ -295,7 +297,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 1 件目 (制限公開 ∧ Q2=ヒト) は JGA scope に入り `data-service="jga"` カードが、2 件目 (公開) は `data-service="dra"` カードが両方描画される
   - JGA カードに `submit.sequenceRead.jga.intro` / `submit.sequenceRead.jga.dbclsPolicy` 由来の note 文 (DBCLS で Policy 承認 (JGAP) を取得する旨) が表示される
   - 同一 entry が JGA と DRA の両方の scope に出ないこと (1 件目は jga カードの対象ファイルにのみ、2 件目は dra カードの対象ファイルにのみ現れる)
-- **備考**: Q1=`公開データの登録` でも行 access を `制限公開` にできるが、JGA 分岐の起点は `access=restricted ∧ Q2=human`。S-SUBMIT-09 は同じ JGA 経路を Q1=`制限公開を含む登録` 起点で前提ゲートまで含めて検証する。
+- **備考**: Q1=`公開データの登録` でも行 access を `制限公開` にできるが、JGA 分岐の起点は `access=restricted ∧ Q2=human`。S-SUBMIT-09 は同じ JGA 経路を Q1=`制限公開データを含む登録` 起点で前提ゲートまで含めて検証する。
 
 ### S-SUBMIT-05: live-commit 詳細パネルで配列ペアを設定する
 
@@ -331,7 +333,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. Q2 未選択の状態で `配列リード (FASTQ)` ボタンの `disabled` を確認し、disabled tip (`title`) が `登録種別を選択してください` であることを確認
   2. Q2 radiogroup で `ヒト以外の真核生物` を選択
-  3. Q1 radiogroup を `制限公開を含む登録` に変更
+  3. Q1 radiogroup を `制限公開データを含む登録` に変更
 - **期待**:
   - 手順 1 時点で 11 ボタンすべて disabled
   - 手順 2 後、`配列リード (FASTQ)` `バリアント (VCF)` `発現マトリクス (TSV)` 等が enabled になる (Q1=public ∩ Q2=eukaryote の allowedRepos に candidateRepos が交わる種別)
@@ -356,7 +358,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q1 radiogroup で `制限公開を含む登録` を選択
+  1. Q1 radiogroup で `制限公開データを含む登録` を選択
   2. Q2 radiogroup で `ヒト` を選択 (他の Q2 は disabled、`ヒト` のみ選択可)
   3. enable された `配列リード (FASTQ)` をクリック (`read-001.fastq`、access default は Q1=restricted により `制限公開`)
 - **期待**:
@@ -397,7 +399,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. Q2 radiogroup で `ヒト` を選択 (Q1 は `公開データの登録`)
   2. `発現マトリクス (TSV)` をクリック (`mtx-001.tsv`、destination は `gea`)
-  3. Q1 radiogroup を `制限公開を含む登録` に変更
+  3. Q1 radiogroup を `制限公開データを含む登録` に変更
 - **期待**:
   - Q1=restricted (repos={jga}) では Q2=`ヒト` は引き続き enable のまま (human が jga を含むため自動クリアされない)
   - 既存の発現マトリクス行は削除されずテーブルに残る (`[data-testid="file-row"]` 1 件)
@@ -414,20 +416,18 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `data-service="dra"` の `[data-testid="flow-step"]` カードが viewport 内にスクロールイン (`scrollIntoView`、`expect(card).toBeInViewport()`)
 - **備考**: スクロール挙動は DOM 上の実描画でしか検証できないため e2e 専用。staging で常時再現可能。
 
-### E-SUBMIT-01: 未設定の詳細行が notify Tag と確認事項に出る
+### E-SUBMIT-01: 未設定の詳細行が notify Tag と warning tone で示される
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
   1. Q2 radiogroup で `ヒト以外の真核生物` を選択
   2. `空間トランスクリプトーム (TSV)` をクリック (`spt-001.tsv`、platform 未選択)
-  3. 確認事項バナーの行参照 (`N 行目`) をクリック
 - **期待**:
   - テーブル行のファイル名脇に `未設定` の warning Tag が表示される (platform を選ぶまで)
   - データ詳細パネルの該当 `[data-testid="detail-item"]` が warning tone (`未設定`)
-  - 確認事項バナーに platform 未確定による未充足エントリの行参照 (`1 行目`) が表示される
-  - 行参照クリックで `[data-testid="file-row"][data-entry-id]` が viewport にスクロールイン (`onJumpToRow` → `scrollToRow`)
-- **備考**: ファイル名は自動採番された read-only 表示で、行内に生物 selector やファイル名入力欄は存在しない (warn 配色の input という旧 UI は無い)。検証対象は detail 未設定の notify と確認事項バナーの行参照スクロール。
+  - 確認事項バナー (`確認事項が N 件あります`) は描画されない。spatial-transcriptomics は platform 未選択でも常時 GEA にルーティングされ、`selectValidations` の 3 種別 (precondition-conflict / no-destination-service / dangling-group-id) のいずれにも該当しないため `validations` が空になる
+- **備考**: ファイル名は自動採番された read-only 表示で、行内に生物 selector やファイル名入力欄は存在しない (warn 配色の input という旧 UI は無い)。未設定 detail の検出は行レベルの notify (warning Tag) と detail-item の warning tone のみで、未設定 detail を確認事項バナーに集約する validation 種別は存在しない。
 
 ### E-SUBMIT-03: 100 行追加でも UI が応答する
 
@@ -451,9 +451,8 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   2. `空間トランスクリプトーム (TSV)` を 1 件追加 (platform 未選択)
   3. データ詳細パネルで `Visium` を選択 (live-commit) して充足させる
 - **期待**:
-  - platform 未選択の間は該当行が `未設定` で、確認事項バナーに未充足の行参照が出る (`spatial-transcriptomics` group は platform 確定まで destination を確定できない)
+  - platform 未選択の間は該当行のファイル名脇 / 詳細項目が `未設定` (warning Tag / warning tone) になる (destination は GEA が常時確定するため確認事項バナーは描画されない)
   - `Visium` 選択後、`未設定` Tag が消え `設定済み` になり、`data-service="gea"` カードと (Sequencing 系のため) `data-service="dra"` カードの 2 段が描画される
-  - 確認事項バナーから当該行の未充足参照が消える
 - **備考**: spatial-transcriptomics の DRA+GEA 2 段は recipe 由来。Visium/Stereo-seq は Sequencing 系で DRA を伴い、Xenium/MERFISH は GEA のみ (`submit.detail.options.spatialTranscriptomics` の sub 説明に対応)。
 
 ### E-SUBMIT-05: 削除後の連番ギャップで自動採番が衝突しない
@@ -509,7 +508,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - ページ上部に `section[role="region"][aria-label="重要なお知らせ"]` が描画される
   - その中に featured item ごとの `article[aria-label="<title>"]` が `publishedAt` 降順 (新しい順) に縦 stack される
-  - 各 article に「重要」critical Tag、`publishedAt` の日付、title、`external` の「詳細」TextLink (en URL があれば)、「通知を閉じる」IconButton が含まれる
+  - 各 article に「重要」critical Tag、`publishedAt` の日付、title、`external` の「詳細」TextLink (`newsItemUrl` が `url[lang] ?? url.ja ?? url.en` で URL を解決できる場合に表示)、「通知を閉じる」IconButton が含まれる
   - `featured===false` の item や `retireTime` 経過済の item は描画されない
 - **備考**: featured item が 0 件 (全件 retire 済 / whitelist 空) の期間は `section[role=region]` 自体が描画されない。featured 元データは `ddbj/www/_data/global.yml` の `top_news` whitelist 由来で、staging の mirror 状態に依存する。
 
@@ -581,7 +580,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - 手順 2 で root loader が `?lang=` を削って 302 redirect し、`Set-Cookie: db_portal_lang=en` を発行する (redirect 後の URL は `/news`、`/en/news` 等の prefix は付かない)
   - 以降の internal link / 再読込でも en が cookie で維持される
-  - en title を持つ item は en title と en 外部 URL (`https://www.ddbj.nig.ac.jp/news/en/<slug>-e.html` パターン) を表示する
+  - en title を持つ item は en title と en 外部 URL を表示する (en URL のパターンは source 依存: DDBJ ソースは `https://www.ddbj.nig.ac.jp/news/en/<slug>-e.html`、DBCLS ソースは `https://dbcls.rois.ac.jp/en/<y>/<mo>/<d>/<title>.html`。source Tag に応じて使い分ける)
   - en title が空の item は ja title に fallback し (`newsItemTitle` 契約)、外部リンクは存在する言語側の URL を指す
   - en title を持たない item は en 一覧の絞り込み (title 非空判定) から外れることがある
 - **備考**: `?lang=en` query → 302 + cookie の i18n モデル (URL prefix なし) を前提とする。en 対訳の有無は実データ依存で、en title を持つ既知 item が存在する期間に実行する。
@@ -654,7 +653,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - URL が `/services?source=dbcls&category=search` に更新される (params は `source` → `category` の順、各 param 値は alphabet sort)
   - 一覧が source=dbcls かつ category=search の item に絞り込まれる (各 service row の source Tag が `DBCLS`)
-  - AppliedFilters に「適用中 · 2」が表示され、`aria-label` が `種別: 検索 を解除` / `ソース: DBCLS を解除` (en は `Type: Search` / `Source: DBCLS` 形) の解除 button が 2 件描画される
+  - AppliedFilters に「適用中 · 2」が表示され、`aria-label` が `種別: 検索 を解除` / `ソース: DBCLS を解除` (en は `Type: Search を解除` / `Source: DBCLS を解除` 形。` を解除` サフィックスは `applied-filters.tsx` でハードコードされ未翻訳) の解除 button が 2 件描画される。テストは exact 一致でなく前方部分 (`/種別: 検索/` 等) で照合する
   - facet toggle は `navigate(..., { replace: true })` なので履歴が積まれない (ブラウザ戻るで `/services` 初期画面に戻らず直前ページに戻る)
 - **備考**: route-level wiring (`handleFacetChange` → `serializeServicesFacetState` → navigate → `parseServicesFacetState` → `applyFilter`) を実データで貫通する。pure-function の serialize/parse 単体テストでは i18n ラベル不一致や query 文字列の取り違えを捕捉できない。
 
@@ -735,7 +734,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - status が 302
   - `Location` ヘッダの origin が Keycloak realm (`https://idp-staging.ddbj.nig.ac.jp`)、path が `/realms/master/protocol/openid-connect/auth`
-  - query が `response_type=code`、`code_challenge_method=S256`、非空の `code_challenge`、`scope=openid profile email`、`client_id=db-portal-dev`、`/api/auth/callback` で終わる `redirect_uri`、非空の `state` を持つ
+  - query が `response_type=code`、`code_challenge_method=S256`、非空の `code_challenge`、`scope=openid profile email`、`client_id=db-portal-staging` (e2e は staging を叩くため `DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-staging`、`db-portal-dev` は dev 専用)、`/api/auth/callback` で終わる `redirect_uri`、非空の `state` を持つ
   - レスポンスに `Set-Cookie: sid=...` が含まれない (この時点では session 未発行)
 - **備考**: `state` / `code_verifier` は pending store に 10 分 TTL で保存される (`PENDING_TTL_MS`)。authorize URL 自体に `code_verifier` は載らない (PKCE)。
 
@@ -762,7 +761,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   2. 続いて `/api/auth/logout-callback` までのリダイレクトチェーンを完走させる
 - **期待**:
   - logout レスポンスが 302、`Location` の origin が Keycloak realm (`https://idp-staging.ddbj.nig.ac.jp`)、path が `/realms/master/protocol/openid-connect/logout`
-  - query が `id_token_hint`、`client_id=db-portal-dev`、`/api/auth/logout-callback` で終わる (URL エンコードされた `return_to=/` を含む) `post_logout_redirect_uri` を持つ
+  - query が `id_token_hint`、`client_id=db-portal-staging` (staging では `DB_PORTAL_KEYCLOAK_CLIENT_ID=db-portal-staging`)、`/api/auth/logout-callback` で終わる (URL エンコードされた `return_to=/` を含む) `post_logout_redirect_uri` を持つ
   - チェーン完走後、`/api/auth/logout-callback` のレスポンスが `Set-Cookie: sid=; Max-Age=0`(`HttpOnly`/`SameSite=Lax`/`Path=/`) を返す
   - その後の `GET /api/me` が 401 を返す
 - **備考**: session が無い状態で `/api/auth/logout` を叩いた場合は Keycloak へ飛ばず、cookie clear + `return_to` への 302 のみとなる (routes.ts の no-session 分岐)。本シナリオは session を持つ正常系に限定する。
@@ -816,7 +815,7 @@ AI 補助は独立した region ではなく、検索ボックス内の「AI モ
 - `/search` の `SearchInputPanel`: 生成結果を in-place の proposal `<section>` で見せ、Apply で Advanced builder に反映する。
 - トップ (`/`) / 結果 (`/search/results`) の `NavigableSearchInput`: proposal を出さず、`event: done` の AST を serialize して `/search/results?q=<DSL>` に遷移する。
 
-AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (`AI 検索アシスタントへの入力` / `AI search assistant input`)。送信ボタンは AI モードで `search.assistant.generateShort` (`生成` / `Generate`)、生成中は `search.assistant.generating` (`生成中…` / `Generating…`)。エラーは toast ではなく inline の `<p role="alert">` (`search.assistant.generateError`) で表示する。
+AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (`AI 検索アシスタントへの入力` / `AI search assistant input`)。送信ボタンのラベルは入口で異なる: `/search` の `SearchInputPanel` は AI モードで `search.assistant.generateShort` (`生成` / `Generate`)、トップ (`/`) / 結果 (`/search/results`) の `NavigableSearchInput` は AI モードでも `search.a11y.submit` (`検索` / `Search`) のまま (idle 時)。どちらも生成中は `search.assistant.generating` (`生成中…` / `Generating…`) になる。`NavigableSearchInput` 文脈では送信ボタンのラベルに依存せず AI 入力欄で Enter 送信するのが堅牢。エラーは toast ではなく、`NavigableSearchInput` のみ inline の `<p role="alert">` (`search.assistant.generateError`) で表示する。`SearchInputPanel` は error 表示を持たず、AI モードのまま proposal が出ないだけ (keyword には戻らない)。
 
 ### S-LLM-01: /search で AI モード生成 → proposal が in-place 表示される
 
@@ -883,14 +882,14 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **手順**:
   1. `/search/results?q=cancer&db=bioproject` を開く (NavigableSearchInput がマウントされる)
   2. 「AI モード」 button をクリック
-  3. AI 入力欄に `breast cancer rna-seq` を入力し、`生成` をクリック
+  3. AI 入力欄に `breast cancer rna-seq` を入力し、Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - `useAssistantStream` が `event: error` を受信し state が `error` になる
   - ボックス直下に inline の `<p role="alert">` が現れ、文言が `search.assistant.generateError` (`クエリの生成に失敗しました。入力を変えて再試行してください。` / `Could not generate a query...`)
   - AI 入力欄に `breast cancer rna-seq` が残る (内容ロストしない)
   - `/search/results` から遷移しない (URL 不変)
   - toast component は DOM に存在しない (実装に toast は無い)
-- **備考**: `page.route()` で response を途中切断する (notes.md §7 の E-LLM-02 再現方法)。NavigableSearchInput のみ inline alert を描画する (SearchInputPanel は error 表示を持たず keyword に戻すだけ)。
+- **備考**: `page.route()` で response を途中切断する (notes.md §7 の E-LLM-02 再現方法)。NavigableSearchInput のみ inline alert を描画する (SearchInputPanel は error 表示を持たず、AI モードのまま proposal を出さないだけ; keyword には戻らない)。
 
 ### E-LLM-03: event:error が UI に inline alert として届き入力が保持される
 
@@ -899,7 +898,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **手順**:
   1. `/` を開く (トップ hero の NavigableSearchInput)
   2. 「AI モード」 button をクリックして AI モードに入る
-  3. AI 入力欄に `single cell human pancreas` を入力し、`生成` をクリック
+  3. AI 入力欄に `single cell human pancreas` を入力し、Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - SSE は `200` だが `event: error` を含むため state が `error` に遷移し、proposal は出ず `/search/results` へ遷移しない (URL は `/`)
   - inline `<p role="alert">` が `search.assistant.generateError` の文言で表示される
@@ -926,7 +925,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route` で health=`{status:"ok",model:"e2e"}`、`/api/llm/search-assistant` を複数の `event: message` delta + `event: done\ndata: <AST JSON>` を流す `200` SSE に固定。AST は `{"op":"contains","field":"organism_name","value":"Homo sapiens"}` 相当
 - **手順**:
   1. `/` を開く
-  2. 「AI モード」 button をクリックし、AI 入力欄に `human samples` を入力して `生成` をクリック
+  2. 「AI モード」 button をクリックし、AI 入力欄に `human samples` を入力して Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - 生成中は送信ボタンが `生成中…` になり、`event: message` delta が来ても proposal `<section>` (`AI による生成結果`) は描画されない (NavigableSearchInput は preview を持たない)
   - `event: done` 受信後、`/db-portal/serialize` で AST を DSL に直し、URL が `/search/results?q=<serialized DSL>` に遷移する (`q` パラメータが非空)
@@ -939,7 +938,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route` で health=`{status:"ok",model:"e2e"}`、`/api/llm/search-assistant` を `429` JSON `{ "error": "rate_limited", "axis": "ip" }` + `Retry-After: 30` を返すよう固定 (SSE は開かない)
 - **手順**:
   1. `/search/results?q=cancer` を開く
-  2. 「AI モード」 button → AI 入力欄に `lung cancer` を入力 → `生成` をクリック
+  2. 「AI モード」 button → AI 入力欄に `lung cancer` を入力 → Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - レスポンスが `429`、`Retry-After: 30`、body `{ error: "rate_limited", axis: "ip" }`、`Content-Type` は `text/event-stream` ではない
   - `useAssistantStream` は `!response.ok` で state を `error` にするため、ボックス直下に inline `<p role="alert">` (`search.assistant.generateError`) が出る
@@ -969,11 +968,10 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   1. `/` を訪問
 - **期待**:
   - `<html lang="ja">`
-  - Header の `ホーム` nav が active (`aria-current="page"`)
   - Hero に `<SearchBox size="lg">` の検索入力 1 件、placeholder が「キーワード、accession、学名で検索」
   - example chip 5 件 (`BRCA1` / `SARS-CoV-2` / `"Oryza sativa"` / `"Cyprinus carpio"` / `PRJDB10452`) が表示され、chip クリックで入力欄に値が入る
   - example 行末に「詳細条件で検索」 TextLink、href が `/search`
-  - ServiceGrid に primary-service の Service tile が 6 件 (`role="listitem"` の LinkCard が 6)
+  - ServiceGrid に primary-service の Service tile が 6 件 (`<ul>` 内の `role="listitem"` (`<li>`) が 6、各 `<li>` 内に LinkCard。`getByRole("listitem")` が 6 を返す)
   - 「サービス」 SectionHeading + FeaturedServices リストに 1 件以上の row、見出し横に「すべて見る」 link (href `/services`)
   - 右 aside の NewsAside に news 5 件 (NEWS_LIMIT)、「すべて見る」 link (href `/news`)
   - Breadcrumb nav は描画されない (`useBreadcrumb` が Home のみで 0 件 → null)
@@ -997,13 +995,13 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 ### S-TOP-03: hero keyword 検索 (scope=all) で `/search/results?q=` に遷移
 
 - **ペルソナ**: P-ANON
-- **前提**: `/` を訪問、scope dropdown は default の「すべて」
+- **前提**: `/` を訪問、scope dropdown は default の「全データベース」 (`search.scope.all`)
 - **手順**:
   1. hero の検索入力に `cancer` と入力
   2. Enter で submit (または検索ボタン click)
 - **期待**:
   - URL が `/search/results?q=cancer` に変わる (`db` param は付かない、scope=all は `scopeKeyToDbSlug` が null を返すため)
-  - cross-DB 検索結果が表示される (「横断検索結果」 見出し)
+  - cross-DB 検索結果領域が表示される (`role="region"` aria-label「検索結果」 = `search.a11y.resultsRegion`、内部に `data-testid="db-card"` の per-DB カード。`search.results.cross.heading`「横断検索結果」 は i18n に定義はあるがどの component も描画しないため見出しテキストでは照合しない)
 - **備考**: 値は `value.trim()` されて `buildResultsHref` に渡る。先頭末尾の空白は除去される。
 
 ### S-TOP-04: cookie 維持された en セッションでトップ再訪問が en を保持
@@ -1101,7 +1099,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - Breadcrumb nav (`aria-label` = `a11y.breadcrumbNav`) の `<ol>` は **ちょうど 2 セグメント**: 先頭が `ホーム` link (`href="/"`)、末尾が `aria-current="page"` の span `BioProject`。`データベース` の中間セグメントは存在しない (flat route 構成のため、`databases` breadcrumbI18nKey を持つ親 route が無い)
   - 関連データベース section (見出し `関連データベース`) に `BioSample` の TextLink (`href="/databases/biosample"`) が 1 件
   - 外部リンク section (見出し `外部リンク`) に `NCBI BioProject` / `EBI BioStudies` / `DDBJ BioProject 公式ページ` の 3 link
-  - 最終更新 row に `最終更新` Tag + `<time dateTime="2026-05-25T00:00:00Z">` の可視テキスト `2026/05/25`
+  - 最終更新 row に `最終更新` Tag + `<time dateTime="2026-05-25T00:00:00Z">` の可視テキスト `2026年5月25日`
 
 ### S-CONTENT-02: ?lang=en で /databases/bioproject の en 表示
 
@@ -1130,7 +1128,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - 本文に SAMD アクセッション説明テキスト (`/SAMD/` に一致する可視テキスト) が含まれる
   - 関連データベース section に `BioProject` の TextLink (`href="/databases/bioproject"`)
   - 外部リンク section に `NCBI BioSample` / `EBI BioSamples` / `DDBJ BioSample 公式ページ` の 3 link
-  - 最終更新 row の `<time dateTime="2026-05-25T00:00:00Z">` 可視テキストが `2026/05/25`
+  - 最終更新 row の `<time dateTime="2026-05-25T00:00:00Z">` 可視テキストが `2026年5月25日`
 
 ### S-CONTENT-04: 実 route 構成どおりの breadcrumb chain
 
@@ -1166,7 +1164,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   2. `/databases/bioproject?lang=en` を訪問 (redirect 後)
 - **期待**:
   - 外部リンク section の 3 link がそれぞれ `target="_blank"` かつ `rel` に `noopener` と `noreferrer` を含む。href は順に `https://www.ncbi.nlm.nih.gov/bioproject/` / `https://www.ebi.ac.uk/biostudies/` / `https://www.ddbj.nig.ac.jp/bioproject/index.html`
-  - ja: `<time dateTime="2026-05-25T00:00:00Z">` の可視テキストが `2026/05/25` (ja-JP `toLocaleDateString`)
+  - ja: `<time dateTime="2026-05-25T00:00:00Z">` の可視テキストが `2026年5月25日` (ja-JP `toLocaleDateString`)
   - en: 同 `<time>` の `dateTime` が `2026-05-25T00:00:00Z` のまま、可視テキストが `May 25, 2026` (en-US)
 - **備考**: 不正な lastUpdated 文字列に対する raw-iso fallback (formatDate の NaN 分岐) は実コンテンツに存在しないため component 単体テスト側で固定する
 
