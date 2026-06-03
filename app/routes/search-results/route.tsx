@@ -213,7 +213,8 @@ const SearchResultsRoute = () => {
     if (keywordParseError) setKeywordParseError(false)
   }
 
-  // Clear the query but stay on the results page (empty state, current db kept).
+  // Clear the query but stay on the results page: dropping q falls back to
+  // match_all (the full set) for the current db.
   const handleClear = () => {
     navigate(buildResultsHref({ db: data.db }))
   }
@@ -248,6 +249,14 @@ const SearchResultsRoute = () => {
     </Button>
   )
 
+  // The facet sidebar shares one node for both the pending aggregation and a
+  // failed/aborted one (a match_all facet aggregation can outrun the SSR budget):
+  // render the rows with no buckets either way, so the page keeps its hits rather
+  // than the facets deferred bubbling up to the route error boundary.
+  const facetFallback = (
+    <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={null} />
+  )
+
   return (
     <>
       <Section padTop="mid" padBottom="none">
@@ -265,83 +274,83 @@ const SearchResultsRoute = () => {
           showExamples={false}
           searchPending={search.pending}
         />
-        {data.q && (
-          <div className="mt-2.5">
-            <SwitchableQueryPreview
-              dsl={data.q}
-              ast={data.ast}
-              onClear={handleClear}
-              onEdit={handleEditInBuilder}
-            />
-          </div>
-        )}
+        <div className="mt-2.5">
+          <SwitchableQueryPreview
+            dsl={data.q}
+            ast={data.ast}
+            {...(data.q ? { onClear: handleClear } : {})}
+            onEdit={handleEditInBuilder}
+          />
+        </div>
         {(sync.status === "syncing" || sync.status === "failed") && (
           <div className="mt-2">
             <SyncStatusChip status={sync.status} />
           </div>
         )}
       </Section>
-      {data.q === ""
-        ? null
-        : data.parseError
-          ? (
-            <Section padTop="sm" padBottom="lg">
-              <Callout tone="warn" role="status" action={retryAction}>
-                {t("search.errors.parseFailure")}
-              </Callout>
-            </Section>
-          )
-          : (
-            <Suspense
-              fallback={
-                <Section padTop="sm" padBottom="lg">
-                  <SearchResultsSkeleton db={data.db} />
-                </Section>
-              }
-            >
-              <Await resolve={data.results}>
-                {(result: SearchResult) =>
-                  result.kind === "error"
-                    ? (
-                      <Section padTop="sm" padBottom="lg">
-                        <Callout tone="warn" role="status" action={retryAction}>
-                          {result.errorKey === "cross"
-                            ? t("search.errors.crossSearchFailure")
-                            : t("search.errors.dbSearchFailure")}
-                        </Callout>
-                      </Section>
-                    )
-                    : result.kind === "empty"
-                      ? null
-                      : (
-                        <Section padTop="sm" padBottom="lg">
-                          <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                            <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={result.facets} />
-                            <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
-                              {result.kind === "cross"
-                                ? <CrossResults q={data.q} response={result.cross} />
-                                : data.db
-                                  ? (
-                                    <PerDbResults
-                                      db={data.db}
-                                      response={result.perDb}
-                                      lang={lang}
-                                      page={data.page}
-                                      perPage={data.perPage}
-                                      sort={data.sort}
-                                      onPageChange={handlePageChange}
-                                      onPerPageChange={handlePerPageChange}
-                                      onSortChange={handleSortChange}
-                                    />
-                                  )
-                                  : null}
-                            </div>
-                          </div>
-                        </Section>
-                      )}
-              </Await>
-            </Suspense>
-          )}
+      {data.parseError
+        ? (
+          <Section padTop="sm" padBottom="lg">
+            <Callout tone="warn" role="status" action={retryAction}>
+              {t("search.errors.parseFailure")}
+            </Callout>
+          </Section>
+        )
+        : (
+          <Suspense
+            fallback={
+              <Section padTop="sm" padBottom="lg">
+                <SearchResultsSkeleton db={data.db} />
+              </Section>
+            }
+          >
+            <Await resolve={data.results}>
+              {(result: SearchResult) =>
+                result.kind === "error"
+                  ? (
+                    <Section padTop="sm" padBottom="lg">
+                      <Callout tone="warn" role="status" action={retryAction}>
+                        {result.errorKey === "cross"
+                          ? t("search.errors.crossSearchFailure")
+                          : t("search.errors.dbSearchFailure")}
+                      </Callout>
+                    </Section>
+                  )
+                  : (
+                    <Section padTop="sm" padBottom="lg">
+                      <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                        <Suspense fallback={facetFallback}>
+                          <Await resolve={data.facets} errorElement={facetFallback}>
+                            {(facets) => (
+                              <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={facets} />
+                            )}
+                          </Await>
+                        </Suspense>
+                        <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
+                          {result.kind === "cross"
+                            ? <CrossResults q={data.q} response={result.cross} />
+                            : data.db
+                              ? (
+                                <PerDbResults
+                                  db={data.db}
+                                  response={result.perDb}
+                                  lang={lang}
+                                  page={data.page}
+                                  perPage={data.perPage}
+                                  sort={data.sort}
+                                  onPageChange={handlePageChange}
+                                  onPerPageChange={handlePerPageChange}
+                                  onSortChange={handleSortChange}
+                                />
+                              )
+                              : null}
+                        </div>
+                      </div>
+                    </Section>
+                  )}
+            </Await>
+          </Suspense>
+        )}
     </>
   )
 }

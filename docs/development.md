@@ -65,6 +65,7 @@ docker compose up -d --build
 - `DB_PORTAL_LOG_LEVEL`: `debug` / `info` / `warn` から選ぶ
 - `DB_PORTAL_DEFAULT_LANG`: i18n の default 言語 (`ja` / `en`、`i18n.md`)。`VITE_DB_PORTAL_DEFAULT_LANG` として client にも露出
 - `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_OPENAPI_URL`: ddbj-search-api の base / openapi.json 配置先
+- `DB_PORTAL_FACET_CACHE_TTL_MS`: match_all facet 集計の server cache TTL (ms、未設定で既定 1 時間。`search.md`)
 - `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID` / `DB_PORTAL_AUTH_SESSION_TTL_SECONDS`: Keycloak realm / client / session TTL (`auth.md`)
 - `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY` / `DB_PORTAL_LLM_MODEL` / `DB_PORTAL_LLM_TIMEOUT_MS` / `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN`: vLLM 接続先と挙動 (`llm.md`)。`DB_PORTAL_LLM_BASE_URL` 空文字で AI 補助機能を hide
 - `DB_PORTAL_NEWS_REPOS_DIR` / `DB_PORTAL_NEWS_DDBJ_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` / `DB_PORTAL_NEWS_DBCLS_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` / `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` / `DB_PORTAL_NEWS_CACHE_DIR`: News mirror の clone 設定と cache 配置 (`news.md`)

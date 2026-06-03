@@ -328,6 +328,8 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 facet 集計 (`facets` パラメタ) は hits とは別の deferred で返す。cross と q 付き per-DB は検索 1 リクエストの応答から hits・facet を同時に取り出すが、per-DB の match_all (q 空) は全件への facet 集計が重く hits の描画を妨げるため、hits (facet なし) を先に解決し、facet 集計は別リクエストの deferred で追従させる。facet サイドバーは集計が届くまで行だけ (件数・候補なし) を描き、解決したら埋める。集計失敗は facet なしで degrade する (§ 候補値・件数の出所)。
 
+match_all の facet 集計は scope (cross / 各 DB) 単位で server 側 in-memory cache する。全件集計は重い一方データ更新まで実質静的なので、長め (既定 1 時間、`DB_PORTAL_FACET_CACHE_TTL_MS` で調整) に保持し、初回 miss のみ ES を集計して以降は cache から即返す。2 回目以降は SSR budget 内で facet が追従し、ES への再集計負荷も避ける (q 付き検索は対象外で都度集計する)。cache miss 中の同時アクセスは進行中の 1 集計を共有する。
+
 検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
 送信ボタンは実行中ビジー表示にする: キーワード検索の解決中 (parse → serialize → navigate → loader、`useSearchPending` が `useNavigation` で追跡) は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。`/search` ビルダーの box submit も同じく検索を実行し (旧来は keyword をコミットするだけで無反応だった)、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
@@ -451,6 +453,19 @@ AI 補助は **top / cross-DB results / per-DB results / `/search`** の検索 b
 
 `/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI モード」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI モード (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI モードでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。
 
+### db スコープ (locked / auto)
+
+AI 生成の db スコープは **呼び出し面で決まる**。生成結果の db は SSE `done` の `{ ast, db }` が運び、client はそれに従って遷移する (詳細は `llm.md`)。
+
+| 面 | スコープ | 挙動 |
+|---|---|---|
+| top | auto | db を送らない。生成 DSL が 1 DB の Tier-3 を使えば BFF が db を導出し、`/search/results?q=…&db=<db>` へ遷移。cross なら横断 results へ。**黙って遷移** (専用バナーは出さず、scope セレクタの表示で db が分かる) |
+| cross-search ビルダー (`/search`) | auto | 同上だが反映先は results でなくビルダー。導出 db を builder の DB scope セレクタに反映し、その DB の Tier-3 を扱える ([§ Advanced builder](#advanced-builder) の scope-aware)。scope セレクタで特定 DB を選んでいれば locked 扱いで生成 |
+| cross-DB results | auto | new / append とも導出可。append は現クエリ (cross) に Tier-3 を足すとその DB へ寄る |
+| per-DB results | **locked** | 現 `db` を送る。new / append とも **その DB 内で完結** する。モデルが DB 外 Tier-3 を出した場合は `/db-portal/parse` が弾き `invalid_dsl` エラー (その DB で再入力を促す)。別 DB へは勝手に遷移しない |
+
+導出は「DSL 中の Tier-3 field がどの DB のものか」 で決まる (`llm.md` の field→DB 表)。RNA-seq → `library_strategy` → SRA、host/strain → BioSample、relevance → BioProject、のように、明確に 1 DB の構造化概念を述べた入力だけが per-DB へ寄り、汎用の topic/organism クエリは横断のまま全 DB 分布を見せる。
+
 ### 生成モード (cross-search ビルダー)
 
 AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがあり、**生成 prompt がモードで変わりうるため生成前に選ぶ**。UI は検索ボックス左の scope 選択スロット (キーワードモードでは DB scope = 全データベース等) を AI モードでそのまま流用し、`新規生成 / 既存に追加` を選ばせる。入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
@@ -472,8 +487,8 @@ footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボ
 
 `/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
 
-- `event: message` → client では消費しない (delta は server 側で蓄積され `done` の完全な AST に集約される。client は生成途中の表示を持たない)
-- `event: done` → data を ParseNode AST として受け取り proposal state に反映、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
+- `event: message` → BFF は出さない (モデル生出力は転送しない、`llm.md` § プロンプトインジェクション)。client も消費しない
+- `event: done` → data `{ ast, db }` を受け取り、`ast` を proposal state に、`db` を遷移/scope 反映に使う、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
 - `event: error` → state = "error"、box 直下に inline エラー文言 (`search.assistant.generateError`) を出す (入力は保持)
 
 `AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
@@ -487,8 +502,8 @@ client は `event: done` で受け取った ParseNode AST をそのまま propos
 
 反映は経路で分かれる:
 
-- **`/search` (ビルダー)**: ユーザーの「適用」操作時に純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL。
-- **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化して `/search/results` へ `navigate` する。loader が新 `?q=` を再 split して keyword / facet / 保持 state を組み直す。results の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = `data.ast`) で、free_text も含む。top は `new` 固定。
+- **`/search` (ビルダー)**: ユーザーの「適用」操作時に純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。`done.db` が非 null なら DB scope セレクタをその db に合わせる (導出された Tier-3 を扱えるように)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL。
+- **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化し、`done.db` を `?db=` に載せて `/search/results` へ `navigate` する (`db` null なら横断)。loader が新 `?q=` (+ `db`) を再 split して keyword / facet / 保持 state を組み直す。**per-DB results は locked** で、`current`・遷移先ともその DB に固定する (別 DB へ寄らない)。cross results / top の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = `data.ast`) で free_text も含む。top は `new` 固定。
 
 per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 
