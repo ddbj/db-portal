@@ -1,22 +1,17 @@
-# db-portal
+# BSI
 
-DDBJ の登録・検索サービスへの統合ポータル。検索 (横断 / DB 指定 + Advanced builder + Sidebar facet)、登録ナビゲーション (テーブル + 動的 FlowStep カード)、ニュース、DDBJ Account (Keycloak) 連携、AI 検索アシスタント (LLM)、日本語 / 英語の i18n を 1 リポジトリで提供する。コンテンツは `*.content.tsx` collection (TSX fragment + Zod 検証) で扱う。
+BioData Science Initiative (BSI) のデータ登録とデータ検索を、ひとつの入口に統合した Web ポータル。研究者が「どこに登録すればよいか」「目的のデータをどう探すか」で迷わないことを目的とし、横断検索から登録手順の案内までを 1 リポジトリで提供する。
 
-## 技術スタック
+主な機能:
 
-| 層 | 採用 |
-|---|---|
-| フロント | Vite + React Router v7 (framework mode, config-based routing) + TypeScript (strict) + Tailwind CSS v4 |
-| データフェッチ | TanStack Query |
-| バリデーション | Zod |
-| 型自動生成 | `openapi-typescript` (ddbj-search-api `openapi.json`) |
-| 認証 | DDBJ Account (Keycloak) BFF + HttpOnly cookie |
-| LLM | 自前 vLLM (OpenAI 互換 API) を BFF 経由で利用 (model は `DB_PORTAL_LLM_MODEL`、詳細は `docs/llm.md`) |
-| サーバ | Express + `@react-router/express` (SSR) |
-| テスト | Vitest + fast-check (PBT) + Playwright (E2E) |
-| Lint | ESLint (`@stylistic` + `eslint-plugin-import` の `no-restricted-paths`) |
-| 開発 | Docker Compose |
-| 本番 | podman + podman-compose (NIG インフラ) |
+- 検索 — 全 DB の横断検索と DB 指定検索、条件を細かく組み立てる Advanced builder、結果を絞り込む Sidebar facet
+- AI 検索アシスタント — 自然文の問い合わせを検索条件へ変換する LLM 連携
+- 登録ナビゲーション — データの種類から適切な登録先を導くテーブルと、登録の流れを示す動的な FlowStep カード
+- ニュース / サービス一覧 — DDBJ の既存サイトから情報を取り込んで掲載
+- DDBJ Account 連携 — Keycloak によるログイン (BFF + HttpOnly cookie)
+- 日本語 / 英語の i18n — 言語切替に対応
+
+各ページのコンテンツは `*.content.tsx` collection (TSX fragment + Zod 検証) として管理する。
 
 ## クイックスタート (dev)
 
@@ -72,13 +67,10 @@ docker compose exec app npm run check:last-updated
 
 - [deployment.md](docs/deployment.md) — 環境構成 / 起動アーキ / log event / 監視 / トラブルシュート軸 / secret rotation
 
-## 参考
+## License
 
-- 既存サイト: https://ddbj.nig.ac.jp
-- 検索 UI 参考: https://www.ncbi.nlm.nih.gov/ (NCBI Entrez)
-- デザイン参考: https://bsi.rois.ac.jp (BSI)
-- 登録関連コンテンツの元ネタ: [ddbj/www](https://github.com/ddbj/www) (Jekyll サイト)
+Copyright 2026 BioData Science Initiative (BSI).
 
-## ライセンス
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use the files in this repository except in compliance with the License. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>, or from the [`LICENSE`](LICENSE) file distributed with this repository.
 
-Apache-2.0 (`LICENSE`)。
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
