@@ -25,19 +25,19 @@ const renderCross = (databases: unknown[]) =>
 describe("CrossResults top-hit links", () => {
   test("trad uses the getentry host, not the search/entry path", () => {
     renderCross([dbEntry("trad", [{ identifier: "U01317", type: "trad", title: "Trad entry" }])])
-    expect(screen.getByRole("link", { name: "Trad entry" }))
+    expect(screen.getByRole("link", { name: "U01317" }))
       .toHaveAttribute("href", "https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
   })
 
   test("taxonomy uses the tx_search host", () => {
     renderCross([dbEntry("taxonomy", [{ identifier: "9606", type: "taxonomy", title: "Homo sapiens" }])])
-    expect(screen.getByRole("link", { name: "Homo sapiens" }))
+    expect(screen.getByRole("link", { name: "9606" }))
       .toHaveAttribute("href", "https://ddbj.nig.ac.jp/tx_search/9606?view=info")
   })
 
   test("ES hits use the search/entry path keyed by fine-grained type", () => {
     renderCross([dbEntry("sra", [{ identifier: "DRZ012283", type: "sra-analysis", title: "SRA analysis" }])])
-    expect(screen.getByRole("link", { name: "SRA analysis" }))
+    expect(screen.getByRole("link", { name: "DRZ012283" }))
       .toHaveAttribute("href", "https://ddbj.nig.ac.jp/search/entry/sra-analysis/DRZ012283")
   })
 

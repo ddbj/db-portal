@@ -69,7 +69,7 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 | パラメタ | 値域 | 必須 | 意味 |
 |---|---|---|---|
-| `q` | DSL 文字列 (URI encoded) | × | 空のとき全件 (results 側は空 result を出す) |
+| `q` | DSL 文字列 (URI encoded) | × | 空のとき match_all (全件)。cross / per-DB とも `q` を省いて検索 API を呼ぶ |
 | `db` | `trad` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy` | × | 不在で cross-DB、値ありで per-DB |
 | `page` | 1+ の整数 | × | 不在は 1 |
 | `perPage` | `20` / `50` / `100` | × | 不在は 20 |
@@ -87,6 +87,8 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 `/search` (ビルダー) も `?q=<DSL>` (+ `db`) で開くと loader が `GET /db-portal/parse` で AST 化し、`splitFreeText` で free_text を keyword 行に、残りを `toAdvanced` で Advanced builder に復元する (facet サイドバーは無いので構造化条件はすべてビルダー側)。db は scope に復元する。結果ページの `クエリビルダーで編集` がこの経路を使う。
 
 `/search/results` route の loader が `?q=` を読み、`GET /db-portal/parse` で AST 化する。route component は AST を **3 つの面** に分解して state を再構築する: top-level の `free_text` (`splitFreeText`) → **キーワードボックス**、Sidebar facet で表現できる leaf (`splitForSidebar`) → **facet サイドバー**、残り → **保持する Advanced state** (`toAdvanced`)。Advanced state は results では UI を描かず、preview グラフでの可視化と再 serialize のために保持する。
+
+`q` が空のときは parse を行わず `ast=null` のまま 3 面とも初期状態にし、検索は `q` を省いた match_all (全件) になる (§ URL 設計)。facet サイドバーは出るので、ユーザは全件からの絞り込みを開始でき、facet を操作した時点で `q` が生成されて通常の絞り込み結果に遷移する。
 
 表現できない構造 (たとえば `OR` を Sidebar facet 側に持たせる、など) は **保持 state 側に倒す**。Sidebar は単純な AND of equality / range のみを表す。
 
@@ -324,6 +326,8 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 重い検索 (`cross-search` / per-DB `search`) は loader から **await せず deferred Promise** で返す。route は検索 box・プレビュー・facet サイドバー枠・結果 skeleton を即描画し、検索が解決した時点でグリッドを一斉に埋める (cross-search は 1 リクエストなので、各カードが個別に時間差で入るのではなくまとめて確定する)。`?q=` の **parse だけは await** する — その AST がキーワードボックス・facet サイドバーの復元と parse 失敗判定に要るため。これで top / 前ページからの遷移を待たせず、ロード中であることを skeleton で可視化する。この loading skeleton はロード中のプレースホルダで、ロード後に各フィールドを「値があれば出す」方針 (フィールド単位の skeleton は出さない、§ cross-DB 結果) とはレイヤーが別。
 
+facet 集計 (`facets` パラメタ) は hits とは別の deferred で返す。cross と q 付き per-DB は検索 1 リクエストの応答から hits・facet を同時に取り出すが、per-DB の match_all (q 空) は全件への facet 集計が重く hits の描画を妨げるため、hits (facet なし) を先に解決し、facet 集計は別リクエストの deferred で追従させる。facet サイドバーは集計が届くまで行だけ (件数・候補なし) を描き、解決したら埋める。集計失敗は facet なしで degrade する (§ 候補値・件数の出所)。
+
 検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
 送信ボタンは実行中ビジー表示にする: キーワード検索の解決中 (parse → serialize → navigate → loader、`useSearchPending` が `useNavigation` で追跡) は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。`/search` ビルダーの box submit も同じく検索を実行し (旧来は keyword をコミットするだけで無反応だった)、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
@@ -334,13 +338,13 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、結果は deferred で返す → [§ 検索結果 UI](#検索結果-ui))。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
+`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、結果は deferred で返す → [§ 検索結果 UI](#検索結果-ui))。`q` が空のときは `?q=` を省いて `cross-search?topHits=3` を呼び、全 DB の総件数 + 上位 hit を match_all で出す。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
 
 各カードの内容:
 
 - title: i18n リソースの `search.scope.<db>`。同じ行の右端に「結果一覧 →」 link を並べる
 - count: `count ?? 0`
-- 上位 hit: 最大 3 件。accession + 日付 + title を出す。日付は datePublished → dateModified → dateCreated の fallback (per-DB 行と共通)
+- 上位 hit: 最大 3 件。accession (entry への外部リンク) + 日付 + title を出す。日付は datePublished → dateModified → dateCreated の fallback (per-DB 行と共通)
 - 「結果一覧 →」: `/search/results?q=<DSL>&db=<id>` への TextLink (title と同じ行の右端)
 - error フィールド (timeout 等の一時的な部分失敗) が立っているとき: count を出さず、一時障害メッセージ (`search.results.cross.error`) + 「再読み込み」 (`navigate(0)`、`search.results.cross.retry`) を表示する。error は恒久的な検索不可ではなく再読み込みで回復しうるため、「失敗」ではなく一時性が伝わる文言にする
 
@@ -352,7 +356,7 @@ Tier 2 fallback: optional field (title / description / datePublished 等) が `n
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
-`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。
+`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。`q` が空のときは `?q=` を省いて match_all を呼び全件を出す (relevance sort では全 score tie となり identifier 昇順が effective order)。
 
 #### Layout (2-col)
 

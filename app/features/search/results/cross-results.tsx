@@ -104,26 +104,28 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
               {hits.map((hit) => (
                 <li
                   key={hit.identifier}
-                  className="grid grid-cols-[90px_1fr] gap-x-3"
+                  className="grid grid-cols-[115px_1fr] gap-x-3"
                 >
-                  <div className="min-w-0">
-                    <span className="font-mono text-fs-label text-brand-deep">{hit.identifier}</span>
-                    {resolveDate(hit) && (
-                      <div className="font-mono text-fs-micro text-ink-soft mt-0.5">
-                        {formatHitDate(resolveDate(hit))}
-                      </div>
-                    )}
-                  </div>
                   <div className="min-w-0">
                     <Link
                       to={entryHref(hit)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-fs-label text-ink no-underline hover:underline line-clamp-2"
+                      className="inline-flex items-center gap-0.5 font-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
                     >
-                      {hit.title ?? hit.identifier}
-                      <ExternalIcon size={11} aria-hidden className="ml-0.5 inline align-middle text-ink-soft" />
+                      {hit.identifier}
+                      <ExternalIcon size={10} aria-hidden className="shrink-0 text-ink-soft" />
                     </Link>
+                    {resolveDate(hit) && (
+                      <div className="font-mono text-fs-body-sm text-ink-soft">
+                        {formatHitDate(resolveDate(hit))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-fs-body-sm text-ink line-clamp-2">
+                      {hit.title ?? hit.identifier}
+                    </span>
                   </div>
                 </li>
               ))}

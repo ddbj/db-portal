@@ -132,38 +132,43 @@ export const SearchBox = ({
               : "bg-surface border-border-strong",
         )}
       >
-        {showScope && (
-          interactiveScope
-            ? (
-              <button
-                type="button"
-                onClick={() => setScopeOpen((o) => !o)}
-                aria-haspopup="listbox"
-                aria-expanded={scopeOpen}
-                aria-controls={listboxId}
-                aria-label={scopeAriaLabel}
-                className={cn(
-                  "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft cursor-pointer min-w-[140px] hover:bg-surface-subtle",
-                  cls.scope,
-                )}
-              >
-                <span className="flex-1 text-left">{scopeValue}</span>
-                <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
-              </button>
-            )
-            : (
-              <div
-                className={cn(
-                  "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft min-w-[140px]",
-                  cls.scope,
-                )}
-                aria-label={scopeAriaLabel}
-              >
-                <span className="flex-1">{scopeValue}</span>
-                <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
-              </div>
-            )
-        )}
+        {interactiveScope
+          ? (
+            <button
+              type="button"
+              onClick={() => setScopeOpen((o) => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={scopeOpen}
+              aria-controls={listboxId}
+              aria-label={scopeAriaLabel}
+              className={cn(
+                "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft cursor-pointer min-w-[140px] hover:bg-surface-subtle",
+                cls.scope,
+              )}
+            >
+              <span className="flex-1 text-left">{scopeValue}</span>
+              <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
+            </button>
+          )
+          : (
+            // When hidden (the top hero's AI mode) the scope keeps its box —
+            // invisible and zero-width — so the form's items-stretch height holds
+            // and the box doesn't jump between keyword and AI mode.
+            <div
+              className={cn(
+                "flex items-center gap-2 text-ink font-bold",
+                cls.scope,
+                showScope
+                  ? "px-3 border-r border-border-soft min-w-[140px]"
+                  : "invisible w-0 overflow-hidden whitespace-nowrap",
+              )}
+              aria-label={showScope ? scopeAriaLabel : undefined}
+              aria-hidden={showScope ? undefined : true}
+            >
+              <span className="flex-1">{scopeValue}</span>
+              <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
+            </div>
+          )}
         <div className="flex-1 flex items-center px-4 gap-2.5 min-w-0">
           {showSearchIcon && (
             <SearchIcon size={cls.icon} className="text-ink-soft shrink-0" />
