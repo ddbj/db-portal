@@ -216,8 +216,15 @@ docker compose exec app npm run test:unit           # unit のみ
 docker compose exec app npm run test:pbt            # PBT のみ
 docker compose exec app npm test -- --watch         # watch モード
 
-# e2e (staging URL に対して)
-docker compose exec app npm run test:e2e
+# e2e は staging 環境に対してのみ実行する (dev サーバは対象外)。
+# dev コンテナの DB_PORTAL_PORTAL_ORIGIN は localhost:3000 を指すので、override
+# しないと baseURL が dev サーバに向く。必ず staging origin を渡す。user project は
+# DB_PORTAL_E2E_USER_PASSWORD (Keycloak login 用 secret) を host 側で export してから渡す。
+export DB_PORTAL_E2E_USER_PASSWORD=...   # 値は credentials 管理
+docker compose exec \
+  -e DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
+  -e DB_PORTAL_E2E_USER_PASSWORD \
+  app npm run test:e2e
 ```
 
 ## ディレクトリ構造
