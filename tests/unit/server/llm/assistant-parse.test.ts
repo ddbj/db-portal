@@ -81,6 +81,48 @@ describe("parseModelOutput", () => {
     expect(receivedUrl).toContain("db=sra")
   })
 
+  test("crossPlaneSraQuery_isRepairedThenReparsed", async () => {
+    // Model leaks the subtype-AND trap (organism is sra-sample, library_strategy is
+    // sra-experiment → 0 hits). The BFF guard repairs the AST, serializes it, and
+    // re-parses the plane-safe result. (server/llm/assistant/plane-guard.ts)
+    const crossPlaneAst = {
+      op: "AND",
+      rules: [
+        { op: "contains", field: "organism_name", value: "Homo sapiens" },
+        { op: "eq", field: "library_strategy", value: "RNA-Seq" },
+      ],
+    }
+    const repairedAst = {
+      op: "AND",
+      rules: [
+        { op: "contains", field: "organism_name", value: "Homo sapiens" },
+        { op: "free_text", value: "RNA-seq", is_phrase: true },
+      ],
+    }
+    const repairedDsl = 'organism_name:"Homo sapiens" AND "RNA-seq"'
+    const calls: string[] = []
+    const outcome = await parseModelOutput(
+      'organism_name:"Homo sapiens" AND library_strategy:RNA-Seq',
+      "sra",
+      {
+        env,
+        fetchImpl: stubFetch((url) => {
+          calls.push(url)
+          if (url.includes("/db-portal/serialize")) {
+            return new Response(JSON.stringify({ dsl: repairedDsl }), { status: 200 })
+          }
+          if (url.includes("library_strategy")) {
+            return new Response(JSON.stringify({ ast: crossPlaneAst }), { status: 200 })
+          }
+
+          return new Response(JSON.stringify({ ast: repairedAst }), { status: 200 })
+        }),
+      },
+    )
+    expect(outcome).toEqual({ ok: true, ast: repairedAst, db: "sra", dsl: repairedDsl })
+    expect(calls.some((u) => u.includes("/db-portal/serialize"))).toBe(true)
+  })
+
   test("autoMode_derivesDbFromCrossTier3Verdict", async () => {
     const calls: string[] = []
     const ast = { op: "eq", field: "library_strategy", value: "RNA-Seq" }

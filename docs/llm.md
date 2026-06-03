@@ -201,7 +201,8 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 - スコープ 2 種: `DB scope:` 行があれば **locked** (cross field + その DB の Tier-3 のみ、その DB に valid)、無ければ **auto** (cross 中心、明確に 1 DB の構造化概念を述べた入力のみ Tier-3 を使い、2 DB の Tier-3 を混在させない)
 - 生成 2 モード: `Current query:` が無ければ新規生成、有れば既存条件を完全保持して融合 (append)
 - 出力は常に最低 1 条件。organism は決して落とさない。非対応の入力 (fuzzy `~`・boost `^`・regex) は description に押し込まず省く / 等価表現に直す
-- few-shot は cross / 各 DB Tier-3 / append / 導出 / robustness を実演する
+- subtype plane 不変量: SRA / JGA は subtype 別の独立 doc で、異なる plane の field を AND すると 0 件になる (`search-fields.md` § subtype plane 不変量)。organism (sra-sample) と library_\* / platform / instrument (sra-experiment) は同居できないので、両方を求められたら organism を残し、sequencing 概念は **free-text 1 語** (field 無しの引用句、keyword box と同じく title/name/description を横断) へ降格し、platform/instrument/layout/selection は捨てる。experiment 系 Tier-3 field は organism 等の sample-plane field が無いときだけ使う。JGA は `study_type` に `type:jga-dataset` を付けない
+- few-shot は cross / 各 DB Tier-3 / subtype-plane 降格 / append / 導出 / robustness を実演する
 
 変換規約 (allowed field・organism 通称→学名・topic→description・date 範囲と番兵・Tier-3 enum 語彙と DB 対応・`AND`/`OR`/`NOT` の precedence と括弧・非対応文字の扱い) の SSOT は `server/llm/assistant/prompt.ts` の `SYSTEM_PROMPT` と few-shot。許容 field/op の最終判定は **ddbj-search-api の allowlist** (`/db-portal/parse` が検証) が SSOT で、Tier-1/2 (cross) / Tier-3 (per-DB) の区分と Tier-3 → DB 対応は `search-fields.md` を参照。
 
@@ -217,6 +218,7 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
   - 200 → `event: done` に `{ ast, db }` を載せる
   - 400 → `event: error` `{ code: "invalid_dsl", message: <problem detail> }`
   - 5xx / network → 短い retry 後 `upstream-disconnect`
+- **subtype plane ガード** (`server/llm/assistant/plane-guard.ts`): db が sra / jga に確定した AST が cross-plane (異なる subtype plane の field を AND、`search-fields.md` § subtype plane 不変量) のとき、構造的に 0 件になるのを防ぐ決定論的修復を挟む。sample plane (organism 等) + cross field を残し experiment / analysis plane の field を落とし、落とした主 sequencing 概念を free-text 1 語として畳み込む (プロンプト規約と同形)。修復後の AST を `/db-portal/serialize` → 元スコープで `/db-portal/parse` し直して canonical な `{ ast, db }` を得る (auto は Tier-3 が消えるので cross に再解決、locked はその db のまま)。プロンプトで防ぎ切れない残り (Qwen の field マッピング prior による取りこぼし) をここで 0 件化させない。再 serialize / 再 parse が失敗したら元の parse 結果に degrade する
 
 `/db-portal/parse` の base URL は `DB_PORTAL_SEARCH_API_URL` (search API と共用、`server/lib/env.ts`)。
 

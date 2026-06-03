@@ -96,6 +96,20 @@ DSL field type (enum / text / identifier) から op を機械導出する ([§ D
 - `type` は subtype 識別子。SRA subtype = sra-submission / sra-study / sra-experiment / sra-run / sra-sample / sra-analysis、JGA subtype = jga-study / jga-dataset / jga-policy / jga-dac。`db=sra` / `db=jga` は subtype 横断なので、対応しない subtype の doc では空 bucket になり自然に脱落する。
 - trad / taxonomy (Solr) の field は ARSA / TXSearch schema を参照 (本書の ES 対応表の対象外)。
 
+### subtype plane 不変量 (cross-plane AND = 0 件)
+
+SRA / JGA の DB ごと field は **subtype 別の独立 doc** に分かれて入っており、field は subtype を跨いで共有されない (上表「subtype 所在」列)。同一 doc が複数 plane の field を同時に持つことはないため、**異なる plane の field を AND したクエリは構造的に 0 件**になる (DSL parse / `field-not-available-for-db` 検証はいずれも db 単位で、plane 整合は見ないので parse 200 でもヒット 0)。
+
+| db | plane | field |
+| --- | --- | --- |
+| sra | sample (sra-sample) | `organism_id` / `organism_name` / `geo_loc_name` / `collection_date` / `derived_from_id` |
+| sra | experiment (sra-experiment) | `library_strategy` / `library_source` / `library_selection` / `library_layout` / `platform` / `instrument_model` / `library_name` / `library_construction_protocol` |
+| sra | analysis (sra-analysis) | `analysis_type` |
+| jga | study (jga-study) | `study_type` / `vendor` / `grant_title` / `grant_agency` (organism も study に同居) |
+| jga | dataset (jga-dataset) | `dataset_type` |
+
+`type:<subtype>` は 1 plane の doc に固定するので、別 plane の field と AND しても同様に 0 件。代表例: `organism_name AND library_strategy`、`organism_name AND platform`、`study_type AND type:jga-dataset` はいずれも 0。AI 検索アシスタントがこの罠を避けるための変換規約 (organism は残し sequencing 概念を free-text 1 語へ降格する等) は `llm.md` § 検索アシスタント / `server/llm/assistant/prompt.ts` を参照。
+
 ## DSL field type 規約
 
 DSL `field:value` の演算子は field type から導出される (`allowlist.py` の `OPERATOR_BY_KIND`):
