@@ -11,6 +11,7 @@
 !eslint.config.ts
 !stryker.conf.json
 !app/
+!public/
 !server/
 !tests/
 !docs/
