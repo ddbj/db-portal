@@ -157,11 +157,11 @@ describe("ProposalConditions", () => {
   })
 
   test("unknownField_fallsBackToRawName", () => {
-    // A field outside the builder catalog (a Solr-backed taxonomy field) has no
-    // builder label, so the chip falls back to the raw field name.
-    renderNode({ op: "eq", field: "kingdom", value: "Bacteria" })
-    expect(screen.getByText("kingdom")).toBeInTheDocument()
-    expect(screen.getByText("Bacteria")).toBeInTheDocument()
+    // A field the builder does not model (absent from the field registry, e.g. the
+    // router-injected status) has no label, so the chip falls back to the raw name.
+    renderNode({ op: "eq", field: "status", value: "public" })
+    expect(screen.getByText("status")).toBeInTheDocument()
+    expect(screen.getByText("public")).toBeInTheDocument()
   })
 
   test("identityAst_rendersNothing", () => {

@@ -14,6 +14,9 @@ type FacetPanelProps = {
   dispatch: Dispatch<SearchFacetAction>
   db: DbSlug | null
   facets: DbPortalFacets | null
+  // True only on a cold first load (no cached buckets yet): facet rows hold their
+  // place with a skeleton instead of dropping out until the aggregation lands.
+  loading?: boolean
 }
 
 type Bucket = { value: string; count: number; label?: string }
@@ -60,16 +63,31 @@ const parseTaxIds = (raw: string): string[] => {
 const sameValues = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((value, i) => value === b[i])
 
+// Three pulsing bars standing in for buckets while a cold aggregation loads, so a
+// facet row keeps its place (and label) instead of vanishing (docs/search.md
+// § Sidebar facet).
+const FacetSkeleton = ({ label }: { label: string }) => (
+  <FacetGroup label={label}>
+    {[0, 1, 2].map((i) => (
+      <li key={i} className="py-1">
+        <span aria-hidden className="block h-4 animate-pulse rounded-tag bg-border-soft" />
+      </li>
+    ))}
+  </FacetGroup>
+)
+
 const FacetSection = ({
   row,
   selected,
   buckets,
+  loading,
   onToggle,
   onClear,
 }: {
   row: FilterRow
   selected: readonly string[]
   buckets: readonly Bucket[]
+  loading: boolean
   onToggle: (value: string) => void
   onClear: () => void
 }) => {
@@ -83,7 +101,17 @@ const FacetSection = ({
     .filter((v) => !shownValues.has(v))
     .map((value) => ({ value, count: 0 }))
   const visible = [...shown, ...extras]
-  if (visible.length === 0) return null
+  // No buckets: hold the row with a skeleton while loading, otherwise drop it (an
+  // empty facet, e.g. a subtype with no docs in this scope, falls away naturally).
+  if (visible.length === 0) {
+    return loading
+      ? (
+        <div data-testid={`facet-${row.key}-loading`}>
+          <FacetSkeleton label={t(`search.facets.field.${row.key}`)} />
+        </div>
+      )
+      : null
+  }
   // The toggle appears once there are more buckets than the collapsed view; it
   // both expands (up to CAP) and collapses again.
   const canToggle = buckets.length > VISIBLE
@@ -268,7 +296,7 @@ const NumberRangeSection = ({
   )
 }
 
-export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => {
+export const FacetPanel = ({ state, dispatch, db, facets, loading = false }: FacetPanelProps) => {
   const t = useT()
   // Anchor for resolving date presets to concrete windows (display + emit share
   // the same day, so a freshly picked preset round-trips back to itself).
@@ -340,6 +368,7 @@ export const FacetPanel = ({ state, dispatch, db, facets }: FacetPanelProps) => 
               row={row}
               selected={selected}
               buckets={bucketsFor(facets, row)}
+              loading={loading}
               onToggle={(value) => dispatch({ type: "toggleFacet", key: row.key, value })}
               onClear={() => dispatch({ type: "clearFacet", key: row.key })}
             />

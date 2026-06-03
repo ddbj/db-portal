@@ -2,13 +2,15 @@ import { http, HttpResponse } from "msw"
 import type { LoaderFunctionArgs } from "react-router"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
-import { clearMatchAllFacetCache } from "~/routes/search-results/facet-cache.server"
+import {
+  clearMatchAllFacetCache,
+  getCachedMatchAllFacets,
+} from "~/routes/search-results/facet-cache.server"
 import { loader, type LoaderData } from "~/routes/search-results/loader"
 
 import {
   crossSearchHandler,
   dbSearchHandler,
-  minimalCrossSearchResponse,
   minimalDbSearchResponse,
   minimalParseResponse,
   parseHandler,
@@ -32,87 +34,58 @@ afterEach(() => {
   delete process.env.DB_PORTAL_SEARCH_API_URL
 })
 
-describe("search-results loader: facetSelfExclude", () => {
-  test("crossSearch_withFacets_sendsFacetSelfExcludeTrue", async () => {
-    let capturedUrl: URL | undefined
-    server.use(
-      parseHandler(),
-      crossSearchHandler({
-        onRequest: (url) => { capturedUrl = url },
-        response: minimalCrossSearchResponse({
-          organism: [
-            { value: "9606", count: 100, label: "Homo sapiens" },
-            { value: "10090", count: 50, label: "Mus musculus" },
-          ],
-        }),
-      }),
-    )
-    const data = await buildLoader("?q=organism_id:9606")
-    await data.results
-    expect(capturedUrl?.searchParams.get("facetSelfExclude")).toBe("true")
+describe("search-results loader: hits", () => {
+  test("emptyQuery_cross_resolvesCross", async () => {
+    server.use(crossSearchHandler())
+    const data = await buildLoader("?q=")
+    expect(data.parseError).toBe(false)
+    expect(await data.results).toMatchObject({ kind: "cross" })
   })
 
-  test("dbSearch_withFacets_sendsFacetSelfExcludeTrue", async () => {
+  test("emptyQuery_cross_omitsQParam", async () => {
     let capturedUrl: URL | undefined
+    server.use(crossSearchHandler({ onRequest: (url) => { capturedUrl = url } }))
+    await (await buildLoader("?q=")).results
+    expect(capturedUrl?.searchParams.has("q")).toBe(false)
+  })
+
+  test("emptyQuery_perDb_omitsQParam", async () => {
+    const urls: URL[] = []
+    server.use(dbSearchHandler({ onRequest: (url) => { urls.push(url) } }))
+    await (await buildLoader("?db=biosample")).results
+    expect(urls.length).toBeGreaterThan(0)
+    expect(urls.every((u) => !u.searchParams.has("q"))).toBe(true)
+  })
+
+  test("hitsRequest_omitsFacets", async () => {
+    // The hits request no longer carries facets; the sidebar pulls the aggregation
+    // client-side (the facet param only appears on the match_all placeholder fill).
+    let hitsUrl: URL | undefined
     server.use(
       parseHandler(),
       dbSearchHandler({
-        onRequest: (url) => { capturedUrl = url },
-        response: minimalDbSearchResponse({
-          organism: [
-            { value: "9606", count: 100, label: "Homo sapiens" },
-            { value: "10090", count: 50, label: "Mus musculus" },
-          ],
-        }),
+        onRequest: (url) => { if (!url.searchParams.has("facets")) hitsUrl = url },
       }),
     )
-    const data = await buildLoader("?q=organism_id:9606&db=biosample")
+    await (await buildLoader("?q=cancer&db=biosample")).results
+    expect(hitsUrl).toBeDefined()
+    expect(hitsUrl?.searchParams.has("facets")).toBe(false)
+  })
+
+  test("emptyQuery_skipsParse", async () => {
+    let parseCalled = false
+    server.use(
+      http.get("*/db-portal/parse", () => {
+        parseCalled = true
+
+        return HttpResponse.json(minimalParseResponse("x"))
+      }),
+      crossSearchHandler(),
+    )
+    const data = await buildLoader("?q=")
     await data.results
-    expect(capturedUrl?.searchParams.get("facetSelfExclude")).toBe("true")
-  })
-
-  test("crossSearch_facetsInResponse_resolvedThroughFacetsDeferred", async () => {
-    const facets = {
-      organism: [
-        { value: "9606", count: 500, label: "Homo sapiens" },
-        { value: "10090", count: 200, label: "Mus musculus" },
-      ],
-    }
-    server.use(
-      parseHandler(),
-      crossSearchHandler({ response: minimalCrossSearchResponse(facets) }),
-    )
-    const data = await buildLoader("?q=organism_id:9606")
-    expect(await data.results).toMatchObject({ kind: "cross" })
-    expect(await data.facets).toEqual(facets)
-  })
-
-  test("dbSearch_facetsInResponse_resolvedThroughFacetsDeferred", async () => {
-    const facets = {
-      accessibility: [
-        { value: "public-access", count: 300 },
-        { value: "controlled-access", count: 20 },
-      ],
-    }
-    server.use(
-      parseHandler(),
-      dbSearchHandler({ response: minimalDbSearchResponse(facets) }),
-    )
-    const data = await buildLoader("?q=organism_id:9606&db=biosample")
-    expect(await data.results).toMatchObject({ kind: "perDb" })
-    expect(await data.facets).toEqual(facets)
-  })
-})
-
-describe("search-results loader: degrade", () => {
-  test("crossSearch_apiReturnsNullFacets_facetsResolveNull", async () => {
-    server.use(
-      parseHandler(),
-      crossSearchHandler({ response: minimalCrossSearchResponse(null) }),
-    )
-    const data = await buildLoader("?q=cancer")
-    expect(await data.results).toMatchObject({ kind: "cross" })
-    expect(await data.facets).toBeNull()
+    expect(parseCalled).toBe(false)
+    expect(data.parseError).toBe(false)
   })
 
   test("parseError_setsParseErrorFlag", async () => {
@@ -147,75 +120,34 @@ describe("search-results loader: degrade", () => {
   })
 })
 
-describe("search-results loader: empty query runs match_all", () => {
-  test("emptyQuery_cross_resolvesCross", async () => {
+describe("search-results loader: facet placeholder", () => {
+  test("coldCache_facetsPlaceholderIsNull", async () => {
+    // Cold cache: the placeholder is null right away (the heavy match_all is never
+    // awaited on the SSR path); a background fill warms the cache for next time.
+    // Uses a scope distinct from the other cases so its fire-and-forget fill can't
+    // race into their cache entries.
+    server.use(
+      dbSearchHandler({ response: minimalDbSearchResponse({ experimentType: [{ value: "X", count: 1 }] }) }),
+    )
+    const data = await buildLoader("?db=gea")
+    expect(data.facets).toBeNull()
+  })
+
+  test("warmCache_returnsCachedMatchAllFacets", async () => {
+    // Warm cache: the scope's cached match_all is returned synchronously as the
+    // instant placeholder the sidebar shows before its q-aware counts land.
+    const facets = { package: [{ value: "MIGS.ba", count: 5 }] }
+    await getCachedMatchAllFacets("db:biosample", () => Promise.resolve(facets))
+    server.use(dbSearchHandler())
+    const data = await buildLoader("?db=biosample")
+    expect(data.facets).toEqual(facets)
+  })
+
+  test("warmCrossCache_returnsCachedMatchAllFacets", async () => {
+    const facets = { organism: [{ value: "9606", count: 500, label: "Homo sapiens" }] }
+    await getCachedMatchAllFacets("cross", () => Promise.resolve(facets))
     server.use(crossSearchHandler())
     const data = await buildLoader("?q=")
-    expect(data.parseError).toBe(false)
-    expect(await data.results).toMatchObject({ kind: "cross" })
-  })
-
-  test("emptyQuery_cross_omitsQParam", async () => {
-    let capturedUrl: URL | undefined
-    server.use(crossSearchHandler({ onRequest: (url) => { capturedUrl = url } }))
-    await (await buildLoader("?q=")).results
-    expect(capturedUrl?.searchParams.has("q")).toBe(false)
-  })
-
-  test("emptyQuery_perDb_omitsQParam", async () => {
-    const urls: URL[] = []
-    server.use(dbSearchHandler({ onRequest: (url) => { urls.push(url) } }))
-    const data = await buildLoader("?db=biosample")
-    await Promise.all([data.results, data.facets])
-    expect(urls.length).toBeGreaterThan(0)
-    expect(urls.every((u) => !u.searchParams.has("q"))).toBe(true)
-  })
-
-  test("emptyQuery_perDb_fetchesHitsWithoutFacets_andFacetsSeparately", async () => {
-    const urls: URL[] = []
-    server.use(dbSearchHandler({ onRequest: (url) => { urls.push(url) } }))
-    const data = await buildLoader("?db=biosample")
-    await Promise.all([data.results, data.facets])
-    expect(urls.some((u) => !u.searchParams.has("facets"))).toBe(true)
-    expect(urls.some((u) => u.searchParams.has("facets"))).toBe(true)
-  })
-
-  test("emptyQuery_perDb_facetsResolveThroughDeferred", async () => {
-    const facets = { package: [{ value: "MIGS.ba.6.0", count: 100 }] }
-    server.use(dbSearchHandler({ response: minimalDbSearchResponse(facets) }))
-    const data = await buildLoader("?db=biosample")
-    expect(await data.facets).toEqual(facets)
-  })
-
-  test("emptyQuery_skipsParse", async () => {
-    let parseCalled = false
-    server.use(
-      http.get("*/db-portal/parse", () => {
-        parseCalled = true
-
-        return HttpResponse.json(minimalParseResponse("x"))
-      }),
-      crossSearchHandler(),
-    )
-    const data = await buildLoader("?q=")
-    await data.results
-    expect(parseCalled).toBe(false)
-    expect(data.parseError).toBe(false)
-  })
-
-  test("emptyQuery_perDb_cachesFacetAggregation_acrossRequests", async () => {
-    let facetRequests = 0
-    server.use(
-      dbSearchHandler({
-        onRequest: (url) => { if (url.searchParams.has("facets")) facetRequests += 1 },
-        response: minimalDbSearchResponse({ package: [{ value: "MIGS.ba", count: 5 }] }),
-      }),
-    )
-    const first = await buildLoader("?db=biosample")
-    await Promise.all([first.results, first.facets])
-    const second = await buildLoader("?db=biosample")
-    await Promise.all([second.results, second.facets])
-    expect(facetRequests).toBe(1)
-    expect(await second.facets).toEqual({ package: [{ value: "MIGS.ba", count: 5 }] })
+    expect(data.facets).toEqual(facets)
   })
 })

@@ -102,19 +102,27 @@ export const SearchInputPanel = ({
   })
 
   const generating = stream.state === "streaming"
+  // A failed generation puts the box into the same validation-failure treatment
+  // as an unparseable keyword (warn border + inline alert below).
+  const aiError = isAi && stream.state === "error"
   // AI mode busies while generating; keyword mode busies while the search the
   // box kicked off resolves.
   const submitDisabled = isAi ? generating : searchPending
   const submitLabel = isAi
-    ? (generating ? t("search.assistant.generating") : t("search.assistant.generateShort"))
+    ? (generating
+      ? t("search.assistant.generating")
+      : aiError
+        ? t("search.assistant.retry")
+        : t("search.assistant.generateShort"))
     : (searchPending ? t("search.a11y.searching") : t("search.a11y.submit"))
   // Reserve the widest of every label the submit can show (検索 / 検索中… / 生成 /
-  // 生成中…) so toggling mode or busy state never resizes the box.
+  // 生成中… / 再試行) so toggling mode or busy state never resizes the box.
   const submitReserve = [
     t("search.a11y.submit"),
     t("search.a11y.searching"),
     t("search.assistant.generateShort"),
     t("search.assistant.generating"),
+    t("search.assistant.retry"),
   ]
 
   // The keyword box submit runs the cross search (same as the builder's button),
@@ -186,7 +194,7 @@ export const SearchInputPanel = ({
         maxWidth={9999}
         showSearchIcon={!isAi}
         tone={isAi ? "ai" : "default"}
-        invalid={keywordInvalid}
+        invalid={keywordInvalid || aiError}
         value={isAi ? aiInput : keyword}
         placeholder={isAi ? (effectiveAiMode === "append" ? t("search.assistant.placeholderAppend") : t("search.assistant.placeholderNew")) : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
@@ -257,6 +265,12 @@ export const SearchInputPanel = ({
             {t("search.a11y.assistantStop")}
           </Button>
         </div>
+      )}
+
+      {aiError && (
+        <p role="alert" className="m-0 text-fs-label font-semibold text-warn-fg">
+          {t("search.assistant.generateError")}
+        </p>
       )}
 
       {isAi && stream.proposal !== null && (

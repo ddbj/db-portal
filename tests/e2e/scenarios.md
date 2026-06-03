@@ -71,8 +71,8 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/search` を開く
 - **手順**:
-  1. 「+ 条件を追加」 (`search.builder.addCondition`) で条件行を 1 つ追加し、field セレクタ (`search.a11y.fieldSelector`「検索フィールド」) で `生物種 ID` (`organism_id`、`search.builder.field.organismId`)、述語セレクタ (`search.a11y.predicateSelector`「条件の演算子」) で `と一致` (`search.builder.predicate.eq`、identifier kind の default op)、値の Combobox (`search.builder.valuePlaceholder`「値を入力」) に taxID `9606` を入力 (organism facet の `Homo sapiens (9606)` 候補を選んでも可、いずれも taxID `9606` を commit する)
-  2. もう一度「+ 条件を追加」 で 2 行目を追加し、field=`学名` (`organism_name`、`search.builder.field.organismName`)、述語=`を含む` (`search.builder.predicate.contains`、text kind)、値の TextInput (`値を入力`) に `Homo sapiens` を入力
+  1. 「+ 条件を追加」 (`search.builder.addCondition`) で条件行を 1 つ追加し、field セレクタ (`search.a11y.fieldSelector`「検索フィールド」) で `生物種` (`organism_id`、`search.fields.organism`)、述語セレクタ (`search.a11y.predicateSelector`「条件の演算子」) で `と一致` (`search.builder.predicate.eq`、identifier kind の default op)、値の Combobox (`search.builder.valuePlaceholder`「値を入力」) に taxID `9606` を入力 (organism facet の `Homo sapiens (9606)` 候補を選んでも可、いずれも taxID `9606` を commit する)
+  2. もう一度「+ 条件を追加」 で 2 行目を追加し、field=`学名` (`organism_name`、`search.fields.organismName`)、述語=`を含む` (`search.builder.predicate.contains`、text kind)、値の TextInput (`値を入力`) に `Homo sapiens` を入力
   3. ライブプレビュー (`QueryPreview`) に DSL が反映されるのを待つ (debounce 700 ms)
   4. ページ下部の `この条件で検索` (`search.actions.submit`) button をクリック
 - **期待**:

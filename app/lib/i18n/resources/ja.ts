@@ -370,49 +370,6 @@ export type Resources = {
       }
       removeCondition: string
       removeGroup: string
-      field: {
-        identifier: string
-        title: string
-        description: string
-        organismId: string
-        organismName: string
-        name: string
-        accessibility: string
-        datePublished: string
-        dateModified: string
-        dateCreated: string
-        organization: string
-        publication: string
-        objectType: string
-        projectType: string
-        relevance: string
-        grantTitle: string
-        grantAgency: string
-        externalLinkLabel: string
-        host: string
-        strain: string
-        isolate: string
-        package: string
-        model: string
-        geoLocName: string
-        collectionDate: string
-        derivedFromId: string
-        libraryStrategy: string
-        librarySource: string
-        libraryLayout: string
-        librarySelection: string
-        platform: string
-        instrumentModel: string
-        libraryName: string
-        libraryConstructionProtocol: string
-        analysisType: string
-        studyType: string
-        vendor: string
-        datasetType: string
-        type: string
-        experimentType: string
-        submissionType: string
-      }
       predicate: {
         eq: string
         notEq: string
@@ -512,7 +469,6 @@ export type Resources = {
         projectType: string
         grantTitle: string
         grantAgency: string
-        externalLinkLabel: string
         package: string
         model: string
         host: string
@@ -520,7 +476,6 @@ export type Resources = {
         isolate: string
         geoLocName: string
         collectionDate: string
-        derivedFromId: string
         libraryStrategy: string
         librarySource: string
         librarySelection: string
@@ -595,6 +550,7 @@ export type Resources = {
       modeAppend: string
       applyReplace: string
       generateError: string
+      retry: string
     }
     scope: {
       all: string
@@ -1059,49 +1015,6 @@ export const ja: Resources = {
       },
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
-      field: {
-        identifier: "識別子",
-        title: "タイトル",
-        description: "説明",
-        organismId: "生物種 ID",
-        organismName: "学名",
-        name: "名称",
-        accessibility: "公開区分",
-        datePublished: "公開日",
-        dateModified: "更新日",
-        dateCreated: "作成日",
-        organization: "登録機関",
-        publication: "論文",
-        objectType: "BioProject type",
-        projectType: "Project type",
-        relevance: "Relevance",
-        grantTitle: "助成課題",
-        grantAgency: "助成機関",
-        externalLinkLabel: "外部リンク",
-        host: "Host",
-        strain: "Strain",
-        isolate: "Isolate",
-        package: "Package",
-        model: "Model",
-        geoLocName: "Location",
-        collectionDate: "Collection date",
-        derivedFromId: "Derived from",
-        libraryStrategy: "Library strategy",
-        librarySource: "Library source",
-        libraryLayout: "Library layout",
-        librarySelection: "Library selection",
-        platform: "Platform",
-        instrumentModel: "Instrument model",
-        libraryName: "Library name",
-        libraryConstructionProtocol: "Library construction protocol",
-        analysisType: "Analysis type",
-        studyType: "Study type",
-        vendor: "Vendor",
-        datasetType: "Dataset type",
-        type: "Type (subtype)",
-        experimentType: "Experiment type",
-        submissionType: "Submission type",
-      },
       predicate: {
         eq: "と一致",
         notEq: "と一致しない",
@@ -1201,7 +1114,6 @@ export const ja: Resources = {
         projectType: "Project type",
         grantTitle: "助成課題",
         grantAgency: "助成機関",
-        externalLinkLabel: "外部リンク",
         package: "Package",
         model: "Model",
         host: "Host",
@@ -1209,7 +1121,6 @@ export const ja: Resources = {
         isolate: "Isolate",
         geoLocName: "Location",
         collectionDate: "Collection date",
-        derivedFromId: "Derived from",
         libraryStrategy: "Library strategy",
         librarySource: "Library source",
         librarySelection: "Library selection",
@@ -1291,7 +1202,8 @@ export const ja: Resources = {
       modeNew: "新規生成",
       modeAppend: "既存に追加",
       applyReplace: "この内容で作成",
-      generateError: "クエリの生成に失敗しました。入力を変えて再試行してください。",
+      generateError: "クエリの生成に失敗しました。",
+      retry: "再試行",
     },
     scope: {
       all: "全データベース",

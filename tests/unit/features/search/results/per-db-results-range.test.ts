@@ -53,11 +53,13 @@ const summary = (total: number, start: number, end: number): string =>
   `${total.toLocaleString("en-US")} 件中 ${start.toLocaleString("en-US")}-${end.toLocaleString("en-US")}`
 
 describe("PerDbResults range summary boundaries", () => {
-  test("PerDbResults_totalZero_rendersEmptyNotRange", () => {
+  test("PerDbResults_totalZero_rendersCountAndSingleEmptyNotice", () => {
     renderRange(0, 1, 20)
-    // total=0 collapses to the empty notice; computeRange returns {0,0} and the
-    // range string must never appear.
-    expect(screen.getAllByText(EMPTY_LABEL).length).toBeGreaterThan(0)
+    // total=0 shows the count "0 件" in the header summary and the empty notice
+    // exactly once in the body Callout (the message is not duplicated across
+    // header and body); computeRange returns {0,0} so the range never appears.
+    expect(screen.getByText("0 件")).toBeInTheDocument()
+    expect(screen.getAllByText(EMPTY_LABEL)).toHaveLength(1)
     expect(screen.queryByText(/件中/)).toBeNull()
   })
 

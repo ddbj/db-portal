@@ -54,7 +54,9 @@ export {
   scopeFacetParam,
   searchFacetReducer,
   type SearchFacetState,
+  type SidebarFacets,
   splitForSidebar,
+  useSidebarFacets,
 } from "./sidebar"
 export { SyncStatusChip } from "./sync-status"
 export {

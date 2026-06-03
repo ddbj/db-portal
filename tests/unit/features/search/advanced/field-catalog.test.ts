@@ -8,6 +8,9 @@ import {
 import { DB_SLUGS } from "~/lib/search-scope"
 
 const CROSS_FIELDS = fieldsForScope(null)
+// ES-backed single-DB scopes share the cross (Tier 1/2) fields; Solr-backed
+// scopes (trad / taxonomy) carry their own curated fields instead.
+const ES_DBS = DB_SLUGS.filter((db) => db !== "trad" && db !== "taxonomy")
 
 describe("fieldsForScope", () => {
   test("cross scope offers only cross fields, no Tier 3", () => {
@@ -38,24 +41,32 @@ describe("fieldsForScope", () => {
     expect(fieldsForScope("metabobank")).not.toContain("type")
   })
 
-  test("Solr-backed scopes (trad / taxonomy) get cross fields only", () => {
-    expect(fieldsForScope("trad")).toEqual(CROSS_FIELDS)
-    expect(fieldsForScope("taxonomy")).toEqual(CROSS_FIELDS)
+  test("Solr-backed scopes offer their own Solr fields, not degenerate ES fields", () => {
+    const trad = fieldsForScope("trad")
+    expect(trad).toContain("division")
+    expect(trad).toContain("sequence_length")
+    expect(trad).not.toContain("accessibility") // degenerate on Solr
+    expect(trad).not.toContain("identifier")
+
+    const taxonomy = fieldsForScope("taxonomy")
+    expect(taxonomy).toContain("rank")
+    expect(taxonomy).toContain("kingdom")
+    expect(taxonomy).not.toContain("organism_id") // tax_id is doc identity
   })
 
-  test("publication is a cross field everywhere except biosample", () => {
+  test("publication is a cross field on every ES scope except biosample", () => {
     // publication.title nested is not merged into biosample, so single-DB biosample
     // is rejected by the API (field-not-available-for-db); the builder must drop it.
     expect(CROSS_FIELDS).toContain("publication")
     expect(fieldsForScope("biosample")).not.toContain("publication")
-    for (const db of DB_SLUGS) {
+    for (const db of ES_DBS) {
       if (db === "biosample") continue
       expect(fieldsForScope(db)).toContain("publication")
     }
   })
 
-  test("every scope includes all cross fields, minus per-DB exclusions", () => {
-    for (const db of DB_SLUGS) {
+  test("every ES scope includes all cross fields, minus per-DB exclusions", () => {
+    for (const db of ES_DBS) {
       const scoped = fieldsForScope(db)
       for (const field of CROSS_FIELDS) {
         // biosample is the sole exclusion: publication.title nested is absent there.
@@ -72,13 +83,14 @@ describe("field operators and membership", () => {
     expect(FIELD_OPS.identifier).toEqual(["eq", "wildcard"]) // identifier
     expect(FIELD_OPS.title).toEqual(["contains", "wildcard"]) // text
     expect(FIELD_OPS.date_published).toEqual(["between"]) // date
+    expect(FIELD_OPS.sequence_length).toEqual(["between"]) // number
     expect(FIELD_OPS.library_strategy).toEqual(["eq"]) // Tier 3 enum
   })
 
-  test("isAdvancedField recognizes catalog fields and rejects others", () => {
+  test("isAdvancedField recognizes registry fields (incl. Solr) and rejects others", () => {
     expect(isAdvancedField("instrument_model")).toBe(true)
     expect(isAdvancedField("identifier")).toBe(true)
-    expect(isAdvancedField("kingdom")).toBe(false) // Solr field, not in the builder catalog
+    expect(isAdvancedField("kingdom")).toBe(true) // Solr field, now offered in the builder
     expect(isAdvancedField("not_a_field")).toBe(false)
   })
 })

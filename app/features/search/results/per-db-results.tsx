@@ -1,6 +1,6 @@
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, useT } from "~/lib/i18n"
-import { Callout, InfoHint, Select, type SelectOption } from "~/ui"
+import { InfoHint, SearchIcon, Select, type SelectOption } from "~/ui"
 
 import {
   type DbSlug,
@@ -77,7 +77,9 @@ export const PerDbResults = ({
           aria-atomic="true"
         >
           {response.total === 0
-            ? t("search.results.perDb.empty")
+            ? t("search.results.perDb.totalCount", {
+              total: response.total.toLocaleString("en-US"),
+            })
             : t("search.results.perDb.rangeSummary", {
               start: start.toLocaleString("en-US"),
               end: end.toLocaleString("en-US"),
@@ -121,7 +123,15 @@ export const PerDbResults = ({
         </div>
       </div>
       {response.total === 0
-        ? <Callout tone="info" role="status">{t("search.results.perDb.empty")}</Callout>
+        ? (
+          <div
+            role="status"
+            className="flex items-center gap-3 rounded-card border border-border-soft bg-surface-subtle px-5 py-6 text-ink-mid"
+          >
+            <SearchIcon size={20} aria-hidden className="text-ink-softer shrink-0" />
+            <span className="text-fs-body">{t("search.results.perDb.empty")}</span>
+          </div>
+        )
         : (
           <ul className="list-none p-0 m-0">
             {response.hits.map((hit) => (

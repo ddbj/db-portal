@@ -67,6 +67,29 @@ describe("SearchBox", () => {
     )
   })
 
+  test("SearchBox_toneAi_appliesBrandSoftBorder", () => {
+    render(<SearchBox tone="ai" />)
+    expect(screen.getByRole("search")).toHaveClass("bg-brand-soft", "border-brand")
+  })
+
+  test("SearchBox_invalid_appliesWarnBorderAndAriaInvalid", () => {
+    render(<SearchBox invalid />)
+    const form = screen.getByRole("search")
+    expect(form).toHaveClass("bg-surface", "border-warn-border", "ring-warn-border")
+    expect(form).not.toHaveClass("border-border-strong")
+    expect(screen.getByRole("textbox", { name: "検索キーワード" }))
+      .toHaveAttribute("aria-invalid", "true")
+  })
+
+  test("SearchBox_invalidWithAiTone_invalidWinsOverTone", () => {
+    // An invalid state must override the AI tone so a generation failure reads
+    // as a validation failure rather than staying in the AI-mode treatment.
+    render(<SearchBox tone="ai" invalid />)
+    const form = screen.getByRole("search")
+    expect(form).toHaveClass("border-warn-border", "ring-warn-border")
+    expect(form).not.toHaveClass("border-brand", "bg-brand-soft")
+  })
+
   test("SearchBox_submitButton_appliesBrandPalette", () => {
     render(<SearchBox />)
     const submit = screen.getByRole("button", { name: "検索" })

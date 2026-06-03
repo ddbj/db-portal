@@ -44,6 +44,23 @@ export const getCachedMatchAllFacets = (
   return pending
 }
 
+// SSR 用の同期 placeholder: 鮮度内の cache があれば即返す。無ければ背景で fetcher を
+// 起動 (await しない) して次回以降を warm にしつつ null を返す。重い全件集計で SSR の
+// stream を塞がないためのもの (docs/search.md § Sidebar facet)。正確な q 連動 facet は
+// client (use-sidebar-facets) が引き直す。
+export const peekMatchAllFacets = (
+  scope: string,
+  fetcher: () => Promise<DbPortalFacets | null>,
+): DbPortalFacets | null => {
+  const fresh = store.get(scope)
+  if (fresh && fresh.expiresAt > Date.now()) return fresh.facets
+  // Fire-and-forget warm-up; swallow failures so a cold miss just stays cold and
+  // retries next request (the fetcher is not re-cached on rejection).
+  void getCachedMatchAllFacets(scope, fetcher).catch(() => undefined)
+
+  return null
+}
+
 // テスト用: cache をクリアする (テスト間で状態を共有しないため)。
 export const clearMatchAllFacetCache = (): void => {
   store.clear()

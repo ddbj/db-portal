@@ -1,12 +1,13 @@
 import type { FacetName } from "~/lib/api"
 
+import { FIELD_REGISTRY, type FieldDef, type FieldKey, type Scope, SCOPE_FIELDS, scopeOf } from "../field-registry"
 import type { DbSlug } from "../types"
 
-// Sidebar filter rows per scope (cross + each DB). This is the code SSOT for
-// docs/search.md § Sidebar facet: which fields appear, how they render, the
-// DbPortalFacets key to read counts from, and the DSL field/operator emitted
-// into the AST. The API decides the facet candidate values; this only decides
-// presentation and AST mapping.
+// Sidebar filter rows per scope, derived from the shared field registry
+// (`../field-registry.ts`). The registry decides which fields exist and their DSL
+// type / facetability / label; this module only turns that into per-scope rows
+// (render kind + AST operator) for docs/search.md § Sidebar facet. The API decides
+// the facet candidate values; this only decides presentation and AST mapping.
 
 export type FilterRowKind = "facet" | "text" | "dateRange" | "numberRange"
 
@@ -15,7 +16,7 @@ export type FilterRowKind = "facet" | "text" | "dateRange" | "numberRange"
 export type FilterOp = "eq" | "contains" | "between"
 
 export type FilterRow = {
-  // Stable key within a scope; also the i18n label key under search.facets.field.
+  // Stable key within a scope; also the i18n label key under search.fields.
   key: string
   kind: FilterRowKind
   // DSL field name emitted into the AST.
@@ -27,187 +28,48 @@ export type FilterRow = {
   organism?: boolean
 }
 
-type Scope = "cross" | DbSlug
+// Render kind from the field's DSL type: date/number get range controls, facetable
+// fields (enum or text with a facetName) get checkboxes, the rest a text input.
+const rowKind = (def: FieldDef): FilterRowKind => {
+  if (def.type === "date") return "dateRange"
+  if (def.type === "number") return "numberRange"
+  if (def.facetName !== undefined) return "facet"
 
-const facet = (
-  key: string,
-  dslField: string,
-  facetName: FacetName,
-  op: FilterOp = "eq",
-): FilterRow => ({ key, kind: "facet", dslField, op, facetName })
-
-const text = (key: string, dslField: string, op: FilterOp = "contains"): FilterRow => ({
-  key,
-  kind: "text",
-  dslField,
-  op,
-})
-
-const organism: FilterRow = {
-  key: "organism",
-  kind: "facet",
-  dslField: "organism_id",
-  op: "eq",
-  facetName: "organism",
-  organism: true,
-}
-// Free-text search on organism.name, paired with the taxID organism facet so a
-// name-based DSL (organism_name:...) round-trips into the sidebar instead of
-// falling through to the Advanced builder.
-const organismName = text("organismName", "organism_name")
-// organization.name (nested text) を絞り込む行。DSL field 名は API allowlist の submitter。
-const organization = text("organization", "submitter")
-// Tier 1 identity / text fields. identifier は keyword exact (op eq)、title / description は
-// keyword box 既定 field と同じ analyzed match (contains)。全 ES scope + cross に出る。
-const identifier = text("identifier", "identifier", "eq")
-const title = text("title", "title")
-const description = text("description", "description")
-const datePublished: FilterRow = {
-  key: "datePublished",
-  kind: "dateRange",
-  dslField: "date_published",
-  op: "between",
-}
-const sequenceLength: FilterRow = {
-  key: "sequenceLength",
-  kind: "numberRange",
-  dslField: "sequence_length",
-  op: "between",
-}
-// Common ES fields surfaced in every ES scope's sidebar. accessibility is a
-// 2-value enum facet (API _COMMON_FACET); name / publication are free-text rows.
-// publication is omitted where the field is not merged (biosample) and on Solr scopes.
-const accessibility = facet("accessibility", "accessibility", "accessibility")
-const name = text("name", "name")
-const publication = text("publication", "publication")
-const dateModified: FilterRow = {
-  key: "dateModified",
-  kind: "dateRange",
-  dslField: "date_modified",
-  op: "between",
-}
-const dateCreated: FilterRow = {
-  key: "dateCreated",
-  kind: "dateRange",
-  dslField: "date_created",
-  op: "between",
-}
-// ES scopes expose all three date ranges; Solr (trad) keeps only date_published.
-const esDateRanges: readonly FilterRow[] = [datePublished, dateModified, dateCreated]
-
-// Common Tier 1/2 rows shared by cross and every ES scope (identity / text +
-// the organism facet + accessibility). publication is appended per scope since
-// it is not merged into biosample; Solr scopes (trad / taxonomy) keep their own
-// curated rows and do not reuse this head.
-const esCommonHead: readonly FilterRow[] = [
-  organism,
-  organismName,
-  accessibility,
-  organization,
-  identifier,
-  title,
-  name,
-  description,
-]
-
-export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
-  cross: [...esCommonHead, publication, ...esDateRanges],
-  bioproject: [
-    ...esCommonHead,
-    publication,
-    facet("objectType", "object_type", "objectType"),
-    facet("relevance", "relevance", "relevance"),
-    text("projectType", "project_type"),
-    text("grantTitle", "grant_title"),
-    text("grantAgency", "grant_agency"),
-    text("externalLinkLabel", "external_link_label"),
-    ...esDateRanges,
-  ],
-  // biosample omits publication: the publication.title nested field is not merged
-  // there, so the API rejects publication for db=biosample (422).
-  biosample: [
-    ...esCommonHead,
-    facet("package", "package", "package"),
-    facet("model", "model", "model"),
-    text("host", "host"),
-    text("strain", "strain"),
-    text("isolate", "isolate"),
-    text("geoLocName", "geo_loc_name"),
-    text("collectionDate", "collection_date"),
-    text("derivedFromId", "derived_from_id", "eq"),
-    ...esDateRanges,
-  ],
-  sra: [
-    ...esCommonHead,
-    publication,
-    facet("type", "type", "type"),
-    facet("libraryStrategy", "library_strategy", "libraryStrategy"),
-    facet("librarySource", "library_source", "librarySource"),
-    facet("librarySelection", "library_selection", "librarySelection"),
-    facet("platform", "platform", "platform"),
-    facet("libraryLayout", "library_layout", "libraryLayout"),
-    facet("instrumentModel", "instrument_model", "instrumentModel"),
-    facet("analysisType", "analysis_type", "analysisType"),
-    text("libraryName", "library_name"),
-    text("libraryConstructionProtocol", "library_construction_protocol"),
-    text("geoLocName", "geo_loc_name"),
-    text("collectionDate", "collection_date"),
-    text("derivedFromId", "derived_from_id", "eq"),
-    ...esDateRanges,
-  ],
-  jga: [
-    ...esCommonHead,
-    publication,
-    facet("type", "type", "type"),
-    facet("studyType", "study_type", "studyType"),
-    facet("datasetType", "dataset_type", "datasetType"),
-    facet("vendor", "vendor", "vendor", "contains"),
-    text("grantTitle", "grant_title"),
-    text("grantAgency", "grant_agency"),
-    text("externalLinkLabel", "external_link_label"),
-    ...esDateRanges,
-  ],
-  gea: [
-    ...esCommonHead,
-    publication,
-    facet("experimentType", "experiment_type", "experimentType"),
-    ...esDateRanges,
-  ],
-  metabobank: [
-    ...esCommonHead,
-    publication,
-    facet("experimentType", "experiment_type", "experimentType"),
-    facet("studyType", "study_type", "studyType"),
-    facet("submissionType", "submission_type", "submissionType"),
-    ...esDateRanges,
-  ],
-  // Solr (ARSA): organism_id / submitter degenerate, so omitted.
-  trad: [
-    facet("division", "division", "division"),
-    facet("molecularType", "molecular_type", "molecularType"),
-    organismName,
-    text("featureGeneName", "feature_gene_name"),
-    text("referenceJournal", "reference_journal"),
-    datePublished,
-    sequenceLength,
-  ],
-  // Solr (TXSearch): organism facet degenerate (tax_id is doc identity),
-  // submitter / date_published degenerate, so omitted.
-  taxonomy: [
-    facet("rank", "rank", "rank"),
-    facet("kingdom", "kingdom", "kingdom", "contains"),
-    text("lineage", "lineage"),
-    text("phylum", "phylum"),
-    text("class", "class"),
-    text("order", "order"),
-    text("family", "family"),
-    text("genus", "genus"),
-    text("species", "species"),
-    text("commonName", "common_name"),
-  ],
+  return "text"
 }
 
-const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
+// AST operator from the DSL type: text → contains (analyzed match), date/number →
+// between (range), enum/identifier → eq (keyword exact).
+const rowOp = (def: FieldDef): FilterOp => {
+  if (def.type === "date" || def.type === "number") return "between"
+  if (def.type === "text") return "contains"
+
+  return "eq"
+}
+
+const toRow = (field: FieldKey): FilterRow => {
+  const def: FieldDef = FIELD_REGISTRY[field]
+
+  return {
+    key: def.labelKey,
+    kind: rowKind(def),
+    dslField: field,
+    op: rowOp(def),
+    ...(def.facetName !== undefined ? { facetName: def.facetName } : {}),
+    ...(def.organism ? { organism: true } : {}),
+  }
+}
+
+// Per-scope rows resolved from the registry layout (cross + each DB). The code
+// SSOT for which rows appear, in which order, with what render kind / AST mapping.
+const buildScopeFilters = (): Record<Scope, readonly FilterRow[]> => {
+  const out = {} as Record<Scope, readonly FilterRow[]>
+  for (const scope of Object.keys(SCOPE_FIELDS) as Scope[]) out[scope] = SCOPE_FIELDS[scope].map(toRow)
+
+  return out
+}
+
+export const SCOPE_FILTERS = buildScopeFilters()
 
 export const scopeFilters = (db: DbSlug | null): readonly FilterRow[] =>
   SCOPE_FILTERS[scopeOf(db)]

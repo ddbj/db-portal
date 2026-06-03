@@ -18,6 +18,7 @@ import {
   fieldsForScope,
   isAdvancedField,
   isDateField,
+  isNumberField,
   parsePredicate,
   type Predicate,
   predicateLabelKey,
@@ -52,6 +53,8 @@ export const ConditionRow = ({
   const scopeDb = useScopeDb()
   const facetData = useScopeFacetData()
   const dateField = isDateField(condition.field)
+  // Range fields (date / number) emit a FROM/TO pair; number uses numeric inputs.
+  const numberField = isNumberField(condition.field)
   const negated = condition.combinator === "NOT"
   // Offer the active scope's fields, but always keep the row's current field
   // selectable even when a scope switch made it out-of-scope (the db-aware sync
@@ -62,7 +65,7 @@ export const ConditionRow = ({
     : [...scopeFields, condition.field]
   const fieldOptions: SelectOption[] = fieldList.map((field) => ({
     value: field,
-    label: t(`search.builder.field.${fieldLabelKey(field)}`),
+    label: t(`search.facets.field.${fieldLabelKey(field)}`),
   }))
   // Operator + negation folded into one predicate dropdown so the row reads as a
   // clause ("タイトル を含まない …"); there is no separate exclude toggle.
@@ -108,28 +111,28 @@ export const ConditionRow = ({
         onChange={(next) => onPredicateChange(parsePredicate(next))}
         width={184}
       />
-      {dateField || condition.op === "between"
+      {dateField || numberField
         ? (
           <div className="flex items-center gap-2">
             <Label>{t("search.builder.rangeFromLabel")}</Label>
             <TextInput
               size="md"
-              type="date"
+              type={dateField ? "date" : "number"}
               ariaLabel={t("search.builder.rangeFromLabel")}
               value={condition.from}
               onChange={(event) => onRangeChange({ from: event.currentTarget.value })}
-              placeholder={t("search.builder.rangeFromPlaceholder")}
+              {...(dateField ? { placeholder: t("search.builder.rangeFromPlaceholder") } : {})}
               mono
               width={156}
             />
             <Label>{t("search.builder.rangeToLabel")}</Label>
             <TextInput
               size="md"
-              type="date"
+              type={dateField ? "date" : "number"}
               ariaLabel={t("search.builder.rangeToLabel")}
               value={condition.to}
               onChange={(event) => onRangeChange({ to: event.currentTarget.value })}
-              placeholder={t("search.builder.rangeToPlaceholder")}
+              {...(dateField ? { placeholder: t("search.builder.rangeToPlaceholder") } : {})}
               mono
               width={156}
             />

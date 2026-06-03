@@ -68,13 +68,13 @@ test.describe("Search Domain", () => {
     ).toHaveCount(0)
   })
 
-  test("S-SEARCH-04: Advanced builder → ?q= 更新と検索実行 (生物種 ID + 学名 の 2 条件)", async ({ page }) => {
+  test("S-SEARCH-04: Advanced builder → ?q= 更新と検索実行 (生物種 + 学名 の 2 条件)", async ({ page }) => {
     await page.goto("/search")
 
-    // Row 1: 生物種 ID (organism_id, identifier) と一致 9606
+    // Row 1: 生物種 (organism_id, identifier) と一致 9606
     await page.getByRole("button", { name: /\+ 条件を追加|\+ Add condition/ }).first().click()
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
-    await page.getByRole("option", { name: /生物種 ID|Organism \(taxonomy ID\)/ }).click()
+    await page.getByRole("option", { name: /^生物種$|^Organism$/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
     await page.getByRole("option", { name: /^と一致$|^equals$/ }).click()
     await page.getByRole("combobox", { name: /値を入力|Enter value/ }).last().fill("9606")
@@ -82,7 +82,7 @@ test.describe("Search Domain", () => {
     // Row 2: 学名 (organism_name, text) を含む Homo sapiens
     await page.getByRole("button", { name: /\+ 条件を追加|\+ Add condition/ }).first().click()
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
-    await page.getByRole("option", { name: /学名|Organism \(name\)/ }).click()
+    await page.getByRole("option", { name: /学名|Organism name/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
     await page.getByRole("option", { name: /を含む|contains/ }).click()
     await page.getByRole("textbox", { name: /値を入力|Enter value/ }).last().fill("Homo sapiens")

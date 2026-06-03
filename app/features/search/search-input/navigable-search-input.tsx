@@ -109,6 +109,9 @@ export const NavigableSearchInput = ({
   }
 
   const generating = stream.state === "streaming"
+  // A failed generation puts the box into the same validation-failure treatment
+  // as an unparseable keyword (warn border + inline alert below).
+  const aiError = isAi && stream.state === "error"
   // The submit is busy while generating (AI) or while a keyword search /
   // post-generation navigation is resolving.
   const submitDisabled = generating || searchPending
@@ -116,18 +119,23 @@ export const NavigableSearchInput = ({
     ? t("search.assistant.generating")
     : searchPending
       ? t("search.a11y.searching")
-      : t("search.a11y.submit")
-  // The submit may show 検索 / 検索中… / 生成中…; reserve the widest so the box
-  // never resizes when the label changes.
+      : aiError
+        ? t("search.assistant.retry")
+        : t("search.a11y.submit")
+  // The submit may show 検索 / 検索中… / 生成中… / 再試行; reserve the widest so
+  // the box never resizes when the label changes.
   const submitReserve = [
     t("search.a11y.submit"),
     t("search.a11y.searching"),
     t("search.assistant.generating"),
+    t("search.assistant.retry"),
   ]
 
   const handleSubmit = (value: string) => {
     if (submitDisabled) return
     if (isAi) {
+      // In the error state the submit reads 再試行; running it again with the
+      // retained input is the retry.
       if (value.trim().length === 0) return
       pendingModeRef.current = effectiveAiMode
       void stream.start(value, {
@@ -191,7 +199,7 @@ export const NavigableSearchInput = ({
         maxWidth={9999}
         showSearchIcon={!isAi}
         tone={isAi ? "ai" : "default"}
-        invalid={keywordInvalid}
+        invalid={keywordInvalid || aiError}
         value={isAi ? aiInput : keyword}
         placeholder={isAi ? (effectiveAiMode === "append" ? t("search.assistant.placeholderAppend") : t("search.assistant.placeholderNew")) : t("search.searchBoxPlaceholder")}
         ariaLabel={isAi ? t("search.a11y.assistantInput") : t("search.a11y.input")}
@@ -238,8 +246,8 @@ export const NavigableSearchInput = ({
         </div>
       )}
 
-      {isAi && stream.state === "error" && (
-        <p role="alert" className="m-0 text-fs-label text-warn-fg">
+      {aiError && (
+        <p role="alert" className="m-0 text-fs-label font-semibold text-warn-fg">
           {t("search.assistant.generateError")}
         </p>
       )}

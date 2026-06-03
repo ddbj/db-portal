@@ -127,7 +127,7 @@ group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正�
 
 各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
-field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる (Solr backed の trad / taxonomy 専用 field は除く)。具体の field 一覧は `field-catalog.ts` の `fieldsForScope` (および `search-fields.md` の field 軸) を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。コードは `field-catalog.ts` の `fieldsForScope` / `FIELD_OPS` が SSOT。
+field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる。Solr backed の trad / taxonomy では ARSA / TXSearch 固有 field を出し、degenerate な共通 field は出さない (Sidebar と同じ scope 構成)。具体の field 一覧は `search-fields.md` の field 軸を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date / number は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。どの scope にどの field が出るかは `field-registry.ts` (Sidebar と共通の SSOT)、builder の op affordance は `field-catalog.ts` の `FIELD_OPS` から導出する。
 
 ### reducer の責務
 
@@ -190,7 +190,7 @@ Sidebar の各行はフィールドの値域に応じて 3 種類の制御で出
 
 ### scope 別の filter 構成
 
-scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range のどれで描き、どの DSL field を emit するか) は `facet-config.ts` の `SCOPE_FILTERS` が SSOT。field 軸 (各 field がどの scope で出るか) の対応は `search-fields.md` 参照。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch で degenerate する行を出さない (trad: organism / submitter、taxonomy: organism / submitter / date_published)。
+scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range のどれで描き、どの DSL field を emit するか) は `field-registry.ts` の `SCOPE_FIELDS` が SSOT (Advanced builder と共通の scope 構成; `facet-config.ts` がこれを Sidebar 行に解決し、render kind / op / facetName / label は registry から導く)。field 軸 (各 field がどの scope で出るか) の対応は `search-fields.md` 参照。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch で degenerate する行を出さない (trad: organism / submitter、taxonomy: organism / submitter / date_published)。
 
 行構成を貫く不変量:
 
@@ -229,7 +229,7 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 - **`facetSelfExclude`**: `true` を送ると各 facet の集計母集団から自身のフィルタを除外する (self-exclusion)。portal は常に `true` で呼ぶ。cursor path では非適用 (cursor に焼き込んだ query を母集団にするため)
 - **レスポンス `facets`** (`DbPortalFacets` = `Facets` 拡張): 各 facet が `{value, count}` 配列 (`organism` のみ `{value, count, label}`)。「集計対象外 = `null`」「0 件 = `[]`」。横断はトップレベル 1 セット (ES 6 DB union、organism / type のみ。trad / taxonomy は含まれない)
 - **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。portal の facet state はこのマッピングを持つ
-- **集計失敗時**: API は `facets=null` を返し検索結果は 200 のまま。portal は facet 非表示で degrade する
+- **集計失敗 / 未取得時**: サイドバーは facet 行を消さず、cache 済み match_all をプレースホルダとして描き、それも無い cold 初回は行を skeleton で保持する (Advanced builder が候補ゼロの combobox で field を残すのと揃える、§ 検索結果 UI)
 
 ### AST 変換 (Sidebar ⇄ AST)
 
@@ -326,9 +326,9 @@ cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検�
 
 重い検索 (`cross-search` / per-DB `search`) は loader から **await せず deferred Promise** で返す。route は検索 box・プレビュー・facet サイドバー枠・結果 skeleton を即描画し、検索が解決した時点でグリッドを一斉に埋める (cross-search は 1 リクエストなので、各カードが個別に時間差で入るのではなくまとめて確定する)。`?q=` の **parse だけは await** する — その AST がキーワードボックス・facet サイドバーの復元と parse 失敗判定に要るため。これで top / 前ページからの遷移を待たせず、ロード中であることを skeleton で可視化する。この loading skeleton はロード中のプレースホルダで、ロード後に各フィールドを「値があれば出す」方針 (フィールド単位の skeleton は出さない、§ cross-DB 結果) とはレイヤーが別。
 
-facet 集計 (`facets` パラメタ) は hits とは別の deferred で返す。cross と q 付き per-DB は検索 1 リクエストの応答から hits・facet を同時に取り出すが、per-DB の match_all (q 空) は全件への facet 集計が重く hits の描画を妨げるため、hits (facet なし) を先に解決し、facet 集計は別リクエストの deferred で追従させる。facet サイドバーは集計が届くまで行だけ (件数・候補なし) を描き、解決したら埋める。集計失敗は facet なしで degrade する (§ 候補値・件数の出所)。
+facet 集計は loader の deferred では返さず、**サイドバーが client 側 (react-query) で引く** (stale-while-revalidate)。loader は scope の cache 済み match_all 集計を **即出るプレースホルダ**として同期で返し (warm なら即値、cold は null)、サイドバーはまずそれを描いてから、client が引いた **正確な集計** (`?q=` 付きは q 連動・self-exclude、q 空は scope 全体の match_all) に件数を差し替える。重い match_all を client で引くので SSR ストリーミングの abort budget に縛られず、集計が遅い / cold でも facet 行が消えない。プレースホルダが無い cold 初回だけは行を skeleton で保持する (集計失敗時も同様に degrade、§ 候補値・件数の出所)。
 
-match_all の facet 集計は scope (cross / 各 DB) 単位で server 側 in-memory cache する。全件集計は重い一方データ更新まで実質静的なので、長め (既定 1 時間、`DB_PORTAL_FACET_CACHE_TTL_MS` で調整) に保持し、初回 miss のみ ES を集計して以降は cache から即返す。2 回目以降は SSR budget 内で facet が追従し、ES への再集計負荷も避ける (q 付き検索は対象外で都度集計する)。cache miss 中の同時アクセスは進行中の 1 集計を共有する。
+q 空の match_all facet 集計は scope (cross / 各 DB) 単位で server 側 in-memory cache し、上記プレースホルダの土台にする。全件集計は重い一方データ更新まで実質静的なので、長め (既定 1 時間、`DB_PORTAL_FACET_CACHE_TTL_MS` で調整) に保持する。loader は warm cache を同期で返し、cold miss は背景集計を起動して null を返す (SSR を塞がず次回以降を warm にする)。cache miss 中の同時アクセスは進行中の 1 集計を共有する。q 付き集計はクエリ依存のため cache せず client が都度引く。
 
 検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
 
@@ -415,7 +415,7 @@ detail link は hit の `url` ではなく identifier + 細粒度 `type` から�
 
 ### ResultsToolbar
 
-- 左: 件数 (`<total> 件中 <start>-<end>`)
+- 左: 件数 (`<total> 件中 <start>-<end>`、0 件のときは `0 件` のみ)。「結果なし」 文言は結果領域の Callout 側に一本化し、件数行には重ねない
 - 中: sort 切替 (`relevance` / `date_desc` / `date_asc`) + perPage 切替 (`20` / `50` / `100`)
 - 右: pagination
 
@@ -429,7 +429,7 @@ ResultsToolbar は結果リストの上下に置く。上は件数 + sort + perP
 
 - main 結果 wrapper (cross-DB / per-DB 共通) に `role="region"` + `aria-label={t("search.a11y.resultsRegion")}`
 - 件数表示 (ResultsToolbar 左の `<total> 件中 <start>-<end>`) に `aria-live="polite"` + `aria-atomic="true"` を付け、loader 完了で件数が announce される
-- 「結果なし」 / parse error / cross / db error の Callout には `aria-live="polite"`
+- per-DB の「結果なし」通知は `role="status"` (polite を含意。検索アイコン + 文言の控えめなブロック)、parse error / cross / db error の Callout には `aria-live="polite"`
 - 「同期中」 / 「同期失敗」 を表す SyncStatusChip は視覚バッジのみで、現状 `role` / `aria-live` は付けていない (SR への announce は今後の改善余地。付けるなら chip か wrapper に `role="status"`)
 
 assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更新では使わない (キーストロークごとに発火する debounce sync が SR を邪魔するため)。重大エラーの限定箇所のみ assertive に倒す。
@@ -489,7 +489,7 @@ footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボ
 
 - `event: message` → BFF は出さない (モデル生出力は転送しない、`llm.md` § プロンプトインジェクション)。client も消費しない
 - `event: done` → data `{ ast, db }` を受け取り、`ast` を proposal state に、`db` を遷移/scope 反映に使う、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
-- `event: error` → state = "error"、box 直下に inline エラー文言 (`search.assistant.generateError`) を出す (入力は保持)
+- `event: error` → state = "error"。送信側の非 OK レスポンス (429 rate limit / 接続失敗) も同じく state = "error" に倒す。失敗時は 3 つの入力面 (top / results / `/search` ビルダー) すべてで、入力ボックスをキーワード構文エラーと同じ validation-failure 表示 (warn 枠 + `aria-invalid`) にし、その直下に `role="alert"` のエラー文言 (`search.assistant.generateError`) を出す。あわせて送信ボタンのラベルを「再試行」(`search.assistant.retry`) に変え、押すと入力を保持したまま同じ内容で再生成する。入力欄は編集可能なまま残るので、言い換えての再送もできる
 
 `AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
 

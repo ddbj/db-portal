@@ -7,8 +7,9 @@ ES に実在する field (ddbj-search-converter の mapping) を起点に、各�
 - ES の型 (実際に index に入っている field): ddbj-search-converter `es/mappings/`
 - DSL allowlist (field / tier / 演算子): ddbj-search-api `search/dsl/allowlist.py`
 - REST `/entries` の term / text 区分: ddbj-search-api `es/query.py` (`_TERM_FILTER_FIELDS` / `_TEXT_MATCH_FIELDS`)
-- Sidebar filter 行: `app/features/search/sidebar/facet-config.ts`
-- Advanced builder の field (scope 別カタログ): `app/features/search/advanced/field-catalog.ts` (`fieldsForScope` / `FIELD_OPS`)
+- 検索 field の SSOT (type / scope / facet 化 / label、Sidebar・Advanced builder 共通): `app/features/search/field-registry.ts` (`FIELD_REGISTRY` / `SCOPE_FIELDS`)
+- Sidebar filter 行への解決 (render kind / op / facetName): `app/features/search/sidebar/facet-config.ts`
+- Advanced builder の field / op affordance: `app/features/search/advanced/field-catalog.ts` (`fieldsForScope` / `FIELD_OPS`)
 - 検索結果リストの表示 field (per-DB の見せ方 / detail link 生成): `app/features/search/results/result-fields.ts` (規約は `search.md` § Result row)
 
 ## 前提構造
@@ -34,7 +35,7 @@ ES common mapping (全 type に merge) 起点。「横断」= cross-DB の `q` �
 
 単一 DB 指定 (`db=...`) では、その DB に実在しない field を `q` に載せると API が `field-not-available-for-db` (422) を返す。共通 field でこれに該当するのは条件付き merge の `publication` のみ (biosample に publication nested が不在なため `db=biosample` で 422)。Tier3 field は所属 DB (§ DB ごと field) 以外で 422、横断 (cross) で Tier3 を載せた場合は別エラー `field-not-available-in-cross-db` (400)。merge される DB は各行の備考、Tier3 の所属 DB は § DB ごと field を参照。db-portal の builder / filter は各 scope で有効な field しか供給しないため、通常これらは踏まない。
 
-op / type は DSL field type から機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。どの scope の Sidebar / facet にどの field が出るかは `facet-config.ts` (`SCOPE_FILTERS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
+op / type は DSL field type から機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。どの scope の Sidebar / Advanced builder / facet にどの field が出るかは `field-registry.ts` (`SCOPE_FIELDS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
 
 | ES field (type)                                    | DSL field             | 横断   | 備考 (条件付き merge / subtype 所在)                            |
 | -------------------------------------------------- | --------------------- | ------ | --------------------------------------------------------------- |
@@ -60,7 +61,7 @@ op / type は DSL field type から機械導出する ([§ DSL field type 規約
 
 ## DB ごと field (ES 6 DB)
 
-DSL field type (enum / text / identifier) から op を機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。enum / text の区分は REST `/entries` の term / text 区分に従う。どの scope の Sidebar / facet にどの field が出るかは `facet-config.ts` (`SCOPE_FILTERS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
+DSL field type (enum / text / identifier) から op を機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。enum / text の区分は REST `/entries` の term / text 区分に従う。どの scope の Sidebar / Advanced builder / facet にどの field が出るかは `field-registry.ts` (`SCOPE_FIELDS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
 
 | DB         | ES field (type)                                  | DSL field                                        | type       | subtype 所在   |
 | ---------- | ------------------------------------------------ | ------------------------------------------------ | ---------- | -------------- |

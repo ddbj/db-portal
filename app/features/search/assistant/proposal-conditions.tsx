@@ -141,7 +141,7 @@ const FieldChip = ({ field }: { field: string }) => {
         !known && "font-mono",
       )}
     >
-      {known ? t(`search.builder.field.${fieldLabelKey(field)}`) : field}
+      {known ? t(`search.facets.field.${fieldLabelKey(field)}`) : field}
     </span>
   )
 }

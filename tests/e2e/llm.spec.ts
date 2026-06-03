@@ -3,6 +3,7 @@ import { expect, test } from "./helpers"
 const enterMode = /AI モード|AI mode/
 const assistantInput = /AI 検索アシスタントへの入力|AI search assistant input/
 const generateError = /クエリの生成に失敗しました|Could not generate a query/
+const retryGeneration = /再試行|Try again/
 const fieldSelector = /検索フィールド|Search field/
 const proposalHeading = /AI による生成結果|AI-generated query/
 
@@ -96,13 +97,15 @@ test.describe("LLM Domain", () => {
         body: JSON.stringify({ status: "ok", model: "e2e" }),
       }),
     )
-    await page.route("**/api/llm/search-assistant", (route) =>
-      route.fulfill({
+    let assistantCalls = 0
+    await page.route("**/api/llm/search-assistant", (route) => {
+      assistantCalls += 1
+      void route.fulfill({
         status: 200,
         contentType: "text/event-stream",
         body: ": stream-open\n\nevent: error\ndata: {\"code\":\"upstream-disconnect\",\"message\":\"stream interrupted\"}\n\n",
-      }),
-    )
+      })
+    })
     await page.goto("/search/results?q=cancer&db=bioproject")
 
     await page.getByRole("button", { name: enterMode }).click()
@@ -116,8 +119,15 @@ test.describe("LLM Domain", () => {
     await expect(alert).toHaveText(generateError)
     await expect(input).toHaveValue("breast cancer rna-seq")
     await expect(page).toHaveURL(/\/search\/results\?q=cancer&db=bioproject/)
+    // The failure reads as a validation failure: the box turns invalid.
+    await expect(input).toHaveAttribute("aria-invalid", "true")
     // The implementation surfaces errors inline, never via a toast/status node.
     await expect(page.getByRole("status")).toHaveCount(0)
+
+    // 再試行 re-runs generation with the retained input.
+    await page.getByRole("button", { name: retryGeneration }).click()
+    await expect.poll(() => assistantCalls).toBe(2)
+    await expect(input).toHaveValue("breast cancer rna-seq")
   })
 
   test("E-LLM-03: event:error が UI に inline alert として届き入力が保持される", async ({ page }) => {
@@ -148,6 +158,8 @@ test.describe("LLM Domain", () => {
     await expect(alert).toHaveText(generateError)
     await expect(input).toHaveValue("single cell human pancreas")
     await expect(page).toHaveURL(/\/$/)
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    await expect(page.getByRole("button", { name: retryGeneration })).toBeVisible()
     await expect(page.getByRole("status")).toHaveCount(0)
   })
 
@@ -242,5 +254,7 @@ test.describe("LLM Domain", () => {
     await expect(alert).toHaveText(generateError)
     await expect(input).toHaveValue("lung cancer")
     await expect(page).toHaveURL(/\/search\/results\?q=cancer/)
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    await expect(page.getByRole("button", { name: retryGeneration })).toBeVisible()
   })
 })

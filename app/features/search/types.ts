@@ -16,6 +16,7 @@ import {
   fieldsForScope,
   isAdvancedField,
   isDateField,
+  isNumberField,
 } from "./advanced/field-catalog"
 
 export {
@@ -36,6 +37,7 @@ export {
   fieldsForScope,
   isAdvancedField,
   isDateField,
+  isNumberField,
 }
 
 type ApiSortValue = "datePublished:asc" | "datePublished:desc"

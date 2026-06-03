@@ -30,6 +30,7 @@ import {
   toAdvanced,
   useDebouncedSerialize,
   useSearchPending,
+  useSidebarFacets,
 } from "~/features/search"
 import { type ParseNode, searchApiBaseUrl } from "~/lib/api"
 import { pageTitleMeta } from "~/lib/content"
@@ -60,6 +61,10 @@ const SearchResultsRoute = () => {
   const lang = useLang()
   const navigate = useNavigate()
   const search = useSearchPending()
+  // Sidebar facets: the loader's cached match_all shows instantly, then the q-aware
+  // counts replace it. Fetching client-side keeps a heavy aggregation off the SSR
+  // abort budget, so the facet rows no longer vanish when it runs long.
+  const sidebarFacets = useSidebarFacets(data.db, data.q, data.facets, searchApiBaseUrl)
 
   // Restore the committed query into its three independent surfaces: the
   // free-text keyword (shown in the box), the facet sidebar, and the held
@@ -254,12 +259,14 @@ const SearchResultsRoute = () => {
     </Button>
   )
 
-  // The facet sidebar shares one node for both the pending aggregation and a
-  // failed/aborted one (a match_all facet aggregation can outrun the SSR budget):
-  // render the rows with no buckets either way, so the page keeps its hits rather
-  // than the facets deferred bubbling up to the route error boundary.
-  const facetFallback = (
-    <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={null} />
+  const facetPanel = (
+    <FacetPanel
+      state={facetState}
+      dispatch={dispatchFacetWithFlush}
+      db={data.db}
+      facets={sidebarFacets.facets}
+      loading={sidebarFacets.loading}
+    />
   )
 
   return (
@@ -325,13 +332,7 @@ const SearchResultsRoute = () => {
                   : (
                     <Section padTop="sm" padBottom="lg">
                       <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                        <Suspense fallback={facetFallback}>
-                          <Await resolve={data.facets} errorElement={facetFallback}>
-                            {(facets) => (
-                              <FacetPanel state={facetState} dispatch={dispatchFacetWithFlush} db={data.db} facets={facets} />
-                            )}
-                          </Await>
-                        </Suspense>
+                        {facetPanel}
                         <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                           {result.kind === "cross"
                             ? <CrossResults q={data.q} response={result.cross} />

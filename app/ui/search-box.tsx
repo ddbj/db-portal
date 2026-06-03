@@ -125,10 +125,12 @@ export const SearchBox = ({
         onSubmit={handleSubmit}
         className={cn(
           "rounded-card flex items-stretch overflow-hidden shadow-card w-full border",
-          tone === "ai"
-            ? "bg-brand-soft border-brand"
-            : invalid
-              ? "bg-surface border-warn-border ring-1 ring-warn-border"
+          // An invalid state always wins over the AI tone so a generation /
+          // syntax failure reads as a validation failure regardless of mode.
+          invalid
+            ? "bg-surface border-warn-border ring-1 ring-warn-border"
+            : tone === "ai"
+              ? "bg-brand-soft border-brand"
               : "bg-surface border-border-strong",
         )}
       >
