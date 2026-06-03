@@ -3,7 +3,7 @@ import { type ParseNode, parseQuery } from "~/lib/api"
 import { identityAst } from "../ast/identity"
 import type { DbSlug } from "../types"
 
-export type ParseDslOptions = {
+type ParseDslOptions = {
   baseUrl?: string
   signal?: AbortSignal
   // Validator scope: a per-DB scope admits Tier 3 fields; cross mode (null) only

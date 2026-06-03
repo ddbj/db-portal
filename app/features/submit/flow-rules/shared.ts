@@ -1,5 +1,4 @@
 import type {
-  ChipAxis,
   FileEntry,
   FileGroup,
   FlowStep,
@@ -9,9 +8,6 @@ import type {
   Service,
   Submission,
 } from "~/schemas/submit"
-
-export const hasChip = (entry: FileEntry, axis: ChipAxis, value?: string): boolean =>
-  entry.chipTags.some((c) => c.axis === axis && (value === undefined || c.value === value))
 
 export const groupOf = (submission: Submission, groupId: string): FileGroup | undefined =>
   submission.fileGroups.find((g) => g.id === groupId)
@@ -26,10 +22,7 @@ export const mergeScopes = (scopes: readonly FlowStepScope[]): FlowStepScope => 
   groupIds: sortUnique(scopes.flatMap((s) => s.groupIds)),
 })
 
-export const isNonEmptyScope = (scope: FlowStepScope): boolean =>
-  scope.entryIds.length > 0 || scope.groupIds.length > 0
-
-export const dedupeNotes = (notes: readonly FlowStepNote[]): FlowStepNote[] => {
+const dedupeNotes = (notes: readonly FlowStepNote[]): FlowStepNote[] => {
   const seen = new Set<string>()
   const out: FlowStepNote[] = []
   for (const n of notes) {

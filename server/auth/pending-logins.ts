@@ -1,4 +1,4 @@
-export type PendingLogin = {
+type PendingLogin = {
   codeVerifier: string
   state: string
   returnTo: string
@@ -6,9 +6,9 @@ export type PendingLogin = {
 }
 
 export const PENDING_TTL_MS = 10 * 60 * 1000
-export const PENDING_CLEANUP_INTERVAL_MS = 60_000
+const PENDING_CLEANUP_INTERVAL_MS = 60_000
 
-export type Clock = () => number
+type Clock = () => number
 
 export const createPendingLoginStore = (clock: Clock = Date.now) => {
   const store = new Map<string, PendingLogin>()
@@ -36,7 +36,7 @@ export const createPendingLoginStore = (clock: Clock = Date.now) => {
   return { put, take, cleanup }
 }
 
-export type PendingLoginStore = ReturnType<typeof createPendingLoginStore>
+type PendingLoginStore = ReturnType<typeof createPendingLoginStore>
 
 export const pendingLogins: PendingLoginStore = createPendingLoginStore()
 const cleanupTimer = setInterval(() => pendingLogins.cleanup(), PENDING_CLEANUP_INTERVAL_MS)

@@ -8,9 +8,9 @@ const ProblemDetails = z.object({
   instance: z.string().optional(),
 }).passthrough()
 
-export type ProblemDetails = z.infer<typeof ProblemDetails>
+type ProblemDetails = z.infer<typeof ProblemDetails>
 
-export type APIErrorInit = {
+type APIErrorInit = {
   status: number
   type?: string | undefined
   title?: string | undefined

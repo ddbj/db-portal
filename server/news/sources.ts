@@ -1,6 +1,5 @@
 import path from "node:path"
 
-import type { NewsSource } from "../../app/schemas/api-bff/news"
 import { dbclsDateFromSlug } from "./normalize"
 import {
   dbclsSlugStripper,
@@ -66,5 +65,3 @@ export const dbclsConfig = (
   slugFromFilename: dbclsSlugStripper,
   publishedAtFromSlug: dbclsDateFromSlug,
 })
-
-export const knownSources: readonly NewsSource[] = ["ddbj", "dbcls"] as const

@@ -1,6 +1,6 @@
 import { cn } from "./cn"
 
-export type SegmentedOption = { value: string; label: string }
+type SegmentedOption = { value: string; label: string }
 
 type SegmentedProps = {
   ariaLabel: string

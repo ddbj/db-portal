@@ -8,7 +8,7 @@ import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
 import type { DateRangeFilter, SearchFacetState } from "./facet-state"
 
-export type FromSidebarOptions = {
+type FromSidebarOptions = {
   db?: DbSlug | null
 }
 

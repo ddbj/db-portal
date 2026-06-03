@@ -17,9 +17,9 @@ export const SessionEntry = z.object({
 export type SessionEntry = z.infer<typeof SessionEntry>
 
 export const SESSION_TTL_MS = 30 * 60 * 1000
-export const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 
-export type Clock = () => number
+type Clock = () => number
 
 export const createSessionStore = (
   clock: Clock = Date.now,
@@ -58,7 +58,7 @@ export const createSessionStore = (
   return { set, get, remove, cleanup }
 }
 
-export type SessionStore = ReturnType<typeof createSessionStore>
+type SessionStore = ReturnType<typeof createSessionStore>
 
 const env = parseServerEnv()
 export const sessionStore: SessionStore = createSessionStore(

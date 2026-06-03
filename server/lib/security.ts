@@ -2,7 +2,7 @@ import crypto from "node:crypto"
 
 import type { RequestHandler } from "express"
 
-export type SecurityHeadersOptions = {
+type SecurityHeadersOptions = {
   env: "dev" | "staging" | "production"
   searchApiUrl?: string
 }

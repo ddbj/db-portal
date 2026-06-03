@@ -1,8 +1,6 @@
 import type { FlowStep, ServiceBadgeColor } from "~/schemas/submit"
 import { serviceBadgeColor } from "~/schemas/submit"
 
-export type { ServiceBadgeColor }
-
 export const stepBadgeColor = (step: FlowStep): ServiceBadgeColor =>
   serviceBadgeColor({
     service: step.service,

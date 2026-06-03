@@ -7,7 +7,7 @@ export type DbHit = DbSearchResponse["hits"][number]
 // A meta chip on the bottom row. `vocab` = controlled / identifier-like value
 // (rendered mono, "kept exact"); `free` = submitter free text (de-emphasized,
 // optional field label); `num` = a formatted numeric quantity.
-export type DisplayChip =
+type DisplayChip =
   | { kind: "vocab"; value: string }
   | { kind: "free"; value: string; labelKey?: string }
   | { kind: "num"; value: string }
@@ -88,7 +88,7 @@ export const submitterName = (hit: DbHit): string | null => {
 export const rowExcerpt = (hit: DbHit): string | null =>
   "description" in hit && hit.description ? hit.description : null
 
-export type TaxonomyExtras = {
+type TaxonomyExtras = {
   commonName: string | null
   japaneseName: string | null
   lineage: readonly string[]
@@ -111,7 +111,7 @@ export const taxonomyExtras = (hit: DbHit): TaxonomyExtras | null => {
 }
 
 // Optional field labels for `free` chips (resolved by the row component).
-export const CHIP_LABEL = {
+const CHIP_LABEL = {
   host: "search.results.row.host",
   geo: "search.results.row.geo",
 } as const

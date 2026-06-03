@@ -6,7 +6,7 @@ import { cn, ExternalIcon } from "~/ui"
 import { LoginButton } from "./login-button"
 import { SwitchLang } from "./switch-lang"
 
-export type NavId = "search" | "submit" | "about"
+type NavId = "search" | "submit" | "about"
 
 type InternalNavItem = { id: "search" | "submit"; kind: "internal"; path: "search" | "submit" }
 type ExternalNavItem = { id: "about"; kind: "external"; href: string }

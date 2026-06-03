@@ -18,8 +18,8 @@ import {
 const DESTINATION_SET: ReadonlySet<Service> = new Set(DESTINATION_SERVICES)
 const ENDPOINT_SET: ReadonlySet<Service> = new Set(SUBMISSION_ENDPOINTS)
 
-export const RoutingScope = z.enum(["entry", "group"])
-export type RoutingScope = z.infer<typeof RoutingScope>
+const RoutingScope = z.enum(["entry", "group"])
+type RoutingScope = z.infer<typeof RoutingScope>
 
 const RoutingNote = z
   .object({
@@ -137,6 +137,3 @@ export const SubmitRoutingCatalog = z
 
 export type SubmitRoutingCatalog = z.infer<typeof SubmitRoutingCatalog>
 export type SubmitKindRoute = z.infer<typeof KindRoute>
-export type SubmitRule = z.infer<typeof Rule>
-export type SubmitEmit = z.infer<typeof Emit>
-export type SubmitRoutingNote = z.infer<typeof RoutingNote>

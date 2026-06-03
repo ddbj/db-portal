@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchLlmHealth, type LlmHealth } from "~/lib/api"
 
-export type LlmAvailability = {
+type LlmAvailability = {
   ready: boolean
   reason?: string
   health: LlmHealth | null
 }
 
-export const LLM_AVAILABILITY_STALE_MS = 5 * 60_000
+const LLM_AVAILABILITY_STALE_MS = 5 * 60_000
 
 // Dev server only (never under vitest): surface the AI mode even when no LLM is
 // configured so the assistant flow can be exercised against a stubbed proposal.

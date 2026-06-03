@@ -28,18 +28,18 @@ export const DBCLS_NAME_OVERRIDES: Readonly<Record<string, { ja: string; en: str
   TogoTV: { ja: "TogoTV", en: "TogoTV" },
 }
 
-export type ServiceSourceFile = {
+type ServiceSourceFile = {
   source: ServiceSource
   /** localDir からの相対パスを解決した、データファイルの絶対パス。 */
   filePath: (localDir: string) => string
 }
 
-export const ddbjSourceFile: ServiceSourceFile = {
+const ddbjSourceFile: ServiceSourceFile = {
   source: "ddbj",
   filePath: (localDir) => path.join(localDir, "_data/services.yml"),
 }
 
-export const dbclsSourceFile: ServiceSourceFile = {
+const dbclsSourceFile: ServiceSourceFile = {
   source: "dbcls",
   filePath: (localDir) => path.join(localDir, "json/services.json"),
 }

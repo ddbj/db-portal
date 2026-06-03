@@ -18,7 +18,7 @@ const buildIdGenerator = () => {
   }
 }
 
-export type SubmitDispatch = {
+type SubmitDispatch = {
   setQ1: (q1: Q1 | null) => void
   setQ2: (q2: Q2 | null) => void
   addRow: (fileTypeKind: FileTypeKind) => void

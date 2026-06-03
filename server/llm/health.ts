@@ -2,8 +2,6 @@ import type { LlmHealth } from "../../app/schemas/api-bff/llm"
 import type { Logger } from "../lib/log"
 import { callVllmModels, type LlmClient } from "./client"
 
-export type { LlmHealth } from "../../app/schemas/api-bff/llm"
-
 const HEALTH_CHECK_INTERVAL_MS = 5 * 60_000
 const INITIAL_DELAY_MS = 5_000
 
@@ -11,11 +9,11 @@ let active: LlmHealth = { status: "unset" }
 
 export const getActiveHealth = (): LlmHealth => active
 
-export const setActiveHealth = (next: LlmHealth): void => {
+const setActiveHealth = (next: LlmHealth): void => {
   active = next
 }
 
-export type HealthMonitor = {
+type HealthMonitor = {
   start: () => void
   stop: () => void
 }

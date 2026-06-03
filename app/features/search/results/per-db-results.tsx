@@ -17,7 +17,7 @@ import {
 import { ResultsPagination } from "./pagination"
 import { ResultRow } from "./result-row"
 
-export type PerDbResultsProps = {
+type PerDbResultsProps = {
   db: DbSlug
   response: DbSearchResponse
   lang: Lang

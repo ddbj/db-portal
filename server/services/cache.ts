@@ -23,7 +23,7 @@ const emptyState = (): ServiceCache => ({
 
 const cachePath = (cacheDir: string): string => path.join(cacheDir, CACHE_FILE)
 
-export type LoadResult = {
+type LoadResult = {
   state: ServiceCache
   source: "disk" | "empty"
 }
@@ -53,7 +53,7 @@ export const loadCacheFromDisk = async (
   }
 }
 
-export const persistCacheToDisk = async (
+const persistCacheToDisk = async (
   cacheDir: string,
   state: ServiceCache,
   logger: Logger,

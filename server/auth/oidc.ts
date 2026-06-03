@@ -9,17 +9,11 @@ export type OidcConfig = {
   fetchImpl?: typeof fetch
 }
 
-export type AuthorizeUrlResult = {
-  url: string
-  state: string
-  codeVerifier: string
-}
-
-export type Tokens = {
+type Tokens = {
   idToken: string
 }
 
-export type UserInfo = {
+type UserInfo = {
   sub: string
   name: string
   email: string

@@ -7,7 +7,7 @@ export { LlmHealth } from "~/schemas/api-bff/llm"
 
 const HEALTH_PATH = "/api/llm/health"
 
-export type FetchLlmHealthOptions = {
+type FetchLlmHealthOptions = {
   baseUrl?: string
   signal?: AbortSignal
   headers?: HeadersInit

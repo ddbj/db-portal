@@ -12,7 +12,7 @@ import {
   predicateLabelKey,
 } from "../types"
 
-export type ProposalConditionsProps = {
+type ProposalConditionsProps = {
   node: ParseNode
 }
 

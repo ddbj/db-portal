@@ -3,7 +3,7 @@ import type { DataForm, FileEntry, FileEntryChip, FileGroup, GroupType } from "~
 import type { FormOptionDef } from "./form-defs"
 
 // 行詳細フォームの作業値 (groupType / dataForm / chipTags の組)。DataDetailPanel が選択判定と commit 値生成に用いる。
-export type Draft = {
+type Draft = {
   groupType: GroupType
   dataForm: DataForm
   chipTags: FileEntryChip[]

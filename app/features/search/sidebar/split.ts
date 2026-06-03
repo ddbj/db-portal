@@ -7,7 +7,7 @@ import { matchDatePreset } from "./date-preset"
 import { type FilterRow, rowByDslField } from "./facet-config"
 import { createInitialSearchFacetState, type SearchFacetState } from "./facet-state"
 
-export type SplitResult = {
+type SplitResult = {
   sidebar: SearchFacetState
   rest: ParseNode
 }

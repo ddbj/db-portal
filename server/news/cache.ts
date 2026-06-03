@@ -23,7 +23,7 @@ const emptyState = (): NewsCache => ({
 
 const cachePath = (cacheDir: string): string => path.join(cacheDir, CACHE_FILE)
 
-export type LoadResult = {
+type LoadResult = {
   state: NewsCache
   source: "disk" | "empty"
 }
@@ -53,7 +53,7 @@ export const loadCacheFromDisk = async (
   }
 }
 
-export const persistCacheToDisk = async (
+const persistCacheToDisk = async (
   cacheDir: string,
   state: NewsCache,
   logger: Logger,

@@ -3,9 +3,6 @@ import type {
   NewsItem,
   NewsSource,
 } from "../../app/schemas/api-bff/news"
-import { NewsCategory as NewsCategoryEnum } from "../../app/schemas/api-bff/news"
-
-export { NewsCategory } from "../../app/schemas/api-bff/news"
 
 const DEFAULT_CATEGORY: NewsCategory = "other"
 
@@ -43,9 +40,6 @@ export const tagsToCategory = (
 
   return DEFAULT_CATEGORY
 }
-
-export const isNewsCategory = (value: string): value is NewsCategory =>
-  (NewsCategoryEnum.options as readonly string[]).includes(value)
 
 export type FrontMatter = {
   title?: string

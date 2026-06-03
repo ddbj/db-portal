@@ -3,7 +3,7 @@ import type { LoaderFunctionArgs } from "react-router"
 import { type DbSlug, readSearchParams } from "~/features/search"
 import { type ParseNode, parseQuery } from "~/lib/api"
 
-export type LoaderData = {
+type LoaderData = {
   q: string
   db: DbSlug | null
   ast: ParseNode | null

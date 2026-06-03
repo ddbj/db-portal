@@ -117,7 +117,7 @@ const paginate = (items: NewsList, page: number): { items: NewsItem[]; totalPage
   return { items: items.slice(start, start + PAGE_SIZE), totalPages }
 }
 
-export type UseNewsListResult = {
+type UseNewsListResult = {
   loading: boolean
   error: boolean
   total: number

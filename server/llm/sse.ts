@@ -18,7 +18,7 @@ const VllmStreamChunkSchema = z.object({
 // an `error`, so a prompt injection cannot turn the endpoint into an open LLM
 // proxy (docs/llm.md § プロンプトインジェクション対策). Heartbeats keep the
 // connection alive during generation.
-export type SseStream = {
+type SseStream = {
   start: () => void
   done: (data: string) => void
   error: (code: string, message: string) => void

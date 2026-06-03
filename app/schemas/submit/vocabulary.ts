@@ -118,7 +118,7 @@ export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>
 
 // spatial-platform → GEA Submission Type の分類。Sequencing 系は生リードを DRA に出す
 // 2 段 (spatial recipe が DRA step を emit)。それ以外 (xenium / merfish) は GEA のみ
-export const SEQUENCING_SPATIAL_PLATFORMS: readonly string[] = ["visium", "stereo-seq"]
+const SEQUENCING_SPATIAL_PLATFORMS: readonly string[] = ["visium", "stereo-seq"]
 
 export const isSequencingSpatialPlatform = (value: string): boolean =>
   SEQUENCING_SPATIAL_PLATFORMS.includes(value)

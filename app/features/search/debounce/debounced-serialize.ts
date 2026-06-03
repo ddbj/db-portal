@@ -11,7 +11,7 @@ import { useDebouncedValue } from "./use-debounced-value"
 
 export const DEBOUNCE_MS = 700
 
-export type DebouncedSerializeResult = {
+type DebouncedSerializeResult = {
   status: SyncStatus
   dsl: string
   retry: () => void

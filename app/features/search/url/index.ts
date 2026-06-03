@@ -1,5 +1,5 @@
-export { type ParseDslOptions,parseDslToAst } from "./from-url"
-export { type SerializeAstOptions,serializeAstToDsl } from "./to-url"
+export { parseDslToAst } from "./from-url"
+export { serializeAstToDsl } from "./to-url"
 export {
   buildResultsHref,
   buildSearchHref,

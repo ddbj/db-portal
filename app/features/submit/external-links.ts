@@ -3,9 +3,9 @@ import { getServiceBySubmit } from "~/lib/content"
 import type { Lang } from "~/lib/i18n"
 import type { Service } from "~/schemas/submit"
 
-export type ServiceSource = "DDBJ" | "DBCLS"
+type ServiceSource = "DDBJ" | "DBCLS"
 
-export type SubmitMeta = {
+type SubmitMeta = {
   externalUrl: string
   source: ServiceSource | null
 }

@@ -7,7 +7,7 @@ import { Button, Label, Segmented, StableLabel } from "~/ui"
 import { ProposalConditions } from "../assistant"
 import { isIdentityAst } from "../ast"
 
-export type SwitchableQueryPreviewProps = {
+type SwitchableQueryPreviewProps = {
   dsl: string
   ast: ParseNode | null
   onClear?: () => void

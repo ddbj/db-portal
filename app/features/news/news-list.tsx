@@ -11,7 +11,7 @@ import {
 import { NewsRow } from "./news-row"
 import { NEWS_PAGE_SIZE } from "./use-news-list"
 
-export type NewsListProps = {
+type NewsListProps = {
   lang: Lang
   facet: NewsFacetState
   onChange: (next: NewsFacetState) => void

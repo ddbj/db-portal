@@ -2,7 +2,7 @@ import type { AdvancedState } from "../advanced"
 
 export type AiMode = "append" | "new"
 
-export type AiModeDefault = {
+type AiModeDefault = {
   mode: AiMode
   appendDisabled: boolean
 }

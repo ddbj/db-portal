@@ -92,7 +92,7 @@ const paginate = (items: ServiceList, page: number): { items: ServiceItem[]; tot
   return { items: items.slice(start, start + PAGE_SIZE), totalPages }
 }
 
-export type UseServicesListResult = {
+type UseServicesListResult = {
   loading: boolean
   error: boolean
   total: number

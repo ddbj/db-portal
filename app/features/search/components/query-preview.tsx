@@ -3,7 +3,7 @@ import { useState } from "react"
 import { useT } from "~/lib/i18n"
 import { Button, Label, StableLabel } from "~/ui"
 
-export type QueryPreviewProps = {
+type QueryPreviewProps = {
   dsl: string
   onClear?: () => void
   onEdit?: () => void

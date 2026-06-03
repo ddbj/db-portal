@@ -14,7 +14,7 @@ import {
 } from "../assistant"
 import { type AiMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
 
-export type SearchInputPanelProps = {
+type SearchInputPanelProps = {
   keyword: string
   onKeywordChange: (value: string) => void
   scope: string

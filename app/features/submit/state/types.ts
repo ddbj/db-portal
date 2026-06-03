@@ -36,14 +36,3 @@ export type Action =
   | { type: "EDIT_ROW_CELL"; entryId: string; patch: Partial<FileEntry> }
   | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch; releasedGroupId: string }
   | { type: "REMOVE_ROW"; entryId: string }
-
-const emptySubmission = (): Submission => ({
-  preconditions: { q1: null, q2: null },
-  fileEntries: [],
-  fileGroups: [],
-  notes: "",
-})
-
-export const createEmptyUIState = (): UIState => ({
-  submission: emptySubmission(),
-})

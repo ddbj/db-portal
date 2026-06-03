@@ -6,7 +6,7 @@ export const LANG_COOKIE_NAME = "db_portal_lang"
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365
 
-export type LangCookieOptions = {
+type LangCookieOptions = {
   secure: boolean
 }
 

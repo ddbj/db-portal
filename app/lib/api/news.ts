@@ -5,7 +5,6 @@ import { buildRequestInit, joinUrl } from "./client"
 import { toAPIError } from "./errors"
 
 export {
-  NewsCache,
   NewsCategory,
   NewsItem,
   NewsList,
@@ -29,7 +28,7 @@ export const newsItemUrl = (item: NewsItem, lang: Lang): string | undefined => {
   return item.url[lang] ?? item.url.ja ?? item.url.en
 }
 
-export type FetchNewsQuery = {
+type FetchNewsQuery = {
   lang?: Lang
   source?: readonly string[]
   category?: readonly string[]
@@ -59,7 +58,7 @@ const buildNewsPath = (query: FetchNewsQuery | undefined): string => {
   return qs ? `${base}?${qs}` : base
 }
 
-export type FetchNewsOptions = {
+type FetchNewsOptions = {
   baseUrl?: string
   signal?: AbortSignal
   headers?: HeadersInit

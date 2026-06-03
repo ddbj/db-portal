@@ -10,7 +10,7 @@ type TextLinkBase = {
   arrow?: boolean
 }
 
-export type TextLinkProps =
+type TextLinkProps =
   | (TextLinkBase & { to: To; external?: false; href?: never })
   | (TextLinkBase & { href: string; external: true; to?: never })
 

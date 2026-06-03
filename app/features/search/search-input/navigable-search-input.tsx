@@ -9,7 +9,7 @@ import { useAssistantStream, useLlmAvailability } from "../assistant"
 import { isIdentityAst } from "../ast"
 import { type AiMode } from "./ai-mode"
 
-export type NavigableSearchInputProps = {
+type NavigableSearchInputProps = {
   keyword: string
   onKeywordChange: (value: string) => void
   // Run the keyword search (the caller navigates to the results URL).

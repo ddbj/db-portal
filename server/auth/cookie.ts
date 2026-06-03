@@ -1,8 +1,8 @@
 import { parse, serialize } from "cookie"
 
-export const COOKIE_NAME = "sid"
+const COOKIE_NAME = "sid"
 
-export type CookieOptions = {
+type CookieOptions = {
   secure: boolean
 }
 

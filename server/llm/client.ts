@@ -9,7 +9,7 @@ export type LlmClient = {
   fetchImpl: typeof fetch
 }
 
-export type LlmClientOverrides = {
+type LlmClientOverrides = {
   fetchImpl?: typeof fetch
 }
 
@@ -22,7 +22,7 @@ export const createLlmClient = (env: ServerEnv, overrides: LlmClientOverrides = 
   fetchImpl: overrides.fetchImpl ?? fetch,
 })
 
-export const llmAuthHeader = (client: LlmClient): Record<string, string> =>
+const llmAuthHeader = (client: LlmClient): Record<string, string> =>
   client.apiKey ? { Authorization: `Bearer ${client.apiKey}` } : {}
 
 export type ChatMessage = {
@@ -30,7 +30,7 @@ export type ChatMessage = {
   content: string
 }
 
-export type ChatCompletionRequest = {
+type ChatCompletionRequest = {
   messages: ChatMessage[]
   temperature?: number
   maxTokens?: number

@@ -16,8 +16,8 @@ const ExternalLink = z.object({
   href: z.string().url(),
 })
 
-export const DatabaseSlug = z.enum(["bioproject", "biosample"])
-export type DatabaseSlug = z.infer<typeof DatabaseSlug>
+const DatabaseSlug = z.enum(["bioproject", "biosample"])
+type DatabaseSlug = z.infer<typeof DatabaseSlug>
 
 export const DatabaseContent = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),

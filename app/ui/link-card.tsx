@@ -5,7 +5,7 @@ type LinkCardBase = {
   children: ReactNode
 }
 
-export type LinkCardProps =
+type LinkCardProps =
   | (LinkCardBase & { to: To; external?: false; href?: never })
   | (LinkCardBase & { href: string; external: true; to?: never })
 

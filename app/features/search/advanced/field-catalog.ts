@@ -7,7 +7,7 @@ import type { AdvancedOp } from "~/schemas/api-bff/llm"
 // per scope. Cross fields (allowlist Tier 1/2) are valid in every scope; per-DB
 // fields (Tier 3) are offered only when that DB is the active scope. Solr-backed
 // trad / taxonomy Tier 3 fields are sidebar-only and intentionally omitted here.
-export type FieldKind = "identifier" | "text" | "enum" | "date"
+type FieldKind = "identifier" | "text" | "enum" | "date"
 
 // Operators the builder offers per field kind — the UI affordance set, a subset
 // of what the API allowlist (search/dsl/allowlist.py, OPERATOR_BY_KIND) accepts

@@ -21,7 +21,7 @@ import {
 import { type LangRawMap, pairToNewsItems, parseRawArticle } from "./pair"
 import { dbclsConfig, ddbjConfig, type RepoSourceConfig } from "./sources"
 
-export type NewsMirror = {
+type NewsMirror = {
   start: () => void
   stop: () => void
 }
@@ -31,13 +31,13 @@ export type NewsMirror = {
  * 同じ clone を読む別 mirror (services) が news の clone を再利用するための hook。
  * 呼び出し側 (news) は callback の中身を知らない。
  */
-export type OnSourceSynced = (
+type OnSourceSynced = (
   source: NewsSource,
   localDir: string,
   sha: string,
 ) => Promise<void>
 
-export type NewsMirrorOptions = {
+type NewsMirrorOptions = {
   onSourceSynced?: OnSourceSynced
 }
 
@@ -45,7 +45,7 @@ let activeCache: CacheStore | undefined
 
 export const getActiveNewsCache = (): CacheStore | undefined => activeCache
 
-export const sourceConfigs = (env: ServerEnv): RepoSourceConfig[] => [
+const sourceConfigs = (env: ServerEnv): RepoSourceConfig[] => [
   ddbjConfig(
     env.DB_PORTAL_NEWS_DDBJ_REPO_URL,
     env.DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH,
@@ -216,4 +216,3 @@ export const createNewsMirror = (
   return { mirror, cache }
 }
 
-export type { NewsSource }

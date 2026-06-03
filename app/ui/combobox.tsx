@@ -14,7 +14,7 @@ type ComboboxSize = "sm" | "md" | "lg"
 // (e.g. an organism shows the scientific name but commits the taxID).
 export type ComboboxOption = { value: string; label: string; count?: number }
 
-export type ComboboxProps = {
+type ComboboxProps = {
   ariaLabel: string
   ariaDescribedby?: string
   options: readonly ComboboxOption[]

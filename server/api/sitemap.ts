@@ -40,12 +40,12 @@ const normalizeUrlPath = (p: string): string => {
   return collapsed.replace(/\/+$/, "")
 }
 
-export type SitemapAlternate = {
+type SitemapAlternate = {
   hreflang: "ja" | "en" | "x-default"
   href: string
 }
 
-export type SitemapEntry = {
+type SitemapEntry = {
   loc: string
   alternates: readonly SitemapAlternate[]
 }

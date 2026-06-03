@@ -43,7 +43,7 @@ const pickFromAcceptLanguage = (header: string | null): Lang | null => {
   return null
 }
 
-export type ResolveLangInput = {
+type ResolveLangInput = {
   cookieLang: Lang | undefined
   acceptLanguage: string | null
   defaultLang: Lang

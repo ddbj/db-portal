@@ -3,7 +3,7 @@ import { type ParseNode, type ParseNodeInput, serializeAst } from "~/lib/api"
 import { isIdentityAst } from "../ast/identity"
 import type { DbSlug } from "../types"
 
-export type SerializeAstOptions = {
+type SerializeAstOptions = {
   baseUrl?: string
   signal?: AbortSignal
   // Validator scope: a per-DB scope admits Tier 3 fields (the sidebar facets

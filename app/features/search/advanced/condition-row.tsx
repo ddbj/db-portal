@@ -26,7 +26,7 @@ import {
 import type { AdvancedCondition } from "./reducer"
 import { useScopeDb, useScopeFacetData } from "./scope-context"
 
-export type ConditionRowProps = {
+type ConditionRowProps = {
   condition: AdvancedCondition
   removable: boolean
   onFieldChange: (field: AdvancedField) => void

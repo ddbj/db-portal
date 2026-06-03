@@ -12,7 +12,7 @@ export type EntryRouting = {
   notes: FlowStepNote[]
 }
 
-export const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
+const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
   const route = getKindRoute(entry.fileTypeKind)
   const group = groupOf(submission, entry.groupId)
   const ctx: PredicateContext = {

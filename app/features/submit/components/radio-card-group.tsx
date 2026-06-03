@@ -1,6 +1,6 @@
 import { FmtRadio } from "~/ui"
 
-export type RadioCardOption = {
+type RadioCardOption = {
   value: string
   label: string
   sub?: string

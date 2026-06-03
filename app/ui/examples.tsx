@@ -1,6 +1,6 @@
 import { Chip } from "./chip"
 
-export type ExamplesProps = {
+type ExamplesProps = {
   label: string
   items: readonly string[]
   onPick: (item: string) => void

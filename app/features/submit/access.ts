@@ -7,7 +7,7 @@ const ACCESS_SENSITIVE_KINDS: ReadonlySet<FileTypeKind> = new Set([
   "microarray-expression",
 ])
 
-export const isAccessSensitiveKind = (kind: FileTypeKind): boolean =>
+const isAccessSensitiveKind = (kind: FileTypeKind): boolean =>
   ACCESS_SENSITIVE_KINDS.has(kind)
 
 // 公開+制限モードで種別ごとに公開区分トグルを出すか。reads は human/非 human とも登録先が変わる。

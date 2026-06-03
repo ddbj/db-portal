@@ -5,7 +5,6 @@ import { buildRequestInit, joinUrl } from "./client"
 import { toAPIError } from "./errors"
 
 export {
-  ServiceCache,
   ServiceCategory,
   ServiceItem,
   ServiceList,
@@ -36,7 +35,7 @@ export const serviceUrl = (item: ServiceItem, lang: Lang): string | undefined =>
   return item.url[lang] ?? item.url.ja ?? item.url.en
 }
 
-export type FetchServicesQuery = {
+type FetchServicesQuery = {
   source?: readonly string[]
   category?: readonly string[]
   featured?: boolean
@@ -58,7 +57,7 @@ const buildServicesPath = (query: FetchServicesQuery | undefined): string => {
   return qs ? `${base}?${qs}` : base
 }
 
-export type FetchServicesOptions = {
+type FetchServicesOptions = {
   baseUrl?: string
   signal?: AbortSignal
   headers?: HeadersInit

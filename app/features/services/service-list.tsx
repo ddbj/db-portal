@@ -11,7 +11,7 @@ import {
 import { ServiceRow } from "./service-row"
 import { SERVICES_PAGE_SIZE } from "./use-services-list"
 
-export type ServiceListProps = {
+type ServiceListProps = {
   lang: Lang
   facet: ServicesFacetState
   onChange: (next: ServicesFacetState) => void

@@ -19,7 +19,7 @@ export type FormOptionDef = {
   effect: FormOptionEffect
 }
 
-export type FormGroupDef = {
+type FormGroupDef = {
   id: string
   num: string
   labelKey: string
@@ -27,7 +27,7 @@ export type FormGroupDef = {
   options: readonly FormOptionDef[]
 }
 
-export type RowFormDef = {
+type RowFormDef = {
   groups: readonly FormGroupDef[]
 }
 

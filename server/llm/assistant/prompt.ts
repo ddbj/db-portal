@@ -85,7 +85,7 @@ const formatUser = (input: string, currentDsl?: string, db?: string): string => 
   return lines.join("\n")
 }
 
-export type AssistantPromptInput = {
+type AssistantPromptInput = {
   userInput: string
   currentDsl?: string | undefined
   // The locked single-DB scope (per-DB results page). Absent on top / cross-search,

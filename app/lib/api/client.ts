@@ -1,8 +1,6 @@
 import { toAPIError } from "./errors"
 import type { paths } from "./openapi-types"
 
-export type Paths = paths
-
 type GetOp<P extends keyof paths> = paths[P] extends { get: infer Op } ? Op : never
 type PostOp<P extends keyof paths> = paths[P] extends { post: infer Op } ? Op : never
 
@@ -19,7 +17,7 @@ export type ApiRequestOptions = {
 const requestCredentials = (baseUrl: string | undefined): RequestCredentials =>
   baseUrl ? "same-origin" : "include"
 
-export type BuildInitOptions = {
+type BuildInitOptions = {
   method: "GET" | "POST"
   signal?: AbortSignal | undefined
   headers?: HeadersInit | undefined

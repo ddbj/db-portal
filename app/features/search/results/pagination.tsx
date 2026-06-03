@@ -1,7 +1,7 @@
 import { useT } from "~/lib/i18n"
 import { Pagination as PaginationPrimitive } from "~/ui"
 
-export type ResultsPaginationProps = {
+type ResultsPaginationProps = {
   page: number
   totalPages: number
   onPageChange: (page: number) => void

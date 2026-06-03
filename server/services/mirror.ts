@@ -11,7 +11,7 @@ let activeCache: CacheStore | undefined
 
 export const getActiveServicesCache = (): CacheStore | undefined => activeCache
 
-export type ServicesMirror = {
+type ServicesMirror = {
   init: () => Promise<void>
   rebuildSource: (source: ServiceSource, localDir: string, sha: string) => Promise<void>
   cache: CacheStore

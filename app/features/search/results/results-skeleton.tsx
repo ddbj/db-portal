@@ -31,7 +31,7 @@ const SkeletonCard = ({ db }: { db: DbSlug }) => {
   )
 }
 
-export const CrossResultsSkeleton = () => (
+const CrossResultsSkeleton = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {CARD_ORDER.map((db) => <SkeletonCard key={db} db={db} />)}
   </div>

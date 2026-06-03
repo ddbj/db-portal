@@ -1,6 +1,6 @@
 import type { ServiceCategory } from "~/lib/api"
 
-export type ServiceCategoryLabelKey = `services.category.${ServiceCategory}`
+type ServiceCategoryLabelKey = `services.category.${ServiceCategory}`
 
 export const serviceCategoryLabelKey = (
   category: ServiceCategory,

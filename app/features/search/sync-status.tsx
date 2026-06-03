@@ -3,7 +3,7 @@ import { Tag } from "~/ui"
 
 import type { SyncStatus } from "./types"
 
-export type SyncStatusChipProps = {
+type SyncStatusChipProps = {
   status: SyncStatus
 }
 

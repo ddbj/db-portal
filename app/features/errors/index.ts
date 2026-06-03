@@ -1,1 +1,1 @@
-export { type ErrorKind, ErrorPage } from "./error-page"
+export { ErrorPage } from "./error-page"

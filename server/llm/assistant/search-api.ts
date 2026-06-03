@@ -12,7 +12,7 @@ export type SearchApiDeps = {
   fetchImpl?: typeof fetch
 }
 
-export type ParseAstOutcome =
+type ParseAstOutcome =
   | { ok: true; ast: unknown; db: string | null }
   | { ok: false; code: "invalid_dsl" | "upstream"; message: string }
 

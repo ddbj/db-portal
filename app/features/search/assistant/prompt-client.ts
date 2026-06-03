@@ -30,9 +30,9 @@ export type AssistantStartOptions = {
   db?: DbSlug | undefined
 }
 
-export type AssistantState = "idle" | "streaming" | "done" | "error"
+type AssistantState = "idle" | "streaming" | "done" | "error"
 
-export type AssistantStreamResult = {
+type AssistantStreamResult = {
   state: AssistantState
   proposal: ParseNode | null
   // The DB the proposal resolved to (locked or derived); null = cross-database.

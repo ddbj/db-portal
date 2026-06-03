@@ -1,7 +1,7 @@
 import { extractDsl, stripUnsupported } from "./dsl"
 import { parseDslToAst, type SearchApiDeps } from "./search-api"
 
-export type AstOutcome =
+type AstOutcome =
   | { ok: true; ast: unknown; db: string | null; dsl: string }
   | { ok: false; code: "no_dsl" | "invalid_dsl" | "upstream"; message: string }
 

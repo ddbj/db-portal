@@ -12,13 +12,8 @@ export {
   toggleSource,
   toggleYear,
 } from "./facet-url-state"
-export { NewsList, type NewsListProps } from "./news-list"
-export { NewsRow } from "./news-row"
+export { NewsList } from "./news-list"
 export {
   collectNewsFacetCounts,
-  NEWS_PAGE_SIZE,
-  type NewsFacetCounts,
-  type NewsFacetOptions,
   useNewsList,
-  type UseNewsListResult,
 } from "./use-news-list"

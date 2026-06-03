@@ -27,7 +27,7 @@ export type FilterRow = {
   organism?: boolean
 }
 
-export type Scope = "cross" | DbSlug
+type Scope = "cross" | DbSlug
 
 const facet = (
   key: string,
@@ -207,7 +207,7 @@ export const SCOPE_FILTERS: Record<Scope, readonly FilterRow[]> = {
   ],
 }
 
-export const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
+const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
 
 export const scopeFilters = (db: DbSlug | null): readonly FilterRow[] =>
   SCOPE_FILTERS[scopeOf(db)]

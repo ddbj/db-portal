@@ -33,16 +33,6 @@ export const CloseIcon = ({ size = 14, title, ...rest }: IconProps) => (
   </svg>
 )
 
-export const TrashIcon = ({ size = 16, title, ...rest }: IconProps) => (
-  <svg {...baseProps(size, title)} {...rest}>
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <path d="M19 6 V20 a2 2 0 0 1 -2 2 H7 a2 2 0 0 1 -2 -2 V6" />
-    <path d="M8 6 V4 a2 2 0 0 1 2 -2 H14 a2 2 0 0 1 2 2 V6" />
-    <line x1="10" y1="11" x2="10" y2="17" />
-    <line x1="14" y1="11" x2="14" y2="17" />
-  </svg>
-)
-
 export const SearchIcon = ({ size = 16, title, ...rest }: IconProps) => (
   <svg {...baseProps(size, title)} {...rest}>
     <circle cx="11" cy="11" r="7" />

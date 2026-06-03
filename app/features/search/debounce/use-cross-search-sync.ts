@@ -9,12 +9,12 @@ import { serializeAstToDsl } from "../url/to-url"
 import { DEBOUNCE_MS } from "./debounced-serialize"
 import { useDebouncedValue } from "./use-debounced-value"
 
-export type CrossSearchSyncOutcome =
+type CrossSearchSyncOutcome =
   | { status: "idle"; dsl: "" }
   | { status: "synced"; dsl: string }
   | { status: "failed"; parseError: boolean }
 
-export type ResolveCrossSearchOptions = {
+type ResolveCrossSearchOptions = {
   baseUrl?: string
   // Validator scope for the live preview: per-DB admits Tier 3 fields, null
   // (cross) only Tier 1/2. Must match the scope the search will actually run in.
@@ -48,7 +48,7 @@ export const resolveCrossSearchSync = async (
   }
 }
 
-export type CrossSearchSyncResult = {
+type CrossSearchSyncResult = {
   status: SyncStatus
   dsl: string
   parseError: boolean

@@ -8,7 +8,7 @@ import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
 import { entryHref, resolveDate } from "./result-fields"
 
-export type CrossResultsProps = {
+type CrossResultsProps = {
   q: string
   response: CrossSearchResponse
 }

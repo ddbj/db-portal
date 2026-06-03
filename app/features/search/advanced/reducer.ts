@@ -56,7 +56,7 @@ const fallbackId = (): AdvancedNodeId => {
   return `${idPrefix}${idCounter.toString(36)}`
 }
 
-export const newId = (): AdvancedNodeId => {
+const newId = (): AdvancedNodeId => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID()
   }

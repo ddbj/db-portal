@@ -12,7 +12,7 @@ const ServiceLink = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("external"), href: z.string().url() }),
 ])
 
-export type ServiceLink = z.infer<typeof ServiceLink>
+type ServiceLink = z.infer<typeof ServiceLink>
 
 const TopUsage = z.object({
   category: z.literal("primary-service"),

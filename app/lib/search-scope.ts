@@ -18,9 +18,6 @@ export const SCOPE_KEYS = ["all", ...DB_SLUGS] as const
 
 export type ScopeKey = typeof SCOPE_KEYS[number]
 
-export const isScopeKey = (value: string): value is ScopeKey =>
-  (SCOPE_KEYS as readonly string[]).includes(value)
-
 export const scopeKeyToDbSlug = (key: ScopeKey): DbSlug | null =>
   key === "all" ? null : key
 

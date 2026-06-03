@@ -8,7 +8,7 @@ type SourceName = "DDBJ" | "DBCLS"
 
 type StatusTone = "critical" | "warning" | "success" | "info"
 
-export type TagProps =
+type TagProps =
   | {
     kind?: "tag"
     size?: TagSize

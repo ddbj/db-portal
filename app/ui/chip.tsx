@@ -10,7 +10,7 @@ type ChipBase = {
   selected?: boolean
 }
 
-export type ChipProps =
+type ChipProps =
   | (ChipBase & { as?: "a"; to: To; onClick?: never })
   | (ChipBase & { as: "button"; onClick?: MouseEventHandler<HTMLButtonElement>; to?: never })
 

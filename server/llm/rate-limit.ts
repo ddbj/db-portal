@@ -3,18 +3,18 @@ type Window = { startMs: number; count: number }
 const WINDOW_MS = 60_000
 const CLEANUP_INTERVAL_MS = 5 * 60_000
 
-export type Clock = () => number
+type Clock = () => number
 
-export type LimitDecision =
+type LimitDecision =
   | { ok: true }
   | { ok: false; axis: "ip" | "session"; retryAfterSec: number }
 
-export type RateLimitConfig = {
+type RateLimitConfig = {
   perIpPerMin: number
   perSessionPerMin: number
 }
 
-export type RateLimiter = {
+type RateLimiter = {
   check: (ip: string, sid: string | undefined) => LimitDecision
   cleanup: () => void
 }

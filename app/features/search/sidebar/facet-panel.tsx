@@ -9,7 +9,7 @@ import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
 import { EMPTY_DATE_RANGE, type SearchFacetAction, type SearchFacetState } from "./facet-state"
 
-export type FacetPanelProps = {
+type FacetPanelProps = {
   state: SearchFacetState
   dispatch: Dispatch<SearchFacetAction>
   db: DbSlug | null

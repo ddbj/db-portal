@@ -1,7 +1,7 @@
 import { useT } from "~/lib/i18n/use-t"
 import { ArrowLeftIcon, PageTitle, TextLink } from "~/ui"
 
-export type ErrorKind = "not-found" | "generic"
+type ErrorKind = "not-found" | "generic"
 
 type ErrorPageProps = {
   kind: ErrorKind

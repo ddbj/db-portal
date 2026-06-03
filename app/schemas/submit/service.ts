@@ -49,7 +49,7 @@ export const EXTERNAL_SERVICES: readonly Service[] = byRole("external")
 // 最終格納先が DDBJ 外になる external (jpost = proteomics / eva = 非ヒト variant) も含む。
 // humandbs は Policy 申請・承認の誘導であって格納先ではないため含めない。
 // emit.service / candidateRepos / no-orphan 判定はこの集合を境界に使う。
-export const ENDPOINT_EXTERNALS: readonly Service[] = ["jpost", "eva"]
+const ENDPOINT_EXTERNALS: readonly Service[] = ["jpost", "eva"]
 export const SUBMISSION_ENDPOINTS: readonly Service[] = [
   ...DESTINATION_SERVICES,
   ...ENDPOINT_EXTERNALS,
@@ -74,7 +74,7 @@ export const isSubmissionEndpoint = (service: Service): boolean =>
 
 // 役割タグの表示キー。external のうち登録エンドポイント (jpost/eva) は「外部登録先」、
 // エンドポイントでない前提ゲート (humandbs) は「申請窓口」として表示語を分ける。
-export type ServiceRoleTagKey = ServiceRole | "gate"
+type ServiceRoleTagKey = ServiceRole | "gate"
 export const serviceRoleTagKey = (service: Service): ServiceRoleTagKey => {
   const role = SERVICE_ROLE[service]
   if (role !== "external") return role
@@ -85,7 +85,7 @@ export const serviceRoleTagKey = (service: Service): ServiceRoleTagKey => {
 export const ServiceBadgeColor = z.enum(["emerald", "amber", "rose"])
 export type ServiceBadgeColor = z.infer<typeof ServiceBadgeColor>
 
-export type ServiceBadgeInput = {
+type ServiceBadgeInput = {
   service: Service
   hasWarningOrError: boolean
 }

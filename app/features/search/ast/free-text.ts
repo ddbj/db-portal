@@ -12,7 +12,7 @@ type FreeTextNode = Extract<ParseNode, { op: "free_text" }>
 const freeTextToken = (node: FreeTextNode): string =>
   node.is_phrase ? `"${node.value}"` : node.value
 
-export type FreeTextSplit = {
+type FreeTextSplit = {
   // The free text as a single keyword-box string.
   keyword: string
   // The same free text as an AST, folded back into the live sync so editing a

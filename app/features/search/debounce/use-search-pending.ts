@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigation } from "react-router"
 
-export type SearchPending = {
+type SearchPending = {
   pending: boolean
   // Mark a search as started (button press), before the async parse / serialize.
   begin: () => void

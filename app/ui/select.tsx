@@ -13,7 +13,7 @@ export type SelectOption = string | { value: string; label: string }
 
 type NormalizedOption = { value: string; label: string }
 
-export type SelectProps = {
+type SelectProps = {
   ariaLabel: string
   ariaDescribedby?: string
   options: readonly SelectOption[]
