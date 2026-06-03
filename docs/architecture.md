@@ -31,7 +31,7 @@ db-portal/
 │   ├── pbt/                     fast-check (純粋ロジックの不変量)
 │   └── e2e/                     Playwright (staging に対して)
 ├── env.dev / env.staging / env.production
-├── compose.yml / compose.podman.yml
+├── compose.yml / compose.dev.yml / compose.podman.yml
 ├── Dockerfile
 ├── package.json
 ├── tsconfig.json

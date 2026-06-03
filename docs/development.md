@@ -32,7 +32,7 @@ docker compose exec app npm run gen:api-types
 curl -s http://localhost:3000 | head -20
 ```
 
-`compose.yml` の `app` サービスが `npm run dev` を `command` として持つので、`docker compose up` だけで dev サーバが起動する。dev は `http://localhost:3000` (`env.dev` の `DB_PORTAL_PORTAL_ORIGIN`)。
+`env.dev` が `COMPOSE_FILE=compose.yml:compose.dev.yml` を持つので、`docker compose up` だけで base (production 形) に dev override (source bind-mount + `node_modules` volume + `build.target: dev`) が重なり、`command` の `npm run dev` で dev サーバが起動する。dev は `http://localhost:3000` (`env.dev` の `DB_PORTAL_PORTAL_ORIGIN`)。staging / production 形を手元で確認したいときは `cp env.staging .env` (= `COMPOSE_FILE` 無し) で base のみが load され、image に build を焼いた runtime stage が起動する。
 
 ## 環境ファイル
 
@@ -57,7 +57,8 @@ docker compose up -d --build
 各環境で値が変わる env 変数の一覧 (一部):
 
 - `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV`: 環境識別子 (compose の container_name / image / volume / network 名に展開される)
-- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev`、staging / production は `sh -c "npm run build && npm start"` (起動時に build してから start)
+- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev` (HMR)、staging / production は `tsx server/index.ts`。build と `validate:content` は image build 時に済むので起動時は listen のみ。npm を介さないのは node を PID1 直下に置いて `SIGTERM` を届かせるため (`deployment.md` の「起動と停止」)
+- `COMPOSE_FILE`: dev のみ `compose.yml:compose.dev.yml` を設定し `docker compose` に dev override を自動合成させる。staging / production は未設定 (base のみ、podman は明示 `-f` で `compose.podman.yml` を重ねる)
 - `DB_PORTAL_APP_PORT`: host 側 listen port (環境ごとに異なる)
 - `DB_PORTAL_APP_INTERNAL_PORT`: container 内 listen port (`vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む。dev は 3000)
 - `DB_PORTAL_PORTAL_ORIGIN`: portal 自身の origin (redirect_uri 計算 / `<base>` 等の起点)
@@ -123,7 +124,7 @@ docker compose exec app npm run validate:content
 | `app/lib/api/openapi-types.ts` | 手動で `gen:api-types` 再実行 |
 | `app/content/**/*.content.tsx` | 起動時 eager validate のため、追加・削除は server 再起動 |
 | `package.json` | `docker compose exec app npm install` で再 install |
-| `Dockerfile` / `compose.yml` | `docker compose down -v && docker compose up -d --build` |
+| `Dockerfile` / `compose.yml` / `compose.dev.yml` | `docker compose down -v && docker compose up -d --build` |
 | `env.*` | `.env` を再 cp してから `docker compose down -v && up -d --build` |
 
 `.env` の変更は compose の re-up が必要。`docker compose restart app` だけでは新 env が反映されない場合がある (compose の env 解釈タイミングに依存)。

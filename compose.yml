@@ -5,9 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
     volumes:
-      - .:/app:rw
-      - app-node_modules:/app/node_modules:rw
+      - ./cache:/app/cache:rw
     ports:
       - "${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
     environment:
@@ -49,10 +49,6 @@ services:
     command: ${DB_PORTAL_APP_COMMAND}
     init: true
     networks: [db-portal-network]
-
-volumes:
-  app-node_modules:
-    name: ${DB_PORTAL_PREFIX}-node_modules
 
 networks:
   db-portal-network:

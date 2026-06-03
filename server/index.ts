@@ -79,12 +79,35 @@ if (isProd) {
 
 const servicesMirror = createServicesMirror(env, logger)
 void servicesMirror.init()
-createNewsMirror(env, logger, {
+const newsMirror = createNewsMirror(env, logger, {
   onSourceSynced: servicesMirror.rebuildSource,
-}).mirror.start()
-startHealthMonitor(llmClient, logger).start()
+}).mirror
+newsMirror.start()
+const healthMonitor = startHealthMonitor(llmClient, logger)
+healthMonitor.start()
 
 const port = env.DB_PORTAL_APP_INTERNAL_PORT
-app.listen(port, () => {
+const server = app.listen(port, () => {
   logger.info("server_listening", { port, env: env.DB_PORTAL_ENV })
 })
+
+// Graceful shutdown bounds the deploy swap window: stop background timers, drop
+// idle keep-alive connections, and exit as soon as in-flight requests drain.
+// Long-lived connections (LLM SSE) are cut off after a grace period so stop
+// never waits for the SIGKILL timeout. The empty write flushes the shutdown log
+// (stdout is a pipe) before exiting.
+const SHUTDOWN_GRACE_MS = 3000
+let shuttingDown = false
+const finish = () => process.stdout.write("", () => process.exit(0))
+const shutdown = (signal: NodeJS.Signals) => {
+  if (shuttingDown) return
+  shuttingDown = true
+  logger.info("server_shutdown", { signal })
+  newsMirror.stop()
+  healthMonitor.stop()
+  server.closeIdleConnections()
+  server.close(finish)
+  setTimeout(finish, SHUTDOWN_GRACE_MS).unref()
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"))
+process.on("SIGINT", () => shutdown("SIGINT"))

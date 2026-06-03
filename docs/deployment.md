@@ -10,7 +10,14 @@ production / staging への deploy を **podman + podman-compose による NIG �
 | staging | NIG (podman + podman-compose)、main 追従 | `npm start` (built SSR) |
 | production | NIG (podman + podman-compose)、tag 指定 | `npm start` (built SSR) |
 
-`compose.yml` 1 本で dev / staging / production を扱い、`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めることで、同一ホスト上で 3 環境を衝突なく並列に動かせる。podman 固有の差分は `compose.podman.yml` の override で吸収する (rootless 対応の `userns_mode` / `security_opt`)。
+`compose.yml` を **production 形 (immutable image / source bind-mount なし)** の base とし、`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めることで、同一ホスト上で 3 環境を衝突なく並列に動かせる。base に override を重ねて環境差を吸収する:
+
+| override | 用途 | 載せ方 |
+|---|---|---|
+| `compose.dev.yml` | dev の source bind-mount + `node_modules` volume + HMR (`build.target: dev`) | dev は `env.dev` の `COMPOSE_FILE=compose.yml:compose.dev.yml` で自動合成 (`docker compose` がフラグなしで両方 load) |
+| `compose.podman.yml` | rootless 対応 (`userns_mode: keep-id` / `security_opt`) | staging / production は `podman-compose -f compose.yml -f compose.podman.yml` で明示指定 (dev override は読まない) |
+
+base が production 形なので、staging / production は `compose.dev.yml` を load しない限り source を bind-mount せず、image に焼き込んだ build / `node_modules` をそのまま使う。runtime に書き込むのは mirror cache だけなので、base は `./cache:/app/cache` のみ bind-mount し、deploy をまたいで news / repos / services cache を保持する。
 
 env ファイル (`env.dev` / `env.staging` / `env.production`) は git 管理。production 側の secret は `CHANGE_ME` プレースホルダで commit し、実値は deploy 先 host 上の `.env.<env>.local` を起動時に `.env` に merge して上書きする (`.gitignore` の `.env.*.local` で実値は git に出ない)。
 
@@ -26,7 +33,8 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
    │
    ▼
 [podman: ${DB_PORTAL_PREFIX}-app]
-   │  command: sh -c "npm run build && npm start"  (build → start; npm start = validate:content + tsx server/index.ts)
+   │  build / validate:content は image build 時に済む (runtime stage に build/ を焼き込み)
+   │  command: tsx server/index.ts  (再 build / 再 validate なし)
    │
    ├─ SSR: React Router v7 framework mode (build/server/index.js)
    └─ BFF: Express endpoints
@@ -40,14 +48,22 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
        └─ /robots.txt
 ```
 
-`server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では起動時に build した (`npm run build`) `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。
+`server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では **image build 時に** build した (`Dockerfile` の build stage が `npm run build`) `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。`build/` は image build 時に runtime stage へ焼き込むので、container 起動時に build は走らない。
 
 リバースプロキシ側 (NIG infra) は `X-Forwarded-Proto` / `X-Forwarded-Host` / `X-Forwarded-For` を付与する。Express の `trust proxy` は `loopback` を設定済 (`server/index.ts`)。許可しない上流からの `X-Forwarded-*` は無視される。
+
+## 起動と停止
+
+- production / staging の `command` は `tsx server/index.ts` (npm を介さない)。node が PID1 (`init: true` の tini) の直接の子になり、`SIGTERM` が node に届く (npm を挟むと signal が node に forward されず `SIGKILL` timeout まで延びる)
+- **graceful shutdown**。`server/index.ts` は `SIGTERM` / `SIGINT` で背景 timer (news mirror / LLM health monitor) を止め、idle keep-alive を落とし、in-flight が drain した時点で exit する (`server_shutdown` log)。長命接続 (LLM SSE) は grace 期間内に閉じなければ force-exit
+- reverse proxy の upstream は固定 (NIG infra、portal 側から切替不可) なので、deploy は同一 host port への in-place swap。旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる
+- session は in-memory なので swap で消失する (ユーザは再ログイン)。HTTP 可用性とは別問題
 
 ## リリースフロー
 
 - staging deploy はリリースマネージャが手動で実施する (main 追従)
 - production deploy は git tag (`v<MAJOR>.<MINOR>.<PATCH>` SemVer) を打ってから手動で実施する
+- deploy 手順: host で対象 ref を checkout → `podman-compose -f compose.yml -f compose.podman.yml build` (旧 container は serving 継続) → `up -d --force-recreate app` で swap。具体的な host / path / コマンドは git 管理外の運用メモ
 - session store は in-memory なので、deploy / rollback で消失する (ユーザは再ログイン)
 - News disk cache は schema バージョンを内部に持ち、起動時に互換チェックが入る (`news.md`)。schema 互換性が壊れる変更は別 release note に明記する
 - Rollback は前安定 tag への checkout で行う。staging は main 追従なので、問題のある commit を `git revert` して main に push し直す方が安全 (host 上で `git checkout <prev-commit>` だと main との差分が温存される)
@@ -69,13 +85,12 @@ production の `openapi.json` と portal が知っている型 (`app/lib/api/ope
 
 ## 起動シーケンス
 
-`npm start` (= `validate:content` + `tsx server/index.ts`) で起動。次の順で初期化する:
+production の `command` (= `tsx server/index.ts`) で起動。build と `validate:content` は image build 時に済んでいる (build stage の `npm run build` が `validate:content` → `react-router build` を実行し、1 件でも fail すると image build が **fail-fast**。runtime は同一 image を起動するだけなので再 validate しない)。`validate:content` の対象は `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` の Zod parse と submit-routing カタログ (`app/content/submit-routing/catalog.ts` の `validateSubmitRouting`)。runtime 起動は次の順で初期化する:
 
-1. `validate:content`: `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` を Zod parse し、加えて submit-routing カタログ (`app/content/submit-routing/catalog.ts` の `validateSubmitRouting`) も検証。1 件でも fail すると **exit 1** で起動失敗 (build / runtime 両方で fail-fast)
-2. `server/lib/env.ts` の `parseServerEnv` で env を Zod 検証。必須 env が無いと exit
-3. Express server を listen (`server_listening` log)
-4. News mirror が起動 (`createNewsMirror.mirror.start`): disk cache を即時 load して以降は `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
-5. LLM health monitor が起動: 5 秒後に初回 health check、以降 5 分間隔で polling (`llm.md`)
+1. `server/lib/env.ts` の `parseServerEnv` で env を Zod 検証。必須 env が無いと exit
+2. Express server を listen (`server_listening` log)
+3. News mirror が起動 (`createNewsMirror.mirror.start`): disk cache を即時 load して以降は `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
+4. LLM health monitor が起動: 5 秒後に初回 health check、以降 5 分間隔で polling (`llm.md`)
 
 LLM health monitor が初回 check を打つまでの 5 秒間、`/api/llm/health` は `status: "unset"` を返す (URL 設定有無に関わらず)。News mirror は disk cache を即時 load するので、cache が残っていれば `/api/news` は最初から item を返す。
 
@@ -99,6 +114,7 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 | Event | level | 意味 |
 |---|---|---|
 | `server_listening` | info | server 起動完了 |
+| `server_shutdown` | info | `SIGTERM` / `SIGINT` 受信、in-flight を drain して終了 (deploy swap 時刻の突合に使う) |
 | `auth_login_success` | info | OIDC code 交換が成功し session 発行 |
 | `auth_callback_invalid_state` | warn | callback の `state` が pending store に無い (replay / CSRF) |
 | `auth_callback_invalid_id_token` | warn | `id_token` の payload 検証に失敗 |
@@ -188,7 +204,7 @@ mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。portal は id_token のみを保持し token refresh フローを持たないため (`auth.md`)、session 期限切れ・portal 再起動・Keycloak SSO session idle 超過のいずれでも単に session が破棄されて `401` になる。これは仕様。
 
 - 「思ったより早く切れる」: `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` env で延長 (例 7200 = 2h)。Keycloak の `Client Session Idle` も同時に揃えること (短い方で実効 TTL が決まるため)
-- 「すべての user が同時に切れた」: server が再起動したため (in-memory session、永続化なし)。deploy timing と log の `server_listening` 時刻を突合
+- 「すべての user が同時に切れた」: server が再起動したため (in-memory session、永続化なし)。deploy timing と log の `server_shutdown` / `server_listening` 時刻を突合
 
 ### disk cache 容量
 

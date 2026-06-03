@@ -1,0 +1,14 @@
+# Override layered on top of compose.yml for local development.
+# env.dev sets COMPOSE_FILE=compose.yml:compose.dev.yml so `docker compose up`
+# composes both files; staging / production load only the base.
+services:
+  app:
+    build:
+      target: dev
+    volumes:
+      - .:/app:rw
+      - app-node_modules:/app/node_modules:rw
+
+volumes:
+  app-node_modules:
+    name: ${DB_PORTAL_PREFIX}-node_modules
