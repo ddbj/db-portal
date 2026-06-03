@@ -1,5 +1,5 @@
 import type { DatabaseContent } from "~/schemas/content/database-content"
-import { Callout, TextLink } from "~/ui"
+import { Callout, Heading, TextLink } from "~/ui"
 
 export default {
   slug: "biosample",
@@ -12,7 +12,7 @@ export default {
     ja: (
       <div className="flex flex-col gap-section-md">
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">BioSample とは</h2>
+          <Heading as="h2" bar className="mb-3">BioSample とは</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             BioSample は、DDBJ の一次データベース (DRA / DDBJ Annotated / GEA など) に登録された実験データの
             出典となる生物学的試料の情報をまとめるデータベースです。
@@ -27,7 +27,7 @@ export default {
           で実験データの種別を選ぶと、BioSample を含む登録経路が自動で組み立てられます。
         </Callout>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">アクセッション番号と package</h2>
+          <Heading as="h2" bar className="mb-3">アクセッション番号と package</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             DDBJ BioSample では各試料に
             {" "}
@@ -39,7 +39,7 @@ export default {
           </p>
         </section>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">国際的な共有</h2>
+          <Heading as="h2" bar className="mb-3">国際的な共有</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             登録された BioSample は、DDBJ・EBI・NCBI の各 BioSample データベース間で双方向に共有されます。
             つまり一度 DDBJ に登録した試料情報は、他センターの一次データベースからも参照可能です。
@@ -50,7 +50,7 @@ export default {
     en: (
       <div className="flex flex-col gap-section-md">
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">What BioSample captures</h2>
+          <Heading as="h2" bar className="mb-3">What BioSample captures</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             BioSample is the central place where descriptive information about the biological
             material used to generate experimental data in DDBJ&apos;s primary archives (DRA, DDBJ
@@ -67,7 +67,7 @@ export default {
           when needed.
         </Callout>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">Accession prefix and packages</h2>
+          <Heading as="h2" bar className="mb-3">Accession prefix and packages</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             DDBJ BioSample issues accessions prefixed with
             {" "}
@@ -77,7 +77,7 @@ export default {
           </p>
         </section>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">International exchange</h2>
+          <Heading as="h2" bar className="mb-3">International exchange</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             All sample information held by DDBJ, EBI, and NCBI BioSample databases is shared
             bidirectionally. A sample you submit to DDBJ is therefore reachable from the primary

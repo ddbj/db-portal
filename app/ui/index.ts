@@ -11,6 +11,7 @@ export { FacetRow } from "./facet-row"
 export { FmtCheck } from "./fmt-check"
 export { FmtRadio } from "./fmt-radio"
 export { FormGroup } from "./form-group"
+export { Heading } from "./heading"
 export { IconButton } from "./icon-button"
 export {
   AlertIcon,

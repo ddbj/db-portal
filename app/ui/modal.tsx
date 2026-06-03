@@ -2,6 +2,7 @@ import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react"
 import { useEffect, useRef } from "react"
 
 import { cn } from "./cn"
+import { Heading } from "./heading"
 import { IconButton } from "./icon-button"
 import { CloseIcon } from "./icons"
 
@@ -167,12 +168,9 @@ export const ModalHeader = ({
           )}
         </div>
       )}
-      <TitleTag
-        id={titleId}
-        className="text-fs-h2 font-bold text-ink m-0 leading-tight"
-      >
+      <Heading as={TitleTag} size="h2" id={titleId}>
         {title}
-      </TitleTag>
+      </Heading>
       {description !== undefined && (
         <p className="text-fs-label text-ink-mid mt-1 leading-relaxed">
           {description}

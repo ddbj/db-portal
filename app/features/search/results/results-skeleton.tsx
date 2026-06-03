@@ -1,5 +1,5 @@
 import { useT } from "~/lib/i18n"
-import { cn } from "~/ui"
+import { cn, Heading } from "~/ui"
 
 import type { DbSlug } from "../types"
 import { CARD_ORDER } from "./cross-results"
@@ -20,7 +20,7 @@ const SkeletonCard = ({ db }: { db: DbSlug }) => {
       data-testid="db-card-skeleton"
       className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3"
     >
-      <h3 className="text-fs-h2 font-bold text-ink m-0">{t(`search.scope.${db}`)}</h3>
+      <Heading as="h3" size="h2">{t(`search.scope.${db}`)}</Heading>
       <Bar className="h-7 w-24" />
       <div className="border-t border-border-soft pt-3 flex flex-col gap-2">
         <Bar className="h-3 w-1/2" />

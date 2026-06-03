@@ -1,6 +1,6 @@
 import { useLang } from "~/lib/i18n"
 import type { FileEntry, FileTypeKind, FlowStep } from "~/schemas/submit"
-import { AlertIcon, Button, Callout, cn, Tag } from "~/ui"
+import { AlertIcon, Button, Callout, cn, Heading, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
@@ -83,9 +83,9 @@ export const FlowStepCard = ({
     >
       <header className="flex items-center gap-2 flex-wrap">
         <StepBadge index={index} pending={hasWarningOrError} />
-        <h3 className="text-fs-h2 font-bold text-ink m-0 leading-tight flex-1 min-w-0">
+        <Heading as="h3" size="h2" className="flex-1 min-w-0">
           {serviceTitle}
-        </h3>
+        </Heading>
         <Tag>{roleLabel}</Tag>
         {hasWarningOrError && (
           <Tag kind="status" tone="warning">{noteKindLabel("warning")}</Tag>

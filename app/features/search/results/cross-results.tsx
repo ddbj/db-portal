@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
 import { useT } from "~/lib/i18n"
-import { Button, ExternalIcon, Label, TextLink } from "~/ui"
+import { Button, ExternalIcon, Heading, Label, TextLink } from "~/ui"
 
 import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
@@ -63,7 +63,7 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
       className="rounded-card border border-border-soft bg-surface p-4 flex flex-col gap-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <h3 className="text-fs-h2 font-bold text-ink m-0">{t(`search.scope.${db}`)}</h3>
+        <Heading as="h3" size="h2">{t(`search.scope.${db}`)}</Heading>
         <span className="shrink-0 whitespace-nowrap">
           <TextLink to={href} arrow>
             {t("search.results.cross.viewAll")}

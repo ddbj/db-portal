@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
 import type { DbSlug } from "~/lib/search-scope"
-import { Button, cn, Examples, SearchBox, StableLabel } from "~/ui"
+import { Button, cn, Examples, Heading, SearchBox, StableLabel } from "~/ui"
 
 import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
 import {
@@ -229,7 +229,7 @@ export const SearchInputPanel = ({
               <span key={key} className="inline-flex items-center gap-1.5 leading-none">
                 <kbd
                   className={cn(
-                    "rounded border px-1.5 py-0.5 font-mono text-fs-meta not-italic leading-none",
+                    "rounded-tag border px-1.5 py-0.5 font-mono text-fs-meta not-italic leading-none",
                     keywordInvalid
                       ? "border-warn-border bg-warn-bg text-warn-fg"
                       : "border-border-soft bg-surface-subtle text-ink-mid",
@@ -264,9 +264,9 @@ export const SearchInputPanel = ({
           aria-labelledby={proposalHeadingId}
           className="rounded-card border border-border-soft bg-surface p-3 flex flex-col gap-2.5 overflow-hidden"
         >
-          <h2 id={proposalHeadingId} className="m-0 text-fs-h3 font-bold text-ink">
+          <Heading as="h2" size="h3" id={proposalHeadingId}>
             {t("search.assistant.proposalHeading")}
-          </h2>
+          </Heading>
           <ProposalConditions node={stream.proposal} />
           <div className="flex flex-wrap justify-end gap-2">
             <Button

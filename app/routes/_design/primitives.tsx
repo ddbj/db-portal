@@ -14,6 +14,7 @@ import {
   FmtCheck,
   FmtRadio,
   FormGroup,
+  Heading,
   IconButton,
   Label,
   LinkCard,
@@ -155,6 +156,9 @@ const HeadingGallery = () => (
     <SidebarHeading action={<TextLink to="#">編集</TextLink>}>
       SidebarHeading with action
     </SidebarHeading>
+    <Heading bar>Heading (bar, fs-h2) — 本文 / content のセクション見出し</Heading>
+    <Heading>Heading (no bar, fs-h2) — modal / card title</Heading>
+    <Heading size="h3">Heading (no bar, fs-h3) — 小さめ panel 見出し</Heading>
     <SidebarGroupLabel>SIDEBAR GROUP LABEL</SidebarGroupLabel>
     <SidebarGroupLabel action={<TextLink to="#">解除</TextLink>}>
       WITH ACTION

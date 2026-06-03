@@ -52,7 +52,7 @@ export const InfoHint = ({ label, ariaLabel }: InfoHintProps) => {
         onBlur={() => setHovered(false)}
         onClick={() => setPinned((p) => !p)}
         className={cn(
-          "inline-flex items-center justify-center rounded-full cursor-help leading-none",
+          "inline-flex items-center justify-center rounded-pill cursor-help leading-none",
           open ? "text-brand" : "text-ink-soft hover:text-brand",
         )}
       >

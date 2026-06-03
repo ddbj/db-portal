@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
-import { createElement } from "react"
 
 import { cn } from "./cn"
+import { Heading } from "./heading"
 
 type SidebarHeadingProps = {
   children: ReactNode
@@ -24,15 +24,9 @@ export const SidebarHeading = ({
       withDivider && "border-b border-border-soft py-2.5 min-h-heading-row",
     )}
   >
-    {createElement(
-      as,
-      {
-        id,
-        className:
-          "text-fs-h3 font-bold text-ink m-0 tracking-h3 leading-tight pl-2.5 border-l-[3px] border-brand",
-      },
-      children,
-    )}
+    <Heading as={as} size="h3" bar id={id}>
+      {children}
+    </Heading>
     {action}
   </div>
 )

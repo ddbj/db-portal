@@ -1,5 +1,5 @@
 import type { DatabaseContent } from "~/schemas/content/database-content"
-import { Callout, TextLink } from "~/ui"
+import { Callout, Heading, TextLink } from "~/ui"
 
 export default {
   slug: "bioproject",
@@ -12,7 +12,7 @@ export default {
     ja: (
       <div className="flex flex-col gap-section-md">
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">BioProject とは</h2>
+          <Heading as="h2" bar className="mb-3">BioProject とは</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             BioProject は、研究プロジェクト単位でデータをまとめるためのメタデータデータベースです。
             個々の配列データや試料情報は、対応する BioProject アクセッション番号を参照することで、
@@ -27,7 +27,7 @@ export default {
           から、登録対象のファイル種別に合わせた手順を確認できます。
         </Callout>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">アクセッション番号</h2>
+          <Heading as="h2" bar className="mb-3">アクセッション番号</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             DDBJ BioProject では、登録された各プロジェクトに対して
             {" "}
@@ -38,7 +38,7 @@ export default {
           </p>
         </section>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">国際的な共有</h2>
+          <Heading as="h2" bar className="mb-3">国際的な共有</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             公開された BioProject のメタデータは、INSDC (International Nucleotide Sequence Database
             Collaboration) のメンバーである EBI および NCBI と継続的に交換されます。
@@ -50,7 +50,7 @@ export default {
     en: (
       <div className="flex flex-col gap-section-md">
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">What BioProject organises</h2>
+          <Heading as="h2" bar className="mb-3">What BioProject organises</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             BioProject is a metadata database that organises data per research project. Individual
             sequence records and sample metadata can be grouped together by referring to the same
@@ -65,7 +65,7 @@ export default {
           to see the registration path tailored to the file types you plan to deposit.
         </Callout>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">Accession prefix</h2>
+          <Heading as="h2" bar className="mb-3">Accession prefix</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             DDBJ BioProject issues accession numbers prefixed with
             {" "}
@@ -75,7 +75,7 @@ export default {
           </p>
         </section>
         <section>
-          <h2 className="text-fs-h2 font-bold text-ink m-0 mb-3">International exchange</h2>
+          <Heading as="h2" bar className="mb-3">International exchange</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             Published BioProject metadata is continuously exchanged with EBI and NCBI as members of
             INSDC (International Nucleotide Sequence Database Collaboration). The portal&apos;s

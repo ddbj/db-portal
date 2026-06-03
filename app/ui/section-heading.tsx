@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { createElement } from "react"
+
+import { Heading } from "./heading"
 
 type SectionHeadingProps = {
   children: ReactNode
@@ -23,15 +24,9 @@ export const SectionHeading = ({
   <div className="flex flex-col gap-1.5 mb-3">
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-2.5 min-w-0">
-        {createElement(
-          as,
-          {
-            id,
-            className:
-              "text-fs-h2 font-bold text-ink m-0 pl-2.5 border-l-[3px] border-brand leading-tight",
-          },
-          children,
-        )}
+        <Heading as={as} size="h2" bar id={id}>
+          {children}
+        </Heading>
         {count !== undefined && (
           <span className="text-fs-label text-ink-soft">
             {count}{countSuffix === undefined || countSuffix === "" ? "" : ` ${countSuffix}`}

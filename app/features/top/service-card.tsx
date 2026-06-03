@@ -1,6 +1,6 @@
 import type { Lang } from "~/lib/i18n"
 import type { ServiceContent } from "~/schemas/content/service-content"
-import { ExternalIcon, LinkCard } from "~/ui"
+import { ExternalIcon, Heading, LinkCard } from "~/ui"
 
 import { ServiceIcon } from "./service-icon"
 
@@ -21,12 +21,12 @@ export const ServiceCard = ({ service, lang }: ServiceCardProps) => {
         <ServiceIcon id={service.id} size={30} />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-fs-h2 font-bold text-ink m-0 flex items-center gap-1.5">
+        <Heading as="h3" size="h2" className="flex items-center gap-1.5">
           <span className="min-w-0">{title}</span>
           {link.kind === "external" && (
             <ExternalIcon size={12} className="text-ink-soft" />
           )}
-        </h3>
+        </Heading>
         <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed mt-1">{description}</p>
       </div>
     </div>
