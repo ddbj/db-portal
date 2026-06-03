@@ -184,27 +184,6 @@ describe("NotificationBar", () => {
     expect(screen.queryByRole("region")).toBeNull()
   })
 
-  test("NotificationBar_expiredFeatured_isFilteredOut", async () => {
-    const expired: NewsList = [
-      {
-        id: "expired-1",
-        source: "ddbj",
-        category: "announcement",
-        featured: true,
-        publishedAt: "2026-05-23T12:00:00Z",
-        retireTime: "2026-05-24T12:00:00Z",
-        title: { ja: "期限切れ", en: "Expired" },
-        db: [],
-        rawTags: { ja: ["お知らせ"], en: ["Announcement"] },
-      },
-    ]
-    server.use(http.get("*/api/news", () => HttpResponse.json(expired)))
-    const { container } = renderBar()
-    await waitFor(() => {
-      expect(container.textContent).toBe("")
-    })
-  })
-
   test("NotificationBar_nonFeaturedItem_isFilteredOut", async () => {
     server.use(http.get("*/api/news", () =>
       HttpResponse.json([release1])),

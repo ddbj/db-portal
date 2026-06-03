@@ -105,7 +105,6 @@ describe("toNewsItem", () => {
     fm: {
       title: "ja タイトル",
       date: "2024-01-02T00:00:00+09:00",
-      retire_time: "2024-02-02T00:00:00+09:00",
       db: ["ddbj"],
       tags: ["データ公開"],
     },
@@ -132,7 +131,6 @@ describe("toNewsItem", () => {
     expect(item?.featured).toBe(false)
     expect(item?.url?.ja).toContain("/news/ja/2024-01-02.html")
     expect(item?.url?.en).toContain("/news/en/2024-01-02-e.html")
-    expect(item?.retireTime).toBe("2024-02-02T00:00:00+09:00")
   })
 
   test("toNewsItem_bothMissing_returnsUndefined", () => {

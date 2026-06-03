@@ -42,7 +42,6 @@ const newsItem = (o: {
   category?: NewsCat
   source?: "ddbj" | "dbcls"
   featured?: boolean
-  retireTime?: string
   title?: { ja: string; en: string }
 }): Record<string, unknown> => ({
   id: o.id,
@@ -50,7 +49,6 @@ const newsItem = (o: {
   category: o.category ?? "announcement",
   featured: o.featured ?? false,
   publishedAt: o.publishedAt,
-  ...(o.retireTime ? { retireTime: o.retireTime } : {}),
   title: o.title ?? { ja: `お知らせ ${o.id}`, en: `News ${o.id}` },
   db: [],
   rawTags: { ja: [], en: [] },
@@ -210,7 +208,6 @@ test.describe("News Domain", () => {
   test("S-NEWS-06: featured が mirror → global.yml → NotificationBar まで貫通する", async ({ page }) => {
     type ApiNewsItem = {
       featured?: boolean
-      retireTime?: string
       publishedAt: string
       title: { ja?: string; en?: string }
     }
@@ -218,10 +215,7 @@ test.describe("News Domain", () => {
     expect(res.status()).toBe(200)
     const items = (await res.json()) as ApiNewsItem[]
 
-    const now = Date.now()
-    const featured = items
-      .filter((n) => n.featured === true)
-      .filter((n) => !n.retireTime || Date.parse(n.retireTime) > now)
+    const featured = items.filter((n) => n.featured === true)
 
     const expectedTitles = [...featured]
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))

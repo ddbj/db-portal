@@ -34,7 +34,6 @@ export const NewsItem = z.object({
   category: NewsCategory,
   featured: z.boolean().default(false),
   publishedAt: z.string().datetime({ offset: true }),
-  retireTime: z.string().datetime({ offset: true }).optional(),
   title: langString,
   summary: langString.optional(),
   url: langOptionalUrl.optional(),

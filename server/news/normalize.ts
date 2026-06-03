@@ -50,7 +50,6 @@ export const isNewsCategory = (value: string): value is NewsCategory =>
 export type FrontMatter = {
   title?: string
   date?: string
-  retire_time?: string
   category?: string
   db?: string[]
   tags?: string[]
@@ -233,9 +232,6 @@ export const toNewsItem = (
     ?? toIsoDatetime(ja?.fm.date)
     ?? cfg.publishedAtFromSlug?.(slug)
   if (!publishedAt) return undefined
-  const retireTime = toIsoDatetime(primary.fm.retire_time)
-    ?? toIsoDatetime(en?.fm.retire_time)
-    ?? toIsoDatetime(ja?.fm.retire_time)
   const jaTags = ja?.fm.tags ?? []
   const enTags = en?.fm.tags ?? []
   const category = tagsToCategory(cfg.source, [...jaTags, ...enTags])
@@ -259,7 +255,6 @@ export const toNewsItem = (
     category,
     featured,
     publishedAt,
-    ...(retireTime ? { retireTime } : {}),
     title: {
       ja: stripHtmlTags(ja?.fm.title ?? ""),
       en: stripHtmlTags(en?.fm.title ?? ""),

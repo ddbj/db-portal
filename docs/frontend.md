@@ -225,7 +225,6 @@ returnTo はクライアントから渡す。`buildLoginUrl(returnTo?)` / `build
 **トップページ (`pathname === "/"`) のみ** で render し、`/api/news` の news のうち次を満たすものを表示する:
 
 - `featured === true` (featured whitelist で marked、`news.md`)
-- `retireTime` が無いか現在時刻が `retireTime` 未満
 - その session で dismiss 済みでない
 
 #### 順序

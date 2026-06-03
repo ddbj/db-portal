@@ -96,7 +96,7 @@ front matter の `tags` で使われている実値:
 
 ### 写像ルール
 
-ja / en の `rawTags` を結合し、各 tag を `trim.toLowerCase` 正規化して source 別 mapping 表を first-match で引き、マッチが無ければ `other` (default fallback) を採る (`server/news/normalize.ts`)。`retireTime` を過ぎた item の `category` は変えない (NotificationBar 側で `featured && retireTime > now` を見て表示から外す)。source 側で新しい tag が追加されたら `other` に落ちる (UI を壊さない)。
+ja / en の `rawTags` を結合し、各 tag を `trim.toLowerCase` 正規化して source 別 mapping 表を first-match で引き、マッチが無ければ `other` (default fallback) を採る (`server/news/normalize.ts`)。source 側で新しい tag が追加されたら `other` に落ちる (UI を壊さない)。
 
 ## facet 設計
 
@@ -175,7 +175,7 @@ git clone / pull は GitHub の git protocol HTTPS 経由で行う。REST API ra
 
 | ファイル | 内容 |
 |---|---|
-| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像、url 組み立て、retire_time 解析、`published: false` 除外 |
+| `tests/unit/server/news/normalize.test.ts` | front matter parse、tag → NewsCategory 写像、url 組み立て、`published: false` 除外 |
 | `tests/unit/server/news/cache.test.ts` | disk load (file 不在 / 破損 / schema 不一致) → 空 cache、`replaceItemsForSource` で他 source の items を保持しつつ差し替え、filter (category / source / year / service / lang) |
 | `tests/unit/server/news/pair.test.ts` | ja のみ / en のみ / 両方ある場合の slug ペアリング |
 | `tests/unit/server/news/featured.test.ts` | `global.yml` parser: 正常 / 末尾空白 / 空 array / 不在 / malformed YAML / `path` が non-string / BOM 付きの 7 ケース |

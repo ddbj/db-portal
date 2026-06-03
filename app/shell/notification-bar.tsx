@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router"
 
-import { fetchNews, type NewsItem, newsItemTitle, newsItemUrl } from "~/lib/api/news"
+import { fetchNews, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
 
@@ -32,13 +32,6 @@ const writeDismissed = (ids: readonly string[]): void => {
   }
 }
 
-const isActiveFeatured = (n: NewsItem, now: number): boolean => {
-  if (!n.featured) return false
-  if (!n.retireTime) return true
-
-  return Date.parse(n.retireTime) > now
-}
-
 export const NotificationBar = () => {
   const t = useT()
   const lang = useLang()
@@ -60,9 +53,8 @@ export const NotificationBar = () => {
   if (!isTopPath(pathname)) return null
   if (query.isError || !query.data) return null
 
-  const now = Date.now()
   const visible = query.data
-    .filter((n) => isActiveFeatured(n, now))
+    .filter((n) => n.featured)
     .filter((n) => !hydrated || !dismissed.includes(n.id))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
 

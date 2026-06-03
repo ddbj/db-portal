@@ -499,7 +499,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - ページ上部に `section[role="region"][aria-label="重要なお知らせ"]` が描画される
   - その中に featured item ごとの `article[aria-label="<title>"]` が `publishedAt` 降順 (新しい順) に縦 stack される
   - 各 article に「重要」critical Tag、`publishedAt` の日付、title、`external` の「詳細」TextLink (`newsItemUrl` が `url[lang] ?? url.ja ?? url.en` で URL を解決できる場合に表示)、「通知を閉じる」IconButton が含まれる
-  - `featured===false` の item や `retireTime` 経過済の item は描画されない
+  - `featured===false` の item は描画されない
 - **備考**: fixture 固定で featured 2 件を保証する (データ依存 skip なし)。featured 0 件時に bar が描画されないこと、および実 mirror → global.yml → bar の貫通は S-NEWS-06 が担保する。
 
 ### S-NEWS-04: トップ右 aside に最新ニュースと「すべて見る」リンク
@@ -532,12 +532,12 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-NEWS-06: featured が mirror → global.yml → NotificationBar まで貫通する
 
 - **ペルソナ**: P-ANON
-- **前提**: staging の ddbj/www mirror が同期済で、`top_news` whitelist に該当する未 retire の item が存在する
+- **前提**: staging の ddbj/www mirror が同期済で、`top_news` whitelist に該当する item が存在する
 - **手順**:
   1. `GET /api/news?lang=ja` を直接叩き、`featured===true` の item 集合とその title / publishedAt を取得する
   2. `/` を開く
 - **期待**:
-  - NotificationBar (`section[role="region"][aria-label="重要なお知らせ"]`) 内の `article[aria-label]` の title 集合が、手順 1 で得た featured item (retireTime 未経過分) の title 集合と一致する
+  - NotificationBar (`section[role="region"][aria-label="重要なお知らせ"]`) 内の `article[aria-label]` の title 集合が、手順 1 で得た featured item の title 集合と一致する
   - bar の並び順が `publishedAt` 降順である
   - featured 化されていない同名 title が `/news` の通常 row としてのみ現れ、NotificationBar には出ない (featured と category が独立軸であることの確認)
 - **備考**: git mirror + normalize + pairing + `featured.ts` の whitelist 突合という統合経路を検証する。news ドメインで唯一 `/api/news` を mock しない実データシナリオ。whitelist 該当 featured が 0 件の期間も skip せず、その場合は「NotificationBar が描画されない」ことを貫通の一部として assert する。
