@@ -22,6 +22,7 @@ cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` 
 - スペース区切り (`cancer mouse`) → AND (全語を含む)。`keywordOperator` とは無関係 (ddbj-search-api の DSL 文法が値内空白を AND 連結する)
 - カンマ区切り (`cancer,mouse`) → OR (いずれかに一致)。`keywordOperator` の default
 - クオート (`"Homo sapiens"`) → phrase 一致 (順序保持)
+- 末尾の語 (bare word) は前方一致でも拾う (`Huma` → `Human`、`Homo sap` → `Homo sapiens`)。クオートした phrase には掛からない (ddbj-search-api `compile_free_text` が末尾トークンを `phrase_prefix` に展開する)
 - DSL 内の明示的 `AND` / `OR` / `NOT` は `keywordOperator` と無関係
 
 キーワードボックスは **自由文** (スペース / カンマ / クオート) として案内する。ddbj-search-api の文法は `field:value` (allowlist 制の Tier 1/2/3 フィールド) も解釈するが、portal の UI ではこれを宣伝しない。フィールドを限定した検索は Advanced builder の役割で、キーワードボックスは「おもな項目の全文検索」 に徹する。不明フィールド (`organism:` 等) や解釈できない構文を入れると `/db-portal/parse` が 400 を返すので、その入力はキーワードボックスを invalid 表示にして知らせる ([§ parse の失敗](#parse-の失敗))。
