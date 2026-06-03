@@ -1,8 +1,16 @@
+import type { Page } from "@playwright/test"
+
 import { expect, test } from "./helpers"
+
+// /services は外部 mirror 由来の全件 list を SSR するため full load が遅く、
+// waitUntil:"load" だと staging で navigation が ERR_ABORTED になりやすい。DOM 構築
+// 時点で進め、以降の toBeVisible polling で実コンテンツの描画を待つ。
+const gotoServices = (page: Page) =>
+  page.goto("/services", { waitUntil: "domcontentloaded" })
 
 test.describe("Services Domain", () => {
   test("S-SERVICES-01: /services で一覧表示と facet group", async ({ page }) => {
-    await page.goto("/services")
+    await gotoServices(page)
 
     await expect(
       page.getByRole("heading", { name: /サービス|Services/i, level: 1 }),
@@ -25,7 +33,7 @@ test.describe("Services Domain", () => {
   })
 
   test("S-SERVICES-02: facet で絞り込み、URL に反映", async ({ page }) => {
-    await page.goto("/services")
+    await gotoServices(page)
 
     const facetPanel = page.getByRole("region", { name: /絞り込み|Refine/i })
     await expect(facetPanel).toBeVisible({ timeout: 15_000 })
@@ -95,7 +103,7 @@ test.describe("Services Domain", () => {
         body: "[]",
       }),
     )
-    await page.goto("/services")
+    await gotoServices(page)
 
     // 一覧 0 件でも h1 が描画される
     await expect(

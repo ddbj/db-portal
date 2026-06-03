@@ -6,7 +6,7 @@ import { expect, test } from "./helpers"
 // label + sub の連結になる。識別は部分一致 (regex) で行う。
 const Q1_PUBLIC = /公開データの登録/
 const Q1_RESTRICTED = /制限公開データを含む登録/
-const Q1_THIRD = /第三者データの解析登録/
+const Q1_THIRD = /第三者による解析結果の登録/
 // "ヒト" は "ヒト以外の真核生物" の前方一致になるため sub 文言で曖昧さを排除する。
 const Q2_HUMAN = /ヒト個人由来のデータ/
 const Q2_EUKARYOTE = /ヒト以外の真核生物/
@@ -46,7 +46,7 @@ test.describe("Submit Domain", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "登録ナビゲーション" }),
     ).toBeVisible()
-    await expect(page.getByRole("heading", { name: "登録するデータの種類" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "登録データ種別" })).toBeVisible()
 
     await expect(
       page.getByRole("radiogroup", { name: "登録種別" }).getByRole("radio", { name: Q1_PUBLIC }),
