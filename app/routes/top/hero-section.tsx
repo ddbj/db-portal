@@ -51,7 +51,7 @@ export const HeroSection = () => {
   const handleGenerated = async (ast: ParseNode, generatedDb: DbSlug | null) => {
     search.begin()
     try {
-      const dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl })
+      const dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: generatedDb })
       navigate(buildResultsHref({ q: dsl, db: generatedDb }))
     } catch {
       // Serialize is a system-side failure; stay on the top page.
