@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react"
 
 import type { ParseNode } from "~/lib/api"
 import { useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { Button, Examples, SearchBox } from "~/ui"
 
 import { useAssistantStream, useLlmAvailability } from "../assistant"
@@ -25,8 +26,12 @@ export type NavigableSearchInputProps = {
   // The current full query (keyword + facets + structured), sent as `current`
   // so append folds the request into it. Undefined / empty disables append.
   appendCurrentAst?: ParseNode | undefined
-  // Hand off the validated AST (the caller serializes it and navigates).
-  onGenerated: (ast: ParseNode, mode: AiMode) => void
+  // The locked single-DB scope (per-DB results page): generation stays in this DB
+  // (new and append). Undefined on top / cross, where the BFF derives the DB.
+  lockedDb?: DbSlug | undefined
+  // Hand off the validated AST + resolved DB (locked or derived; null = cross).
+  // The caller serializes the AST and navigates to that scope.
+  onGenerated: (ast: ParseNode, mode: AiMode, db: DbSlug | null) => void
   // Hide the example chip row (results pages omit it). Defaults to shown.
   showExamples?: boolean
   // Rendered at the right end of the example chip row so it shares the line with
@@ -56,6 +61,7 @@ export const NavigableSearchInput = ({
   invalid = false,
   allowAppend,
   appendCurrentAst,
+  lockedDb,
   onGenerated,
   showExamples = true,
   examplesTrailing,
@@ -79,8 +85,8 @@ export const NavigableSearchInput = ({
     && !isIdentityAst(appendCurrentAst)
   const effectiveAiMode: AiMode = canAppend ? aiMode : "new"
 
-  const stream = useAssistantStream(undefined, (ast) => {
-    onGenerated(ast, pendingModeRef.current)
+  const stream = useAssistantStream(undefined, (ast, db) => {
+    onGenerated(ast, pendingModeRef.current, db)
     setAiInput("")
     setMode("keyword")
   })
@@ -127,6 +133,7 @@ export const NavigableSearchInput = ({
       void stream.start(value, {
         mode: effectiveAiMode,
         current: effectiveAiMode === "append" ? appendCurrentAst : undefined,
+        db: lockedDb,
       })
     } else {
       onSearch(value)

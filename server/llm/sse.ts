@@ -13,9 +13,13 @@ const VllmStreamChunkSchema = z.object({
   ).optional(),
 }).passthrough()
 
+// The search assistant never streams raw model output (no `message` event): the
+// BFF accumulates the completion server-side and emits only a validated `done` or
+// an `error`, so a prompt injection cannot turn the endpoint into an open LLM
+// proxy (docs/llm.md § プロンプトインジェクション対策). Heartbeats keep the
+// connection alive during generation.
 export type SseStream = {
   start: () => void
-  message: (data: string) => void
   done: (data: string) => void
   error: (code: string, message: string) => void
   close: () => void
@@ -68,7 +72,6 @@ export const openSseStream = (res: Response): SseStream => {
       writeRaw(": stream-open\n\n")
       startHeartbeat()
     },
-    message: (data: string) => writeEvent("message", data),
     done: (data: string) => writeEvent("done", data),
     error: (code: string, message: string) => writeEvent("error", JSON.stringify({ code, message })),
     close: () => {

@@ -47,6 +47,7 @@ const handleBotRequest = (
         },
         onError(error: unknown) {
           responseStatusCode = 500
+          // eslint-disable-next-line no-console -- last-resort SSR render error logging at the framework boundary; app/ cannot import the server logger (import zone)
           if (shellRendered) console.error(error)
         },
       },
@@ -82,6 +83,7 @@ const handleBrowserRequest = (
         },
         onError(error: unknown) {
           responseStatusCode = 500
+          // eslint-disable-next-line no-console -- last-resort SSR render error logging at the framework boundary; app/ cannot import the server logger (import zone)
           if (shellRendered) console.error(error)
         },
       },

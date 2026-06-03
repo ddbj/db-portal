@@ -1,6 +1,6 @@
+import { useLang } from "~/lib/i18n"
 import type { FileEntry, FileTypeKind, FlowStep } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, Tag } from "~/ui"
-import { useLang } from "~/lib/i18n"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"

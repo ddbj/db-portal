@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react"
 
 import { buildRequestInit, joinUrl, type ParseNode } from "~/lib/api"
+import { type DbSlug, isDbSlug } from "~/lib/search-scope"
 
 const ASSISTANT_PATH = "/api/llm/search-assistant"
 
@@ -24,6 +25,9 @@ export type AssistantStartOptions = {
   // The current builder AST, sent in append mode so the model folds the new
   // request into it (the BFF serializes it to DSL for the prompt).
   current?: ParseNode | undefined
+  // The locked single-DB scope (per-DB results page). Absent on top / cross-search,
+  // where the BFF derives the DB from the generated DSL and returns it in `done`.
+  db?: DbSlug | undefined
 }
 
 export type AssistantState = "idle" | "streaming" | "done" | "error"
@@ -31,6 +35,8 @@ export type AssistantState = "idle" | "streaming" | "done" | "error"
 export type AssistantStreamResult = {
   state: AssistantState
   proposal: ParseNode | null
+  // The DB the proposal resolved to (locked or derived); null = cross-database.
+  proposalDb: DbSlug | null
   start: (input: string, options?: AssistantStartOptions) => Promise<void>
   stop: () => void
   reset: () => void
@@ -39,6 +45,17 @@ export type AssistantStreamResult = {
 const isParseNode = (value: unknown): value is ParseNode =>
   typeof value === "object" && value !== null
   && typeof (value as { op?: unknown }).op === "string"
+
+// `done` carries { ast, db }: the validated AST plus the resolved DB slug (or
+// null for cross). Tolerate a bare AST for forward/backward safety.
+const parseDonePayload = (raw: unknown): { ast: ParseNode; db: DbSlug | null } | null => {
+  if (isParseNode(raw)) return { ast: raw, db: null }
+  if (typeof raw !== "object" || raw === null) return null
+  const { ast, db } = raw as { ast?: unknown; db?: unknown }
+  if (!isParseNode(ast)) return null
+
+  return { ast, db: typeof db === "string" && isDbSlug(db) ? db : null }
+}
 
 const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
   const events: { event: string; data: string }[] = []
@@ -63,10 +80,11 @@ const parseSseEvents = (chunk: string): { event: string; data: string }[] => {
 // a ref so a fresh closure each render never staleness-traps the stream loop.
 export const useAssistantStream = (
   baseUrl?: string,
-  onDone?: (ast: ParseNode) => void,
+  onDone?: (ast: ParseNode, db: DbSlug | null) => void,
 ): AssistantStreamResult => {
   const [state, setState] = useState<AssistantState>("idle")
   const [proposal, setProposal] = useState<ParseNode | null>(null)
+  const [proposalDb, setProposalDb] = useState<DbSlug | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
@@ -81,6 +99,7 @@ export const useAssistantStream = (
     controllerRef.current?.abort()
     controllerRef.current = null
     setProposal(null)
+    setProposalDb(null)
     setState("idle")
   }, [])
 
@@ -91,12 +110,14 @@ export const useAssistantStream = (
     controllerRef.current = controller
     setState("streaming")
     setProposal(null)
+    setProposalDb(null)
     if (DEV_STUB) {
       await new Promise((resolve) => setTimeout(resolve, 600))
       if (controller.signal.aborted) return
       setProposal(DEV_SAMPLE_PROPOSAL)
+      setProposalDb(null)
       setState("done")
-      onDoneRef.current?.(DEV_SAMPLE_PROPOSAL)
+      onDoneRef.current?.(DEV_SAMPLE_PROPOSAL, null)
 
       return
     }
@@ -110,6 +131,7 @@ export const useAssistantStream = (
           input,
           ...(options?.mode ? { mode: options.mode } : {}),
           ...(options?.current !== undefined ? { current: options.current } : {}),
+          ...(options?.db ? { db: options.db } : {}),
         }),
       })
       const response = await fetch(joinUrl(baseUrl, ASSISTANT_PATH), init)
@@ -138,10 +160,12 @@ export const useAssistantStream = (
               setState("error")
               continue
             }
-            if (isParseNode(raw)) {
-              setProposal(raw)
+            const payload = parseDonePayload(raw)
+            if (payload) {
+              setProposal(payload.ast)
+              setProposalDb(payload.db)
               setState("done")
-              onDoneRef.current?.(raw)
+              onDoneRef.current?.(payload.ast, payload.db)
             } else {
               setState("error")
             }
@@ -160,5 +184,5 @@ export const useAssistantStream = (
     }
   }, [baseUrl, state])
 
-  return { state, proposal, start, stop, reset }
+  return { state, proposal, proposalDb, start, stop, reset }
 }

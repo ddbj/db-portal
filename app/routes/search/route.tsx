@@ -161,6 +161,8 @@ const SearchRoute = () => {
             const key = labelToKey.get(label)
             if (key !== undefined) setScope(key)
           }}
+          scopeDb={db}
+          onScopeDbChange={(nextDb) => setScope(dbSlugToScopeKey(nextDb))}
           advancedState={advancedState}
           dispatch={dispatch}
           invalid={hasError}

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express"
 import { z } from "zod"
 
+import { ASSISTANT_DB_SLUGS } from "../../../app/schemas/api-bff/llm"
 import { getSidFromHeader } from "../../auth/cookie"
 import type { ServerEnv } from "../../lib/env"
 import type { Logger } from "../../lib/log"
@@ -16,6 +17,9 @@ const RequestBody = z.object({
   input: z.string().trim().min(1),
   mode: z.enum(["new", "append"]).optional(),
   current: z.unknown().optional(),
+  // The locked single-DB scope (per-DB results page). Absent on top / cross-search,
+  // where the BFF derives the DB from the generated DSL.
+  db: z.enum(ASSISTANT_DB_SLUGS).optional(),
 })
 
 const clientIp = (req: Request): string =>
@@ -51,9 +55,9 @@ export const makeHandleSearchAssistant = (
         return
       }
     }
-    const { input, mode, current } = parsedBody.data
+    const { input, mode, current, db } = parsedBody.data
     const safeInput = redactUserInput(input)
-    logger.debug("llm_assistant_request", { inputLength: safeInput.length, mode: mode ?? "new" })
+    logger.debug("llm_assistant_request", { inputLength: safeInput.length, mode: mode ?? "new", db: db ?? "auto" })
 
     const stream = openSseStream(res)
     stream.start()
@@ -67,7 +71,7 @@ export const makeHandleSearchAssistant = (
       const currentDsl = mode === "append" && current !== undefined
         ? await serializeAstToDsl(current, { env })
         : undefined
-      const messages = buildAssistantMessages({ userInput: input, currentDsl })
+      const messages = buildAssistantMessages({ userInput: input, currentDsl, db })
       const upstreamResp = await callVllmStreamRaw(
         client,
         { messages, temperature: 0, stream: true },
@@ -79,13 +83,13 @@ export const makeHandleSearchAssistant = (
 
         return
       }
+      // Accumulate the model output server-side only; never forward raw deltas to
+      // the client (the output contract is a validated DSL/AST, so a prompt
+      // injection cannot turn this endpoint into an open LLM proxy). docs/llm.md.
       const result = await readVllmStream(
         upstreamResp.body,
         abortController.signal,
-        (delta) => {
-          accumulated += delta
-          stream.message(delta)
-        },
+        (delta) => { accumulated += delta },
       )
       if (!result.ok) {
         stream.error("upstream-disconnect", result.reason ?? "stream interrupted")
@@ -93,7 +97,8 @@ export const makeHandleSearchAssistant = (
 
         return
       }
-      const outcome = await parseModelOutput(accumulated, { env })
+      // db set = locked single-DB; absent = auto (the BFF derives the DB).
+      const outcome = await parseModelOutput(accumulated, db ?? null, { env })
       if (!outcome.ok) {
         const code = outcome.code === "upstream" ? "upstream-disconnect" : outcome.code
         stream.error(code, outcome.message)
@@ -101,7 +106,7 @@ export const makeHandleSearchAssistant = (
 
         return
       }
-      stream.done(JSON.stringify(outcome.ast))
+      stream.done(JSON.stringify({ ast: outcome.ast, db: outcome.db }))
     } catch (error) {
       const aborted = (error as { name?: string }).name === "AbortError"
       if (!aborted) {

@@ -5,6 +5,7 @@ import { NavigableSearchInput, serializeAstToDsl, useSearchPending } from "~/fea
 import { type ParseNode, searchApiBaseUrl } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import {
+  type DbSlug,
   SCOPE_KEYS,
   type ScopeKey,
   scopeKeyToDbSlug,
@@ -45,11 +46,13 @@ export const HeroSection = () => {
 
   // The top page only generates new queries, so the AI proposal is serialized
   // and handed straight to the results page (the proposal itself is not shown).
-  const handleGenerated = async (ast: ParseNode) => {
+  // The DB comes from the generation (the locked scope, or the BFF-derived DB),
+  // so "RNA-seq" lands on SRA even when the keyword scope is "all".
+  const handleGenerated = async (ast: ParseNode, generatedDb: DbSlug | null) => {
     search.begin()
     try {
       const dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl })
-      navigate(buildResultsHref({ q: dsl, db }))
+      navigate(buildResultsHref({ q: dsl, db: generatedDb }))
     } catch {
       // Serialize is a system-side failure; stay on the top page.
       search.end()
@@ -67,7 +70,8 @@ export const HeroSection = () => {
         onScopeChange={handleScopeChange}
         allowAppend={false}
         hideScopeInAiMode
-        onGenerated={(ast) => void handleGenerated(ast)}
+        lockedDb={db ?? undefined}
+        onGenerated={(ast, _mode, generatedDb) => void handleGenerated(ast, generatedDb)}
         examplesTrailing={
           <TextLink to={buildSearchHref()} arrow>{t("top.hero.advancedLink")}</TextLink>
         }

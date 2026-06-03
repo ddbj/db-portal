@@ -3,7 +3,9 @@ import type { ServerEnv } from "../../lib/env"
 // The BFF talks to ddbj-search-api for the two grammar operations the assistant
 // needs: validate the model's DSL into an AST (parse), and turn the current
 // builder AST into a DSL string to seed append mode (serialize). The portal
-// keeps no DSL grammar of its own (search.md § portal 側に thin serializer を持たない).
+// keeps no DSL grammar of its own (search.md § portal 側に thin serializer を持たない),
+// so the DB a cross-context query resolves to is taken from the parse API's own
+// "field-not-available-in-cross-db" verdict rather than a duplicated field map.
 
 export type SearchApiDeps = {
   env: ServerEnv
@@ -11,34 +13,85 @@ export type SearchApiDeps = {
 }
 
 export type ParseAstOutcome =
-  | { ok: true; ast: unknown }
+  | { ok: true; ast: unknown; db: string | null }
   | { ok: false; code: "invalid_dsl" | "upstream"; message: string }
+
+// Tiebreak when a cross-context query uses only Tier-3 fields shared by several
+// DBs (db-portal display order; mirrors the eval oracle's _DB_PRIORITY).
+const DB_PRIORITY = ["sra", "bioproject", "biosample", "jga", "gea", "metabobank", "trad", "taxonomy"] as const
 
 const baseUrl = (env: ServerEnv): string =>
   env.DB_PORTAL_SEARCH_API_URL.replace(/\/$/, "")
 
-export const parseDslToAst = async (
+type ParseCall =
+  | { kind: "ok"; ast: unknown }
+  | { kind: "cross-tier3"; dbs: string[] }
+  | { kind: "invalid"; message: string }
+  | { kind: "upstream"; message: string }
+
+const callParse = async (
   dsl: string,
+  db: string | null,
   { env, fetchImpl = fetch }: SearchApiDeps,
-): Promise<ParseAstOutcome> => {
-  const url = `${baseUrl(env)}/db-portal/parse?q=${encodeURIComponent(dsl)}`
+): Promise<ParseCall> => {
+  const query = db ? `q=${encodeURIComponent(dsl)}&db=${encodeURIComponent(db)}` : `q=${encodeURIComponent(dsl)}`
+  const url = `${baseUrl(env)}/db-portal/parse?${query}`
   try {
     const response = await fetchImpl(url)
     if (response.ok) {
       const body = (await response.json()) as { ast?: unknown }
 
-      return { ok: true, ast: body.ast }
+      return { kind: "ok", ast: body.ast }
     }
     if (response.status === 400) {
-      const body = (await response.json().catch(() => ({}))) as { detail?: string }
+      const body = (await response.json().catch(() => ({}))) as { type?: string; detail?: string }
+      const detail = body.detail ?? "invalid DSL"
+      // cross-mode hit a Tier-3 field; the detail names the eligible DB(s)
+      // ("...use db=biosample or db=sra."). Only meaningful when db was unset.
+      if (db === null && (body.type ?? "").endsWith("field-not-available-in-cross-db")) {
+        const dbs = [...detail.matchAll(/db=([a-z]+)/g)]
+          .map((m) => m[1])
+          .filter((slug): slug is string => slug !== undefined)
 
-      return { ok: false, code: "invalid_dsl", message: body.detail ?? "invalid DSL" }
+        return { kind: "cross-tier3", dbs }
+      }
+
+      return { kind: "invalid", message: detail }
     }
 
-    return { ok: false, code: "upstream", message: `parse responded ${response.status}` }
+    return { kind: "upstream", message: `parse responded ${response.status}` }
   } catch (error) {
-    return { ok: false, code: "upstream", message: error instanceof Error ? error.message : "parse failed" }
+    return { kind: "upstream", message: error instanceof Error ? error.message : "parse failed" }
   }
+}
+
+// Validate the model's DSL and resolve its DB. `db` set = locked single-DB mode
+// (the whole query must be valid there). `db` null = auto: cross when it uses
+// only cross fields, otherwise the BFF re-parses under the DB the parse API
+// reports the Tier-3 fields belong to (highest-priority on a tie).
+export const parseDslToAst = async (
+  dsl: string,
+  db: string | null,
+  deps: SearchApiDeps,
+): Promise<ParseAstOutcome> => {
+  const first = await callParse(dsl, db, deps)
+  if (first.kind === "ok") return { ok: true, ast: first.ast, db }
+  if (first.kind === "invalid") return { ok: false, code: "invalid_dsl", message: first.message }
+  if (first.kind === "upstream") return { ok: false, code: "upstream", message: first.message }
+
+  // cross-tier3: pick the eligible DB and re-parse under it.
+  const derived = DB_PRIORITY.find((slug) => first.dbs.includes(slug)) ?? first.dbs[0]
+  if (derived === undefined) {
+    return { ok: false, code: "invalid_dsl", message: "query uses a single-DB field with no resolvable DB" }
+  }
+  const second = await callParse(dsl, derived, deps)
+  if (second.kind === "ok") return { ok: true, ast: second.ast, db: derived }
+  if (second.kind === "upstream") return { ok: false, code: "upstream", message: second.message }
+
+  // invalid / another cross-tier3 (fields from a different DB) → not expressible in one DB.
+  const message = second.kind === "invalid" ? second.message : "query mixes fields from multiple DBs"
+
+  return { ok: false, code: "invalid_dsl", message }
 }
 
 // Serialize the current builder AST to a DSL string for the append prompt.

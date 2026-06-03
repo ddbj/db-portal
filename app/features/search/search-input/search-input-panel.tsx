@@ -2,6 +2,7 @@ import type { Dispatch } from "react"
 import { useEffect, useId, useState } from "react"
 
 import { useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { Button, cn, Examples, SearchBox, StableLabel } from "~/ui"
 
 import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
@@ -20,6 +21,12 @@ export type SearchInputPanelProps = {
   scopeOptions: readonly string[]
   onScopeChange: (label: string) => void
   scopeAriaLabel?: string
+  // The builder's current DB scope (null = cross). Sent as the locked scope when
+  // a specific DB is selected; when cross, the BFF derives the DB and the panel
+  // switches the builder scope to it via onScopeDbChange so the applied Tier-3
+  // conditions are valid/offered.
+  scopeDb?: DbSlug | null
+  onScopeDbChange?: (db: DbSlug | null) => void
   advancedState: AdvancedState
   dispatch: Dispatch<AdvancedAction>
   // The keyword could not be parsed; reflect it on the box (warn border +
@@ -42,6 +49,8 @@ export const SearchInputPanel = ({
   scopeOptions,
   onScopeChange,
   scopeAriaLabel,
+  scopeDb = null,
+  onScopeDbChange,
   advancedState,
   dispatch,
   invalid = false,
@@ -84,10 +93,12 @@ export const SearchInputPanel = ({
   }
 
   // append sends the current builder AST so the model folds the request into it;
-  // new sends nothing and generates fresh.
+  // new sends nothing and generates fresh. A specific scope DB locks generation
+  // to it; cross (null) lets the BFF derive the DB.
   const startOptions = (): AssistantStartOptions => ({
     mode: effectiveAiMode,
     current: effectiveAiMode === "append" ? fromAdvanced(advancedState) : undefined,
+    db: scopeDb ?? undefined,
   })
 
   const generating = stream.state === "streaming"
@@ -121,6 +132,9 @@ export const SearchInputPanel = ({
 
   const applyProposal = (proposalMode: AiMode) => {
     if (stream.proposal === null) return
+    // Switch the builder scope to the resolved DB first so the Tier-3 conditions
+    // it carries are valid/offered (no-op when it matches the current scope).
+    if (onScopeDbChange && stream.proposalDb !== scopeDb) onScopeDbChange(stream.proposalDb)
     // The proposal AST already folds in the existing query for append, so both
     // modes rebuild the builder from it; new also clears the keyword row.
     dispatch({ type: "replaceRoot", root: toAdvanced(stream.proposal).root })

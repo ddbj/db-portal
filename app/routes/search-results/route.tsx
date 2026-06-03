@@ -35,6 +35,7 @@ import { type ParseNode, searchApiBaseUrl } from "~/lib/api"
 import { pageTitleMeta } from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
 import {
+  type DbSlug,
   dbSlugToScopeKey,
   SCOPE_KEYS,
   type ScopeKey,
@@ -123,12 +124,13 @@ const SearchResultsRoute = () => {
     )
   }, searchApiBaseUrl, data.db)
 
+  const { flush: flushSync } = sync
   const dispatchFacetWithFlush = useCallback(
     (action: Parameters<typeof dispatchFacet>[0]) => {
       dispatchFacet(action)
-      if (action.type === "toggleFacet") sync.flush()
+      if (action.type === "toggleFacet") flushSync()
     },
-    [sync.flush],
+    [flushSync],
   )
 
   const handlePageChange = (nextPage: number) => {
@@ -186,13 +188,16 @@ const SearchResultsRoute = () => {
   }
 
   // The AI proposal is applied without review: serialize the validated AST and
-  // navigate. append folds the current query server-side, new replaces it.
-  const handleGenerated = async (ast: ParseNode) => {
+  // navigate. append folds the current query server-side, new replaces it. The
+  // DB comes from the generation: per-DB pages stay locked to data.db; on cross
+  // the BFF-derived DB (generatedDb) routes the result (e.g. adding a Tier-3
+  // condition lands on that DB).
+  const handleGenerated = async (ast: ParseNode, generatedDb: DbSlug | null) => {
     search.begin()
     let dsl = ""
     if (!isIdentityAst(ast)) {
       try {
-        dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: data.db })
+        dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: generatedDb })
       } catch {
         // Serialize failure is system-side; leave the current results in place.
         search.end()
@@ -200,12 +205,12 @@ const SearchResultsRoute = () => {
         return
       }
     }
-    if (dsl === data.q) {
+    if (dsl === data.q && generatedDb === data.db) {
       search.end()
 
       return
     }
-    navigate(buildResultsHref({ q: dsl, db: data.db }))
+    navigate(buildResultsHref({ q: dsl, db: generatedDb }))
   }
 
   const handleKeywordChange = (value: string) => {
@@ -270,7 +275,8 @@ const SearchResultsRoute = () => {
           invalid={keywordParseError}
           allowAppend
           appendCurrentAst={data.ast ?? undefined}
-          onGenerated={(ast) => void handleGenerated(ast)}
+          lockedDb={data.db ?? undefined}
+          onGenerated={(ast, _mode, generatedDb) => void handleGenerated(ast, generatedDb)}
           showExamples={false}
           searchPending={search.pending}
         />

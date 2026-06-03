@@ -7,6 +7,22 @@ export const LlmHealth = z.discriminatedUnion("status", [
 ])
 export type LlmHealth = z.infer<typeof LlmHealth>
 
+// DB slugs the search assistant accepts as a locked scope (per-DB results page);
+// kept here (server-importable, unlike app/lib/search-scope) for the BFF request
+// schema. The parse API allowlist is the SSOT for which fields each DB allows.
+export const ASSISTANT_DB_SLUGS = [
+  "trad",
+  "sra",
+  "bioproject",
+  "biosample",
+  "jga",
+  "gea",
+  "metabobank",
+  "taxonomy",
+] as const
+
+export type AssistantDbSlug = typeof ASSISTANT_DB_SLUGS[number]
+
 export const ADVANCED_FIELDS = [
   "identifier",
   "title",
