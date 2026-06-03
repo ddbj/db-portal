@@ -169,7 +169,7 @@ export const en: Resources = {
       q1: {
         "public": { label: "Public data", sub: "Openly released data" },
         "restricted": { label: "Includes restricted-access data", sub: "Controlled-access data such as human individuals" },
-        "third-party": { label: "Analysis of third-party data", sub: "Data derived from records submitted by others" },
+        "third-party": { label: "Analysis results for third-party data", sub: "Data derived from records submitted by others" },
       },
       q2: {
         "human": { label: "Human", sub: "Human individuals and human-derived samples" },
@@ -180,7 +180,6 @@ export const en: Resources = {
       },
     },
     table: {
-      headingDescription: "Select the kinds of data you have (set the access level per type when the submission includes restricted data).",
       detailUnset: "Set data details",
       empty: "Select your data types from the buttons above.",
     },

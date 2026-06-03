@@ -183,7 +183,6 @@ export type Resources = {
       }
     }
     table: {
-      headingDescription: string
       detailUnset: string
       empty: string
     }
@@ -790,7 +789,7 @@ export const ja: Resources = {
     pageTitle: "登録ナビゲーション",
     sections: {
       preconditions: "登録前提",
-      table: "登録するデータの種類",
+      table: "登録データ種別",
       flow: "登録フロー",
     },
     preconditions: {
@@ -802,18 +801,17 @@ export const ja: Resources = {
       q1: {
         "public": { label: "公開データの登録", sub: "公開を前提としたデータ" },
         "restricted": { label: "制限公開データを含む登録", sub: "アクセス制御を伴うデータを含む" },
-        "third-party": { label: "第三者データの解析登録", sub: "他者が登録したデータに対する解析結果" },
+        "third-party": { label: "第三者による解析結果の登録", sub: "他者が登録したデータに対する解析結果" },
       },
       q2: {
         "human": { label: "ヒト", sub: "ヒト個人由来のデータ" },
         "eukaryote": { label: "ヒト以外の真核生物", sub: "動植物・菌類など" },
         "prokaryote": { label: "原核生物", sub: "細菌・古細菌" },
-        "virus": { label: "ファージ・ウイルス", sub: "ウイルス・ファージ" },
+        "virus": { label: "ファージ・ウイルス", sub: "ファージ・ウイルス" },
         "metagenome": { label: "環境サンプル", sub: "メタゲノム・環境由来サンプル" },
       },
     },
     table: {
-      headingDescription: "手元にあるデータの種類を選びます (公開+制限のときは種別ごとに公開区分も指定します)",
       detailUnset: "未設定",
       empty: "上のボタンからデータの種類を選んでください",
     },
