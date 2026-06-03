@@ -119,7 +119,7 @@ export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>>
 }
 
 // SERVICE_DEPENDENCIES のトポロジカル順を実現する線形順 (前提が依存先より前)。
-// 前提ゲート (humandbs) → 随伴 (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva)。
+// 前提ゲート (humandbs) → 共通メタデータ (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva)。
 // SERVICE_DEPENDENCIES の妥当な線形拡張であることは PBT/unit で固定する。
 export const SERVICE_DEPENDENCY_ORDER: readonly Service[] = [
   "humandbs",

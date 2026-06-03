@@ -883,12 +883,12 @@ export const ja: Resources = {
       prereqHeading: "先に済ませること",
       wizardHeading: "外部サイトでの手順",
       prepareHeading: "準備するもの",
-      roleTag: { destination: "登録先", companion: "随伴", external: "外部登録先", gate: "申請窓口" },
+      roleTag: { destination: "登録先", companion: "共通メタデータ", external: "外部登録先", gate: "申請窓口" },
       ctaLabel: "登録サイトを開く",
       filesHeading: "対象ファイル",
       gotchaHeading: "ポイント",
-      "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねる随伴メタデータ" },
-      "biosample": { title: "BioSample", description: "サンプルを束ねる随伴メタデータ" },
+      "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねるメタデータ" },
+      "biosample": { title: "BioSample", description: "サンプルを束ねるメタデータ" },
       "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },
       "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先" },
       "ddbj-trad": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
@@ -996,10 +996,10 @@ export const ja: Resources = {
       proteomics: "プロテオミクス (proteomics) の質量分析は、MetaboBank ではなく jPOST に登録します。",
     },
     bioproject: {
-      intro: "プロジェクトを束ねる BioProject が随伴して作成されます。",
+      intro: "プロジェクトを束ねる BioProject があわせて作成されます。",
     },
     biosample: {
-      intro: "サンプルを束ねる BioSample が随伴して作成されます。実サンプル数・生物種は各 step で入力します。",
+      intro: "サンプルを束ねる BioSample があわせて作成されます。実サンプル数・生物種は各 step で入力します。",
     },
     spatial: {
       dra: {
