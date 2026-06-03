@@ -128,7 +128,7 @@ health 状態は `server/llm/health.ts` の `setActiveHealth` で memory に保�
 | `done` | 完了通知 | `{ ast, db }` (`ast` = BFF が `/db-portal/parse` で得た検証済み ParseNode、`db` = 確定した DB slug or `null`) |
 | `error` | エラー通知 | `{ "code": "string", "message": "string" }` |
 
-検索アシスタントの SSE は、生成中は heartbeat だけを流し、確定後に `done` か `error` を 1 つ出して閉じる。`message` (モデルの逐次出力) は流さない: client は元々消費しておらず、生出力を出さないことでエンドポイントが「任意のモデル出力を返す proxy」 にならない (プロンプトインジェクション対策、後述)。`event:` を省略した SSE を `message` 扱いにする一般規約は SSE クライアント共通だが、本エンドポイントは `done` / `error` のみを明示的に出す。
+検索アシスタントの SSE は、生成中は heartbeat だけを流し、確定後に `done` か `error` を 1 つ出して閉じる。`message` (モデルの逐次出力) は流さない: client は元々消費しておらず、生出力を出さないことでエンドポイントが「任意のモデル出力を返す proxy」 にならない (`## プロンプトインジェクション対策`)。`event:` を省略した SSE を `message` 扱いにする一般規約は SSE クライアント共通だが、本エンドポイントは `done` / `error` のみを明示的に出す。
 
 ### heartbeat
 
@@ -187,7 +187,7 @@ Response: SSE
 
 vLLM は自然文を **1 行の Advanced-Search DSL 文字列** に変換する (フルスペック: `AND` / `OR` / `NOT` / グルーピング)。BFF は完了後に DSL を抽出・検証し、`event: done` に `/db-portal/parse` が返した **ParseNode AST** と **確定した db** を載せる。
 
-- **db スコープ**: `db` 指定 (locked、per-DB ページ) のときその DB の Tier-3 まで使い、その DB で検証する (DB 外 field は `invalid_dsl`)。`db` 不在 (auto、top / cross) のとき BFF は生成 DSL が使った Tier-3 field から db を導出する (cross field のみ → `db: null` = 横断、ある DB の Tier-3 → その DB)。導出規則は `search-fields.md` の Tier-3 → DB 対応 (ddbj-search-api `allowlist.py` の `TIER3_FIELD_DBS` が SSOT)。
+- **db スコープ**: `db` 指定 (locked、per-DB ページ) のときその DB の Tier-3 まで使い、その DB で検証する (DB 外 field は `invalid_dsl`)。`db` 不在 (auto、top / cross) のとき BFF はまず db 無しで parse し、cross 不可の Tier-3 を含むと parse が 400 `field-not-available-in-cross-db` で該当 DB を名指しするので、その DB で再 parse して db を確定する (cross field のみなら 200 = `db: null` 横断)。複数 DB 候補のタイブレークは `DB_PRIORITY` (`server/llm/assistant/search-api.ts`)。portal 側に field→DB マップは持たず、Tier-3 → DB 判定の SSOT は ddbj-search-api `allowlist.py` (`search-fields.md`)。
 - **client での反映**は経路で分かれる: `/search` は read-only preview (`ProposalConditions`) に出して「適用」 で Advanced state へ反映 (導出 db は builder scope に反映)、top / cross results は提案を見せず AST を serialize して `/search/results?q=…[&db=<db>]` へ遷移する (`search.md` § 提案の反映)。
 - `mode=append` のとき BFF は `current` を DSL に serialize して prompt に差し込み、vLLM が既存条件を保持したまま融合した完全な DSL を返す。results の `current` は現クエリ全体 (keyword + facet + 構造化条件) の AST。append は現スコープ内で行う (per-DB の append はその DB のまま)。
 
@@ -213,7 +213,7 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 - 非対応の fuzzy `~N` / boost `^N` を除去する (モデルが稀に残すため)
 - **db の確定**:
   - **locked** (request の `db` 指定): その `db` で `GET /db-portal/parse?q=<DSL>&db=<id>` を呼ぶ。DB 外 Tier-3 を含めばここで 400 になる
-  - **auto** (`db` 不在): DSL が使う Tier-3 field から db を導出する (`server/llm/assistant/` の field→DB 表 = `app/schemas/api-bff/llm.ts`、ddbj-search-api `allowlist.py` の `TIER3_FIELD_DBS` 由来)。cross field のみ → 横断 (`db=null`、parse は db 無しで呼ぶ)、ある DB の Tier-3 のみ → その DB で parse、2 DB に跨る Tier-3 → `invalid_dsl`
+  - **auto** (`db` 不在): まず db 無しで `/db-portal/parse` を呼ぶ。200 なら横断 (`db=null`)。cross 不可の Tier-3 を含むと 400 `field-not-available-in-cross-db` が eligible な DB を problem `detail` に名指しする (`...use db=biosample or db=sra.`) ので、それを抽出し `DB_PRIORITY` でタイブレークした DB で再 parse する。再 parse が 200 ならその DB、2 DB に跨る等で再び弾かれたら `invalid_dsl`。portal 側に field→DB マップは持たず、DB 判定は parse API の verdict に委ねる (`server/llm/assistant/search-api.ts`)
   - 200 → `event: done` に `{ ast, db }` を載せる
   - 400 → `event: error` `{ code: "invalid_dsl", message: <problem detail> }`
   - 5xx / network → 短い retry 後 `upstream-disconnect`
@@ -224,7 +224,7 @@ system prompt の方針 (出力は 1 行 DSL 文字列、JSON ではない):
 
 `event: error` を client (`useAssistantStream`) が受け取ったら state を `error` にし、proposal は出さない (= 遷移しない)。`/search` の統合入力ではプロンプトを入力欄に残し、top / results の `NavigableSearchInput` は box 直下に inline のエラー文言 (`search.assistant.generateError`) を出して入力を保つ。いずれも内容ロストを避け、ユーザーが入力を変えて再送できる。
 
-client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStream` が `event: message` を受信して streaming token を貯め、`event: done` の data を ParseNode AST として受け取り proposal state に入れる (lift 不要、BFF が検証済み)。
+client は `app/features/search/assistant/prompt-client.ts` の `useAssistantStream` が `event: done` の data を ParseNode AST として受け取り proposal state に入れる (BFF が `message` を出さないので token は消費せず、lift / 再 parse も不要)。`event: error` は inline エラーに落とす。
 
 ## rate limit
 

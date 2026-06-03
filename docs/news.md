@@ -18,7 +18,7 @@
 | ja/en pairing | slug でペアリング (`19961123` / `19961123-e` → 同一 NewsItem) |
 | 正規化 | front matter の `tags` を `NewsCategory` enum に写像 (source 別 mapping 表)、原 tag は `rawTags` で保持 |
 | featured | `ddbj/www/_data/global.yml` の `top_news.{ja,en}[].path` (slug whitelist) に一致した item は `featured=true`。NotificationBar 掲載対象 |
-| API | `GET /api/news?lang=&category=&year=&service=` で cache を filter して返す |
+| API | `GET /api/news?lang=&category=&source=&year=&service=` で cache を filter して返す |
 
 ## データモデル
 

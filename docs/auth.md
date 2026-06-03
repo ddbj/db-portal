@@ -137,6 +137,8 @@ Express handler で完結させる利点:
 
 payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse する。署名再検証を TLS server validation に委ねる代わりに、token の意味的な claim (発行者 / 宛先 / 有効期限) を payload 側で必ず検証することで、direct 受信の前提が崩れた token を弾く。
 
+callback handler の error 応答は、`code` / `state` 欠落で 400 `invalid_request`、`state` が pending store に無いとき 400 `invalid_state` (下記「State CSRF と returnTo の二重防御」)、id_token payload 検証失敗で 400 `invalid_id_token`、token endpoint への code 交換失敗で 502 `code_exchange_failed`。
+
 ### Logout
 
 1. Browser が `/api/auth/logout` を踏む
@@ -216,13 +218,13 @@ Cookie: sid=<opaque>
 
 ### SSR 経由の userInfo
 
-route loader からも user 情報を取れるよう、`loadAuth(request)` helper を `app/lib/auth/` に置く。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、200 なら `UserInfo`、401 なら `null`、5xx は throw する。
+route loader からも user 情報を取れるよう、`loadAuth(request)` helper を `app/lib/auth/ssr-loader.ts` に置く。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、200 なら `UserInfo`、401 なら `null`、5xx は throw する。
 
-`loadAuth` は `app` zone から `fetch(new URL("/api/me", request.url))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md`)。SSR 初期描画時に Header のユーザー名表示が即座に解決する。
+`loadAuth` は `app` zone から `fetch(new URL("/api/me", <portal origin>))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md`)。SSR 初期描画時に Header のユーザー名表示が即座に解決する。
 
-#### Cookie 転送の安全性前提
+#### BFF 宛先 origin の固定
 
-`request.url` は React Router の SSR runtime が **portal 自身の origin** を解決した URL である必要がある。リバースプロキシ越しに deploy する場合、Express の `trust proxy` 設定と `X-Forwarded-Host` の許可ホスト制限を BFF (`server/`) で必ず行うこと。攻撃者が `Host:` を任意 origin に書き換えられる構成では `sid` cookie が外部に流出する。
+BFF の宛先 origin は `request.url` ではなく env `VITE_DB_PORTAL_PORTAL_ORIGIN` から取る (`portalOrigin()`、未設定なら throw)。これにより `Host:` ヘッダ改竄で `/api/me` 転送先 (= `sid` cookie の送出先) が外部 origin に逸れることを防ぐ。なお client IP に依存する機能 (LLM rate limit、`llm.md`) のため、リバースプロキシ越しの deploy では Express の `trust proxy` (`loopback` 設定済) と `X-Forwarded-For` の信頼ホスト制限を BFF (`server/`) で正しく行う。
 
 ## `<RequireAuth>` wrapper と URL helper
 
@@ -325,4 +327,4 @@ Keycloak 設定を変更したら以下を確認:
 
 ### PBT
 
-- 任意の `(sid, entry)` 列に対し、`get` 後の `expiresAt` が `set` 時の `expiresAt` 以上、削除後の `get` が `undefined`
+- 任意の `(sid, entry)` 列に対し、TTL 内のアクセスで entry が返り (sliding 延長)、TTL 超過で `undefined`、削除後の `get` が `undefined` になる

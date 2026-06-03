@@ -20,8 +20,8 @@ db-portal/
 ├── server/                      BFF / Node 専用コード (browser に出さない)
 │   ├── index.ts                 Node entry (RR v7 server adapter + API route 配線)
 │   ├── lib/                     env 検証 / 構造化 log
-│   ├── auth/                    session store / cookie / OIDC token 交換
-│   ├── api/                     /api/* エンドポイント実装
+│   ├── auth/                    session store / cookie / OIDC token 交換 + /api/auth/* handler
+│   ├── api/                     /api/* エンドポイント実装 (me / news / services / llm / sitemap / robots)
 │   ├── news/                    ddbj/www + dbcls/website mirror + disk cache
 │   ├── services/                services 一覧の正規化 + disk cache (news clone 再利用)
 │   └── llm/                     vLLM HTTP client
@@ -69,7 +69,7 @@ URL は lang 中立 (cookie で言語が決まる、`i18n.md` 参照)。
 
 `/databases/:slug` は config-based route で 1 つの param ルートとして宣言する。各 DB は `/databases/<slug>` の形に統一する (URL 設計の論理性、および既存 DDBJ サイトの単体 path との衝突回避のため)。
 
-`/auth/*` は BFF (`server/api/auth/*`) が 302 で抜けるため、client 側の route は実際には到達しないが、Keycloak client 設定が旧 redirect_uri を保持していた場合の fallback として残す (`auth.md`)。
+`/auth/*` は BFF (`server/auth/routes.ts`) が 302 で抜けるため、client 側の route は実際には到達しないが、Keycloak client 設定が旧 redirect_uri を保持していた場合の fallback として残す (`auth.md`)。
 
 `/api/set-lang` は `server/index.ts` の `app.all("*", createRequestHandler(...))` フォールバック経由で RR まで届く (既存 BFF 個別登録 `/api/me` / `/api/news` 等とは衝突しない、`i18n.md` 参照)。
 
@@ -155,7 +155,7 @@ en 表示時に対応キーが en リソースに存在しない page では、r
 
 ESLint が次の 2 系統で逸脱を検出する。
 
-- 生 hex literal 禁止: `app/{features,routes,shell,content}/` 配下で `#[0-9A-Fa-f]{3,8}` を含む文字列リテラルを `no-restricted-syntax` で弾く。`app/ui/` のみ除外
+- 生 hex literal 禁止: `app/{features,routes,content,ui,shell}/` 配下で `#[0-9A-Fa-f]{3,8}` を含む文字列リテラルを `no-restricted-syntax` で弾く (`app/routes/_design/` のみ除外)。token を持つべき色を primitive 層でも生書きさせない
 - arbitrary Tailwind value 禁止: `app/{features,routes,content}/` 配下で `className` 内の `bg-[#...]` / `text-[14.5px]` / `p-[3px]` を弾く。`app/ui/` と `app/shell/` は除外 (chrome / primitive 設計上の細部値を許容)
 - `app/routes/_design/` (開発時のみ生成される token / primitive 視覚確認 route) は `no-restricted-syntax` 全体から除外 (token 一覧表示のために hex 文字列を意図的に保持する)
 
@@ -232,7 +232,7 @@ secret (LLM API key / Keycloak credential) を要求する外部 API (vLLM / Key
   ├─ Advanced builder reducer (app/features/search/)
   └─ Sidebar facet → AST (app/features/search/)
         │
-        ▼ debounce 500-1000 ms
+        ▼ debounce 700 ms (`search.md`)
   ddbj-search-api POST /db-portal/serialize
         │
         ▼
@@ -283,7 +283,7 @@ session store は logout 時の `id_token_hint` 用 idToken・ユーザー情報
   POST /api/llm/search-assistant (SSE)
         │
         ▼
-[Server] vLLM へ pass-through (event: message / done / error)
+[Server] vLLM へ pass-through (検証済み結果のみ: event: done / error、`llm.md`)
 ```
 
 vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/llm/health` が `{status:"unset"}` を返し、UI 側で AI アシスタント機能を非表示にする。
@@ -342,7 +342,7 @@ CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成し
 
 URL × lang × hreflang の表現は i18n と一体なので、SSOT を `i18n.md` の「SEO」 節に集約する。本書は概要のみ:
 
-- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes について `?lang=ja` / `?lang=en` 2 URL を出力、hreflang 相互宣言
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection (`databases`) + 静的 routes (`/` / `/search` / `/submit` / `/news`) について `?lang=ja` / `?lang=en` 2 URL を出力、hreflang 相互宣言
 - `GET /robots.txt` (`server/api/robots.ts`): production のみ全許可 + Sitemap、dev / staging は全 disallow
 
 ### 404 ページ

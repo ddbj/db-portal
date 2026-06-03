@@ -19,7 +19,7 @@ ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二�
 
 | パス | 内容 |
 |---|---|
-| `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 11k 行。git commit 対象 |
+| `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 11,500 行。git commit 対象 |
 | `app/lib/api/client.ts` | `apiGet` / `apiPost` の operation 型補完付き fetch wrapper |
 | `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 |
 | `app/lib/api/search.ts` | `crossSearch` / `dbSearch` / `parseQuery` / `serializeAst` の wrapper |

@@ -54,23 +54,22 @@ docker compose up -d --build
 
 ### 環境ごとの差
 
-各環境で値が変わる env 変数の一覧 (一部):
+env 変数の **全集合とデフォルトは `server/lib/env.ts` (Zod schema) が SSOT**、各環境の実値は `env.dev` / `env.staging` / `env.production` (root に commit 済)、compose 内マッピングは `compose.yml`。feature 固有変数の意味は各 feature docs が持つ。本書では「環境間で挙動が変わる軸」 と「どの docs が SSOT か」 だけ示す。
 
-- `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV`: 環境識別子 (compose の container_name / image / volume / network 名に展開される)
-- `DB_PORTAL_APP_COMMAND`: dev は `npm run dev` (HMR)、staging / production は `tsx server/index.ts`。build と `validate:content` は image build 時に済むので起動時は listen のみ。npm を介さないのは node を PID1 直下に置いて `SIGTERM` を届かせるため (`deployment.md` の「起動と停止」)
-- `COMPOSE_FILE`: dev のみ `compose.yml:compose.dev.yml` を設定し `docker compose` に dev override を自動合成させる。staging / production は未設定 (base のみ、podman は明示 `-f` で `compose.podman.yml` を重ねる)
-- `DB_PORTAL_APP_PORT`: host 側 listen port (環境ごとに異なる)
-- `DB_PORTAL_APP_INTERNAL_PORT`: container 内 listen port (`vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む。dev は 3000)
-- `DB_PORTAL_PORTAL_ORIGIN`: portal 自身の origin (redirect_uri 計算 / `<base>` 等の起点)
-- `DB_PORTAL_LOG_LEVEL`: `debug` / `info` / `warn` から選ぶ
-- `DB_PORTAL_DEFAULT_LANG`: i18n の default 言語 (`ja` / `en`、`i18n.md`)。`VITE_DB_PORTAL_DEFAULT_LANG` として client にも露出
-- `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_OPENAPI_URL`: ddbj-search-api の base / openapi.json 配置先
-- `DB_PORTAL_FACET_CACHE_TTL_MS`: match_all facet 集計の server cache TTL (ms、未設定で既定 1 時間。`search.md`)
-- `DB_PORTAL_KEYCLOAK_REALM_URL` / `DB_PORTAL_KEYCLOAK_CLIENT_ID` / `DB_PORTAL_AUTH_SESSION_TTL_SECONDS`: Keycloak realm / client / session TTL (`auth.md`)
-- `DB_PORTAL_LLM_BASE_URL` / `DB_PORTAL_LLM_API_KEY` / `DB_PORTAL_LLM_MODEL` / `DB_PORTAL_LLM_TIMEOUT_MS` / `DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN`: vLLM 接続先と挙動 (`llm.md`)。`DB_PORTAL_LLM_BASE_URL` 空文字で AI 補助機能を hide
-- `DB_PORTAL_NEWS_REPOS_DIR` / `DB_PORTAL_NEWS_DDBJ_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` / `DB_PORTAL_NEWS_DBCLS_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` / `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` / `DB_PORTAL_NEWS_CACHE_DIR`: News mirror の clone 設定と cache 配置 (`news.md`)
+| 変数群 | 環境差 / 用途 | SSOT docs |
+|---|---|---|
+| `DB_PORTAL_PREFIX` / `DB_PORTAL_ENV` | 環境識別子 (compose の container_name / image / volume / network 名に展開) | — |
+| `DB_PORTAL_APP_COMMAND` | dev = `npm run dev`、staging / production = `tsx server/index.ts` (build / `validate:content` は image build 時に済む、node を PID1 直下に置き `SIGTERM` を届かせる) | `deployment.md`「起動と停止」 |
+| `COMPOSE_FILE` | dev のみ `compose.yml:compose.dev.yml` で dev override を自動合成。staging / production は未設定 (podman は明示 `-f` で `compose.podman.yml`) | `deployment.md` |
+| `DB_PORTAL_APP_PORT` / `DB_PORTAL_APP_INTERNAL_PORT` / `DB_PORTAL_PORTAL_ORIGIN` | host / container の listen port (`APP_INTERNAL_PORT` は `vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む、dev 3000) と portal 自身の origin | — |
+| `DB_PORTAL_LOG_LEVEL` / `DB_PORTAL_DEFAULT_LANG` | log severity / i18n default 言語 (`DEFAULT_LANG` は `VITE_DB_PORTAL_DEFAULT_LANG` で client にも露出) | `i18n.md` |
+| `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_SEARCH_API_TIMEOUT_MS` / `DB_PORTAL_OPENAPI_URL` | ddbj-search-api の base / timeout / openapi.json 配置先 | `api-types.md` |
+| `DB_PORTAL_KEYCLOAK_*` / `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | Keycloak realm / client / session TTL | `auth.md` |
+| `DB_PORTAL_LLM_*` | vLLM 接続先と挙動 (`BASE_URL` 空で AI 補助を hide)。BFF 用と GPU node serving 用に分かれる | `llm.md` |
+| `DB_PORTAL_NEWS_*` | News mirror の clone 設定と cache 配置 | `news.md` |
+| `DB_PORTAL_SERVICES_CACHE_DIR` | Services mirror の cache 配置 (clone 先は News の `DB_PORTAL_NEWS_REPOS_DIR` を再利用) | `services.md` |
 
-実値は `env.dev` / `env.staging` / `env.production` を直接参照する (root に commit 済)。env の compose 内マッピングは `compose.yml`。
+`DB_PORTAL_FACET_CACHE_TTL_MS` (match_all facet の server cache TTL、未設定で既定 1 時間、`search.md`) は `server/lib/env.ts` の検証対象外で、`process.env` を直読みする optional 変数 (env ファイルにも常時は置かない)。
 
 ### Secret の扱い
 
@@ -120,7 +119,7 @@ docker compose exec app npm run validate:content
 
 | 変更箇所 | 反映方法 |
 |---|---|
-| `app/` / `server/` の TS / TSX | RR v7 dev server が HMR で即反映 |
+| `app/` / `server/` の TS / TSX | dev は `tsx watch server/index.ts` (Vite を middleware mode で内包)。`app/**` / `server/**` の変更で `tsx watch` が server プロセスを再起動して反映する |
 | `app/styles/tailwind.css` | Tailwind v4 plugin が即反映 |
 | `app/lib/api/openapi-types.ts` | 手動で `gen:api-types` 再実行 |
 | `app/content/**/*.content.tsx` | 起動時 eager validate のため、追加・削除は server 再起動 |
@@ -231,7 +230,7 @@ CI (`.github/workflows/ci.yml`) は次の 4 つを Docker Compose 内で回す�
 ```bash
 docker compose exec app npm run typecheck
 docker compose exec app npm run lint
-docker compose exec app npm test
+docker compose exec app npm test -- --run
 docker compose exec app npm audit --audit-level=high --omit=dev
 ```
 

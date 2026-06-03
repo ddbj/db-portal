@@ -127,7 +127,7 @@ group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正�
 
 各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
 
-field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる (Solr backed の trad / taxonomy 専用 field は除く)。具体の field 一覧は `field-catalog.ts` の `CATALOG` / `fieldsForScope` (および `search-fields.md` の field 軸) を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。コードは `field-catalog.ts` の `fieldsForScope` / `FIELD_OPS` が SSOT。
+field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる (Solr backed の trad / taxonomy 専用 field は除く)。具体の field 一覧は `field-catalog.ts` の `fieldsForScope` (および `search-fields.md` の field 軸) を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。コードは `field-catalog.ts` の `fieldsForScope` / `FIELD_OPS` が SSOT。
 
 ### reducer の責務
 

@@ -100,8 +100,8 @@ prop 名と意味はこの規約に従い、値の増減は `app/ui/` の primit
 - **Tags & Chips** (`tag.tsx` / `chip.tsx` / `examples.tsx`): `Tag` は非インタラクティブ label、`Chip` はインタラクティブ pill。`Chip` は `as` で URL push (link) か状態変更 (button) かを切り替える。`Examples` は `例:` ラベル + Chip 群の共通行で、top hero / `/search` / results で共有する
 - **Facets** (`applied-filters.tsx` / `facet-group.tsx` / `facet-row.tsx` / `date-facet.tsx`): sidebar facet UI。`DateFacet` は segmented quick range + collapsible FROM/TO
 - **Callout** (`callout.tsx`): inline notice、3 tone (info / warn / ok)、`role="status" | "alert"` を consumer 側が制御
-- **Modal** (`modal.tsx` / `modal-preview.tsx`): root + Header / Body / Footer / Preview / Card の家族。詳細は次節の Modal core を参照
-- **その他** (`pagination.tsx` / `link-card.tsx` / `text-link.tsx`): pagination は数字ボタン + 前 / 次 / ellipsis のミニマル実装。`LinkCard` / `TextLink` は **内部 link (RR `<Link>`) と外部 link (`<a target="_blank">`) を 1 primitive に統一**、外部は `rel="noopener noreferrer"` を自動付与
+- **Modal** (`modal.tsx` / `modal-preview.tsx`): `Modal` (root) + `ModalHeader` / `ModalBody` / `ModalFooter` + `ModalPreview` / `PreviewCard` の家族。詳細は次節の Modal core を参照
+- **その他** (`pagination.tsx` / `link-card.tsx` / `text-link.tsx` / `info-hint.tsx` / `segmented.tsx` / `stable-label.tsx`): pagination は数字ボタン + 前 / 次 / ellipsis のミニマル実装。`LinkCard` / `TextLink` は **内部 link (RR `<Link>`) と外部 link (`<a target="_blank">`) を 1 primitive に統一**、外部は `rel="noopener noreferrer"` を自動付与。`InfoHint` は ⓘ トリガで hover / focus / pin する tooltip (native `title` を使わない)、`Segmented` は 2 値以上の即時切替トグル (AND/OR・DSL/グラフ等、active を brand 塗り)、`StableLabel` は取り得る全ラベルの最大幅を確保してテキスト差し替え (検索 ⇄ 検索中…) でコントロールがリサイズしないようにする layout helper
 
 ### Forms: error state と SR 連携
 
@@ -265,13 +265,7 @@ route handle 規約は `architecture.md` の「route handle 規約」 を参照�
 
 #### missing key の挙動
 
-`react-i18next` の `fallbackLng: "ja"` により、en リソースに無いキーは ja の値が render される (`i18n.md`)。これにより:
-
-- 翻訳の一部が欠落していても画面は壊れない (ja でフォールバック)
-- TranslationUnavailable バナーで「日本語で表示している」 状態を可視化
-- ユーザーは Switch link で能動的に ja に切替可能 (URL 不変)
-
-route handle に `i18n.en === "complete"` を書いたものはバナー非表示。ja default 設計なので en 側の翻訳が出揃った時点で flag を更新する運用。
+en リソースに無いキーは `react-i18next` の `fallbackLng: "ja"` で ja 値が render され (機構は `i18n.md` の「翻訳なし fallback」)、本バナーがその状態を可視化する。route handle に `i18n.en === "complete"` を書いたものはバナー非表示で、ja default 設計のため en の翻訳が出揃った時点で flag を更新する運用。
 
 ### ShellLayout
 
@@ -434,21 +428,21 @@ NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有�
 
 ```
 app/content/
-├── databases/
-│   ├── bioproject/index.content.tsx   → /databases/bioproject
-│   └── biosample/index.content.tsx    → /databases/biosample
-└── services/
-    ├── bioproject.content.tsx          BioProject (submit-only)
-    ├── biosample.content.tsx           BioSample (submit-only)
-    ├── search.content.tsx              portal 内検索 (top primary tile)
-    ├── submit-nav.content.tsx          portal 内登録ナビ (top primary tile)
-    ├── supercomputer.content.tsx       NIG スパコン (top primary tile, external)
-    ├── ...
-    ├── humandbs.content.tsx            humandbs (submit-only)
-    └── jpost.content.tsx               jPOST (submit-only)
+├── databases/                          → /databases/:slug の各エントリ
+│   ├── bioproject/index.content.tsx
+│   └── biosample/index.content.tsx
+└── services/                           ServiceContent collection (top tile + submit CTA)
+    ├── search.content.tsx              top primary tile (portal 内検索)
+    ├── submit-nav.content.tsx          top primary tile (登録ナビ)
+    ├── services-index.content.tsx      top primary tile (サービス一覧)
+    ├── supercomputer.content.tsx       top primary tile (NIG スパコン, external)
+    ├── statistics.content.tsx          top primary tile
+    ├── activity.content.tsx            top primary tile
+    ├── dra.content.tsx / jga.content.tsx / …   submit CTA (submit Service enum と対応)
+    └── humandbs.content.tsx / jpost.content.tsx / eva.content.tsx   submit external CTA
 ```
 
-対応する Zod schema は `app/schemas/content/{database-content.ts, service-content.ts}` に置く。loader / type / breadcrumb hook は `app/lib/content/` に置く (`loader.ts` / `breadcrumb.ts` / `types.ts` / `index.ts`)。
+全件・表示名・top/submit usage は collection が SSOT (top primary tile は `service-icon.tsx` の switch と対応)。対応する Zod schema は `app/schemas/content/` に置く (`database-content.ts` / `service-content.ts`、submit-routing カタログ用の `submit-routing-content.ts`)。loader / type / breadcrumb hook は `app/lib/content/` に置く (`loader.ts` / `breadcrumb.ts` / `types.ts` / `index.ts`)。
 
 zone 関係は `architecture.md` を参照。`content` は `ui` / `lib` / `schemas` / `content` を import 可、`features` / `shell` への import は禁止 (ESLint `no-restricted-paths` で物理強制)。
 
@@ -503,7 +497,7 @@ portal 内 navigation の Service tiles (トップ左 main の primary tiles) �
 | フィールド | 型 | 備考 |
 |---|---|---|
 | `service` | submit `Service` enum | flow card / preview card で参照される |
-| `externalUrl` | URL | 外部 CTA リンク先 |
+| `externalUrl` | `{ ja, en }` URL (en は null 可) | 外部 CTA リンク先 |
 | `source` | `"DDBJ" \| "DBCLS"` または null | tag 表示用 |
 | `accessionPlaceholders` | 文字列配列 | step カード上の placeholder 例 |
 
@@ -517,9 +511,9 @@ portal 内 navigation の Service tiles (トップ左 main の primary tiles) �
 - 一覧: database / service の全件取得
 - top category 別一覧: 指定 top category を持つ service を `top.order` 昇順で取得
 - submit 逆引き: submit `Service` enum 値から service entry を逆引き
-- validateAll: database / service それぞれを Zod parse し直し、結果を返す
+- validateAllDatabases / validateAllServices: database / service それぞれを Zod parse し直し、結果を返す
 
-CLI (`scripts/validate-content.ts`) は database / service の validateAll に加えて submit-routing catalog (`validateSubmitRouting`) を順に呼び、いずれかが失敗すれば `process.exit(1)` する。
+CLI (`scripts/validate-content.ts`) は `validateAllDatabases` / `validateAllServices` に加えて submit-routing catalog (`validateSubmitRouting`) を順に呼び、いずれかが失敗すれば `process.exit(1)` する。
 
 ### 起動時 fail-fast
 

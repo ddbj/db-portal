@@ -7,8 +7,8 @@ production / staging への deploy を **podman + podman-compose による NIG �
 | 環境 | 役割 | 起動 |
 |---|---|---|
 | dev | localhost (Docker Compose) | `npm run dev` (HMR) |
-| staging | NIG (podman + podman-compose)、main 追従 | `npm start` (built SSR) |
-| production | NIG (podman + podman-compose)、tag 指定 | `npm start` (built SSR) |
+| staging | NIG (podman + podman-compose)、main 追従 | `tsx server/index.ts` (built SSR) |
+| production | NIG (podman + podman-compose)、tag 指定 | `tsx server/index.ts` (built SSR) |
 
 `compose.yml` を **production 形 (immutable image / source bind-mount なし)** の base とし、`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めることで、同一ホスト上で 3 環境を衝突なく並列に動かせる。base に override を重ねて環境差を吸収する:
 
@@ -128,10 +128,16 @@ log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
 | `news_git_sync_failed` | warn | source repo の git pull / clone に失敗 |
 | `news_mirror_no_change` | debug | source repo の HEAD に変更なし、再 build なし |
 | `news_mirror_full_refresh` | info | source repo の HEAD が更新され、cache を全件 rebuild |
-| `news_mirror_failed` | warn | mirror tick の例外 (rate limit / network) |
+| `news_mirror_failed` | error | mirror tick の例外 (network 等) |
+| `news_on_source_synced_failed` | warn | News→services 再構築フックの失敗 |
 | `featured_whitelist_read_failed` | warn | featured whitelist YAML の読込に失敗 |
 | `featured_whitelist_yaml_parse_failed` | warn | featured whitelist YAML の parse に失敗 |
 | `featured_whitelist_schema_mismatch` | warn | featured whitelist の schema が不一致 |
+| `services_cache_loaded` | info | disk cache から service item を初期 load |
+| `services_mirror_refresh` | info | News mirror の HEAD 更新フックで services を再構築 |
+| `services_cache_read_failed` / `services_cache_persist_failed` / `services_cache_schema_mismatch` | warn | services disk cache の読込 / 書込 / schema 不一致 |
+| `services_source_read_failed` / `services_ddbj_yaml_parse_failed` / `services_dbcls_json_parse_failed` | warn | services source ファイルの read / parse 失敗 (既存 items 維持) |
+| `services_ddbj_schema_mismatch` / `services_dbcls_not_array` / `services_dbcls_missing_name_en` / `services_duplicate_id` | warn | services 正規化時の不整合 (該当行を skip / fallback) |
 | `llm_health_transition` | info | vLLM 接続状態が遷移 (`ok` ↔ `unreachable` ↔ `unset`) |
 | `llm_assistant_request` | debug | search-assistant SSE 開始 (debug のため dev のみ出力) |
 | `llm_assistant_failed` | warn | search-assistant 中に upstream または parse 系の失敗 |
