@@ -10,7 +10,10 @@ export default {
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/dra/index.html" },
   submit: {
     service: "dra",
-    externalUrl: "https://www.ddbj.nig.ac.jp/dra/submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/dra/submission.html",
+      en: "https://www.ddbj.nig.ac.jp/dra/submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["DRR######", "DRX######"],
   },

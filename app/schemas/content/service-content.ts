@@ -21,9 +21,14 @@ const TopUsage = z.object({
 
 export type ServiceTopCategory = z.infer<typeof TopUsage>["category"]
 
+const BilingualUrl = z.object({
+  ja: z.string().url(),
+  en: z.string().url().nullable(),
+})
+
 const SubmitUsage = z.object({
   service: SubmitService,
-  externalUrl: z.string().url(),
+  externalUrl: BilingualUrl,
   source: z.enum(["DDBJ", "DBCLS"]).nullable(),
   accessionPlaceholders: z.array(z.string()).default([]),
 })

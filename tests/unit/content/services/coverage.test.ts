@@ -21,7 +21,10 @@ describe("services collection coverage", () => {
   test("services_submitUsage_hasExternalUrl", () => {
     for (const service of SubmitService.options) {
       const entry = getServiceBySubmit(service)
-      expect(entry?.submit?.externalUrl).toBeTypeOf("string")
+      const externalUrl = entry?.submit?.externalUrl
+      expect(externalUrl).toBeDefined()
+      expect(externalUrl?.ja).toBeTypeOf("string")
+      expect(externalUrl?.en === null || typeof externalUrl?.en === "string").toBe(true)
     }
   })
 

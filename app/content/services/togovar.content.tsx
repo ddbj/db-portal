@@ -9,7 +9,10 @@ export default {
   },
   submit: {
     service: "togovar",
-    externalUrl: "https://togovar.org/",
+    externalUrl: {
+      ja: "https://togovar.org/",
+      en: null,
+    },
     source: "DDBJ",
     accessionPlaceholders: [],
   },

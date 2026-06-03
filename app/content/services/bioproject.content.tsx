@@ -10,7 +10,10 @@ export default {
   link: { kind: "internal", to: "/databases/bioproject" },
   submit: {
     service: "bioproject",
-    externalUrl: "https://www.ddbj.nig.ac.jp/bioproject/submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/bioproject/submission.html",
+      en: "https://www.ddbj.nig.ac.jp/bioproject/submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["PRJDB######"],
   },

@@ -1,5 +1,6 @@
 import { type CardCopy, SUBMIT_CARDS } from "~/content/submit-routing/cards"
 import { getServiceBySubmit } from "~/lib/content"
+import type { Lang } from "~/lib/i18n"
 import type { Service } from "~/schemas/submit"
 
 export type ServiceSource = "DDBJ" | "DBCLS"
@@ -9,13 +10,16 @@ export type SubmitMeta = {
   source: ServiceSource | null
 }
 
-export const getSubmitMeta = (service: Service): SubmitMeta | undefined => {
+export const getSubmitMeta = (service: Service, lang: Lang): SubmitMeta | undefined => {
   const entry = getServiceBySubmit(service)
   const submit = entry?.submit
   if (submit === undefined) return undefined
 
+  const { externalUrl } = submit
+  const resolvedUrl = externalUrl[lang] ?? externalUrl.ja
+
   return {
-    externalUrl: submit.externalUrl,
+    externalUrl: resolvedUrl,
     source: submit.source,
   }
 }

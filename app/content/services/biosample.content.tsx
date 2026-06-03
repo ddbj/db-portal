@@ -10,7 +10,10 @@ export default {
   link: { kind: "internal", to: "/databases/biosample" },
   submit: {
     service: "biosample",
-    externalUrl: "https://www.ddbj.nig.ac.jp/biosample/submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/biosample/submission.html",
+      en: "https://www.ddbj.nig.ac.jp/biosample/submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["SAMD######"],
   },

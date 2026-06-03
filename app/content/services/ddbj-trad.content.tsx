@@ -9,7 +9,10 @@ export default {
   },
   submit: {
     service: "ddbj-trad",
-    externalUrl: "https://www.ddbj.nig.ac.jp/ddbj/mss.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/ddbj/mss.html",
+      en: "https://www.ddbj.nig.ac.jp/ddbj/mss-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["AP######", "BAAA01000000"],
   },

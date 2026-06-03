@@ -9,7 +9,10 @@ export default {
   },
   submit: {
     service: "nsss",
-    externalUrl: "https://www.ddbj.nig.ac.jp/ddbj/web-submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/ddbj/web-submission.html",
+      en: "https://www.ddbj.nig.ac.jp/ddbj/web-submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["LC######"],
   },

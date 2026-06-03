@@ -9,7 +9,10 @@ export default {
   },
   submit: {
     service: "jpost",
-    externalUrl: "https://repository.jpostdb.org/",
+    externalUrl: {
+      ja: "https://repository.jpostdb.org/",
+      en: null,
+    },
     source: null,
     accessionPlaceholders: ["JPST######"],
   },

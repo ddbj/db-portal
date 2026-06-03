@@ -10,7 +10,10 @@ export default {
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/jga/index.html" },
   submit: {
     service: "jga",
-    externalUrl: "https://www.ddbj.nig.ac.jp/jga/submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/jga/submission.html",
+      en: "https://www.ddbj.nig.ac.jp/jga/submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["JGAS######", "JGAD######"],
   },

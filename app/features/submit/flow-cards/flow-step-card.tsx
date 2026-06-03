@@ -1,5 +1,6 @@
 import type { FileEntry, FileTypeKind, FlowStep } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, Tag } from "~/ui"
+import { useLang } from "~/lib/i18n"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
@@ -61,9 +62,10 @@ export const FlowStepCard = ({
   externalCtaLabel,
   sourceTagLabel,
 }: FlowStepCardProps) => {
+  const lang = useLang()
   const hasWarningOrError = step.notes.some((n) => n.kind === "warning" || n.kind === "error")
   const scopeEntries = entries.filter((e) => step.scope.entryIds.includes(e.id))
-  const meta = getSubmitMeta(step.service)
+  const meta = getSubmitMeta(step.service, lang)
   const externalUrl = meta?.externalUrl
   const source = meta?.source ?? null
 

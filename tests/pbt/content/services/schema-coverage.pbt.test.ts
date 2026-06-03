@@ -28,9 +28,14 @@ const topArb = fc.record({
   order: fc.nat({ max: 20 }),
 })
 
+const urlArb = fc.constantFrom("https://example.com/a", "https://example.org/b")
+
 const submitArb = fc.record({
   service: submitServiceArb,
-  externalUrl: fc.constantFrom("https://example.com/a", "https://example.org/b"),
+  externalUrl: fc.record({
+    ja: urlArb,
+    en: fc.oneof(urlArb, fc.constant(null)),
+  }),
   source: fc.constantFrom("DDBJ" as const, "DBCLS" as const, null),
   accessionPlaceholders: fc.array(fc.stringMatching(/^[A-Z]{2,8}#+$/), { maxLength: 3 }),
 })

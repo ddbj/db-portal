@@ -10,7 +10,10 @@ export default {
   link: { kind: "external", href: "https://mb2.ddbj.nig.ac.jp/" },
   submit: {
     service: "metabobank",
-    externalUrl: "https://mb2.ddbj.nig.ac.jp/submission/",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/metabobank/submission.html",
+      en: "https://www.ddbj.nig.ac.jp/metabobank/submission-e.html",
+    },
     source: "DDBJ",
     accessionPlaceholders: ["MTBKS####"],
   },

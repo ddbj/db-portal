@@ -28,7 +28,7 @@ const noLinkService: ServiceContent = {
   description: { ja: "x", en: "x" },
   submit: {
     service: "dra",
-    externalUrl: "https://example.com",
+    externalUrl: { ja: "https://example.com", en: null },
     source: null,
     accessionPlaceholders: [],
   },

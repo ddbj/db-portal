@@ -9,7 +9,10 @@ export default {
   },
   submit: {
     service: "eva",
-    externalUrl: "https://www.ebi.ac.uk/eva/",
+    externalUrl: {
+      ja: "https://www.ebi.ac.uk/eva/",
+      en: null,
+    },
     source: null,
     accessionPlaceholders: ["PRJEB######"],
   },

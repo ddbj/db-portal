@@ -10,7 +10,10 @@ export default {
   link: { kind: "external", href: "https://www.ddbj.nig.ac.jp/gea/index.html" },
   submit: {
     service: "gea",
-    externalUrl: "https://www.ddbj.nig.ac.jp/gea/submission.html",
+    externalUrl: {
+      ja: "https://www.ddbj.nig.ac.jp/gea/submission.html",
+      en: null,
+    },
     source: "DDBJ",
     accessionPlaceholders: ["E-GEAD-######"],
   },
