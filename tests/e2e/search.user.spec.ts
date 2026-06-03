@@ -3,9 +3,10 @@ import { expect, test } from "@playwright/test"
 test.describe("Search Domain (authenticated)", () => {
   test("S-SEARCH-11: per-DB results の AI append 生成が現クエリを保持して navigate する", async ({ page }) => {
     // vLLM の生成揺れ/timeout に依存しないよう health=ok と SSE(done) を mock 固定する。
-    // append は server 側で現クエリ (cancer) と融合した AST を done で返す設計なので、
-    // mock も融合済み AND AST (free_text:cancer + organism_name:Homo sapiens) を返す。
-    // この done AST の serialize → navigate (現クエリ保持) は実コードを通す。
+    // append は server 側で現クエリ (cancer) と融合した AST + resolved DB を done payload
+    // ({ast, db}) で返す設計。per-DB results (db=bioproject) では locked DB がそのまま
+    // resolved DB になるので、mock の done も ast=融合済み AND AST + db="bioproject" を返す。
+    // この done の serialize → navigate (現クエリ + db scope 保持) は実コードを通す。
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
         status: 200,
@@ -24,7 +25,7 @@ test.describe("Search Domain (authenticated)", () => {
       route.fulfill({
         status: 200,
         contentType: "text/event-stream",
-        body: `: stream-open\n\nevent: done\ndata: ${JSON.stringify(appendedAst)}\n\n`,
+        body: `: stream-open\n\nevent: done\ndata: ${JSON.stringify({ ast: appendedAst, db: "bioproject" })}\n\n`,
       }),
     )
 
