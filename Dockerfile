@@ -41,6 +41,13 @@ CMD ["sleep", "infinity"]
 
 # --- build: produce the SSR/client build artifact. ---
 FROM base AS build
+# VITE_* vars are baked into the client bundle at build time, so they must be
+# declared as ARGs here and passed via compose build.args (not runtime env).
+ARG VITE_DB_PORTAL_SEARCH_API_URL
+ARG VITE_DB_PORTAL_KEYCLOAK_REALM_URL
+ARG VITE_DB_PORTAL_KEYCLOAK_CLIENT_ID
+ARG VITE_DB_PORTAL_PORTAL_ORIGIN
+ARG VITE_DB_PORTAL_DEFAULT_LANG=ja
 COPY . .
 RUN NODE_ENV=production npm run build
 

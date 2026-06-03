@@ -6,6 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runtime
+      args:
+        - VITE_DB_PORTAL_SEARCH_API_URL=${DB_PORTAL_SEARCH_API_URL}
+        - VITE_DB_PORTAL_KEYCLOAK_REALM_URL=${DB_PORTAL_KEYCLOAK_REALM_URL}
+        - VITE_DB_PORTAL_KEYCLOAK_CLIENT_ID=${DB_PORTAL_KEYCLOAK_CLIENT_ID}
+        - VITE_DB_PORTAL_PORTAL_ORIGIN=${DB_PORTAL_PORTAL_ORIGIN}
+        - VITE_DB_PORTAL_DEFAULT_LANG=${DB_PORTAL_DEFAULT_LANG:-ja}
     volumes:
       - ./cache:/app/cache:rw
     ports:
