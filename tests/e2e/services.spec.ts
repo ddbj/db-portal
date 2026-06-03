@@ -30,7 +30,10 @@ test.describe("Services Domain", () => {
     const facetPanel = page.getByRole("region", { name: /絞り込み|Refine/i })
     await expect(facetPanel).toBeVisible({ timeout: 15_000 })
 
+    // 各 facet 選択は URL ナビゲーションで反映される。実ユーザーは 1 つ目の反映を見てから
+    // 2 つ目を選ぶため、中間状態 (category=search) の反映を待ってから DBCLS を選ぶ。
     await facetPanel.getByRole("checkbox", { name: /検索|Search/i }).first().click()
+    await expect(page).toHaveURL(/category=search/, { timeout: 10_000 })
     await facetPanel.getByRole("checkbox", { name: "DBCLS" }).first().click()
 
     // params は source → category の順、値は alphabet sort

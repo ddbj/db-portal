@@ -153,9 +153,6 @@ const SubmitRoute = () => {
 
             <div id="submit-kind-selection">
               <SectionHeading>{t("submit.sections.table")}</SectionHeading>
-              <p className="text-fs-body-sm text-ink-mid mt-0 mb-4 leading-relaxed">
-                {t("submit.table.headingDescription")}
-              </p>
               <FileTypeGrid
                 onToggle={onToggleKind}
                 getLabel={fileTypeKindLabel}

@@ -199,8 +199,9 @@ test.describe("News Domain", () => {
     // OFF に戻すと総件数が復元、AppliedFilters が消える
     await dataRelease.click()
     await expect(page).not.toHaveURL(/category=/, { timeout: 10_000 })
-    const restored = await readCountTotal(count)
-    expect(restored).toBe(baseTotal)
+    // 件数表示は URL 変化に遅れて settle する。settle 前に読むと filtered 値を拾うため、
+    // 総件数が baseTotal へ戻りきるまで poll する (facet on→off の round-trip 不変量)。
+    await expect.poll(() => readCountTotal(count), { timeout: 15_000 }).toBe(baseTotal)
     await expect(
       page.getByRole("button", { name: "種別: データ公開 を解除" }),
     ).toHaveCount(0)
