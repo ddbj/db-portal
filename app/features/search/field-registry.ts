@@ -101,34 +101,41 @@ export type Scope = "cross" | DbSlug
 
 // Per-scope ordered field list — the single source of "which field appears in
 // which scope" for BOTH surfaces (the Sidebar renders this order; the builder
-// reads the same membership). Each scope reads facet rows first, then text, then
-// ranges, with the shared head before per-DB fields. Solr scopes (trad / taxonomy)
-// carry their own curated fields; degenerate ES fields are omitted there
-// (docs/search.md § scope 別の filter 構成). publication is omitted for biosample
-// (the nested field is not merged there, API rejects it).
+// reads the same membership). Rows read top-to-bottom as one sentence: subject
+// (organism) → record identity / content → per-DB attributes → access / provenance
+// metadata → dates. Fields are grouped by meaning, not render kind, so related
+// fields stay adjacent (the organism taxID facet sits with its name text; the
+// access / provenance block trails just above the date ranges). Solr scopes (trad /
+// taxonomy) carry their own curated fields; degenerate ES fields are omitted there
+// (docs/search.md § scope 別の filter 構成).
 const ES_HEAD = [
-  // facets first
+  // subject: the organism taxID facet and the scientific-name text are one concept
   "organism_id",
-  "accessibility",
-  // then text
   "organism_name",
-  "submitter",
+  // record identity / content
   "identifier",
   "title",
   "name",
   "description",
 ] as const satisfies readonly FieldKey[]
 
+// Access / provenance metadata, placed after the per-DB attributes and just above
+// the dates: accessibility, then the submitting organization. publication and grant
+// provenance append after per scope (publication is not merged for biosample; grants
+// only for bioproject / jga-study).
+const ES_META = ["accessibility", "submitter"] as const satisfies readonly FieldKey[]
+
 const ES_DATES = ["date_published", "date_modified", "date_created"] as const satisfies readonly FieldKey[]
 
 export const SCOPE_FIELDS = {
-  cross: [...ES_HEAD, "publication", ...ES_DATES],
+  cross: [...ES_HEAD, ...ES_META, "publication", ...ES_DATES],
   bioproject: [
     ...ES_HEAD,
-    "publication",
     "object_type",
-    "relevance",
     "project_type",
+    "relevance",
+    ...ES_META,
+    "publication",
     "grant_title",
     "grant_agency",
     ...ES_DATES,
@@ -142,43 +149,47 @@ export const SCOPE_FIELDS = {
     "isolate",
     "geo_loc_name",
     "collection_date",
+    ...ES_META,
     ...ES_DATES,
   ],
   sra: [
     ...ES_HEAD,
-    "publication",
     "type",
     "library_strategy",
     "library_source",
     "library_selection",
-    "platform",
     "library_layout",
+    "platform",
     "instrument_model",
     "analysis_type",
     "library_name",
     "library_construction_protocol",
     "geo_loc_name",
     "collection_date",
+    ...ES_META,
+    "publication",
     ...ES_DATES,
   ],
   jga: [
     ...ES_HEAD,
-    "publication",
     "type",
     "study_type",
     "dataset_type",
     "vendor",
+    ...ES_META,
+    "publication",
     "grant_title",
     "grant_agency",
     ...ES_DATES,
   ],
-  gea: [...ES_HEAD, "publication", "experiment_type", ...ES_DATES],
+  gea: [...ES_HEAD, "experiment_type", ...ES_META, "publication", ...ES_DATES],
   metabobank: [
     ...ES_HEAD,
-    "publication",
     "experiment_type",
     "study_type",
     "submission_type",
+    ...ES_META,
+    "publication",
     ...ES_DATES,
   ],
   // Solr (ARSA): organism_id / submitter degenerate, so omitted. publication maps to

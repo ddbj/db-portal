@@ -513,7 +513,7 @@ export const en: Resources = {
       field: {
         organism: "Organism (TaxID)",
         organization: "Organization",
-        identifier: "Identifier",
+        identifier: "Accession",
         title: "Title",
         description: "Description",
         accessibility: "Accessibility",
