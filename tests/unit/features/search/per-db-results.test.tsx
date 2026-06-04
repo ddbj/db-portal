@@ -6,7 +6,7 @@ import type { DbSearchResponse } from "~/lib/api"
 
 import { renderWithStub } from "../../_helpers/render"
 
-const HARD_LIMIT_LABEL = "上位 10,000 件まで表示しています"
+const HARD_LIMIT_BADGE = "上位 10,000 件まで"
 
 const response = (o: Record<string, unknown>): DbSearchResponse =>
   ({
@@ -38,18 +38,25 @@ const renderPerDb = (resp: DbSearchResponse) =>
   })
 
 describe("PerDbResults toolbar", () => {
-  test("PerDbResults_hardLimitReached_showsCollapsedInfoHintTrigger", () => {
+  test("PerDbResults_hardLimitReached_showsAlwaysOnLimitBadge", () => {
     renderPerDb(response({ total: 12345, hardLimitReached: true }))
-    // The notice is an ⓘ trigger, not always-on text: the button carries the
-    // message as its accessible name, and the tooltip stays collapsed until
-    // the user hovers / clicks.
-    expect(screen.getByRole("button", { name: HARD_LIMIT_LABEL })).toBeInTheDocument()
-    expect(screen.queryByRole("tooltip")).toBeNull()
+    // The notice is always-on text, not a collapsed tooltip: a warn badge in the
+    // toolbar states the cap inline next to the hit count.
+    expect(screen.getByText(HARD_LIMIT_BADGE)).toBeInTheDocument()
   })
 
-  test("PerDbResults_notHardLimited_hidesInfoHintTrigger", () => {
+  test("PerDbResults_notHardLimited_hidesLimitBadge", () => {
     renderPerDb(response({ total: 42, hardLimitReached: false }))
-    expect(screen.queryByRole("button", { name: HARD_LIMIT_LABEL })).toBeNull()
+    expect(screen.queryByText(HARD_LIMIT_BADGE)).toBeNull()
+  })
+
+  test("PerDbResults_totalExceedsDeepPagingLimit_capsPaginationAtReachablePage", () => {
+    renderPerDb(response({ total: 50000, hardLimitReached: true }))
+    // total=50000 / perPage=20 would be 2,500 pages, but page * perPage > 10000
+    // is rejected by the API, so pagination must stop at page 500 (=10000/20)
+    // and never offer the uncapped last page.
+    expect(screen.getAllByRole("button", { name: "500 ページ目へ" }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole("button", { name: "2500 ページ目へ" })).toBeNull()
   })
 
   test("PerDbResults_always_rendersCountSortAndPerPageTogether", () => {

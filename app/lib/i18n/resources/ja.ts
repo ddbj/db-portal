@@ -1072,7 +1072,7 @@ export const ja: Resources = {
         notApplicableReason: "filter:{{fields}} に未対応",
       },
       perDb: {
-        hardLimit: "上位 10,000 件まで表示しています",
+        hardLimit: "上位 {{limit}} 件まで",
         totalCount: "{{total}} 件",
         rangeSummary: "{{total}} 件中 {{start}}-{{end}}",
         empty: "条件に一致する結果がありません",

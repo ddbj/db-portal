@@ -478,7 +478,7 @@ export const en: Resources = {
         notApplicableReason: "filter:{{fields}} not supported",
       },
       perDb: {
-        hardLimit: "Showing the top 10,000 hits",
+        hardLimit: "Top {{limit}} only",
         totalCount: "{{total}} hits",
         rangeSummary: "{{start}}-{{end}} of {{total}}",
         empty: "No results matched the conditions",

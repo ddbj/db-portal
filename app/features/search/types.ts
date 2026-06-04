@@ -2,8 +2,11 @@ import {
   DB_SLUGS,
   type DbSlug,
   isDbSlug,
+  maxReachablePage,
   PER_PAGE_VALUES,
   type PerPageValue,
+  reachablePageCount,
+  SEARCH_HARD_LIMIT,
   SORT_KEYS,
   type SortKey,
 } from "~/lib/search-scope"
@@ -23,8 +26,11 @@ export {
   DB_SLUGS,
   type DbSlug,
   isDbSlug,
+  maxReachablePage,
   PER_PAGE_VALUES,
   type PerPageValue,
+  reachablePageCount,
+  SEARCH_HARD_LIMIT,
   SORT_KEYS,
   type SortKey,
 }

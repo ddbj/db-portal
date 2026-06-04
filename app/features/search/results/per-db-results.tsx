@@ -1,11 +1,13 @@
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, useT } from "~/lib/i18n"
-import { InfoHint, SearchIcon, Select, type SelectOption } from "~/ui"
+import { AlertIcon, SearchIcon, Select, type SelectOption } from "~/ui"
 
 import {
   type DbSlug,
   PER_PAGE_VALUES,
   type PerPageValue,
+  reachablePageCount,
+  SEARCH_HARD_LIMIT,
   SORT_KEYS,
   type SortKey,
 } from "../types"
@@ -53,7 +55,9 @@ export const PerDbResults = ({
   onSortChange,
 }: PerDbResultsProps) => {
   const t = useT()
-  const totalPages = response.total === 0 ? 0 : Math.ceil(response.total / perPage)
+  // Cap pages at the deep paging limit so pagination never offers a page the
+  // search API would reject with a 400 (docs/search.md § Pagination).
+  const totalPages = reachablePageCount(response.total, perPage)
   const { start, end } = computeRange(response.total, page, perPage)
 
   const sortOptions: SelectOption[] = SORT_KEYS.map((key) => {
@@ -87,7 +91,12 @@ export const PerDbResults = ({
             })}
         </p>
         {response.hardLimitReached && (
-          <InfoHint label={t("search.results.perDb.hardLimit")} />
+          <span className="inline-flex items-center gap-1 rounded-pill border border-warn-border bg-warn-bg px-2.5 py-0.5 text-fs-label font-semibold text-warn-fg">
+            <AlertIcon size={13} aria-hidden />
+            {t("search.results.perDb.hardLimit", {
+              limit: SEARCH_HARD_LIMIT.toLocaleString("en-US"),
+            })}
+          </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <label className="text-fs-label text-ink-mid inline-flex items-center gap-2">

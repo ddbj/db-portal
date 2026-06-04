@@ -62,8 +62,11 @@ export { SyncStatusChip } from "./sync-status"
 export {
   DB_SLUGS,
   type DbSlug,
+  maxReachablePage,
   PER_PAGE_VALUES,
   type PerPageValue,
+  reachablePageCount,
+  SEARCH_HARD_LIMIT,
   SORT_KEYS,
   type SortKey,
   sortKeyToApiSort,

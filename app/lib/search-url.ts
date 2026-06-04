@@ -3,6 +3,7 @@ import {
   isDbSlug,
   isPerPageValue,
   isSortKey,
+  maxReachablePage,
   type PerPageValue,
   type SortKey,
 } from "./search-scope"
@@ -23,10 +24,14 @@ export const readSearchParams = (params: URLSearchParams): SearchUrlState => {
   const q = params.get("q") ?? ""
   const rawDb = params.get("db")
   const db = rawDb !== null && isDbSlug(rawDb) ? rawDb : null
-  const rawPage = Number.parseInt(params.get("page") ?? "", 10)
-  const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : DEFAULT_PAGE
   const rawPerPage = Number.parseInt(params.get("perPage") ?? "", 10)
   const perPage = isPerPageValue(rawPerPage) ? rawPerPage : DEFAULT_PER_PAGE
+  // Clamp page to the deep paging limit so a hand-typed ?page= never sends the
+  // loader past page * perPage <= 10000 (which the search API answers with a 400).
+  const rawPage = Number.parseInt(params.get("page") ?? "", 10)
+  const page = Number.isInteger(rawPage) && rawPage >= 1
+    ? Math.min(rawPage, maxReachablePage(perPage))
+    : DEFAULT_PAGE
   const rawSort = params.get("sort")
   const sort = rawSort !== null && isSortKey(rawSort) ? rawSort : DEFAULT_SORT
 

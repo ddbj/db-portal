@@ -4,9 +4,9 @@ import { describe, expect } from "vitest"
 import {
   DB_SLUGS,
   type DbSlug,
-  DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
   DEFAULT_SORT,
+  maxReachablePage,
   PER_PAGE_VALUES,
   type PerPageValue,
   readSearchParams,
@@ -19,7 +19,9 @@ import {
 const arbDb = fc.option(fc.constantFrom<DbSlug>(...DB_SLUGS), { freq: 3, nil: null })
 const arbPerPage = fc.constantFrom<PerPageValue>(...PER_PAGE_VALUES)
 const arbSort = fc.constantFrom<SortKey>(...SORT_KEYS)
-const arbPage = fc.integer({ min: 1, max: 500 })
+// Spans well past every perPage's deep paging limit so the round-trip exercises
+// the clamp in readSearchParams (perPage=100 caps at page 100).
+const arbPage = fc.integer({ min: 1, max: 12000 })
 const arbQ = fc.string({ maxLength: 24 })
 
 const arbState: fc.Arbitrary<SearchUrlState> = fc.record({
@@ -37,8 +39,9 @@ describe("search URL symmetry", () => {
       const written = writeSearchParams(state)
       const back = readSearchParams(written)
       expect(back.db).toBe(state.db)
-      if (state.page === DEFAULT_PAGE) expect(back.page).toBe(DEFAULT_PAGE)
-      else expect(back.page).toBe(state.page)
+      // page round-trips, except it is clamped to the deep paging limit so the
+      // restored page never exceeds maxReachablePage(perPage).
+      expect(back.page).toBe(Math.min(state.page, maxReachablePage(state.perPage)))
       if (state.perPage === DEFAULT_PER_PAGE) expect(back.perPage).toBe(DEFAULT_PER_PAGE)
       else expect(back.perPage).toBe(state.perPage)
       if (state.sort === DEFAULT_SORT) expect(back.sort).toBe(DEFAULT_SORT)

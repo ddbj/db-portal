@@ -411,7 +411,7 @@ detail link は hit の `url` ではなく identifier + 細粒度 `type` から�
 
 #### Pagination
 
-`app/ui/pagination.tsx` で `totalPages = Math.ceil(total / perPage)` を計算した offset pagination のみを使う。ES の `max_result_window` (10000 件) を超える page にユーザーが行ったとき、API が error を返す前提で UI は通常の数値 pagination をそのまま描画する。深部 page の cursor 切替 (search_after) は portal 側では実装していない。
+offset pagination のみを使う。検索 API は `page * perPage` が deep paging limit (`SEARCH_HARD_LIMIT` = 10000、`app/lib/search-scope.ts`) を超えると 400 を返すため、UI 側で到達不能ページを描画しない。不変条件: 到達可能な最大 page は `floor(10000 / perPage)` (perPage=20→500 / 50→200 / 100→100)。`totalPages` はこの値でキャップし、pagination の「最終ページへジャンプ」も上限ページを指す。URL の `?page=` も `readSearchParams` で同じ上限にクランプし、直打ちで limit を超えても 400 にならない。深部 page の cursor 切替 (search_after) は portal 側では実装していない。
 
 ### ResultsToolbar
 
@@ -421,7 +421,7 @@ detail link は hit の `url` ではなく identifier + 細粒度 `type` から�
 
 ResultsToolbar は結果リストの上下に置く。上は件数 + sort + perPage + pagination、下は pagination のみ。
 
-`hardLimitReached === true` のとき件数の横に ⓘ アイコン (`InfoHint`) を出し、hover / click で「上位 10,000 件まで表示しています」を tooltip 表示する (API 仕様、ES / Solr のハードリミット表示)。
+`hardLimitReached === true` (total >= 10000) のとき、件数の横に警告色 (warn) のバッジ「上位 10,000 件まで」を常設し、閲覧できるのが上位 10000 件までであることを明示する。
 
 ### 結果領域の a11y
 
