@@ -1,20 +1,21 @@
 import { useState } from "react"
 
 import { deriveFlowSteps, isKindEnabled, isQ2Enabled, RadioCardGroup, selectValidations } from "~/features/submit"
+import { ExternalLinkButton } from "~/features/submit/components/external-link-button"
 import { StepBadge } from "~/features/submit/components/step-badge"
-import { useT } from "~/lib/i18n"
+import { getSubmitCard, getSubmitMeta } from "~/features/submit/external-links"
+import { useLang, useT } from "~/lib/i18n"
 import type { FileEntry, FlowStep, Q1, Q2, Service, Submission } from "~/schemas/submit"
 import {
   FileTypeKind as FileTypeKindEnum,
   Q1 as Q1Enum,
   Q2 as Q2Enum,
-  serviceRole,
   serviceRoleTagKey,
   stepPrerequisites,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
-import { Button, Callout, cn, PageTitle, Tag } from "~/ui"
+import { Button, Callout, PageTitle, Tag } from "~/ui"
 
 type EntrySpec = {
   kind: FileEntry["fileTypeKind"]
@@ -75,10 +76,9 @@ const PRESETS: readonly { label: string; build: () => Submission }[] = [
   },
 ]
 
-type Check = { tone: "warn" | "error"; label: string; text: string }
-
 const SubmitResultSummary = () => {
   const t = useT()
+  const lang = useLang()
   const [submission, setSubmission] = useState<Submission>(emptySubmission)
   const { q1, q2 } = submission.preconditions
 
@@ -123,36 +123,14 @@ const SubmitResultSummary = () => {
   const validations = selectValidations({ submission })
 
   const serviceTitle = (service: Service): string => t(`submit.flow.${service}.title`)
+  const serviceDescription = (service: Service): string => t(`submit.flow.${service}.description`)
   const roleLabel = (service: Service): string => t(`submit.flow.roleTag.${serviceRoleTagKey(service)}`)
+  const noteKindLabel = (kind: "warning" | "error"): string =>
+    kind === "error" ? t("submit.flow.noteError") : t("submit.flow.noteWarning")
   const hasWarnOrError = (step: FlowStep): boolean =>
     step.notes.some((n) => n.kind === "warning" || n.kind === "error")
 
   const present = new Set(steps.map((s) => s.service))
-
-  const checks: Check[] = []
-  for (const step of steps) {
-    for (const note of step.notes) {
-      if (note.kind === "info") continue
-      checks.push({
-        tone: note.kind === "error" ? "error" : "warn",
-        label: note.kind === "error" ? t("submit.flow.noteError") : t("submit.flow.noteWarning"),
-        text: `${t(note.messageKey)}（${serviceTitle(step.service)}）`,
-      })
-    }
-  }
-  for (const v of validations) {
-    checks.push({ tone: "warn", label: "確認", text: t(`submit.validations.${v.kind}`) })
-  }
-
-  const granularityBadge = (service: Service) => {
-    const role = serviceRole(service)
-    const name = serviceTitle(service)
-    if (role === "destination") return <Tag kind="brand">{name}</Tag>
-    if (role === "external") return <Tag kind="status" tone="warning">{name}</Tag>
-
-    return <Tag>{name}</Tag>
-  }
-
   const labelClass = "text-fs-label font-bold text-ink-mid m-0"
 
   return (
@@ -160,7 +138,7 @@ const SubmitResultSummary = () => {
       <PageTitle
         eyebrow="Design preview"
         title="Submit result summary"
-        subtitle="右の step 一覧を「登録先サマリー」として rich にした案の試作。判定は出さず、導出した登録先 (粒度 / 順序 / 確認・前提) を見せる。"
+        subtitle="右の step 一覧を「登録先サマリー」として rich にした案の試作。判定は出さず、導出した登録先ごとに、なぜそこか (routing 理由) / 説明 / source / 外部リンク / 先に要るものを見せる。"
       />
       <Callout tone="info">この画面は production build では生成されない開発専用ツール。本番 /submit には未反映。</Callout>
 
@@ -246,64 +224,101 @@ const SubmitResultSummary = () => {
             ? <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed">{t("submit.flow.empty")}</p>
             : (
               <>
-                <div className="flex flex-col gap-2">
-                  <p className={labelClass}>登録先</p>
-                  <ul className="flex flex-wrap gap-2 m-0 list-none p-0">
-                    {steps.map((step) => <li key={step.id}>{granularityBadge(step.service)}</li>)}
-                  </ul>
-                </div>
+                <ol className="flex flex-col m-0 list-none p-0">
+                  {steps.map((step, i) => {
+                    const meta = getSubmitMeta(step.service, lang)
+                    const issuedNote = getSubmitCard(step.service).issuedNote?.[lang]
+                    const prereqs = stepPrerequisites(step.service, present).map(serviceTitle)
+                    const count = step.scope.entryIds.length
 
-                <div className="flex flex-col gap-2">
-                  <p className={labelClass}>次にやること</p>
-                  <ol className="flex flex-col gap-2.5 m-0 list-none p-0">
-                    {steps.map((step, i) => {
-                      const prereqs = stepPrerequisites(step.service, present).map(serviceTitle)
-                      const count = step.scope.entryIds.length
-
-                      return (
-                        <li key={step.id} className="flex gap-2.5 items-start">
-                          <StepBadge index={i + 1} pending={hasWarnOrError(step)} />
-                          <div className="min-w-0 flex flex-col gap-0.5 py-0.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-fs-body-sm font-semibold text-ink">{serviceTitle(step.service)}</span>
-                              <Tag size="sm">{roleLabel(step.service)}</Tag>
-                              {count > 0 && (
-                                <span className="font-mono text-fs-micro text-ink-soft">{count} 件</span>
-                              )}
-                            </div>
-                            {prereqs.length > 0 && (
-                              <span className="text-fs-micro text-ink-soft leading-snug">
-                                先に: {prereqs.join(" · ")}
-                              </span>
+                    return (
+                      <li
+                        key={step.id}
+                        className="flex gap-2.5 items-start py-4 border-b border-border-soft first:pt-0 last:border-b-0 last:pb-0"
+                      >
+                        <StepBadge index={i + 1} pending={hasWarnOrError(step)} />
+                        <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-fs-body-sm font-semibold text-ink">{serviceTitle(step.service)}</span>
+                            <Tag size="sm">{roleLabel(step.service)}</Tag>
+                            {meta?.source != null && (
+                              <Tag kind="source" name={meta.source} size="sm">{meta.source}</Tag>
+                            )}
+                            {count > 0 && (
+                              <span className="font-mono text-fs-micro text-ink-soft ml-auto">{count} 件</span>
                             )}
                           </div>
-                        </li>
-                      )
-                    })}
-                  </ol>
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <p className={labelClass}>確認・前提</p>
-                  {checks.length === 0
-                    ? <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed">確認が必要な点はありません。</p>
-                    : (
-                      <ul className="flex flex-col gap-2 m-0 list-none p-0">
-                        {checks.map((check, i) => (
-                          <li key={i} className="flex gap-2 items-start">
-                            <Tag
-                              kind="status"
-                              tone={check.tone === "error" ? "critical" : "warning"}
-                              size="sm"
-                            >
-                              {check.label}
-                            </Tag>
-                            <span className={cn("text-fs-body-sm text-ink-mid leading-relaxed")}>{check.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                </div>
+                          <p className="text-fs-body-sm text-ink-mid m-0 leading-relaxed">
+                            {serviceDescription(step.service)}
+                          </p>
+
+                          {step.notes.length > 0 && (
+                            <ul className="flex flex-col gap-1 m-0 list-none p-0">
+                              {step.notes.map((note, ni) =>
+                                note.kind === "info"
+                                  ? (
+                                    <li
+                                      key={ni}
+                                      className="flex gap-1.5 text-fs-body-sm text-ink-mid leading-relaxed"
+                                    >
+                                      <span className="text-ink-soft shrink-0">→</span>
+                                      <span className="min-w-0">{t(note.messageKey)}</span>
+                                    </li>
+                                  )
+                                  : (
+                                    <li key={ni} className="flex gap-1.5 items-start">
+                                      <Tag
+                                        kind="status"
+                                        tone={note.kind === "error" ? "critical" : "warning"}
+                                        size="sm"
+                                      >
+                                        {noteKindLabel(note.kind)}
+                                      </Tag>
+                                      <span className="text-fs-body-sm text-warn-fg leading-relaxed min-w-0">
+                                        {t(note.messageKey)}
+                                      </span>
+                                    </li>
+                                  ),
+                              )}
+                            </ul>
+                          )}
+
+                          {prereqs.length > 0 && (
+                            <span className="text-fs-micro text-ink-soft leading-snug">
+                              先に: {prereqs.join(" · ")}
+                            </span>
+                          )}
+
+                          {meta?.externalUrl !== undefined && (
+                            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                              <ExternalLinkButton url={meta.externalUrl} label={t("submit.flow.ctaLabel")} />
+                              {issuedNote !== undefined && issuedNote.length > 0 && (
+                                <span className="text-fs-micro text-ink-soft leading-snug min-w-0">{issuedNote}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ol>
+
+                {validations.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className={labelClass}>確認事項</p>
+                    <ul className="flex flex-col gap-2 m-0 list-none p-0">
+                      {validations.map((v, i) => (
+                        <li key={i} className="flex gap-2 items-start">
+                          <Tag kind="status" tone="warning" size="sm">確認</Tag>
+                          <span className="text-fs-body-sm text-ink-mid leading-relaxed">
+                            {t(`submit.validations.${v.kind}`)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
         </section>
