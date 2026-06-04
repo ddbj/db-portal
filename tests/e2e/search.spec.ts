@@ -71,18 +71,18 @@ test.describe("Search Domain", () => {
   test("S-SEARCH-04: Advanced builder → ?q= 更新と検索実行 (生物種 + 学名 の 2 条件)", async ({ page }) => {
     await page.goto("/search")
 
-    // Row 1: 生物種 (organism_id, identifier) と一致 9606
+    // Row 1: Organism (TaxID) (organism_id, identifier) と一致 9606
     await page.getByRole("button", { name: /\+ 条件を追加|\+ Add condition/ }).first().click()
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
-    await page.getByRole("option", { name: /^生物種$|^Organism$/ }).click()
+    await page.getByRole("option", { name: /Organism \(TaxID\)/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
     await page.getByRole("option", { name: /^と一致$|^equals$/ }).click()
     await page.getByRole("combobox", { name: /値を入力|Enter value/ }).last().fill("9606")
 
-    // Row 2: 学名 (organism_name, text) を含む Homo sapiens
+    // Row 2: Organism name (organism_name, text) を含む Homo sapiens
     await page.getByRole("button", { name: /\+ 条件を追加|\+ Add condition/ }).first().click()
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
-    await page.getByRole("option", { name: /学名|Organism name/ }).click()
+    await page.getByRole("option", { name: /Organism name/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
     await page.getByRole("option", { name: /を含む|contains/ }).click()
     await page.getByRole("textbox", { name: /値を入力|Enter value/ }).last().fill("Homo sapiens")
@@ -194,18 +194,18 @@ test.describe("Search Domain", () => {
     await expect(organism).toBeVisible({ timeout: 15_000 })
     // The taxID 9606 is restored: either a checked bucket, or the taxID box value.
     const checkedBucket = organism.getByRole("checkbox", { checked: true })
-    const taxBox = organism.getByRole("textbox", { name: /生物種 ID|Taxonomy ID/ })
+    const taxBox = organism.getByRole("textbox", { name: /Taxonomy ID/ })
     if ((await checkedBucket.count()) === 0) {
       await expect(taxBox).toHaveValue(/9606/)
     } else {
       await expect(checkedBucket.first()).toBeChecked()
     }
 
-    // The 公開日 date row is restored as a custom range showing 2022 / 2024 bounds,
-    // and exposes a 解除 button in its group header.
+    // The Date First Published row is restored as a custom range showing 2022 / 2024
+    // bounds, and exposes a 解除 button in its group header.
     const dateGroup = page
       .locator("div")
-      .filter({ has: page.getByText(/公開日|Date published/) })
+      .filter({ has: page.getByText(/Date First Published/) })
       .filter({ has: page.getByRole("textbox", { name: /開始日/ }) })
       .first()
     await expect(dateGroup.getByRole("textbox", { name: /開始日/ })).toHaveValue("2022-01-01")

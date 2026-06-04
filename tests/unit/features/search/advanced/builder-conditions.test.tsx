@@ -72,10 +72,10 @@ describe("AdvancedBuilder conditions", () => {
     expect(screen.queryByRole("button", { name: "除外" })).toBeNull()
   })
 
-  test("fieldLabels_areJapaneseOnly", () => {
+  test("fieldLabels_showResolvedLabelWithoutRawField", () => {
     renderBuilder(twoConditions())
-    // Default field is title → shown as "タイトル", never "タイトル (title)".
-    expect(screen.getAllByText("タイトル").length).toBeGreaterThan(0)
-    expect(screen.queryByText("タイトル (title)")).toBeNull()
+    // Default field is title → shown as "Title", never "Title (title)".
+    expect(screen.getAllByText("Title").length).toBeGreaterThan(0)
+    expect(screen.queryByText("Title (title)")).toBeNull()
   })
 })

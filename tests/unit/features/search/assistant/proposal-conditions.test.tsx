@@ -19,8 +19,8 @@ const renderNode = (node: ParseNode) => {
 describe("ProposalConditions", () => {
   test("singleLeaf_readsAsClauseWithoutCombinator", () => {
     renderNode({ op: "eq", field: "organism_name", value: "Homo sapiens" })
-    // Plain Japanese field label, not the raw snake_case field.
-    expect(screen.getByText("学名")).toBeInTheDocument()
+    // Resolved field label, not the raw snake_case field.
+    expect(screen.getByText("Organism name")).toBeInTheDocument()
     expect(screen.queryByText("organism_name")).toBeNull()
     expect(screen.getByText("と一致")).toBeInTheDocument()
     expect(screen.getByText("Homo sapiens")).toBeInTheDocument()
@@ -40,9 +40,9 @@ describe("ProposalConditions", () => {
     })
     expect(screen.getByText("AND")).toBeInTheDocument()
     expect(screen.getByText("すべてに一致")).toBeInTheDocument()
-    expect(screen.getByText("学名")).toBeInTheDocument()
-    expect(screen.getByText("タイトル")).toBeInTheDocument()
-    expect(screen.getByText("公開日")).toBeInTheDocument()
+    expect(screen.getByText("Organism name")).toBeInTheDocument()
+    expect(screen.getByText("Title")).toBeInTheDocument()
+    expect(screen.getByText("Date First Published")).toBeInTheDocument()
     expect(screen.getByText("を含む")).toBeInTheDocument()
     expect(screen.getByText("の期間内")).toBeInTheDocument()
     expect(screen.getByText("2022-01-01 〜 2024-12-31")).toBeInTheDocument()
@@ -182,6 +182,6 @@ describe("ProposalConditions", () => {
     // A one-child AND carries no join meaning, so the badge is omitted.
     expect(screen.queryByText("AND")).toBeNull()
     expect(screen.queryByText("すべてに一致")).toBeNull()
-    expect(screen.getByText("タイトル")).toBeInTheDocument()
+    expect(screen.getByText("Title")).toBeInTheDocument()
   })
 })

@@ -41,7 +41,7 @@ export const FIELD_REGISTRY = {
   // === Tier 3 BioProject ===
   object_type: { type: "enum", facetName: "objectType", labelKey: "objectType" },
   relevance: { type: "enum", facetName: "relevance", labelKey: "relevance" },
-  project_type: { type: "text", labelKey: "projectType" },
+  project_type: { type: "text", facetName: "projectType", labelKey: "projectType" },
   grant_title: { type: "text", labelKey: "grantTitle" },
   grant_agency: { type: "text", labelKey: "grantAgency" },
   // === Tier 3 BioSample ===
@@ -89,6 +89,10 @@ export const FIELD_REGISTRY = {
   genus: { type: "text", labelKey: "genus" },
   species: { type: "text", labelKey: "species" },
   common_name: { type: "text", labelKey: "commonName" },
+  synonym: { type: "text", labelKey: "synonym" },
+  blast_name: { type: "text", labelKey: "blastName" },
+  equivalent_name: { type: "text", labelKey: "equivalentName" },
+  domain: { type: "text", labelKey: "domain" },
 } as const satisfies Record<string, FieldDef>
 
 export type FieldKey = keyof typeof FIELD_REGISTRY
@@ -177,20 +181,25 @@ export const SCOPE_FIELDS = {
     "submission_type",
     ...ES_DATES,
   ],
-  // Solr (ARSA): organism_id / submitter degenerate, so omitted.
+  // Solr (ARSA): organism_id / submitter degenerate, so omitted. publication maps to
+  // the ARSA ReferenceTitle, so it is searchable here.
   trad: [
     "division",
     "molecular_type",
     "organism_name",
+    "publication",
     "feature_gene_name",
     "reference_journal",
     "date_published",
     "sequence_length",
   ],
-  // Solr (TXSearch): organism facet / submitter / date_published degenerate.
+  // Solr (TXSearch): submitter / date_published degenerate, so omitted. organism_id is
+  // searchable by tax_id but its facet is degenerate, so it is facet-suppressed to a
+  // text input (FACET_SUPPRESSED). strain / isolate share names with biosample.
   taxonomy: [
     "rank",
     "kingdom",
+    "organism_id",
     "lineage",
     "phylum",
     "class",
@@ -199,7 +208,24 @@ export const SCOPE_FIELDS = {
     "genus",
     "species",
     "common_name",
+    "strain",
+    "isolate",
+    "synonym",
+    "blast_name",
+    "equivalent_name",
+    "domain",
   ],
 } as const satisfies Record<Scope, readonly FieldKey[]>
 
 export const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
+
+// Scopes where a field is filterable but its facet aggregation is degenerate, so it
+// renders as a text/identifier input instead of facet checkboxes (the API also rejects
+// the facet there). taxonomy: every TXSearch doc is its own organism, so organism_id
+// has no meaningful facet and `facets=organism` is rejected for taxonomy.
+const FACET_SUPPRESSED: Partial<Record<Scope, readonly FieldKey[]>> = {
+  taxonomy: ["organism_id"],
+}
+
+export const isFacetSuppressed = (scope: Scope, field: FieldKey): boolean =>
+  (FACET_SUPPRESSED[scope] ?? []).includes(field)

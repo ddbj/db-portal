@@ -49,9 +49,9 @@ const organismFacets = (): DbPortalFacets =>
     ],
   }) as DbPortalFacets
 
-// The Taxonomy ID input (ariaLabel from search.facets.organismTaxId, ja "生物種 ID").
+// The Taxonomy ID input (ariaLabel from search.facets.organismTaxId).
 const taxIdBox = (): HTMLInputElement =>
-  screen.getByRole("textbox", { name: "生物種 ID" }) as HTMLInputElement
+  screen.getByRole("textbox", { name: "Taxonomy ID" }) as HTMLInputElement
 
 describe("OrganismFacetSection tax id box", () => {
   test("checkboxSelectionFillsTaxIdBox", () => {

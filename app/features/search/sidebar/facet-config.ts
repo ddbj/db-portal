@@ -1,6 +1,14 @@
 import type { FacetName } from "~/lib/api"
 
-import { FIELD_REGISTRY, type FieldDef, type FieldKey, type Scope, SCOPE_FIELDS, scopeOf } from "../field-registry"
+import {
+  FIELD_REGISTRY,
+  type FieldDef,
+  type FieldKey,
+  isFacetSuppressed,
+  type Scope,
+  SCOPE_FIELDS,
+  scopeOf,
+} from "../field-registry"
 import type { DbSlug } from "../types"
 
 // Sidebar filter rows per scope, derived from the shared field registry
@@ -29,11 +37,12 @@ export type FilterRow = {
 }
 
 // Render kind from the field's DSL type: date/number get range controls, facetable
-// fields (enum or text with a facetName) get checkboxes, the rest a text input.
-const rowKind = (def: FieldDef): FilterRowKind => {
+// fields (a resolved facetName) get checkboxes, the rest a text input. The facetName
+// is resolved per scope so a facet-suppressed field falls back to a text input.
+const rowKind = (def: FieldDef, facetName: FacetName | undefined): FilterRowKind => {
   if (def.type === "date") return "dateRange"
   if (def.type === "number") return "numberRange"
-  if (def.facetName !== undefined) return "facet"
+  if (facetName !== undefined) return "facet"
 
   return "text"
 }
@@ -47,16 +56,20 @@ const rowOp = (def: FieldDef): FilterOp => {
   return "eq"
 }
 
-const toRow = (field: FieldKey): FilterRow => {
+// Facet aggregation is resolved per scope: a field whose facet is degenerate in the
+// scope (FACET_SUPPRESSED) drops its facetName / organism so it renders as a text or
+// identifier input and is not sent in the scope's `facets` request param.
+const toRow = (field: FieldKey, scope: Scope): FilterRow => {
   const def: FieldDef = FIELD_REGISTRY[field]
+  const facetName = isFacetSuppressed(scope, field) ? undefined : def.facetName
 
   return {
     key: def.labelKey,
-    kind: rowKind(def),
+    kind: rowKind(def, facetName),
     dslField: field,
     op: rowOp(def),
-    ...(def.facetName !== undefined ? { facetName: def.facetName } : {}),
-    ...(def.organism ? { organism: true } : {}),
+    ...(facetName !== undefined ? { facetName } : {}),
+    ...(facetName !== undefined && def.organism ? { organism: true } : {}),
   }
 }
 
@@ -64,7 +77,9 @@ const toRow = (field: FieldKey): FilterRow => {
 // SSOT for which rows appear, in which order, with what render kind / AST mapping.
 const buildScopeFilters = (): Record<Scope, readonly FilterRow[]> => {
   const out = {} as Record<Scope, readonly FilterRow[]>
-  for (const scope of Object.keys(SCOPE_FIELDS) as Scope[]) out[scope] = SCOPE_FIELDS[scope].map(toRow)
+  for (const scope of Object.keys(SCOPE_FIELDS) as Scope[]) {
+    out[scope] = SCOPE_FIELDS[scope].map((field) => toRow(field, scope))
+  }
 
   return out
 }

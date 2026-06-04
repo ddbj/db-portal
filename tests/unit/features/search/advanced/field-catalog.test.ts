@@ -45,13 +45,16 @@ describe("fieldsForScope", () => {
     const trad = fieldsForScope("trad")
     expect(trad).toContain("division")
     expect(trad).toContain("sequence_length")
+    expect(trad).toContain("publication") // maps to the ARSA ReferenceTitle
     expect(trad).not.toContain("accessibility") // degenerate on Solr
     expect(trad).not.toContain("identifier")
 
     const taxonomy = fieldsForScope("taxonomy")
     expect(taxonomy).toContain("rank")
     expect(taxonomy).toContain("kingdom")
-    expect(taxonomy).not.toContain("organism_id") // tax_id is doc identity
+    expect(taxonomy).toContain("organism_id") // searchable by tax_id (facet-suppressed to text)
+    expect(taxonomy).toContain("synonym") // TXSearch-only text field
+    expect(taxonomy).not.toContain("accessibility") // degenerate on Solr
   })
 
   test("publication is a cross field on every ES scope except biosample", () => {
