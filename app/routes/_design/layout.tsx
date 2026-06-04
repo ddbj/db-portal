@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: "/_design", label: "Overview" },
   { to: "/_design/tokens", label: "Tokens" },
   { to: "/_design/primitives", label: "Primitives" },
+  { to: "/_design/submit-result-summary", label: "Result summary" },
 ] as const
 
 const DesignLayout = () => {

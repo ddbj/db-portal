@@ -338,6 +338,8 @@ service 間の前提関係を **ステップ依存グラフ** として宣言し
 
 `/_design/submit-flow-explorer` route を置く (production build から除外)。任意の入力 (前段 Q1/Q2 + 選択種別 + 種別ごとの access・詳細) を組むと、出る `FlowStep[]` を全件プレビューする。各 step に **由来バッジ** (「Tier1 ルール由来」「Tier2 集約由来」「named recipe 由来」) を出す。加えて **マトリクスモード** で Q1 × Q2 × 種別の組合せを一覧し、`no-destination` / 種別 disable を可視化する。DDBJ はカタログを編集 → エクスプローラで結果を目視 → PBT が CI で網羅・不変量を検証、という流れでフローを確認・拡充する。
 
+同じく production build から除外する `/_design/submit-result-summary` route は、右 pane の step 一覧を「登録先サマリー」(導出した登録先の粒度バッジ / 依存順の次にやること / warning・error と validation を集めた確認・前提) として見せ直す案を、builder と代表ケースのプリセットで試作する検討用 surface。本番 `/submit` には反映していない。
+
 ---
 
 ## Service と role / 外向き契約
