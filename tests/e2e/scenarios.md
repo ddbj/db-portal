@@ -174,6 +174,19 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `db=bioproject` は保持される
 - **備考**: vLLM の生成揺れ/timeout を除くため SSE を mock 固定する (health-gate skip なし)。append 融合 → serialize (実 `/db-portal/serialize`) → navigate は実物を通す。`/search` (replaceRoot 経路) の生成は別コードパスで、results の append→serialize→loader 再 split を踏むのは本シナリオのみ。
 
+### S-SEARCH-12: suppressed accession の id 直打ちでヒットしSuppressed バッジが出る
+
+- **ペルソナ**: P-ANON
+- **前提**: ddbj-search-api staging 到達可能。`status=suppressed` の accession を 1 件以上 fixture で確定する (`tests/e2e/fixtures`)。同 accession は通常の語検索では hit しない
+- **手順**:
+  1. `/` を開く
+  2. 検索ボックスに suppressed の accession (完全一致) を入力して検索する
+- **期待**:
+  - per-DB results (または cross カードの上位 hit) に当該レコードが現れる
+  - その row に `search.results.row.suppressed`Suppressed バッジ (critical tone) が出る
+  - 対照: 同 accession の末尾を削った前方一致や、当該レコードを含む通常の語検索では suppressed が **現れない** (backend は top-level の単一 accession 完全一致のときだけ解禁する)
+- **備考**: accession 完全一致判定と suppressed 解禁は ddbj-search-api 側 (`detect_accession_exact_match_in_ast`) が担い、portal は DSL 送出とSuppressed バッジ表示のみ。検証 accession は staging データに依存するため fixture で管理し、データ更新で消えたら更新する。
+
 ### E-SEARCH-01: 不正 DSL の URL で parse 失敗 Callout
 
 - **ペルソナ**: P-ANON

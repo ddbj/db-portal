@@ -122,3 +122,19 @@ describe("CrossResults field-not-applicable", () => {
     expect(screen.getByText("filter:Publication / Date Last Published に未対応")).toBeInTheDocument()
   })
 })
+
+describe("CrossResults suppressed top hit", () => {
+  test("a suppressed top hit shows the Suppressed badge", () => {
+    renderCross([dbEntry("bioproject", [
+      { identifier: "PRJDB1", type: "bioproject", title: "Project", status: "suppressed" },
+    ])])
+    expect(screen.getByText("Suppressed")).toBeInTheDocument()
+  })
+
+  test("a public top hit shows no Suppressed badge", () => {
+    renderCross([dbEntry("bioproject", [
+      { identifier: "PRJDB1", type: "bioproject", title: "Project", status: "public" },
+    ])])
+    expect(screen.queryByText("Suppressed")).toBeNull()
+  })
+})

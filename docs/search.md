@@ -61,6 +61,18 @@ AI 検索アシスタントは「自然言語入力 → Advanced builder への�
 
 server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では client 側 UI 配線のみ。
 
+### データ可視性 (status)
+
+レコードの INSDC status (`public` / `private` / `suppressed` / `withdrawn`) で検索可視性が変わる。判定ロジックは ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`) が SSOT で、portal は DSL を送るだけ。portal はその結果を表示する責務だけを負う。
+
+| status | 通常の検索 (キーワード / facet) | accession 完全一致 (id 直打ち) | portal の表示 |
+|---|---|---|---|
+| `public` | ヒット | ヒット | 通常表示 |
+| `suppressed` | 除外 | **ヒット** | Suppressed バッジ ([§ Result row](#result-row)) |
+| `private` / `withdrawn` | 除外 (API が 404 で秘匿) | 除外 | 結果に現れない |
+
+「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。portal は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、portal 側に accession 判定や status フィルタは持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、portal が表示で区別するのは `suppressed` だけ。
+
 ## URL 設計
 
 ### URL = 検索状態の SSOT
@@ -373,7 +385,7 @@ cross-DB と同じ 2 ペイン (検索 box + preview は共通ヘッダ、[§ �
 
 per-DB の 1 ヒットを、全 DB 共通の 4 段スケルトンで描く (カードではなく区切り線リスト)。DB 差は内部分岐 (`result-fields.ts` のマッピング) で表し、DB ごとにコンポーネントを分けない。
 
-1. ID 行: identifier + datePublished + subtype/rank バッジ + controlled-access バッジ
+1. ID 行: identifier + datePublished + subtype/rank バッジ + suppressed バッジ + controlled-access バッジ
 2. title: リンク (なければ identifier)。外部 entry を新規タブで開く
 3. excerpt: description を 2 行 clamp (description を持たない DB は出さない)
 4. メタ行: 登録機関 (organization[0].name) → organism → DB 固有 chip
@@ -407,7 +419,7 @@ detail link は hit の `url` ではなく identifier + 細粒度 `type` から�
 
 - organism は jga (常に Homo sapiens で識別力ゼロ) と taxonomy (organism = その taxon 自身) では出さない。
 - free-form (experimentType / studyType / datasetType / host / strain / geoLocName 等) は submitter 自由記述で表記揺れが大きいため、見出しにせず控えめ chip に留める。
-- controlled-access (実質 JGA のみ) は警告色バッジで示す。`status` / `accessibility` / `isPartOf` / `type` / `publication` / `grant` / `externalLink` / `dbXrefs` / `sameAs` / `distribution` / `properties` はリスト行に出さない (常時同値・冗長・詳細画面向き)。
+- controlled-access (実質 JGA のみ) は警告色バッジで示す。`status` は通常リスト行に出さないが、`suppressed` だけは critical 色のSuppressed バッジで示す (id 直打ちでしか現れず public と区別が要るため、[§ データ可視性](#データ可視性-status))。`accessibility` / `isPartOf` / `type` / `publication` / `grant` / `externalLink` / `dbXrefs` / `sameAs` / `distribution` / `properties` はリスト行に出さない (常時同値・冗長・詳細画面向き)。
 
 #### Pagination
 

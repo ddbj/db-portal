@@ -68,6 +68,13 @@ export const subtypeBadge = (hit: DbHit): string | null => {
 export const isControlled = (hit: DbHit): boolean =>
   "accessibility" in hit && hit.accessibility === "controlled-access"
 
+// Suppressed entries surface only through an exact accession match (the search
+// API unlocks them for that query alone), so flag them in the result list to
+// keep a suppressed record from reading as a normal public hit. Accepts per-DB
+// hits and cross-search lightweight hits alike.
+export const isSuppressed = (hit: { status?: string | null }): boolean =>
+  hit.status === "suppressed"
+
 // Scientific name when it carries signal. JGA is always Homo sapiens and
 // Taxonomy's organism is the taxon itself, so both are suppressed.
 export const organismName = (db: DbSlug, hit: DbHit): string | null => {

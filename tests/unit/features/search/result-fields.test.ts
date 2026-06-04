@@ -5,6 +5,7 @@ import {
   type DbHit,
   entryHref,
   isControlled,
+  isSuppressed,
   organismName,
   rowDate,
   rowExcerpt,
@@ -111,6 +112,16 @@ describe("isControlled", () => {
     expect(isControlled(hit({ accessibility: "controlled-access" }))).toBe(true)
     expect(isControlled(hit({ accessibility: "public-access" }))).toBe(false)
     expect(isControlled(hit({}))).toBe(false)
+  })
+})
+
+describe("isSuppressed", () => {
+  test("true only for status=suppressed", () => {
+    expect(isSuppressed(hit({ status: "suppressed" }))).toBe(true)
+    expect(isSuppressed(hit({ status: "public" }))).toBe(false)
+    expect(isSuppressed(hit({ status: "private" }))).toBe(false)
+    expect(isSuppressed(hit({ status: "withdrawn" }))).toBe(false)
+    expect(isSuppressed(hit({}))).toBe(false)
   })
 })
 

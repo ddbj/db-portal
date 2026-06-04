@@ -495,6 +495,7 @@ export const en: Resources = {
       },
       row: {
         controlled: "Controlled-access",
+        suppressed: "Suppressed",
         host: "host",
         geo: "region",
         lineage: "lineage",

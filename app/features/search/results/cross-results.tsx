@@ -2,12 +2,12 @@ import { Link, useNavigate } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
 import { useT } from "~/lib/i18n"
-import { Button, ExternalIcon, Heading, Label, TextLink } from "~/ui"
+import { Button, ExternalIcon, Heading, Label, Tag, TextLink } from "~/ui"
 
 import { FIELD_REGISTRY } from "../field-registry"
 import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
-import { entryHref, resolveDate } from "./result-fields"
+import { entryHref, isSuppressed, resolveDate } from "./result-fields"
 
 type CrossResultsProps = {
   q: string
@@ -145,6 +145,11 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                         <div className="font-mono text-fs-body-sm text-ink-soft">
                           {formatHitDate(resolveDate(hit))}
                         </div>
+                      )}
+                      {isSuppressed(hit) && (
+                        <Tag kind="status" tone="critical" size="sm">
+                          {t("search.results.row.suppressed")}
+                        </Tag>
                       )}
                     </div>
                     <div className="min-w-0">

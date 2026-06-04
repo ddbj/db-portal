@@ -56,7 +56,7 @@ op / type は DSL field type から機械導出する ([§ DSL field type 規約
 | externalLink.label (nested)                        | `external_link_label` | per-DB | bioproject / 全 jga にのみ merge                                |
 | type (keyword)                                     | `type`                | per-DB | subtype 識別子 (例 `sra-experiment` / `jga-dataset`)            |
 | isPartOf (keyword)                                 | —                     | —      | 粗い DB 区分。絞り込みは scope selector が担う (filter 非対象)  |
-| status (keyword)                                   | —                     | —      | router が内部注入 (parameter 非露出)                            |
+| status (keyword)                                   | —                     | —      | filter 非露出 (router が内部注入)。`suppressed` のみ結果でバッジ表示 (`search.md` § データ可視性) |
 | url / properties / dbXrefs / distribution / sameAs | —                     | —      | `index:False` / `enabled:False` で検索対象外                    |
 
 ## DB ごと field (ES 6 DB)

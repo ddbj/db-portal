@@ -8,6 +8,7 @@ import {
   type DbHit,
   entryHref,
   isControlled,
+  isSuppressed,
   organismName,
   rowDate,
   rowExcerpt,
@@ -55,6 +56,7 @@ export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
   const href = entryHref(hit)
   const subtype = subtypeBadge(hit)
   const controlled = isControlled(hit)
+  const suppressed = isSuppressed(hit)
   const excerpt = rowExcerpt(hit)
   const organism = organismName(db, hit)
   const submitter = submitterName(hit)
@@ -66,11 +68,14 @@ export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
   return (
     <article className="flex flex-col gap-1.5 px-3 py-4 transition-colors hover:bg-surface-subtle">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-fs-label">
-        <span className="font-mono font-semibold tracking-mono text-brand-deep">{hit.identifier}</span>
-        {date && <span className="font-mono text-ink-soft">{date}</span>}
-        {(subtype || controlled) && (
+        <span className="font-mono font-semibold tracking-mono leading-none text-brand-deep">{hit.identifier}</span>
+        {date && <span className="font-mono leading-none text-ink-soft">{date}</span>}
+        {(subtype || suppressed || controlled) && (
           <span className="ml-0.5 inline-flex items-center gap-1.5">
             {subtype && <Tag kind="tag" size="sm" mono>{subtype}</Tag>}
+            {suppressed && (
+              <Tag kind="status" tone="critical" size="sm">{t("search.results.row.suppressed")}</Tag>
+            )}
             {controlled && (
               <Tag kind="status" tone="warning" size="sm">{t("search.results.row.controlled")}</Tag>
             )}

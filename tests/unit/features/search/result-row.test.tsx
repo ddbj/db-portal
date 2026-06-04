@@ -112,6 +112,16 @@ describe("ResultRow", () => {
     expect(screen.getByText("アクセス制限")).toBeInTheDocument()
   })
 
+  test("suppressed hits get a Suppressed badge", () => {
+    renderRow({ db: "bioproject", hit: hit({ ...bioproject, status: "suppressed" }), lang: "ja" })
+    expect(screen.getByText("Suppressed")).toBeInTheDocument()
+  })
+
+  test("public hits show no Suppressed badge", () => {
+    renderRow({ db: "bioproject", hit: hit({ ...bioproject, status: "public" }), lang: "ja" })
+    expect(screen.queryByText("Suppressed")).toBeNull()
+  })
+
   test("subtype badge shows the entity subtype for multi-subtype DBs", () => {
     renderRow({ db: "sra", hit: sraExperiment, lang: "ja" })
     expect(screen.getByText("experiment")).toBeInTheDocument()
