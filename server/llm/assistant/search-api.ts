@@ -1,4 +1,5 @@
 import type { ServerEnv } from "../../lib/env"
+import { isFieldNotAvailableForDb, pruneUnavailableFields } from "./field-availability-guard"
 
 // The BFF talks to ddbj-search-api for the two grammar operations the assistant
 // needs: validate the model's DSL into an AST (parse), and turn the current
@@ -13,7 +14,7 @@ export type SearchApiDeps = {
 }
 
 type ParseAstOutcome =
-  | { ok: true; ast: unknown; db: string | null }
+  | { ok: true; ast: unknown; db: string | null; dsl: string }
   | { ok: false; code: "invalid_dsl" | "upstream"; message: string }
 
 // Tiebreak when a cross-context query uses only Tier-3 fields shared by several
@@ -26,7 +27,7 @@ const baseUrl = (env: ServerEnv): string =>
 type ParseCall =
   | { kind: "ok"; ast: unknown }
   | { kind: "cross-tier3"; dbs: string[] }
-  | { kind: "invalid"; message: string }
+  | { kind: "invalid"; message: string; type: string }
   | { kind: "upstream"; message: string }
 
 const callParse = async (
@@ -56,13 +57,35 @@ const callParse = async (
         return { kind: "cross-tier3", dbs }
       }
 
-      return { kind: "invalid", message: detail }
+      return { kind: "invalid", message: detail, type: body.type ?? "" }
     }
 
     return { kind: "upstream", message: `parse responded ${response.status}` }
   } catch (error) {
     return { kind: "upstream", message: error instanceof Error ? error.message : "parse failed" }
   }
+}
+
+// Parse under a concrete DB, repairing the per-DB field-availability trap: when the
+// validator rejects a Tier-1/2 cross field the DB cannot serve (a date in taxonomy,
+// organism_id in trad, publication in biosample), drop those clauses from the DSL and
+// re-parse once so the query validates instead of surfacing as invalid_dsl (the search
+// endpoint treats the now-absent field as a no-op). Returns the call plus the DSL that
+// actually validated (pruned or original).
+const parseUnderDb = async (
+  dsl: string,
+  db: string,
+  deps: SearchApiDeps,
+): Promise<{ call: ParseCall; dsl: string }> => {
+  const call = await callParse(dsl, db, deps)
+  if (call.kind === "invalid" && isFieldNotAvailableForDb(call.type)) {
+    const pruned = pruneUnavailableFields(dsl, db)
+    if (pruned !== null) {
+      return { call: await callParse(pruned, db, deps), dsl: pruned }
+    }
+  }
+
+  return { call, dsl }
 }
 
 // Validate the model's DSL and resolve its DB. `db` set = locked single-DB mode
@@ -74,8 +97,16 @@ export const parseDslToAst = async (
   db: string | null,
   deps: SearchApiDeps,
 ): Promise<ParseAstOutcome> => {
-  const first = await callParse(dsl, db, deps)
-  if (first.kind === "ok") return { ok: true, ast: first.ast, db }
+  if (db !== null) {
+    const { call, dsl: usedDsl } = await parseUnderDb(dsl, db, deps)
+    if (call.kind === "ok") return { ok: true, ast: call.ast, db, dsl: usedDsl }
+    if (call.kind === "upstream") return { ok: false, code: "upstream", message: call.message }
+
+    return { ok: false, code: "invalid_dsl", message: call.kind === "invalid" ? call.message : "invalid DSL" }
+  }
+
+  const first = await callParse(dsl, null, deps)
+  if (first.kind === "ok") return { ok: true, ast: first.ast, db: null, dsl }
   if (first.kind === "invalid") return { ok: false, code: "invalid_dsl", message: first.message }
   if (first.kind === "upstream") return { ok: false, code: "upstream", message: first.message }
 
@@ -84,12 +115,12 @@ export const parseDslToAst = async (
   if (derived === undefined) {
     return { ok: false, code: "invalid_dsl", message: "query uses a single-DB field with no resolvable DB" }
   }
-  const second = await callParse(dsl, derived, deps)
-  if (second.kind === "ok") return { ok: true, ast: second.ast, db: derived }
-  if (second.kind === "upstream") return { ok: false, code: "upstream", message: second.message }
+  const { call, dsl: usedDsl } = await parseUnderDb(dsl, derived, deps)
+  if (call.kind === "ok") return { ok: true, ast: call.ast, db: derived, dsl: usedDsl }
+  if (call.kind === "upstream") return { ok: false, code: "upstream", message: call.message }
 
   // invalid / another cross-tier3 (fields from a different DB) → not expressible in one DB.
-  const message = second.kind === "invalid" ? second.message : "query mixes fields from multiple DBs"
+  const message = call.kind === "invalid" ? call.message : "query mixes fields from multiple DBs"
 
   return { ok: false, code: "invalid_dsl", message }
 }

@@ -42,5 +42,5 @@ export const parseModelOutput = async (
     }
   }
 
-  return { ok: true, ast: outcome.ast, db: outcome.db, dsl }
+  return { ok: true, ast: outcome.ast, db: outcome.db, dsl: outcome.dsl }
 }
