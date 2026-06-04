@@ -215,7 +215,7 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "biosample")).toHaveCount(0)
   })
 
-  test("S-SUBMIT-12: Q1 変更で選択済み種別が前提矛盾になり確認事項に出る", async ({ page }) => {
+  test("S-SUBMIT-12: Q1 変更で既存行が前提矛盾になり確認事項に出る", async ({ page }) => {
     await page.goto("/submit")
     await selectQ2(page, Q2_HUMAN)
     await toggleKind(page, "発現マトリクス")
@@ -223,12 +223,25 @@ test.describe("Submit Domain", () => {
 
     await selectQ1(page, Q1_THIRD)
 
-    // 選択は解除されず、第三者では発現マトリクスが登録先を持たないため disable + 確認事項
+    // 選択は破棄されない。第三者では発現マトリクスが登録先を持たないが、disable は新規選択
+    // だけをブロックし、前段変更で無効化された選択済み種別は常にクリックで解除できる
+    // (docs/submit.md「データ種別の選択 UX」)。よってトグルは enable のまま conflict 表示
+    // (aria-pressed 維持 + 解除を促す tooltip) になり、経路導出から除外されて gea step は
+    // 消え (conflict-kind-no-step)、確認事項に precondition-conflict が出る。
     await expect(
       page.getByRole("radiogroup", { name: "生物ドメイン" }).getByRole("radio", { name: Q2_HUMAN }),
     ).toBeChecked()
-    await expect(kindButton(page, "発現マトリクス")).toBeDisabled()
+    const conflictKind = kindButton(page, "発現マトリクス")
+    await expect(conflictKind).toBeEnabled()
+    await expect(conflictKind).toHaveAttribute("aria-pressed", "true")
+    await expect(conflictKind).toHaveAttribute("title", /クリックで選択を解除できます/)
+    await expect(flowStep(page, "gea")).toHaveCount(0)
     await expect(validationBanner(page)).toBeVisible()
+
+    // conflict はトグルのクリックで解除でき、確認事項が解消する。
+    await conflictKind.click()
+    await expect(conflictKind).toHaveAttribute("aria-pressed", "false")
+    await expect(validationBanner(page)).toHaveCount(0)
   })
 
   test("S-SUBMIT-13: FlowOverview のステーションクリックで該当カードへスクロール", async ({ page }) => {

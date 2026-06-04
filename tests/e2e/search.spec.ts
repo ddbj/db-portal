@@ -164,8 +164,13 @@ test.describe("Search Domain", () => {
   })
 
   test("S-SEARCH-08: クエリビルダーで編集: results → /search?q=&db= の db scope parse 往復", async ({ page }) => {
+    // results route は mount 後に URL の query を再シリアライズし、canonical DSL へ
+    // navigate(replace) で正規化することがある (route.tsx useDebouncedSerialize)。default の
+    // "load" 待ちはこの client 遷移と競合して net::ERR_ABORTED になるため、goto は
+    // domcontentloaded で確定させ、正規化 replace の前に settle させる。
     await page.goto(
       "/search/results?q=object_type%3A%22BioProject%22%20AND%20cancer&db=bioproject",
+      { waitUntil: "domcontentloaded" },
     )
 
     await expect(
