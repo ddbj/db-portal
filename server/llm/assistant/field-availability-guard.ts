@@ -14,7 +14,7 @@
 // one of them is a hard 400, not a silent drop, at /db-portal/parse).
 export const UNAVAILABLE_BY_DB: Record<string, ReadonlySet<string>> = {
   taxonomy: new Set(["name", "date_published", "date_modified", "date_created", "date", "submitter", "publication"]),
-  trad: new Set(["organism_id", "name", "date_modified", "date_created", "date", "submitter"]),
+  trad: new Set(["name", "date_modified", "date_created", "date", "submitter"]),
   biosample: new Set(["publication"]),
 }
 

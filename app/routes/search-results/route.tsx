@@ -9,7 +9,9 @@ import {
   createInitialState,
   CrossResults,
   DEFAULT_PAGE,
+  ExactMatchCard,
   FacetPanel,
+  findExactMatch,
   fromAdvanced,
   fromSidebar,
   identityAst,
@@ -318,9 +320,9 @@ const SearchResultsRoute = () => {
             }
           >
             <Await resolve={data.results}>
-              {(result: SearchResult) =>
-                result.kind === "error"
-                  ? (
+              {(result: SearchResult) => {
+                if (result.kind === "error") {
+                  return (
                     <Section padTop="sm" padBottom="lg">
                       <Callout tone="warn" role="status" action={retryAction}>
                         {result.errorKey === "cross"
@@ -329,32 +331,43 @@ const SearchResultsRoute = () => {
                       </Callout>
                     </Section>
                   )
-                  : (
-                    <Section padTop="sm" padBottom="lg">
-                      <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                        {facetPanel}
-                        <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
-                          {result.kind === "cross"
-                            ? <CrossResults q={data.q} response={result.cross} />
-                            : data.db
-                              ? (
-                                <PerDbResults
-                                  db={data.db}
-                                  response={result.perDb}
-                                  lang={lang}
-                                  page={data.page}
-                                  perPage={data.perPage}
-                                  sort={data.sort}
-                                  onPageChange={handlePageChange}
-                                  onPerPageChange={handlePerPageChange}
-                                  onSortChange={handleSortChange}
-                                />
-                              )
-                              : null}
-                        </div>
+                }
+                const exactMatch = result.kind === "cross"
+                  ? findExactMatch(data.ast, result.cross.databases)
+                  : null
+
+                return (
+                  <Section padTop="sm" padBottom="lg">
+                    <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                      {facetPanel}
+                      <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
+                        {result.kind === "cross"
+                          ? (
+                            <>
+                              {exactMatch && <ExactMatchCard match={exactMatch} lang={lang} />}
+                              <CrossResults q={data.q} response={result.cross} />
+                            </>
+                          )
+                          : data.db
+                            ? (
+                              <PerDbResults
+                                db={data.db}
+                                response={result.perDb}
+                                lang={lang}
+                                page={data.page}
+                                perPage={data.perPage}
+                                sort={data.sort}
+                                onPageChange={handlePageChange}
+                                onPerPageChange={handlePerPageChange}
+                                onSortChange={handleSortChange}
+                              />
+                            )
+                            : null}
                       </div>
-                    </Section>
-                  )}
+                    </div>
+                  </Section>
+                )
+              }}
             </Await>
           </Suspense>
         )}

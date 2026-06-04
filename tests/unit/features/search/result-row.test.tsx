@@ -170,4 +170,14 @@ describe("ResultRow", () => {
     expect(screen.getByText("human")).toBeInTheDocument()
     expect(screen.getByText(/Homo › Homininae › Hominidae/)).toBeInTheDocument()
   })
+
+  test("dbChip leads the row with the owning DB name when enabled", () => {
+    renderRow({ db: "sra", hit: sraExperiment, lang: "ja", dbChip: true })
+    expect(screen.getByText("SRA")).toBeInTheDocument()
+  })
+
+  test("dbChip is absent by default", () => {
+    renderRow({ db: "sra", hit: sraExperiment, lang: "ja" })
+    expect(screen.queryByText("SRA")).toBeNull()
+  })
 })

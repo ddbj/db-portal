@@ -71,7 +71,7 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 | `suppressed` | 除外 | **ヒット** | Suppressed バッジ ([§ Result row](#result-row)) |
 | `private` / `withdrawn` | 除外 (API が 404 で秘匿) | 除外 | 結果に現れない |
 
-「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。portal は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、portal 側に accession 判定や status フィルタは持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、portal が表示で区別するのは `suppressed` だけ。
+「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。portal は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、解禁・status フィルタ用の accession 判定は持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、portal が表示で区別するのは `suppressed` だけ。cross-DB 結果ではこの完全一致を **表示用にのみ** portal 側で検出し、該当エントリを最上部の完全一致カードに出す ([§ 完全一致カード](#完全一致カード-exact-match))。解禁判定の SSOT は引き続き backend で、portal の検出はそれを肩代わりしない。
 
 ## URL 設計
 
@@ -202,7 +202,7 @@ Sidebar の各行はフィールドの値域に応じて 3 種類の制御で出
 
 ### scope 別の filter 構成
 
-scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range のどれで描き、どの DSL field を emit するか) は `field-registry.ts` の `SCOPE_FIELDS` が SSOT (Advanced builder と共通の scope 構成; `facet-config.ts` がこれを Sidebar 行に解決し、render kind / op / facetName / label は registry から導く)。field 軸 (各 field がどの scope で出るか) の対応は `search-fields.md` 参照。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch で degenerate する行を出さない (trad: organism / submitter、taxonomy: submitter / date_published)。taxonomy の `organism_id` は facet が degenerate (API が organism facet を受け付けない) なため、facet を per-scope で抑制し text / identifier 入力として出す (`field-registry.ts` の `FACET_SUPPRESSED`)。
+scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range のどれで描き、どの DSL field を emit するか) は `field-registry.ts` の `SCOPE_FIELDS` が SSOT (Advanced builder と共通の scope 構成; `facet-config.ts` がこれを Sidebar 行に解決し、render kind / op / facetName / label は registry から導く)。field 軸 (各 field がどの scope で出るか) の対応は `search-fields.md` 参照。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の trad / taxonomy では ARSA / TXSearch で degenerate する行を出さない (trad: submitter、taxonomy: submitter / date_published)。trad / taxonomy の `organism_id` は facet が degenerate (API が organism facet を受け付けない) なため、facet を per-scope で抑制し text / identifier 入力として出す (`field-registry.ts` の `FACET_SUPPRESSED`)。
 
 行構成を貫く不変量:
 
@@ -217,7 +217,7 @@ scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range
 - **`type` (subtype) facet は per-DB のみ**: sra (`sra-*` subtype) / jga (`jga-*` subtype) の scope で `type` facet を出し、bucket は subtype 名。`db=sra` / `db=jga` + `facets=type` が subtype 別件数を返す (ddbj-search-api 対応済み)。単一 subtype の bioproject / biosample / gea / metabobank では出さない (API も `facet-not-applicable` で 400)。
 - **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` / `derivedFromId` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
 - **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは cross + ES 6 DB で text 入力 (`submitter` の contains、UI ラベルは Organization)。Solr backed (trad / taxonomy) は degenerate のため出さない。
-- **taxonomy の `organism` facet は抑制**: tax_id が doc 同一性で facet が degenerate (API は taxonomy facet を rank / kingdom のみに限定)。`organism_id` は filter から外さず、facet を per-scope 抑制して tax_id 直検索の identifier 入力 (eq / wildcard) として出す。学名軸は `organism_name` / `species` / `commonName` 等の text で扱う。
+- **Solr scope (trad / taxonomy) の `organism` facet は抑制**: taxonomy は tax_id が doc 同一性で facet が degenerate (API は taxonomy facet を rank / kingdom のみに限定)、trad は ARSA に taxID index が無く API が taxID を学名へ解決して照合するため organism facet 集計が無い。どちらも `organism_id` は filter から外さず、facet を per-scope 抑制して taxID 直検索の identifier 入力 (eq / wildcard) として出す。学名軸は `organism_name` (trad / cross / ES 6 DB) や taxonomy の `species` / `commonName` 等の text で扱う。
 - **`organism` filter は taxID と学名の 2 系統**: organism facet (cross + ES 6 DB) は bucket チェックボックス (taxID = `organism_id`、件数付き、表示は学名ラベル) の上に Taxonomy ID text box を持つ。両者は同じ選択状態 (taxID 群) の双方向同期する別表現で、text box では bucket に現れない minor な taxID もカンマ区切りで直接入力できる (bucket 外の値も sidebar から指定可能にする)。これとは別軸で学名の contains 検索を `organismName` text 行 (cross + ES 6 DB + trad) として持つ。AST 上は facet/Taxonomy ID box が `organism_id`、text 行が `organism_name` を emit し、Taxonomy ID box は facet 選択の表示専用エディタで AST マッピングは facet 行のまま不変 (§ AST 変換)。
 - **accessibility は 2 値 enum facet**: public-access / controlled-access。API の `_COMMON_FACET` で全 ES scope 集計可能なので、cross + ES 6 DB の sidebar に facet として出す (Solr trad / taxonomy は field 不在で出さない)。
 - **共通 Tier 1/2 field の網羅追加**: cross + 全 ES scope に identifier (text, exact)・title・name・description・organismName・organization (= `submitter`) の text 行と dateModified / dateCreated の range 行を出す。publication (text) は merge される scope (biosample 除く) + cross に出す。keyword box / Advanced builder と重複する分は許容 (sidebar = `/search/results` で唯一編集できる filter のため、横断可 field も sidebar から到達できるようにする)。`organism_name` も横断可 field として sidebar に出すことで、`organism_name:…` の DSL が Advanced builder に落ちず sidebar の学名 text 行に round-trip する。
@@ -367,6 +367,27 @@ q 空の match_all facet 集計は scope (cross / 各 DB) 単位で server 側 i
 cross-DB でも左に Sidebar を出す。構成は cross scope の filter (organism / datePublished、[§ Sidebar facet](#sidebar-facet))。Tier 1 のみで Tier 3 は出さない (横断で `field-not-available-in-cross-db` になるため)。
 
 Tier 2 fallback: optional field (title / description / datePublished 等) が `null` / `undefined` のとき、該当行を非表示にする (skeleton / placeholder を出さない)。「title なしの hit」 は 1 行で accession だけ表示する。
+
+#### 完全一致カード (exact match)
+
+accession 直打ち (例 `DRA000001`) や organism 学名 (例 `Homo sapiens`) のような単一エントリを名指しする検索のとき、結果グリッドの直上に「完全一致」カードを 1 枚出す (NCBI Entrez の sensor 相当)。目的エントリへの直リンクを最上部に置き、各 DB カードの上位ヒットに埋もれさせない。
+
+発火条件 (不変量):
+
+- 対象は cross-DB 画面 (`?db=` 不在) のみ。per-DB では出さない
+- クエリが **単純 lookup** のときだけ発火する: AST の top-level が単一 `free_text`、または全 child が `free_text` の AND (スペース区切りの "Homo sapiens" 等) で、`splitFreeText` の `rest` が空になる形。`OR` / `NOT` / `field:` leaf / ワイルドカード / facet 併用 / 混在 AND では出さない。`OR` / `NOT` 配下とワイルドカードを除外する方針は § データ可視性 の解禁条件と同じだが、カードは keyword box 由来の lookup 向け表示なので `field:` 直接指定 (`identifier:` 等) は対象にしない
+- 照合は cross-search レスポンスの lightweight hits だけで行う (追加リクエスト・backend 変更なし)。完全一致は relevance 上位に来る前提の best-effort で、`topHits` 窓内に該当 hit があるときだけ出す
+
+照合規則 (大文字小文字は無視):
+
+| 入力種別 | 照合先 | 出すもの |
+|---|---|---|
+| accession (例 `DRA000001`) | hit の `identifier` と完全一致 | 一致 hit 1 件 (複数 DB に跨るときは `CARD_ORDER` 先頭) |
+| organism 学名 (例 `Homo sapiens`) | `taxonomy` 型 hit の `title` / `organism.name` と完全一致 | その Taxonomy hit 1 件 |
+
+accession と organism の両方が一致しうるときは accession を優先する。
+
+表示は per-DB の Result row (`ResultRow`) を強調枠で囲んで流用し、横断コンテキストなので所属 DB を先頭の chip で示す (detail link は `entryHref` 共通生成)。完全一致で出した hit が下の DB カードの上位ヒットにも現れる重複は、強調ボックスとグリッドで目的が異なるため意図的に許容する。accession 完全一致で解禁された `suppressed` エントリはこのカードでも Suppressed バッジが出る (`ResultRow` 流用のため、[§ データ可視性](#データ可視性-status))。
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 

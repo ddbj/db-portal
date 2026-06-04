@@ -19,11 +19,11 @@ describe("pruneUnavailableFields", () => {
     expect(pruneUnavailableFields("organism_id:9606 AND rank:species", "taxonomy")).toBeNull()
   })
 
-  test("trad: drops organism_id and name but keeps date_published (trad's only valid date)", () => {
+  test("trad: keeps organism_id (the API resolves the taxID) but drops name, keeps date_published", () => {
     expect(pruneUnavailableFields(
       "organism_id:9606 AND molecular_type:mRNA AND name:foo AND date_published:[2020-01-01 TO 9999-12-31]",
       "trad",
-    )).toBe("molecular_type:mRNA AND date_published:[2020-01-01 TO 9999-12-31]")
+    )).toBe("organism_id:9606 AND molecular_type:mRNA AND date_published:[2020-01-01 TO 9999-12-31]")
   })
 
   test("trad: drops date_modified (unavailable) — boundary against taxonomy keeping no date", () => {

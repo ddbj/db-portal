@@ -35,6 +35,9 @@ export {
 } from "./debounce"
 export {
   CrossResults,
+  type ExactMatch,
+  ExactMatchCard,
+  findExactMatch,
   PerDbResults,
   SearchResultsSkeleton,
 } from "./results"

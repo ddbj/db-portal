@@ -23,6 +23,9 @@ export type ResultRowProps = {
   db: DbSlug
   hit: DbHit
   lang: Lang
+  // Leads the row with a chip naming the owning DB. Off in per-DB lists (the DB is
+  // the page); on where a row stands alone in a cross-DB context (the exact-match card).
+  dbChip?: boolean
 }
 
 const formatDate = (value: string, lang: Lang): string => {
@@ -48,7 +51,7 @@ const SubmitterIcon = () => (
   </svg>
 )
 
-export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
+export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => {
   const t = useT()
   const rawDate = rowDate(hit)
   const date = rawDate ? formatDate(rawDate, lang) : null
@@ -68,6 +71,7 @@ export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
   return (
     <article className="flex flex-col gap-1.5 px-3 py-4 transition-colors hover:bg-surface-subtle">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-fs-label">
+        {dbChip && <Tag kind="brand" size="sm">{t(`search.scope.${db}`)}</Tag>}
         <span className="font-mono font-semibold tracking-mono leading-none text-brand-deep">{hit.identifier}</span>
         {date && <span className="font-mono leading-none text-ink-soft">{date}</span>}
         {(subtype || suppressed || controlled) && (

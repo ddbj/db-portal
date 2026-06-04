@@ -476,6 +476,7 @@ export const en: Resources = {
         countAria: "Hit count",
         notApplicable: "Not applicable",
         notApplicableReason: "filter:{{fields}} not supported",
+        exactMatch: "Exact match",
       },
       perDb: {
         hardLimit: "Top {{limit}} only",

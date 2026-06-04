@@ -419,6 +419,7 @@ export type Resources = {
         countAria: string
         notApplicable: string
         notApplicableReason: string
+        exactMatch: string
       }
       perDb: {
         hardLimit: string
@@ -1071,6 +1072,7 @@ export const ja: Resources = {
         countAria: "ヒット件数",
         notApplicable: "対象外",
         notApplicableReason: "filter:{{fields}} に未対応",
+        exactMatch: "完全一致",
       },
       perDb: {
         hardLimit: "上位 {{limit}} 件まで",

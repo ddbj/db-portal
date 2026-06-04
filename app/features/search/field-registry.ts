@@ -192,11 +192,15 @@ export const SCOPE_FIELDS = {
     "publication",
     ...ES_DATES,
   ],
-  // Solr (ARSA): organism_id / submitter degenerate, so omitted. publication maps to
-  // the ARSA ReferenceTitle, so it is searchable here.
+  // Solr (ARSA): submitter degenerate, so omitted. organism_id is searchable — the API
+  // resolves the taxID to a scientific name and matches the ARSA Organism/Lineage — but its
+  // facet aggregation is degenerate, so it is facet-suppressed to a taxID input
+  // (FACET_SUPPRESSED), sitting with its name text. publication maps to the ARSA
+  // ReferenceTitle, so it is searchable here.
   trad: [
     "division",
     "molecular_type",
+    "organism_id",
     "organism_name",
     "publication",
     "feature_gene_name",
@@ -232,9 +236,11 @@ export const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
 
 // Scopes where a field is filterable but its facet aggregation is degenerate, so it
 // renders as a text/identifier input instead of facet checkboxes (the API also rejects
-// the facet there). taxonomy: every TXSearch doc is its own organism, so organism_id
-// has no meaningful facet and `facets=organism` is rejected for taxonomy.
+// the facet there). Both Solr scopes suppress organism_id: taxonomy because every
+// TXSearch doc is its own organism (`facets=organism` is rejected), trad because ARSA has
+// no taxID index (the API matches organism_id by resolving the taxID to a scientific name).
 const FACET_SUPPRESSED: Partial<Record<Scope, readonly FieldKey[]>> = {
+  trad: ["organism_id"],
   taxonomy: ["organism_id"],
 }
 
