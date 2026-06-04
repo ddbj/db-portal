@@ -166,6 +166,7 @@ export const en: Resources = {
       q1Required: "Choose a submission type to continue.",
       q2DisabledReason: "Not available for the selected submission type.",
       kindDisabledReason: "Not available for the selected submission type and biological domain.",
+      kindConflictReason: "No destination under the current submission basics. Click to deselect.",
       q1: {
         "public": { label: "Public data", sub: "Openly released data" },
         "restricted": { label: "Includes restricted-access data", sub: "Controlled-access data such as human individuals" },
@@ -377,7 +378,7 @@ export const en: Resources = {
     validations: {
       heading: "{{count}} things to check",
       rowReference: "Row {{index}}",
-      "precondition-conflict": "A row uses a file type that is no longer allowed by the submission basics.",
+      "precondition-conflict": "A selected file type conflicts with the submission basics. Click it to deselect.",
       "no-destination-service": "This row does not map to any destination service.",
       "dangling-group-id": "A row references a group that no longer exists.",
     },

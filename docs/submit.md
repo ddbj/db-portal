@@ -317,9 +317,10 @@ deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission �
 
 | 不変量 | 防ぐ事故 |
 |---|---|
-| no-orphan-destination | 種別 ≥ 1 の任意 submission で、各種別が bioproject/biosample 以外に最低 1 つの destination service step に入る |
+| no-orphan-destination | enable 種別 ≥ 1 の任意 submission で、各 enable 種別が bioproject/biosample 以外に最低 1 つの destination service step に入る |
+| conflict-kind-no-step | 前段で disable された選択種別は step を生成せず、その entryId はどの step scope にも現れない (右 pane に無効な登録先を出さない) |
 | cascade-no-deadend | 任意 (q1, q2) で enable された種別を選ぶと destination service が 1 枚以上出る (allowedRepos = ∅ や宛先なしの種別が選べない) |
-| group-scope-completeness | `emit.scope=group` の step は flagged group の groupIds と全 member の両方を含む |
+| group-scope-completeness | `emit.scope=group` の step は flagged group の groupIds と、その group の enable な member を含む (disable された種別の member は scope に出さない) |
 | spatial-dra-2step | Sequencing 系 platform の spatial 種別は dra と gea の両 step に入り、Microarray 系 platform の種別は gea のみで dra に入らない |
 
 ### ステップ依存とカード順序
@@ -411,7 +412,7 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 
 `/submit` は 1 つの `<Section>` を左右 2 pane に割る。左 pane が **入力** (利用者がデータ種別とその来歴を答える: 登録前提 Q1/Q2 → データ種別の選択 → 公開区分 → データ詳細)、右 pane が **結果** (導出された登録フロー: 一覧 FlowOverview → 各 step 詳細 FlowStepCard、違反時のみ PartialFailureBanner)。狭い画面では縦積みにする。pane 比率・grid・各 component の組み立ては `app/features/submit/` と `app/routes/submit/` が SSOT。id は client mount 後に採番して SSR hydration mismatch を避ける。
 
-前段で Q1/Q2 を変更して選択済みの種別が disable になった場合、選択は破棄せず、`selectValidations` が `precondition-conflict` を出して該当種別へ誘導する (整合崩れを破壊的に解決しない)。
+前段で Q1/Q2 を変更して選択済みの種別が disable になった場合、選択は破棄せず、`selectValidations` が `precondition-conflict` を出して該当種別へ誘導する (整合崩れを破壊的に解決しない)。無効化された種別は経路導出から除外され (右 pane に無効な登録先を出さない、`## 経路導出と不変量` の `conflict-kind-no-step`)、利用者は該当種別のトグルをクリックして選択を解除することで conflict を解消する (disable は新規選択だけをブロックし、選択済みは常に解除できる)。
 
 ### 登録フロー一覧 (FlowOverview)
 
@@ -433,7 +434,7 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 
 ## データ種別の選択 UX
 
-中段は **データ種別の on/off トグル群** で、利用者は手元にある種別を選ぶ。種別は前段 Q1/Q2 のカスケード (`## 前段カスケード・フィルタ`) で enable/disable され、disable の種別は理由を tooltip で示す (選んでも宛先が無い種別を選ばせない)。同一種別は高々 1 個で、種別間の依存による相互 disable は持たない (`## 設計判断` の「種別間の相互排他は持たない」)。
+中段は **データ種別の on/off トグル群** で、利用者は手元にある種別を選ぶ。種別は前段 Q1/Q2 のカスケード (`## 前段カスケード・フィルタ`) で enable/disable され、disable の種別は理由を tooltip で示す (選んでも宛先が無い種別を選ばせない)。disable は **新規選択だけをブロック** し、前段変更で無効化された選択済み種別は常にクリックで解除できる (conflict 表示にし、解消導線とする。`## 画面構成`)。同一種別は高々 1 個で、種別間の依存による相互 disable は持たない (`## 設計判断` の「種別間の相互排他は持たない」)。
 
 公開区分 (access) は per-file では持たず、Q1 = 公開+制限 のときだけ access-sensitive な種別 (`## 公開区分 (access) の規約`) に open/restricted トグルとして出す。default は Q2 由来で、ヒトは restricted、非ヒトは open から始める。公開 / 第三者 のときは access UI を出さない (全種別 open)。
 
@@ -453,7 +454,7 @@ flow-changing 詳細質問 (`### 詳細質問の選別基準`) を持つ種別�
 
 `selectValidations(state)` (純粋関数) が次を検査する。各 validation は i18n key + 該当種別を含み、click で該当箇所を scroll into view する。
 
-- `precondition-conflict`: 前段 Q1/Q2 で disable された種別が選ばれたまま残っている
+- `precondition-conflict`: 前段 Q1/Q2 で disable された種別が選ばれたまま残っている。この種別は経路導出から除外される (右 pane に登録先を出さない) ため、`no-destination-service` とは二重計上せず precondition-conflict 1 件に集約し、トグルのクリックで解除させる
 - `no-destination-service`: その種別がどの destination service step にも入らない
 - `dangling-group-id`: ペア (`assembly-annotation`) の group 参照が崩れている (UI バグ検知)
 

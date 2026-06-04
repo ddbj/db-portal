@@ -1,8 +1,10 @@
 import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
+import { isKindEnabled } from "../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
 import {
+  type FileEntry,
   type FlowStep,
   isSequencingSpatialPlatform,
   isSubmissionEndpoint,
@@ -22,6 +24,10 @@ const entryIdsOfService = (steps: readonly FlowStep[], pred: (s: FlowStep) => bo
 
   return ids
 }
+
+// 前段カスケードで enable された (= 経路導出に乗る) entry か
+const isActive = (submission: Submission, e: FileEntry): boolean =>
+  isKindEnabled(submission.preconditions.q1, submission.preconditions.q2, e.fileTypeKind)
 
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_anySubmission_isIdempotent",
@@ -48,9 +54,9 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_anyEntries_yieldsAtLeastOneStep",
+  "deriveFlowSteps_anyEnabledEntry_yieldsAtLeastOneStep",
   (submission) => {
-    fc.pre(submission.fileEntries.length > 0)
+    fc.pre(submission.fileEntries.some((e) => isActive(submission, e)))
     expect(deriveFlowSteps(submission).length).toBeGreaterThan(0)
   },
 )
@@ -58,10 +64,10 @@ test.prop([arbSubmission], RUNS)(
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_plainSubmission_yieldsExactlyOneBioprojectAndBiosample",
   (submission) => {
-    fc.pre(submission.fileEntries.length > 0)
     const steps = deriveFlowSteps(submission)
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
-    fc.pre(submission.fileEntries.some((e) => !jgaIds.has(e.id)))
+    // enable かつ非 jga の entry があるときだけ既定 companion が出る
+    fc.pre(submission.fileEntries.some((e) => isActive(submission, e) && !jgaIds.has(e.id)))
     expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
     expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
   },
@@ -76,6 +82,7 @@ test.prop([arbSubmission], RUNS)(
     const q2 = submission.preconditions.q2
     for (const e of submission.fileEntries) {
       if (e.fileTypeKind !== "sequence-read") continue
+      if (!isActive(submission, e)) continue
       // JGA はヒト個人のみ。restricted でも非ヒト (metagenome 含む) は DRA(embargo) に行く
       const toJga = e.access === "restricted" && q2 === "human"
       if (toJga) {
@@ -134,13 +141,28 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_everyEntry_appearsInSomeEndpointStep",
+  "deriveFlowSteps_everyEnabledEntry_appearsInSomeEndpointStep",
   (submission) => {
     const steps = deriveFlowSteps(submission)
     // 登録エンドポイント = DDBJ 内 destination ∪ 外部の最終格納先 (jpost / eva)
     const endpointIds = entryIdsOfService(steps, (s) => isSubmissionEndpoint(s.service))
     for (const e of submission.fileEntries) {
+      if (!isActive(submission, e)) continue
       expect(endpointIds.has(e.id)).toBe(true)
+    }
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_disabledKind_appearsInNoStep",
+  (submission) => {
+    const steps = deriveFlowSteps(submission)
+    const inAnyScope = new Set<string>()
+    for (const s of steps) for (const id of s.scope.entryIds) inAnyScope.add(id)
+    // 前段で disable された選択種別は step を生成せず、scope にも現れない (group member 漏れも検知)
+    for (const e of submission.fileEntries) {
+      if (isActive(submission, e)) continue
+      expect(inAnyScope.has(e.id)).toBe(false)
     }
   },
 )
@@ -152,6 +174,7 @@ test.prop([arbSubmission], RUNS)(
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
+      if (!isActive(submission, e)) continue
       const geaStep = steps.find((s) => s.service === "gea" && s.scope.entryIds.includes(e.id))
       expect(geaStep).toBeDefined()
       expect(geaStep!.scope.groupIds).toContain(e.groupId)
@@ -168,6 +191,7 @@ test.prop([arbSubmission], RUNS)(
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
+      if (!isActive(submission, e)) continue
       const sequencing = e.chipTags.some(
         (c) => c.axis === "spatial-platform" && isSequencingSpatialPlatform(c.value),
       )

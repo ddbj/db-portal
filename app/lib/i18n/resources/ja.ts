@@ -169,6 +169,7 @@ export type Resources = {
       q1Required: string
       q2DisabledReason: string
       kindDisabledReason: string
+      kindConflictReason: string
       q1: {
         "public": { label: string; sub: string }
         "restricted": { label: string; sub: string }
@@ -762,6 +763,7 @@ export const ja: Resources = {
       q1Required: "登録種別を選択してください",
       q2DisabledReason: "選択した登録種別では、この生物ドメインは登録先を持ちません",
       kindDisabledReason: "選択した登録種別と生物ドメインの組み合わせでは、登録先がありません",
+      kindConflictReason: "現在の登録前提では登録先がありません。クリックで選択を解除できます",
       q1: {
         "public": { label: "公開データの登録", sub: "公開を前提としたデータ" },
         "restricted": { label: "制限公開データを含む登録", sub: "アクセス制御を伴うデータを含む" },
@@ -973,7 +975,7 @@ export const ja: Resources = {
     validations: {
       heading: "確認事項が {{count}} 件あります",
       rowReference: "{{index}} 行目",
-      "precondition-conflict": "登録前提と矛盾する種別の行があります",
+      "precondition-conflict": "登録前提と矛盾する種別があります。該当の種別をクリックで解除してください",
       "no-destination-service": "この行はどの登録先にも入りません",
       "dangling-group-id": "存在しないグループを参照している行があります",
     },

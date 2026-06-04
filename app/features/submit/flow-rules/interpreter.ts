@@ -1,6 +1,7 @@
 import { getKindRoute } from "~/content/submit-routing/catalog"
 import type { FileEntry, FlowStepNote, FlowStepScope, Service, Submission } from "~/schemas/submit"
 
+import { isKindEnabled } from "../cascade"
 import { evalWhen, type PredicateContext } from "./predicate"
 import { groupMembers, groupOf, sortUnique } from "./shared"
 
@@ -15,19 +16,20 @@ export type EntryRouting = {
 const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
   const route = getKindRoute(entry.fileTypeKind)
   const group = groupOf(submission, entry.groupId)
-  const ctx: PredicateContext = {
-    entry,
-    group,
-    q1: submission.preconditions.q1,
-    q2: submission.preconditions.q2,
-  }
+  const { q1, q2 } = submission.preconditions
+  const ctx: PredicateContext = { entry, group, q1, q2 }
   // 末尾の {always} fallback が必ずあるため find は常にマッチする
   const rule = route.rules.find((r) => evalWhen(r.when, ctx))
   if (rule === undefined) throw new Error(`no matching rule for "${entry.fileTypeKind}"`)
 
   const scope: FlowStepScope = rule.emit.scope === "group"
     ? {
-      entryIds: sortUnique(groupMembers(submission, entry.groupId).map((e) => e.id)),
+      // group emit でも disable 種別の member は含めない (経路導出に乗る active member だけを scope に出す)
+      entryIds: sortUnique(
+        groupMembers(submission, entry.groupId)
+          .filter((m) => isKindEnabled(q1, q2, m.fileTypeKind))
+          .map((e) => e.id),
+      ),
       groupIds: [entry.groupId],
     }
     : { entryIds: [entry.id], groupIds: [] }

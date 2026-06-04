@@ -365,6 +365,72 @@ describe("deriveFlowSteps", () => {
     expect(warningKeys(stepFor(steps, "gea"))).toContain("submit.gea.spatialImage.largeImageGeneralist")
   })
 
+  test("deriveFlowSteps_conflictKind_isExcludedFromFlow", () => {
+    // Q1=第三者 では variant は登録先を持たない (allowedRepos {ddbj-trad, metabobank} と交わらず disable)。
+    // variant の rule 自体は q2=human→togovar にマッチするため、カスケードを見ずに導出すると TogoVar カードが
+    // 出てしまう。導出はカスケードを尊重し、この種別の step を一切出さない
+    const submission: Submission = {
+      preconditions: { q1: "third-party", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "variant",
+          access: "open",
+          dataForm: "variant-call",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    expect(deriveFlowSteps(submission)).toEqual([])
+  })
+
+  test("deriveFlowSteps_mixedEnabledAndConflict_derivesOnlyEnabled", () => {
+    // third-party × eukaryote の allowedRepos = {ddbj-trad, metabobank}:
+    // sequence-nucleotide は enable (ddbj-trad へ)、variant は disable
+    const submission: Submission = {
+      preconditions: { q1: "third-party", q2: "eukaryote" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "sequence-nucleotide",
+          access: "open",
+          dataForm: "assembled",
+          groupId: "g1",
+          chipTags: [],
+        },
+        {
+          id: "e2",
+          fileTypeKind: "variant",
+          access: "open",
+          dataForm: "variant-call",
+          groupId: "g2",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [
+        { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] },
+        { id: "g2", groupType: "single", memberFileIds: ["e2"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // enable な sequence-nucleotide だけが導出され、conflict の variant はどの step にも現れない
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj-trad"])
+    expect(steps.some((s) => s.service === "togovar" || s.service === "eva")).toBe(false)
+    const allEntryIds = steps.flatMap((s) => s.scope.entryIds)
+    expect(allEntryIds).toContain("e1")
+    expect(allEntryIds).not.toContain("e2")
+    // companion も enable entry のみを束ねる
+    expect(stepFor(steps, "bioproject").scope.entryIds).toContain("e1")
+    expect(stepFor(steps, "bioproject").scope.entryIds).not.toContain("e2")
+  })
+
   test("deriveFlowSteps_emptySubmission_returnsNoSteps", () => {
     const submission: Submission = {
       preconditions: { q1: null, q2: null },

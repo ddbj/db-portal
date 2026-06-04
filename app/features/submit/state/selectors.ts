@@ -24,8 +24,11 @@ export const selectValidations = (state: UIState): Validation[] => {
   }
 
   for (const entry of state.submission.fileEntries) {
+    // disable された種別は flow から除かれる。解除を促す precondition-conflict だけを出し、
+    // no-destination-service / dangling-group-id と二重計上しない (1 信号に集約)
     if (!isKindEnabled(q1, q2, entry.fileTypeKind)) {
       validations.push({ kind: "precondition-conflict", entryId: entry.id })
+      continue
     }
     if (!destinationEntryIds.has(entry.id)) {
       validations.push({ kind: "no-destination-service", entryId: entry.id })

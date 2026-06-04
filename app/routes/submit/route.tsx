@@ -160,6 +160,7 @@ const SubmitRoute = () => {
                 isSelected={(k) => selectedKinds.has(k)}
                 isEnabled={(k) => isKindEnabled(q1, q2, k)}
                 disabledReason={gridDisabledReason}
+                conflictReason={t("submit.preconditions.kindConflictReason")}
               />
               {accessEntries.length > 0 && (
                 <div className="mt-5 flex flex-col gap-2">

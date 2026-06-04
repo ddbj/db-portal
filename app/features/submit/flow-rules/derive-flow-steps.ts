@@ -1,5 +1,6 @@
 import { type FileEntry, type FlowStep, type Service, type Submission } from "~/schemas/submit"
 
+import { isKindEnabled } from "../cascade"
 import { type EntryRouting, routeEntries } from "./interpreter"
 import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
 import { byServiceDependencyOrder } from "./ordering"
@@ -37,9 +38,13 @@ const companionSteps = (entries: readonly FileEntry[]): FlowStep[] => {
 
 // 薄インタプリタ (Tier1) と Tier2 構造エンジン / named recipe を合成して FlowStep[] を返す (副作用なし)
 export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
-  if (submission.fileEntries.length === 0) return []
+  const { q1, q2 } = submission.preconditions
+  // 前段カスケードで disable された種別は登録先を持たないため flow から除く
+  // (右 pane に無効な登録先を出さず、precondition-conflict と表示を一致させる)
+  const activeEntries = submission.fileEntries.filter((e) => isKindEnabled(q1, q2, e.fileTypeKind))
+  if (activeEntries.length === 0) return []
 
-  const routings = routeEntries(submission, submission.fileEntries)
+  const routings = routeEntries(submission, activeEntries)
   const jgaEntries = routings.filter((r) => r.service === "jga").map((r) => r.entry)
   const plainRoutings = routings.filter((r) => r.service !== "jga")
 
@@ -47,7 +52,7 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
     ...buildTier1Steps(plainRoutings),
     ...companionSteps(plainRoutings.map((r) => r.entry)),
     ...jgaSubmissionSteps(jgaEntries),
-    ...spatialSteps(submission.fileEntries),
+    ...spatialSteps(activeEntries),
   ]
 
   return [...steps].sort(byServiceDependencyOrder)

@@ -1,12 +1,17 @@
 import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
+import { isKindEnabled } from "../../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../../app/features/submit/flow-rules"
 import { RECIPE_ALLOWLIST } from "../../../../app/features/submit/flow-rules/recipes"
-import { type FlowStep, isSubmissionEndpoint } from "../../../../app/schemas/submit"
+import { type FileEntry, type FlowStep, isSubmissionEndpoint, type Submission } from "../../../../app/schemas/submit"
 import { arbSubmission } from "../../arbitraries/submission"
 
 const RUNS = { numRuns: 2000 }
+
+// 前段カスケードで enable された (= 経路導出に乗る) entry か
+const isActive = (submission: Submission, e: FileEntry): boolean =>
+  isKindEnabled(submission.preconditions.q1, submission.preconditions.q2, e.fileTypeKind)
 
 const entryIdsWhere = (steps: readonly FlowStep[], pred: (s: FlowStep) => boolean): Set<string> => {
   const ids = new Set<string>()
@@ -59,6 +64,7 @@ test.prop([arbSubmission], RUNS)(
     // spatial recipe は default companion を維持する: spatial entry は gea (非 jga) に route され companion に含まれる
     for (const e of submission.fileEntries) {
       if (!isSpatialKind(e.fileTypeKind)) continue
+      if (!isActive(submission, e)) continue
       expect(tier2Ids.has(e.id)).toBe(true)
     }
   },
@@ -69,8 +75,9 @@ test.prop([arbSubmission], RUNS)(
   (submission) => {
     const steps = deriveFlowSteps(submission)
     const endpointIds = entryIdsWhere(steps, (s) => isSubmissionEndpoint(s.service))
-    // recipe 適用後も全 entry が宙に浮かない (no-orphan-destination を recipe 出力でも維持)
+    // recipe 適用後も全 enable entry が宙に浮かない (no-orphan-destination を recipe 出力でも維持)
     for (const e of submission.fileEntries) {
+      if (!isActive(submission, e)) continue
       expect(endpointIds.has(e.id)).toBe(true)
     }
   },

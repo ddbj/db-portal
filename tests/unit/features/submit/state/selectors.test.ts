@@ -58,8 +58,10 @@ describe("selectValidations", () => {
   })
 
   test("selectValidations_entryGroupIdNotInGroups_reportsDanglingGroupId", () => {
+    // enable 種別 (public/human の sequence-read) で dangling-group-id を分離して検査する
+    // (disable 種別だと precondition-conflict に集約され dangling は出ない)
     const state = stateOf({
-      preconditions: { q1: null, q2: null },
+      preconditions: { q1: "public", q2: "human" },
       fileEntries: [
         {
           id: "e1",
@@ -151,8 +153,9 @@ describe("selectValidations", () => {
     expect(kindsOf(stateOf(submission), "no-destination-service")).toBe(false)
   })
 
-  test("selectValidations_oneRowManyDefects_reportsEachIndependently", () => {
-    // a single entry can trip multiple validation kinds at once
+  test("selectValidations_conflictRow_reportsOnlyPreconditionConflict", () => {
+    // conflict 種別は flow から除外され解除を促す対象なので precondition-conflict 1 件に集約する。
+    // ghost group や宛先なしを同時に抱えていても、dangling-group-id / no-destination-service と二重計上しない
     const state = stateOf({
       preconditions: { q1: "third-party", q2: "human" },
       fileEntries: [
@@ -170,8 +173,7 @@ describe("selectValidations", () => {
     })
     const kinds = selectValidations(state).map((v) => v.kind)
 
-    expect(kinds).toContain("precondition-conflict")
-    expect(kinds).toContain("dangling-group-id")
+    expect(kinds).toEqual(["precondition-conflict"])
   })
 })
 
