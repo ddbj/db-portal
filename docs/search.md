@@ -448,7 +448,7 @@ assertive (`role="alert"` / `aria-live="assertive"`) は通常の検索結果更
 
 AI 補助は **top / cross-DB results / per-DB results / `/search`** の検索 box で表示する (`ready` のときだけトグルを出す)。経路で扱いが分かれる:
 
-- **`/search`** (検索ビルダ): `SearchInputPanel`。提案を read-only カードで見せ、ユーザの「適用」で `replaceRoot`。
+- **`/search`** (検索ビルダ): `SearchInputPanel`。提案を read-only カードで見せ、ユーザの「適用」で反映する。反映は `?q=` 復元と同じ経路で提案 AST を分割する: top-level の `free_text` は `splitFreeText` でキーワードボックスへ、構造化部分は `toAdvanced` でビルダーへ (`replaceRoot`)。ビルダーは `free_text` leaf を持てないため、この分割をしないと生成キーワードが落ちる。`new` はキーワードを提案の free text で置換、`append` は既存キーワードを保ちつつ生成 free text をマージする (append は builder AST のみをモデルに送るので、生成 free text は純粋に新規)。
 - **top / results** (`NavigableSearchInput`): 提案カードを出さず、生成された AST を serialize して即 `/search/results` へ遷移する。top は `new` 固定、results は `new` / `append` を選べる。
 
 `/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI モード」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI モード (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI モードでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。

@@ -13,7 +13,7 @@ const DEV_SAMPLE_PROPOSAL: ParseNode = {
   op: "AND",
   rules: [
     { op: "contains", field: "organism_name", value: "Homo sapiens" },
-    { op: "contains", field: "title", value: "single cell" },
+    { op: "free_text", value: "single-cell RNA-seq", is_phrase: true },
     { op: "between", field: "date_published", from: "2022-01-01", to: "2024-12-31" },
   ],
 }

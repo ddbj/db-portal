@@ -5,7 +5,7 @@ import { useT } from "~/lib/i18n"
 import type { DbSlug } from "~/lib/search-scope"
 import { Button, cn, Examples, Heading, SearchBox, StableLabel } from "~/ui"
 
-import { type AdvancedAction, type AdvancedState, fromAdvanced, toAdvanced } from "../advanced"
+import { type AdvancedAction, type AdvancedState, fromAdvanced } from "../advanced"
 import {
   type AssistantStartOptions,
   ProposalConditions,
@@ -13,6 +13,7 @@ import {
   useLlmAvailability,
 } from "../assistant"
 import { type AiMode, builderConditionCount, resolveAiModeDefault } from "./ai-mode"
+import { proposalToInputs } from "./apply-proposal"
 
 type SearchInputPanelProps = {
   keyword: string
@@ -143,10 +144,12 @@ export const SearchInputPanel = ({
     // Switch the builder scope to the resolved DB first so the Tier-3 conditions
     // it carries are valid/offered (no-op when it matches the current scope).
     if (onScopeDbChange && stream.proposalDb !== scopeDb) onScopeDbChange(stream.proposalDb)
-    // The proposal AST already folds in the existing query for append, so both
-    // modes rebuild the builder from it; new also clears the keyword row.
-    dispatch({ type: "replaceRoot", root: toAdvanced(stream.proposal).root })
-    if (proposalMode === "new") onKeywordChange("")
+    // Route the proposal into the keyword box (free text) and the builder
+    // (structured remainder) the same way the `?q=` pre-fill does, so a generated
+    // keyword is never lost to the builder's inability to hold a free_text leaf.
+    const { keyword: nextKeyword, root } = proposalToInputs(stream.proposal, proposalMode, keyword)
+    dispatch({ type: "replaceRoot", root })
+    onKeywordChange(nextKeyword)
     setAiInput("")
     stream.reset()
     setMode("keyword")
