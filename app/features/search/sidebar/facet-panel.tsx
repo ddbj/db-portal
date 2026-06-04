@@ -2,7 +2,7 @@ import { type Dispatch, useEffect, useRef, useState } from "react"
 
 import type { DbPortalFacets } from "~/lib/api"
 import { useT } from "~/lib/i18n"
-import { type AppliedFilter, AppliedFilters, DateFacet, FacetGroup, FacetRow, SidebarHeading, TextInput } from "~/ui"
+import { type AppliedFilter, AppliedFilters, DateFacet, FacetGroup, FacetRow, SidebarGroupLabel, SidebarHeading, TextInput } from "~/ui"
 
 import type { DbSlug } from "../types"
 import { presetRangeToDates } from "./date-preset"
@@ -203,10 +203,10 @@ const OrganismFacetSection = ({
         expanded={expanded}
         onShowMore={() => setExpanded((v) => !v)}
       >
-        <li className="flex flex-col gap-1 py-1">
-          <span className="text-fs-label text-ink-mid">{taxIdLabel}</span>
+        <li className="flex flex-col pb-2">
           <TextInput
             ariaLabel={taxIdLabel}
+            placeholder={taxIdLabel}
             size="sm"
             mono
             value={raw}
@@ -242,8 +242,8 @@ const TextSection = ({
   const label = t(`search.facets.field.${row.key}`)
 
   return (
-    <label className="flex flex-col gap-1" data-testid={`text-${row.key}`}>
-      <span className="text-fs-label text-ink-mid">{label}</span>
+    <label className="flex flex-col" data-testid={`text-${row.key}`}>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <TextInput
         ariaLabel={label}
         size="sm"
@@ -271,8 +271,8 @@ const NumberRangeSection = ({
   const label = t(`search.facets.field.${row.key}`)
 
   return (
-    <div className="flex flex-col gap-1" data-testid={`range-${row.key}`}>
-      <span className="text-fs-label text-ink-mid">{label}</span>
+    <div className="flex flex-col" data-testid={`range-${row.key}`}>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <div className="flex items-center gap-2">
         <TextInput
           ariaLabel={`${label} ${t("search.facets.dateRange.fromLabel")}`}
@@ -342,7 +342,7 @@ export const FacetPanel = ({ state, dispatch, db, facets, loading = false }: Fac
     }
   }
   return (
-    <aside className="flex flex-col gap-4">
+    <aside className="flex flex-col gap-3">
       <SidebarHeading withDivider>{t("search.facets.heading")}</SidebarHeading>
       <AppliedFilters applied={applied} onClearAll={() => dispatch({ type: "clear" })} />
       {rows.map((row) => {
