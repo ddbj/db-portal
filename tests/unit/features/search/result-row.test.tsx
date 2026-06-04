@@ -62,7 +62,6 @@ const taxonomy = hit({
   datePublished: null,
   rank: "species",
   commonName: "human",
-  japaneseName: "ヒト",
   lineage: ["Homo", "Homininae", "Hominidae"],
 })
 
@@ -155,10 +154,10 @@ describe("ResultRow", () => {
     expect(screen.getByText("MAFF lab")).toBeInTheDocument()
   })
 
-  test("taxonomy renders rank badge, common/japanese names, and lineage", () => {
+  test("taxonomy renders rank badge, common name, and lineage", () => {
     renderRow({ db: "taxonomy", hit: taxonomy, lang: "ja" })
     expect(screen.getByText("species")).toBeInTheDocument()
-    expect(screen.getByText("human / ヒト")).toBeInTheDocument()
+    expect(screen.getByText("human")).toBeInTheDocument()
     expect(screen.getByText(/Homo › Homininae › Hominidae/)).toBeInTheDocument()
   })
 })

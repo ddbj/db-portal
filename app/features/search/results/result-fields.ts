@@ -90,7 +90,6 @@ export const rowExcerpt = (hit: DbHit): string | null =>
 
 type TaxonomyExtras = {
   commonName: string | null
-  japaneseName: string | null
   lineage: readonly string[]
 }
 
@@ -105,7 +104,6 @@ export const taxonomyExtras = (hit: DbHit): TaxonomyExtras | null => {
 
   return {
     commonName: "commonName" in hit && hit.commonName ? hit.commonName : null,
-    japaneseName: "japaneseName" in hit && hit.japaneseName ? hit.japaneseName : null,
     lineage,
   }
 }

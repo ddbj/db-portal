@@ -218,13 +218,12 @@ describe("signatureChips", () => {
 })
 
 describe("taxonomyExtras", () => {
-  test("extracts commonName / japaneseName / lineage (array)", () => {
+  test("extracts commonName / lineage (array)", () => {
     expect(taxonomyExtras(hit({
       type: "taxonomy",
       commonName: "human",
-      japaneseName: "ヒト",
       lineage: ["Homo", "Homininae", "Hominidae"],
-    }))).toEqual({ commonName: "human", japaneseName: "ヒト", lineage: ["Homo", "Homininae", "Hominidae"] })
+    }))).toEqual({ commonName: "human", lineage: ["Homo", "Homininae", "Hominidae"] })
   })
 
   test("splits a string lineage", () => {

@@ -4,6 +4,7 @@ import type { CrossSearchResponse } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import { Button, ExternalIcon, Heading, Label, TextLink } from "~/ui"
 
+import { FIELD_REGISTRY } from "../field-registry"
 import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
 import { entryHref, resolveDate } from "./result-fields"
@@ -55,6 +56,16 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   const db: DbSlug = entry.db
   const href = buildResultsHref({ q, db })
   const hits = (entry.hits ?? []).slice(0, 3)
+  // field_not_applicable is a calm per-arm signal (this DB lacks a queried field), not
+  // an upstream failure: show "対象外" naming the offending filter(s), with no retry and
+  // no top-hits section (the backend was never queried for this arm).
+  const notApplicable = entry.error === "field_not_applicable"
+  const upstreamError = entry.error !== null && !notApplicable
+  const unavailableLabels = (entry.unavailableFields ?? []).map((field) => {
+    const def = (FIELD_REGISTRY as Record<string, { labelKey: string } | undefined>)[field]
+
+    return def ? t(`search.facets.field.${def.labelKey}`) : field
+  })
 
   return (
     <article
@@ -71,7 +82,7 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {entry.error
+        {upstreamError
           ? (
             <>
               <span className="text-fs-label text-red">
@@ -82,56 +93,71 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
               </Button>
             </>
           )
-          : (
-            <span
-              aria-label={t("search.results.cross.countAria")}
-              className="font-mono tabular-nums text-fs-h2 font-semibold text-ink"
-            >
-              {formatCount(entry.count)}
-            </span>
-          )}
+          : notApplicable
+            ? (
+              <span className="flex flex-col gap-0.5">
+                <span className="text-fs-body font-semibold text-ink-soft">
+                  {t("search.results.cross.notApplicable")}
+                </span>
+                {unavailableLabels.length > 0 && (
+                  <span className="text-fs-meta text-ink-softer">
+                    {t("search.results.cross.notApplicableReason", { fields: unavailableLabels.join(" / ") })}
+                  </span>
+                )}
+              </span>
+            )
+            : (
+              <span
+                aria-label={t("search.results.cross.countAria")}
+                className="font-mono tabular-nums text-fs-h2 font-semibold text-ink"
+              >
+                {formatCount(entry.count)}
+              </span>
+            )}
       </div>
-      <div className="border-t border-border-soft pt-3">
-        <Label>{t("search.results.cross.topHits")}</Label>
-        {hits.length === 0
-          ? (
-            <p className="text-fs-label text-ink-soft m-0 mt-1">
-              {t("search.results.cross.noTopHits")}
-            </p>
-          )
-          : (
-            <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-2">
-              {hits.map((hit) => (
-                <li
-                  key={hit.identifier}
-                  className="grid grid-cols-[115px_1fr] gap-x-3"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      to={entryHref(hit)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-0.5 font-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
-                    >
-                      {hit.identifier}
-                      <ExternalIcon size={10} aria-hidden className="shrink-0 text-ink-soft" />
-                    </Link>
-                    {resolveDate(hit) && (
-                      <div className="font-mono text-fs-body-sm text-ink-soft">
-                        {formatHitDate(resolveDate(hit))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-fs-body-sm text-ink line-clamp-2">
-                      {hit.title ?? hit.identifier}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-      </div>
+      {!notApplicable && (
+        <div className="border-t border-border-soft pt-3">
+          <Label>{t("search.results.cross.topHits")}</Label>
+          {hits.length === 0
+            ? (
+              <p className="text-fs-label text-ink-soft m-0 mt-1">
+                {t("search.results.cross.noTopHits")}
+              </p>
+            )
+            : (
+              <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-2">
+                {hits.map((hit) => (
+                  <li
+                    key={hit.identifier}
+                    className="grid grid-cols-[115px_1fr] gap-x-3"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        to={entryHref(hit)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-0.5 font-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
+                      >
+                        {hit.identifier}
+                        <ExternalIcon size={10} aria-hidden className="shrink-0 text-ink-soft" />
+                      </Link>
+                      {resolveDate(hit) && (
+                        <div className="font-mono text-fs-body-sm text-ink-soft">
+                          {formatHitDate(resolveDate(hit))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-fs-body-sm text-ink line-clamp-2">
+                        {hit.title ?? hit.identifier}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+        </div>
+      )}
     </article>
   )
 }

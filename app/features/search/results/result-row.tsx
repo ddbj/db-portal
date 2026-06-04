@@ -60,9 +60,7 @@ export const ResultRow = ({ db, hit, lang }: ResultRowProps) => {
   const submitter = submitterName(hit)
   const chips = signatureChips(db, hit)
   const tax = taxonomyExtras(hit)
-  const subtitle = tax
-    ? [tax.commonName, tax.japaneseName].filter(Boolean).join(" / ")
-    : ""
+  const subtitle = tax?.commonName ?? ""
   const hasMeta = submitter !== null || organism !== null || chips.length > 0 || (tax?.lineage.length ?? 0) > 0
 
   return (

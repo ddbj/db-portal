@@ -12,7 +12,7 @@ const response = (databases: unknown[]): CrossSearchResponse =>
 const dbEntry = (
   db: string,
   hits: Record<string, unknown>[],
-  overrides: { count?: number | null; error?: string | null } = {},
+  overrides: { count?: number | null; error?: string | null; unavailableFields?: string[] | null } = {},
 ) => ({ db, count: hits.length, error: null, hits, ...overrides })
 
 const renderCross = (databases: unknown[]) =>
@@ -92,5 +92,33 @@ describe("CrossResults aggregation error", () => {
     expect(screen.getByText("1,234")).toBeInTheDocument()
     expect(screen.queryByText("一時的に集計できませんでした")).toBeNull()
     expect(screen.queryByRole("button", { name: "再読み込み" })).toBeNull()
+  })
+})
+
+describe("CrossResults field-not-applicable", () => {
+  test("a field_not_applicable arm shows 対象外 naming the offending filter, no error / reload / '?' / top hits", () => {
+    renderCross([dbEntry("taxonomy", [], {
+      count: null,
+      error: "field_not_applicable",
+      unavailableFields: ["publication"],
+    })])
+    expect(screen.getByText("対象外")).toBeInTheDocument()
+    // The DSL field is resolved to its registry label, prefixed with "filter:".
+    expect(screen.getByText("filter:Publication に未対応")).toBeInTheDocument()
+    // Not an upstream failure: no temporary notice, no reload control, no "?".
+    expect(screen.queryByText("一時的に集計できませんでした")).toBeNull()
+    expect(screen.queryByRole("button", { name: "再読み込み" })).toBeNull()
+    expect(screen.queryByText("?")).toBeNull()
+    // The backend was never queried for this arm, so no top-hits section.
+    expect(screen.queryByText("上位ヒット")).toBeNull()
+  })
+
+  test("multiple unavailable fields are joined and resolved to labels", () => {
+    renderCross([dbEntry("taxonomy", [], {
+      count: null,
+      error: "field_not_applicable",
+      unavailableFields: ["publication", "date_modified"],
+    })])
+    expect(screen.getByText("filter:Publication / Date Last Published に未対応")).toBeInTheDocument()
   })
 })

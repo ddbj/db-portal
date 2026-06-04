@@ -474,6 +474,8 @@ export const en: Resources = {
         retry: "Reload",
         error: "Counting is temporarily unavailable",
         countAria: "Hit count",
+        notApplicable: "Not applicable",
+        notApplicableReason: "filter:{{fields}} not supported",
       },
       perDb: {
         hardLimit: "Showing the top 10,000 hits",

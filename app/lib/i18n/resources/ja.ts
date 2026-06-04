@@ -417,6 +417,8 @@ export type Resources = {
         retry: string
         error: string
         countAria: string
+        notApplicable: string
+        notApplicableReason: string
       }
       perDb: {
         hardLimit: string
@@ -1066,6 +1068,8 @@ export const ja: Resources = {
         retry: "再読み込み",
         error: "一時的に集計できませんでした",
         countAria: "ヒット件数",
+        notApplicable: "対象外",
+        notApplicableReason: "filter:{{fields}} に未対応",
       },
       perDb: {
         hardLimit: "上位 10,000 件まで表示しています",

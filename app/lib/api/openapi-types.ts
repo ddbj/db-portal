@@ -2007,6 +2007,12 @@ export interface components {
              */
             error: components["schemas"]["DbPortalCountError"] | null;
             /**
+             * Unavailablefields
+             * @description DSL field names that made this arm field_not_applicable (count=null). Non-null only when error='field_not_applicable'; null otherwise.
+             * @example null
+             */
+            unavailableFields?: string[] | null;
+            /**
              * Hits
              * @description Lightweight top hits for this DB (up to topHits items, relevance order).  ``null`` when ``topHits=0``; ``[]`` when ``error`` is set; otherwise 0..topHits items.
              * @example [
@@ -2024,7 +2030,7 @@ export interface components {
          * @description Error reason for a DB entry in the cross-search count response.
          * @enum {string}
          */
-        DbPortalCountError: "timeout" | "upstream_5xx" | "connection_refused" | "unknown";
+        DbPortalCountError: "timeout" | "upstream_5xx" | "connection_refused" | "unknown" | "field_not_applicable";
         /**
          * DbPortalCrossSearchResponse
          * @description Cross-database response (8 entries, fixed order, count + top hits).
@@ -3354,9 +3360,6 @@ export interface components {
         /**
          * DbPortalHitTaxonomy
          * @description Taxonomy (TXSearch-backed) hit.
-         *
-         *     ``japaneseName`` is exposed in the response shape but cannot be
-         *     used as a search field.
          */
         DbPortalHitTaxonomy: {
             /**
@@ -3467,11 +3470,6 @@ export interface components {
              * @example human
              */
             commonName?: string | null;
-            /**
-             * Japanesename
-             * @example ヒト
-             */
-            japaneseName?: string | null;
             /**
              * Lineage
              * @example [
