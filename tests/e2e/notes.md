@@ -2,25 +2,38 @@
 
 Playwright e2e の設計上の制約・運用上のハマりどころ。シナリオ自体は `scenarios.md` を参照。
 
-## 1. 環境 / baseURL
+## 1. 環境 / 実行場所
 
-e2e は **staging URL に対して実行** する。dev (Docker) に対しては基本的に走らせない。
+e2e は **staging ホスト上の e2e 専用コンテナで、deploy 済みの公開 URL を叩く**。ローカル / dev コンテナでは回さない。
 
-| env | 用途 | baseURL |
+- **runner** (Playwright + chromium) は `Dockerfile` の `e2e` stage。production の `runtime` とは別 image で、playwright は runtime / production image には入れない。
+- **target** は deploy 済み staging アプリの公開 URL `https://bsi-staging.nig.ac.jp`。runner はブラウザを動かす道具で、検証しているのは deploy 済みアプリそのもの (リバースプロキシ / TLS / Secure cookie / redirect_uri を実ユーザーと同じ経路で通る)。
+- baseURL は `playwright.config.ts` が `DB_PORTAL_PORTAL_ORIGIN` を参照する (省略時も `https://bsi-staging.nig.ac.jp`)。`DB_PORTAL_PORTAL_ORIGIN=http://localhost:3000` を持つ dev コンテナでは回さない (baseURL が dev サーバに向き、Secure cookie / redirect_uri 前提のシナリオが壊れる)。
+
+| env | 用途 | 値 |
 |---|---|---|
-| `DB_PORTAL_PORTAL_ORIGIN` | `playwright.config.ts` が参照 | `https://bsi-staging.nig.ac.jp` (省略時 default) |
+| `DB_PORTAL_PORTAL_ORIGIN` | baseURL | `https://bsi-staging.nig.ac.jp` |
+| `DB_PORTAL_E2E_USER_PASSWORD` | `user` project の Keycloak login | staging test user の password (secret) |
 
-staging に向けて回す場合 (リリースマネージャの手元 / 作業環境):
+手順 (staging ホスト `nig-a012-search` の deploy checkout で実行):
 
 ```bash
-docker compose exec app sh -c '
-  DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
-  DB_PORTAL_E2E_USER_PASSWORD=<staging test user password> \
-  npm run test:e2e
-'
+cd ~/db-portal-staging
+git pull --ff-only                       # specs を deploy 済みアプリに揃える
+ulimit -n "$(ulimit -Hn)"                # build の npm ci が EMFILE で落ちないよう nofile を上げる
+podman build --target e2e -t db-portal-staging-e2e .
+
+# test user password は argv に出さない: 600 の env-file に書いて --env-file で渡す。
+umask 077
+cat > /tmp/db-portal-e2e.env <<'EOF'
+DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp
+DB_PORTAL_E2E_USER_PASSWORD=<staging test user password>
+EOF
+podman run --rm --env-file /tmp/db-portal-e2e.env db-portal-staging-e2e
+rm -f /tmp/db-portal-e2e.env
 ```
 
-CI からの自動実行はしない (`deployment.md §6`)。リリース判定の前に手動で回す。
+サブセットだけ回すときは image 引数の末尾に grep を渡す: `... db-portal-staging-e2e npm run test:e2e -- -g "S-SUBMIT-12"`。CI からの自動実行はしない (`deployment.md §6`)。リリース判定の前に手動で回す。
 
 ## 2. テスト間の独立性
 
@@ -77,7 +90,7 @@ ddbj-search-api / Keycloak / vLLM / GitHub API の遅延は 1-3 秒、ピーク�
 
 ### 4.2 Retry
 
-`playwright.config.ts` で `retries: process.env.CI ? 1 : 0` を設定。staging の 1 回限り 502 / 503 は CI 側で吸収する。ローカルでは retry しない (再現性を確認)。
+`playwright.config.ts` で `retries: process.env.CI ? 2 : 1` を設定。staging ホストの e2e コンテナ (CI 環境変数なし) は 1 回 retry し、staging の単発 502 / 503 / navigation race を吸収する。CI で回す場合のみ 2 回。
 
 ### 4.3 Network idle 待機
 
@@ -139,27 +152,18 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 
 ## 8. スクリーンショット / trace
 
-`playwright.config.ts` で `trace: "on-first-retry"` を設定。CI で失敗した spec は `playwright-report/` に trace が残り、GitHub Actions の artifact として upload される。
-
-local 実行で失敗を見たい場合:
+`playwright.config.ts` で `trace: "on-first-retry"` を設定。失敗 spec の trace / HTML report は e2e コンテナ内の `test-results/<spec>/trace.zip` と `playwright-report/` に出る。`--rm` で消えるので、残すときは出力先をホストに bind-mount する:
 
 ```bash
-docker compose exec app npx playwright show-trace test-results/<spec-name>/trace.zip
+podman run --rm \
+  -v "$PWD/test-results:/app/test-results" -v "$PWD/playwright-report:/app/playwright-report" \
+  --env-file /tmp/db-portal-e2e.env db-portal-staging-e2e
+# trace を見る (UI なし環境ではホストに持ち帰って `npx playwright show-trace` で開く)
 ```
 
 ## 9. 実行タイミング
 
-e2e は CI から自動実行しない。リリース判定の前にリリースマネージャがローカル / 作業用環境で staging に対して回す:
-
-```bash
-docker compose exec app sh -c '
-  DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
-  DB_PORTAL_E2E_USER_PASSWORD=<staging test user password> \
-  npm run test:e2e
-'
-```
-
-失敗時の HTML report は `playwright-report/` に出力される (`npx playwright show-report` でブラウザ表示)。
+e2e は CI から自動実行しない。`main` を staging に deploy した直後に、リリースマネージャが staging ホスト上の e2e コンテナで deploy 済み staging を叩いて全シナリオを回す (手順は §1)。緑を確認してから production に deploy する。runner が target と同じ NIG 内にあるぶん、ローカルから叩くよりレイテンシが低く速い。失敗時の HTML report / trace は §8 で取り出す。
 
 ## 10. 関連 docs
 

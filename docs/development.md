@@ -99,16 +99,8 @@ docker compose exec app npm run test:unit
 docker compose exec app npm run test:pbt
 docker compose exec app npm test -- --watch
 
-# E2E (Playwright)。e2e は staging 環境に対してのみ実行する (dev サーバは対象外)。
-# dev コンテナの DB_PORTAL_PORTAL_ORIGIN は http://localhost:3000 を指すため、
-# override しないと playwright の baseURL が誤って dev サーバに向く。必ず staging
-# origin を渡す。user project (Keycloak login) は DB_PORTAL_E2E_USER_PASSWORD を
-# 要求する (値は secret、host 側で export しておく)。
-export DB_PORTAL_E2E_USER_PASSWORD=...   # 値は credentials 管理
-docker compose exec \
-  -e DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
-  -e DB_PORTAL_E2E_USER_PASSWORD \
-  app npm run test:e2e
+# E2E (Playwright) は dev コンテナでは回さない。staging ホスト上の e2e 専用コンテナで
+# deploy 済みの公開 URL を叩く。手順は tests/e2e/notes.md §1。
 
 # Build
 docker compose exec app npm run build
@@ -259,10 +251,7 @@ docker compose exec app npm run validate:content
 docker compose exec app npm run build
 docker compose exec app npm run check:last-updated
 docker compose exec app npm run gen:api-types  # 差分があれば commit
-# e2e は staging 環境に対してのみ実行する (origin override 必須、上記「開発コマンド」参照)
-docker compose exec \
-  -e DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
-  -e DB_PORTAL_E2E_USER_PASSWORD \
-  app npm run test:e2e
 ```
+
+e2e は手元では回さない。staging に deploy した後、staging ホスト上の e2e 専用コンテナで全シナリオを回して緑を確認してから production に deploy する (`tests/e2e/notes.md` §1 / §9)。
 

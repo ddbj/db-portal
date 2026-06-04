@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **unit** | 関数・コンポーネント単体。外部境界を mock | `tests/unit/` | 開発中、何度も気軽に |
 | **pbt** | 純粋関数の不変量を fast-check で検証 | `tests/pbt/` | unit と同列、何度も |
-| **e2e** | UI から外部サービスまで貫通。staging 環境で実物を叩く | `tests/e2e/` | リリース前、CI で |
+| **e2e** | UI から外部サービスまで貫通。staging 環境で実物を叩く | `tests/e2e/` | リリース前、staging ホスト上で手動 |
 
 unit + pbt は開発のフィードバックループ。e2e は staging リリース後の検証。最初は unit + pbt を主軸にして、機能ごとに e2e シナリオを追加する。
 
@@ -215,17 +215,9 @@ docker compose exec app npm test                    # 全実行
 docker compose exec app npm run test:unit           # unit のみ
 docker compose exec app npm run test:pbt            # PBT のみ
 docker compose exec app npm test -- --watch         # watch モード
-
-# e2e は staging 環境に対してのみ実行する (dev サーバは対象外)。
-# dev コンテナの DB_PORTAL_PORTAL_ORIGIN は localhost:3000 を指すので、override
-# しないと baseURL が dev サーバに向く。必ず staging origin を渡す。user project は
-# DB_PORTAL_E2E_USER_PASSWORD (Keycloak login 用 secret) を host 側で export してから渡す。
-export DB_PORTAL_E2E_USER_PASSWORD=...   # 値は credentials 管理
-docker compose exec \
-  -e DB_PORTAL_PORTAL_ORIGIN=https://bsi-staging.nig.ac.jp \
-  -e DB_PORTAL_E2E_USER_PASSWORD \
-  app npm run test:e2e
 ```
+
+e2e は dev コンテナでは回さない。staging ホスト上の e2e 専用コンテナで deploy 済みの公開 URL (`https://bsi-staging.nig.ac.jp`) を叩く。手順は `tests/e2e/notes.md` §1。
 
 ## ディレクトリ構造
 

@@ -31,13 +31,23 @@ RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --i
 ENV HOME=/home/app
 RUN mkdir -p /home/app && chmod 777 /home/app
 
-# --- dev: source is bind-mounted at runtime (HMR); Playwright for e2e. ---
+# --- dev: source is bind-mounted at runtime (HMR / unit + pbt). ---
 FROM base AS dev
+COPY . .
+CMD ["sleep", "infinity"]
+
+# --- e2e: Playwright runner. Drives headless chromium against a DEPLOYED URL
+#     (DB_PORTAL_PORTAL_ORIGIN) to verify it end-to-end. Built and run on the
+#     staging host; carries chromium + devDeps + specs but builds no app — the
+#     target under test is the already-deployed staging app reached over its
+#     public origin, so the reverse proxy / TLS / Secure cookie / redirect_uri
+#     path is exercised for real. Never point it at a local dev server. ---
+FROM base AS e2e
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install --with-deps chromium && \
     chmod -R a+rX /ms-playwright
 COPY . .
-CMD ["sleep", "infinity"]
+CMD ["npm", "run", "test:e2e"]
 
 # --- build: produce the SSR/client build artifact. ---
 FROM base AS build
