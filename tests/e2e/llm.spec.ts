@@ -2,6 +2,7 @@ import { expect, test } from "./helpers"
 
 const enterMode = /AI モード|AI mode/
 const assistantInput = /AI 検索アシスタントへの入力|AI search assistant input/
+const keywordInput = /検索キーワード|Search keywords/
 const generateError = /クエリの生成に失敗しました|Could not generate a query/
 const retryGeneration = /再試行|Try again/
 const fieldSelector = /検索フィールド|Search field/
@@ -69,6 +70,62 @@ test.describe("LLM Domain", () => {
     // Apply rebuilds the builder (replaceRoot) and returns to keyword mode.
     await expect(toggle).toHaveAttribute("aria-pressed", "false", { timeout: 10_000 })
     await expect(page.getByRole("textbox", { name: assistantInput })).toHaveCount(0)
+    const rows = page.getByRole("combobox", { name: fieldSelector })
+    await expect(rows.first()).toBeVisible()
+    expect(await rows.count()).toBeGreaterThanOrEqual(1)
+  })
+
+  test("S-LLM-04: /search の proposal の free text が Apply でキーワードボックスへ載る", async ({ page }) => {
+    await page.route("**/api/llm/health", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", model: "e2e" }),
+      }),
+    )
+    // A structured leaf (organism_name) AND a top-level free_text phrase. The
+    // builder cannot hold a free_text leaf, so Apply must route it to the
+    // keyword box rather than drop it.
+    await page.route("**/api/llm/search-assistant", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body:
+          ": stream-open\n\n"
+          + `event: done\ndata: ${
+            JSON.stringify({
+              op: "AND",
+              rules: [
+                { op: "contains", field: "organism_name", value: "Homo sapiens" },
+                { op: "free_text", value: "single-cell RNA-seq", is_phrase: true },
+              ],
+            })
+          }\n\n`,
+      }),
+    )
+
+    await page.goto("/search")
+
+    const toggle = page.getByRole("button", { name: enterMode })
+    await toggle.click()
+    await expect(toggle).toHaveAttribute("aria-pressed", "true")
+
+    await page.getByRole("textbox", { name: assistantInput }).fill(
+      "Homo sapiens single-cell RNA-seq",
+    )
+    await page.getByRole("button", { name: /^生成$|^Generate$/ }).click()
+
+    await expect(page.getByRole("region", { name: proposalHeading })).toBeVisible({
+      timeout: 30_000,
+    })
+    await page.getByRole("button", { name: /この内容で作成|Create with this/ }).click()
+
+    // Apply returns to keyword mode and lands the free text in the keyword box
+    // (re-quoted as a phrase); the structured remainder stays in the builder.
+    await expect(toggle).toHaveAttribute("aria-pressed", "false", { timeout: 10_000 })
+    await expect(page.getByRole("textbox", { name: keywordInput })).toHaveValue(
+      '"single-cell RNA-seq"',
+    )
     const rows = page.getByRole("combobox", { name: fieldSelector })
     await expect(rows.first()).toBeVisible()
     expect(await rows.count()).toBeGreaterThanOrEqual(1)

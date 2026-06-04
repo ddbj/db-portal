@@ -853,6 +853,21 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - keyword 行は `new` モードのためクリアされる
 - **備考**: SSE を mock 固定するため決定的 (health-gate skip なし)。done AST は固定値だが、行の存在・件数 (`>= 1`) と builder への反映有無のみ assert し、特定 field/value への厳密一致は assert しない (mock 値に過度に結合しない)。
 
+### S-LLM-04: /search の proposal の free text が Apply でキーワードボックスへ載る
+
+- **ペルソナ**: P-ANON
+- **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`、`organism_name` leaf + top-level `free_text` フレーズの AND) を mock 固定。`/search` を空 builder で開く
+- **手順**:
+  1. 「AI モード」 button をクリックして AI モードに入る
+  2. AI 入力欄に prompt を入力し、`生成` をクリック
+  3. proposal `<section>` が表示されるのを待つ
+  4. 「この内容で作成」 button (`search.assistant.applyReplace`、空 builder なので生成モードは `new`) をクリック
+- **期待**:
+  - Apply 後、モードが keyword に戻る (「AI モード」 button が `aria-pressed="false"`)
+  - 上部キーワードボックス (`search.a11y.input`「検索キーワード」) に top-level free_text が phrase 再クオートで載る (`"single-cell RNA-seq"`)。Advanced builder は `free_text` leaf を表現できないため、`?q=` 復元と同じ `splitFreeText` 経路でキーワードボックスへ振り分ける (`new` はキーワードを置換)
+  - 構造化 leaf (organism_name) は Advanced builder の行 (`検索フィールド` combobox >= 1 件) として残る
+- **備考**: free_text を含む proposal の Apply 経路を固定する (S-LLM-03 は free_text を含まない proposal で builder 再構築のみを見るため、生成キーワードの取りこぼしを検出できない)。SSE mock 固定で決定的。
+
 ### E-LLM-01: health=unreachable のとき AI モードトグルは表示される (送信時のみ失敗)
 
 - **ペルソナ**: P-ANON
