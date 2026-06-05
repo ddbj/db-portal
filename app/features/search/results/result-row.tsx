@@ -5,6 +5,8 @@ import { ExternalIcon, Tag } from "~/ui"
 
 import type { DbSlug } from "../types"
 import {
+  ancestryRow,
+  CLASSIFICATION_LABEL,
   type DbHit,
   entryHref,
   isControlled,
@@ -16,7 +18,7 @@ import {
   signatureChips,
   submitterName,
   subtypeBadge,
-  taxonomyExtras,
+  taxonomyCommonName,
 } from "./result-fields"
 
 export type ResultRowProps = {
@@ -64,9 +66,9 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
   const organism = organismName(db, hit)
   const submitter = submitterName(hit)
   const chips = signatureChips(db, hit)
-  const tax = taxonomyExtras(hit)
-  const subtitle = tax?.commonName ?? ""
-  const hasMeta = submitter !== null || organism !== null || chips.length > 0 || (tax?.lineage.length ?? 0) > 0
+  const classification = ancestryRow(hit)
+  const subtitle = taxonomyCommonName(hit) ?? ""
+  const hasMeta = submitter !== null || organism !== null || chips.length > 0 || classification.length > 0
 
   return (
     <article className="flex flex-col gap-1.5 px-3 py-4 transition-colors hover:bg-surface-subtle">
@@ -126,7 +128,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
                   className="inline-flex items-center rounded-tag bg-surface-subtle px-2 py-px text-fs-micro leading-snug text-ink-soft"
                 >
                   {chip.labelKey && (
-                    <span className="mr-1 text-ink-softer">{t(chip.labelKey)}</span>
+                    <span className="mr-1 text-ink-softer">{t(chip.labelKey)}:</span>
                   )}
                   {chip.value}
                 </span>
@@ -139,11 +141,11 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
                   {chip.value}
                 </span>
               ))}
-          {tax && tax.lineage.length > 0 && (
+          {classification.length > 0 && (
             <span className="text-ink-soft">
-              <span className="mr-1 text-ink-softer">{t("search.results.row.lineage")}</span>
-              {tax.lineage.slice(0, 6).join(" › ")}
-              {tax.lineage.length > 6 ? " …" : ""}
+              <span className="mr-1 text-ink-softer">{t(CLASSIFICATION_LABEL)}:</span>
+              {classification.slice(0, 6).join(" › ")}
+              {classification.length > 6 ? " …" : ""}
             </span>
           )}
         </div>

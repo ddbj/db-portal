@@ -39,6 +39,7 @@ export {
   ExactMatchCard,
   findExactMatch,
   PerDbResults,
+  type ResolvedExactMatch,
   SearchResultsSkeleton,
 } from "./results"
 export {

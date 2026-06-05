@@ -2,6 +2,7 @@ import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 
 import {
+  ancestryRow,
   type DbHit,
   entryHref,
   isControlled,
@@ -12,7 +13,7 @@ import {
   rowTitle,
   signatureChips,
   subtypeBadge,
-  taxonomyExtras,
+  taxonomyCommonName,
 } from "~/features/search/results/result-fields"
 
 const hit = (o: Record<string, unknown>): DbHit => o as unknown as DbHit
@@ -131,6 +132,11 @@ describe("rowExcerpt", () => {
     expect(rowExcerpt(hit({ description: null }))).toBeNull()
     expect(rowExcerpt(hit({}))).toBeNull()
   })
+
+  test("trad / taxonomy carry no excerpt (description is null; reference prose is detail-only)", () => {
+    expect(rowExcerpt(hit({ type: "trad", description: null, referenceTitle: ["A paper title"] }))).toBeNull()
+    expect(rowExcerpt(hit({ type: "taxonomy", description: null }))).toBeNull()
+  })
 })
 
 describe("signatureChips", () => {
@@ -156,8 +162,8 @@ describe("signatureChips", () => {
     }))
     expect(chips).toEqual([
       { kind: "vocab", value: "MIGS.ba" },
-      { kind: "free", value: "Crassostrea gigas", labelKey: "search.results.row.host" },
-      { kind: "free", value: "Japan: Hiroshima", labelKey: "search.results.row.geo" },
+      { kind: "free", value: "Crassostrea gigas", labelKey: "search.facets.field.host" },
+      { kind: "free", value: "Japan: Hiroshima", labelKey: "search.facets.field.geoLocName" },
     ])
   })
 
@@ -204,6 +210,104 @@ describe("signatureChips", () => {
     ])
   })
 
+  test("biosample: package (displayName, vocab) leads; collectionDate (free, labelled) trails", () => {
+    expect(signatureChips("biosample", hit({
+      type: "biosample",
+      package: { name: "MIGS.ba.soil", displayName: "MIGS: soil" },
+      model: ["MIGS.ba"],
+      collectionDate: "2020-04",
+    }))).toEqual([
+      { kind: "vocab", value: "MIGS: soil" },
+      { kind: "vocab", value: "MIGS.ba" },
+      { kind: "free", value: "2020-04", labelKey: "search.facets.field.collectionDate" },
+    ])
+  })
+
+  test("biosample: package falls back to name when displayName is absent", () => {
+    expect(signatureChips("biosample", hit({ type: "biosample", package: { name: "MIGS.ba.soil", displayName: null } })))
+      .toEqual([{ kind: "vocab", value: "MIGS.ba.soil" }])
+  })
+
+  test("sra-experiment surfaces librarySelection + libraryLayout (vocab)", () => {
+    expect(signatureChips("sra", hit({
+      type: "sra-experiment",
+      librarySelection: ["RANDOM"],
+      libraryLayout: "PAIRED",
+    }))).toEqual([
+      { kind: "vocab", value: "RANDOM" },
+      { kind: "vocab", value: "PAIRED" },
+    ])
+  })
+
+  test("sra-sample surfaces geoLocName + collectionDate (free, labelled)", () => {
+    expect(signatureChips("sra", hit({ type: "sra-sample", geoLocName: "Japan: Hiroshima", collectionDate: "2019" })))
+      .toEqual([
+        { kind: "free", value: "Japan: Hiroshima", labelKey: "search.facets.field.geoLocName" },
+        { kind: "free", value: "2019", labelKey: "search.facets.field.collectionDate" },
+      ])
+  })
+
+  test("INSDC missing-value placeholders emit no chip across host / strain / isolate / geoLocName / collectionDate", () => {
+    for (const token of ["N/A", "na", "missing", "not applicable", "not collected", "restricted access", "Unknown", "-"]) {
+      expect(signatureChips("biosample", hit({
+        type: "biosample",
+        host: token,
+        strain: token,
+        isolate: token,
+        geoLocName: token,
+        collectionDate: token,
+      }))).toEqual([])
+      expect(signatureChips("sra", hit({ type: "sra-sample", geoLocName: token, collectionDate: token }))).toEqual([])
+    }
+  })
+
+  test("real attribute values still emit chips alongside filtered placeholders", () => {
+    expect(signatureChips("biosample", hit({ type: "biosample", isolate: "not applicable", strain: "JBKA-6" })))
+      .toEqual([{ kind: "free", value: "JBKA-6" }])
+  })
+
+  test("jga-study surfaces vendor (vocab) after studyType", () => {
+    expect(signatureChips("jga", hit({ type: "jga-study", studyType: ["Control Set"], vendor: ["Illumina"] })))
+      .toEqual([
+        { kind: "free", value: "Control Set" },
+        { kind: "vocab", value: "Illumina" },
+      ])
+  })
+
+  test("metabobank surfaces submissionType (vocab) after experimentType", () => {
+    expect(signatureChips("metabobank", hit({ type: "metabobank", experimentType: ["LC-MS"], submissionType: ["open"] })))
+      .toEqual([
+        { kind: "free", value: "LC-MS" },
+        { kind: "vocab", value: "open" },
+      ])
+  })
+
+  test("trad surfaces geneName (vocab, capped at 2) after the sequence chips; no publication chip", () => {
+    expect(signatureChips("trad", hit({
+      type: "trad",
+      molecularType: "DNA",
+      geneName: ["rbcL", "matK", "trnH"],
+      referenceJournal: ["Nature 405:1"],
+    }))).toEqual([
+      { kind: "vocab", value: "DNA" },
+      { kind: "vocab", value: "rbcL" },
+      { kind: "vocab", value: "matK" },
+    ])
+  })
+
+  test("taxonomy chips are blastName (vocab) + first synonym (free, labelled); ranks ride the Classification row", () => {
+    expect(signatureChips("taxonomy", hit({
+      type: "taxonomy",
+      kingdom: "Metazoa",
+      genus: "Homo",
+      blastName: "primates",
+      synonym: ["Homo sapiens Linnaeus", "second name"],
+    }))).toEqual([
+      { kind: "vocab", value: "primates" },
+      { kind: "free", value: "Homo sapiens Linnaeus", labelKey: "search.facets.field.synonym" },
+    ])
+  })
+
   test("empty / null signature fields produce no chips", () => {
     expect(signatureChips("bioproject", hit({ type: "bioproject", projectType: null, relevance: [] }))).toEqual([])
     expect(signatureChips("sra", hit({ type: "sra-run" }))).toEqual([])
@@ -228,21 +332,36 @@ describe("signatureChips", () => {
   })
 })
 
-describe("taxonomyExtras", () => {
-  test("extracts commonName / lineage (array)", () => {
-    expect(taxonomyExtras(hit({
+describe("taxonomyCommonName", () => {
+  test("taxonomy commonName, null elsewhere", () => {
+    expect(taxonomyCommonName(hit({ type: "taxonomy", commonName: "human" }))).toBe("human")
+    expect(taxonomyCommonName(hit({ type: "taxonomy", commonName: null }))).toBeNull()
+    expect(taxonomyCommonName(hit({ type: "trad", commonName: "x" }))).toBeNull()
+  })
+})
+
+describe("ancestryRow", () => {
+  test("taxonomy → named Linnaean ranks, general→specific, present ones only", () => {
+    expect(ancestryRow(hit({
       type: "taxonomy",
-      commonName: "human",
-      lineage: ["Homo", "Homininae", "Hominidae"],
-    }))).toEqual({ commonName: "human", lineage: ["Homo", "Homininae", "Hominidae"] })
+      kingdom: "Metazoa",
+      phylum: "Arthropoda",
+      class: "Insecta",
+      order: "Diptera",
+      family: "Drosophilidae",
+      genus: "Drosophila",
+    }))).toEqual(["Metazoa", "Arthropoda", "Insecta", "Diptera", "Drosophilidae", "Drosophila"])
+    expect(ancestryRow(hit({ type: "taxonomy", kingdom: "Metazoa", genus: "Homo" }))).toEqual(["Metazoa", "Homo"])
   })
 
-  test("splits a string lineage", () => {
-    expect(taxonomyExtras(hit({ type: "taxonomy", lineage: "Homo; Homininae; Hominidae" }))?.lineage)
-      .toEqual(["Homo", "Homininae", "Hominidae"])
+  test("trad → raw source-organism lineage (drops empty entries)", () => {
+    expect(ancestryRow(hit({ type: "trad", lineage: ["Eukaryota", "", "Metazoa"] })))
+      .toEqual(["Eukaryota", "Metazoa"])
   })
 
-  test("null for non-taxonomy hits", () => {
-    expect(taxonomyExtras(hit({ type: "trad" }))).toBeNull()
+  test("empty for other DBs and when no rank / lineage is present", () => {
+    expect(ancestryRow(hit({ type: "bioproject" }))).toEqual([])
+    expect(ancestryRow(hit({ type: "taxonomy" }))).toEqual([])
+    expect(ancestryRow(hit({ type: "trad" }))).toEqual([])
   })
 })

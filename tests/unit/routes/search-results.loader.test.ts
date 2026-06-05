@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw"
 import type { LoaderFunctionArgs } from "react-router"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
+import type { CrossSearchResponse, DbSearchResponse } from "~/lib/api"
 import {
   clearMatchAllFacetCache,
   getCachedMatchAllFacets,
@@ -117,6 +118,97 @@ describe("search-results loader: hits", () => {
     )
     const result = await (await buildLoader("?q=cancer&db=biosample")).results
     expect(result).toEqual({ kind: "error", errorKey: "db" })
+  })
+})
+
+describe("search-results loader: exact match", () => {
+  // A name-it lookup whose accession sits in a cross-search top hit. The lightweight
+  // arm carries a thin title; the per-DB probe returns the full hit with a distinct
+  // title + signature field, so the two are tellable apart in assertions.
+  const lightweightCross: CrossSearchResponse = {
+    databases: [{
+      db: "bioproject",
+      count: 1,
+      error: null,
+      hits: [{ identifier: "PRJDB1", type: "bioproject", title: "Light title" }],
+    }],
+    facets: null,
+  }
+  const fullHitResponse: DbSearchResponse = {
+    total: 1,
+    hits: [{ identifier: "PRJDB1", type: "bioproject", title: "Full title", projectType: ["genome"] }],
+    hardLimitReached: false,
+    page: 1,
+    perPage: 5,
+    hasNext: false,
+    facets: null,
+  }
+  const freeTextParse = (value: string) =>
+    parseHandler({ response: { ast: { op: "free_text", value, is_phrase: false } } })
+
+  test("accessionMatch_fetchesFullHit", async () => {
+    const probes: URL[] = []
+    server.use(
+      freeTextParse("PRJDB1"),
+      crossSearchHandler({ response: lightweightCross }),
+      dbSearchHandler({ response: fullHitResponse, onRequest: (url) => probes.push(url) }),
+    )
+    const result = await (await buildLoader("?q=PRJDB1")).results
+    if (result.kind !== "cross") throw new Error("expected cross result")
+    expect(result.exactMatch?.db).toBe("bioproject")
+    expect(result.exactMatch?.hit.identifier).toBe("PRJDB1")
+    // Full hit (from the probe), not the lightweight cross hit.
+    expect(result.exactMatch?.hit.title).toBe("Full title")
+    expect(probes).toHaveLength(1)
+  })
+
+  test("probeReturnsNoMatchingHit_fallsBackToLightweight", async () => {
+    server.use(
+      freeTextParse("PRJDB1"),
+      crossSearchHandler({ response: lightweightCross }),
+      dbSearchHandler({ response: minimalDbSearchResponse() }), // hits: []
+    )
+    const result = await (await buildLoader("?q=PRJDB1")).results
+    if (result.kind !== "cross") throw new Error("expected cross result")
+    expect(result.exactMatch?.hit.title).toBe("Light title")
+  })
+
+  test("probeFailure_fallsBackToLightweight", async () => {
+    server.use(
+      freeTextParse("PRJDB1"),
+      crossSearchHandler({ response: lightweightCross }),
+      http.get("*/db-portal/search", () => new HttpResponse(null, { status: 500 })),
+    )
+    const result = await (await buildLoader("?q=PRJDB1")).results
+    if (result.kind !== "cross") throw new Error("expected cross result")
+    expect(result.exactMatch?.hit.identifier).toBe("PRJDB1")
+    expect(result.exactMatch?.hit.title).toBe("Light title")
+  })
+
+  test("noLookupMatch_noProbe_nullExactMatch", async () => {
+    const probes: URL[] = []
+    server.use(
+      freeTextParse("zzz"),
+      crossSearchHandler({ response: lightweightCross }),
+      dbSearchHandler({ onRequest: (url) => probes.push(url) }),
+    )
+    const result = await (await buildLoader("?q=zzz")).results
+    if (result.kind !== "cross") throw new Error("expected cross result")
+    expect(result.exactMatch).toBeNull()
+    expect(probes).toHaveLength(0)
+  })
+
+  test("structuredQuery_noProbe_nullExactMatch", async () => {
+    const probes: URL[] = []
+    server.use(
+      parseHandler(), // minimal eq AST: not a plain lookup
+      crossSearchHandler({ response: lightweightCross }),
+      dbSearchHandler({ onRequest: (url) => probes.push(url) }),
+    )
+    const result = await (await buildLoader("?q=PRJDB1")).results
+    if (result.kind !== "cross") throw new Error("expected cross result")
+    expect(result.exactMatch).toBeNull()
+    expect(probes).toHaveLength(0)
   })
 })
 

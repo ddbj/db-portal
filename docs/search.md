@@ -209,6 +209,7 @@ scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range
 - **Sidebar は AND of rows**: 各行は AND 結合のみ。OR / NOT を持てない ([§ AST 変換](#ast-変換-sidebar--ast))
 - **cross は Tier 1/2 のみ**: cross sidebar には横断可の共通 field しか出さない (Tier 3 は `field-not-available-in-cross-db` で 400)
 - **Solr scope は degenerate 行を出さない**: trad / taxonomy は ARSA / TXSearch で degenerate する行 (上記) を構成から除く
+- **行順は意味順 (render kind 非依存)**: 各 scope の行は subject (organism) → 識別 / 内容 → 分類 / DB 固有属性 → access / provenance → 数値 → 日付 の意味順で並べ、facet (checkbox) を render kind だけを理由に上部へ持ち上げない。taxonomy は階級を Linnaean 階層順 (domain → kingdom → … → species) に置く
 
 注意:
 
@@ -376,7 +377,7 @@ accession 直打ち (例 `DRA000001`) や organism 学名 (例 `Homo sapiens`) �
 
 - 対象は cross-DB 画面 (`?db=` 不在) のみ。per-DB では出さない
 - クエリが **単純 lookup** のときだけ発火する: AST の top-level が単一 `free_text`、または全 child が `free_text` の AND (スペース区切りの "Homo sapiens" 等) で、`splitFreeText` の `rest` が空になる形。`OR` / `NOT` / `field:` leaf / ワイルドカード / facet 併用 / 混在 AND では出さない。`OR` / `NOT` 配下とワイルドカードを除外する方針は § データ可視性 の解禁条件と同じだが、カードは keyword box 由来の lookup 向け表示なので `field:` 直接指定 (`identifier:` 等) は対象にしない
-- 照合は cross-search レスポンスの lightweight hits だけで行う (追加リクエスト・backend 変更なし)。完全一致は relevance 上位に来る前提の best-effort で、`topHits` 窓内に該当 hit があるときだけ出す
+- 照合 (どのエントリを名指しているかの判定) は cross-search レスポンスの lightweight hits だけで行う (判定に追加リクエスト・backend 変更は不要)。完全一致は relevance 上位に来る前提の best-effort で、`topHits` 窓内に該当 hit があるときだけ出す
 
 照合規則 (大文字小文字は無視):
 
@@ -387,7 +388,7 @@ accession 直打ち (例 `DRA000001`) や organism 学名 (例 `Homo sapiens`) �
 
 accession と organism の両方が一致しうるときは accession を優先する。
 
-表示は per-DB の Result row (`ResultRow`) を強調枠で囲んで流用し、横断コンテキストなので所属 DB を先頭の chip で示す (detail link は `entryHref` 共通生成)。完全一致で出した hit が下の DB カードの上位ヒットにも現れる重複は、強調ボックスとグリッドで目的が異なるため意図的に許容する。accession 完全一致で解禁された `suppressed` エントリはこのカードでも Suppressed バッジが出る (`ResultRow` 流用のため、[§ データ可視性](#データ可視性-status))。
+表示は per-DB の Result row (`ResultRow`) を強調枠で囲んで流用し、横断コンテキストなので所属 DB を先頭の chip で示す (detail link は `entryHref` 共通生成)。lightweight hit は DB 固有 field を持たないため、**一致を検出したら committed クエリ (cross-search で suppressed も解禁済みの同じ q) を所属 DB の per-DB search へ 1 回だけ投げ直し、同一 identifier の full hit を引いてカードに描く** (loader 内 `resolveExactMatch`)。これで完全一致カードも per-DB 行と同じ signature chip / lineage を載せる。full hit が引けない / 取得失敗のときは lightweight hit のまま描画し、カードは必ず出す。完全一致で出した hit が下の DB カードの上位ヒットにも現れる重複は、強調ボックスとグリッドで目的が異なるため意図的に許容する。accession 完全一致で解禁された `suppressed` エントリはこのカードでも Suppressed バッジが出る (`ResultRow` 流用のため、[§ データ可視性](#データ可視性-status))。
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
@@ -425,22 +426,24 @@ detail link は hit の `url` ではなく identifier + 細粒度 `type` から�
 
 ##### DB 別の表示 field
 
-メタ行に出す DB 固有 field の規約 (値があるときだけ)。chip は値の語彙で 2 質感に分ける: controlled / identifier / numeric は mono の chip、submitter 自由記述 (free-form) は淡色の控えめ chip。
+メタ行に出す DB 固有 field の規約 (値があるときだけ)。chip は値の語彙で 2 質感に分ける: controlled / identifier / numeric は mono の枠線 chip (値を「正確な語彙」として強調)、submitter 自由記述 (free-form) は淡色・枠線なしの控えめ chip (表記揺れがあるため de-emphasize)。ラベル接頭辞を出す free chip (host / geoLocName / collectionDate 等) は sidebar facet と同じ field ラベル (`search.facets.field.*`、両 locale 共通の英語) を流用し、filter と表記を揃える。
 
 | DB | subtype/rank バッジ | organism | excerpt | DB 固有メタ (chip) |
 |---|---|---|---|---|
 | bioproject | Umbrella のとき | あれば | あり | projectType / relevance |
-| biosample | — | あれば (主役) | あり | model / host / strain / isolate / geoLocName |
-| sra | entity subtype | sample のみ | run 以外 | experiment: libraryStrategy / librarySource / platform / instrumentModel、analysis: analysisType、sample: geoLocName |
-| jga | entity subtype | 出さない | あり (dac は無) | study: studyType、dataset: datasetType |
+| biosample | — | あれば (主役) | あり | package / model / host / strain / isolate / geoLocName / collectionDate |
+| sra | entity subtype | sample のみ | run 以外 | experiment: libraryStrategy / librarySource / librarySelection / libraryLayout / platform / instrumentModel、analysis: analysisType、sample: geoLocName / collectionDate |
+| jga | entity subtype | 出さない | あり (dac は無) | study: studyType / vendor、dataset: datasetType |
 | gea | — | 出さない | あり | experimentType |
-| metabobank | — | 出さない | あり | experimentType / studyType |
-| trad | — | あれば | 無し (Solr が null) | molecularType / division / sequenceLength (bp) |
-| taxonomy | rank | 出さない | 無し | commonName / japaneseName (title 補助) + lineage |
+| metabobank | — | 出さない | あり | experimentType / studyType / submissionType |
+| trad | — | あれば | 無し (Solr が null、Definition が title 兼説明) | molecularType / division / sequenceLength (bp) / geneName、+ Classification 行 |
+| taxonomy | rank | 出さない | 無し | blastName / synonym (先頭 1 件) + commonName (title 補助)、+ Classification 行 |
 
 - organism は jga (常に Homo sapiens で識別力ゼロ) と taxonomy (organism = その taxon 自身) では出さない。
-- free-form (experimentType / studyType / datasetType / host / strain / geoLocName 等) は submitter 自由記述で表記揺れが大きいため、見出しにせず控えめ chip に留める。
-- controlled-access (実質 JGA のみ) は警告色バッジで示す。`status` は通常リスト行に出さないが、`suppressed` だけは critical 色のSuppressed バッジで示す (id 直打ちでしか現れず public と区別が要るため、[§ データ可視性](#データ可視性-status))。`accessibility` / `isPartOf` / `type` / `publication` / `grant` / `externalLink` / `dbXrefs` / `sameAs` / `distribution` / `properties` はリスト行に出さない (常時同値・冗長・詳細画面向き)。
+- **Classification 行**: organism の分類位置を general→specific で `›` 連結し、共通の「Classification」ラベルで出す (taxonomy / trad とも同概念)。**taxonomy** は常時揃う名前付き標準階級 (`kingdom` / `phylum` / `class` / `order` / `family` / `genus`) を使う (生の lineage clade 連鎖より一般 user に分かりやすい)。**trad** は名前付き階級を持たないため raw lineage (標準階級＋名無し clade) を使う。`species` / `domain` / `equivalentName` / `strain` / `isolate` 等の他 taxonomy field は API で取得できるがリスト行には出さない (filter / 詳細画面向き)。
+- free-form chip (experimentType / studyType / datasetType / host / strain / isolate / geoLocName / collectionDate / synonym 等) は submitter 自由記述で表記揺れが大きいため、見出しにせず控えめ chip に留める。ラベル付き chip は `<facet と同じ field ラベル>: <値>` 形式で出す。
+- submitter 自由記述の属性 chip (host / strain / isolate / geoLocName / collectionDate) は、INSDC の欠損値表記 (`not applicable` / `missing` / `N/A` / `restricted access` 等) を値無し扱いにして chip を出さない。
+- controlled-access (実質 JGA のみ) は警告色バッジで示す。`status` は通常リスト行に出さないが、`suppressed` だけは critical 色のSuppressed バッジで示す (id 直打ちでしか現れず public と区別が要るため、[§ データ可視性](#データ可視性-status))。`accessibility` / `isPartOf` / `type` / `publication` (trad の `referenceTitle` / `referenceJournal` 含む) / `grant` / `externalLink` / `dbXrefs` / `sameAs` / `distribution` / `properties` はリスト行に出さない (常時同値・冗長・詳細画面向き)。
 
 #### Pagination
 

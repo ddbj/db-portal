@@ -62,7 +62,12 @@ const taxonomy = hit({
   datePublished: null,
   rank: "species",
   commonName: "human",
-  lineage: ["Homo", "Homininae", "Hominidae"],
+  kingdom: "Metazoa",
+  phylum: "Chordata",
+  class: "Mammalia",
+  order: "Primates",
+  family: "Hominidae",
+  genus: "Homo",
 })
 
 const renderRow = (props: ResultRowProps) =>
@@ -164,11 +169,12 @@ describe("ResultRow", () => {
     expect(screen.getByText("MAFF lab")).toBeInTheDocument()
   })
 
-  test("taxonomy renders rank badge, common name, and lineage", () => {
+  test("taxonomy renders rank badge, common name, and the named Classification chain", () => {
     renderRow({ db: "taxonomy", hit: taxonomy, lang: "ja" })
     expect(screen.getByText("species")).toBeInTheDocument()
     expect(screen.getByText("human")).toBeInTheDocument()
-    expect(screen.getByText(/Homo › Homininae › Hominidae/)).toBeInTheDocument()
+    expect(screen.getByText("Classification:")).toBeInTheDocument()
+    expect(screen.getByText(/Metazoa › Chordata › Mammalia › Primates › Hominidae › Homo/)).toBeInTheDocument()
   })
 
   test("dbChip leads the row with the owning DB name when enabled", () => {

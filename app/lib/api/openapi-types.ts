@@ -3479,6 +3479,57 @@ export interface components {
              *     ]
              */
             lineage?: string[] | string | null;
+            /**
+             * Synonym
+             * @description Taxon synonyms (multi-valued).
+             * @example [
+             *       "Arabis thaliana"
+             *     ]
+             */
+            synonym?: string[] | null;
+            /**
+             * Blastname
+             * @example primates
+             */
+            blastName?: string | null;
+            /**
+             * Kingdom
+             * @example Metazoa
+             */
+            kingdom?: string | null;
+            /**
+             * Phylum
+             * @example Chordata
+             */
+            phylum?: string | null;
+            /**
+             * Class
+             * @example Mammalia
+             */
+            class?: string | null;
+            /**
+             * Order
+             * @example Primates
+             */
+            order?: string | null;
+            /**
+             * Family
+             * @example Hominidae
+             */
+            family?: string | null;
+            /**
+             * Genus
+             * @example Homo
+             */
+            genus?: string | null;
+            /**
+             * Equivalentname
+             * @description Equivalent names (multi-valued).
+             * @example [
+             *       "primate"
+             *     ]
+             */
+            equivalentName?: string[] | null;
         };
         /**
          * DbPortalHitTrad
@@ -3598,6 +3649,41 @@ export interface components {
              * @example 5000
              */
             sequenceLength?: number | null;
+            /**
+             * Referencetitle
+             * @description GenBank REFERENCE titles (multi-valued).
+             * @example [
+             *       "A strong candidate for the breast and ovarian cancer susceptibility gene BRCA1",
+             *       "Direct Submission"
+             *     ]
+             */
+            referenceTitle?: string[] | null;
+            /**
+             * Referencejournal
+             * @description GenBank REFERENCE journals (multi-valued).
+             * @example [
+             *       "Science 266 (5182), 66-71 (1994)"
+             *     ]
+             */
+            referenceJournal?: string[] | null;
+            /**
+             * Genename
+             * @description Gene names from the GenBank feature table's ``/gene=`` qualifiers (deduplicated, capped).
+             * @example [
+             *       "BRCA1"
+             *     ]
+             */
+            geneName?: string[] | null;
+            /**
+             * Lineage
+             * @description Taxonomic ancestors (ancestor-only, organism itself excluded).
+             * @example [
+             *       "Eukaryota",
+             *       "Metazoa",
+             *       "Chordata"
+             *     ]
+             */
+            lineage?: string[] | null;
         };
         /**
          * DbPortalHitsResponse

@@ -2,8 +2,10 @@ import type { LoaderFunctionArgs } from "react-router"
 
 import {
   type DbSlug,
+  findExactMatch,
   type PerPageValue,
   readSearchParams,
+  type ResolvedExactMatch,
   scopeFacetParam,
   type SortKey,
   sortKeyToApiSort,
@@ -23,9 +25,10 @@ import { peekMatchAllFacets } from "./facet-cache.server"
 // Hits resolve through this union so the route's <Await> has one render path: a
 // cross/per-DB payload, or a folded error. Facet buckets ride a separate `facets`
 // value (an instant cached placeholder), refined client-side by the sidebar
-// (docs/search.md § 検索結果 UI / § Sidebar facet).
+// (docs/search.md § 検索結果 UI / § Sidebar facet). The cross arm also carries the
+// resolved exact-match entry (full hit) so the route renders it without re-deriving.
 export type SearchResult =
-  | { kind: "cross"; cross: CrossSearchResponse }
+  | { kind: "cross"; cross: CrossSearchResponse; exactMatch: ResolvedExactMatch | null }
   | { kind: "perDb"; perDb: DbSearchResponse }
   | { kind: "error"; errorKey: "cross" | "db" }
 
@@ -72,6 +75,40 @@ const matchAllPlaceholder = (
   return peekMatchAllFacets(scope, fetcher)
 }
 
+// Page size of the follow-up per-DB probe (smallest the API allows): the named
+// entry ranked in the cross-search top-3 for its arm, so it leads the same q on
+// the per-DB endpoint and sits on the first page.
+const EXACT_MATCH_PROBE_PER_PAGE = 20
+
+// Resolve the detected exact match to a full per-DB hit. The cross-search reply
+// only carries lightweight hits, so re-run the committed query against the matched
+// DB (same q that already unlocked any suppressed entry in cross-search) and pick
+// the hit with the matched identifier, giving the card the full signature chips /
+// lineage of a per-DB row. Any miss / failure folds back to the lightweight hit so
+// the card always renders (docs/search.md § 完全一致カード).
+const resolveExactMatch = async (
+  ast: ParseNode | null,
+  q: string,
+  databases: CrossSearchResponse["databases"],
+  options: { baseUrl?: string },
+): Promise<ResolvedExactMatch | null> => {
+  const detected = findExactMatch(ast, databases)
+  if (!detected) return null
+  const fallback: ResolvedExactMatch = {
+    db: detected.db,
+    hit: detected.hit as unknown as DbSearchResponse["hits"][number],
+  }
+  try {
+    const res = await dbSearch({ db: detected.db, q, perPage: EXACT_MATCH_PROBE_PER_PAGE }, options)
+    const wanted = detected.hit.identifier.toLowerCase()
+    const full = res.hits.find((h) => h.identifier.toLowerCase() === wanted)
+
+    return full ? { db: detected.db, hit: full } : fallback
+  } catch {
+    return fallback
+  }
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {
   const url = new URL(request.url)
   const params = readSearchParams(url.searchParams)
@@ -110,7 +147,11 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
   let results: Promise<SearchResult>
   if (params.db === null) {
     results = crossSearch({ ...qPart, topHits: 3 }, options)
-      .then((cross): SearchResult => ({ kind: "cross", cross }))
+      .then(async (cross): Promise<SearchResult> => ({
+        kind: "cross",
+        cross,
+        exactMatch: await resolveExactMatch(ast, params.q, cross.databases, options),
+      }))
       .catch((): SearchResult => ({ kind: "error", errorKey: "cross" }))
   } else {
     const db = params.db

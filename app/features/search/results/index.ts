@@ -1,5 +1,5 @@
 export { CrossResults } from "./cross-results"
-export { type ExactMatch, findExactMatch } from "./exact-match"
+export { type ExactMatch, findExactMatch, type ResolvedExactMatch } from "./exact-match"
 export { ExactMatchCard } from "./exact-match-card"
 export { PerDbResults } from "./per-db-results"
 export { SearchResultsSkeleton } from "./results-skeleton"

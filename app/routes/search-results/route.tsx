@@ -11,7 +11,6 @@ import {
   DEFAULT_PAGE,
   ExactMatchCard,
   FacetPanel,
-  findExactMatch,
   fromAdvanced,
   fromSidebar,
   identityAst,
@@ -332,10 +331,6 @@ const SearchResultsRoute = () => {
                     </Section>
                   )
                 }
-                const exactMatch = result.kind === "cross"
-                  ? findExactMatch(data.ast, result.cross.databases)
-                  : null
-
                 return (
                   <Section padTop="sm" padBottom="lg">
                     <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
@@ -344,7 +339,7 @@ const SearchResultsRoute = () => {
                         {result.kind === "cross"
                           ? (
                             <>
-                              {exactMatch && <ExactMatchCard match={exactMatch} lang={lang} />}
+                              {result.exactMatch && <ExactMatchCard match={result.exactMatch} lang={lang} />}
                               <CrossResults q={data.q} response={result.cross} />
                             </>
                           )

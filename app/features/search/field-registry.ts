@@ -106,7 +106,9 @@ export type Scope = "cross" | DbSlug
 // metadata → dates. Fields are grouped by meaning, not render kind, so related
 // fields stay adjacent (the organism taxID facet sits with its name text; the
 // access / provenance block trails just above the date ranges). Solr scopes (trad /
-// taxonomy) carry their own curated fields; degenerate ES fields are omitted there
+// taxonomy) carry their own curated fields but follow the same shape — subject first,
+// dates last — and taxonomy lays its rank fields out as a Linnaean hierarchy
+// (domain → … → species); degenerate ES fields are omitted there
 // (docs/search.md § scope 別の filter 構成).
 const ES_HEAD = [
   // subject: the organism taxID facet and the scientific-name text are one concept
@@ -196,26 +198,33 @@ export const SCOPE_FIELDS = {
   // resolves the taxID to a scientific name and matches the ARSA Organism/Lineage — but its
   // facet aggregation is degenerate, so it is facet-suppressed to a taxID input
   // (FACET_SUPPRESSED), sitting with its name text. publication maps to the ARSA
-  // ReferenceTitle, so it is searchable here.
+  // ReferenceTitle, so it is searchable here. Subject (organism) leads, the division /
+  // molecular_type classification follows, then content, the sequence_length range, and the
+  // date last.
   trad: [
-    "division",
-    "molecular_type",
     "organism_id",
     "organism_name",
+    "division",
+    "molecular_type",
     "publication",
     "feature_gene_name",
     "reference_journal",
-    "date_published",
     "sequence_length",
+    "date_published",
   ],
   // Solr (TXSearch): submitter / date_published degenerate, so omitted. organism_id is
   // searchable by tax_id but its facet is degenerate, so it is facet-suppressed to a
-  // text input (FACET_SUPPRESSED). strain / isolate share names with biosample.
+  // text input (FACET_SUPPRESSED). strain / isolate share names with biosample. Order reads
+  // as the record's identity (taxID, rank), its lineage path, then the Linnaean hierarchy
+  // top-to-bottom (domain → kingdom → … → species), the alternative names, and the
+  // specimen-level strain / isolate last — rank / kingdom render as facets but sit where
+  // their meaning belongs, not hoisted as a checkbox block.
   taxonomy: [
-    "rank",
-    "kingdom",
     "organism_id",
+    "rank",
     "lineage",
+    "domain",
+    "kingdom",
     "phylum",
     "class",
     "order",
@@ -223,12 +232,11 @@ export const SCOPE_FIELDS = {
     "genus",
     "species",
     "common_name",
-    "strain",
-    "isolate",
     "synonym",
     "blast_name",
     "equivalent_name",
-    "domain",
+    "strain",
+    "isolate",
   ],
 } as const satisfies Record<Scope, readonly FieldKey[]>
 

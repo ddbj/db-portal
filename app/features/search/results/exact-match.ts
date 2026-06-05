@@ -3,12 +3,21 @@ import type { CrossSearchResponse, ParseNode } from "~/lib/api"
 import { isIdentityAst, splitFreeText } from "../ast"
 import { type DbSlug, isDbSlug } from "../types"
 import { CARD_ORDER } from "./cross-results"
+import type { DbHit } from "./result-fields"
 
 // One cross-search lightweight hit (identifier / type / title / organism / status
 // / dates), the shape carried by each DB arm of the cross-search response.
 type LightweightHit = NonNullable<CrossSearchResponse["databases"][number]["hits"]>[number]
 
+// A detected match: the lightweight hit found in the cross-search top hits.
 export type ExactMatch = { db: DbSlug; hit: LightweightHit }
+
+// A match resolved for display: the full per-DB hit the loader fetches for the
+// detected entry (or the lightweight hit cast to `DbHit` when that fetch finds
+// nothing — every result-fields helper guards with `"x" in hit`, so the row
+// degrades to whatever fields the hit carries). Carried by the cross loader
+// result and rendered by `ExactMatchCard` (docs/search.md § 完全一致カード).
+export type ResolvedExactMatch = { db: DbSlug; hit: DbHit }
 
 const isFreeText = (node: ParseNode): node is Extract<ParseNode, { op: "free_text" }> =>
   node.op === "free_text"

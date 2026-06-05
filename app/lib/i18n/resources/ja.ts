@@ -441,9 +441,7 @@ export type Resources = {
       row: {
         controlled: string
         suppressed: string
-        host: string
-        geo: string
-        lineage: string
+        classification: string
       }
     }
     facets: {
@@ -1095,9 +1093,7 @@ export const ja: Resources = {
       row: {
         controlled: "アクセス制限",
         suppressed: "Suppressed",
-        host: "宿主",
-        geo: "地域",
-        lineage: "系統",
+        classification: "Classification",
       },
     },
     facets: {
