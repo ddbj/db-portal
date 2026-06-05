@@ -115,7 +115,6 @@ const ES_HEAD = [
   "organism_id",
   "organism_name",
   // record identity / content
-  "identifier",
   "title",
   "name",
   "description",

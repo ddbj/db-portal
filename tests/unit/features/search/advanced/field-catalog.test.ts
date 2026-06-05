@@ -13,8 +13,10 @@ const CROSS_FIELDS = fieldsForScope(null)
 const ES_DBS = DB_SLUGS.filter((db) => db !== "trad" && db !== "taxonomy")
 
 describe("fieldsForScope", () => {
-  test("cross scope offers only cross fields, no Tier 3", () => {
-    expect(CROSS_FIELDS).toContain("identifier")
+  test("cross scope offers the common fields, not identifier or Tier 3", () => {
+    // identifier (accession) is not a filter field: its eq row never narrows, so
+    // accession lookup lives in the keyword box and the cross exact-match card.
+    expect(CROSS_FIELDS).not.toContain("identifier")
     expect(CROSS_FIELDS).toContain("accessibility")
     expect(CROSS_FIELDS).not.toContain("instrument_model")
     expect(CROSS_FIELDS).not.toContain("object_type")

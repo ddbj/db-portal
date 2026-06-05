@@ -39,7 +39,7 @@ op / type は DSL field type から機械導出する ([§ DSL field type 規約
 
 | ES field (type)                                    | DSL field             | 横断   | 備考 (条件付き merge / subtype 所在)                            |
 | -------------------------------------------------- | --------------------- | ------ | --------------------------------------------------------------- |
-| identifier (keyword)                               | `identifier`          | ○      | —                                                               |
+| identifier (keyword)                               | `identifier`          | ○      | keyword box 既定 field。filter 行には非露出 (`eq` は絞り込み不可) |
 | name (text+keyword)                                | `name`                | ○      | keyword box 既定 field の 1 つ                                  |
 | title (text)                                       | `title`               | ○      | keyword box 既定 field の 1 つ                                  |
 | description (text)                                 | `description`         | ○      | keyword box 既定 field の 1 つ                                  |
