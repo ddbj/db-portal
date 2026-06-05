@@ -12,4 +12,3 @@ export {
 } from "./facet-state"
 export { fromSidebar } from "./from-sidebar"
 export { splitForSidebar } from "./split"
-export { type SidebarFacets, useSidebarFacets } from "./use-sidebar-facets"

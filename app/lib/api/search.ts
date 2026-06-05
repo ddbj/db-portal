@@ -18,6 +18,17 @@ export type ParseResponse =
 type SerializeResponse =
   paths["/db-portal/serialize"]["post"]["responses"][200]["content"]["application/json"]
 
+type CrossSearchByAstQuery = NonNullable<paths["/db-portal/cross-search"]["post"]["parameters"]["query"]>
+type DbSearchByAstQuery = NonNullable<paths["/db-portal/search"]["post"]["parameters"]["query"]>
+type SearchByAstBody = paths["/db-portal/cross-search"]["post"]["requestBody"]["content"]["application/json"]
+
+// GET payload plus the `dsl` echo of the posted AST: the response of the AST-input
+// search path, so the caller renders results and syncs `?q=dsl` from one request.
+export type CrossSearchByAstResponse =
+  paths["/db-portal/cross-search"]["post"]["responses"][200]["content"]["application/json"]
+export type DbSearchByAstResponse =
+  paths["/db-portal/search"]["post"]["responses"][200]["content"]["application/json"]
+
 // Facet aggregation payload shared by cross-search and single-DB responses
 // (`DbPortalFacets`). Each facet is `FacetBucket[] | null` ("null" = not
 // aggregated, "[]" = aggregated with zero buckets); `organism` carries a `label`.
@@ -47,3 +58,18 @@ export const serializeAst = (
   options: ApiRequestOptions & { query?: SerializeQuery },
 ): Promise<SerializeResponse> =>
   apiPost("/db-portal/serialize", body, options)
+
+// AST-input search: post the client-held AST directly so one request yields hits,
+// the q-aware facets, and the serialized `dsl` to sync into `?q=` (no separate
+// serialize / parse round trips). An omitted `ast` means match_all (`dsl: ""`).
+export const crossSearchByAst = (
+  body: SearchByAstBody,
+  options: ApiRequestOptions & { query?: CrossSearchByAstQuery },
+): Promise<CrossSearchByAstResponse> =>
+  apiPost("/db-portal/cross-search", body, options)
+
+export const dbSearchByAst = (
+  body: SearchByAstBody,
+  options: ApiRequestOptions & { query?: DbSearchByAstQuery },
+): Promise<DbSearchByAstResponse> =>
+  apiPost("/db-portal/search", body, options)

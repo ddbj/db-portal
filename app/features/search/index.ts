@@ -30,17 +30,22 @@ export {
 export {
   resolveCrossSearchSync,
   useCrossSearchSync,
-  useDebouncedSerialize,
   useSearchPending,
 } from "./debounce"
 export {
   CrossResults,
   type ExactMatch,
   ExactMatchCard,
+  fetchSearchResults,
   findExactMatch,
   PerDbResults,
   type ResolvedExactMatch,
+  type SearchParams,
+  type SearchResult,
+  type SearchResultsPayload,
+  type SearchResultsQuery,
   SearchResultsSkeleton,
+  useSearchResults,
 } from "./results"
 export {
   builderConditionCount,
@@ -58,9 +63,7 @@ export {
   scopeFacetParam,
   searchFacetReducer,
   type SearchFacetState,
-  type SidebarFacets,
   splitForSidebar,
-  useSidebarFacets,
 } from "./sidebar"
 export { SyncStatusChip } from "./sync-status"
 export {

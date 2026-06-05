@@ -2,7 +2,6 @@ import { http, HttpResponse } from "msw"
 import type { LoaderFunctionArgs } from "react-router"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
-import type { CrossSearchResponse, DbSearchResponse } from "~/lib/api"
 import {
   clearMatchAllFacetCache,
   getCachedMatchAllFacets,
@@ -35,45 +34,10 @@ afterEach(() => {
   delete process.env.DB_PORTAL_SEARCH_API_URL
 })
 
-describe("search-results loader: hits", () => {
-  test("emptyQuery_cross_resolvesCross", async () => {
-    server.use(crossSearchHandler())
-    const data = await buildLoader("?q=")
-    expect(data.parseError).toBe(false)
-    expect(await data.results).toMatchObject({ kind: "cross" })
-  })
-
-  test("emptyQuery_cross_omitsQParam", async () => {
-    let capturedUrl: URL | undefined
-    server.use(crossSearchHandler({ onRequest: (url) => { capturedUrl = url } }))
-    await (await buildLoader("?q=")).results
-    expect(capturedUrl?.searchParams.has("q")).toBe(false)
-  })
-
-  test("emptyQuery_perDb_omitsQParam", async () => {
-    const urls: URL[] = []
-    server.use(dbSearchHandler({ onRequest: (url) => { urls.push(url) } }))
-    await (await buildLoader("?db=biosample")).results
-    expect(urls.length).toBeGreaterThan(0)
-    expect(urls.every((u) => !u.searchParams.has("q"))).toBe(true)
-  })
-
-  test("hitsRequest_omitsFacets", async () => {
-    // The hits request no longer carries facets; the sidebar pulls the aggregation
-    // client-side (the facet param only appears on the match_all placeholder fill).
-    let hitsUrl: URL | undefined
-    server.use(
-      parseHandler(),
-      dbSearchHandler({
-        onRequest: (url) => { if (!url.searchParams.has("facets")) hitsUrl = url },
-      }),
-    )
-    await (await buildLoader("?q=cancer&db=biosample")).results
-    expect(hitsUrl).toBeDefined()
-    expect(hitsUrl?.searchParams.has("facets")).toBe(false)
-  })
-
-  test("emptyQuery_skipsParse", async () => {
+// The loader restores GUI state from a shared `?q=` and never fetches hits: the
+// search runs client-side from the parsed AST (tested in the fetch-results suite).
+describe("search-results loader: query restore", () => {
+  test("emptyQuery_skipsParse_nullAst", async () => {
     let parseCalled = false
     server.use(
       http.get("*/db-portal/parse", () => {
@@ -81,15 +45,21 @@ describe("search-results loader: hits", () => {
 
         return HttpResponse.json(minimalParseResponse("x"))
       }),
-      crossSearchHandler(),
     )
     const data = await buildLoader("?q=")
-    await data.results
     expect(parseCalled).toBe(false)
     expect(data.parseError).toBe(false)
+    expect(data.ast).toBeNull()
   })
 
-  test("parseError_setsParseErrorFlag", async () => {
+  test("validQuery_parsesToAst", async () => {
+    server.use(parseHandler({ response: { ast: { op: "free_text", value: "cancer", is_phrase: false } } }))
+    const data = await buildLoader("?q=cancer")
+    expect(data.parseError).toBe(false)
+    expect(data.ast).toMatchObject({ op: "free_text", value: "cancer" })
+  })
+
+  test("parseError_setsParseErrorFlag_nullAstAndFacets", async () => {
     server.use(
       http.get("*/db-portal/parse", () =>
         new HttpResponse(JSON.stringify({ type: "unexpected-token" }), {
@@ -100,115 +70,8 @@ describe("search-results loader: hits", () => {
     )
     const data = await buildLoader("?q=:::invalid")
     expect(data.parseError).toBe(true)
-  })
-
-  test("crossSearch_networkError_resolvesCrossError", async () => {
-    server.use(
-      parseHandler(),
-      http.get("*/db-portal/cross-search", () => new HttpResponse(null, { status: 500 })),
-    )
-    const result = await (await buildLoader("?q=cancer")).results
-    expect(result).toEqual({ kind: "error", errorKey: "cross" })
-  })
-
-  test("dbSearch_networkError_resolvesDbError", async () => {
-    server.use(
-      parseHandler(),
-      http.get("*/db-portal/search", () => new HttpResponse(null, { status: 500 })),
-    )
-    const result = await (await buildLoader("?q=cancer&db=biosample")).results
-    expect(result).toEqual({ kind: "error", errorKey: "db" })
-  })
-})
-
-describe("search-results loader: exact match", () => {
-  // A name-it lookup whose accession sits in a cross-search top hit. The lightweight
-  // arm carries a thin title; the per-DB probe returns the full hit with a distinct
-  // title + signature field, so the two are tellable apart in assertions.
-  const lightweightCross: CrossSearchResponse = {
-    databases: [{
-      db: "bioproject",
-      count: 1,
-      error: null,
-      hits: [{ identifier: "PRJDB1", type: "bioproject", title: "Light title" }],
-    }],
-    facets: null,
-  }
-  const fullHitResponse: DbSearchResponse = {
-    total: 1,
-    hits: [{ identifier: "PRJDB1", type: "bioproject", title: "Full title", projectType: ["genome"] }],
-    hardLimitReached: false,
-    page: 1,
-    perPage: 5,
-    hasNext: false,
-    facets: null,
-  }
-  const freeTextParse = (value: string) =>
-    parseHandler({ response: { ast: { op: "free_text", value, is_phrase: false } } })
-
-  test("accessionMatch_fetchesFullHit", async () => {
-    const probes: URL[] = []
-    server.use(
-      freeTextParse("PRJDB1"),
-      crossSearchHandler({ response: lightweightCross }),
-      dbSearchHandler({ response: fullHitResponse, onRequest: (url) => probes.push(url) }),
-    )
-    const result = await (await buildLoader("?q=PRJDB1")).results
-    if (result.kind !== "cross") throw new Error("expected cross result")
-    expect(result.exactMatch?.db).toBe("bioproject")
-    expect(result.exactMatch?.hit.identifier).toBe("PRJDB1")
-    // Full hit (from the probe), not the lightweight cross hit.
-    expect(result.exactMatch?.hit.title).toBe("Full title")
-    expect(probes).toHaveLength(1)
-  })
-
-  test("probeReturnsNoMatchingHit_fallsBackToLightweight", async () => {
-    server.use(
-      freeTextParse("PRJDB1"),
-      crossSearchHandler({ response: lightweightCross }),
-      dbSearchHandler({ response: minimalDbSearchResponse() }), // hits: []
-    )
-    const result = await (await buildLoader("?q=PRJDB1")).results
-    if (result.kind !== "cross") throw new Error("expected cross result")
-    expect(result.exactMatch?.hit.title).toBe("Light title")
-  })
-
-  test("probeFailure_fallsBackToLightweight", async () => {
-    server.use(
-      freeTextParse("PRJDB1"),
-      crossSearchHandler({ response: lightweightCross }),
-      http.get("*/db-portal/search", () => new HttpResponse(null, { status: 500 })),
-    )
-    const result = await (await buildLoader("?q=PRJDB1")).results
-    if (result.kind !== "cross") throw new Error("expected cross result")
-    expect(result.exactMatch?.hit.identifier).toBe("PRJDB1")
-    expect(result.exactMatch?.hit.title).toBe("Light title")
-  })
-
-  test("noLookupMatch_noProbe_nullExactMatch", async () => {
-    const probes: URL[] = []
-    server.use(
-      freeTextParse("zzz"),
-      crossSearchHandler({ response: lightweightCross }),
-      dbSearchHandler({ onRequest: (url) => probes.push(url) }),
-    )
-    const result = await (await buildLoader("?q=zzz")).results
-    if (result.kind !== "cross") throw new Error("expected cross result")
-    expect(result.exactMatch).toBeNull()
-    expect(probes).toHaveLength(0)
-  })
-
-  test("structuredQuery_noProbe_nullExactMatch", async () => {
-    const probes: URL[] = []
-    server.use(
-      parseHandler(), // minimal eq AST: not a plain lookup
-      crossSearchHandler({ response: lightweightCross }),
-      dbSearchHandler({ onRequest: (url) => probes.push(url) }),
-    )
-    const result = await (await buildLoader("?q=PRJDB1")).results
-    if (result.kind !== "cross") throw new Error("expected cross result")
-    expect(result.exactMatch).toBeNull()
-    expect(probes).toHaveLength(0)
+    expect(data.ast).toBeNull()
+    expect(data.facets).toBeNull()
   })
 })
 

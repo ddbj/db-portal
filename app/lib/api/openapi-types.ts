@@ -817,7 +817,11 @@ export interface paths {
          */
         get: operations["crossSearchDbPortal"];
         put?: never;
-        post?: never;
+        /**
+         * DB Portal cross-database fan-out by AST (count + top hits + dsl echo)
+         * @description Same fan-out as GET /db-portal/cross-search but the query AST is sent in the request body ({ast}) instead of as ?q=, and the normalized dsl is echoed for shared-URL sync. Lets db-portal collapse the interactive serialize->navigate->parse round-trips into one request. Tier 3 fields return 400 field-not-available-in-cross-db; ast omitted/null searches all records and echoes dsl=''.
+         */
+        post: operations["crossSearchByAstDbPortal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -837,7 +841,11 @@ export interface paths {
          */
         get: operations["searchDbPortal"];
         put?: never;
-        post?: never;
+        /**
+         * DB Portal db-specific hits search by AST (hits + dsl echo)
+         * @description Same single-database hits search as GET /db-portal/search but the query AST is sent in the request body ({ast}) instead of as ?q=, and the normalized dsl is echoed for shared-URL sync. db is required (400 missing-db). Cursor pagination behaves like the GET path: the token carries the query, the body AST is not used for the search but dsl is still echoed; Solr DBs (trad / taxonomy) return 400 cursor-not-supported. ast omitted/null searches all records and echoes dsl=''.
+         */
+        post: operations["searchByAstDbPortal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2031,6 +2039,38 @@ export interface components {
          * @enum {string}
          */
         DbPortalCountError: "timeout" | "upstream_5xx" | "connection_refused" | "unknown" | "field_not_applicable";
+        /**
+         * DbPortalCrossSearchByAstResponse
+         * @description ``POST /db-portal/cross-search`` response: cross payload + ``dsl`` echo.
+         */
+        DbPortalCrossSearchByAstResponse: {
+            /**
+             * Databases
+             * @description Per-database count and (when topHits>=1) lightweight hits.  Fixed length 8, fixed order.
+             * @example [
+             *       {
+             *         "count": 100,
+             *         "db": "trad"
+             *       },
+             *       {
+             *         "count": 50,
+             *         "db": "bioproject"
+             *       }
+             *     ]
+             */
+            databases: components["schemas"]["DbPortalCount"][];
+            /**
+             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (trad / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
+             * @example null
+             */
+            facets?: components["schemas"]["DbPortalFacets"] | null;
+            /**
+             * Dsl
+             * @description Normalized DSL serialized from the request AST (same output as ``POST /db-portal/serialize``).  Reusable as ``GET ?q=<dsl>`` for shared-URL background sync; empty string when ``ast`` is omitted.
+             * @example cancer AND organism_name:"Homo sapiens"
+             */
+            dsl: string;
+        };
         /**
          * DbPortalCrossSearchResponse
          * @description Cross-database response (8 entries, fixed order, count + top hits).
@@ -3686,6 +3726,72 @@ export interface components {
             lineage?: string[] | null;
         };
         /**
+         * DbPortalHitsByAstResponse
+         * @description ``POST /db-portal/search`` response: hits payload + ``dsl`` echo.
+         */
+        DbPortalHitsByAstResponse: {
+            /**
+             * Total
+             * @description Total matching hits (track_total_hits=true).
+             * @example 1234
+             */
+            total: number;
+            /**
+             * Hits
+             * @description Search hits (oneOf 8 DB variants).
+             * @example [
+             *       {
+             *         "identifier": "PRJDB1234",
+             *         "title": "Example BioProject",
+             *         "type": "bioproject"
+             *       }
+             *     ]
+             */
+            hits: (components["schemas"]["DbPortalHitBioProject"] | components["schemas"]["DbPortalHitBioSample"] | components["schemas"]["DbPortalHitSra"] | components["schemas"]["DbPortalHitJga"] | components["schemas"]["DbPortalHitGea"] | components["schemas"]["DbPortalHitMetabobank"] | components["schemas"]["DbPortalHitTrad"] | components["schemas"]["DbPortalHitTaxonomy"])[];
+            /**
+             * Hardlimitreached
+             * @description True when total >= 10000 (aligned with Solr hard limit).
+             * @example false
+             */
+            hardLimitReached: boolean;
+            /**
+             * Page
+             * @description Current page (null in cursor mode).
+             * @example 1
+             */
+            page: number | null;
+            /**
+             * Perpage
+             * @description Items per page (20, 50, or 100).
+             * @example 20
+             */
+            perPage: number;
+            /**
+             * Nextcursor
+             * @description Cursor token for the next page (null on last page).
+             * @example eyJwaXRfaWQiOiJhYmMxMjMifQ.def456
+             */
+            nextCursor?: string | null;
+            /**
+             * Hasnext
+             * @description Whether more pages are available.
+             * @default false
+             * @example true
+             */
+            hasNext: boolean;
+            /**
+             * @description Facet aggregation scoped to the current ``q`` when the ``facets`` parameter is supplied; ``null`` otherwise.  Population matches the hits query (same compiled query + status filter).  See db-portal-api-spec.md § facet 集計.
+             * @example null
+             */
+            facets?: components["schemas"]["DbPortalFacets"] | null;
+            /**
+             * Dsl
+             * @description Normalized DSL serialized from the request AST (same output as ``POST /db-portal/serialize``).  Reusable as ``GET ?q=<dsl>`` for shared-URL background sync; empty string when ``ast`` is omitted.
+             * @example cancer AND organism_name:"Homo sapiens"
+             */
+            dsl: string;
+        };
+        /**
          * DbPortalHitsResponse
          * @description DB-specific search response (hits envelope + pagination).
          */
@@ -3991,6 +4097,37 @@ export interface components {
              *     }
              */
             ast: components["schemas"]["DbPortalParseBoolOp-Output"] | components["schemas"]["DbPortalParseLeafValue"] | components["schemas"]["DbPortalParseLeafRange"] | components["schemas"]["DbPortalParseFreeText"];
+        };
+        /**
+         * DbPortalSearchByAstRequest
+         * @description Request body for ``POST /db-portal/cross-search`` and ``/db-portal/search``.
+         *
+         *     ``ast`` reuses ``DbPortalParseNode`` so a parse response / serialize input
+         *     can be sent back verbatim.  Schema violations surface as 400 ``invalid-ast``
+         *     (see ``ddbj_search_api.main`` request-validation handler).  ``ast`` is
+         *     optional: ``null`` / omitted means the ``q``-less GET behaviour (match_all /
+         *     ``*:*`` full fan-out) and the handler echoes ``dsl=""``.
+         */
+        DbPortalSearchByAstRequest: {
+            /**
+             * Ast
+             * @description AST JSON tree (same shape as GET /db-portal/parse response).  Optional: null / omitted searches all records (match_all) and the response echoes ``dsl=""``.
+             * @example {
+             *       "op": "AND",
+             *       "rules": [
+             *         {
+             *           "op": "free_text",
+             *           "value": "cancer"
+             *         },
+             *         {
+             *           "field": "organism_name",
+             *           "op": "contains",
+             *           "value": "Homo sapiens"
+             *         }
+             *       ]
+             *     }
+             */
+            ast?: (components["schemas"]["DbPortalParseBoolOp-Input"] | components["schemas"]["DbPortalParseLeafValue"] | components["schemas"]["DbPortalParseLeafRange"] | components["schemas"]["DbPortalParseFreeText"]) | null;
         };
         /**
          * DbPortalSerializeRequest
@@ -11430,6 +11567,141 @@ export interface operations {
             };
         };
     };
+    crossSearchByAstDbPortal: {
+        parameters: {
+            query?: {
+                /** @description Per-DB top hits count.  ``0`` returns count-only (``databases[i].hits`` is ``null``); ``1``-``50`` returns up to N hits per DB.  Hits are ordered by relevance (``_score`` desc) with ``identifier`` ascending as the tiebreaker; when ``ast`` is omitted (``match_all``) all scores tie, so ``identifier`` ascending becomes the effective order.  Out of range (>50 or negative) returns 422. */
+                topHits?: number;
+                /** @description Default boolean operator for connecting comma-separated FreeText tokens. Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value are always AND-combined (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the AST are unaffected. */
+                keywordOperator?: components["schemas"]["KeywordOperator"];
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Cross-search accepts ``organism`` / ``accessibility`` / ``type`` only (ES entries-alias aggregation); any other name returns 400 ``facet-not-applicable``.  Allowlist typos return 422.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                facets?: string | null;
+                /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
+                facetsSize?: number | null;
+                /** @description When ``true``, drop each facet's own ``q`` filter from that facet's aggregation population (self-exclusion for multi-select sidebars); other conditions (other facets, free text, ``status``) still apply, and the hits themselves stay filtered by the full ``q``.  Default ``false`` keeps the population identical to the hits.  Compatible with ``cursor`` but not applied on the cursor path (the cursor token carries no AST).  See ``docs/db-portal-api-spec.md`` § 集計母集団と self-exclusion. */
+                facetSelfExclude?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DbPortalSearchByAstRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "databases": [
+                     *         {
+                     *           "db": "trad",
+                     *           "error": "timeout",
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "sra",
+                     *           "count": 1234,
+                     *           "hits": [
+                     *             {
+                     *               "identifier": "DRR123456",
+                     *               "type": "sra-run",
+                     *               "url": "https://ddbj.nig.ac.jp/search/entry/sra-run/DRR123456",
+                     *               "title": "Whole-genome sequencing of Homo sapiens",
+                     *               "organism": {
+                     *                 "identifier": "9606",
+                     *                 "name": "Homo sapiens"
+                     *               },
+                     *               "status": "public",
+                     *               "accessibility": "public-access",
+                     *               "dateCreated": "2024-01-01",
+                     *               "dateModified": "2024-06-01",
+                     *               "datePublished": "2024-01-15",
+                     *               "isPartOf": "sra"
+                     *             }
+                     *           ]
+                     *         },
+                     *         {
+                     *           "db": "bioproject",
+                     *           "count": 567,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "biosample",
+                     *           "count": 890,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "jga",
+                     *           "count": 12,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "gea",
+                     *           "count": 34,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "metabobank",
+                     *           "count": 5,
+                     *           "hits": []
+                     *         },
+                     *         {
+                     *           "db": "taxonomy",
+                     *           "count": 12,
+                     *           "hits": []
+                     *         }
+                     *       ],
+                     *       "dsl": "cancer AND organism_name:\"Homo sapiens\""
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DbPortalCrossSearchByAstResponse"];
+                };
+            };
+            /** @description Bad Request (invalid-ast body schema violation, unexpected-parameter, query validate/scope error such as field-not-available-in-cross-db). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity (parameter validation error). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Bad Gateway (all databases failed) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     searchDbPortal: {
         parameters: {
             query?: {
@@ -11470,6 +11742,123 @@ export interface operations {
                 };
             };
             /** @description Bad Request (missing-db, cursor exclusivity, query parse/validate error, deep paging limit). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity (parameter validation error, e.g. invalid db / sort / perPage). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Bad Gateway (Solr upstream error) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchByAstDbPortal: {
+        parameters: {
+            query?: {
+                /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``POST /db-portal/cross-search``. */
+                db?: components["schemas"]["DbPortalDb"] | null;
+                /** @description Page number (1-based).  Combined with perPage, page * perPage must be <= 10000 (deep paging limit; exceeding returns 400). */
+                page?: number;
+                /** @description Items per page.  Allowed: 20, 50, 100. */
+                perPage?: 20 | 50 | 100;
+                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, sort / page must use their defaults (db and perPage may be combined); the body AST is not used for the search (the token carries the query) but ``dsl`` is still echoed from it. Combining cursor with sort / page>1 returns 400 'about:blank' (cursor exclusivity).  Solr-backed DBs (db=trad / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported'. */
+                cursor?: string | null;
+                /** @description Sort order.  Allowed: null (relevance, default), ``datePublished:desc``, ``datePublished:asc``. */
+                sort?: ("datePublished:asc" | "datePublished:desc") | null;
+                /** @description Default boolean operator for connecting comma-separated FreeText tokens. Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value are always AND-combined (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the AST are unaffected.  Exclusive with cursor when not at default (OR). */
+                keywordOperator?: components["schemas"]["KeywordOperator"];
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=trad`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                facets?: string | null;
+                /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
+                facetsSize?: number | null;
+                /** @description When ``true``, drop each facet's own ``q`` filter from that facet's aggregation population (self-exclusion for multi-select sidebars); other conditions (other facets, free text, ``status``) still apply, and the hits themselves stay filtered by the full ``q``.  Default ``false`` keeps the population identical to the hits.  Compatible with ``cursor`` but not applied on the cursor path (the cursor token carries no AST).  See ``docs/db-portal-api-spec.md`` § 集計母集団と self-exclusion. */
+                facetSelfExclude?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DbPortalSearchByAstRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "total": 1234,
+                     *       "hits": [
+                     *         {
+                     *           "identifier": "PRJDB1234",
+                     *           "type": "bioproject",
+                     *           "title": "Whole-genome sequencing of Homo sapiens",
+                     *           "description": "Reference genome assembly with deep coverage.",
+                     *           "organism": {
+                     *             "identifier": "9606",
+                     *             "name": "Homo sapiens"
+                     *           },
+                     *           "datePublished": "2024-01-15",
+                     *           "dateModified": "2024-06-01",
+                     *           "dateCreated": "2024-01-01",
+                     *           "url": "https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234",
+                     *           "sameAs": [],
+                     *           "status": "public",
+                     *           "accessibility": "public-access",
+                     *           "projectType": "BioProject",
+                     *           "organization": [],
+                     *           "publication": [],
+                     *           "grant": [],
+                     *           "externalLink": [],
+                     *           "relevance": [
+                     *             "Medical"
+                     *           ]
+                     *         }
+                     *       ],
+                     *       "hardLimitReached": false,
+                     *       "page": 1,
+                     *       "perPage": 20,
+                     *       "nextCursor": "eyJwaXRfaWQiOiJhYmMxMjMifQ.def456",
+                     *       "hasNext": true,
+                     *       "dsl": "cancer AND organism_name:\"Homo sapiens\""
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DbPortalHitsByAstResponse"];
+                };
+            };
+            /** @description Bad Request (invalid-ast body schema violation, missing-db, cursor exclusivity / cursor-not-supported, query validate/scope error, deep paging limit). */
             400: {
                 headers: {
                     [name: string]: unknown;

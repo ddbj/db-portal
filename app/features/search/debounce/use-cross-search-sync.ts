@@ -6,8 +6,7 @@ import { astEquals, isIdentityAst, mergeAstAnd } from "../ast"
 import type { DbSlug, SyncStatus } from "../types"
 import { parseDslToAst } from "../url/from-url"
 import { serializeAstToDsl } from "../url/to-url"
-import { DEBOUNCE_MS } from "./debounced-serialize"
-import { useDebouncedValue } from "./use-debounced-value"
+import { DEBOUNCE_MS, useDebouncedValue } from "./use-debounced-value"
 
 type CrossSearchSyncOutcome =
   | { status: "idle"; dsl: "" }
@@ -77,8 +76,7 @@ export const useCrossSearchSync = (
   }, [onSynced])
 
   // A monotonically increasing token discards out-of-order responses when the
-  // input changes mid-flight (parse / serialize are not cancelled, mirroring
-  // the existing useDebouncedSerialize).
+  // input changes mid-flight (parse / serialize are not cancelled).
   const tokenRef = useRef(0)
   const lastRef = useRef<SyncInput | null>(null)
 

@@ -1,5 +1,5 @@
-import { Suspense, useCallback, useEffect, useMemo, useReducer, useState } from "react"
-import { Await, useLoaderData, useNavigate } from "react-router"
+import { useEffect, useMemo, useReducer, useRef, useState } from "react"
+import { useLoaderData, useNavigate } from "react-router"
 
 import {
   advancedReducer,
@@ -27,11 +27,8 @@ import {
   splitForSidebar,
   splitFreeText,
   SwitchableQueryPreview,
-  SyncStatusChip,
   toAdvanced,
-  useDebouncedSerialize,
-  useSearchPending,
-  useSidebarFacets,
+  useSearchResults,
 } from "~/features/search"
 import { type ParseNode, searchApiBaseUrl } from "~/lib/api"
 import { pageTitleMeta } from "~/lib/content"
@@ -45,7 +42,7 @@ import {
 } from "~/lib/search-scope"
 import { Button, Callout, Section } from "~/ui"
 
-import { loader, type SearchResult } from "./loader"
+import { loader } from "./loader"
 
 export { loader }
 
@@ -56,27 +53,25 @@ export const handle = {
 
 export const meta = pageTitleMeta
 
+// Coalesce the URL projection: results render at once from the AST, while the
+// shared `?q=` is rewritten this long after the last edit settles (replace, so it
+// never gates the UI and never floods history).
+const URL_SYNC_DEBOUNCE_MS = 500
+
 const SearchResultsRoute = () => {
   const data = useLoaderData<typeof loader>()
   const t = useT()
   const lang = useLang()
   const navigate = useNavigate()
-  const search = useSearchPending()
-  // Sidebar facets: the loader's cached match_all shows instantly, then the q-aware
-  // counts replace it. Fetching client-side keeps a heavy aggregation off the SSR
-  // abort budget, so the facet rows no longer vanish when it runs long.
-  const sidebarFacets = useSidebarFacets(data.db, data.q, data.facets, searchApiBaseUrl)
 
-  // Restore the committed query into its three independent surfaces: the
-  // free-text keyword (shown in the box), the facet sidebar, and the held
-  // structured remainder (kept for re-serialization, shown only in the preview
-  // graph). The keyword AST is folded back into the live sync so editing a facet
-  // never drops the free text.
-  const { keywordInit, keywordAst, advancedInit, facetInit } = useMemo(() => {
+  // Seed values for the committed query, split out of the AST the loader parsed from
+  // a shared `?q=`: the free-text keyword (shown in the box), the held structured
+  // remainder (preview graph), and the facet sidebar.
+  const { keywordInit, keywordAstInit, advancedInit, facetInit } = useMemo(() => {
     if (!data.ast) {
       return {
         keywordInit: "",
-        keywordAst: identityAst,
+        keywordAstInit: identityAst,
         advancedInit: createInitialState(),
         facetInit: createInitialSearchFacetState(),
       }
@@ -86,136 +81,148 @@ const SearchResultsRoute = () => {
 
     return {
       keywordInit: ft.keyword,
-      keywordAst: ft.keywordAst,
+      keywordAstInit: ft.keywordAst,
       advancedInit: toAdvanced(split.rest),
       facetInit: split.sidebar,
     }
   }, [data.ast, data.db])
 
+  // Client SSOT for the live query. The committed free-text AST is re-applied on
+  // submit, so editing a facet never drops the keyword; paging is held here too so a
+  // query edit can reset it without a round trip.
   const [keyword, setKeyword] = useState(keywordInit)
   const [keywordParseError, setKeywordParseError] = useState(false)
+  const [keywordBusy, setKeywordBusy] = useState(false)
+  const [committedKeywordAst, setCommittedKeywordAst] = useState<ParseNode>(keywordAstInit)
   const [advancedState, dispatchAdvanced] = useReducer(advancedReducer, advancedInit)
   const [facetState, dispatchFacet] = useReducer(searchFacetReducer, facetInit)
-
-  useEffect(() => {
-    setKeyword(keywordInit)
-    setKeywordParseError(false)
-    dispatchAdvanced({ type: "replaceRoot", root: advancedInit.root })
-    dispatchFacet({ type: "replace", state: facetInit })
-  }, [keywordInit, advancedInit, facetInit])
+  const [page, setPage] = useState(data.page)
+  const [perPage, setPerPage] = useState(data.perPage)
+  const [sort, setSort] = useState(data.sort)
 
   const advancedAst = useMemo(() => fromAdvanced(advancedState), [advancedState])
   const facetAst = useMemo(
     () => fromSidebar(facetState, { db: data.db }),
     [facetState, data.db],
   )
-  // The keyword is the committed free text (re-applied on submit), so facet
-  // edits serialize keyword + held structured + facets together.
   const mergedAst = useMemo(
-    () => mergeAstAnd(keywordAst, advancedAst, facetAst),
-    [keywordAst, advancedAst, facetAst],
+    () => mergeAstAnd(committedKeywordAst, advancedAst, facetAst),
+    [committedKeywordAst, advancedAst, facetAst],
   )
 
-  const sync = useDebouncedSerialize(mergedAst, (dsl) => {
-    if (dsl === data.q) return
-    navigate(
-      buildResultsHref({
-        q: dsl,
-        db: data.db,
-        page: DEFAULT_PAGE,
-        perPage: data.perPage,
-        sort: data.sort,
-      }),
-      { replace: true, preventScrollReset: true },
-    )
-  }, searchApiBaseUrl, data.db)
-
-  const { flush: flushSync } = sync
-  const dispatchFacetWithFlush = useCallback(
-    (action: Parameters<typeof dispatchFacet>[0]) => {
-      dispatchFacet(action)
-      if (action.type === "toggleFacet") flushSync()
-    },
-    [flushSync],
+  // The search, keyed on the live intent (scope + AST + paging): any edit refetches
+  // at once with a skeleton, and one response carries hits, the q-aware facets, and
+  // the `dsl` to project into `?q=`.
+  const results = useSearchResults(
+    data.db,
+    mergedAst,
+    { page, perPage, sort },
+    data.facets,
+    !data.parseError,
+    searchApiBaseUrl,
   )
 
-  const handlePageChange = (nextPage: number) => {
-    navigate(
-      buildResultsHref({ q: data.q, db: data.db, page: nextPage, perPage: data.perPage, sort: data.sort }),
-    )
-  }
-  const handlePerPageChange = (nextPerPage: PerPageValue) => {
-    navigate(
-      buildResultsHref({ q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: nextPerPage, sort: data.sort }),
-    )
-  }
-  const handleSortChange = (nextSort: SortKey) => {
-    navigate(
-      buildResultsHref({ q: data.q, db: data.db, page: DEFAULT_PAGE, perPage: data.perPage, sort: nextSort }),
-    )
-  }
-
-  // The keyword box runs the search directly: parse the keyword, fold it into the
-  // held structured conditions and facets, serialize, then navigate (push).
-  const runKeywordSearch = async (kw: string) => {
-    search.begin()
-    let combined = mergeAstAnd(advancedAst, facetAst)
-    const trimmed = kw.trim()
-    if (trimmed.length > 0) {
-      try {
-        const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
-        combined = mergeAstAnd(parsed, advancedAst, facetAst)
-      } catch {
-        setKeywordParseError(true)
-        search.end()
-
-        return
-      }
-    }
-    setKeywordParseError(false)
-    let dsl = ""
-    if (!isIdentityAst(combined)) {
-      try {
-        dsl = await serializeAstToDsl(combined, { baseUrl: searchApiBaseUrl, db: data.db })
-      } catch {
-        // Serialize is a system-side failure the user cannot fix; the sync chip
-        // surfaces it. Don't navigate and don't raise a warning here.
-        search.end()
-
-        return
-      }
-    }
-    if (dsl === data.q) {
-      search.end()
+  // The URL is a derived projection, not a gate: once the search resolves, the echoed
+  // `dsl` (+ paging) is written into `?q=` (replace; a keyword submit / clear pushes a
+  // history entry). A failed / pending search leaves `dsl` null, so the shared URL
+  // stays on the last good query.
+  const lastSyncedRef = useRef({ q: data.q, db: data.db })
+  const pushNextRef = useRef(false)
+  useEffect(() => {
+    if (data.parseError) return
+    const dsl = results.dsl
+    if (dsl === null) return
+    if (dsl === data.q && page === data.page && perPage === data.perPage && sort === data.sort) {
+      lastSyncedRef.current = { q: dsl, db: data.db }
 
       return
     }
-    navigate(buildResultsHref({ q: dsl, db: data.db }))
+    const id = setTimeout(() => {
+      lastSyncedRef.current = { q: dsl, db: data.db }
+      const push = pushNextRef.current
+      pushNextRef.current = false
+      navigate(
+        buildResultsHref({ q: dsl, db: data.db, page, perPage, sort }),
+        push ? { preventScrollReset: true } : { replace: true, preventScrollReset: true },
+      )
+    }, URL_SYNC_DEBOUNCE_MS)
+
+    return () => clearTimeout(id)
+  }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, navigate])
+
+  // Restore client state from a genuine navigation (cold load / back-forward / scope
+  // change / clear elsewhere). Skip our own URL echo so a rapid in-flight edit is not
+  // clobbered by the projection coming back through the loader.
+  useEffect(() => {
+    if (data.q === lastSyncedRef.current.q && data.db === lastSyncedRef.current.db) return
+    lastSyncedRef.current = { q: data.q, db: data.db }
+    setKeyword(keywordInit)
+    setKeywordParseError(false)
+    setKeywordBusy(false)
+    setCommittedKeywordAst(keywordAstInit)
+    dispatchAdvanced({ type: "replaceRoot", root: advancedInit.root })
+    dispatchFacet({ type: "replace", state: facetInit })
+    setPage(data.page)
+    setPerPage(data.perPage)
+    setSort(data.sort)
+  }, [data.q, data.db, data.page, data.perPage, data.sort, keywordInit, keywordAstInit, advancedInit, facetInit])
+
+  const handlePageChange = (nextPage: number) => setPage(nextPage)
+  const handlePerPageChange = (nextPerPage: PerPageValue) => {
+    setPerPage(nextPerPage)
+    setPage(DEFAULT_PAGE)
+  }
+  const handleSortChange = (nextSort: SortKey) => {
+    setSort(nextSort)
+    setPage(DEFAULT_PAGE)
   }
 
-  // The AI proposal is applied without review: serialize the validated AST and
-  // navigate. append folds the current query server-side, new replaces it. The
-  // DB comes from the generation: per-DB pages stay locked to data.db; on cross
-  // the BFF-derived DB (generatedDb) routes the result (e.g. adding a Tier-3
-  // condition lands on that DB).
+  // The keyword box commits the free text into the live query: parse it, fold it in
+  // (the search refetches from the merged AST), reset paging, and push a history
+  // entry once the URL syncs. The held structured conditions and facets are kept.
+  const runKeywordSearch = async (kw: string) => {
+    const trimmed = kw.trim()
+    if (trimmed.length === 0) {
+      setKeywordParseError(false)
+      pushNextRef.current = true
+      setPage(DEFAULT_PAGE)
+      setCommittedKeywordAst(identityAst)
+
+      return
+    }
+    setKeywordBusy(true)
+    try {
+      const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
+      setKeywordParseError(false)
+      pushNextRef.current = true
+      setPage(DEFAULT_PAGE)
+      setCommittedKeywordAst(parsed)
+    } catch {
+      setKeywordParseError(true)
+    } finally {
+      setKeywordBusy(false)
+    }
+  }
+
+  // The AI proposal is applied without review. It can re-scope the result (per-DB
+  // pages stay locked to data.db; on cross the BFF-derived generatedDb routes it), so
+  // it serializes and navigates rather than mutating in place, and the destination
+  // rebuilds its surfaces from the URL.
   const handleGenerated = async (ast: ParseNode, generatedDb: DbSlug | null) => {
-    search.begin()
+    setKeywordBusy(true)
     let dsl = ""
     if (!isIdentityAst(ast)) {
       try {
         dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: generatedDb })
       } catch {
         // Serialize failure is system-side; leave the current results in place.
-        search.end()
+        setKeywordBusy(false)
 
         return
       }
     }
-    if (dsl === data.q && generatedDb === data.db) {
-      search.end()
-
-      return
-    }
+    setKeywordBusy(false)
+    if (dsl === data.q && generatedDb === data.db) return
     navigate(buildResultsHref({ q: dsl, db: generatedDb }))
   }
 
@@ -224,13 +231,19 @@ const SearchResultsRoute = () => {
     if (keywordParseError) setKeywordParseError(false)
   }
 
-  // Clear the query but stay on the results page: dropping q falls back to
-  // match_all (the full set) for the current db.
+  // Clear the query but stay on the results page: reset every surface to empty so the
+  // search falls back to match_all (the full set) for the current db.
   const handleClear = () => {
-    navigate(buildResultsHref({ db: data.db }))
+    setKeyword("")
+    setKeywordParseError(false)
+    setCommittedKeywordAst(identityAst)
+    dispatchAdvanced({ type: "replaceRoot", root: createInitialState().root })
+    dispatchFacet({ type: "replace", state: createInitialSearchFacetState() })
+    setPage(DEFAULT_PAGE)
+    pushNextRef.current = true
   }
   const handleEditInBuilder = () => {
-    navigate(buildSearchHref({ q: data.q, db: data.db }))
+    navigate(buildSearchHref({ q: results.dsl ?? data.q, db: data.db }))
   }
 
   const scopeOptions = useMemo(
@@ -259,14 +272,24 @@ const SearchResultsRoute = () => {
       {t("search.sync.retry")}
     </Button>
   )
+  const resultsRetryAction = (
+    <Button kind="secondary" size="sm" onClick={() => results.refetch()}>
+      {t("search.sync.retry")}
+    </Button>
+  )
+
+  const result = results.result
+  // The live query graph drives the preview and the AI "append" context; an identity
+  // AST (empty query) shows the placeholder and offers no clear action.
+  const liveQuery = isIdentityAst(mergedAst) ? undefined : mergedAst
 
   const facetPanel = (
     <FacetPanel
       state={facetState}
-      dispatch={dispatchFacetWithFlush}
+      dispatch={dispatchFacet}
       db={data.db}
-      facets={sidebarFacets.facets}
-      loading={sidebarFacets.loading}
+      facets={results.facets}
+      loading={results.facets === null}
     />
   )
 
@@ -282,25 +305,20 @@ const SearchResultsRoute = () => {
           onScopeChange={handleScopeChange}
           invalid={keywordParseError}
           allowAppend
-          appendCurrentAst={data.ast ?? undefined}
+          appendCurrentAst={liveQuery}
           lockedDb={data.db ?? undefined}
           onGenerated={(ast, _mode, generatedDb) => void handleGenerated(ast, generatedDb)}
           showExamples={false}
-          searchPending={search.pending}
+          searchPending={keywordBusy}
         />
         <div className="mt-2.5">
           <SwitchableQueryPreview
-            dsl={data.q}
-            ast={data.ast}
-            {...(data.q ? { onClear: handleClear } : {})}
+            dsl={results.dsl ?? data.q}
+            ast={liveQuery ?? data.ast}
+            {...(liveQuery ? { onClear: handleClear } : {})}
             onEdit={handleEditInBuilder}
           />
         </div>
-        {(sync.status === "syncing" || sync.status === "failed") && (
-          <div className="mt-2">
-            <SyncStatusChip status={sync.status} />
-          </div>
-        )}
       </Section>
       {data.parseError
         ? (
@@ -310,62 +328,53 @@ const SearchResultsRoute = () => {
             </Callout>
           </Section>
         )
-        : (
-          <Suspense
-            fallback={
+        : results.isError
+          ? (
+            <Section padTop="sm" padBottom="lg">
+              <Callout tone="warn" role="status" action={resultsRetryAction}>
+                {data.db === null
+                  ? t("search.errors.crossSearchFailure")
+                  : t("search.errors.dbSearchFailure")}
+              </Callout>
+            </Section>
+          )
+          : results.isPending || result === null
+            ? (
               <Section padTop="sm" padBottom="lg">
                 <SearchResultsSkeleton db={data.db} />
               </Section>
-            }
-          >
-            <Await resolve={data.results}>
-              {(result: SearchResult) => {
-                if (result.kind === "error") {
-                  return (
-                    <Section padTop="sm" padBottom="lg">
-                      <Callout tone="warn" role="status" action={retryAction}>
-                        {result.errorKey === "cross"
-                          ? t("search.errors.crossSearchFailure")
-                          : t("search.errors.dbSearchFailure")}
-                      </Callout>
-                    </Section>
-                  )
-                }
-                return (
-                  <Section padTop="sm" padBottom="lg">
-                    <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
-                      {facetPanel}
-                      <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
-                        {result.kind === "cross"
-                          ? (
-                            <>
-                              {result.exactMatch && <ExactMatchCard match={result.exactMatch} lang={lang} />}
-                              <CrossResults q={data.q} response={result.cross} />
-                            </>
-                          )
-                          : data.db
-                            ? (
-                              <PerDbResults
-                                db={data.db}
-                                response={result.perDb}
-                                lang={lang}
-                                page={data.page}
-                                perPage={data.perPage}
-                                sort={data.sort}
-                                onPageChange={handlePageChange}
-                                onPerPageChange={handlePerPageChange}
-                                onSortChange={handleSortChange}
-                              />
-                            )
-                            : null}
-                      </div>
-                    </div>
-                  </Section>
-                )
-              }}
-            </Await>
-          </Suspense>
-        )}
+            )
+            : (
+              <Section padTop="sm" padBottom="lg">
+                <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                  {facetPanel}
+                  <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
+                    {result.kind === "cross"
+                      ? (
+                        <>
+                          {result.exactMatch && <ExactMatchCard match={result.exactMatch} lang={lang} />}
+                          <CrossResults q={results.dsl ?? data.q} response={result.cross} />
+                        </>
+                      )
+                      : data.db
+                        ? (
+                          <PerDbResults
+                            db={data.db}
+                            response={result.perDb}
+                            lang={lang}
+                            page={page}
+                            perPage={perPage}
+                            sort={sort}
+                            onPageChange={handlePageChange}
+                            onPerPageChange={handlePerPageChange}
+                            onSortChange={handleSortChange}
+                          />
+                        )
+                        : null}
+                  </div>
+                </div>
+              </Section>
+            )}
     </>
   )
 }

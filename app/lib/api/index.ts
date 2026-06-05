@@ -18,9 +18,13 @@ export {
 } from "./news"
 export {
   crossSearch,
+  crossSearchByAst,
+  type CrossSearchByAstResponse,
   type CrossSearchResponse,
   type DbPortalFacets,
   dbSearch,
+  dbSearchByAst,
+  type DbSearchByAstResponse,
   type DbSearchResponse,
   type FacetName,
   parseQuery,

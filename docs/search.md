@@ -13,7 +13,7 @@ AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,seria
 | cross-DB | `/search/results?q=<DSL>` | 8 DB (`trad` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy`) を横断、ヒット数カード + 上位 hit list |
 | per-DB | `/search/results?q=<DSL>&db=<id>` | 1 DB に絞り、record card list + pagination + 詳細 facet |
 
-cross-DB は `GET /db-portal/cross-search`、per-DB は `GET /db-portal/search` を呼ぶ。両方とも query string `q` に DSL を載せる。
+cross-DB は `/db-portal/cross-search`、per-DB は `/db-portal/search` を呼ぶ。`/search/results` は手元の AST を **POST** body で投げ (interactive 経路、§ AST ↔ DSL の往来)、結果と一緒に正規化済み `dsl` を受け取る。GET (`?q=<DSL>`) は cold load / 共有 URL 復元用に検索 API 側に残る。
 
 ### キーワードの結合規則
 
@@ -75,9 +75,9 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 ## URL 設計
 
-### URL = 検索状態の SSOT
+### URL = 共有可能な検索状態
 
-検索状態は **URL クエリパラメタが SSOT**。client state は URL から復元できる形に揃える。
+URL クエリパラメタは **検索状態の共有・復元形**。任意の URL から client state を復元でき、共有・ブックマーク・リロード・戻る/進むが成立する。`/search/results` の **対話中** は client が持つ AST がライブな源泉で、URL `?q=` はその射影として背景同期される (§ 検索結果 UI の AST 駆動)。`q` は常に検索 API が解する DSL 文字列。
 
 | パラメタ | 値域 | 必須 | 意味 |
 |---|---|---|---|
@@ -89,10 +89,9 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 ### URL 更新規則
 
-- Advanced builder / Sidebar facet の変更 → debounce 700 ms → `/db-portal/serialize` → `?q=` を `replace` で更新 (履歴を汚さない)
-- 検索ボタン / Enter → `push` (履歴に積む、戻るボタンで前の検索に戻れる)
-- per-DB の `page` / `perPage` / `sort` 変更 → `replace`
-- per-DB → cross-DB scope change → `?db=` を delete
+- **`/search/results`**: facet / Advanced / paging の変更は client state を即更新し、AST 駆動の検索が解決した時点で返ってきた `dsl` を `?q=` に `replace` 射影する (検索ボタン / Enter / クリアは `push`)。URL は結果を gate せず、解決後に追従する射影 (§ 検索結果 UI の AST 駆動)
+- **`/search`** (ビルダー): Advanced 編集 → debounce 700 ms → `/db-portal/serialize` → `?q=` を `replace`、検索ボタン / Enter → `push`
+- per-DB → cross-DB scope change → 別 route へ遷移し `?db=` を delete
 
 ### URL → state の復元
 
@@ -121,9 +120,9 @@ system 側の serialize / 同期失敗 (ユーザーが直せない) は **こ�
 
 `/search/results` のキーワードボックスでも、submit 時の keyword parse が失敗したらボックスを invalid 表示にし、box 直下に構文エラー文言を出す。遷移はせずその場で直せる。results / top の box は構文ヒント (スペース=AND 等) や AI モードの補助文を出さない (それらは `/search` ビルダーのみ)。
 
-`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が parse 失敗を同期フラグ (`parseError`) として返し (parse は loader 内で await するので即座に確定する)、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。検索本体 (cross / per-DB) の失敗は deferred な結果側で `<Callout>` に落とす (§ cross-DB 結果の error)。
+`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が parse 失敗を同期フラグ (`parseError`) として返し (parse は loader 内で await するので即座に確定する)、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。検索本体 (cross / per-DB) の失敗は AST 駆動の query 側で `<Callout>` に落とす (右端の「再試行」= refetch、§ cross-DB 結果の error)。
 
-API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が失敗を表示する。
+API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。`/search` ビルダーの debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が失敗を表示する。`/search/results` の検索は query なので上記 retry が効き、最終失敗時のみ結果側 `<Callout>` に落ちる。
 
 ## Advanced builder
 
@@ -312,49 +311,50 @@ Sidebar は state から `app/ui/` の FacetGroup / FacetRow / TextInput / DateF
 
 `merge` は **冪等ではない** (同じ node を 2 回渡すと重複した child を持つ AND node が生成される)。UI 側で重複を除去する場合は呼び出し側の責務。等価判定は構造比較 (`astEquals`、JSON.stringify では union 子の順序問題で false negative が出る)。
 
-## /db-portal/serialize 呼び出し
+## AST ↔ DSL の往来
 
-### debounce 700 ms
+DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST を `/db-portal/serialize` で文字列化して URL に載せる。`/search/results` は AST を検索 endpoint に **POST** して結果と一緒に `dsl` を受け取る (§ 検索結果 UI の AST 駆動)。どちらも client に grammar を持たず ([§ portal 側に thin serializer を持たない](#portal-側に-thin-serializer-を持たない))、変換は API に委ねる。
 
-merged AST が変化したら 700 ms 待って `/db-portal/serialize` を呼ぶ。debounced ast が identityAst なら何もしない (URL の `?q=` を削除する場合は別 action)。成功で `navigate("/search/results?q=...", { replace: true })`、失敗で `syncStatus = "failed"`。
+### scope を渡す
 
-`serialize` / `parse` は現在の **`db` scope を渡して呼ぶ** (per-DB は当該 DB、cross は省略)。per-DB facet は Tier 3 field (`object_type` 等) を emit するので、scope を渡さない (= cross 検証) と `field-not-available-in-cross-db` で 400 になり sync 失敗するため。loader の URL 復元 parse も同じ理由で `db` を渡す。
+`serialize` / `parse` / AST 駆動の検索は現在の **`db` scope を渡して呼ぶ** (per-DB は当該 DB、cross は省略)。per-DB facet は Tier 3 field (`object_type` 等) を emit するので、scope を渡さない (= cross 検証) と `field-not-available-in-cross-db` で 400 になるため。loader の URL 復元 parse も同じ理由で `db` を渡す。
 
-`/search` (cross-search ビルダー) はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 700 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` する。keyword の parse 失敗は `parseError` (構文エラー) として `failed` 扱いにし、serialize 失敗とは区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる (`useDebouncedSerialize` と同じく非キャンセル)。
+### `/search` ビルダーの serialize-sync
 
-`/search/results` (cross-DB / per-DB) は `useDebouncedSerialize` を使い、`merge(committed keyword AST, 保持 advanced AST, facet AST)` を serialize する。committed keyword AST を畳むので facet 編集でも free text が保存される。キーワードボックスの submit はこの live sync とは別に、編集中の keyword を parse して同様に merge → serialize → `navigate` (push) する。
+`/search` はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 700 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` し、成功で `navigate(?q=..., { replace })`、失敗で `syncStatus = "failed"`。keyword の parse 失敗は `parseError` (構文エラー) として serialize 失敗と区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる。
 
-### sync-status
+### sync-status (`/search` のみ)
 
-`SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ chip を表示する (`synced` / `idle` は invisible)。chip は **状態を示すタグのみ** で操作は持たない。再試行はクエリプレビュー上の warn `<Callout>` 右端の「再試行」に集約する ([§ parse の失敗](#parse-の失敗))。
+`SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ出す。chip は **状態を示すタグのみ** で操作は持たず、再試行はクエリプレビュー上の warn `<Callout>` の「再試行」に集約する ([§ parse の失敗](#parse-の失敗))。`/search/results` は serialize-sync を持たないため chip を出さない: 検索の進行は結果 skeleton、失敗は結果側の `<Callout>` が示す。
 
 ### 失敗時の挙動
 
-- 表示中の検索結果は古い URL のまま (URL は書き換えない、古いままで使い続けられる)
-- 検索実行 button は submit 時に `/db-portal/serialize` を直接呼ぶ。`/search` では parse 構文エラー表示中のみ button を disable にする。serialize / 同期失敗 (system 側、ユーザーが直せない) は警告も disable も伴わず、sync chip だけが示す
-- `useDebouncedSerialize` は `useMutation` を使い、`mutations.retry: 0` で retry なし。1 回目の 5xx で `syncStatus = "failed"` になり chip が失敗を示す。同じ AST の再 dispatch は警告 `<Callout>` の「再試行」が行う
+- `/search`: 表示中の結果は古い URL のまま (URL を書き換えない)。serialize / 同期失敗 (system 側、ユーザーが直せない) は警告も disable も伴わず sync chip だけが示す。`useMutation` で retry なし
+- `/search/results`: AST 駆動の検索が最終失敗したら **URL を書き換えず直前の結果を残し**、結果側に warn `<Callout>` (「再試行」= refetch) を出す。`dsl` が返らない限り `?q=` 射影は走らないので、共有 URL は最後の成功クエリのまま留まる
 
 ## 検索結果 UI
 
-cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`) + SyncStatusChip、さらに下に `[ facet サイドバー | 結果 ]` の 2-col grid。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
+cross-DB / per-DB は **同じ 2 ペイン構造**で描く: 上部に太い検索 box (`NavigableSearchInput`)、その下に切替可能なクエリプレビュー (`SwitchableQueryPreview`)、さらに下に `[ facet サイドバー | 結果 ]` の 2-col grid。結果領域だけが cross (`CrossResults`) と per-DB (`PerDbResults`) で切り替わる。
 
-重い検索 (`cross-search` / per-DB `search`) は loader から **await せず deferred Promise** で返す。route は検索 box・プレビュー・facet サイドバー枠・結果 skeleton を即描画し、検索が解決した時点でグリッドを一斉に埋める (cross-search は 1 リクエストなので、各カードが個別に時間差で入るのではなくまとめて確定する)。`?q=` の **parse だけは await** する — その AST がキーワードボックス・facet サイドバーの復元と parse 失敗判定に要るため。これで top / 前ページからの遷移を待たせず、ロード中であることを skeleton で可視化する。この loading skeleton はロード中のプレースホルダで、ロード後に各フィールドを「値があれば出す」方針 (フィールド単位の skeleton は出さない、§ cross-DB 結果) とはレイヤーが別。
+**AST 駆動の検索** (§ AST ↔ DSL の往来)。loader は結果を取らず、`?q=` を `GET /db-portal/parse` で AST 化して GUI state を復元するだけ (`q` 空なら parse せず `ast=null`)。結果は route が client (TanStack Query) で引く: クエリキー = scope + ライブな `merge(committed keyword AST, 保持 advanced AST, facet AST)` + paging。キーが変わる (facet / 編集 / paging) たびに、AST を検索 endpoint に **POST** する (cross は `POST /db-portal/cross-search`、per-DB は `POST /db-portal/search`、`db` scope と `topHits` / paging / facet 集計パラメタを query に乗せる)。空 (identity) AST は body を省いて match_all。1 レスポンスが **hits + q 連動 facet 集計 + `dsl`** を載せて返るので、結果描画・サイドバー件数・URL 射影 (`?q=<dsl>`) が 1 往復で揃う。serialize / parse の往復も別の facet 取得もない。
 
-facet 集計は loader の deferred では返さず、**サイドバーが client 側 (react-query) で引く** (stale-while-revalidate)。loader は scope の cache 済み match_all 集計を **即出るプレースホルダ**として同期で返し (warm なら即値、cold は null)、サイドバーはまずそれを描いてから、client が引いた **正確な集計** (`?q=` 付きは q 連動・self-exclude、q 空は scope 全体の match_all) に件数を差し替える。重い match_all を client で引くので SSR ストリーミングの abort budget に縛られず、集計が遅い / cold でも facet 行が消えない。プレースホルダが無い cold 初回だけは行を skeleton で保持する (集計失敗時も同様に degrade、§ 候補値・件数の出所)。
+キーが変わってまだデータが無い間は結果 skeleton を出す (キャッシュ済みキーへ戻る facet 再トグル等は即描画)。`?q=` を直接開いた cold load の parse は loader で await して GUI を即復元する一方、結果取得は client mount で走るので skeleton → hits になる (前ページ / top からの遷移を待たせない)。この loading skeleton はロード中のプレースホルダで、ロード後に各フィールドを「値があれば出す」方針 (§ cross-DB 結果) とはレイヤーが別。
 
-q 空の match_all facet 集計は scope (cross / 各 DB) 単位で server 側 in-memory cache し、上記プレースホルダの土台にする。全件集計は重い一方データ更新まで実質静的なので、長め (既定 1 時間、`DB_PORTAL_FACET_CACHE_TTL_MS` で調整) に保持する。loader は warm cache を同期で返し、cold miss は背景集計を起動して null を返す (SSR を塞がず次回以降を warm にする)。cache miss 中の同時アクセスは進行中の 1 集計を共有する。q 付き集計はクエリ依存のため cache せず client が都度引く。
+facet 集計は上記 1 レスポンスに同梱される (`facetSelfExclude=true`: hits は full-q で絞りつつ、各 facet の集計母集団からは自身の句だけ外す)。loader は scope の cache 済み match_all 集計を **即出るプレースホルダ**として同期で返し (warm なら即値、cold は null)、サイドバーはまずそれを描いてから、検索レスポンスの **正確な q 連動集計** に件数を差し替える。プレースホルダが無い cold 初回だけ行を skeleton で保持する (§ 候補値・件数の出所)。
 
-検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に現クエリ全体 (= `data.ast`) を渡す。キーワードボックスの submit は parse → 保持 state + facet と merge → serialize → `navigate` (push)。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push) する (`new` は置換、`append` は server 融合済み)。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し (両者で同一 set・等幅表示)、results (cross / per-DB) では出さない。
+q 空の match_all facet 集計は scope (cross / 各 DB) 単位で server 側 in-memory cache し、上記プレースホルダの土台にする。全件集計は重い一方データ更新まで実質静的なので、長め (既定 1 時間、`DB_PORTAL_FACET_CACHE_TTL_MS` で調整) に保持する。loader は warm cache を同期で返し、cold miss は背景集計を起動して null を返す (SSR を塞がず次回以降を warm にする)。cache miss 中の同時アクセスは進行中の 1 集計を共有する。
 
-送信ボタンは実行中ビジー表示にする: キーワード検索の解決中 (parse → serialize → navigate → loader、`useSearchPending` が `useNavigation` で追跡) は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。`/search` ビルダーの box submit も同じく検索を実行し (旧来は keyword をコミットするだけで無反応だった)、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
+検索 box は results では `allowAppend` を有効にし、`appendCurrentAst` に **ライブな merged AST** を渡す。キーワードボックスの submit は keyword を parse して committed keyword AST に反映する (merged AST が変わり検索が走る) + paging を初期化し、解決後の URL 射影を `push` にする。AI 生成は提案を見せず、検証済み AST を serialize して `navigate` (push): 結果を別 DB へ再 scope しうるため遷移経路を通し、遷移先が URL から GUI を組み直す。検索 box 下の例 chip 行は top と `/search` (cross builder) のキーワード box にのみ出し、results では出さない。
 
-`SwitchableQueryPreview` は committed クエリ (`data.q` / `data.ast`) を 2 つの view で映す: **DSL 文字列** (default) と、AI 提案と同じ read-only ビルダーグラフ (`ProposalConditions`)。`DSL / グラフ` の segmented トグルで切り替える。keyword でも facet でもない構造化条件 (OR / NOT 等) はここで閲覧でき、編集は AI の append か `/search` ビルダーで行う。preview には `コピー` / `クリア` (現 db を保ったまま q を空にして遷移) / `クエリビルダーで編集` の操作も置く。`クエリビルダーで編集` は現在の DSL と db を載せて `/search?q=<DSL>&db=<id>` へ遷移し、ビルダーを復元する。
+送信ボタンは実行中ビジー表示にする: キーワード submit の parse 中は disable + 「検索中…」、AI 生成のストリーミング中は disable + 「生成中…」(停止ボタンは残す)。facet / paging の編集はボタンを busy にしない (結果 skeleton が進行を示す)。`/search` ビルダーの box submit も同じく検索を実行し、ビルダー下部の「検索」button と同じ `runSearch` を叩く。
+
+`SwitchableQueryPreview` は **ライブクエリ** (merged AST / 解決した `dsl`、未解決時は committed `?q=` にフォールバック) を 2 つの view で映す: **DSL 文字列** (default) と、AI 提案と同じ read-only ビルダーグラフ (`ProposalConditions`)。`DSL / グラフ` の segmented トグルで切り替える。keyword でも facet でもない構造化条件 (OR / NOT 等) はここで閲覧でき、編集は AI の append か `/search` ビルダーで行う。preview には `コピー` / `クリア` (全面をリセットし match_all へ) / `クエリビルダーで編集` の操作も置く。`クエリビルダーで編集` は現在の DSL と db を載せて `/search?q=<DSL>&db=<id>` へ遷移し、ビルダーを復元する。
 
 (results / top の box には構文ヒントや AI モードの補助文は出さない。それらは `/search` ビルダー専用。)
 
 ### cross-DB 結果 (`/search/results?q=...`)
 
-`GET /db-portal/cross-search?q=...&topHits=3` を route loader が呼ぶ (TanStack Query は使わない、結果は deferred で返す → [§ 検索結果 UI](#検索結果-ui))。`q` が空のときは `?q=` を省いて `cross-search?topHits=3` を呼び、全 DB の総件数 + 上位 hit を match_all で出す。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
+`POST /db-portal/cross-search` を client (TanStack Query) が呼ぶ (body に merged AST、query に `topHits=3` + facet 集計 → [§ 検索結果 UI](#検索結果-ui))。AST が空 (identity) のときは body を省いて match_all を呼び、全 DB の総件数 + 上位 hit を出す。レスポンスの `databases` 配列 (length 8、固定順) について **常にカードを 1 枚** 出す (0 件 DB も skip しない、相対的なヒット分布を見せる)。8 枚を一目で見渡せるよう、カードは縦に詰める (DB 説明文は持たず、上位 hit は 3 件まで)。
 
 各カードの内容:
 
@@ -393,7 +393,7 @@ accession と organism の両方が一致しうるときは accession を優先�
 
 ### per-DB 結果 (`/search/results?q=...&db=<id>`)
 
-`GET /db-portal/search?q=...&db=<id>&page=N&perPage=M&sort=<sort>` を route loader が呼ぶ。`q` が空のときは `?q=` を省いて match_all を呼び全件を出す (relevance sort では全 score tie となり identifier 昇順が effective order)。
+`POST /db-portal/search` を client (TanStack Query) が呼ぶ (body に merged AST、query に `db` / `page` / `perPage` / `sort` + facet 集計)。AST が空のときは body を省いて match_all を出す (relevance sort では全 score tie となり identifier 昇順が effective order)。
 
 #### Layout (2-col)
 
@@ -540,7 +540,7 @@ client は `event: done` で受け取った ParseNode AST をそのまま propos
 反映は経路で分かれる:
 
 - **`/search` (ビルダー)**: ユーザーの「適用」操作時に純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。`done.db` が非 null なら DB scope セレクタをその db に合わせる (導出された Tier-3 を扱えるように)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL。
-- **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化し、`done.db` を `?db=` に載せて `/search/results` へ `navigate` する (`db` null なら横断)。loader が新 `?q=` (+ `db`) を再 split して keyword / facet / 保持 state を組み直す。**per-DB results は locked** で、`current`・遷移先ともその DB に固定する (別 DB へ寄らない)。cross results / top の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = `data.ast`) で free_text も含む。top は `new` 固定。
+- **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化し、`done.db` を `?db=` に載せて `/search/results` へ `navigate` する (`db` null なら横断)。loader が新 `?q=` (+ `db`) を再 split して keyword / facet / 保持 state を組み直す。**per-DB results は locked** で、`current`・遷移先ともその DB に固定する (別 DB へ寄らない)。cross results / top の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = ライブ merged AST) で free_text も含む。top は `new` 固定。
 
 per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
 

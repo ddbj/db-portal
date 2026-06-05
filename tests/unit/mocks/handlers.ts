@@ -1,6 +1,13 @@
 import { http, HttpResponse, type RequestHandler } from "msw"
 
-import type { CrossSearchResponse, DbPortalFacets, DbSearchResponse, ParseResponse } from "~/lib/api"
+import type {
+  CrossSearchByAstResponse,
+  CrossSearchResponse,
+  DbPortalFacets,
+  DbSearchByAstResponse,
+  DbSearchResponse,
+  ParseResponse,
+} from "~/lib/api"
 import type { UserInfo } from "~/lib/auth/types"
 import type { LlmHealth } from "~/schemas/api-bff/llm"
 import type { NewsList } from "~/schemas/api-bff/news"
@@ -62,6 +69,45 @@ export const dbSearchHandler = (
     const url = new URL(request.url)
     overrides.onRequest?.(url)
     return HttpResponse.json(overrides.response ?? minimalDbSearchResponse())
+  })
+
+// AST-input (POST) search mocks: the GET payload plus the `dsl` echo the route
+// projects into `?q=`. onRequest exposes the posted body so a test can assert the
+// AST (or its absence for match_all) and the query params.
+export const minimalCrossSearchByAstResponse = (
+  dsl: string,
+  facets: DbPortalFacets | null = null,
+): CrossSearchByAstResponse => ({ ...minimalCrossSearchResponse(facets), dsl })
+
+export const minimalDbSearchByAstResponse = (
+  dsl: string,
+  facets: DbPortalFacets | null = null,
+): DbSearchByAstResponse => ({ ...minimalDbSearchResponse(facets), dsl })
+
+export const crossSearchByAstHandler = (
+  overrides: {
+    response?: CrossSearchByAstResponse
+    onRequest?: (url: URL, body: unknown) => void
+  } = {},
+): RequestHandler =>
+  http.post("*/db-portal/cross-search", async ({ request }) => {
+    const url = new URL(request.url)
+    const body = await request.json().catch(() => ({}))
+    overrides.onRequest?.(url, body)
+    return HttpResponse.json(overrides.response ?? minimalCrossSearchByAstResponse(""))
+  })
+
+export const dbSearchByAstHandler = (
+  overrides: {
+    response?: DbSearchByAstResponse
+    onRequest?: (url: URL, body: unknown) => void
+  } = {},
+): RequestHandler =>
+  http.post("*/db-portal/search", async ({ request }) => {
+    const url = new URL(request.url)
+    const body = await request.json().catch(() => ({}))
+    overrides.onRequest?.(url, body)
+    return HttpResponse.json(overrides.response ?? minimalDbSearchByAstResponse(""))
   })
 
 const unsetHealth: LlmHealth = { status: "unset" }
