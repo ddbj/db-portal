@@ -2,43 +2,7 @@
 
 DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
 
-## ディレクトリ構造
-
-```
-db-portal/
-├── app/                         アプリケーションコード (browser + SSR)
-│   ├── root.tsx                 HTML shell、i18n provider、QueryClient provider
-│   ├── routes.ts                config-based routing の宣言 (URL 全構造の SSOT)
-│   ├── routes/                  route component の置き場 (file 名 ≠ URL)
-│   ├── features/                画面横断ロジック (search / submit / news / services / top / errors)
-│   ├── shell/                   Header / Footer / NotificationBar / NewsAside / Breadcrumb
-│   ├── ui/                      Tailwind primitives (Button / Card / Tag / Callout / Modal …)
-│   ├── lib/                     純粋ユーティリティ (api / i18n / auth client / content / query)
-│   ├── content/                 *.content.tsx (型安全コンテンツ collection)
-│   ├── schemas/                 Zod schemas (submit vocab / FlowStep / News / DatabaseContent …)
-│   └── styles/                  Tailwind v4 entry + @theme block
-├── server/                      BFF / Node 専用コード (browser に出さない)
-│   ├── index.ts                 Node entry (RR v7 server adapter + API route 配線)
-│   ├── lib/                     env 検証 / 構造化 log
-│   ├── auth/                    session store / cookie / OIDC token 交換 + /api/auth/* handler
-│   ├── api/                     /api/* エンドポイント実装 (me / news / services / llm / sitemap / robots)
-│   ├── news/                    ddbj/www + dbcls/website mirror + disk cache
-│   ├── services/                services 一覧の正規化 + disk cache (news clone 再利用)
-│   └── llm/                     vLLM HTTP client
-├── docs/                        本書を含む仕様 SSOT (概念 + 図 + schemas/ 参照)
-├── tests/
-│   ├── unit/                    Vitest + msw + createRoutesStub
-│   ├── pbt/                     fast-check (純粋ロジックの不変量)
-│   └── e2e/                     Playwright (staging に対して)
-├── env.dev / env.staging / env.production
-├── compose.yml / compose.dev.yml / compose.podman.yml
-├── Dockerfile
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── react-router.config.ts
-└── eslint.config.ts
-```
+## zones と実行境界
 
 `app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は本書の SSR/CSR、build/runtime のセクションで扱う。
 

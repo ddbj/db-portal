@@ -1,6 +1,6 @@
 # Frontend
 
-フロントエンド (`app/ui/` / `app/shell/` / `app/routes/top/` + `app/features/top/` / `app/content/` + `app/lib/content/`) の 4 領域を 1 本にまとめた SSOT。primitive のデザイン原則、global chrome、トップページ、コンテンツ collection をこの順で扱う。
+フロントエンドの primitive デザインシステム (`app/ui/`) と、コンテンツ collection (`app/content/` + `app/lib/content/`) の SSOT。primitive の設計原則・横断ポリシー、コンテンツ collection の契約をこの順で扱う。
 
 ## UI primitives
 
@@ -54,7 +54,7 @@
 
 #### zones とファイル構成
 
-`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`app/ui/` は他の zone を import せず (`architecture.md`)、内部の primitive 同士・util (`cn` helper や icon 集約) は `app/ui/` 配下で閉じる。`Header` のような chrome は `app/shell/` 側 (本書「Shell」)。
+`app/ui/` 配下に primitive ファイルと icons (`app/ui/icons/`) を置き、`app/ui/index.ts` で re-export する。外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。`app/ui/` は他の zone を import せず (`architecture.md`)、内部の primitive 同士・util (`cn` helper や icon 集約) は `app/ui/` 配下で閉じる。`Header` のような chrome は `app/shell/` 側に置く。
 
 #### variant prop の表現
 
@@ -147,265 +147,6 @@ Tailwind v4 は `@theme` 宣言から utility class を自動生成する (`--co
 
 dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した env) で `/_design` route を生成する。`routes/_design/primitives.tsx` で全 primitive を variant × size × state すべて並べ、`routes/_design/tokens.tsx` で全 token を一覧表示する。production build では `app/routes.ts` で除外し 404 にする。
 
-## Shell
-
-`app/shell/` 配下の global layout 部品。Header / NotificationBar / NewsAside / Breadcrumb / SkipLink / TranslationUnavailable / ShellLayout の責務と組み立てを定義する。`app/root.tsx` がこれらを噛ませて全ページ共通の chrome を構築する。
-
-### 責務分担
-
-| ファイル | 役割 |
-|---|---|
-| `header.tsx` | wordmark + 主要 nav + lang 切替 + login button、active nav 判定 |
-| `notification-bar.tsx` | トップページ上部に featured news を表示、close 永続化 |
-| `news-aside.tsx` | トップ右ペイン compact news + 「すべて見る」リンク |
-| `breadcrumb.tsx` | `app/lib/content/breadcrumb.ts` の `useBreadcrumb` を消費して描画 |
-| `skip-link.tsx` | Tab フォーカス時に表示される `<main>` への skip リンク |
-| `translation-unavailable.tsx` | en page で翻訳が未完了の場合のバナー |
-| `login-button.tsx` | `useAuth` の状態を見て「ログイン / ログアウト」 button を切替 |
-| `switch-lang.tsx` | `/api/set-lang` に POST して言語切替する fetcher Form |
-| `shell-layout.tsx` | SkipLink / Header / NotificationBar / Breadcrumb / `<Outlet />` を組み立てる wrapper |
-| `index.ts` | 上記の re-export |
-
-`app/shell/` は `app/ui/` の primitive と `app/lib/` の hook / helper を消費する。`app/features/` を import してはならない (`architecture.md` zones)。LoginButton / SwitchLang 等が BFF endpoint や外部 URL への `<a href>` を直接扱うため `react/forbid-elements` は除外、ただし `<button>` 等は primitive 経由を優先する。
-
-### Header
-
-#### 構成
-
-```
-[wordmark] ............................ [nav] [SwitchLang] [|] [LoginButton]
-```
-
-- wordmark: 左端、`/` への link。`/bsi-logo.svg` (BSI = BioData Science Initiative) を render するロゴ
-- nav: 中央-右寄せ、active nav に `aria-current="page"`
-- SwitchLang: lang 切替リンク (cookie 更新で URL 不変、`i18n.md`)
-- SwitchLang と LoginButton の間に縦区切り
-- LoginButton: 認証 state を見て「ログイン / ログアウト」を出し分け
-
-背景は `surface` (白) で下端に境界線を引く。紫ベタ / グラデーション / 上端帯は使わない。見た目値は `app/shell/header.tsx` が SSOT。
-
-#### nav 構成
-
-ja / en で同じ構造、文言だけ i18n リソースから引く。wordmark が top page リンクを兼ねるため top は nav に含めない。news は nav に置かず、トップ右ペインの NewsAside + `/news` 直リンクで誘導する。
-
-| key | i18n key | kind | 遷移先 | active 条件 |
-|---|---|---|---|---|
-| search | `nav.search` | internal | `/search` | path が `/search` 始まり (results 含む) |
-| submit | `nav.submit` | internal | `/submit` | path が `/submit` 始まり |
-| about | `nav.about` | external | `https://bsi.rois.ac.jp` | 外部リンクのため active 判定対象外 |
-
-`/databases/:slug` は top-level nav に含まない (deep page、active = null)。about は外部 URL なので `<a target="_blank" rel="noopener noreferrer">` + ExternalIcon で開く。
-
-#### active 判定
-
-`useLocation.pathname` を見て NAV_ITEMS の internal item を順に走査し、`pathname === item.path` または `pathname.startsWith(item.path + "/")` で active id を返す。external item は active 判定の対象外。Header には optional `active` prop を用意して上位から override 可能 (テスト用)。
-
-#### LoginButton
-
-`app/lib/auth/use-auth.ts` の `useAuth` を呼び、state によって以下を出し分ける:
-
-| `useAuth.status` | 表示 | 遷移先 |
-|---|---|---|
-| `"loading"` | text `t("auth.loggingIn")` (= "認証中…") | — |
-| `"unauthenticated"` | "ログイン" link (`<a href>`) | `buildLoginUrl(pathname)` |
-| `"authenticated"` | name と "ログアウト" が `·` でつながった単一 `<a href>` | `buildLogoutUrl(pathname)` |
-
-returnTo はクライアントから渡す。`buildLoginUrl(returnTo?)` / `buildLogoutUrl(returnTo?)` は positional 引数で受け、同一 origin 検証して `/` 始まり以外を `/` に正規化する (`auth.md`)。
-
-#### SwitchLang
-
-`/api/set-lang` resource route に POST する fetcher Form で実装する (`i18n.md`)。URL は不変、root loader が revalidate されて全画面が新 lang で再 render される。Globe icon を左に、text に "JA / EN" 切替の意味を持たせる ("Switch to English" / "日本語" を i18n リソースから引く)。
-
-### NotificationBar
-
-トップページ上部の featured news スタック。表示仕様はここに集約する (`news.md` はデータ源の補足のみ)。レイアウト・close の実装・sessionStorage key・SSR hydration の詳細は `app/shell/notification-bar.tsx`、視覚は `/_design` が SSOT。
-
-#### 表示条件
-
-**トップページ (`pathname === "/"`) のみ** で render し、`/api/news` の news のうち次を満たすものを表示する:
-
-- `featured === true` (featured whitelist で marked、`news.md`)
-- その session で dismiss 済みでない
-
-#### 順序
-
-`publishedAt` 降順 (新しい順) に縦に積む。優先度フィールドは持たず時系列のみで決定する。
-
-#### close と永続化
-
-各 bar の close で当該 bar のみ即時に消え、全件 close で section ごと消える。dismiss 済みは **sessionStorage** に保持する。cookie だと長期で抑制されすぎ、localStorage だと永久に閉じてしまうため、「tab を閉じるまで再表示しない・次の session では再評価」 を満たす sessionStorage を選ぶ。
-
-#### a11y / SSR
-
-section landmark (`role="region"`) は 1 つに留め、各 bar は `<article aria-label={title}>` で個別識別する。sessionStorage は client 専用なので SSR では全件表示し、hydration 後に dismissed を反映する (hydration mismatch を避けつつ初回 paint で表示する)。
-
-### NewsAside
-
-トップページ右ペイン専用 (sticky)。最新 N 件 (`NEWS_LIMIT` 定数が SSOT、現状 5 件) の compact news list を表示する。heading (`SectionHeading` + 「すべて見る」 link)・各 row の構成・スタイルは `app/shell/news-aside.tsx`、視覚は `/_design` が SSOT。
-
-`app/lib/api/news.ts` の `fetchNews` を TanStack Query で呼び、client 側で `NEWS_LIMIT` 件に slice する (limit は client 側責任)。fetch を `app/shell/news-aside.tsx` 内で行うのは、features を import すると zones を超えるため (`architecture.md`)。
-
-### Breadcrumb
-
-`app/shell/breadcrumb.tsx` は `app/lib/content/breadcrumb.ts` の `useBreadcrumb` を消費し、結果を `<nav aria-label={t("a11y.breadcrumbNav")}>` で wrap するだけの薄い UI 層。表示形式は `[ホーム] > [データベース] > [BioProject]`、先頭は `t("breadcrumb.home")` + ホームへの link、末尾は `aria-current="page"`、区切りは `›` (U+203A、`aria-hidden`)。仕様詳細は本書「Content system」の「Breadcrumb 自動生成」を参照。
-
-### TranslationUnavailable
-
-#### 表示条件
-
-現在の lang が `en` かつ、route handle の `i18n.en` が `"complete"` 以外 (`useMatches` を辿り、いずれかの match が条件を満たす場合)。親 layout は handle を持たず、子 route が宣言する。
-
-ja 側の route handle には `i18n` flag を **書かない** (ja default なので flag 不要、不在 = complete とみなす)。ja で missing キーは PBT (`tests/pbt/lib/i18n/resource-parity.pbt.test.ts`) が許さない。
-
-route handle 規約は `architecture.md` の「route handle 規約」 を参照。
-
-#### 表示位置
-
-`ShellLayout` 内で Header と main の間、NotificationBar の **下**、Breadcrumb の **上** に出す (banner 性質、route content より上)。バナー本体の構成・スタイルは `app/shell/translation-unavailable.tsx`、視覚は `/_design` が SSOT。`Callout tone="info"` 相当だが、ja への Switch link (`/api/set-lang` に POST する fetcher Form、cookie 更新 / URL 不変) を含めるため shell 側の専用 component とする。
-
-#### missing key の挙動
-
-en リソースに無いキーは `react-i18next` の `fallbackLng: "ja"` で ja 値が render され (機構は `i18n.md` の「翻訳なし fallback」)、本バナーがその状態を可視化する。route handle に `i18n.en === "complete"` を書いたものはバナー非表示で、ja default 設計のため en の翻訳が出揃った時点で flag を更新する運用。
-
-### ShellLayout
-
-`app/shell/shell-layout.tsx` が `app/root.tsx` から呼ばれる。
-
-#### 構成
-
-```
-Page
-├ SkipLink
-├ Header
-├ NotificationBar
-├ TranslationUnavailable
-├ Breadcrumb
-└ <main id="main">{children}</main>
-```
-
-- `Page` は `app/ui/page.tsx` (font / color baseline)
-- `Header` は内部で `useLocation().pathname` から active nav を導出 (`computeActiveNav` で path 判定、props で渡さない)
-- `main` に `id="main"` を付け、`SkipLink` の遷移先にする
-- `SkipLink` は Header の **上** に置く sr-only な link で、Tab で focus したときだけ可視化する
-
-#### トップページ特例
-
-`/` (top page) では `<main>` の中身を 2-col grid にして右側に `NewsAside` を出す。ShellLayout はこの分岐を **持たない** (NewsAside の配置はトップ route 側で組み立てる、layout を pure に保つ)。`NewsAside` 自体は `app/shell/` 配下に置くが、layout に embed せず route から explicit に import して使う。
-
-### i18n 統合
-
-`app/lib/i18n/` の `createI18nInstance(lang)` を 1 request ごとに呼び、`<I18nextProvider>` に渡す。これにより SSR の並列 request で `changeLanguage` のレースが発生しない (`i18n.md`)。module-level の global instance は持たない。
-
-shell が直接消費するキー namespace は `common` / `nav` / `breadcrumb` / `auth` / `switchLang` / `notificationBar` / `newsAside` / `translationUnavailable` / `a11y`。実体は `app/lib/i18n/resources/{ja,en}.ts` が SSOT。ja と en でキーセットは完全一致させる (`i18n.md` PBT で担保)。
-
-## Top route
-
-`/` で表示されるトップページの仕様。`app/routes/top/route.tsx` が SSOT。
-
-トップは「DDBJ ポータルへの入口」として、検索ボックスを実質的なヒーローに据え、サービス一覧と最新ニュースへの導線を 2-col grid で構成する。
-
-### 全体構成
-
-ShellLayout が SkipLink / Header / NotificationBar / Breadcrumb を描画した上で、TopRoute は `<main>` に Hero section と「ServiceGrid + FeaturedServices の左カラム / NewsAside の右カラム」 の 2-col grid を組み立てる。NewsAside は **トップページのみ** で aside カラムに表示する。`ShellLayout` は NewsAside を embed せず、トップ route 側で explicit に呼ぶことで layout の単一責務を保つ。
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Hero (NavigableSearchInput: keyword/AI + scope + examples)  │
-├──────────────────────────────────┬──────────────────────────┤
-│  ServiceGrid (primary tiles)     │                          │
-│                                  │  NewsAside               │
-│  FeaturedServices                │  (sticky, 最新 N 件)      │
-│    (name 順 compact list)        │                          │
-└──────────────────────────────────┴──────────────────────────┘
-```
-
-`ServiceGrid` は `app/features/top/` 配下、`FeaturedServices` は `app/features/services/` 配下に置く (画面固有 component、`app/ui/` には入れない)。`HeroSection` は検索 box (`NavigableSearchInput`、`features/search`) を使うため **`app/routes/top/` 配下** に置く。zones の制約上 `features/top` は `features/search` を import できず、検索 box とサービスタイルの統合は route 層が担う。`NewsAside` は shell 共通 component を import する。
-
-### Hero section
-
-#### 構成
-
-- `NavigableSearchInput` (`search-input/`、results と共有する太い検索 box。keyword / AI モードを 1 つの box で切り替える)
-- scope の選択肢は `SCOPE_KEYS = ["all", ...DB_SLUGS]`、初期値は `"all"` (= "全データベース")。scope ラベルは `search.scope.*` キーから引く
-- keyword モードでは scope = DB scope、box 直下に共通 `Examples` (`例:` + chip 列。例文言は `NavigableSearchInput` が `search.*` キーから引く)
-- 検索例の trailing に「詳細条件で検索 →」リンク (`/search` への TextLink、`top.hero.advancedLink`)
-
-#### AI モード (top は new 固定)
-
-- `useLlmAvailability().ready` のときだけ box 内に「AI モード」トグルを出す (`llm.md`)
-- top は **新規生成 (new) 固定** で `allowAppend={false}`。new/append selector は出さず、scope スロットは DB scope のまま。送信ボタンは keyword/AI とも **「検索」**
-- AI モードに切り替えると検索例 chip が AI 用 (`search.assistant.examples`) に替わる
-- AI 入力 → 「検索」で DSL を生成 (SSE)、**提案を見せず** に検証済み AST を `serializeAstToDsl` で DSL 化し `/search/results?q=<dsl>&db=<scope>` へ遷移する
-
-#### keyword submit の挙動
-
-- 入力値 `q` と scope を受け、`/search/results?q=<encoded>` に navigate する
-- scope が `"all"` 以外なら `db=<slug>` を URL に付加 (`scopeKeyToDbSlug` で変換)
-- DSL parse / serialize は results / AI 生成側でのみ実行する (top の keyword は simple query を URL に渡すだけ)
-- 空入力で submit された場合は `/search/results` (q 無し、scope に応じた `db` のみ) に遷移
-
-#### i18n キー
-
-`top` namespace が hero 固有に持つのは詳細検索リンク 1 キーのみ。実文言は i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`) が SSOT。
-
-| key | 用途 |
-|---|---|
-| `top.hero.advancedLink` | 検索例 trailing の `/search` への誘導リンク文言 |
-
-box の placeholder / aria / 送信ラベル / 検索例 / AI 文言は `NavigableSearchInput` が `search.*` キーを引く (top 固有では持たない)。
-
-Hero に独立した heading は置かない (検索 box 自体が page の入口を兼ねる)。Header の wordmark がブランド表示を担う。
-
-### Service tiles
-
-#### データソース
-
-`app/content/services/` collection の `top.category === "primary-service"` を `top.order` 昇順で取得する (本書「Content system」)。entry の全件・表示名・link 先は collection が SSOT、本書には書かない。
-
-Card 全体をクリッカブルにするため、`app/ui/link-card.tsx` の `LinkCard` primitive を使う。`LinkCard` は internal なら `react-router` の `<Link>`、external なら `<a target="_blank" rel="noopener noreferrer">` を内部で組み立てる。
-
-#### グリッドと card design
-
-grid のレイアウト・寸法は `app/features/top/service-grid.tsx` / `service-card.tsx`、視覚は `/_design` が SSOT。規約として固定するのは:
-
-- icon は service entry の `id` に応じた dedicated SVG を `app/features/top/service-icon.tsx` の switch から選ぶ (各 service 専用デザイン)
-- 外部リンク card には `ExternalIcon` を visual hint として表示する
-
-### Services (top page)
-
-#### データソース
-
-services mirror を client-side の TanStack Query で取得し、`featuredTop` の entry を抽出する (データ生成・featuredTop 規約は `services.md`)。`SectionHeading` (`top.services.heading`) と「すべて見る」link を上に出し、DDBJ・DBCLS を混在させた **name アルファベット順の compact list** で表示する。query key は `/services` 一覧と共有する。
-
-#### 行 design
-
-- 専用の compact row を内部に持つ。1 行 = name (url があれば外部 link) + 同行に 1 行 ellipsis の description。source Tag / category Tag / icon は持たない (詳細な一覧表示は `/services` に誘導)
-- facet / pagination は top page には出さない
-
-#### i18n キー
-
-実文言は i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`) が SSOT。
-
-| key | 用途 |
-|---|---|
-| `top.serviceGrid.heading` | ServiceGrid 用 heading の資源 (現状 grid は内側に heading を render しない) |
-| `top.services.heading` | FeaturedServices の `SectionHeading` |
-| `top.services.viewAll` | FeaturedServices の `/services` への「すべて見る」link |
-
-name / description は service mirror の data から、category ラベルは i18n (`services.category.*`) から解決する。
-
-### NewsAside / NotificationBar
-
-トップは右ペインで `app/shell/news-aside.tsx` を消費する。詳細仕様 (取得 / 表示 / 空・loading) は本書「Shell」の「NewsAside」を参照。NewsAside はトップ専用で、`ShellLayout` には含めない (route 側で explicit に呼ぶ)。
-
-NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有のロジックは無く、仕様詳細は本書「Shell」の「NotificationBar」を参照。
-
-### SSR / hydration
-
-- TopRoute は loader を持たない (Service tiles は collection 起動時 load、Services list / News は client-side の TanStack Query で取得)
-- SSR では News fetch を `useQuery` の `prefetch` で行わない (TanStack Query の hydration は採用していない)。初回 client mount で fetch する
-- 結果として SSR では `NewsAside` が loading / empty 状態でレンダリングされ、hydration 後に実データに置き換わる (initial paint で skeleton 相当の表示)
-
 ## Content system
 
 データベース解説、サービス紹介、各種ガイドのコンテンツを TypeScript ファイル (`*.content.tsx`) として書く collection 方式を採用する。`architecture.md` の zones に従い、コンテンツは `app/content/` に集約する。
@@ -423,24 +164,6 @@ NotificationBar は `ShellLayout` 経由で全 page に出る。トップ固有�
 - リッチ表現: JSX で `app/ui/` primitive を直接使える
 - i18n diff の読みやすさ: 同一ファイルに `{ja, en}` 並走、レビュー時に両言語の差を 1 ファイルで確認
 - CMS 化への移行余地: loader (`app/lib/content/loader.ts`) を差し替えれば外部 CMS への切替が可能
-
-### ディレクトリ構造
-
-```
-app/content/
-├── databases/                          → /databases/:slug の各エントリ
-│   ├── bioproject/index.content.tsx
-│   └── biosample/index.content.tsx
-└── services/                           ServiceContent collection (top tile + submit CTA)
-    ├── search.content.tsx              top primary tile (portal 内検索)
-    ├── submit-nav.content.tsx          top primary tile (登録ナビ)
-    ├── services-index.content.tsx      top primary tile (サービス一覧)
-    ├── supercomputer.content.tsx       top primary tile (NIG スパコン, external)
-    ├── statistics.content.tsx          top primary tile
-    ├── activity.content.tsx            top primary tile
-    ├── dra.content.tsx / jga.content.tsx / …   submit CTA (submit Service enum と対応)
-    └── humandbs.content.tsx / jpost.content.tsx / eva.content.tsx   submit external CTA
-```
 
 全件・表示名・top/submit usage は collection が SSOT (top primary tile は `service-icon.tsx` の switch と対応)。対応する Zod schema は `app/schemas/content/` に置く (`database-content.ts` / `service-content.ts`、submit-routing カタログ用の `submit-routing-content.ts`)。loader / type / breadcrumb hook は `app/lib/content/` に置く (`loader.ts` / `breadcrumb.ts` / `types.ts` / `index.ts`)。
 
@@ -604,22 +327,6 @@ UI primitives:
 
 - `vitest-axe` で各 primitive / shell component の `axe` violation 0 件を保証
 
-Shell:
-
-- nav 項目 / active 判定 / SwitchLang / LoginButton 出し分け
-- NotificationBar の表示順 / 個別 close で他 bar 残存 / 全件 close で section 消失 / sessionStorage 永続化
-- NewsAside の 最新 N 件 (`NEWS_LIMIT`) list / 「すべて見る」 link / source / category Tag
-- Breadcrumb の 0-1 件 null / handle 駆動描画
-- TranslationUnavailable の表示条件 / ja URL で非表示
-- ShellLayout の組み立て / skip link
-
-Top route:
-
-- 2-col grid 構成、HeroSection / ServiceGrid / FeaturedServices / NewsAside の存在
-- ServiceGrid が `top.order` 順に並ぶ
-- ServiceCard の internal / external 切替
-- FeaturedServices が featuredTop を name 順 list で表示 (name + description のみ)
-
 Content system:
 
 - 不正な fixture で `validateAll*` が `errors` を返す、`getDatabaseBySlug` / `getServiceById` が存在しない id で `undefined`
@@ -628,16 +335,7 @@ Content system:
 
 ### PBT
 
-Shell:
-
 - shell が追加する全 i18n キーで ja / en のキーセット同一
-
-Top route:
-
-- 任意の有効な `ServiceContent` 入力で Zod parse 成功、無効な組み合わせで失敗
 - routes-helpers の path / id 対称性
-
-Content system:
-
 - 任意の有効な `DatabaseContent` 入力で Zod parse 成功
 - 任意の有効な `ServiceContent` 入力で Zod parse 成功、無効な組み合わせ (top も submit も無い / top あるのに link 無い) で必ず失敗

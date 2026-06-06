@@ -10,7 +10,7 @@ ES に実在する field (ddbj-search-converter の mapping) を起点に、各�
 - 検索 field の SSOT (type / scope / facet 化 / label、Sidebar・Advanced builder 共通): `app/features/search/field-registry.ts` (`FIELD_REGISTRY` / `SCOPE_FIELDS`)
 - Sidebar filter 行への解決 (render kind / op / facetName): `app/features/search/sidebar/facet-config.ts`
 - Advanced builder の field / op affordance: `app/features/search/advanced/field-catalog.ts` (`fieldsForScope` / `FIELD_OPS`)
-- 検索結果リストの表示 field (per-DB の見せ方 / detail link 生成): `app/features/search/results/result-fields.ts` (規約は `search.md` § Result row)
+- 検索結果リストの表示 field (per-DB の見せ方 / detail link 生成): `app/features/search/results/result-fields.ts`
 
 ## 前提構造
 
@@ -73,7 +73,6 @@ DSL field type (enum / text / identifier) から op を機械導出する ([§ D
 |            | host (text+keyword)                              | `host`                                           | text       | —              |
 |            | strain / isolate (text)                          | `strain` / `isolate`                             | text       | —              |
 |            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | —              |
-|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | —              |
 | sra        | type (keyword)                                   | `type`                                           | enum       | —              |
 |            | libraryStrategy (text+keyword)                   | `library_strategy`                               | enum       | sra-experiment |
 |            | librarySource (text+keyword)                     | `library_source`                                 | enum       | sra-experiment |
@@ -84,7 +83,6 @@ DSL field type (enum / text / identifier) から op を機械導出する ([§ D
 |            | analysisType (text+keyword)                      | `analysis_type`                                  | enum       | sra-analysis   |
 |            | libraryName / libraryConstructionProtocol (text) | `library_name` / `library_construction_protocol` | text       | sra-experiment |
 |            | geoLocName / collectionDate (text)               | `geo_loc_name` / `collection_date`               | text       | sra-sample     |
-|            | derivedFrom.identifier (nested keyword)          | `derived_from_id`                                | identifier | sra-sample     |
 | jga        | type (keyword)                                   | `type`                                           | enum       | —              |
 |            | studyType (text+keyword)                         | `study_type`                                     | enum       | —              |
 |            | datasetType (text+keyword)                       | `dataset_type`                                   | enum       | —              |
@@ -103,7 +101,7 @@ SRA / JGA の DB ごと field は **subtype 別の独立 doc** に分かれて�
 
 | db | plane | field |
 | --- | --- | --- |
-| sra | sample (sra-sample) | `organism_id` / `organism_name` / `geo_loc_name` / `collection_date` / `derived_from_id` |
+| sra | sample (sra-sample) | `organism_id` / `organism_name` / `geo_loc_name` / `collection_date` |
 | sra | experiment (sra-experiment) | `library_strategy` / `library_source` / `library_selection` / `library_layout` / `platform` / `instrument_model` / `library_name` / `library_construction_protocol` |
 | sra | analysis (sra-analysis) | `analysis_type` |
 | jga | study (jga-study) | `study_type` / `vendor` / `grant_title` / `grant_agency` (organism も study に同居) |

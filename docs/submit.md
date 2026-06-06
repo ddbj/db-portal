@@ -41,7 +41,7 @@ UI 全体は前段フィルタを足した 3 段構造になる:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段で種別を選び、中段の選択肢を狭めるために前段を調整する、という編集モデル。この 3 段は画面では 2 pane に割り付く: 前段 + 中段 (入力) を左 pane、下段 (結果) を右 pane に置く (`## 画面構成`)。
+下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段で種別を選び、中段の選択肢を狭めるために前段を調整する、という編集モデル。この 3 段は画面では 2 pane に割り付く: 前段 + 中段 (入力) を左 pane、下段 (結果) を右 pane に置く。
 
 ### Cross-DB Tag / Intra-DB Tag
 
@@ -54,7 +54,7 @@ Cross-DB Tag は前段フィルタ / 種別トグル / 種別ごとの access・
 
 ### 詳細質問の選別基準
 
-種別の「データ詳細」質問 (DataDetailPanel) に持ってよいのは、**その答えで導出される `FlowStep[]` が変わる (flow-changing) 軸だけ** とする。具体的には destination service の集合が変わる・必須 step が増減する・scope の束ね方が変わる軸を指す。出る service / step を変えない細部は詳細質問にせず、登録先が決まってから Step カード内 Intra-DB Tag (pulldown) で埋める。利用者は「フローが変わる問い」だけを答え、各 DB の細部は後で埋める、という負荷分散になる。
+種別の「データ詳細」質問に持ってよいのは、**その答えで導出される `FlowStep[]` が変わる (flow-changing) 軸だけ** とする。具体的には destination service の集合が変わる・必須 step が増減する・scope の束ね方が変わる軸を指す。出る service / step を変えない細部は詳細質問にせず、登録先が決まってから Step カード内 Intra-DB Tag (pulldown) で埋める。利用者は「フローが変わる問い」だけを答え、各 DB の細部は後で埋める、という負荷分散になる。
 
 判定の物差し (この基準は DDBJ 公式の登録手順が flow 分岐に使っている軸と一致させる。値の根拠は `ddbj.nig.ac.jp` のソース):
 
@@ -333,19 +333,13 @@ service 間の前提関係を **ステップ依存グラフ** として宣言し
 | humandbs (Policy ゲート) | jga | Policy 承認 (JGAP) を得ないと JGA に登録できない |
 | dra | gea (sequencing 2 段) / ddbj-trad (MAG/SAG) | 生リードを先に DRA に登録し processed/ゲノムから参照する |
 
-カード順序 (不変量 #5) はこの依存グラフのトポロジカル順で、前提ステップが依存ステップより前に出る。前提ゲート (Policy: humandbs) → 共通メタデータ (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva) の線形順がこのトポロジカル順を実現する (Policy ゲートと共通メタデータは JGA が companion を抑制するため同一フローに共存しない)。各カードの「先に済ませること」は、依存先のうち **そのフローに実在する** 前提ステップだけを、その step の anchor へのリンクとして出す。`FlowOverview` も同じ依存順で並び、番号 badge の昇順が「前提 → 依存先」を表す。
-
-### フロー・エクスプローラ (人がフローを確認する surface)
-
-`/_design/submit-flow-explorer` route を置く (production build から除外)。任意の入力 (前段 Q1/Q2 + 選択種別 + 種別ごとの access・詳細) を組むと、出る `FlowStep[]` を全件プレビューする。各 step に **由来バッジ** (「Tier1 ルール由来」「Tier2 集約由来」「named recipe 由来」) を出す。加えて **マトリクスモード** で Q1 × Q2 × 種別の組合せを一覧し、`no-destination` / 種別 disable を可視化する。DDBJ はカタログを編集 → エクスプローラで結果を目視 → PBT が CI で網羅・不変量を検証、という流れでフローを確認・拡充する。
-
-同じく production build から除外する `/_design/submit-result-summary` route は、右 pane の step 一覧を「登録先サマリー」(導出した登録先の粒度バッジ / 依存順の次にやること / warning・error と validation を集めた確認・前提) として見せ直す案を、builder と代表ケースのプリセットで試作する検討用 surface。本番 `/submit` には反映していない。
+カード順序 (不変量 #5) はこの依存グラフのトポロジカル順で、前提ステップが依存ステップより前に出る。前提ゲート (Policy: humandbs) → 共通メタデータ (bioproject → biosample) → 一次データ (dra) → 主登録先 → 外部リポジトリ (jpost/eva) の線形順がこのトポロジカル順を実現する (Policy ゲートと共通メタデータは JGA が companion を抑制するため同一フローに共存しない)。各 step の「先に済ませること」は、依存先のうち **そのフローに実在する** 前提ステップだけを参照する。
 
 ---
 
 ## Service と role / 外向き契約
 
-Service は単一の enum で、各値が **role** を持つ。利用者向けの登録先 (destination)、submission 全体に共通する導出物 (companion)、DDBJ 外への誘導 (external) を role で区別する。accession 例と外部 URL は各 service の `app/content/services/*.content.tsx` が SSOT (本書は role と役割のみ)。submit カードは accession を主要素にせず、発行 ID の予告に意味がある service (`submit-routing/cards` の `issuedNote`) のみ外部リンク脇に muted で添える (`### 登録フロー詳細カード (FlowStepCard)` の accession の扱い)。
+Service は単一の enum で、各値が **role** を持つ。利用者向けの登録先 (destination)、submission 全体に共通する導出物 (companion)、DDBJ 外への誘導 (external) を role で区別する。accession 例と外部 URL は各 service の `app/content/services/*.content.tsx` が SSOT (本書は role と役割のみ)。submit カードは accession を主要素にせず、発行 ID の予告に意味がある service (`submit-routing/cards` の `issuedNote`) のみ外部リンク脇に muted で添える。
 
 | service id | role | 役割 |
 |---|---|---|
@@ -408,48 +402,6 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 
 ---
 
-## 画面構成
-
-`/submit` は 1 つの `<Section>` を左右 2 pane に割る。左 pane が **入力** (利用者がデータ種別とその来歴を答える: 登録前提 Q1/Q2 → データ種別の選択 → 公開区分 → データ詳細)、右 pane が **結果** (導出された登録フロー: 一覧 FlowOverview → 各 step 詳細 FlowStepCard、違反時のみ PartialFailureBanner)。狭い画面では縦積みにする。pane 比率・grid・各 component の組み立ては `app/features/submit/` と `app/routes/submit/` が SSOT。id は client mount 後に採番して SSR hydration mismatch を避ける。
-
-前段で Q1/Q2 を変更して選択済みの種別が disable になった場合、選択は破棄せず、`selectValidations` が `precondition-conflict` を出して該当種別へ誘導する (整合崩れを破壊的に解決しない)。無効化された種別は経路導出から除外され (右 pane に無効な登録先を出さない、`## 経路導出と不変量` の `conflict-kind-no-step`)、利用者は該当種別のトグルをクリックして選択を解除することで conflict を解消する (disable は新規選択だけをブロックし、選択済みは常に解除できる)。
-
-### 登録フロー一覧 (FlowOverview)
-
-右 pane 先頭の `FlowOverview` は `FlowStep[]` をステップ依存順 (`### ステップ依存とカード順序`) で並べ、俯瞰とナビゲーションに徹する。status・source・説明文を持たず、番号 badge の昇順が依存順 (前提が先) を表す。各ステーションを click すると同順で並ぶ対応 `FlowStepCard` の anchor へ scroll する。step の中身 (source・件数明細・note・依存リンク・warning/error) は本体 `FlowStepCard` 側に置いて重複させない。
-
-### 登録フロー詳細カード (FlowStepCard)
-
-各 `FlowStepCard` は「**外部の登録ウィザードへ進む前の予告**」として振る舞う。利用者が DDBJ の service 構造を知らなくても、そのステップで何が起きるか・先に何が要るか・何を準備するか・押すとどこへ行くかが読めることを目的とする。登録自体は外部ページで行い portal は代行しない (`## 範囲と制約`)。
-
-カードは役割で内容を出し分ける。表示ブロック (ヘッダ / 概要 / 先に済ませること / 対象データ / 準備するもの / 外部での手順 / 注意 / 外部リンク) の構成と出し分け・データ源 (i18n / 導出 / content) は `flow-cards/flow-step-card.tsx` と content (`submit-routing/cards` の `prepare` / `wizardSteps` / `gotcha` / `issuedNote`) が SSOT。「対象データ」ブロックは対象の種別をラベル + アイコンで示す (ファイル名・拡張子は持たない)。役割ごとの差:
-
-- **destination** (dra/jga/gea/ddbj-trad/nsss/metabobank/togovar): 全ブロックを持つ主役カード。外部ウィザード予告と準備リストを要とする
-- **companion** (bioproject/biosample): 「別個の登録先ではなく、フロー全体で共通して埋めるメタデータ」と明示する軽量カード。多くの登録ウィザードの最初のタブで作成/参照する位置づけ
-- **external** (humandbs/jpost/eva): DDBJ 外の窓口。Policy ゲート (humandbs) は「先に済ませる前提」を強調し、jpost/eva は「専門リポジトリへの誘導」を述べる
-
-登録後に発行される accession は、利用者が登録前にはまだ持っていないため **カードの主要素にしない**。一方で引用 ID を発行する service (`submit-routing/cards` で `issuedNote` を持つもの) は、外部リンク脇に muted で「登録すると <論文引用 ID> が発行されます」と統一文で予告する (先に取得が要る Policy の JGAP も同じ `issuedNote` で予告)。誘導ボタンのラベルは、登録は外部サイトで行うという一点で全 service 共通とし、i18n の単一キーで持つ。
-
----
-
-## データ種別の選択 UX
-
-中段は **データ種別の on/off トグル群** で、利用者は手元にある種別を選ぶ。種別は前段 Q1/Q2 のカスケード (`## 前段カスケード・フィルタ`) で enable/disable され、disable の種別は理由を tooltip で示す (選んでも宛先が無い種別を選ばせない)。disable は **新規選択だけをブロック** し、前段変更で無効化された選択済み種別は常にクリックで解除できる (conflict 表示にし、解消導線とする。`## 画面構成`)。同一種別は高々 1 個で、種別間の依存による相互 disable は持たない (`## 設計判断` の「種別間の相互排他は持たない」)。
-
-公開区分 (access) は per-file では持たず、Q1 = 公開+制限 のときだけ access-sensitive な種別 (`## 公開区分 (access) の規約`) に open/restricted トグルとして出す。default は Q2 由来で、ヒトは restricted、非ヒトは open から始める。公開 / 第三者 のときは access UI を出さない (全種別 open)。
-
-flow-changing 詳細質問 (`### 詳細質問の選別基準`) を持つ種別は、その下の `DataDetailPanel` で答える。各種別の詳細カードは種別をラベル + アイコンで示し (ファイル名・拡張子は持たない)、未設定 (`rowIsConfigured` が false) のものは `未設定` notify を出して入力を促す。詳細質問を持たない種別 (`sequence-read` / `variant` / `expression-matrix` / `microarray-expression` / `nmr` / `metabolite-assignment`) は notify を出さない。種別の選択解除はトグルを off にするだけで、確認を挟まず即時に反映する。
-
-### データ詳細パネル (DataDetailPanel)
-
-選択された種別のうち flow-changing 詳細質問を持つものを **最初から展開** する。各種別はその質問 (radio / check) を持ち、選択は即座に submission へ反映される (live commit、下書きを持たない)。質問を持たない種別は panel に現れない。種別を増やすときは form definition (`detail/form-defs.ts`) に 1 エントリ追加すれば panel 側に分岐コードを書かずに済む。
-
-設定状態 (`rowIsConfigured`) は **「フォームの各ラジオ群で 1 つ以上選択されているか」** で決まる。既定値がそのまま妥当な答えになる種別 (`単独配列` / `単独アノテーション`) は最初から `設定済み`、既定では何も選ばれていない種別 (`spatial` / `mass-spectrometry`) はプラットフォーム / ドメインを選ぶまで `未設定` になる。`TagProgress` の母数はこの「詳細質問を持つ種別」で、質問のない種別は設定対象が無いため完了として数える (`countConfiguredRows`)。設定状態の判定 (`rowIsConfigured` / `countConfiguredRows`) は `app/features/submit/state/selectors.ts`、選択値のマッチと commit 値生成 (`optionMatches` 等) は `detail/form-apply.ts` の純関数が SSOT。
-
-配列 + アノテーションのペア (`assembly-annotation`) は、配列 (FASTA) とアノテーションをともに選び、`sequence-annotation` の質問で `配列ペア` を選ぶと両者を同 group に束ねる。種別は高々 1 個ずつなので相方は一意に定まり、配列を選んでいなければアノテーション側は `未設定`、揃えば両方 `設定済み` になる (`単独アノテーション` に戻すとペアは解消する)。
-
----
-
 ## validation 検査軸
 
 `selectValidations(state)` (純粋関数) が次を検査する。各 validation は i18n key + 該当種別を含み、click で該当箇所を scroll into view する。
@@ -499,7 +451,7 @@ submit ナビが採る登録先導出の設計判断とその公式根拠・ト�
 - **`assembly-form` は MAG/SAG の `ddbj-trad` 分岐の軸**: `assembly-form` が routing で意味を持つのは `mag` / `sag` の値による `ddbj-trad` (ENV/SAG ゲノムエントリ) への分岐だけである。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj-trad` 行きで出る service を変えないため、これらは `assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う。チェーン内の段階 (生リード/primary/binned/MAG) は持たない (典型ケースに絞る)
 - **第三者 (TPA) は提出単位 (Q1) で扱い種別ごとには問わない**: 配列系の TPA → `ddbj-trad` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)、メタボローム再解析 → `metabobank`。TPA か否かは 1 提出まるごとで決まる軸なので前段 Q1 だけで判定し、種別ごとの `provenance` 質問・chip は持たない (Q1 と二重に問わない)。種別で割れるため Q1 = 第三者 で振り分け不能な種別は disable される
 - **`assembly-annotation` は 1 step**: 配列 + アノテーションは MSS の 1 ファイルペアであり、配列登録 step とアノテ step に分けない
-- **登録フロー詳細カードは「外部ウィザードの予告」とする**: 登録は外部ページで完結し portal は代行しないため、各 `FlowStepCard` は外部の登録ウィザード (`ddbj/www` の `submission*.md` 等) で何をどの順で行うかを予告し、依存ゲート (例 JGA は Policy 承認後にアップロード) を伝える役割に徹する。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。カード構成・accession の添え方・順序の導出は `### 登録フロー詳細カード (FlowStepCard)` と `### ステップ依存とカード順序`
+- **登録フロー詳細カードは「外部ウィザードの予告」とする**: 登録は外部ページで完結し portal は代行しないため、各 `FlowStepCard` は外部の登録ウィザード (`ddbj/www` の `submission*.md` 等) で何をどの順で行うかを予告し、依存ゲート (例 JGA は Policy 承認後にアップロード) を伝える役割に徹する。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
 
 ---
 

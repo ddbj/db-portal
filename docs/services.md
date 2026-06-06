@@ -150,7 +150,7 @@ upstream の `description` は末尾の文末句点が付くもの・付かな�
 
 `/services` 一覧は `app/features/services/` 配下で実装する (News の構成に準拠。Toolbar + list + Pagination、category / source の 2 FacetGroup、facet ↔ URL params の純粋関数 helper、TanStack Query での取得 + facet 適用 + name sort + pagination)。component 構成は同ディレクトリのコードが SSOT。`AppliedFilters` / `FacetGroup` / `FacetRow` は `app/ui/` の primitive を利用し、`ServiceCategory` → i18n key の写像 helper は `app/lib/i18n` に置く。
 
-top page の services セクションは `/services` 一覧と同じ query key (`["services"]`) で `/api/services` を取得し (全件 fetch を共有)、client 側で `featuredTop === true` の item だけに絞り、DDBJ・DBCLS 混在のアルファベット順 list で表示する (facet / pagination なし、icon なし)。詳細は `frontend.md` の「Top route」。
+top page の services セクションは `/services` 一覧と同じ query key (`["services"]`) で `/api/services` を取得し (全件 fetch を共有)、client 側で `featuredTop === true` の item だけに絞り、DDBJ・DBCLS 混在のアルファベット順 list で表示する (facet / pagination なし、icon なし)。
 
 ## 環境変数
 

@@ -48,7 +48,7 @@ docker compose exec app npm run check:last-updated
 
 **機能基盤**
 
-- [frontend.md](docs/frontend.md) — UI primitives / Shell / Top route / Content system
+- [frontend.md](docs/frontend.md) — UI primitives / Content system
 - [i18n.md](docs/i18n.md) — lang cookie 戦略 / リソース運用 / 翻訳なし fallback
 - [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / `gen:api-types` 運用
 - [tests/README.md](tests/README.md) — unit / PBT / e2e / mock のルール
