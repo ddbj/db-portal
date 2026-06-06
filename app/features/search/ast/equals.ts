@@ -3,8 +3,13 @@ import type { ParseNode } from "~/lib/api"
 export const astEquals = (a: ParseNode, b: ParseNode): boolean => {
   if (a.op !== b.op) return false
   switch (a.op) {
-    case "free_text":
-      return a.value === (b as Extract<ParseNode, { op: "free_text" }>).value
+    case "free_text": {
+      // is_phrase changes the compiled query (phrase match vs bare tokens), so two
+      // free_text nodes with the same value but different is_phrase are not equal.
+      const bb = b as Extract<ParseNode, { op: "free_text" }>
+
+      return a.value === bb.value && (a.is_phrase ?? false) === (bb.is_phrase ?? false)
+    }
     case "eq":
     case "contains":
     case "wildcard": {

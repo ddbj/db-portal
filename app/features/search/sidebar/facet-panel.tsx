@@ -121,6 +121,7 @@ const FacetSection = ({
       <FacetGroup
         label={t(`search.facets.field.${row.key}`)}
         appliedCount={selected.length}
+        clearLabel={t("common.facet.clear")}
         {...(selected.length > 0 ? { onClear } : {})}
         showMore={canToggle}
         showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
@@ -197,6 +198,7 @@ const OrganismFacetSection = ({
       <FacetGroup
         label={t(`search.facets.field.${row.key}`)}
         appliedCount={selected.length}
+        clearLabel={t("common.facet.clear")}
         {...(selected.length > 0 ? { onClear } : {})}
         showMore={canToggle}
         showMoreLabel={expanded ? t("search.facets.showLess") : t("search.facets.showMore")}
@@ -359,7 +361,13 @@ export const FacetPanel = ({ state, dispatch, db, facets, loading = false }: Fac
   return (
     <aside className="flex flex-col gap-3">
       <SidebarHeading withDivider>{t("search.facets.heading")}</SidebarHeading>
-      <AppliedFilters applied={applied} onClearAll={() => dispatch({ type: "clear" })} />
+      <AppliedFilters
+        applied={applied}
+        onClearAll={() => dispatch({ type: "clear" })}
+        appliedLabel={t("common.facet.applied")}
+        clearAllLabel={t("common.facet.clearAll")}
+        removeFilterLabel={t("common.facet.removeFilter")}
+      />
       {rows.map((row) => {
         if (row.kind === "facet") {
           const selected = state.facets[row.key] ?? []
@@ -437,6 +445,18 @@ export const FacetPanel = ({ state, dispatch, db, facets, loading = false }: Fac
                   from: displayFrom,
                   to: value,
                 })}
+              clearLabel={t("common.facet.clear")}
+              presetLabels={{
+                all: t("search.facets.dateRange.all"),
+                "1y": t("search.facets.dateRange.oneYear"),
+                "5y": t("search.facets.dateRange.fiveYears"),
+                "10y": t("search.facets.dateRange.tenYears"),
+              }}
+              specifyLabel={t("search.facets.dateRange.specify")}
+              fromLabel={t("search.facets.dateRange.fromLabel")}
+              toLabel={t("search.facets.dateRange.toLabel")}
+              fromAriaLabel={t("search.facets.dateRange.fromAriaLabel")}
+              toAriaLabel={t("search.facets.dateRange.toAriaLabel")}
             />
           )
         }

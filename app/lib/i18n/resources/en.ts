@@ -8,6 +8,12 @@ export const en: Resources = {
     close: "Close",
     detail: "Details",
     countSuffix: "items",
+    facet: {
+      applied: "Applied",
+      clearAll: "Clear all",
+      clear: "Clear",
+      removeFilter: "Remove filter",
+    },
   },
   errors: {
     notFound: {
@@ -502,8 +508,6 @@ export const en: Resources = {
     },
     facets: {
       heading: "Filters",
-      appliedClearAll: "Clear all",
-      appliedPrefix: "Applied",
       organism: "Organism",
       organismTaxId: "Taxonomy ID",
       submitter: "Submitter",
@@ -576,10 +580,12 @@ export const en: Resources = {
         tenYears: "10 years",
         fromLabel: "FROM",
         toLabel: "TO",
+        specify: "Specify dates",
+        fromAriaLabel: "Start date",
+        toAriaLabel: "End date",
       },
       showMore: "Show more",
       showLess: "Collapse",
-      clearGroup: "Clear",
       empty: "No facets available",
     },
     sync: {
@@ -650,7 +656,6 @@ export const en: Resources = {
       fieldSelector: "Search field",
       predicateSelector: "Condition operator",
       facetGroup: "Facet",
-      removeFilter: "Remove filter",
       queryPreview: "Query preview",
       resultsRegion: "Search results",
       assistantInput: "AI search assistant input",

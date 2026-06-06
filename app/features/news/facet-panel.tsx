@@ -78,11 +78,15 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
           applied={applied}
           onClearAll={() =>
             onChange({ ...emptyNewsFacetState(), sort: facet.sort })}
+          appliedLabel={t("common.facet.applied")}
+          clearAllLabel={t("common.facet.clearAll")}
+          removeFilterLabel={t("common.facet.removeFilter")}
         />
       )}
       <FacetGroup
         label={t("news.facet.category")}
         appliedCount={facet.category.length}
+        clearLabel={t("common.facet.clear")}
         {...(facet.category.length > 0
           ? { onClear: () => onChange(clearFacet(facet, "category")) }
           : {})}
@@ -100,6 +104,7 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
       <FacetGroup
         label={t("news.facet.source")}
         appliedCount={facet.source.length}
+        clearLabel={t("common.facet.clear")}
         {...(facet.source.length > 0
           ? { onClear: () => onChange(clearFacet(facet, "source")) }
           : {})}
@@ -119,6 +124,7 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
         <FacetGroup
           label={t("news.facet.year")}
           appliedCount={facet.year.length}
+          clearLabel={t("common.facet.clear")}
           showMore={yearToggleVisible}
           showMoreLabel={yearsExpanded
             ? t("news.facet.yearCollapse")
@@ -144,6 +150,7 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
         <FacetGroup
           label={t("news.facet.service")}
           appliedCount={facet.service.length}
+          clearLabel={t("common.facet.clear")}
           {...(facet.service.length > 0
             ? { onClear: () => onChange(clearFacet(facet, "service")) }
             : {})}

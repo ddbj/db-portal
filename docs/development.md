@@ -62,6 +62,7 @@ env 変数の **全集合とデフォルトは `server/lib/env.ts` (Zod schema) 
 | `DB_PORTAL_APP_COMMAND` | dev = `npm run dev`、staging / production = `tsx server/index.ts` (build / `validate:content` は image build 時に済む、node を PID1 直下に置き `SIGTERM` を届かせる) | `deployment.md`「起動と停止」 |
 | `COMPOSE_FILE` | dev のみ `compose.yml:compose.dev.yml` で dev override を自動合成。staging / production は未設定 (podman は明示 `-f` で `compose.podman.yml`) | `deployment.md` |
 | `DB_PORTAL_APP_PORT` / `DB_PORTAL_APP_INTERNAL_PORT` / `DB_PORTAL_PORTAL_ORIGIN` | host / container の listen port (`APP_INTERNAL_PORT` は `vite.config.ts` の `server.port` と `server/index.ts` の `app.listen` が読む、dev 3000) と BSI 自身の origin | — |
+| `DB_PORTAL_TRUST_PROXY` | Express `trust proxy` (dev `loopback`、リバースプロキシ背後の staging / production はホップ数 `1` 等)。`req.ip` = client IP の解決に効き、LLM rate limit と client IP ログの正しさを左右する | `deployment.md` / `llm.md` |
 | `DB_PORTAL_LOG_LEVEL` / `DB_PORTAL_DEFAULT_LANG` | log severity / i18n default 言語 (`DEFAULT_LANG` は `VITE_DB_PORTAL_DEFAULT_LANG` で client にも露出) | `i18n.md` |
 | `DB_PORTAL_SEARCH_API_URL` / `DB_PORTAL_SEARCH_API_TIMEOUT_MS` / `DB_PORTAL_OPENAPI_URL` | ddbj-search-api の base / timeout / openapi.json 配置先 | `api-types.md` |
 | `DB_PORTAL_KEYCLOAK_*` / `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | Keycloak realm / client / session TTL | `auth.md` |

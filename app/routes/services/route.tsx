@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 
 import {
@@ -18,7 +18,10 @@ const ServicesRoute = () => {
   const lang = useLang()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const facet = parseServicesFacetState(searchParams.toString())
+  // Keep facet identity stable across renders so the filter/sort/count memos in
+  // useServicesList only recompute when the query string actually changes.
+  const qs = searchParams.toString()
+  const facet = useMemo(() => parseServicesFacetState(qs), [qs])
   const result = useServicesList(lang, facet)
 
   const handleFacetChange = useCallback(

@@ -17,6 +17,7 @@ const TOKEN_ENDPOINT = `${REALM_URL}/protocol/openid-connect/token`
 const env: ServerEnv = {
   DB_PORTAL_ENV: "production",
   DB_PORTAL_APP_INTERNAL_PORT: 3000,
+  DB_PORTAL_TRUST_PROXY: "loopback",
   DB_PORTAL_PORTAL_ORIGIN: PORTAL_ORIGIN,
   DB_PORTAL_LOG_LEVEL: "error",
   DB_PORTAL_DEFAULT_LANG: "ja",

@@ -7,7 +7,7 @@ ddbj-search-api との型連携を 1 元化し、BSI 側で AST / DSL の二重�
 - `app/lib/api/openapi-types.ts` は **ddbj-search-api の `openapi.json` から `openapi-typescript` で自動生成** する
 - 生成物は git commit する (CI で diff check を回すため)
 - BSI 側に手書きの DSL/AST 型を持たない。検索式の構造表現は API レスポンス型 (`ParseNode` alias) に乗せる
-- AST → DSL のシリアライズはサーバへ委譲する (`POST /db-portal/serialize`)。BSI 側に thin serializer を持たない
+- AST → DSL のシリアライズ、および AST を直接渡す検索実行はサーバへ委譲する (`POST /db-portal/serialize` と AST 入力版の `POST /db-portal/cross-search` / `POST /db-portal/search`)。BSI 側に thin serializer を持たない
 
 これにより grammar の二重保守 (BSI 側と API 側) を完全に排除する。
 
@@ -19,10 +19,10 @@ ddbj-search-api との型連携を 1 元化し、BSI 側で AST / DSL の二重�
 
 | パス | 内容 |
 |---|---|
-| `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 11,500 行。git commit 対象 |
+| `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 12,000 行。git commit 対象 |
 | `app/lib/api/client.ts` | `apiGet` / `apiPost` の operation 型補完付き fetch wrapper |
 | `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 |
-| `app/lib/api/search.ts` | `crossSearch` / `dbSearch` / `parseQuery` / `serializeAst` の wrapper |
+| `app/lib/api/search.ts` | `crossSearch` / `dbSearch` (GET, query 入力) / `crossSearchByAst` / `dbSearchByAst` (POST, AST 入力) / `parseQuery` / `serializeAst` の wrapper |
 | `app/lib/api/news.ts` | BFF `/api/news` の wrapper。Zod schema (`NewsItem` / `NewsList` / `NewsSource` / `NewsCategory` / `NewsCache`) は `app/schemas/api-bff/news.ts` に置き、ここで re-export |
 | `app/lib/api/services.ts` | BFF `/api/services` の wrapper。Zod schema (`ServiceItem` / `ServiceList` / `ServiceSource` / `ServiceCategory` / `ServiceCache`) は `app/schemas/api-bff/service.ts` に置き、ここで re-export |
 | `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `isLlmAvailable`。`LlmHealth` Zod schema は `app/schemas/api-bff/llm.ts` に置き、ここで re-export |
@@ -73,15 +73,15 @@ dev / staging は同じ openapi 配置 (staging API) を共有する。Productio
 
 ## operation 型補完の運用
 
-現状の operation は GET / POST + query parameter のみで構成され、`openapi-fetch` のような外部 wrapper への依存を持たず、`paths` 型を直接読む薄い fetch wrapper だけで型補完を成立させる。
+現状の operation は GET (query parameter) と POST (query parameter + JSON requestBody) で構成され、`openapi-fetch` のような外部 wrapper への依存を持たず、`paths` 型を直接読む薄い fetch wrapper だけで型補完を成立させる。
 
 ### fetch wrapper
 
 `app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する型付き fetch wrapper。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、client.ts が直接 env を参照しない)。
 
-`/db-portal/serialize` だけが POST。`/db-portal/cross-search` / `/db-portal/search` / `/db-portal/parse` は GET で、query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `keywordOperator` / `facets` 等、operation ごとに有効な subset) を `options.query` で渡す。
+`/db-portal/parse` は GET のみ。`/db-portal/serialize` は POST のみ。`/db-portal/cross-search` と `/db-portal/search` は GET と POST の両方を持つ: GET は query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `keywordOperator` / `facets` 等、operation ごとに有効な subset) を `options.query` で渡し、POST は AST を JSON body で受けて hits・q-aware facet・シリアライズ済み `dsl` を 1 リクエストで返す。
 
-呼び出し側は通常 `app/lib/api/search.ts` の thin wrapper を経由する (`crossSearch` / `dbSearch` / `parseQuery` / `serializeAst`)。`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は wrapper を経由する。
+呼び出し側は通常 `app/lib/api/search.ts` の thin wrapper を経由する (`crossSearch` / `dbSearch` / `crossSearchByAst` / `dbSearchByAst` / `parseQuery` / `serializeAst`)。`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は wrapper を経由する。
 
 ### query 文字列の組み立て
 
@@ -134,6 +134,8 @@ BSI は次の前提のもとで動く。これらは ddbj-search-api リポジ�
 - `GET /db-portal/parse?q=...` が DSL を受け、AST (Output) を返す
 - `GET /db-portal/cross-search?q=...&topHits=...` が cross-DB のヒット数と top hits を返す
 - `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
+- `POST /db-portal/cross-search` / `POST /db-portal/search` が AST (Input) を body で受け、GET と同じ payload に加えて入力 AST のシリアライズ済み `dsl` を返す (`?q=` 同期用)
+- 同じ検索 path で GET (DSL `q`) と POST (AST body) の双方が同一形の hits / facet を返す
 - discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
 
 API 側の追加・変更は schema レベルで PR が起き、BSI 側は `npm run gen:api-types` で型を更新する。開発者が手動で diff を確認してから commit する。

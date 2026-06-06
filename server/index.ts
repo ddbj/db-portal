@@ -22,9 +22,21 @@ const env = parseServerEnv()
 const logger = createLogger(env.DB_PORTAL_LOG_LEVEL)
 const isProd = process.env.NODE_ENV === "production"
 
+// Express `trust proxy` accepts a hop count, a boolean, or a preset/IP list. The
+// app sits behind the NIG reverse proxy via a container port-map, so the socket
+// peer is the bridge gateway (not loopback); each env sets the value that makes
+// `req.ip` resolve to the real client (see docs/deployment.md).
+const parseTrustProxy = (value: string): boolean | number | string => {
+  if (value === "true") return true
+  if (value === "false") return false
+  const n = Number(value)
+
+  return Number.isInteger(n) && String(n) === value ? n : value
+}
+
 const app = express()
 app.disable("x-powered-by")
-app.set("trust proxy", "loopback")
+app.set("trust proxy", parseTrustProxy(env.DB_PORTAL_TRUST_PROXY))
 app.use(securityHeaders({ env: env.DB_PORTAL_ENV, searchApiUrl: env.DB_PORTAL_SEARCH_API_URL }))
 app.use(express.json({ limit: "1mb" }))
 
@@ -78,7 +90,10 @@ if (isProd) {
 }
 
 const servicesMirror = createServicesMirror(env, logger)
-void servicesMirror.init()
+// Load the services cache from disk before the news mirror starts: news syncs
+// drive servicesMirror.rebuildSource via onSourceSynced, and the disk load must
+// not overwrite a state already rebuilt by that path.
+await servicesMirror.init()
 const newsMirror = createNewsMirror(env, logger, {
   onSourceSynced: servicesMirror.rebuildSource,
 }).mirror

@@ -71,11 +71,7 @@ BSI は read-only で mutation API を持たないため、CSRF 防御は cookie
 
 ### Log redaction
 
-`server/lib/log.ts` の log helper で次のフィールドを `[REDACTED]` に置換する:
-
-- `accessToken` / `refreshToken` / `idToken`
-- `cookie` / `Cookie` (HTTP header)
-- `authorization` / `Authorization` (HTTP header)
+`server/lib/log.ts` の `redact` が credential を含む key (token 各種 / `cookie` / `set-cookie` / `authorization` / `apiKey` / `password` / `secret` 等) を `[REDACTED]` 化し、加えて `Bearer <token>` と JWT の値パターンを backstop で落とす。対象の全列挙と 2 層の詳細は `llm.md` § PII redaction が SSOT。
 
 session entry 全体を log に出すケースは作らない。debug 用に log するなら `sub` と `name` だけに絞る。
 
@@ -225,7 +221,7 @@ route loader からも user 情報を取れるよう、`loadAuth(request)` helpe
 
 #### BFF 宛先 origin の固定
 
-BFF の宛先 origin は `request.url` ではなく env `VITE_DB_PORTAL_PORTAL_ORIGIN` から取る (`portalOrigin()`、未設定なら throw)。これにより `Host:` ヘッダ改竄で `/api/me` 転送先 (= `sid` cookie の送出先) が外部 origin に逸れることを防ぐ。なお client IP に依存する機能 (LLM rate limit、`llm.md`) のため、リバースプロキシ越しの deploy では Express の `trust proxy` (`loopback` 設定済) と `X-Forwarded-For` の信頼ホスト制限を BFF (`server/`) で正しく行う。
+BFF の宛先 origin は `request.url` ではなく env `VITE_DB_PORTAL_PORTAL_ORIGIN` から取る (`portalOrigin()`、未設定なら throw)。これにより `Host:` ヘッダ改竄で `/api/me` 転送先 (= `sid` cookie の送出先) が外部 origin に逸れることを防ぐ。なお client IP に依存する機能 (LLM rate limit、`llm.md`) のため、リバースプロキシ越しの deploy では Express の `trust proxy` を env `DB_PORTAL_TRUST_PROXY` で上流に合わせて設定する (`llm.md` / `deployment.md`)。
 
 ## `<RequireAuth>` wrapper と URL helper
 

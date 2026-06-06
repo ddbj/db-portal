@@ -30,7 +30,7 @@ const isActive = (submission: Submission, e: FileEntry): boolean =>
   isKindEnabled(submission.preconditions.q1, submission.preconditions.q2, e.fileTypeKind)
 
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_anySubmission_isIdempotent",
+  "deriveFlowSteps_anySubmission_isDeterministic",
   (submission) => {
     expect(JSON.stringify(deriveFlowSteps(submission))).toBe(JSON.stringify(deriveFlowSteps(submission)))
   },

@@ -16,6 +16,9 @@ const numberFromString = (defaultValue: number) =>
 export const ServerEnv = z.object({
   DB_PORTAL_ENV: z.enum(["dev", "staging", "production"]).default("dev"),
   DB_PORTAL_APP_INTERNAL_PORT: numberFromString(3000),
+  // Express `trust proxy`: a hop count, boolean, or preset/IP list. Per-IP rate
+  // limiting and client-IP logging depend on this matching the actual upstream.
+  DB_PORTAL_TRUST_PROXY: z.string().trim().min(1).default("loopback"),
   DB_PORTAL_PORTAL_ORIGIN: z.string().url(),
   DB_PORTAL_LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   DB_PORTAL_DEFAULT_LANG: z.enum(["ja", "en"]).default("ja"),

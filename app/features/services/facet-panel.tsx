@@ -53,12 +53,16 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
           applied={applied}
           onClearAll={() =>
             onChange({ ...emptyServicesFacetState(), sort: facet.sort })}
+          appliedLabel={t("common.facet.applied")}
+          clearAllLabel={t("common.facet.clearAll")}
+          removeFilterLabel={t("common.facet.removeFilter")}
         />
       )}
       {options.categories.length > 0 && (
         <FacetGroup
           label={t("services.facet.category")}
           appliedCount={facet.category.length}
+          clearLabel={t("common.facet.clear")}
           {...(facet.category.length > 0
             ? { onClear: () => onChange(clearFacet(facet, "category")) }
             : {})}
@@ -78,6 +82,7 @@ export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps
         <FacetGroup
           label={t("services.facet.source")}
           appliedCount={facet.source.length}
+          clearLabel={t("common.facet.clear")}
           {...(facet.source.length > 0
             ? { onClear: () => onChange(clearFacet(facet, "source")) }
             : {})}

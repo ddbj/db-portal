@@ -89,6 +89,20 @@ describe("normalizeDbclsServices", () => {
     })
   })
 
+  test("drops a URL whose scheme is not http(s)", () => {
+    const json = JSON.stringify([
+      { services_name_en: "header" },
+      {
+        services_name_en: "Evil",
+        services_name_ja: "Evil",
+        URL: "javascript:alert(1)",
+        掲載: true,
+      },
+    ])
+    const items = normalizeDbclsServices(json, silentLogger)
+    expect(items.find((s) => s.id === "dbcls-evil")?.url).toBeUndefined()
+  })
+
   test("sets featuredTop only for Togo-prefixed names", () => {
     expect(byId("dbcls-togoid", dbcls())?.featuredTop).toBe(true)
     expect(byId("dbcls-gggenome", dbcls())?.featuredTop).toBe(false)
@@ -137,7 +151,15 @@ describe("helpers", () => {
   test("absolutizeDdbjUrl handles relative, absolute and invalid", () => {
     expect(absolutizeDdbjUrl("/dra/index.html")).toBe("https://www.ddbj.nig.ac.jp/dra/index.html")
     expect(absolutizeDdbjUrl("https://togovar.org/")).toBe("https://togovar.org/")
+    expect(absolutizeDdbjUrl("http://example.org/")).toBe("http://example.org/")
     expect(absolutizeDdbjUrl("   ")).toBeUndefined()
     expect(absolutizeDdbjUrl("not a url")).toBeUndefined()
+  })
+
+  test("absolutizeDdbjUrl rejects non-http(s) schemes", () => {
+    expect(absolutizeDdbjUrl("javascript:alert(1)")).toBeUndefined()
+    expect(absolutizeDdbjUrl("data:text/html,<script>alert(1)</script>")).toBeUndefined()
+    expect(absolutizeDdbjUrl("vbscript:msgbox(1)")).toBeUndefined()
+    expect(absolutizeDdbjUrl("file:///etc/passwd")).toBeUndefined()
   })
 })

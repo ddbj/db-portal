@@ -69,7 +69,7 @@ en 表示時に対応キーが en リソースに存在しない page では、r
 
 - データ fetch は `loader` で行う。SSR / CSR どちらでも fetch (`/api/*` 経由) を共通化する
 - `app` から `server` への直接 import は ESLint で禁止 (`no-restricted-paths`)。BFF の関数を呼びたい場合も `fetch(new URL("/api/...", request.url))` 経由
-- search-results route は `process.env.DB_PORTAL_SEARCH_API_URL` を直接読んで ddbj-search-api に問い合わせる (BFF を経由しない読み取り。`api-types.md`)
+- search-results route の loader は `process.env.DB_PORTAL_SEARCH_API_URL` を直接読み、ddbj-search-api に `?q` の parse と match-all facet seed だけを問い合わせる (BFF を経由しない読み取り)。hits 検索は client が保持する AST から実行する (React Query。`api-types.md` / `search.md`)
 - loader 内 throw は React Router の error boundary に流れる。404 は `throw new Response("Not Found", { status: 404 })` 形式
 - root loader は cookie / Accept-Language / `?lang=` から lang を解決し loaderData に乗せる (`i18n.md`)
 - `/api/set-lang` は唯一の action 持ち resource route。lang cookie 更新後 303 redirect で Referer に戻す

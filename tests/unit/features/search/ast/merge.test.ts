@@ -44,3 +44,19 @@ describe("mergeAstAnd", () => {
     expect(astEquals(merged, leaf)).toBe(true)
   })
 })
+
+describe("astEquals", () => {
+  test("astEquals_freeTextSameValueSamePhrase_isEqual", () => {
+    const a: ParseNode = { op: "free_text", value: "cancer", is_phrase: true }
+    const b: ParseNode = { op: "free_text", value: "cancer", is_phrase: true }
+    expect(astEquals(a, b)).toBe(true)
+  })
+
+  test("astEquals_freeTextSameValueDifferentPhrase_isNotEqual", () => {
+    // is_phrase changes the compiled query (phrase vs bare tokens), so toggling it
+    // must register as a change (else a re-search would be skipped).
+    const phrase: ParseNode = { op: "free_text", value: "single cell", is_phrase: true }
+    const bare: ParseNode = { op: "free_text", value: "single cell", is_phrase: false }
+    expect(astEquals(phrase, bare)).toBe(false)
+  })
+})

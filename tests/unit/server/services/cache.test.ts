@@ -54,13 +54,13 @@ afterEach(async () => {
 })
 
 describe("services cache store", () => {
-  test("starts empty", () => {
+  test("list_initial_isEmpty", () => {
     const cache = createCacheStore(dir, silentLogger)
     expect(cache.list()).toEqual([])
     expect(cache.getSyncShaForSource("ddbj")).toBeNull()
   })
 
-  test("keeps both sources and sorts by name", async () => {
+  test("list_bothSources_keepsAllSortedByName", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "sha-ddbj")
     await cache.replaceItemsForSource("dbcls", dbclsItems, "sha-dbcls")
@@ -69,7 +69,7 @@ describe("services cache store", () => {
     expect(cache.getSyncShaForSource("dbcls")).toBe("sha-dbcls")
   })
 
-  test("replaceItemsForSource replaces only that source", async () => {
+  test("replaceItemsForSource_oneSource_replacesOnlyThatSource", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "sha-ddbj")
     await cache.replaceItemsForSource("dbcls", dbclsItems, "sha-dbcls")
@@ -79,14 +79,14 @@ describe("services cache store", () => {
     expect(cache.getSyncShaForSource("dbcls")).toBe("sha-dbcls")
   })
 
-  test("filters by source", async () => {
+  test("list_sourceFilter_returnsOnlyMatchingSource", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "s")
     await cache.replaceItemsForSource("dbcls", dbclsItems, "s")
     expect(cache.list({ source: ["dbcls"] }).map((s) => s.id)).toEqual(["dbcls-togoid"])
   })
 
-  test("filters by category with OR semantics over multi-category items", async () => {
+  test("list_categoryFilter_orSemanticsOverMultiCategory", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "s")
     await cache.replaceItemsForSource("dbcls", dbclsItems, "s")
@@ -94,7 +94,7 @@ describe("services cache store", () => {
     expect(ids).toEqual(["dbcls-togoid", "ddbj-txsearch"])
   })
 
-  test("filters by featured", async () => {
+  test("list_featuredFilter_returnsOnlyFeatured", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "s")
     await cache.replaceItemsForSource("dbcls", dbclsItems, "s")
@@ -102,7 +102,7 @@ describe("services cache store", () => {
     expect(ids).toEqual(["dbcls-togoid", "ddbj-bioproject"])
   })
 
-  test("persists and reloads from disk", async () => {
+  test("initFromDisk_afterPersist_restoresState", async () => {
     const cache = createCacheStore(dir, silentLogger)
     await cache.replaceItemsForSource("ddbj", ddbjItems, "sha-ddbj")
     const reloaded = createCacheStore(dir, silentLogger)
@@ -111,19 +111,19 @@ describe("services cache store", () => {
     expect(reloaded.getSyncShaForSource("ddbj")).toBe("sha-ddbj")
   })
 
-  test("missing file loads empty", async () => {
+  test("loadCacheFromDisk_missingFile_loadsEmpty", async () => {
     const loaded = await loadCacheFromDisk(dir, silentLogger)
     expect(loaded.source).toBe("empty")
     expect(loaded.state.items).toEqual([])
   })
 
-  test("corrupt JSON loads empty", async () => {
+  test("loadCacheFromDisk_corruptJson_loadsEmpty", async () => {
     await writeFile(path.join(dir, "services.json"), "{ not json", "utf8")
     const loaded = await loadCacheFromDisk(dir, silentLogger)
     expect(loaded.source).toBe("empty")
   })
 
-  test("schema mismatch loads empty", async () => {
+  test("loadCacheFromDisk_schemaMismatch_loadsEmpty", async () => {
     await writeFile(
       path.join(dir, "services.json"),
       JSON.stringify({ schemaVersion: 99, lastSyncSha: {}, lastFetchedAt: "x", items: [] }),

@@ -6,6 +6,12 @@ export type Resources = {
     close: string
     detail: string
     countSuffix: string
+    facet: {
+      applied: string
+      clearAll: string
+      clear: string
+      removeFilter: string
+    }
   }
   errors: {
     notFound: {
@@ -445,8 +451,6 @@ export type Resources = {
     }
     facets: {
       heading: string
-      appliedClearAll: string
-      appliedPrefix: string
       organism: string
       organismTaxId: string
       submitter: string
@@ -519,10 +523,12 @@ export type Resources = {
         tenYears: string
         fromLabel: string
         toLabel: string
+        specify: string
+        fromAriaLabel: string
+        toAriaLabel: string
       }
       showMore: string
       showLess: string
-      clearGroup: string
       empty: string
     }
     sync: {
@@ -585,7 +591,6 @@ export type Resources = {
       fieldSelector: string
       predicateSelector: string
       facetGroup: string
-      removeFilter: string
       queryPreview: string
       resultsRegion: string
       assistantInput: string
@@ -602,6 +607,12 @@ export const ja: Resources = {
     close: "閉じる",
     detail: "詳細",
     countSuffix: "件",
+    facet: {
+      applied: "適用中",
+      clearAll: "すべて解除",
+      clear: "解除",
+      removeFilter: "フィルタを解除",
+    },
   },
   errors: {
     notFound: {
@@ -1096,8 +1107,6 @@ export const ja: Resources = {
     },
     facets: {
       heading: "絞り込み",
-      appliedClearAll: "すべて解除",
-      appliedPrefix: "適用中",
       organism: "Organism",
       organismTaxId: "Taxonomy ID",
       submitter: "Submitter",
@@ -1170,10 +1179,12 @@ export const ja: Resources = {
         tenYears: "10 年",
         fromLabel: "FROM",
         toLabel: "TO",
+        specify: "日付を指定",
+        fromAriaLabel: "開始日",
+        toAriaLabel: "終了日",
       },
       showMore: "さらに表示",
       showLess: "折りたたむ",
-      clearGroup: "解除",
       empty: "絞り込み条件はありません",
     },
     sync: {
@@ -1244,7 +1255,6 @@ export const ja: Resources = {
       fieldSelector: "検索フィールド",
       predicateSelector: "条件の演算子",
       facetGroup: "ファセット",
-      removeFilter: "フィルタを解除",
       queryPreview: "クエリプレビュー",
       resultsRegion: "検索結果",
       assistantInput: "AI 検索アシスタントへの入力",

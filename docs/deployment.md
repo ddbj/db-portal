@@ -50,7 +50,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
 
 `server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では **image build 時に** build した (`Dockerfile` の build stage が `npm run build`) `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。`build/` は image build 時に runtime stage へ焼き込むので、container 起動時に build は走らない。
 
-リバースプロキシ側 (NIG infra) は `X-Forwarded-Proto` / `X-Forwarded-Host` / `X-Forwarded-For` を付与する。Express の `trust proxy` は `loopback` を設定済 (`server/index.ts`)。許可しない上流からの `X-Forwarded-*` は無視される。
+リバースプロキシ側 (NIG infra) は `X-Forwarded-Proto` / `X-Forwarded-Host` / `X-Forwarded-For` を付与する。Express の `trust proxy` は env `DB_PORTAL_TRUST_PROXY` で設定する (`server/index.ts`)。app は container port-map 越しにプロキシの背後に居るため socket peer は loopback ではなく、`loopback` 固定だと `X-Forwarded-For` が無視され per-IP rate limit と client IP ログが壊れる。staging / production はリバースプロキシ 1 段なら `1` を設定し、実環境で `req.ip` が client IP に解決されることを確認する (ずれる場合はホップ数を調整)。
 
 ## 起動と停止
 

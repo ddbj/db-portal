@@ -10,20 +10,24 @@ export type AppliedFilter = {
 type AppliedFiltersProps = {
   applied: readonly AppliedFilter[]
   onClearAll?: () => void
+  appliedLabel?: string
   clearAllLabel?: string
+  removeFilterLabel?: string
 }
 
 export const AppliedFilters = ({
   applied,
   onClearAll,
+  appliedLabel = "適用中",
   clearAllLabel = "すべて解除",
+  removeFilterLabel = "を解除",
 }: AppliedFiltersProps) => {
   if (applied.length === 0) return null
 
   return (
     <div className="pb-3 border-b border-border-soft">
       <div className="flex items-center justify-between mb-2.5">
-        <Label>適用中 · {applied.length}</Label>
+        <Label>{appliedLabel} · {applied.length}</Label>
         {onClearAll && (
           <button
             type="button"
@@ -49,7 +53,7 @@ export const AppliedFilters = ({
             {f.onClear && (
               <button
                 type="button"
-                aria-label={`${f.label}: ${f.value} を解除`}
+                aria-label={`${f.label}: ${f.value} ${removeFilterLabel}`}
                 onClick={f.onClear}
                 className="px-2 bg-transparent border-0 border-l border-border-soft cursor-pointer text-ink-soft inline-flex items-center justify-center hover:text-ink"
               >

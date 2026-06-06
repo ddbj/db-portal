@@ -53,15 +53,26 @@ export const nameSlug = (name: string): string =>
 export const itemId = (source: ServiceItem["source"], name: string): string =>
   `${source}-${nameSlug(name)}`
 
+const HTTP_SCHEMES = new Set(["http:", "https:"])
+
+// Mirrored source content is only semi-trusted: a `javascript:`/`data:` href would
+// pass `new URL()` and reach an <a href> in the client, so allow only http(s).
+const safeHttpUrl = (candidate: string): string | undefined => {
+  try {
+    const url = new URL(candidate)
+
+    return HTTP_SCHEMES.has(url.protocol) ? url.toString() : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export const absolutizeDdbjUrl = (href: string): string | undefined => {
   const trimmed = href.trim()
   if (trimmed === "") return undefined
   const candidate = trimmed.startsWith("/") ? `${DDBJ_BASE_URL}${trimmed}` : trimmed
-  try {
-    return new URL(candidate).toString()
-  } catch {
-    return undefined
-  }
+
+  return safeHttpUrl(candidate)
 }
 
 const dedupeCategories = (categories: ServiceCategory[]): ServiceCategory[] => {
@@ -243,12 +254,8 @@ export const normalizeDbclsServices = (jsonText: string, logger: Logger): Servic
     const href = entry.URL?.trim()
     let url: { ja?: string; en?: string } | undefined
     if (href) {
-      try {
-        const normalized = new URL(href).toString()
-        url = { ja: normalized, en: normalized }
-      } catch {
-        url = undefined
-      }
+      const normalized = safeHttpUrl(href)
+      url = normalized ? { ja: normalized, en: normalized } : undefined
     }
 
     items.push({

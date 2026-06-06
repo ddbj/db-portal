@@ -8,6 +8,7 @@ type FacetGroupProps = {
   label: string
   appliedCount?: number
   onClear?: () => void
+  clearLabel?: string
   showMore?: boolean
   showMoreLabel?: string
   expanded?: boolean
@@ -19,6 +20,7 @@ export const FacetGroup = ({
   label,
   appliedCount = 0,
   onClear,
+  clearLabel = "解除",
   showMore = false,
   showMoreLabel = "さらに表示",
   expanded = false,
@@ -34,7 +36,7 @@ export const FacetGroup = ({
             onClick={onClear}
             className="bg-transparent border-0 text-brand text-fs-micro font-semibold cursor-pointer p-0 font-sans"
           >
-            解除
+            {clearLabel}
           </button>
         )
       }

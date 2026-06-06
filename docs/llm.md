@@ -260,7 +260,7 @@ client は HTTP status が ok でないことを検知し、他のエラーと�
 
 ### client IP の取得
 
-`server/index.ts` で `trust proxy` を `loopback` に設定済。staging / production の reverse proxy 設定で `X-Forwarded-For` の信頼ホストを正しく制限する (`auth.md` の安全性前提と同じ)。
+Express の `trust proxy` は env `DB_PORTAL_TRUST_PROXY` で環境ごとに設定する (`server/index.ts`)。app は container port-map 越しに NIG リバースプロキシの背後に居るため socket peer は loopback ではない。`loopback` 固定だと `X-Forwarded-For` が無視され、per-IP rate limit が全 client 共有の単一 bucket に退化する。staging / production は上流に合わせた値 (リバースプロキシ 1 段なら `1`) を設定し、実環境で `req.ip` が client IP に解決されるか確認する (`deployment.md` / `auth.md`)。
 
 ## PII redaction
 

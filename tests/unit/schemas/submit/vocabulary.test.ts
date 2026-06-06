@@ -14,41 +14,23 @@ import {
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "../../../../app/schemas/submit"
 
-describe("vocabulary enum option counts", () => {
-  test("FileTypeKind_hasElevenOptions", () => {
-    expect(FileTypeKind.options).toHaveLength(11)
+describe("vocabulary enum option invariants", () => {
+  // Non-empty + unique are the real invariants (a duplicate or empty domain is a
+  // bug); exact counts are change-detectors that fire on benign vocab growth.
+  test.each<[string, readonly string[]]>([
+    ["FileTypeKind", FileTypeKind.options],
+    ["Q1", Q1.options],
+    ["Q2", Q2.options],
+    ["GroupType", GroupType.options],
+    ["DataForm", DataForm.options],
+    ["ChipAxis", ChipAxis.options],
+  ])("%s_optionsAreNonEmptyAndUnique", (_name, options) => {
+    expect(options.length).toBeGreaterThan(0)
+    expect(new Set(options).size).toBe(options.length)
   })
 
-  test("FileTypeKind_optionsAreUnique", () => {
-    expect(new Set(FileTypeKind.options).size).toBe(FileTypeKind.options.length)
-  })
-
-  test("Q1_hasThreeOptions", () => {
-    expect(Q1.options).toHaveLength(3)
-  })
-
-  test("Q2_hasFiveOptions", () => {
-    expect(Q2.options).toHaveLength(5)
-  })
-
-  test("GroupType_hasThirteenOptions", () => {
-    expect(GroupType.options).toHaveLength(13)
-  })
-
-  test("GroupType_optionsAreUnique", () => {
-    expect(new Set(GroupType.options).size).toBe(GroupType.options.length)
-  })
-
-  test("Access_hasTwoOptions", () => {
+  test("Access_hasExactlyOpenAndRestricted", () => {
     expect(Access.options).toEqual(["open", "restricted"])
-  })
-
-  test("DataForm_hasEightOptions", () => {
-    expect(DataForm.options).toHaveLength(8)
-  })
-
-  test("ChipAxis_hasThreeOptions", () => {
-    expect(ChipAxis.options).toHaveLength(3)
   })
 })
 
