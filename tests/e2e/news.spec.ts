@@ -110,14 +110,14 @@ test.describe("News Domain", () => {
 
     // AppliedFilters chip が 2 つ (種別: データ公開 / 年: 2024)
     await expect(
-      page.getByRole("button", { name: "種別: データ公開 を解除" }),
+      page.getByRole("button", { name: "種別: データ公開 フィルタを解除" }),
     ).toBeVisible()
     await expect(
-      page.getByRole("button", { name: "年: 2024 を解除" }),
+      page.getByRole("button", { name: "年: 2024 フィルタを解除" }),
     ).toBeVisible()
 
     // 年 chip 解除で year param が消え、category は残る
-    await page.getByRole("button", { name: "年: 2024 を解除" }).click()
+    await page.getByRole("button", { name: "年: 2024 フィルタを解除" }).click()
     await expect(page).not.toHaveURL(/year=/, { timeout: 10_000 })
     await expect(page).toHaveURL(/category=data-release/)
   })
@@ -191,7 +191,7 @@ test.describe("News Domain", () => {
     }
 
     await expect(
-      page.getByRole("button", { name: "種別: データ公開 を解除" }),
+      page.getByRole("button", { name: "種別: データ公開 フィルタを解除" }),
     ).toBeVisible()
 
     // OFF に戻すと総件数が復元、AppliedFilters が消える
@@ -201,7 +201,7 @@ test.describe("News Domain", () => {
     // 総件数が baseTotal へ戻りきるまで poll する (facet on→off の round-trip 不変量)。
     await expect.poll(() => readCountTotal(count), { timeout: 15_000 }).toBe(baseTotal)
     await expect(
-      page.getByRole("button", { name: "種別: データ公開 を解除" }),
+      page.getByRole("button", { name: "種別: データ公開 フィルタを解除" }),
     ).toHaveCount(0)
   })
 
