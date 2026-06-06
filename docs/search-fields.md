@@ -33,7 +33,7 @@ field は **全 DB 共通** (converter common mapping) と **DB ごと** (type-s
 
 ES common mapping (全 type に merge) 起点。「横断」= cross-DB の `q` に載せられるか (DSL Tier1/2 = 可、Tier3 = per-DB のみ)。
 
-単一 DB 指定 (`db=...`) では、その DB に実在しない field を `q` に載せると API が `field-not-available-for-db` (422) を返す。共通 field でこれに該当するのは条件付き merge の `publication` のみ (biosample に publication nested が不在なため `db=biosample` で 422)。Tier3 field は所属 DB (§ DB ごと field) 以外で 422、横断 (cross) で Tier3 を載せた場合は別エラー `field-not-available-in-cross-db` (400)。merge される DB は各行の備考、Tier3 の所属 DB は § DB ごと field を参照。db-portal の builder / filter は各 scope で有効な field しか供給しないため、通常これらは踏まない。
+単一 DB 指定 (`db=...`) では、その DB に実在しない field を `q` に載せると API が `field-not-available-for-db` (422) を返す。共通 field でこれに該当するのは条件付き merge の `publication` のみ (biosample に publication nested が不在なため `db=biosample` で 422)。Tier3 field は所属 DB (§ DB ごと field) 以外で 422、横断 (cross) で Tier3 を載せた場合は別エラー `field-not-available-in-cross-db` (400)。merge される DB は各行の備考、Tier3 の所属 DB は § DB ごと field を参照。BSI の builder / filter は各 scope で有効な field しか供給しないため、通常これらは踏まない。
 
 op / type は DSL field type から機械導出する ([§ DSL field type 規約](#dsl-field-type-規約))。どの scope の Sidebar / Advanced builder / facet にどの field が出るかは `field-registry.ts` (`SCOPE_FIELDS`) が SSOT で、その表示規則は `search.md` § scope 別の filter 構成 を参照。
 

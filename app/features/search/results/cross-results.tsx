@@ -17,7 +17,7 @@ type CrossResultsProps = {
 type DbEntry = CrossSearchResponse["databases"][number]
 
 // Card display order for the cross-DB grid. The API returns databases in its
-// own fixed order; the portal presents them DDBJ-first.
+// own fixed order; BSI presents them DDBJ-first.
 export const CARD_ORDER: readonly DbSlug[] = [
   "trad",
   "bioproject",

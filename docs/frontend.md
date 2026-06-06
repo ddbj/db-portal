@@ -189,7 +189,7 @@ Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、
 
 ### ServiceContent
 
-portal 内 navigation の Service tiles (トップ左 main の primary tiles) と submit feature の外部 CTA リンクを 1 collection に集約する。外部サービス一覧 (DDBJ / DBCLS の各サービス) は本 collection ではなく services mirror が SSOT (`services.md`)。
+BSI 内 navigation の Service tiles (トップ左 main の primary tiles) と submit feature の外部 CTA リンクを 1 collection に集約する。外部サービス一覧 (DDBJ / DBCLS の各サービス) は本 collection ではなく services mirror が SSOT (`services.md`)。
 
 フィールド一覧:
 
@@ -211,7 +211,7 @@ portal 内 navigation の Service tiles (トップ左 main の primary tiles) �
 
 | category | 追加フィールド | 表示位置 |
 |---|---|---|
-| `primary-service` | `order` (非負整数) | トップの Service tile grid (左 main 上段、portal 内 navigation) |
+| `primary-service` | `order` (非負整数) | トップの Service tile grid (左 main 上段、BSI 内 navigation) |
 
 `order` は表示順 (各カテゴリ内、手動管理)。primary-service は `service-icon.tsx` の SVG を `id` で引く。外部サービスの top page 掲載は collection ではなく services mirror の `featuredTop` で決まる (`services.md`)。
 

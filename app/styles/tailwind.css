@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* DDBJ ポータル デザイントークン (Tailwind v4 @theme).
+/* BSI デザイントークン (Tailwind v4 @theme).
  *
  * 本ファイルがデザインシステムの値の SSOT。utility class は Tailwind v4 が
  * @theme 宣言から自動生成する (--color-brand → bg-brand / text-brand / border-brand、

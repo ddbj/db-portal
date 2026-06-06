@@ -20,7 +20,7 @@ export const DDBJ_FEATURED_NAMES: ReadonlySet<string> = new Set([
 export const DBCLS_FEATURED_PREFIX = "Togo"
 
 /**
- * DBCLS の upstream 表示名を portal 側で上書きするマップ (key = upstream の `services_name_en`)。
+ * DBCLS の upstream 表示名を BSI 側で上書きするマップ (key = upstream の `services_name_en`)。
  * upstream の名前が冗長 / 和名表記のものを簡潔な表示名に揃える。
  */
 export const DBCLS_NAME_OVERRIDES: Readonly<Record<string, { ja: string; en: string }>> = {

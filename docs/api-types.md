@@ -1,15 +1,15 @@
 # API Types
 
-ddbj-search-api との型連携を 1 元化し、portal 側で AST / DSL の二重実装を持たないための運用ルール。`architecture.md` のデータフロー全体像も合わせて参照する。
+ddbj-search-api との型連携を 1 元化し、BSI 側で AST / DSL の二重実装を持たないための運用ルール。`architecture.md` のデータフロー全体像も合わせて参照する。
 
 ## 方針
 
 - `app/lib/api/openapi-types.ts` は **ddbj-search-api の `openapi.json` から `openapi-typescript` で自動生成** する
 - 生成物は git commit する (CI で diff check を回すため)
-- portal 側に手書きの DSL/AST 型を持たない。検索式の構造表現は API レスポンス型 (`ParseNode` alias) に乗せる
-- AST → DSL のシリアライズはサーバへ委譲する (`POST /db-portal/serialize`)。portal 側に thin serializer を持たない
+- BSI 側に手書きの DSL/AST 型を持たない。検索式の構造表現は API レスポンス型 (`ParseNode` alias) に乗せる
+- AST → DSL のシリアライズはサーバへ委譲する (`POST /db-portal/serialize`)。BSI 側に thin serializer を持たない
 
-これにより grammar の二重保守 (portal 側と API 側) を完全に排除する。
+これにより grammar の二重保守 (BSI 側と API 側) を完全に排除する。
 
 ## 生成スクリプト
 
@@ -118,7 +118,7 @@ git diff app/lib/api/openapi-types.ts
 
 | チェック | 何を保証するか |
 |---|---|
-| `tsc --noEmit --strict` | 生成型と portal コードの整合 |
+| `tsc --noEmit --strict` | 生成型と BSI コードの整合 |
 | `npm run lint` | `lib` zone 制約 (他 zone を import していないか) |
 | Unit test (`tests/unit/lib/api/`) | API client wrapper の挙動 (`encode-query` / `APIError` 等) |
 | PBT (`tests/pbt/features/search/`) | AST round-trip / URL serialize 不変量 (`ast-roundtrip` / `url-symmetry` / `merge-laws` / `advanced-reducer`) |
@@ -127,7 +127,7 @@ round-trip の PBT は msw で `/db-portal/serialize` と `/db-portal/parse` を
 
 ## ddbj-search-api 側の前提
 
-portal は次の前提のもとで動く。これらは ddbj-search-api リポジトリ側の責任。
+BSI は次の前提のもとで動く。これらは ddbj-search-api リポジトリ側の責任。
 
 - `openapi.json` が `--strict` な `openapi-typescript` 生成を通る (recursive union / alias / multi-content-type を扱えること)
 - `POST /db-portal/serialize` が AST (Input) を受け、DSL 文字列を返す
@@ -136,4 +136,4 @@ portal は次の前提のもとで動く。これらは ddbj-search-api リポ�
 - `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
 - discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
 
-API 側の追加・変更は schema レベルで PR が起き、portal 側は `npm run gen:api-types` で型を更新する。開発者が手動で diff を確認してから commit する。
+API 側の追加・変更は schema レベルで PR が起き、BSI 側は `npm run gen:api-types` で型を更新する。開発者が手動で diff を確認してから commit する。

@@ -38,7 +38,7 @@ XSS で token が漏れない (JS から到達できない) こと、Safari ITP 
 - Header にユーザー名表示 (`GET /api/me`)
 - `useAuth` hook + `<RequireAuth>` wrapper を構造として提供
 
-portal は read-only で mutation API を持たないため、CSRF 防御は cookie の `SameSite=Lax` のみで足りる。
+BSI は read-only で mutation API を持たないため、CSRF 防御は cookie の `SameSite=Lax` のみで足りる。
 
 ## Cookie 仕様
 
@@ -221,7 +221,7 @@ Cookie: sid=<opaque>
 
 route loader からも user 情報を取れるよう、`loadAuth(request)` helper を `app/lib/auth/ssr-loader.ts` に置く。loader 内で受け取った `Request` の `Cookie` ヘッダを BFF `/api/me` に転送し、200 なら `UserInfo`、401 なら `null`、5xx は throw する。
 
-`loadAuth` は `app` zone から `fetch(new URL("/api/me", <portal origin>))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md`)。SSR 初期描画時に Header のユーザー名表示が即座に解決する。
+`loadAuth` は `app` zone から `fetch(new URL("/api/me", <BSI 自身の origin>))` で BFF を叩く形を取り、`app → server` 直接 import を避ける (`architecture.md`)。SSR 初期描画時に Header のユーザー名表示が即座に解決する。
 
 #### BFF 宛先 origin の固定
 
@@ -243,7 +243,7 @@ Login / Logout のリダイレクトで `returnTo` を保持する際、現在 U
 |---|---|
 | `DB_PORTAL_KEYCLOAK_REALM_URL` | Keycloak realm URL (env ごとに staging realm / production realm を指す) |
 | `DB_PORTAL_KEYCLOAK_CLIENT_ID` | クライアント ID (env ごとに dev / staging / production の client を指す) |
-| `DB_PORTAL_PORTAL_ORIGIN` | redirect_uri 計算に使う portal origin |
+| `DB_PORTAL_PORTAL_ORIGIN` | redirect_uri 計算に使う BSI 自身の origin |
 | `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | session store の sliding TTL (秒)。Keycloak `Client Session Idle` と揃える |
 
 クライアントシークレットは PKCE で不要 (`public` client 設定)。Keycloak client は `access type: public`、PKCE 強制で運用する。
@@ -280,17 +280,17 @@ dev / staging は同じ realm を共有し、client を env 別に分ける (テ
 
 ### 設定値の補足
 
-- **PKCE 強制**: Access Type `public` + Standard Flow + Code Challenge Method `S256` を組み合わせ、PKCE なしの code 交換を Keycloak 側で拒否する (portal BFF は常に `code_verifier` を送出するので、設定ミスや別 client による悪用に対する防護層)
+- **PKCE 強制**: Access Type `public` + Standard Flow + Code Challenge Method `S256` を組み合わせ、PKCE なしの code 交換を Keycloak 側で拒否する (BSI BFF は常に `code_verifier` を送出するので、設定ミスや別 client による悪用に対する防護層)
 - **Redirect URI の運用**: ワイルドカード `*` は禁止。各環境は実 origin (`<DB_PORTAL_PORTAL_ORIGIN>`) を完全一致で登録する。production client の redirect URI に staging origin を含めない (逆も同様、production の `code` が staging に流れて悪用されることを防ぐ)
-- **Web Origins / CORS**: BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には portal 自身の origin のみ登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない
+- **Web Origins / CORS**: BFF が Keycloak を直接叩くため、browser → Keycloak の直接 CORS 通信は発生しない。Web Origins には BSI 自身の origin のみ登録する。silent renew (iframe) は採用していないので 3rd-party cookie の懸念もない
 
 ### Token 寿命
 
-portal は `id_token` のみを保持する (logout 時の `id_token_hint` に使用)。Keycloak の Access Token / Refresh Token Lifespan は portal の動作に影響しないため、Keycloak realm 全体のポリシーに従う。portal session の実効 TTL は `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で独立に管理する。
+BSI は `id_token` のみを保持する (logout 時の `id_token_hint` に使用)。Keycloak の Access Token / Refresh Token Lifespan は BSI の動作に影響しないため、Keycloak realm 全体のポリシーに従う。BSI session の実効 TTL は `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で独立に管理する。
 
 ### Scope 設定
 
-portal が要求する scope:
+BSI が要求する scope:
 
 | Scope | 用途 |
 |---|---|
@@ -302,19 +302,19 @@ portal が要求する scope:
 
 ### e2e テスト用ユーザー
 
-staging realm に portal e2e 用テストユーザーを 1 件作成し、`DB_PORTAL_E2E_USER_PASSWORD` env として password をリリースマネージャの作業環境で保持する。`npm run test:e2e` を回すときに渡す。production realm にはテストユーザーを作らない。
+staging realm に BSI e2e 用テストユーザーを 1 件作成し、`DB_PORTAL_E2E_USER_PASSWORD` env として password をリリースマネージャの作業環境で保持する。`npm run test:e2e` を回すときに渡す。production realm にはテストユーザーを作らない。
 
 ### 設定変更時のチェックリスト
 
 Keycloak 設定を変更したら以下を確認:
 
-- [ ] portal `/api/auth/login` → Keycloak authorize URL に 302 する
+- [ ] BSI `/api/auth/login` → Keycloak authorize URL に 302 する
 - [ ] Keycloak で正しい credential を入力すると `/api/auth/callback` に戻ってくる
 - [ ] Set-Cookie: sid が `HttpOnly; Secure; SameSite=Lax; Path=/` で発行される (production)
 - [ ] `/api/me` が 200 + userInfo を返す
 - [ ] `/api/auth/logout` → Keycloak `end_session_endpoint` に 302 する
 - [ ] logout 後の `/api/me` が 401 になる
-- [ ] redirect URI に portal 以外の origin が登録されていない
+- [ ] redirect URI に BSI 以外の origin が登録されていない
 - [ ] PKCE 強制 `S256` が ON になっている
 - [ ] Access Type が `public` のまま
 

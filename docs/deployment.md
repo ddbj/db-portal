@@ -21,7 +21,7 @@ base が production 形なので、staging / production は `compose.dev.yml` �
 
 env ファイル (`env.dev` / `env.staging` / `env.production`) は git 管理。production 側の secret は `CHANGE_ME` プレースホルダで commit し、実値は deploy 先 host 上の `.env.<env>.local` を起動時に `.env` に merge して上書きする (`.gitignore` の `.env.*.local` で実値は git に出ない)。
 
-LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、GPU node に portal リポジトリを独立 checkout し `llm/` で起動する。staging / production の app は同一 vLLM インスタンスを共有する。具体的な host / path は git 管理外、構成・起動・運用は `llm.md` (SSOT) と `llm/README.md`。
+LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、GPU node に BSI リポジトリを独立 checkout し `llm/` で起動する。staging / production の app は同一 vLLM インスタンスを共有する。具体的な host / path は git 管理外、構成・起動・運用は `llm.md` (SSOT) と `llm/README.md`。
 
 ## 起動アーキ (production / staging 共通)
 
@@ -56,7 +56,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
 
 - production / staging の `command` は `tsx server/index.ts` (npm を介さない)。node が PID1 (`init: true` の tini) の直接の子になり、`SIGTERM` が node に届く (npm を挟むと signal が node に forward されず `SIGKILL` timeout まで延びる)
 - **graceful shutdown**。`server/index.ts` は `SIGTERM` / `SIGINT` で背景 timer (news mirror / LLM health monitor) を止め、idle keep-alive を落とし、in-flight が drain した時点で exit する (`server_shutdown` log)。長命接続 (LLM SSE) は grace 期間内に閉じなければ force-exit
-- reverse proxy の upstream は固定 (NIG infra、portal 側から切替不可) なので、deploy は同一 host port への in-place swap。旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる
+- reverse proxy の upstream は固定 (NIG infra、BSI 側から切替不可) なので、deploy は同一 host port への in-place swap。旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる
 - session は in-memory なので swap で消失する (ユーザは再ログイン)。HTTP 可用性とは別問題
 
 ## リリースフロー
@@ -81,7 +81,7 @@ deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行し�
 
 ### openapi.json 差分検知 (手動 / リリース直前)
 
-production の `openapi.json` と portal が知っている型 (`app/lib/api/openapi-types.ts`) の差分は、リリース直前に production env で `npm run gen:api-types` を再実行して手動で確認する。差分があれば該当 API 変更を portal 側に反映してから release tag を打つ。
+production の `openapi.json` と BSI が知っている型 (`app/lib/api/openapi-types.ts`) の差分は、リリース直前に production env で `npm run gen:api-types` を再実行して手動で確認する。差分があれば該当 API 変更を BSI 側に反映してから release tag を打つ。
 
 ## 起動シーケンス
 
@@ -207,7 +207,7 @@ mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
 
 症状: 操作中に `/api/me` が `401` を返し、UI が再ログインを促す。
 
-session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。portal は id_token のみを保持し token refresh フローを持たないため (`auth.md`)、session 期限切れ・portal 再起動・Keycloak SSO session idle 超過のいずれでも単に session が破棄されて `401` になる。これは仕様。
+session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。BSI は id_token のみを保持し token refresh フローを持たないため (`auth.md`)、session 期限切れ・BSI 再起動・Keycloak SSO session idle 超過のいずれでも単に session が破棄されて `401` になる。これは仕様。
 
 - 「思ったより早く切れる」: `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` env で延長 (例 7200 = 2h)。Keycloak の `Client Session Idle` も同時に揃えること (短い方で実効 TTL が決まるため)
 - 「すべての user が同時に切れた」: server が再起動したため (in-memory session、永続化なし)。deploy timing と log の `server_shutdown` / `server_listening` 時刻を突合
@@ -220,7 +220,7 @@ News cache 配下は単一 `news.json` (数 MB 程度) のみ。schema mismatch 
 
 CSP の仕様詳細 (header 値 / nonce 生成) は `architecture.md` の「非機能要件 / セキュリティ headers」 が SSOT。違反の典型:
 
-- 新規導入した 3rd-party script (CDN font 等) が CSP ホワイトリストに無い (portal は外部 CDN を使わない方針、新規追加していないか確認)
+- 新規導入した 3rd-party script (CDN font 等) が CSP ホワイトリストに無い (BSI は外部 CDN を使わない方針、新規追加していないか確認)
 - inline `<script>` / `<style>` に nonce が付いていない (RR の `<Scripts nonce={nonce} />` で hydration script に nonce が載っているか確認)
 
 ## Secret rotation

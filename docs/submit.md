@@ -1,6 +1,6 @@
 # 登録ナビゲーション (submit)
 
-DDBJ の登録窓口は service ごとに分かれており、利用者は最初に「自分のデータの DB は何か」を選ばされる構造になっている。submit ナビゲーションは、利用者が手元のデータの性質を答えるだけで、登録経路 (どの登録先に何を出すか) を portal 側で導出して可視化する UI である。
+DDBJ の登録窓口は service ごとに分かれており、利用者は最初に「自分のデータの DB は何か」を選ばされる構造になっている。submit ナビゲーションは、利用者が手元のデータの性質を答えるだけで、登録経路 (どの登録先に何を出すか) を BSI 側で導出して可視化する UI である。
 
 ---
 
@@ -14,7 +14,7 @@ submit ナビゲーションはこの状態を出発点とする:
 
 - 利用者は前段で「登録種別」「生物ドメイン」を答える
 - 続いて「手元にあるデータ種別」を **on/off で選ぶ**。各種別は前段 Q1/Q2 で enable/disable される
-- portal が controlled vocabulary と純粋関数で「どの登録先に何を出すか」を導出する
+- BSI が controlled vocabulary と純粋関数で「どの登録先に何を出すか」を導出する
 - 利用者は導出結果 (Step カード) を見て、各 Step の Intra-DB Tag (DDBJ の Division、BioSample の生物種・package、DRA Library Strategy 等) を埋めていく
 
 この向きで「service の存在は知らなくて良い」状態を担保する。
@@ -375,7 +375,7 @@ NSSS が**対応できず MSS に回す**条件 (いずれか 1 つでも該当)
 - **規模**: 1 配列 ≥ 500 kb / 総配列数 > 100 / 1 配列あたり Feature ≥ 30
 - **完成度・連携**: 完全長ゲノム・染色体・オルガネラ/ウイルスゲノム・プラスミド全長、または BioProject/BioSample を DBLINK に記載するもの (メタゲノム・全長ゲノム同一菌株由来など)
 
-db-portal は実ファイルを読まない navigator なので、配列長・配列数・Feature 数の厳密判定はできない。種別 (上記の NSSS 非対応リスト) と「完成ゲノムか否か」で振り分け、規模に依存する境界は Step カードの note で「小規模・非完成なら NSSS Web 登録、それ以外は MSS」と案内する。
+BSI は実ファイルを読まない navigator なので、配列長・配列数・Feature 数の厳密判定はできない。種別 (上記の NSSS 非対応リスト) と「完成ゲノムか否か」で振り分け、規模に依存する境界は Step カードの note で「小規模・非完成なら NSSS Web 登録、それ以外は MSS」と案内する。
 
 ### JGA は「ヒト個人」限定
 
@@ -427,7 +427,7 @@ canonical 1 ソース (DDBJ 由来、内部整合を機械検証)
 - **値域 enum と表示テキストを分離**: enum (`vocabulary.ts` / `service.ts`) = flow-rules/reducer/PBT が参照する唯一の境界・人間レビュー対象。付帯情報 = content モジュール。翻訳 = i18n
 - **更新運用の分離**: enum 値の増減 = flow-rules/PBT に波及する意味論変更 → 人間レビュー必須ゲート (parity test が落として知らせる)。概要・区分の変更 = 説明テキスト → content/i18n 修正で低摩擦
 - **登録フロー詳細カードの service 別文言** (外部ウィザード手順の要約 `wizardSteps`・準備物 `prepare`・静的 `gotcha`・発行 ID 予告 `issuedNote`) は `app/content/submit-routing/cards.ts` の `SUBMIT_CARDS` (service ごとの bilingual データモジュール、`Record<Service, …>` で網羅を型固定) に集約する。カードの汎用ラベル (見出し・役割タグ) は i18n、service 名・概要は i18n (`submit.flow.<service>`)、誘導 URL と source は content/services に置く。文言は DDBJ 公式の登録手順 (`ddbj/www` の各 service `submission*.md` / `web-submission*.md`) を根拠とし、ja/en 揃わない文言は出さない
-- DDBJ 由来データと現 portal の差分は `## 設計判断` に記録する
+- DDBJ 由来データと現 BSI の差分は `## 設計判断` に記録する
 
 ---
 
@@ -451,7 +451,7 @@ submit ナビが採る登録先導出の設計判断とその公式根拠・ト�
 - **`assembly-form` は MAG/SAG の `ddbj-trad` 分岐の軸**: `assembly-form` が routing で意味を持つのは `mag` / `sag` の値による `ddbj-trad` (ENV/SAG ゲノムエントリ) への分岐だけである。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj-trad` 行きで出る service を変えないため、これらは `assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う。チェーン内の段階 (生リード/primary/binned/MAG) は持たない (典型ケースに絞る)
 - **第三者 (TPA) は提出単位 (Q1) で扱い種別ごとには問わない**: 配列系の TPA → `ddbj-trad` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)、メタボローム再解析 → `metabobank`。TPA か否かは 1 提出まるごとで決まる軸なので前段 Q1 だけで判定し、種別ごとの `provenance` 質問・chip は持たない (Q1 と二重に問わない)。種別で割れるため Q1 = 第三者 で振り分け不能な種別は disable される
 - **`assembly-annotation` は 1 step**: 配列 + アノテーションは MSS の 1 ファイルペアであり、配列登録 step とアノテ step に分けない
-- **登録フロー詳細カードは「外部ウィザードの予告」とする**: 登録は外部ページで完結し portal は代行しないため、各 `FlowStepCard` は外部の登録ウィザード (`ddbj/www` の `submission*.md` 等) で何をどの順で行うかを予告し、依存ゲート (例 JGA は Policy 承認後にアップロード) を伝える役割に徹する。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
+- **登録フロー詳細カードは「外部ウィザードの予告」とする**: 登録は外部ページで完結し BSI は代行しないため、各 `FlowStepCard` は外部の登録ウィザード (`ddbj/www` の `submission*.md` 等) で何をどの順で行うかを予告し、依存ゲート (例 JGA は Policy 承認後にアップロード) を伝える役割に徹する。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
 
 ---
 

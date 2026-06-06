@@ -3,8 +3,8 @@ import { isFieldNotAvailableForDb, pruneUnavailableFields } from "./field-availa
 
 // The BFF talks to ddbj-search-api for the two grammar operations the assistant
 // needs: validate the model's DSL into an AST (parse), and turn the current
-// builder AST into a DSL string to seed append mode (serialize). The portal
-// keeps no DSL grammar of its own (search.md § portal 側に thin serializer を持たない),
+// builder AST into a DSL string to seed append mode (serialize). BSI
+// keeps no DSL grammar of its own (search.md § BSI 側に thin serializer を持たない),
 // so the DB a cross-context query resolves to is taken from the parse API's own
 // "field-not-available-in-cross-db" verdict rather than a duplicated field map.
 

@@ -1,6 +1,6 @@
 # News
 
-`ddbj/www` と `dbcls/website` の 2 source を BFF が mirror し、全件 disk cache を保持する。ブラウザは BFF の `/api/news` だけを叩く。BFF は upstream を git で local clone し、定期的に `git pull` で更新する (GitHub REST API は使わない)。portal が GitHub の rate limit や CORS を表に出さない。
+`ddbj/www` と `dbcls/website` の 2 source を BFF が mirror し、全件 disk cache を保持する。ブラウザは BFF の `/api/news` だけを叩く。BFF は upstream を git で local clone し、定期的に `git pull` で更新する (GitHub REST API は使わない)。BSI が GitHub の rate limit や CORS を表に出さない。
 
 データフロー全体図は `architecture.md` を参照する。
 
@@ -41,7 +41,7 @@ Zod schema (`app/schemas/api-bff/news.ts`) が SSOT。BFF (`server/news/`) と c
 
 file 名から slug を取り出す規則は source ごとに異なり、`pair.ts` の `slugFromFilename` が SSOT。同一 slug の ja / en を 1 件の `NewsItem` にペアリングし、片方の言語しか無ければ反対側の title は空文字で持ち UI 側で fallback する (`newsItemTitle` helper)。
 
-front matter に明示的な URL は無く、portal が source / lang / slug から組み立てる (`sources.ts` の `urlBuilder`)。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
+front matter に明示的な URL は無く、BSI が source / lang / slug から組み立てる (`sources.ts` の `urlBuilder`)。該当 file が無い言語側は省略する (`url.ja` のみ / `url.en` のみ)。
 
 | source | URL pattern (ja) | URL pattern (en) |
 |---|---|---|
@@ -59,14 +59,14 @@ front matter に明示的な URL は無く、portal が source / lang / slug か
 各 markdown の front matter を YAML として parse し NewsItem に写す。field ごとの写し方は `server/news/normalize.ts` が SSOT。規約として固定するのは:
 
 - `published`: 両言語側が共に欠落または `published: false` の slug だけを item から落とす。片方でも公開されていれば残す (未公開側の title はそのまま写る)
-- front matter の `category:` field は source 側の Jekyll layout 用で、portal の `NewsCategory` 分類とは **別物**。portal の `category` は `tags` 配列からの写像のみで決定する (`## tag → NewsCategory 写像`)
+- front matter の `category:` field は source 側の Jekyll layout 用で、BSI の `NewsCategory` 分類とは **別物**。BSI の `category` は `tags` 配列からの写像のみで決定する (`## tag → NewsCategory 写像`)
 - `db`: 文字列を全て `.toLowerCase().trim()` してから dedupe する (`agd  ` のような余分な空白も除去)。facet の「サービス」 軸で使う
 - `publishedAt`: ddbj は front matter の `date`、dbcls は file slug `YYYY-MM-DD-postN` から JST datetime を合成する (同一日付の post を安定 sort できる順序にする)
 - `summary`: 本文 markdown 先頭から `extractSummary` で抽出する (heading / link 等を strip、180 文字でカット)
 
 ## tag → NewsCategory 写像
 
-source ごとに語彙が異なる。portal は次の **source 別 mapping 表** で `NewsCategory` に正規化する (`server/news/normalize.ts` の `MAPPING`)。マッチは `tag.trim.toLowerCase` 後の完全一致。
+source ごとに語彙が異なる。BSI は次の **source 別 mapping 表** で `NewsCategory` に正規化する (`server/news/normalize.ts` の `MAPPING`)。マッチは `tag.trim.toLowerCase` 後の完全一致。
 
 ### ddbj/www (DDBJ)
 

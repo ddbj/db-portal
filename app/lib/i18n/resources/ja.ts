@@ -661,7 +661,7 @@ export const ja: Resources = {
   },
   news: {
     pageTitle: "お知らせ・ニュース",
-    pageDescription: "DDBJ センターからのお知らせ、リリースノート、メンテナンス情報をまとめて確認できます。",
+    pageDescription: "DDBJ・DBCLS のお知らせ、リリースノート、メンテナンス情報をまとめて確認できます。",
     toolbar: {
       count: "全 {{count}} 件",
       sort: "並び順",

@@ -2,7 +2,7 @@
 
 検索機能の SSOT。`/search` (検索ビルダ) と `/search/results` (結果) の責務、3 経路 UI (Simple query / Advanced builder / Sidebar facet) を ParseNode (AST) に正規化する規則、`/db-portal/serialize` への debounce 呼び出し、AI 検索アシスタントの方針を定義する。
 
-AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,serialize}` 仕様) を SSOT とする。本書は portal 側 UI 状態と API 呼び出し境界のみを扱う。
+AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,serialize}` 仕様) を SSOT とする。本書は BSI 側 UI 状態と API 呼び出し境界のみを扱う。
 
 ## 概念
 
@@ -17,7 +17,7 @@ cross-DB は `/db-portal/cross-search`、per-DB は `/db-portal/search` を呼�
 
 ### キーワードの結合規則
 
-検索語の結合は入力の区切り文字で決まる。portal は `keywordOperator` を送らず API default (`OR`) に従う。`keywordOperator` はカンマ区切りトークンの結合演算子であり、カンマは「いずれかに一致 (列挙)」 を意味する OR が自然なため、default のままで正しい。
+検索語の結合は入力の区切り文字で決まる。BSI は `keywordOperator` を送らず API default (`OR`) に従う。`keywordOperator` はカンマ区切りトークンの結合演算子であり、カンマは「いずれかに一致 (列挙)」 を意味する OR が自然なため、default のままで正しい。
 
 - スペース区切り (`cancer mouse`) → AND (全語を含む)。`keywordOperator` とは無関係 (ddbj-search-api の DSL 文法が値内空白を AND 連結する)
 - カンマ区切り (`cancer,mouse`) → OR (いずれかに一致)。`keywordOperator` の default
@@ -25,9 +25,9 @@ cross-DB は `/db-portal/cross-search`、per-DB は `/db-portal/search` を呼�
 - 末尾の語 (bare word) は前方一致でも拾う (`Huma` → `Human`、`Homo sap` → `Homo sapiens`)。クオートした phrase には掛からない (ddbj-search-api `compile_free_text` が末尾トークンを `phrase_prefix` に展開する)
 - DSL 内の明示的 `AND` / `OR` / `NOT` は `keywordOperator` と無関係
 
-キーワードボックスは **自由文** (スペース / カンマ / クオート) として案内する。ddbj-search-api の文法は `field:value` (allowlist 制の Tier 1/2/3 フィールド) も解釈するが、portal の UI ではこれを宣伝しない。フィールドを限定した検索は Advanced builder の役割で、キーワードボックスは「おもな項目の全文検索」 に徹する。不明フィールド (`organism:` 等) や解釈できない構文を入れると `/db-portal/parse` が 400 を返すので、その入力はキーワードボックスを invalid 表示にして知らせる ([§ parse の失敗](#parse-の失敗))。
+キーワードボックスは **自由文** (スペース / カンマ / クオート) として案内する。ddbj-search-api の文法は `field:value` (allowlist 制の Tier 1/2/3 フィールド) も解釈するが、BSI の UI ではこれを宣伝しない。フィールドを限定した検索は Advanced builder の役割で、キーワードボックスは「おもな項目の全文検索」 に徹する。不明フィールド (`organism:` 等) や解釈できない構文を入れると `/db-portal/parse` が 400 を返すので、その入力はキーワードボックスを invalid 表示にして知らせる ([§ parse の失敗](#parse-の失敗))。
 
-キーワード (free_text) が照合する **default field は 5 つ** (`identifier` / `title` / `name` / `description` / `organism.name`、ddbj-search-api `compile_free_text` の `_FREE_TEXT_DEFAULT_FIELDS`)。「すべての項目」 ではないので UI もそのように表示する (キーワード行に「おもな項目を全文検索」 + ⓘ で 5 field を明示)。portal は `keywordFields` 相当の絞り込みパラメタを送らない。
+キーワード (free_text) が照合する **default field は 5 つ** (`identifier` / `title` / `name` / `description` / `organism.name`、ddbj-search-api `compile_free_text` の `_FREE_TEXT_DEFAULT_FIELDS`)。「すべての項目」 ではないので UI もそのように表示する (キーワード行に「おもな項目を全文検索」 + ⓘ で 5 field を明示)。BSI は `keywordFields` 相当の絞り込みパラメタを送らない。
 
 cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
 
@@ -45,15 +45,15 @@ cross-DB から per-DB への遷移はカードの「結果一覧」link、per-D
 
 `/search` (cross-search ビルダー) では Simple query (キーワード) と AI アシスタントを 1 つの統合入力 (`SearchInputPanel`) に畳む。キーワードは Advanced builder の先頭に **keyword 行** として双方向同期して表示する (上部ボックス submit / keyword 行の編集のどちらからでも sync する)。キーワードの parse → merge → serialize は `useCrossSearchSync` が単一 debounce で行い、live preview / URL に反映する。上部ボックス submit はキービルダーへの集約のみで、cross-search の実行 (results への遷移) は「この条件で検索」 button が担う。
 
-### portal 側に thin serializer を持たない
+### BSI 側に thin serializer を持たない
 
-AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。portal 側に grammar の薄い TS 実装を持たない。理由:
+AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。BSI 側に grammar の薄い TS 実装を持たない。理由:
 
 - grammar の二重保守を排除する
 - precedence / quote / wildcard / range の規則を 1 箇所に集約する
 - API 側のテスト (pytest + hypothesis) が grammar 検証の SSOT
 
-portal 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar ↔ AST、AND merge) のみ。
+BSI 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar ↔ AST、AND merge) のみ。
 
 ### AI 検索アシスタントの位置付け
 
@@ -63,15 +63,15 @@ server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では clie
 
 ### データ可視性 (status)
 
-レコードの INSDC status (`public` / `private` / `suppressed` / `withdrawn`) で検索可視性が変わる。判定ロジックは ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`) が SSOT で、portal は DSL を送るだけ。portal はその結果を表示する責務だけを負う。
+レコードの INSDC status (`public` / `private` / `suppressed` / `withdrawn`) で検索可視性が変わる。判定ロジックは ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`) が SSOT で、BSI は DSL を送るだけ。BSI はその結果を表示する責務だけを負う。
 
-| status | 通常の検索 (キーワード / facet) | accession 完全一致 (id 直打ち) | portal の表示 |
+| status | 通常の検索 (キーワード / facet) | accession 完全一致 (id 直打ち) | BSI の表示 |
 |---|---|---|---|
 | `public` | ヒット | ヒット | 通常表示 |
 | `suppressed` | 除外 | **ヒット** | Suppressed バッジ |
 | `private` / `withdrawn` | 除外 (API が 404 で秘匿) | 除外 | 結果に現れない |
 
-「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。portal は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、解禁・status フィルタ用の accession 判定は持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、portal が表示で区別するのは `suppressed` だけ。cross-DB 結果ではこの完全一致を **表示用にのみ** portal 側で検出し、該当エントリを目立つ形で示す。解禁判定の SSOT は引き続き backend で、portal の検出はそれを肩代わりしない。
+「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。BSI は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、解禁・status フィルタ用の accession 判定は持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、BSI が表示で区別するのは `suppressed` だけ。cross-DB 結果ではこの完全一致を **表示用にのみ** BSI 側で検出し、該当エントリを目立つ形で示す。解禁判定の SSOT は引き続き backend で、BSI の検出はそれを肩代わりしない。
 
 ## URL 設計
 
@@ -196,7 +196,7 @@ scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range
 注意:
 
 - **`studyType` の意味**: jga / metabobank の facet `studyType` は DSL `study_type` field (jga-study / metabobank の controlled-vocab) を指す。SRA の `libraryStrategy` (DSL `library_strategy`) とは **別 field** なので、`libraryStrategy` は sra scope、`studyType` (= `study_type`) は jga / metabobank scope でのみ出す (混同しない)。
-- **cross で `type` を出さない理由**: `type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、portal は filter として再注入できないため要求しない。
+- **cross で `type` を出さない理由**: `type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、BSI は filter として再注入できないため要求しない。
 - **`type` (subtype) facet は per-DB のみ**: sra (`sra-*` subtype) / jga (`jga-*` subtype) の scope で `type` facet を出し、bucket は subtype 名。`db=sra` / `db=jga` + `facets=type` が subtype 別件数を返す (ddbj-search-api 対応済み)。単一 subtype の bioproject / biosample / gea / metabobank では出さない (API も `facet-not-applicable` で 400)。
 - **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
 - **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは cross + ES 6 DB で text 入力 (`submitter` の contains、UI ラベルは Organization)。Solr backed (trad / taxonomy) は degenerate のため出さない。
@@ -208,7 +208,7 @@ scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range
 
 ### 候補値・件数の出所 = API facet 集計
 
-facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実データから得る** (NCBI 風に値 + 件数を出す)。portal 側の hardcoded 静的リストは持たない。理由:
+facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実データから得る** (NCBI 風に値 + 件数を出す)。BSI 側の hardcoded 静的リストは持たない。理由:
 
 - 中カーディナリティ field (`package` ≈ 200 種、`model` ≈ 250 種、`instrumentModel` ≈ 95 種、`rank` ≈ 48 種等) は静的リストで列挙しきれず、実データ追従もできない
 - 極小 controlled-vocab (`objectType` 2 / `libraryLayout` 2 等) も、件数表示を揃えるため集計経路に一本化する
@@ -218,13 +218,13 @@ facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実
 
 ### API 契約: `/db-portal/*` の facet 集計
 
-`/db-portal/search` / `/db-portal/cross-search` は `facets` パラメタで `q` 連動の facet 集計をレスポンスに同梱する。raw spec は ddbj-search-api `docs/db-portal-api-spec.md § facet 集計` が SSOT。本書は portal 側の消費規約のみを扱う。
+`/db-portal/search` / `/db-portal/cross-search` は `facets` パラメタで `q` 連動の facet 集計をレスポンスに同梱する。raw spec は ddbj-search-api `docs/db-portal-api-spec.md § facet 集計` が SSOT。本書は BSI 側の消費規約のみを扱う。
 
-- **`facets`**: 集計する facet 名のカンマ区切り (省略時は集計なし)。portal は scope の filter 構成 (`SCOPE_FILTERS`) の facet 行に対応する名前を送る (accessibility は送らない)。scope 外の facet は 400 `facet-not-applicable`、allowlist 外の名前は 422
+- **`facets`**: 集計する facet 名のカンマ区切り (省略時は集計なし)。BSI は scope の filter 構成 (`SCOPE_FILTERS`) の facet 行に対応する名前を送る (accessibility は送らない)。scope 外の facet は 400 `facet-not-applicable`、allowlist 外の名前は 422
 - **`facetsSize`**: bucket 上限 (1–1000、既定 100)。多値 facet (`package` / `model` / `rank` 等) の「もっと見る」で使う
-- **`facetSelfExclude`**: `true` を送ると各 facet の集計母集団から自身のフィルタを除外する (self-exclusion)。portal は常に `true` で呼ぶ。cursor path では非適用 (cursor に焼き込んだ query を母集団にするため)
+- **`facetSelfExclude`**: `true` を送ると各 facet の集計母集団から自身のフィルタを除外する (self-exclusion)。BSI は常に `true` で呼ぶ。cursor path では非適用 (cursor に焼き込んだ query を母集団にするため)
 - **レスポンス `facets`** (`DbPortalFacets` = `Facets` 拡張): 各 facet が `{value, count}` 配列 (`organism` のみ `{value, count, label}`)。「集計対象外 = `null`」「0 件 = `[]`」。横断はトップレベル 1 セット (ES 6 DB union、organism / type のみ。trad / taxonomy は含まれない)
-- **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。portal の facet state はこのマッピングを持つ
+- **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。BSI の facet state はこのマッピングを持つ
 - **集計失敗 / 未取得時**: サイドバーは facet 行を消さず、cache 済み match_all をプレースホルダとして描き、それも無い cold 初回は行を skeleton で保持する
 
 ### AST 変換 (Sidebar ⇄ AST)
@@ -284,7 +284,7 @@ date 行 (datePublished / dateModified / dateCreated) は「すべて / 1年 / 5
 
 ## AST ↔ DSL の往来
 
-DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST を `/db-portal/serialize` で文字列化して URL に載せる。`/search/results` は AST を検索 endpoint に **POST** して結果と一緒に `dsl` を受け取る。どちらも client に grammar を持たず ([§ portal 側に thin serializer を持たない](#portal-側に-thin-serializer-を持たない))、変換は API に委ねる。
+DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST を `/db-portal/serialize` で文字列化して URL に載せる。`/search/results` は AST を検索 endpoint に **POST** して結果と一緒に `dsl` を受け取る。どちらも client に grammar を持たず ([§ BSI 側に thin serializer を持たない](#bsi-側に-thin-serializer-を持たない))、変換は API に委ねる。
 
 ### scope を渡す
 

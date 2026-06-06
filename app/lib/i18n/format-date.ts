@@ -1,6 +1,6 @@
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 
-// Format the calendar date in a fixed timezone (JST, the portal's locale and the
+// Format the calendar date in a fixed timezone (JST, BSI's locale and the
 // offset the news timestamps carry) so the same instant renders the same day on
 // the server (often UTC) and in the browser (any timezone) — reading local
 // components would let a near-midnight timestamp render a different day on each

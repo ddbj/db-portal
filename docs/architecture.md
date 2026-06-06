@@ -1,12 +1,12 @@
 # Architecture
 
-DDBJ ポータルの全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
+BSI の全体構造を定義する。本書は `docs/` 配下の最上位 SSOT であり、各論 (`api-types.md` / `i18n.md` / `auth.md` / `frontend.md` / `development.md`) はここから参照される。登録ナビは「登録経路の知識ベース」 として独立した Zod schema (`app/schemas/submit/`) で表現し、外部 metadata schema には依存しない。
 
 ## zones と実行境界
 
 `app/` は browser 実行と SSR 実行の両方を担う。`server/` は Node 専用で browser bundle に乗らない。詳細は本書の SSR/CSR、build/runtime のセクションで扱う。
 
-portal は 1 リポジトリで運用する。module 境界は内部 import 制約 (本書「import 境界 / zones 表」) で物理強制し、これで単一プロダクトの規模では十分に分離される。
+BSI は 1 リポジトリで運用する。module 境界は内部 import 制約 (本書「import 境界 / zones 表」) で物理強制し、これで単一プロダクトの規模では十分に分離される。
 
 ## URL とルーティング
 
@@ -187,7 +187,7 @@ secret (LLM API key / Keycloak credential) を要求する外部 API (vLLM / Key
 
 ## データフローの 4 経路
 
-ポータル内で発生する主要な情報の流れ。
+BSI 内で発生する主要な情報の流れ。
 
 ### 検索
 
@@ -300,7 +300,7 @@ CSP の各 directive が満たす契約 (具体値は `server/lib/security.ts` �
 
 CSP の `nonce-{nonce}` は **per-request** に `crypto.randomUUID` で生成して middleware が `res.locals.cspNonce` に置き、root loader が `<Scripts>` / `<Links>` に渡す。これにより RR v7 hydration script を含む全 inline script が nonce 経由で許可され、`'unsafe-inline'` は付けない。
 
-`style-src` に `'unsafe-inline'` を残しているのは、Tailwind v4 の inject や React の `style={...}` prop に対応するため。script より影響範囲が小さく、portal は外部 stylesheet を読まないので妥当と判断する。
+`style-src` に `'unsafe-inline'` を残しているのは、Tailwind v4 の inject や React の `style={...}` prop に対応するため。script より影響範囲が小さく、BSI は外部 stylesheet を読まないので妥当と判断する。
 
 ### sitemap.xml / robots.txt
 

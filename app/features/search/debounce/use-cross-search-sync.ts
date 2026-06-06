@@ -23,7 +23,7 @@ type ResolveCrossSearchOptions = {
 // Parse the free-text keyword to an AST, AND-merge it with the structured
 // builder AST, then serialize the result to a DSL. The keyword grammar
 // (space = AND, quote = phrase, comma = OR) is resolved by /db-portal/parse so
-// the portal keeps no client-side grammar. parseError distinguishes a keyword
+// BSI keeps no client-side grammar. parseError distinguishes a keyword
 // the user can fix from a serialize-side failure.
 export const resolveCrossSearchSync = async (
   keyword: string,

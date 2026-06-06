@@ -52,7 +52,7 @@ Zod schema (`app/schemas/api-bff/service.ts`) が SSOT。BFF (`server/services/`
 
 ## 分類語彙 → ServiceCategory 写像
 
-source ごとに語彙が異なる。portal は次の **source 別 mapping 表** で `ServiceCategory` に正規化する。`categories` は複数値で、写像結果を dedupe する。結果が空なら `["other"]`。
+source ごとに語彙が異なる。BSI は次の **source 別 mapping 表** で `ServiceCategory` に正規化する。`categories` は複数値で、写像結果を dedupe する。結果が空なら `["other"]`。
 
 ### ddbj/www (DDBJ)
 
@@ -83,7 +83,7 @@ source ごとに語彙が異なる。portal は次の **source 別 mapping 表**
 
 domain 系 (Genome / Gene / Gene expression / Disease) は機能軸の `ServiceCategory` に対応しないため `categories` に寄与させない (原値は `rawCategories` に残す)。`User_1..4` は使わない。
 
-表示名の上書き: upstream の `services_name_*` が冗長 / 和名表記のものは、portal 側の上書き表 (`server/services/sources.ts` の `DBCLS_NAME_OVERRIDES`、key = upstream の `services_name_en`) で簡潔な表示名に揃える。id / featuredTop も上書き後の名前から導出する。
+表示名の上書き: upstream の `services_name_*` が冗長 / 和名表記のものは、BSI 側の上書き表 (`server/services/sources.ts` の `DBCLS_NAME_OVERRIDES`、key = upstream の `services_name_en`) で簡潔な表示名に揃える。id / featuredTop も上書き後の名前から導出する。
 
 | upstream `services_name_en` | 表示名 (ja / en) |
 |---|---|
@@ -144,7 +144,7 @@ URL params との同期 (`facet-url-state.ts`):
 
 ## 説明文の末尾句点 (表示時正規化)
 
-upstream の `description` は末尾の文末句点が付くもの・付かないもので混在する。portal は **表示時** に言語別の文末句点 (ja `。` / en `.`) を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路 (`serviceDescription`、`app/lib/api/services.ts`) でのみ行う。既に句点があるとき据え置く・閉じ括弧の扱い・fallback 言語の規則はコードが SSOT。
+upstream の `description` は末尾の文末句点が付くもの・付かないもので混在する。BSI は **表示時** に言語別の文末句点 (ja `。` / en `.`) を補って統一する。cache / `/api/services` の生データは upstream 忠実なまま保持し、補完は一覧・top で共有する表示用の説明文取得経路 (`serviceDescription`、`app/lib/api/services.ts`) でのみ行う。既に句点があるとき据え置く・閉じ括弧の扱い・fallback 言語の規則はコードが SSOT。
 
 ## UI 統合
 

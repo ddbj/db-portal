@@ -42,7 +42,7 @@ export default {
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             公開された BioProject のメタデータは、INSDC (International Nucleotide Sequence Database
             Collaboration) のメンバーである EBI および NCBI と継続的に交換されます。
-            ポータルの横断検索からは DDBJ で公開された情報を参照できます。
+            BSI の横断検索からは DDBJ で公開された情報を参照できます。
           </p>
         </section>
       </div>
@@ -78,7 +78,7 @@ export default {
           <Heading as="h2" bar className="mb-3">International exchange</Heading>
           <p className="text-fs-body text-ink-mid leading-relaxed m-0">
             Published BioProject metadata is continuously exchanged with EBI and NCBI as members of
-            INSDC (International Nucleotide Sequence Database Collaboration). The portal&apos;s
+            INSDC (International Nucleotide Sequence Database Collaboration). BSI&apos;s
             cross-database search surfaces what is available from DDBJ.
           </p>
         </section>

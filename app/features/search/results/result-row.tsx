@@ -35,7 +35,7 @@ const formatDate = (value: string, lang: Lang): string => {
   if (Number.isNaN(parsed.getTime())) return value
   const locale = lang === "ja" ? "ja-JP" : "en-CA"
 
-  // Pin JST (the portal's locale) so SSR (often UTC) and the browser (any
+  // Pin JST (BSI's locale) so SSR (often UTC) and the browser (any
   // timezone) format the same day and do not trip a hydration mismatch.
   return new Intl.DateTimeFormat(locale, {
     year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo",

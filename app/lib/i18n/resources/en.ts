@@ -61,13 +61,13 @@ export const en: Resources = {
     },
     logoutCallback: {
       title: "You have signed out",
-      description: "Thank you for using the portal.",
+      description: "Thank you for using BSI.",
       backHome: "Back to home",
     },
   },
   news: {
     pageTitle: "News & announcements",
-    pageDescription: "Stay up to date with announcements, release notes, and maintenance schedules from DDBJ Center.",
+    pageDescription: "Stay up to date with announcements, release notes, and maintenance schedules from DDBJ and DBCLS.",
     toolbar: {
       count: "{{count}} items",
       sort: "Sort",

@@ -57,8 +57,8 @@ const SOURCE_SWATCHES: readonly Swatch[] = [
 type TypeFamily = { name: string; cls: string; sample: string }
 
 const TYPE_FAMILIES: readonly TypeFamily[] = [
-  { name: "font-sans", cls: "font-sans", sample: "DDBJ ポータル · DNA Data Bank · 12345" },
-  { name: "font-serif", cls: "font-serif", sample: "DDBJ ポータル · DNA Data Bank · 12345" },
+  { name: "font-sans", cls: "font-sans", sample: "BSI · DNA Data Bank · 12345" },
+  { name: "font-serif", cls: "font-serif", sample: "BSI · DNA Data Bank · 12345" },
   { name: "font-mono", cls: "font-mono", sample: "PRJNA729258 · 2026/05/15 · DDBJ" },
 ]
 
@@ -81,7 +81,7 @@ const TRACKING: readonly TrackingItem[] = [
   {
     name: "tracking-h1",
     value: "-0.015em",
-    sample: "DDBJ ポータル",
+    sample: "BSI",
     sampleCls: "font-sans font-extrabold text-fs-h1 tracking-h1 leading-tight",
     use: "PageTitle h1",
   },
@@ -132,7 +132,7 @@ const LEADING: readonly LeadingItem[] = [
   { name: "leading-loose", cls: "leading-loose", value: "1.7", use: "dense paragraph (cross results description)" },
 ]
 
-const LEADING_SAMPLE = "DDBJ は DNA データバンクとして国際的に協調しながら塩基配列データの登録 / 検索 / 公開を担っている。ポータルは登録支援と統合検索の入口を提供する。"
+const LEADING_SAMPLE = "BSI は DNA データバンクや生命科学データベースを横断し、塩基配列データの登録 / 検索 / 公開を支える。登録支援と統合検索の入口をひとつにまとめて提供する。"
 
 type SpacingItem = { name: string; cls: string; px: string }
 
