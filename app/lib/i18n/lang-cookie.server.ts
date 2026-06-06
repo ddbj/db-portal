@@ -13,6 +13,11 @@ type LangCookieOptions = {
 const isLang = (value: string | undefined): value is Lang =>
   value === "ja" || value === "en"
 
+// dev runs over plain HTTP; every other environment is HTTPS, so the cookie
+// carries the Secure attribute outside dev. Shared by the cookie writers
+// (root loader, set-lang action) so the decision lives in one place.
+export const isSecureRuntime = (): boolean => process.env.DB_PORTAL_ENV !== "dev"
+
 export const serializeLangCookie = (lang: Lang, opts: LangCookieOptions): string =>
   serialize(LANG_COOKIE_NAME, lang, {
     sameSite: "lax",

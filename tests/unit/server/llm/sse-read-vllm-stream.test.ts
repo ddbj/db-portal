@@ -126,10 +126,10 @@ describe("readVllmStream", () => {
     expect(onDelta.mock.calls).toEqual([["real"]])
   })
 
-  test("readVllmStream_trailingEventWithoutFinalBoundary_isNotEmitted", async () => {
+  test("readVllmStream_trailingEventWithoutFinalBoundary_isFlushedOnEnd", async () => {
     const onDelta = vi.fn()
-    // The second event lacks the closing "\n\n", so it stays buffered and is
-    // never flushed: only complete "\n\n"-terminated events are processed.
+    // The final SSE frame can arrive without a closing "\n\n"; it must still be
+    // flushed when the stream ends, otherwise the terminal delta is lost.
     const body = streamFromChunks([
       dataLine(chunk("flushed")),
       `data: ${JSON.stringify(chunk("dangling"))}`,
@@ -138,6 +138,36 @@ describe("readVllmStream", () => {
     const result = await readVllmStream(body, new AbortController().signal, onDelta)
 
     expect(result).toEqual({ ok: true })
-    expect(onDelta.mock.calls).toEqual([["flushed"]])
+    expect(onDelta.mock.calls).toEqual([["flushed"], ["dangling"]])
+  })
+
+  test("readVllmStream_crlfFraming_emitsContent", async () => {
+    const onDelta = vi.fn()
+    // Proxies often rewrite SSE "\n\n" framing to "\r\n\r\n"; the reader must
+    // normalize it rather than stranding the "\r" on the data line.
+    const body = streamFromChunks([
+      `data: ${JSON.stringify(chunk("one"))}\r\n\r\n`,
+      `data: ${JSON.stringify(chunk("two"))}\r\n\r\n`,
+    ])
+
+    const result = await readVllmStream(body, new AbortController().signal, onDelta)
+
+    expect(result).toEqual({ ok: true })
+    expect(onDelta.mock.calls).toEqual([["one"], ["two"]])
+  })
+
+  test("readVllmStream_crlfSplitAcrossReads_emitsContentOnce", async () => {
+    const onDelta = vi.fn()
+    // A CRLF boundary cut between two reads must resolve once the "\n" arrives,
+    // without producing a spurious frame split.
+    const body = streamFromChunks([
+      `data: ${JSON.stringify(chunk("split"))}\r`,
+      "\n\r\n",
+    ])
+
+    const result = await readVllmStream(body, new AbortController().signal, onDelta)
+
+    expect(result).toEqual({ ok: true })
+    expect(onDelta.mock.calls).toEqual([["split"]])
   })
 })

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import type { ParseNode } from "~/lib/api"
 import { useT } from "~/lib/i18n"
@@ -26,13 +26,19 @@ export const SwitchableQueryPreview = (
   const t = useT()
   const [view, setView] = useState<View>("dsl")
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
+  }, [])
 
   const handleCopy = async () => {
     if (typeof navigator === "undefined" || !navigator.clipboard) return
     try {
       await navigator.clipboard.writeText(dsl)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 1500)
     } catch {
       // clipboard 拒否時は何もしない (HTTPS 経由でのみ動作する想定)
     }

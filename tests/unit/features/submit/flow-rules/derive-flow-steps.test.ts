@@ -317,6 +317,42 @@ describe("deriveFlowSteps", () => {
     expect(stepFor(steps, "gea").scope.entryIds).toContain("e1")
   })
 
+  test("deriveFlowSteps_sequenceReadAndVisiumSpatial_unionsIntoSingleDraStep", () => {
+    const submission: Submission = {
+      preconditions: { q1: "public", q2: "human" },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "sequence-read",
+          access: "open",
+          dataForm: "raw",
+          groupId: "g1",
+          chipTags: [],
+        },
+        {
+          id: "e2",
+          fileTypeKind: "spatial-transcriptomics",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g2",
+          chipTags: [{ axis: "spatial-platform", value: "visium" }],
+        },
+      ],
+      fileGroups: [
+        { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] },
+        { id: "g2", groupType: "single", memberFileIds: ["e2"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // The Tier1 DRA (sequence-read) and the spatial recipe DRA (Visium raw reads)
+    // must collapse into one DRA card whose scope covers both entries, not two.
+    const dra = stepFor(steps, "dra")
+    expect(dra.scope.entryIds).toEqual(["e1", "e2"])
+  })
+
   test("deriveFlowSteps_xeniumSpatialTranscriptomics_emitsGeaOnly", () => {
     const submission: Submission = {
       preconditions: { q1: "public", q2: "human" },

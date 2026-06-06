@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { crossSearch, type DbPortalFacets, dbSearch } from "~/lib/api"
 import type { DbSlug } from "~/lib/search-scope"
 
-import { scopeFacetParam } from "../sidebar/facet-config"
-
-// Bucket cap per facet, matching the results-page loader so the builder offers the
-// same candidate set the sidebar would.
-const FACETS_SIZE = 100
+import { FACETS_SIZE, scopeFacetParam } from "../sidebar/facet-config"
 
 const STALE_MS = 5 * 60 * 1000
 

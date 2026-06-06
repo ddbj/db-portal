@@ -2,7 +2,7 @@ import type { CrossSearchResponse, ParseNode } from "~/lib/api"
 
 import { isIdentityAst, splitFreeText } from "../ast"
 import { type DbSlug, isDbSlug } from "../types"
-import { CARD_ORDER } from "./cross-results"
+import { cardOrderIndex } from "./cross-results"
 import type { DbHit } from "./result-fields"
 
 // One cross-search lightweight hit (identifier / type / title / organism / status
@@ -30,12 +30,6 @@ const freeTextValues = (ast: ParseNode): string[] => {
   if (ast.op === "AND") return ast.rules.filter(isFreeText).map((node) => node.value)
 
   return []
-}
-
-const cardOrderIndex = (db: string): number => {
-  const index = CARD_ORDER.indexOf(db as DbSlug)
-
-  return index === -1 ? CARD_ORDER.length : index
 }
 
 // Scan each DB's top hits in DDBJ-first order so a hit shared across DBs resolves

@@ -292,7 +292,6 @@ export type Resources = {
     nsss: {
       intro: string
       specialToMss: string
-      notForReads: string
     }
     variant: {
       jga: { intro: string; policyDelegated: string }
@@ -904,7 +903,6 @@ export const ja: Resources = {
     nsss: {
       intro: "少数・短い塩基配列は、Web 登録システム NSSS (Nucleotide Sequence Submission System) で登録します。",
       specialToMss: "大規模配列・完成ゲノム・WGS / TSA / TLS / EST / HTG / TPA などは NSSS の対象外です。DDBJ (MSS) で登録してください。",
-      notForReads: "生リードは塩基配列登録の対象外です。配列リードは DRA に登録してください。",
     },
     variant: {
       jga: {

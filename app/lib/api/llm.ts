@@ -1,6 +1,6 @@
 import { LlmHealth } from "~/schemas/api-bff/llm"
 
-import { buildRequestInit, joinUrl } from "./client"
+import { buildRequestInit, consumeJsonBody, joinUrl } from "./client"
 import { toAPIError } from "./errors"
 
 export { LlmHealth } from "~/schemas/api-bff/llm"
@@ -25,7 +25,7 @@ export const fetchLlmHealth = async (
   const response = await fetch(joinUrl(options.baseUrl, HEALTH_PATH), init)
   if (!response.ok) throw await toAPIError(response)
 
-  return LlmHealth.parse(await response.json())
+  return LlmHealth.parse(await consumeJsonBody(response))
 }
 
 export const isLlmAvailable = (health: LlmHealth): boolean =>

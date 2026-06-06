@@ -9,7 +9,7 @@ export const SessionEntry = z.object({
   userInfo: z.object({
     sub: z.string().min(1),
     name: z.string().min(1),
-    email: z.string().email(),
+    email: z.string().email().optional(),
   }),
   expiresAt: z.number(),
 })

@@ -45,8 +45,13 @@ export type NewsItem = z.infer<typeof NewsItem>
 export const NewsList = z.array(NewsItem)
 export type NewsList = z.infer<typeof NewsList>
 
+// Bump when the cache shape changes; the server rebuilds caches whose stored
+// schemaVersion no longer matches. Single source for both the schema literal and
+// the writer (server/news/cache.ts).
+export const NEWS_CACHE_SCHEMA_VERSION = 3
+
 export const NewsCache = z.object({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(NEWS_CACHE_SCHEMA_VERSION),
   lastSyncSha: z.record(NewsSource, z.string().nullable()),
   lastFetchedAt: z.string().datetime({ offset: true }),
   items: NewsList,

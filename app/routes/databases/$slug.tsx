@@ -29,6 +29,7 @@ const formatDate = (iso: string, lang: Lang): string => {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "Asia/Tokyo",
   })
 }
 

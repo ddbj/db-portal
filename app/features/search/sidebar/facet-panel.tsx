@@ -339,6 +339,21 @@ export const FacetPanel = ({ state, dispatch, db, facets, loading = false }: Fac
           },
         })
       }
+    } else if (row.kind === "dateRange") {
+      const dr = state.dateRanges[row.key] ?? EMPTY_DATE_RANGE
+      // Mirror the DateFacet's "active" rule: a preset resolves to a window, a
+      // custom range uses its own bounds, and only a complete window is emitted.
+      const preset = presetRangeToDates(dr.active, now)
+      const displayFrom = preset ? preset.from : dr.from
+      const displayTo = preset ? preset.to : dr.to
+      if (displayFrom !== "" && displayTo !== "") {
+        applied.push({
+          label: fieldLabel(row.key),
+          value: `${displayFrom} – ${displayTo}`,
+          onClear: () =>
+            dispatch({ type: "setDateRange", key: row.key, active: "all", from: "", to: "" }),
+        })
+      }
     }
   }
   return (

@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router"
 
 import {
   type DbSlug,
+  facetAggParam,
   type PerPageValue,
   readSearchParams,
   scopeFacetParam,
@@ -35,17 +36,6 @@ export type LoaderData = {
   facets: DbPortalFacets | null
 }
 
-const FACETS_SIZE = 100
-
-const facetParam = (
-  db: DbSlug | null,
-): { facets?: string; facetsSize?: number; facetSelfExclude?: boolean } => {
-  const facets = scopeFacetParam(db)
-  // Drop each facet's own q filter from its aggregation population so a multi-select
-  // facet keeps offering its other values (docs/search.md § 候補値・件数の出所).
-  return facets === "" ? {} : { facets, facetsSize: FACETS_SIZE, facetSelfExclude: true }
-}
-
 // The scope's cached scope-wide (match_all) facets as an instant SSR placeholder.
 // Never blocks the stream on the heavy aggregation: a cold miss returns null and
 // warms the cache in the background for the next request (docs/search.md § Sidebar
@@ -57,8 +47,8 @@ const matchAllPlaceholder = (
   if (scopeFacetParam(db) === "") return null
   const scope = db === null ? "cross" : `db:${db}`
   const fetcher = db === null
-    ? () => crossSearch({ topHits: 0, ...facetParam(null) }, options).then((res) => res.facets ?? null)
-    : () => dbSearch({ db, ...facetParam(db) }, options).then((res) => res.facets ?? null)
+    ? () => crossSearch({ topHits: 0, ...facetAggParam(null) }, options).then((res) => res.facets ?? null)
+    : () => dbSearch({ db, ...facetAggParam(db) }, options).then((res) => res.facets ?? null)
 
   return peekMatchAllFacets(scope, fetcher)
 }

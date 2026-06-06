@@ -13,6 +13,13 @@ import { parseModelOutput } from "./parse"
 import { buildAssistantMessages } from "./prompt"
 import { serializeAstToDsl } from "./search-api"
 
+// The output contract is a single-line DSL, so the completion is bounded both at
+// the model (max_tokens) and as a defensive memory cap on the accumulated text;
+// a prompt that coaxes a runaway completion can therefore neither amplify cost at
+// the model nor grow server memory unbounded.
+const MAX_OUTPUT_TOKENS = 512
+const MAX_ACCUMULATED_CHARS = 8192
+
 const RequestBody = z.object({
   input: z.string().trim().min(1),
   mode: z.enum(["new", "append"]).optional(),
@@ -63,6 +70,13 @@ export const makeHandleSearchAssistant = (
     stream.start()
     const abortController = new AbortController()
     res.on("close", () => abortController.abort())
+    // Bound a hung upstream: abort the generation after the configured timeout so
+    // the heartbeat does not hold a dead connection open indefinitely.
+    let timedOut = false
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true
+      abortController.abort()
+    }, client.timeoutMs)
 
     let accumulated = ""
     try {
@@ -74,7 +88,7 @@ export const makeHandleSearchAssistant = (
       const messages = buildAssistantMessages({ userInput: input, currentDsl, db })
       const upstreamResp = await callVllmStreamRaw(
         client,
-        { messages, temperature: 0, stream: true },
+        { messages, temperature: 0, stream: true, maxTokens: MAX_OUTPUT_TOKENS },
         abortController.signal,
       )
       if (!upstreamResp.ok) {
@@ -89,10 +103,16 @@ export const makeHandleSearchAssistant = (
       const result = await readVllmStream(
         upstreamResp.body,
         abortController.signal,
-        (delta) => { accumulated += delta },
+        (delta) => {
+          if (accumulated.length < MAX_ACCUMULATED_CHARS) accumulated += delta
+        },
       )
       if (!result.ok) {
-        stream.error("upstream-disconnect", result.reason ?? "stream interrupted")
+        if (timedOut) {
+          stream.error("upstream-disconnect", "generation timed out")
+        } else {
+          stream.error("upstream-disconnect", result.reason ?? "stream interrupted")
+        }
         stream.close()
 
         return
@@ -109,13 +129,16 @@ export const makeHandleSearchAssistant = (
       stream.done(JSON.stringify({ ast: outcome.ast, db: outcome.db }))
     } catch (error) {
       const aborted = (error as { name?: string }).name === "AbortError"
-      if (!aborted) {
+      if (timedOut) {
+        stream.error("upstream-disconnect", "generation timed out")
+      } else if (!aborted) {
         logger.error("llm_assistant_failed", {
           message: error instanceof Error ? error.message : String(error),
         })
         stream.error("upstream-disconnect", error instanceof Error ? error.message : "unknown")
       }
     } finally {
+      clearTimeout(timeoutTimer)
       stream.close()
     }
   }

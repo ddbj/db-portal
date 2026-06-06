@@ -40,8 +40,13 @@ export type ServiceItem = z.infer<typeof ServiceItem>
 export const ServiceList = z.array(ServiceItem)
 export type ServiceList = z.infer<typeof ServiceList>
 
+// Bump when the cache shape changes; the server rebuilds caches whose stored
+// schemaVersion no longer matches. Single source for both the schema literal and
+// the writer (server/services/cache.ts).
+export const SERVICE_CACHE_SCHEMA_VERSION = 2
+
 export const ServiceCache = z.object({
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(SERVICE_CACHE_SCHEMA_VERSION),
   lastSyncSha: z.record(ServiceSource, z.string().nullable()),
   lastFetchedAt: z.string().datetime({ offset: true }),
   items: ServiceList,

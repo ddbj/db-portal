@@ -8,11 +8,11 @@ import type {
   NewsList,
   NewsSource,
 } from "../../app/schemas/api-bff/news"
-import { NewsCache as NewsCacheSchema } from "../../app/schemas/api-bff/news"
+import { NEWS_CACHE_SCHEMA_VERSION, NewsCache as NewsCacheSchema } from "../../app/schemas/api-bff/news"
 import type { Logger } from "../lib/log"
 
 const CACHE_FILE = "news.json"
-const SCHEMA_VERSION = 3 as const
+const SCHEMA_VERSION = NEWS_CACHE_SCHEMA_VERSION
 
 const emptyState = (): NewsCache => ({
   schemaVersion: SCHEMA_VERSION,

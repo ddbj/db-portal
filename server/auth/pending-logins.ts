@@ -1,6 +1,7 @@
 type PendingLogin = {
   codeVerifier: string
   state: string
+  nonce: string
   returnTo: string
   createdAt: number
 }

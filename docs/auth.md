@@ -112,8 +112,8 @@ Express handler で完結させる利点:
 ### Login
 
 1. Browser が `/api/auth/login?return_to=/databases/bioproject` を踏む
-2. BFF が PKCE `code_verifier` を生成し、`state` / `code_verifier` / `returnTo` を 10 分 TTL の pending store に積む
-3. BFF が Keycloak の `authorization_endpoint` へ 302 (`code_challenge_method=S256`)
+2. BFF が PKCE `code_verifier` と `nonce` を生成し、`state` / `code_verifier` / `nonce` / `returnTo` を 10 分 TTL の pending store に積む
+3. BFF が Keycloak の `authorization_endpoint` へ 302 (`code_challenge_method=S256`、`nonce` 同送)
 
 ### Callback
 
@@ -134,8 +134,9 @@ Express handler で完結させる利点:
 | `aud` | `DB_PORTAL_KEYCLOAK_CLIENT_ID` を含む (string or string[]) | 同上 |
 | `exp` | 現在時刻より未来 (clock skew は 0 秒) | 同上 |
 | `iat` | 存在し、将来時刻でない (clock skew 60 秒以内) | 同上 |
+| `nonce` | login 時に pending store へ積んだ `nonce` と完全一致 | 同上 |
 
-payload schema は `iss` / `aud` / `exp` / `iat` を含めて parse する。署名再検証を TLS server validation に委ねる代わりに、token の意味的な claim (発行者 / 宛先 / 有効期限) を payload 側で必ず検証することで、direct 受信の前提が崩れた token を弾く。
+payload schema は `iss` / `aud` / `exp` / `iat` / `nonce` を含めて parse する。署名再検証を TLS server validation に委ねる代わりに、token の意味的な claim (発行者 / 宛先 / 有効期限 / nonce) を payload 側で必ず検証することで、direct 受信の前提が崩れた token・別の認可リクエスト向けに発行された token を弾く。PKCE が code 交換を、`nonce` が id_token 自体をこの login に束縛する。`email` は OIDC 上 optional な claim なので未提供のまま扱う (placeholder で埋めない)。
 
 callback handler の error 応答は、`code` / `state` 欠落で 400 `invalid_request`、`state` が pending store に無いとき 400 `invalid_state` (下記「State CSRF と returnTo の二重防御」)、id_token payload 検証失敗で 400 `invalid_id_token`、token endpoint への code 交換失敗で 502 `code_exchange_failed`。
 
@@ -149,7 +150,7 @@ callback handler の error 応答は、`code` / `state` 欠落で 400 `invalid_r
 
 ### Pending login store
 
-login flow 中の `state` / `code_verifier` / `returnTo` を server 側 in-memory に持つ。
+login flow 中の `state` / `code_verifier` / `nonce` / `returnTo` を server 側 in-memory に持つ。
 
 - TTL 10 分、1 分間隔で cleanup
 - `take(state)` は **1 回限り消費** (replay 防止)
@@ -199,7 +200,7 @@ Cookie: sid=<opaque>
 
 | 状況 | Status | Body |
 |---|---|---|
-| Session あり (有効) | 200 | `{ "user": { "sub": "...", "name": "...", "email": "..." } }` |
+| Session あり (有効) | 200 | `{ "user": { "sub": "...", "name": "...", "email": "..." } }` (`email` は id_token に無ければ省略) |
 | Cookie なし / Session 期限切れ | 401 | `{ "error": "unauthorized" }` |
 
 ### Cache 制御

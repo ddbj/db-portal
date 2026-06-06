@@ -22,7 +22,7 @@ import {
 import { ErrorPage } from "~/features/errors"
 import { resolvePageTitle } from "~/lib/content"
 import { createI18nInstance, LangProvider } from "~/lib/i18n"
-import { parseLangCookie, serializeLangCookie } from "~/lib/i18n/lang-cookie.server"
+import { isSecureRuntime, parseLangCookie, serializeLangCookie } from "~/lib/i18n/lang-cookie.server"
 import { detectLangHint, resolveLang } from "~/lib/i18n/resolve-lang.server"
 import type { Lang } from "~/lib/i18n/use-lang"
 import { createQueryClient } from "~/lib/query/client"
@@ -32,8 +32,6 @@ const readDefaultLang = (): Lang => {
   const value = process.env.DB_PORTAL_DEFAULT_LANG
   return value === "en" ? "en" : "ja"
 }
-
-const isSecureRuntime = (): boolean => process.env.DB_PORTAL_ENV !== "dev"
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   const url = new URL(request.url)

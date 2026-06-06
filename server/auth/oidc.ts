@@ -16,7 +16,7 @@ type Tokens = {
 type UserInfo = {
   sub: string
   name: string
-  email: string
+  email?: string
 }
 
 const TokenResponseSchema = z.object({
@@ -34,6 +34,7 @@ const IdTokenPayloadSchema = z.object({
   given_name: z.string().min(1).optional(),
   family_name: z.string().min(1).optional(),
   email: z.string().email().optional(),
+  nonce: z.string().min(1).optional(),
 })
 
 export class IdTokenValidationError extends Error {
@@ -48,6 +49,10 @@ export class IdTokenValidationError extends Error {
 export type IdTokenValidation = {
   issuer: string
   audience: string
+  // The nonce minted for this authorization request; the id_token's `nonce` claim
+  // must echo it, binding the token to this specific login (PKCE protects the code
+  // exchange, the nonce protects the token against replay/substitution).
+  nonce: string
   clockSkewSeconds?: number
   now?: () => number
 }
@@ -77,10 +82,13 @@ export const generatePkce = (): { codeVerifier: string; codeChallenge: string } 
 
 export const generateState = (): string => base64UrlEncode(crypto.randomBytes(16))
 
+export const generateNonce = (): string => base64UrlEncode(crypto.randomBytes(16))
+
 export const buildAuthorizeUrl = (
   config: OidcConfig,
   state: string,
   codeChallenge: string,
+  nonce: string,
 ): string => {
   const url = new URL(`${config.realmUrl}/protocol/openid-connect/auth`)
   url.searchParams.set("client_id", config.clientId)
@@ -88,6 +96,7 @@ export const buildAuthorizeUrl = (
   url.searchParams.set("response_type", "code")
   url.searchParams.set("scope", "openid profile email")
   url.searchParams.set("state", state)
+  url.searchParams.set("nonce", nonce)
   url.searchParams.set("code_challenge", codeChallenge)
   url.searchParams.set("code_challenge_method", "S256")
 
@@ -169,6 +178,9 @@ export const extractUserInfo = (idToken: string, validation: IdTokenValidation):
   if (!audiences.includes(validation.audience)) {
     throw new IdTokenValidationError("aud mismatch")
   }
+  if (parsed.nonce !== validation.nonce) {
+    throw new IdTokenValidationError("nonce mismatch")
+  }
   const nowSeconds = Math.floor((validation.now?.() ?? Date.now()) / 1000)
   const clockSkew = validation.clockSkewSeconds ?? 60
   if (parsed.exp <= nowSeconds) {
@@ -185,7 +197,7 @@ export const extractUserInfo = (idToken: string, validation: IdTokenValidation):
     ?? (combinedName !== "" ? combinedName : undefined)
     ?? parsed.preferred_username
     ?? parsed.sub
-  const email = parsed.email ?? `${parsed.sub}@example.invalid`
+  const email = parsed.email
 
-  return { sub: parsed.sub, name, email }
+  return { sub: parsed.sub, name, ...(email !== undefined ? { email } : {}) }
 }

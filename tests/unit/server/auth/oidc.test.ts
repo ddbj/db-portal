@@ -20,10 +20,12 @@ const buildIdToken = (payload: Record<string, unknown>): string => {
 
 const ISSUER = "https://idp.example.com/realms/master"
 const CLIENT_ID = "db-portal"
+const NONCE = "nonce-abc123"
 
 const validation = (now: number): IdTokenValidation => ({
   issuer: ISSUER,
   audience: CLIENT_ID,
+  nonce: NONCE,
   now: () => now * 1000,
 })
 
@@ -35,6 +37,7 @@ const validPayload = (overrides: Record<string, unknown> = {}): Record<string, u
   sub: "user-1",
   email: "user@example.com",
   name: "User One",
+  nonce: NONCE,
   ...overrides,
 })
 
@@ -59,6 +62,18 @@ describe("extractUserInfo", () => {
   test("extractUserInfo_audMismatch_throwsValidationError", () => {
     const idToken = buildIdToken(validPayload({ aud: "other-client" }))
     expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(IdTokenValidationError)
+  })
+
+  test("extractUserInfo_nonceMismatch_throwsValidationError", () => {
+    const idToken = buildIdToken(validPayload({ nonce: "different-nonce" }))
+    expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(/nonce/)
+  })
+
+  test("extractUserInfo_nonceAbsent_throwsValidationError", () => {
+    // A token minted for a request that carried no nonce cannot be bound to this
+    // login, so an absent claim is rejected rather than passed through.
+    const idToken = buildIdToken(validPayload({ nonce: undefined }))
+    expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(/nonce/)
   })
 
   test("extractUserInfo_expExpired_throwsValidationError", () => {

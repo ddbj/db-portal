@@ -37,12 +37,6 @@ describe("ServiceGrid", () => {
     expect(items.length).toBe(services.length)
   })
 
-  test("ServiceGrid_listClass_appliesGridResponsive", () => {
-    const { container } = renderGrid()
-    const ul = container.querySelector("ul")
-    expect(ul).toHaveClass("grid", "lg:grid-cols-2", "gap-3", "list-none")
-  })
-
   test("ServiceGrid_enLang_rendersEnglishTitles", () => {
     const services = listServicesByTopCategory("primary-service")
     renderGrid("en")

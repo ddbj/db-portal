@@ -70,6 +70,35 @@ describe("createLogger", () => {
     expect(fields.headers["user-agent"]).toBe("ua")
   })
 
+  test("Logger_redactsKeyCaseInsensitively", () => {
+    const spy = spyStdout()
+    const logger = createLogger("info")
+    logger.info("aliases", { "Set-Cookie": "sid=abc", id_token: "tok", PASSWORD: "p" })
+    const entries = parseEntries(spy)
+    expect(entries[0]).toMatchObject({
+      "Set-Cookie": "[REDACTED]",
+      id_token: "[REDACTED]",
+      PASSWORD: "[REDACTED]",
+    })
+  })
+
+  test("Logger_redactsBearerTokenInUnanticipatedKey", () => {
+    const spy = spyStdout()
+    const logger = createLogger("info")
+    logger.info("misc", { note: "called with Authorization: Bearer abc.def-123" })
+    const entries = parseEntries(spy)
+    expect(entries[0]?.note).toBe("called with Authorization: Bearer [REDACTED]")
+  })
+
+  test("Logger_redactsJwtValueInUnanticipatedKey", () => {
+    const spy = spyStdout()
+    const logger = createLogger("info")
+    const jwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.sig-nature_123"
+    logger.info("misc", { detail: `token=${jwt}` })
+    const entries = parseEntries(spy)
+    expect(entries[0]?.detail).toBe("token=[REDACTED_JWT]")
+  })
+
   test("Logger_leavesNonObjectScalarsUntouched", () => {
     const spy = spyStdout()
     const logger = createLogger("info")

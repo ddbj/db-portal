@@ -21,6 +21,29 @@ const buildTier1Steps = (routings: readonly EntryRouting[]): FlowStep[] => {
   )
 }
 
+// 同一 service の step を 1 枚に union する (scope を結合し note をまとめる)。
+// Tier1 の DRA と spatial recipe の DRA のように、別ソースが同じ service を emit したとき
+// 右 pane に同 service のカードが 2 枚出るのを防ぐ (最初に現れた step の id / origin を保つ)。
+const mergeSameServiceSteps = (steps: readonly FlowStep[]): FlowStep[] => {
+  const byService = new Map<Service, FlowStep>()
+  for (const step of steps) {
+    const existing = byService.get(step.service)
+    if (existing === undefined) {
+      byService.set(step.service, step)
+      continue
+    }
+    byService.set(step.service, makeStep(
+      existing.id,
+      existing.service,
+      existing.origin,
+      mergeScopes([existing.scope, step.scope]),
+      [...existing.notes, ...step.notes],
+    ))
+  }
+
+  return [...byService.values()]
+}
+
 // 既定 companion: entry が 1 つでもあれば bioproject 1 + biosample 1 (jga entry は対象外)
 const companionSteps = (entries: readonly FileEntry[]): FlowStep[] => {
   if (entries.length === 0) return []
@@ -48,12 +71,12 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
   const jgaEntries = routings.filter((r) => r.service === "jga").map((r) => r.entry)
   const plainRoutings = routings.filter((r) => r.service !== "jga")
 
-  const steps: FlowStep[] = [
+  const steps = mergeSameServiceSteps([
     ...buildTier1Steps(plainRoutings),
     ...companionSteps(plainRoutings.map((r) => r.entry)),
     ...jgaSubmissionSteps(jgaEntries),
     ...spatialSteps(activeEntries),
-  ]
+  ])
 
   return [...steps].sort(byServiceDependencyOrder)
 }

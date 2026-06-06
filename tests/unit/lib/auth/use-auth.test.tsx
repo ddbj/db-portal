@@ -48,15 +48,18 @@ describe("useAuth", () => {
     expect(screen.getByTestId("status")).toHaveTextContent("loading")
   })
 
-  test("useAuth_invalidPayload_settlesToUnauthenticated", async () => {
+  test("useAuth_invalidPayload_doesNotFlipToUnauthenticated", async () => {
     server.use(
       http.get("*/api/me", () =>
         HttpResponse.json({ user: { sub: "u1" } }),
       ),
     )
     renderWithQueryClient(<Probe />)
-    await waitFor(() => {
-      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated")
-    })
+    // Let the query run and fail to parse the malformed payload.
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    // A malformed /api/me is a server fault, not a confirmed logout, so it must
+    // not become "unauthenticated" (which RequireAuth turns into a login redirect
+    // and could loop); it stays "loading".
+    expect(screen.getByTestId("status")).toHaveTextContent("loading")
   })
 })

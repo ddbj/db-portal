@@ -1,5 +1,7 @@
 export { presetRangeToDates } from "./date-preset"
 export {
+  facetAggParam,
+  FACETS_SIZE,
   type FilterRow,
   SCOPE_FILTERS,
   scopeFacetParam,

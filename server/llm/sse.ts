@@ -99,34 +99,44 @@ export const readVllmStream = async (
   const reader = body.getReader()
   const decoder = new TextDecoder()
   let buffer = ""
+
+  const handleBlock = (block: string): void => {
+    for (const line of block.split("\n")) {
+      if (!line.startsWith(SSE_DATA_PREFIX)) continue
+      const data = line.slice(SSE_DATA_PREFIX.length).trim()
+      if (data === "" || data === "[DONE]") continue
+      let raw: unknown
+      try {
+        raw = JSON.parse(data)
+      } catch {
+        continue
+      }
+      const parsed = VllmStreamChunkSchema.safeParse(raw)
+      if (!parsed.success) continue
+      const content = parsed.data.choices?.[0]?.delta?.content
+      if (typeof content === "string" && content.length > 0) onDelta(content)
+    }
+  }
+
   try {
     while (true) {
       if (signal.aborted) return { ok: false, reason: "aborted" }
       const { value, done } = await reader.read()
       if (done) break
-      buffer += decoder.decode(value, { stream: true })
+      // Normalize CRLF framing (proxies often rewrite SSE `\n\n` to `\r\n\r\n`); a
+      // CRLF split across chunk boundaries resolves on the next iteration because
+      // the unprocessed tail stays in `buffer`.
+      buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, "\n")
       const boundary = buffer.lastIndexOf("\n\n")
       if (boundary === -1) continue
       const ready = buffer.slice(0, boundary)
       buffer = buffer.slice(boundary + 2)
-      for (const block of ready.split("\n\n")) {
-        for (const line of block.split("\n")) {
-          if (!line.startsWith(SSE_DATA_PREFIX)) continue
-          const data = line.slice(SSE_DATA_PREFIX.length).trim()
-          if (data === "" || data === "[DONE]") continue
-          let raw: unknown
-          try {
-            raw = JSON.parse(data)
-          } catch {
-            continue
-          }
-          const parsed = VllmStreamChunkSchema.safeParse(raw)
-          if (!parsed.success) continue
-          const content = parsed.data.choices?.[0]?.delta?.content
-          if (typeof content === "string" && content.length > 0) onDelta(content)
-        }
-      }
+      for (const block of ready.split("\n\n")) handleBlock(block)
     }
+    // Flush the final frame: the last SSE frame can arrive without a trailing
+    // blank line, which would otherwise strand the terminal delta in `buffer`.
+    const tail = buffer.replace(/\r\n/g, "\n").trim()
+    if (tail !== "") for (const block of tail.split("\n\n")) handleBlock(block)
 
     return { ok: true }
   } finally {

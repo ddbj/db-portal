@@ -31,13 +31,31 @@ afterEach(() => {
 })
 
 describe("api.set-lang action", () => {
-  test("setLang_validEn_returns303AndSetsCookieAndRedirectsToReferer", async () => {
+  test("setLang_validEn_returns303AndSetsCookieAndRedirectsToRefererPath", async () => {
     const res = await callAction(buildRequest("lang=en", { referer: "http://localhost/news" }))
     expect(res.status).toBe(303)
-    expect(res.headers.get("Location")).toBe("http://localhost/news")
+    expect(res.headers.get("Location")).toBe("/news")
     const setCookie = res.headers.get("Set-Cookie")
     expect(setCookie).not.toBeNull()
     expect(setCookie).toContain("db_portal_lang=en")
+  })
+
+  test("setLang_sameOriginRefererWithQuery_preservesPathAndSearch", async () => {
+    const res = await callAction(
+      buildRequest("lang=en", { referer: "http://localhost/search/results?q=foo&db=biosample" }),
+    )
+    expect(res.headers.get("Location")).toBe("/search/results?q=foo&db=biosample")
+  })
+
+  test("setLang_crossOriginReferer_fallsBackToRoot", async () => {
+    const res = await callAction(buildRequest("lang=en", { referer: "https://evil.example/phish" }))
+    expect(res.status).toBe(303)
+    expect(res.headers.get("Location")).toBe("/")
+  })
+
+  test("setLang_unparseableReferer_fallsBackToRoot", async () => {
+    const res = await callAction(buildRequest("lang=en", { referer: "://not-a-url" }))
+    expect(res.headers.get("Location")).toBe("/")
   })
 
   test("setLang_validJa_returns303AndSetsJaCookie", async () => {

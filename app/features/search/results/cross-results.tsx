@@ -29,7 +29,7 @@ export const CARD_ORDER: readonly DbSlug[] = [
   "metabobank",
 ]
 
-const cardOrderIndex = (db: string): number => {
+export const cardOrderIndex = (db: string): number => {
   const index = CARD_ORDER.indexOf(db as DbSlug)
 
   return index === -1 ? CARD_ORDER.length : index

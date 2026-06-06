@@ -27,6 +27,21 @@ describe("rateLimiter", () => {
     expect(decision.axis).toBe("session")
   })
 
+  test("rateLimiter_sessionBlocked_doesNotConsumeIpBudget", () => {
+    // Tripping the session axis must not burn the shared per-IP budget, else one
+    // session repeatedly hitting its own limit would deny the whole IP pool.
+    const limiter = createRateLimiter({ perIpPerMin: 2, perSessionPerMin: 1 }, () => 0)
+    expect(limiter.check("1.1.1.1", "s").ok).toBe(true)
+    for (let i = 0; i < 5; i++) {
+      expect(limiter.check("1.1.1.1", "s").ok).toBe(false)
+    }
+    // Only one IP hit was committed, so a fresh session still passes the IP axis.
+    expect(limiter.check("1.1.1.1", "s2").ok).toBe(true)
+    const decision = limiter.check("1.1.1.1", "s3")
+    if (decision.ok) throw new Error("expected ip block")
+    expect(decision.axis).toBe("ip")
+  })
+
   test("rateLimiter_oneMillisecondBeforeWindowEnd_stillBlocked", () => {
     // predicate is `nowMs - startMs >= 60_000`; just before that, window is still active
     let now = 0

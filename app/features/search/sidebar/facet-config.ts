@@ -97,6 +97,21 @@ export const scopeFacetParam = (db: DbSlug | null): string =>
     .map((row) => row.facetName)
     .join(",")
 
+// Number of facet buckets requested per field.
+export const FACETS_SIZE = 100
+
+// Self-excluding q-aware facet aggregation, ridden on the same search response:
+// drop each facet's own q filter from its population so a multi-select facet keeps
+// offering its other values while the hits stay filtered by the full q
+// (docs/search.md § 候補値・件数の出所). Empty scope → no aggregation requested.
+export const facetAggParam = (
+  db: DbSlug | null,
+): { facets?: string; facetsSize?: number; facetSelfExclude?: boolean } => {
+  const facets = scopeFacetParam(db)
+
+  return facets === "" ? {} : { facets, facetsSize: FACETS_SIZE, facetSelfExclude: true }
+}
+
 // dslField → row lookup for a scope (used to route AST leaves back to rows).
 export const rowByDslField = (db: DbSlug | null): Map<string, FilterRow> => {
   const map = new Map<string, FilterRow>()

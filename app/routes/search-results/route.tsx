@@ -176,6 +176,14 @@ const SearchResultsRoute = () => {
     setSort(nextSort)
     setPage(DEFAULT_PAGE)
   }
+  // A facet / text / range / date edit shrinks (or shifts) the result set, so the
+  // current page can fall out of range; reset to the first page like the other
+  // result-shaping controls. Internal `replace` (state restore) dispatches the
+  // raw reducer instead, so it does not reset paging.
+  const handleFacetEdit = (action: Parameters<typeof dispatchFacet>[0]) => {
+    dispatchFacet(action)
+    setPage(DEFAULT_PAGE)
+  }
 
   // The keyword box commits the free text into the live query: parse it, fold it in
   // (the search refetches from the merged AST), reset paging, and push a history
@@ -286,7 +294,7 @@ const SearchResultsRoute = () => {
   const facetPanel = (
     <FacetPanel
       state={facetState}
-      dispatch={dispatchFacet}
+      dispatch={handleFacetEdit}
       db={data.db}
       facets={results.facets}
       loading={results.facets === null}

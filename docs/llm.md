@@ -264,9 +264,10 @@ client は HTTP status が ok でないことを検知し、他のエラーと�
 
 ## PII redaction
 
-prompt 内容そのものは vLLM に送るが、server **log** には PII を残さない。`server/lib/log.ts` の `redact` で次のキーを `[REDACTED]` 化する (既存実装):
+prompt 内容そのものは vLLM に送るが、server **log** には PII を残さない。`server/lib/log.ts` の `redact` が 2 層で credential を落とす:
 
-- `accessToken` / `refreshToken` / `cookie` / `Cookie` / `authorization` / `Authorization`
+- **key 名一致** (case-insensitive): `accessToken` / `refreshToken` / `idToken` / `id_token` / `token` / `bearer` / `cookie` / `set-cookie` / `authorization` / `apiKey` / `api_key` / `password` / `secret` を `[REDACTED]` 化する。大文字小文字・snake_case 表記揺れを問わない
+- **値パターン一致** (backstop): 想定外の key に載った token も、`Bearer <token>` ヘッダと JWT (`eyJ…`.`…`.`…`) の形を文字列値から `[REDACTED]` / `[REDACTED_JWT]` に置換する
 
 LLM 固有の redaction として `server/llm/redaction.ts` が user input 文字列を log する直前に適用する:
 

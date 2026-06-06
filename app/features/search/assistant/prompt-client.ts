@@ -140,39 +140,50 @@ export const useAssistantStream = (
 
         return
       }
+      const handleEvent = (item: { event: string; data: string }): void => {
+        if (item.event === "error") {
+          setState("error")
+
+          return
+        }
+        if (item.event !== "done") return
+        let raw: unknown
+        try {
+          raw = JSON.parse(item.data)
+        } catch {
+          setState("error")
+
+          return
+        }
+        const payload = parseDonePayload(raw)
+        if (!payload) {
+          setState("error")
+
+          return
+        }
+        setProposal(payload.ast)
+        setProposalDb(payload.db)
+        setState("done")
+        onDoneRef.current?.(payload.ast, payload.db)
+      }
+
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ""
       while (true) {
         const { value, done } = await reader.read()
         if (done) break
-        buffer += decoder.decode(value, { stream: true })
+        // Normalize CRLF in case a proxy rewrote the framing.
+        buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, "\n")
         const eventBoundary = buffer.lastIndexOf("\n\n")
         if (eventBoundary === -1) continue
         const ready = buffer.slice(0, eventBoundary)
         buffer = buffer.slice(eventBoundary + 2)
-        for (const item of parseSseEvents(ready)) {
-          if (item.event === "done") {
-            let raw: unknown
-            try {
-              raw = JSON.parse(item.data)
-            } catch {
-              setState("error")
-              continue
-            }
-            const payload = parseDonePayload(raw)
-            if (payload) {
-              setProposal(payload.ast)
-              setProposalDb(payload.db)
-              setState("done")
-              onDoneRef.current?.(payload.ast, payload.db)
-            } else {
-              setState("error")
-            }
-          }
-          if (item.event === "error") setState("error")
-        }
+        for (const item of parseSseEvents(ready)) handleEvent(item)
       }
+      // Flush the final frame: the terminal `done` / `error` event can arrive
+      // without a trailing blank line and would otherwise be stranded in `buffer`.
+      for (const item of parseSseEvents(buffer)) handleEvent(item)
       setState((current) => (current === "streaming" ? "done" : current))
     } catch (error) {
       if ((error as { name?: string }).name === "AbortError") {

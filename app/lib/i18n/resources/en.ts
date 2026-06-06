@@ -309,7 +309,6 @@ export const en: Resources = {
     nsss: {
       intro: "A small number of short nucleotide sequences are submitted through the web-based NSSS (Nucleotide Sequence Submission System).",
       specialToMss: "Large-scale sequences, complete genomes, and WGS / TSA / TLS / EST / HTG / TPA are out of scope for NSSS; submit them through DDBJ (MSS).",
-      notForReads: "Raw reads are not part of nucleotide sequence submission; submit them to DRA instead.",
     },
     variant: {
       jga: {

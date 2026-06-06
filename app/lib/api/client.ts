@@ -76,7 +76,10 @@ export const encodeQuery = (query: Record<string, unknown> | undefined): string 
   return s ? `?${s}` : ""
 }
 
-const consumeJsonBody = async <T>(response: Response): Promise<T> => {
+// Guards a 204 / non-JSON body so callers never hit a raw `SyntaxError` from
+// `response.json()`; a missing JSON body surfaces as a schema validation failure
+// at the caller's `.parse()` instead.
+export const consumeJsonBody = async <T>(response: Response): Promise<T> => {
   if (response.status === 204) return undefined as T
   const contentType = response.headers.get("content-type") ?? ""
   if (!contentType.includes("json")) return undefined as T

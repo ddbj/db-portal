@@ -119,6 +119,7 @@ const jwt = (payload: Record<string, unknown>): string => {
 }
 
 let stateCounter = 0
+const PENDING_NONCE = "nonce-fixed"
 // callback は pendingLogins を消費して state を検証する。
 // 各テストが固有の state を投入し、テスト間で状態を共有しない。
 const seedPendingLogin = (): string => {
@@ -126,6 +127,7 @@ const seedPendingLogin = (): string => {
   pendingLogins.put({
     codeVerifier: "verifier-fixed",
     state,
+    nonce: PENDING_NONCE,
     returnTo: "/",
     createdAt: Date.now(),
   })
@@ -263,6 +265,25 @@ describe("mountAuthRoutes callback error mapping", () => {
     expect(setCookieHeader(recorded)).toBeUndefined()
   })
 
+  test("callback_idTokenNonceMismatch_returns400InvalidIdToken", async () => {
+    const idToken = jwt({
+      iss: REALM_URL,
+      aud: CLIENT_ID,
+      exp: 4_000_000_000,
+      iat: 1_000,
+      sub: "user-1",
+      nonce: "nonce-from-a-different-login",
+    })
+    server.use(http.post(TOKEN_ENDPOINT, () => HttpResponse.json({ id_token: idToken })))
+    const state = seedPendingLogin()
+
+    const recorded = await runCallback({ code: "abc", state })
+
+    expect(recorded.status).toBe(400)
+    expect(recorded.body).toEqual({ error: "invalid_id_token" })
+    expect(setCookieHeader(recorded)).toBeUndefined()
+  })
+
   test("callback_idTokenExpired_returns400InvalidIdToken", async () => {
     const idToken = jwt({
       iss: REALM_URL,
@@ -270,6 +291,7 @@ describe("mountAuthRoutes callback error mapping", () => {
       exp: 1_000,
       iat: 500,
       sub: "user-1",
+      nonce: PENDING_NONCE,
     })
     server.use(http.post(TOKEN_ENDPOINT, () => HttpResponse.json({ id_token: idToken })))
     const state = seedPendingLogin()
@@ -290,6 +312,7 @@ describe("mountAuthRoutes callback error mapping", () => {
       sub: "user-1",
       name: "User One",
       email: "user@example.com",
+      nonce: PENDING_NONCE,
     })
     server.use(http.post(TOKEN_ENDPOINT, () => HttpResponse.json({ id_token: idToken })))
     const state = seedPendingLogin()

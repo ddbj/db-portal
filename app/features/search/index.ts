@@ -55,7 +55,9 @@ export {
 } from "./search-input"
 export {
   createInitialSearchFacetState,
+  facetAggParam,
   FacetPanel,
+  FACETS_SIZE,
   type FilterRow,
   fromSidebar,
   presetRangeToDates,

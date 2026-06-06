@@ -94,7 +94,6 @@ const catalogData = {
             notes: [
               { kind: "info", messageKey: "submit.nsss.intro" },
               { kind: "info", messageKey: "submit.nsss.specialToMss" },
-              { kind: "warning", messageKey: "submit.nsss.notForReads", whenAny: { dataForm: "raw" } },
             ],
           },
         },

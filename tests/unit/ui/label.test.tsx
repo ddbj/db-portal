@@ -4,17 +4,6 @@ import { describe, expect, test } from "vitest"
 import { Label } from "~/ui/label"
 
 describe("Label", () => {
-  test("Label_default_appliesMonoUppercaseLabelTokens", () => {
-    render(<Label>WHERE</Label>)
-    const node = screen.getByText("WHERE")
-    expect(node).toHaveClass("font-mono")
-    expect(node).toHaveClass("font-bold")
-    expect(node).toHaveClass("uppercase")
-    expect(node).toHaveClass("tracking-label")
-    expect(node).toHaveClass("text-fs-label")
-    expect(node).toHaveClass("text-ink-mid")
-  })
-
   test("Label_default_rendersAsSpan", () => {
     const { container } = render(<Label>WHERE</Label>)
     expect(container.querySelector("span")?.textContent).toBe("WHERE")

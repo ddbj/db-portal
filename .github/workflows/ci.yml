@@ -32,5 +32,8 @@ jobs:
       - name: Unit + PBT
         run: docker compose exec -T app npm test -- --run
 
+      - name: Build
+        run: docker compose exec -T app npm run build
+
       - name: Audit production dependencies
         run: docker compose exec -T app npm audit --audit-level=high --omit=dev

@@ -7,22 +7,40 @@ const LEVEL_RANK: Record<LogLevel, number> = {
   error: 40,
 }
 
+// Key match is the first line of defense; compared case-insensitively so renamed
+// casings (`Authorization`, `id_token`, `Set-Cookie`) cannot slip a credential
+// through. Value-pattern redaction below is the backstop for tokens logged under
+// an unanticipated key.
 const REDACT_KEYS = new Set([
-  "accessToken",
-  "refreshToken",
-  "idToken",
+  "accesstoken",
+  "refreshtoken",
+  "idtoken",
+  "id_token",
+  "token",
+  "bearer",
   "cookie",
-  "Cookie",
+  "set-cookie",
   "authorization",
-  "Authorization",
+  "apikey",
+  "api_key",
+  "password",
+  "secret",
 ])
 
+// Redact token-shaped substrings regardless of the surrounding key: JWTs
+// (`eyJ…`.`…`.`…`) and `Bearer <token>` headers.
+const redactString = (value: string): string =>
+  value
+    .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
+    .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]")
+
 const redact = (value: unknown): unknown => {
+  if (typeof value === "string") return redactString(value)
   if (value === null || typeof value !== "object") return value
   if (Array.isArray(value)) return value.map(redact)
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    out[k] = REDACT_KEYS.has(k) ? "[REDACTED]" : redact(v)
+    out[k] = REDACT_KEYS.has(k.toLowerCase()) ? "[REDACTED]" : redact(v)
   }
 
   return out

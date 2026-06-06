@@ -9,7 +9,7 @@ import {
 } from "~/lib/api"
 
 import { isIdentityAst } from "../ast"
-import { scopeFacetParam } from "../sidebar/facet-config"
+import { facetAggParam } from "../sidebar/facet-config"
 import { type DbSlug, type PerPageValue, type SortKey, sortKeyToApiSort } from "../types"
 import { findExactMatch, type ResolvedExactMatch } from "./exact-match"
 
@@ -36,24 +36,11 @@ export type SearchParams = {
   sort: SortKey
 }
 
-const FACETS_SIZE = 100
-
 // Per-DB top hits requested on the cross arm: each named entry that leads its arm
 // sits on the first page so the exact-match probe can lift it to a full hit.
 const CROSS_TOP_HITS = 3
 
 const EXACT_MATCH_PROBE_PER_PAGE = 20
-
-// Self-excluding q-aware facet aggregation ridden on the same search response: drop
-// each facet's own q filter from its population so a multi-select facet keeps
-// offering its other values, while the hits stay filtered by the full q
-// (docs/search.md § 候補値・件数の出所).
-const aggParam = (
-  db: DbSlug | null,
-): { facets?: string; facetsSize?: number; facetSelfExclude?: boolean } => {
-  const facets = scopeFacetParam(db)
-  return facets === "" ? {} : { facets, facetsSize: FACETS_SIZE, facetSelfExclude: true }
-}
 
 // Resolve the detected exact match to a full per-DB hit: re-run the committed AST
 // against the matched DB and pick the hit with the matched identifier, giving the
@@ -94,7 +81,7 @@ export const fetchSearchResults = async (
 ): Promise<SearchResultsPayload> => {
   const options = baseUrl === undefined ? {} : { baseUrl }
   const body = isIdentityAst(ast) ? {} : { ast: ast as ParseNodeInput }
-  const agg = aggParam(db)
+  const agg = facetAggParam(db)
   if (db === null) {
     const cross = await crossSearchByAst(body, { ...options, query: { topHits: CROSS_TOP_HITS, ...agg } })
     const exactMatch = await resolveExactMatch(ast, cross.databases, options)

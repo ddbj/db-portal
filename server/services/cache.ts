@@ -8,11 +8,11 @@ import type {
   ServiceList,
   ServiceSource,
 } from "../../app/schemas/api-bff/service"
-import { ServiceCache as ServiceCacheSchema } from "../../app/schemas/api-bff/service"
+import { SERVICE_CACHE_SCHEMA_VERSION, ServiceCache as ServiceCacheSchema } from "../../app/schemas/api-bff/service"
 import type { Logger } from "../lib/log"
 
 const CACHE_FILE = "services.json"
-const SCHEMA_VERSION = 2 as const
+const SCHEMA_VERSION = SERVICE_CACHE_SCHEMA_VERSION
 
 const emptyState = (): ServiceCache => ({
   schemaVersion: SCHEMA_VERSION,

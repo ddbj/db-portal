@@ -19,6 +19,14 @@ export const FileEntry = z.object({
   access: Access,
   dataForm: DataForm,
   groupId: z.string().min(1),
-  chipTags: z.array(FileEntryChip).default([]),
+  // At most one chip per axis: routing predicates match on `anyChip` by axis, so a
+  // second chip on the same axis would make the outcome depend on array order.
+  chipTags: z
+    .array(FileEntryChip)
+    .refine(
+      (chips) => new Set(chips.map((c) => c.axis)).size === chips.length,
+      { message: "chipTags must not contain more than one chip per axis" },
+    )
+    .default([]),
 })
 export type FileEntry = z.infer<typeof FileEntry>

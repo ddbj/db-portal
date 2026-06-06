@@ -68,6 +68,31 @@ describe("FileEntry", () => {
     ).toThrow()
   })
 
+  test("FileEntry_duplicateChipAxis_throws", () => {
+    // Two individually-valid chips on the same axis: rejected because routing
+    // matches by axis and a second same-axis chip makes the outcome order-dependent.
+    expect(() =>
+      FileEntry.parse({
+        ...validEntry,
+        chipTags: [
+          { axis: "mass-spec-domain", value: "proteomics" },
+          { axis: "mass-spec-domain", value: "metabolomics" },
+        ],
+      }),
+    ).toThrow()
+  })
+
+  test("FileEntry_distinctChipAxes_parses", () => {
+    const parsed = FileEntry.parse({
+      ...validEntry,
+      chipTags: [
+        { axis: "mass-spec-domain", value: "proteomics" },
+        { axis: "spatial-platform", value: "visium" },
+      ],
+    })
+    expect(parsed.chipTags).toHaveLength(2)
+  })
+
   test("FileEntry_groupIdEmpty_throws", () => {
     expect(() => FileEntry.parse({ ...validEntry, groupId: "" })).toThrow()
   })

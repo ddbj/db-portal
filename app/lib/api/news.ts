@@ -1,7 +1,7 @@
 import { type NewsItem, NewsList } from "~/schemas/api-bff/news"
 
 import type { Lang } from "../i18n/use-lang"
-import { buildRequestInit, joinUrl } from "./client"
+import { buildRequestInit, consumeJsonBody, joinUrl } from "./client"
 import { toAPIError } from "./errors"
 
 export {
@@ -75,5 +75,5 @@ export const fetchNews = async (options: FetchNewsOptions = {}): Promise<NewsLis
   const response = await fetch(joinUrl(options.baseUrl, buildNewsPath(options.query)), init)
   if (!response.ok) throw await toAPIError(response)
 
-  return NewsList.parse(await response.json())
+  return NewsList.parse(await consumeJsonBody(response))
 }

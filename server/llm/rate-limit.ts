@@ -34,14 +34,18 @@ export const createRateLimiter = (
   const ipWindows = new Map<string, Window>()
   const sessionWindows = new Map<string, Window>()
 
-  type AxisOutcome = { ok: true } | { ok: false; retryAfterSec: number }
+  type AxisPeek =
+    | { ok: true; commit: () => void }
+    | { ok: false; retryAfterSec: number }
 
-  const tryHit = (
+  // Peek without mutating: a counter is only consumed once both axes pass, so
+  // tripping one axis (e.g. session) never burns the other axis' budget (ip).
+  const peek = (
     map: Map<string, Window>,
     key: string,
     limit: number,
     now: number,
-  ): AxisOutcome => {
+  ): AxisPeek => {
     const prev = map.get(key) ?? { startMs: now, count: 0 }
     const advanced = advanceWindow(prev, now)
     if (advanced.count >= limit) {
@@ -49,22 +53,25 @@ export const createRateLimiter = (
 
       return { ok: false, retryAfterSec }
     }
-    advanced.count += 1
-    map.set(key, advanced)
 
-    return { ok: true }
+    return {
+      ok: true,
+      commit: () => map.set(key, { startMs: advanced.startMs, count: advanced.count + 1 }),
+    }
   }
 
   const check: RateLimiter["check"] = (ip, sid) => {
     const now = clock()
-    const ipDecision = tryHit(ipWindows, ip, config.perIpPerMin, now)
-    if (!ipDecision.ok) return { ok: false, axis: "ip", retryAfterSec: ipDecision.retryAfterSec }
+    const ipPeek = peek(ipWindows, ip, config.perIpPerMin, now)
+    if (!ipPeek.ok) return { ok: false, axis: "ip", retryAfterSec: ipPeek.retryAfterSec }
     if (sid !== undefined) {
-      const sessionDecision = tryHit(sessionWindows, sid, config.perSessionPerMin, now)
-      if (!sessionDecision.ok) {
-        return { ok: false, axis: "session", retryAfterSec: sessionDecision.retryAfterSec }
+      const sessionPeek = peek(sessionWindows, sid, config.perSessionPerMin, now)
+      if (!sessionPeek.ok) {
+        return { ok: false, axis: "session", retryAfterSec: sessionPeek.retryAfterSec }
       }
+      sessionPeek.commit()
     }
+    ipPeek.commit()
 
     return { ok: true }
   }

@@ -10,6 +10,7 @@ import {
   buildLogoutUrl,
   exchangeCodeForTokens,
   extractUserInfo,
+  generateNonce,
   generatePkce,
   generateState,
   IdTokenValidationError,
@@ -44,8 +45,9 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
     )
     const { codeVerifier, codeChallenge } = generatePkce()
     const state = generateState()
-    pendingLogins.put({ codeVerifier, state, returnTo, createdAt: Date.now() })
-    const url = buildAuthorizeUrl(config, state, codeChallenge)
+    const nonce = generateNonce()
+    pendingLogins.put({ codeVerifier, state, nonce, returnTo, createdAt: Date.now() })
+    const url = buildAuthorizeUrl(config, state, codeChallenge, nonce)
     res.redirect(302, url)
   })
 
@@ -69,6 +71,7 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
       const userInfo = extractUserInfo(tokens.idToken, {
         issuer: env.DB_PORTAL_KEYCLOAK_REALM_URL,
         audience: env.DB_PORTAL_KEYCLOAK_CLIENT_ID,
+        nonce: pending.nonce,
       })
       const sid = crypto.randomUUID()
       sessionStore.set(sid, {
