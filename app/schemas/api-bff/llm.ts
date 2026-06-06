@@ -11,7 +11,7 @@ export type LlmHealth = z.infer<typeof LlmHealth>
 // kept here (server-importable, unlike app/lib/search-scope) for the BFF request
 // schema. The parse API allowlist is the SSOT for which fields each DB allows.
 export const ASSISTANT_DB_SLUGS = [
-  "trad",
+  "ddbj",
   "sra",
   "bioproject",
   "biosample",

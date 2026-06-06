@@ -33,7 +33,7 @@ const kindsOf = (state: UIState, kind: string): boolean =>
 
 describe("selectValidations", () => {
   test("selectValidations_kindDisabledByPrecond_reportsPreconditionConflict", () => {
-    // 第三者 (repos = ddbj-trad / metabobank) では expression-matrix (gea) は disable される
+    // 第三者 (repos = ddbj / metabobank) では expression-matrix (gea) は disable される
     expect(isKindEnabled("third-party", "human", "expression-matrix")).toBe(false)
     const state = addRow(withPrecond("third-party", "human"), "expression-matrix", "e1", "g1")
 

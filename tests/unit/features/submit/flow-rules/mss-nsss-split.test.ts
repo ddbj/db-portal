@@ -6,7 +6,7 @@ import type { FileEntry, FileGroup, FlowStep, Submission } from "~/schemas/submi
 const servicesOf = (steps: readonly FlowStep[]): string[] => steps.map((s) => s.service)
 
 const destinationOf = (steps: readonly FlowStep[]): FlowStep => {
-  const dests = steps.filter((s) => s.service === "ddbj-trad" || s.service === "nsss")
+  const dests = steps.filter((s) => s.service === "ddbj" || s.service === "nsss")
   expect(dests).toHaveLength(1)
 
   return dests[0]!
@@ -30,9 +30,9 @@ const singleNucleotide = (
   return { preconditions, fileEntries: [entry], fileGroups: [group], notes: "" }
 }
 
-// 塩基配列アノテーション登録の MSS (ddbj-trad) / NSSS (nsss) 振り分け境界を固定する。
+// 塩基配列アノテーション登録の MSS (ddbj) / NSSS (nsss) 振り分け境界を固定する。
 // 契約は docs/submit.md「### MSS / NSSS の振り分け」: NSSS 非対応種別 (TPA など) と
-// 完成ゲノムは MSS (ddbj-trad)、小規模・非完成は NSSS (nsss)。
+// 完成ゲノムは MSS (ddbj)、小規模・非完成は NSSS (nsss)。
 describe("MSS/NSSS split", () => {
   test("deriveFlowSteps_publicEukaryoteSequenceNucleotide_routesToNsssNotDdbjTrad", () => {
     // 第三者でなく mag-sag-chain でもない素の配列は fallback で NSSS Web 登録窓口に行く
@@ -45,28 +45,28 @@ describe("MSS/NSSS split", () => {
     expect(dest.origin).toBe("tier1")
     expect(dest.scope.entryIds).toEqual(["e1"])
     expect(dest.notes.map((n) => n.messageKey)).toContain("submit.nsss.intro")
-    // collapse 検知: ddbj-trad に流れ込んでいない
-    expect(steps.some((s) => s.service === "ddbj-trad")).toBe(false)
+    // collapse 検知: ddbj に流れ込んでいない
+    expect(steps.some((s) => s.service === "ddbj")).toBe(false)
   })
 
   test("deriveFlowSteps_thirdPartySequenceNucleotide_routesToDdbjTradNotNsss", () => {
-    // TPA は NSSS 非対応種別なので MSS (ddbj-trad) のみ。前段 Q1=third-party が唯一の起点
+    // TPA は NSSS 非対応種別なので MSS (ddbj) のみ。前段 Q1=third-party が唯一の起点
     const steps = deriveFlowSteps(singleNucleotide({ q1: "third-party", q2: "eukaryote" }))
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj-trad"])
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
 
     const dest = destinationOf(steps)
-    expect(dest.service).toBe("ddbj-trad")
+    expect(dest.service).toBe("ddbj")
     expect(dest.origin).toBe("tier1")
     expect(dest.notes.map((n) => n.messageKey)).toContain(
-      "submit.ddbjTrad.tpa.primaryAccessionRequired",
+      "submit.ddbj.tpa.primaryAccessionRequired",
     )
     // collapse 検知: NSSS に流れ込んでいない
     expect(steps.some((s) => s.service === "nsss")).toBe(false)
   })
 
   test("deriveFlowSteps_magCompletedGenomeChain_routesToDdbjTradNotNsss", () => {
-    // 完成度・連携で MSS に回す代表例: MAG ゲノムエントリは ENV division (ddbj-trad) へ
+    // 完成度・連携で MSS に回す代表例: MAG ゲノムエントリは ENV division (ddbj) へ
     const submission: Submission = {
       preconditions: { q1: "public", q2: "metagenome" },
       fileEntries: [
@@ -95,7 +95,7 @@ describe("MSS/NSSS split", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    const trad = steps.filter((s) => s.service === "ddbj-trad")
+    const trad = steps.filter((s) => s.service === "ddbj")
     expect(trad).toHaveLength(1)
     expect(trad[0]!.scope.entryIds).toContain("mag1")
     // 完成ゲノムの配列は NSSS Web 窓口には行かない
@@ -113,7 +113,7 @@ describe("MSS/NSSS split", () => {
     )
 
     expect(nsssDest.service).toBe("nsss")
-    expect(tradDest.service).toBe("ddbj-trad")
+    expect(tradDest.service).toBe("ddbj")
     expect(nsssDest.service).not.toBe(tradDest.service)
   })
 })

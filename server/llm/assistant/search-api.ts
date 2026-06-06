@@ -19,7 +19,7 @@ type ParseAstOutcome =
 
 // Tiebreak when a cross-context query uses only Tier-3 fields shared by several
 // DBs (db-portal display order; mirrors the eval oracle's _DB_PRIORITY).
-const DB_PRIORITY = ["sra", "bioproject", "biosample", "jga", "gea", "metabobank", "trad", "taxonomy"] as const
+const DB_PRIORITY = ["sra", "bioproject", "biosample", "jga", "gea", "metabobank", "ddbj", "taxonomy"] as const
 
 const baseUrl = (env: ServerEnv): string =>
   env.DB_PORTAL_SEARCH_API_URL.replace(/\/$/, "")
@@ -68,7 +68,7 @@ const callParse = async (
 
 // Parse under a concrete DB, repairing the per-DB field-availability trap: when the
 // validator rejects a Tier-1/2 cross field the DB cannot serve (a date in taxonomy,
-// submitter in trad, publication in biosample), drop those clauses from the DSL and
+// submitter in ddbj, publication in biosample), drop those clauses from the DSL and
 // re-parse once so the query validates instead of surfacing as invalid_dsl (the search
 // endpoint treats the now-absent field as a no-op). Returns the call plus the DSL that
 // actually validated (pruned or original).

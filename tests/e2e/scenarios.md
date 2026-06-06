@@ -46,7 +46,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `/search/results?q=cancer` を直接開く
   2. `await page.waitForLoadState("networkidle")`
 - **期待**:
-  - `data-testid="db-card"` の `<article>` が **ちょうど 8 枚** 描画される (0 件 DB も skip しない、`cross-results.tsx` の `CARD_ORDER` 順 = `trad` / `bioproject` / `biosample` / `sra` / `jga` / `taxonomy` / `gea` / `metabobank`)
+  - `data-testid="db-card"` の `<article>` が **ちょうど 8 枚** 描画される (0 件 DB も skip しない、`cross-results.tsx` の `CARD_ORDER` 順 = `ddbj` / `bioproject` / `biosample` / `sra` / `jga` / `taxonomy` / `gea` / `metabobank`)
   - 各カードの `data-db` 属性が上記 8 slug を 1 つずつ持つ (重複なし)
   - 各カード見出し (`<h3>`) が `search.scope.<db>` ラベル (`DDBJ` / `BioProject` / …)
   - 各カードに `結果一覧` の `TextLink` が 1 つある
@@ -60,7 +60,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `data-db="bioproject"` カード内の `結果一覧` link をクリック
 - **期待**:
   - URL が `/search/results?q=cancer&db=bioproject` に変わる
-  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-organization` の facet/text 行と、Date First Published / Date Last Published / Date Submitted の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ trad scope 専用で bioproject には無い) が描画される
+  - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-organization` の facet/text 行と、Date First Published / Date Last Published / Date Submitted の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ ddbj scope 専用で bioproject には無い) が描画される
   - main 結果領域に `role="region"` + `aria-label="検索結果"` (`search.a11y.resultsRegion`) の wrapper があり、`PerDbResults` の区切り線リストが入る
   - 上部に `NavigableSearchInput` の太い検索ボックス、その下に `SwitchableQueryPreview` (`search.preview.label`「クエリプレビュー」) が出る
   - **AI 検索アシスタント専用の右ペイン (region) は存在しない**。AI は検索ボックス内の「AI モード」 toggle に集約される (S-SEARCH-11 / E-SEARCH-03 参照)
@@ -155,7 +155,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `/search/results?q=cancer` を開き `networkidle` まで待つ
 - **期待**:
   - 少なくとも 1 枚の `data-testid="db-card"` で、`aria-label="ヒット件数"` (`search.results.cross.countAria`) の要素が数値テキスト (`toLocaleString("en-US")` 形式、`?` でない) を持つ
-  - その count を持つカードのいずれかで、上位ヒット (`search.results.cross.topHits`「上位ヒット」セクション) に最低 1 件の hit があり、`target="_blank"` + `rel="noopener noreferrer"` の外部 link (accession identifier または title) が `entryHref(hit)` で生成された URL を href に持つ (ES 6 DB は `https://ddbj.nig.ac.jp/search/entry/...`、trad は `getentry.ddbj.nig.ac.jp`、taxonomy は `ddbj.nig.ac.jp/tx_search/...`)
+  - その count を持つカードのいずれかで、上位ヒット (`search.results.cross.topHits`「上位ヒット」セクション) に最低 1 件の hit があり、`target="_blank"` + `rel="noopener noreferrer"` の外部 link (accession identifier または title) が `entryHref(hit)` で生成された URL を href に持つ (ES 6 DB は `https://ddbj.nig.ac.jp/search/entry/...`、ddbj は `getentry.ddbj.nig.ac.jp`、taxonomy は `ddbj.nig.ac.jp/tx_search/...`)
   - hit が 0 件のカードは `search.results.cross.noTopHits`(「上位ヒットはありません」) を表示する (count は引き続き数値)
 - **備考**: count / hits の response 形が変わると黙って `?` / 空になるため、数値と外部 link の実在を統合経路で固定する。`error` フィールドが立ったカードは count を出さず一時障害メッセージになる (E-SEARCH-02 と同経路の部分失敗)。
 

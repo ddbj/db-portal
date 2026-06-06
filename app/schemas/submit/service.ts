@@ -6,7 +6,7 @@ export const Service = z.enum([
   "biosample",
   "dra",
   "jga",
-  "ddbj-trad",
+  "ddbj",
   "nsss",
   "togovar",
   "gea",
@@ -25,7 +25,7 @@ export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
   "biosample": "companion",
   "dra": "destination",
   "jga": "destination",
-  "ddbj-trad": "destination",
+  "ddbj": "destination",
   "nsss": "destination",
   "togovar": "destination",
   "gea": "destination",
@@ -102,7 +102,7 @@ export const serviceBadgeColor = ({
 
 // service 間の前提関係 (前提 → 依存先)。カード順序の依存順と「先に済ませること」の両方を駆動する。
 // companion (bioproject/biosample) は destination の前提、humandbs (Policy ゲート) は jga の前提、
-// dra は gea (sequencing 2 段) / ddbj-trad (MAG) の前提。jga は companion を抑制するので bioproject/biosample に依存しない。
+// dra は gea (sequencing 2 段) / ddbj (MAG) の前提。jga は companion を抑制するので bioproject/biosample に依存しない。
 export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>> = {
   "bioproject": [],
   "biosample": [],
@@ -110,7 +110,7 @@ export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>>
   "jpost": [],
   "dra": ["bioproject", "biosample"],
   "jga": ["humandbs"],
-  "ddbj-trad": ["bioproject", "biosample", "dra"],
+  "ddbj": ["bioproject", "biosample", "dra"],
   "nsss": ["bioproject", "biosample"],
   "togovar": ["bioproject", "biosample"],
   "gea": ["bioproject", "biosample", "dra"],
@@ -127,7 +127,7 @@ export const SERVICE_DEPENDENCY_ORDER: readonly Service[] = [
   "biosample",
   "dra",
   "jga",
-  "ddbj-trad",
+  "ddbj",
   "nsss",
   "togovar",
   "gea",

@@ -837,13 +837,13 @@ export interface paths {
         };
         /**
          * DB Portal db-specific hits search
-         * @description Single-database hits search with pagination. `db` is required (400 `missing-db` if omitted). Elasticsearch-backed DBs support cursor-based pagination; Solr-backed DBs (db=trad / db=taxonomy) are offset-only (400 `cursor-not-supported` if cursor is supplied). On ES DBs, `cursor` cannot be combined with `q` / `sort` / `page>1` (400 `about:blank`, cursor exclusivity). Cross-database counts go through /db-portal/cross-search instead.
+         * @description Single-database hits search with pagination. `db` is required (400 `missing-db` if omitted). Elasticsearch-backed DBs support cursor-based pagination; Solr-backed DBs (db=ddbj / db=taxonomy) are offset-only (400 `cursor-not-supported` if cursor is supplied). On ES DBs, `cursor` cannot be combined with `q` / `sort` / `page>1` (400 `about:blank`, cursor exclusivity). Cross-database counts go through /db-portal/cross-search instead.
          */
         get: operations["searchDbPortal"];
         put?: never;
         /**
          * DB Portal db-specific hits search by AST (hits + dsl echo)
-         * @description Same single-database hits search as GET /db-portal/search but the query AST is sent in the request body ({ast}) instead of as ?q=, and the normalized dsl is echoed for shared-URL sync. db is required (400 missing-db). Cursor pagination behaves like the GET path: the token carries the query, the body AST is not used for the search but dsl is still echoed; Solr DBs (trad / taxonomy) return 400 cursor-not-supported. ast omitted/null searches all records and echoes dsl=''.
+         * @description Same single-database hits search as GET /db-portal/search but the query AST is sent in the request body ({ast}) instead of as ?q=, and the normalized dsl is echoed for shared-URL sync. db is required (400 missing-db). Cursor pagination behaves like the GET path: the token carries the query, the body AST is not used for the search but dsl is still echoed; Solr DBs (ddbj / taxonomy) return 400 cursor-not-supported. ast omitted/null searches all records and echoes dsl=''.
          */
         post: operations["searchByAstDbPortal"];
         delete?: never;
@@ -2050,7 +2050,7 @@ export interface components {
              * @example [
              *       {
              *         "count": 100,
-             *         "db": "trad"
+             *         "db": "ddbj"
              *       },
              *       {
              *         "count": 50,
@@ -2060,7 +2060,7 @@ export interface components {
              */
             databases: components["schemas"]["DbPortalCount"][];
             /**
-             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (trad / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
+             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (ddbj / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
              * @example null
              */
             facets?: components["schemas"]["DbPortalFacets"] | null;
@@ -2075,7 +2075,7 @@ export interface components {
          * DbPortalCrossSearchResponse
          * @description Cross-database response (8 entries, fixed order, count + top hits).
          *
-         *     Order: trad, sra, bioproject, biosample, jga, gea, metabobank, taxonomy.
+         *     Order: ddbj, sra, bioproject, biosample, jga, gea, metabobank, taxonomy.
          *     Each entry carries count and (when ``topHits>=1``) up to ``topHits``
          *     lightweight hits per DB.
          */
@@ -2086,7 +2086,7 @@ export interface components {
              * @example [
              *       {
              *         "count": 100,
-             *         "db": "trad"
+             *         "db": "ddbj"
              *       },
              *       {
              *         "count": 50,
@@ -2096,7 +2096,7 @@ export interface components {
              */
             databases: components["schemas"]["DbPortalCount"][];
             /**
-             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (trad / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
+             * @description Facet aggregation over the ES entries alias (organism / accessibility / type only) when the ``facets`` parameter is supplied; ``null`` otherwise.  Solr-backed DBs (ddbj / taxonomy) are not included.  ``null`` if the aggregation request failed or timed out (the count fan-out still returns 200).  See db-portal-api-spec.md § facet 集計.
              * @example null
              */
             facets?: components["schemas"]["DbPortalFacets"] | null;
@@ -2106,14 +2106,14 @@ export interface components {
          * @description Database identifier for db-portal search (8 values).
          * @enum {string}
          */
-        DbPortalDb: "trad" | "sra" | "bioproject" | "biosample" | "jga" | "gea" | "metabobank" | "taxonomy";
+        DbPortalDb: "ddbj" | "sra" | "bioproject" | "biosample" | "jga" | "gea" | "metabobank" | "taxonomy";
         /**
          * DbPortalFacets
          * @description Facet aggregation results for db-portal endpoints.
          *
          *     Extends the shared :class:`~ddbj_search_api.schemas.common.Facets`
          *     (ES-backed facets) with the four Solr-backed facets that only
-         *     db-portal exposes: ``division`` / ``molecularType`` (trad / ARSA) and
+         *     db-portal exposes: ``division`` / ``molecularType`` (ddbj / ARSA) and
          *     ``rank`` / ``kingdom`` (taxonomy / TXSearch).  The same convention
          *     applies to every field: ``null`` = not aggregated, ``[]`` = aggregated
          *     with zero buckets.  See docs/db-portal-api-spec.md § facet 集計.
@@ -2373,7 +2373,7 @@ export interface components {
             vendor?: components["schemas"]["FacetBucket"][] | null;
             /**
              * Division
-             * @description Trad division count (db=trad only). INSDC division code (ARSA ``Division`` field).
+             * @description Ddbj division count (db=ddbj only). INSDC division code (ARSA ``Division`` field).
              * @example [
              *       {
              *         "count": 1200,
@@ -2384,7 +2384,7 @@ export interface components {
             division?: components["schemas"]["FacetBucket"][] | null;
             /**
              * Moleculartype
-             * @description Trad molecular type count (db=trad only, ARSA ``MolecularType`` field). Re-inject a bucket value as ``molecular_type:<value>`` in the DSL ``q``.
+             * @description Ddbj molecular type count (db=ddbj only, ARSA ``MolecularType`` field). Re-inject a bucket value as ``molecular_type:<value>`` in the DSL ``q``.
              * @example [
              *       {
              *         "count": 800,
@@ -2510,7 +2510,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -2683,7 +2683,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -2741,6 +2741,160 @@ export interface components {
              * @example 2020-04
              */
             collectionDate?: string | null;
+        };
+        /**
+         * DbPortalHitDdbj
+         * @description Ddbj (ARSA-backed) hit.
+         */
+        DbPortalHitDdbj: {
+            /**
+             * Identifier
+             * @description Entry identifier.
+             * @example PRJDB1234
+             */
+            identifier: string;
+            /**
+             * Title
+             * @description Entry title.
+             * @example Sample BioProject title
+             */
+            title?: string | null;
+            /**
+             * Description
+             * @description Entry description.
+             * @example Whole-genome sequencing of sample organism.
+             */
+            description?: string | null;
+            /**
+             * @description Organism information.
+             * @example {
+             *       "identifier": "9606",
+             *       "name": "Homo sapiens"
+             *     }
+             */
+            organism?: components["schemas"]["Organism"] | null;
+            /**
+             * Datepublished
+             * @description Publication date (ISO 8601).
+             * @example 2024-01-15
+             */
+            datePublished?: string | null;
+            /**
+             * Datemodified
+             * @description Modification date (ISO 8601).
+             * @example 2024-06-01
+             */
+            dateModified?: string | null;
+            /**
+             * Datecreated
+             * @description Creation date (ISO 8601).
+             * @example 2024-01-01
+             */
+            dateCreated?: string | null;
+            /**
+             * Url
+             * Format: uri
+             * @description Canonical URL.
+             * @example https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234
+             */
+            url?: string | null;
+            /**
+             * Sameas
+             * @description Equivalent identifiers.
+             * @example [
+             *       {
+             *         "identifier": "PRJNA0001",
+             *         "type": "bioproject",
+             *         "url": "https://example.com/PRJNA0001"
+             *       }
+             *     ]
+             */
+            sameAs?: components["schemas"]["Xref"][] | null;
+            /**
+             * Dbxrefs
+             * @description Cross-references.
+             * @example [
+             *       {
+             *         "identifier": "SAMD00012345",
+             *         "type": "biosample",
+             *         "url": "https://example.com/SAMD00012345"
+             *       }
+             *     ]
+             */
+            dbXrefs?: components["schemas"]["Xref"][] | null;
+            /**
+             * Status
+             * @description INSDC status.
+             * @example public
+             */
+            status?: ("public" | "private" | "suppressed" | "withdrawn") | null;
+            /**
+             * Accessibility
+             * @description Accessibility level (public-access / controlled-access).
+             * @example public-access
+             */
+            accessibility?: ("public-access" | "controlled-access") | null;
+            /**
+             * Ispartof
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
+             * @example bioproject
+             */
+            isPartOf?: string | null;
+            /**
+             * @description Hit type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "ddbj";
+            /**
+             * Division
+             * @example SYN
+             */
+            division?: string | null;
+            /**
+             * Moleculartype
+             * @example DNA
+             */
+            molecularType?: string | null;
+            /**
+             * Sequencelength
+             * @example 5000
+             */
+            sequenceLength?: number | null;
+            /**
+             * Referencetitle
+             * @description GenBank REFERENCE titles (multi-valued).
+             * @example [
+             *       "A strong candidate for the breast and ovarian cancer susceptibility gene BRCA1",
+             *       "Direct Submission"
+             *     ]
+             */
+            referenceTitle?: string[] | null;
+            /**
+             * Referencejournal
+             * @description GenBank REFERENCE journals (multi-valued).
+             * @example [
+             *       "Science 266 (5182), 66-71 (1994)"
+             *     ]
+             */
+            referenceJournal?: string[] | null;
+            /**
+             * Genename
+             * @description Gene names from the GenBank feature table's ``/gene=`` qualifiers (deduplicated, capped).
+             * @example [
+             *       "BRCA1"
+             *     ]
+             */
+            geneName?: string[] | null;
+            /**
+             * Lineage
+             * @description Taxonomic ancestors (ancestor-only, organism itself excluded).
+             * @example [
+             *       "Eukaryota",
+             *       "Metazoa",
+             *       "Chordata"
+             *     ]
+             */
+            lineage?: string[] | null;
         };
         /**
          * DbPortalHitGea
@@ -2836,7 +2990,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -2973,7 +3127,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -3144,7 +3298,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -3303,7 +3457,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -3491,7 +3645,7 @@ export interface components {
             accessibility?: ("public-access" | "controlled-access") | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -3572,160 +3726,6 @@ export interface components {
             equivalentName?: string[] | null;
         };
         /**
-         * DbPortalHitTrad
-         * @description Trad (ARSA-backed) hit.
-         */
-        DbPortalHitTrad: {
-            /**
-             * Identifier
-             * @description Entry identifier.
-             * @example PRJDB1234
-             */
-            identifier: string;
-            /**
-             * Title
-             * @description Entry title.
-             * @example Sample BioProject title
-             */
-            title?: string | null;
-            /**
-             * Description
-             * @description Entry description.
-             * @example Whole-genome sequencing of sample organism.
-             */
-            description?: string | null;
-            /**
-             * @description Organism information.
-             * @example {
-             *       "identifier": "9606",
-             *       "name": "Homo sapiens"
-             *     }
-             */
-            organism?: components["schemas"]["Organism"] | null;
-            /**
-             * Datepublished
-             * @description Publication date (ISO 8601).
-             * @example 2024-01-15
-             */
-            datePublished?: string | null;
-            /**
-             * Datemodified
-             * @description Modification date (ISO 8601).
-             * @example 2024-06-01
-             */
-            dateModified?: string | null;
-            /**
-             * Datecreated
-             * @description Creation date (ISO 8601).
-             * @example 2024-01-01
-             */
-            dateCreated?: string | null;
-            /**
-             * Url
-             * Format: uri
-             * @description Canonical URL.
-             * @example https://ddbj.nig.ac.jp/search/entry/bioproject/PRJDB1234
-             */
-            url?: string | null;
-            /**
-             * Sameas
-             * @description Equivalent identifiers.
-             * @example [
-             *       {
-             *         "identifier": "PRJNA0001",
-             *         "type": "bioproject",
-             *         "url": "https://example.com/PRJNA0001"
-             *       }
-             *     ]
-             */
-            sameAs?: components["schemas"]["Xref"][] | null;
-            /**
-             * Dbxrefs
-             * @description Cross-references.
-             * @example [
-             *       {
-             *         "identifier": "SAMD00012345",
-             *         "type": "biosample",
-             *         "url": "https://example.com/SAMD00012345"
-             *       }
-             *     ]
-             */
-            dbXrefs?: components["schemas"]["Xref"][] | null;
-            /**
-             * Status
-             * @description INSDC status.
-             * @example public
-             */
-            status?: ("public" | "private" | "suppressed" | "withdrawn") | null;
-            /**
-             * Accessibility
-             * @description Accessibility level (public-access / controlled-access).
-             * @example public-access
-             */
-            accessibility?: ("public-access" | "controlled-access") | null;
-            /**
-             * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
-             * @example bioproject
-             */
-            isPartOf?: string | null;
-            /**
-             * @description Hit type discriminator. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            type: "trad";
-            /**
-             * Division
-             * @example SYN
-             */
-            division?: string | null;
-            /**
-             * Moleculartype
-             * @example DNA
-             */
-            molecularType?: string | null;
-            /**
-             * Sequencelength
-             * @example 5000
-             */
-            sequenceLength?: number | null;
-            /**
-             * Referencetitle
-             * @description GenBank REFERENCE titles (multi-valued).
-             * @example [
-             *       "A strong candidate for the breast and ovarian cancer susceptibility gene BRCA1",
-             *       "Direct Submission"
-             *     ]
-             */
-            referenceTitle?: string[] | null;
-            /**
-             * Referencejournal
-             * @description GenBank REFERENCE journals (multi-valued).
-             * @example [
-             *       "Science 266 (5182), 66-71 (1994)"
-             *     ]
-             */
-            referenceJournal?: string[] | null;
-            /**
-             * Genename
-             * @description Gene names from the GenBank feature table's ``/gene=`` qualifiers (deduplicated, capped).
-             * @example [
-             *       "BRCA1"
-             *     ]
-             */
-            geneName?: string[] | null;
-            /**
-             * Lineage
-             * @description Taxonomic ancestors (ancestor-only, organism itself excluded).
-             * @example [
-             *       "Eukaryota",
-             *       "Metazoa",
-             *       "Chordata"
-             *     ]
-             */
-            lineage?: string[] | null;
-        };
-        /**
          * DbPortalHitsByAstResponse
          * @description ``POST /db-portal/search`` response: hits payload + ``dsl`` echo.
          */
@@ -3747,7 +3747,7 @@ export interface components {
              *       }
              *     ]
              */
-            hits: (components["schemas"]["DbPortalHitBioProject"] | components["schemas"]["DbPortalHitBioSample"] | components["schemas"]["DbPortalHitSra"] | components["schemas"]["DbPortalHitJga"] | components["schemas"]["DbPortalHitGea"] | components["schemas"]["DbPortalHitMetabobank"] | components["schemas"]["DbPortalHitTrad"] | components["schemas"]["DbPortalHitTaxonomy"])[];
+            hits: (components["schemas"]["DbPortalHitBioProject"] | components["schemas"]["DbPortalHitBioSample"] | components["schemas"]["DbPortalHitSra"] | components["schemas"]["DbPortalHitJga"] | components["schemas"]["DbPortalHitGea"] | components["schemas"]["DbPortalHitMetabobank"] | components["schemas"]["DbPortalHitDdbj"] | components["schemas"]["DbPortalHitTaxonomy"])[];
             /**
              * Hardlimitreached
              * @description True when total >= 10000 (aligned with Solr hard limit).
@@ -3813,7 +3813,7 @@ export interface components {
              *       }
              *     ]
              */
-            hits: (components["schemas"]["DbPortalHitBioProject"] | components["schemas"]["DbPortalHitBioSample"] | components["schemas"]["DbPortalHitSra"] | components["schemas"]["DbPortalHitJga"] | components["schemas"]["DbPortalHitGea"] | components["schemas"]["DbPortalHitMetabobank"] | components["schemas"]["DbPortalHitTrad"] | components["schemas"]["DbPortalHitTaxonomy"])[];
+            hits: (components["schemas"]["DbPortalHitBioProject"] | components["schemas"]["DbPortalHitBioSample"] | components["schemas"]["DbPortalHitSra"] | components["schemas"]["DbPortalHitJga"] | components["schemas"]["DbPortalHitGea"] | components["schemas"]["DbPortalHitMetabobank"] | components["schemas"]["DbPortalHitDdbj"] | components["schemas"]["DbPortalHitTaxonomy"])[];
             /**
              * Hardlimitreached
              * @description True when total >= 10000 (aligned with Solr hard limit).
@@ -3863,7 +3863,7 @@ export interface components {
          *
          *     ``type`` covers all 16 possible hit values: the 8 db-portal DBs with
          *     sub-types where applicable (``sra-*``, ``jga-*``) plus the
-         *     Solr-backed fixed literals ``trad`` and ``taxonomy``.
+         *     Solr-backed fixed literals ``ddbj`` and ``taxonomy``.
          */
         DbPortalLightweightHit: {
             /**
@@ -3878,7 +3878,7 @@ export interface components {
              * @example bioproject
              * @enum {string}
              */
-            type: "bioproject" | "biosample" | "sra-submission" | "sra-study" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-analysis" | "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy" | "gea" | "metabobank" | "trad" | "taxonomy";
+            type: "bioproject" | "biosample" | "sra-submission" | "sra-study" | "sra-experiment" | "sra-run" | "sra-sample" | "sra-analysis" | "jga-study" | "jga-dataset" | "jga-dac" | "jga-policy" | "gea" | "metabobank" | "ddbj" | "taxonomy";
             /**
              * Title
              * @description Entry title.
@@ -3938,7 +3938,7 @@ export interface components {
             url?: string | null;
             /**
              * Ispartof
-             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"trad"`` / ``"taxonomy"``).
+             * @description Parent collection identifier.  ES-backed hits carry the index-level value (e.g. ``"bioproject"`` / ``"sra"``); Solr-backed hits use a fixed literal (``"ddbj"`` / ``"taxonomy"``).
              * @example bioproject
              */
             isPartOf?: string | null;
@@ -11438,7 +11438,7 @@ export interface operations {
     crossSearchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Ddbj ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
                 /** @description Per-DB top hits count.  ``0`` returns count-only (``databases[i].hits`` is ``null``); ``1``-``50`` returns up to N hits per DB.  Hits are ordered by relevance (``_score`` desc) with ``identifier`` ascending as the tiebreaker; when ``q`` is omitted (``match_all``) all scores tie, so ``identifier`` ascending becomes the effective order.  Out of range (>50 or negative) returns 422. */
                 topHits?: number;
@@ -11467,7 +11467,7 @@ export interface operations {
                      * @example {
                      *       "databases": [
                      *         {
-                     *           "db": "trad",
+                     *           "db": "ddbj",
                      *           "error": "timeout",
                      *           "hits": []
                      *         },
@@ -11601,7 +11601,7 @@ export interface operations {
                      * @example {
                      *       "databases": [
                      *         {
-                     *           "db": "trad",
+                     *           "db": "ddbj",
                      *           "error": "timeout",
                      *           "hits": []
                      *         },
@@ -11705,21 +11705,21 @@ export interface operations {
     searchDbPortal: {
         parameters: {
             query?: {
-                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Trad ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
+                /** @description Search query.  Bare word / quoted phrase / ``field:value`` / ``AND``/``OR``/``NOT`` (uppercase) / parenthesized groups in a single expression.  Bare words and phrases are matched as free text against indexed fields; ``field:value`` constrains to a specific field.  Tier 1 (cross): ``identifier``, ``title``, ``name``, ``description``, ``organism_id``, ``organism_name``, ``date_published``, ``date_modified``, ``date_created``, ``date``.  Tier 2 (cross): ``submitter``, ``publication``.  Tier 3 (single-DB only): BioProject ``object_type`` / ``project_type`` / ``grant_title`` / ``grant_agency`` / SRA ``library_strategy`` etc. / JGA ``study_type`` / GEA+MetaboBank ``experiment_type`` / MetaboBank ``submission_type`` / Ddbj ``division`` etc. / Taxonomy ``rank`` etc.  Free text may only appear as the sole top-level term or directly under a top-level AND (max one); placing it under OR / NOT or nested AND yields 400 ``invalid-freetext-position``.  Errors surface as RFC 7807 problem details with a dedicated ``type`` URI (``unexpected-token`` / ``unknown-field`` / ``field-not-available-in-cross-db`` / ``invalid-freetext-position`` / ``duplicate-freetext`` etc.). */
                 q?: string | null;
-                /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``/db-portal/cross-search``. */
+                /** @description Target database (required).  Allowed: ``ddbj``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``ddbj`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``/db-portal/cross-search``. */
                 db?: components["schemas"]["DbPortalDb"] | null;
                 /** @description Page number (1-based).  Combined with perPage, page * perPage must be <= 10000 (deep paging limit; exceeding returns 400). */
                 page?: number;
                 /** @description Items per page.  Allowed: 20, 50, 100. */
                 perPage?: 20 | 50 | 100;
-                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, q / sort / page must use their defaults (db and perPage may be combined). Combining cursor with q / sort / page>1 on ES DBs returns 400 'about:blank' (cursor exclusivity). Solr-backed DBs (db=trad / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported' if cursor is supplied. */
+                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, q / sort / page must use their defaults (db and perPage may be combined). Combining cursor with q / sort / page>1 on ES DBs returns 400 'about:blank' (cursor exclusivity). Solr-backed DBs (db=ddbj / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported' if cursor is supplied. */
                 cursor?: string | null;
                 /** @description Sort order.  Allowed: null (relevance, default), ``datePublished:desc``, ``datePublished:asc``. */
                 sort?: ("datePublished:asc" | "datePublished:desc") | null;
                 /** @description Default boolean operator for connecting comma-separated FreeText tokens (e.g. ``q=cancer,tumor``).  Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value (e.g. ``q=cancer tumor``) are always AND-combined regardless of this setting (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the DSL are unaffected.  Exclusive with cursor when not at default (OR). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
-                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=trad`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=ddbj`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
                 facetsSize?: number | null;
@@ -11782,19 +11782,19 @@ export interface operations {
     searchByAstDbPortal: {
         parameters: {
             query?: {
-                /** @description Target database (required).  Allowed: ``trad``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``trad`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``POST /db-portal/cross-search``. */
+                /** @description Target database (required).  Allowed: ``ddbj``, ``sra``, ``bioproject``, ``biosample``, ``jga``, ``gea``, ``metabobank``, ``taxonomy``.  ``ddbj`` routes to ARSA (Solr) and ``taxonomy`` to TXSearch (Solr); the other six DBs use Elasticsearch.  Omitting returns 400 ``missing-db``; for cross-database count, use ``POST /db-portal/cross-search``. */
                 db?: components["schemas"]["DbPortalDb"] | null;
                 /** @description Page number (1-based).  Combined with perPage, page * perPage must be <= 10000 (deep paging limit; exceeding returns 400). */
                 page?: number;
                 /** @description Items per page.  Allowed: 20, 50, 100. */
                 perPage?: 20 | 50 | 100;
-                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, sort / page must use their defaults (db and perPage may be combined); the body AST is not used for the search (the token carries the query) but ``dsl`` is still echoed from it. Combining cursor with sort / page>1 returns 400 'about:blank' (cursor exclusivity).  Solr-backed DBs (db=trad / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported'. */
+                /** @description Cursor token for cursor-based pagination (HMAC-signed, PIT 5 min). When specified, sort / page must use their defaults (db and perPage may be combined); the body AST is not used for the search (the token carries the query) but ``dsl`` is still echoed from it. Combining cursor with sort / page>1 returns 400 'about:blank' (cursor exclusivity).  Solr-backed DBs (db=ddbj / db=taxonomy) are cursor-incompatible and return 400 'cursor-not-supported'. */
                 cursor?: string | null;
                 /** @description Sort order.  Allowed: null (relevance, default), ``datePublished:desc``, ``datePublished:asc``. */
                 sort?: ("datePublished:asc" | "datePublished:desc") | null;
                 /** @description Default boolean operator for connecting comma-separated FreeText tokens. Default **OR**.  ``AND`` requires every token to match; ``OR`` requires at least one.  Tokens inside a single FreeText value are always AND-combined (use double quotes for phrase match).  The explicit ``AND`` / ``OR`` / ``NOT`` operators inside the AST are unaffected.  Exclusive with cursor when not at default (OR). */
                 keywordOperator?: components["schemas"]["KeywordOperator"];
-                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=trad`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
+                /** @description Comma-separated facet names to aggregate, scoped to the current ``q`` (optional; omitting it returns no facets).  Accepted names depend on ``db``: ES DBs allow the common facets (``organism`` / ``accessibility``) plus that DB's type-specific facets (e.g. ``db=sra`` → ``libraryStrategy`` etc.); ``db=ddbj`` allows ``division`` / ``molecularType``; ``db=taxonomy`` allows ``rank`` / ``kingdom``.  An out-of-scope name returns 400 ``facet-not-applicable``; an allowlist typo returns 422.  Compatible with ``cursor``.  See ``docs/db-portal-api-spec.md`` § facet 集計. */
                 facets?: string | null;
                 /** @description Maximum number of buckets returned per facet (1-1000, server default 100).  Applies uniformly to every facet selected via ``facets``.  The ``organism`` label sub-aggregation always uses size 1 and is unaffected.  Compatible with ``cursor``. */
                 facetsSize?: number | null;

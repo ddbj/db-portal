@@ -139,7 +139,7 @@ test.describe("Submit Domain", () => {
     // 単独 FASTA が自動でペアになり 設定済み (相方選択 UI は無い)
     await expect(annItem.getByText("設定済み", { exact: true })).toBeVisible()
     await expect(annItem.getByRole("combobox", { name: "ペアにする配列" })).toHaveCount(0)
-    await expect(flowStep(page, "ddbj-trad")).toHaveCount(1)
+    await expect(flowStep(page, "ddbj")).toHaveCount(1)
 
     // 単独アノテーションに戻すと FASTA が単独詳細項目として復活する
     await annItem.getByRole("radio", { name: /単独アノテーション/ }).check()
@@ -170,7 +170,7 @@ test.describe("Submit Domain", () => {
     await expect(reads).toBeEnabled()
     await expect(kindButton(page, "バリアント")).toBeEnabled()
 
-    // 第三者 (ddbj-trad / metabobank) では variant / expression は登録先が無く disable
+    // 第三者 (ddbj / metabobank) では variant / expression は登録先が無く disable
     await selectQ1(page, Q1_THIRD)
     await expect(kindButton(page, "バリアント")).toBeDisabled()
     await expect(kindButton(page, "発現マトリクス")).toBeDisabled()

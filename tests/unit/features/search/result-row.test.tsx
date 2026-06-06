@@ -44,8 +44,8 @@ const jgaDataset = hit({
   organization: [{ name: "University of Tokyo" }],
 })
 
-const trad = hit({
-  type: "trad",
+const ddbj = hit({
+  type: "ddbj",
   identifier: "U01317",
   title: "Human beta globin region on chromosome 11.",
   organism: { identifier: "9606", name: "Homo sapiens" },
@@ -140,7 +140,7 @@ describe("ResultRow", () => {
   })
 
   test("organism renders as an italic pill where it carries signal", () => {
-    renderRow({ db: "trad", hit: trad, lang: "ja" })
+    renderRow({ db: "ddbj", hit: ddbj, lang: "ja" })
     expect(screen.getByText("Homo sapiens")).toHaveClass("italic", "text-brand-deep")
   })
 
@@ -150,7 +150,7 @@ describe("ResultRow", () => {
   })
 
   test("controlled vocab chips are mono with a border", () => {
-    renderRow({ db: "trad", hit: trad, lang: "ja" })
+    renderRow({ db: "ddbj", hit: ddbj, lang: "ja" })
     expect(screen.getByText("DNA")).toHaveClass("font-mono", "border")
   })
 
@@ -160,7 +160,7 @@ describe("ResultRow", () => {
   })
 
   test("sequenceLength is formatted with bp", () => {
-    renderRow({ db: "trad", hit: trad, lang: "ja" })
+    renderRow({ db: "ddbj", hit: ddbj, lang: "ja" })
     expect(screen.getByText("73,308 bp")).toBeInTheDocument()
   })
 

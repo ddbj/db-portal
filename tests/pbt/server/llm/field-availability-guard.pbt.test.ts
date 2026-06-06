@@ -7,11 +7,11 @@ import { pruneUnavailableFields, UNAVAILABLE_BY_DB } from "../../../../server/ll
 // unsupported clauses. Disjoint from UNAVAILABLE_BY_DB[db] by construction.
 const AVAILABLE: Record<string, string[]> = {
   taxonomy: ["rank", "common_name", "genus", "lineage", "domain", "organism_id"],
-  trad: ["division", "molecular_type", "feature_gene_name", "date_published", "organism_name"],
+  ddbj: ["division", "molecular_type", "feature_gene_name", "date_published", "organism_name"],
   biosample: ["host", "strain", "isolate", "geo_loc_name", "date_created", "organism_name"],
 }
 
-const dbArb = fc.constantFrom("taxonomy", "trad", "biosample")
+const dbArb = fc.constantFrom("taxonomy", "ddbj", "biosample")
 
 // Build a flat `field:value` AND-chain. Unique values (a<i> / u<i>) keep substring
 // checks unambiguous; the booleans decide which positions are unsupported.

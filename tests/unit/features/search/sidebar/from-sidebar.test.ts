@@ -161,7 +161,7 @@ describe("fromSidebar", () => {
       ...createInitialSearchFacetState(),
       ranges: { sequenceLength: { from: "100", to: "200" } },
     }
-    const node = expectBetween(fromSidebar(state, { db: "trad" }))
+    const node = expectBetween(fromSidebar(state, { db: "ddbj" }))
     expect(node.field).toBe("sequence_length")
     expect(node.from).toBe("100")
     expect(node.to).toBe("200")

@@ -8,16 +8,16 @@ const catalogData = {
   // カスケード: allowedRepos = Q1.repos ∩ Q2.repos。rules を実行せず repos を読むだけで判定する。
   // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
   q1Options: [
-    { id: "public", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "restricted", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank", "jga"] },
-    { id: "third-party", repos: ["ddbj-trad", "metabobank"] },
+    { id: "public", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "restricted", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jga"] },
+    { id: "third-party", repos: ["ddbj", "metabobank"] },
   ],
   q2Options: [
-    { id: "human", repos: ["dra", "jga", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "eukaryote", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "prokaryote", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "virus", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "metagenome", repos: ["dra", "ddbj-trad", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "virus", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "metagenome", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
   ],
   kindRoutes: [
     {
@@ -54,35 +54,35 @@ const catalogData = {
     },
     {
       id: "sequence-nucleotide",
-      candidateRepos: ["ddbj-trad", "nsss", "dra"],
+      candidateRepos: ["ddbj", "nsss", "dra"],
       rules: [
         {
           when: { anyChip: { axis: "assembly-form", value: "mag" } },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.mag.envGenomeEntry" },
-              { kind: "warning", messageKey: "submit.ddbjTrad.mag.rawReadsToDraRequired" },
+              { kind: "info", messageKey: "submit.ddbj.mag.envGenomeEntry" },
+              { kind: "warning", messageKey: "submit.ddbj.mag.rawReadsToDraRequired" },
             ],
           },
         },
         {
           when: { anyChip: { axis: "assembly-form", value: "sag" } },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.ddbjTrad.sag.misagPackage" }],
+            notes: [{ kind: "info", messageKey: "submit.ddbj.sag.misagPackage" }],
           },
         },
         {
           when: { q1: "third-party" },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.tpa.intro" },
-              { kind: "warning", messageKey: "submit.ddbjTrad.tpa.primaryAccessionRequired" },
+              { kind: "info", messageKey: "submit.ddbj.tpa.intro" },
+              { kind: "warning", messageKey: "submit.ddbj.tpa.primaryAccessionRequired" },
             ],
           },
         },
@@ -101,19 +101,19 @@ const catalogData = {
     },
     {
       id: "sequence-annotation",
-      candidateRepos: ["ddbj-trad"],
+      candidateRepos: ["ddbj"],
       rules: [
         {
           when: { groupType: "assembly-annotation" },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "group",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.assemblyAnnotation.intro" },
-              { kind: "info", messageKey: "submit.ddbjTrad.assemblyAnnotation.filenamePairing" },
+              { kind: "info", messageKey: "submit.ddbj.assemblyAnnotation.intro" },
+              { kind: "info", messageKey: "submit.ddbj.assemblyAnnotation.filenamePairing" },
               {
                 kind: "info",
-                messageKey: "submit.ddbjTrad.locusTagPrefix",
+                messageKey: "submit.ddbj.locusTagPrefix",
                 whenAny: { anyChip: { axis: "assembly-form", value: "mag" } },
               },
             ],
@@ -122,22 +122,22 @@ const catalogData = {
         {
           when: { q1: "third-party" },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.tpa.intro" },
-              { kind: "warning", messageKey: "submit.ddbjTrad.tpa.primaryAccessionRequired" },
+              { kind: "info", messageKey: "submit.ddbj.tpa.intro" },
+              { kind: "warning", messageKey: "submit.ddbj.tpa.primaryAccessionRequired" },
             ],
           },
         },
         {
           when: { always: true },
           emit: {
-            service: "ddbj-trad",
+            service: "ddbj",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.ddbjTrad.annotation.intro" },
-              { kind: "warning", messageKey: "submit.ddbjTrad.annotation.needsSequencePair" },
+              { kind: "info", messageKey: "submit.ddbj.annotation.intro" },
+              { kind: "warning", messageKey: "submit.ddbj.annotation.needsSequencePair" },
             ],
           },
         },

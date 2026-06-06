@@ -1,7 +1,7 @@
 import { expect, test } from "./helpers"
 
 const CARD_ORDER = [
-  "trad",
+  "ddbj",
   "bioproject",
   "biosample",
   "sra",

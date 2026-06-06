@@ -1,5 +1,5 @@
 export const DB_SLUGS = [
-  "trad",
+  "ddbj",
   "sra",
   "bioproject",
   "biosample",

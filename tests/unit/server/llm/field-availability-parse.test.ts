@@ -62,15 +62,15 @@ describe("parseDslToAst field-availability repair", () => {
   })
 
   test("a for-db reject on a Tier-3 cross-DB field (not in the matrix) is NOT pruned", async () => {
-    // host is a biosample field; in trad it is a hard reject, but it is NOT a degenerate
+    // host is a biosample field; in ddbj it is a hard reject, but it is NOT a degenerate
     // Tier-1/2 field, so the guard must leave it and surface invalid_dsl.
     let calls = 0
     const fetchImpl = routeFetch(() => {
       calls += 1
 
-      return json({ type: FOR_DB, detail: "field 'host' is not available for db='trad'" }, 400)
+      return json({ type: FOR_DB, detail: "field 'host' is not available for db='ddbj'" }, 400)
     })
-    const outcome = await parseDslToAst("host:x AND division:HUM", "trad", { env, fetchImpl })
+    const outcome = await parseDslToAst("host:x AND division:HUM", "ddbj", { env, fetchImpl })
     expect(outcome).toMatchObject({ ok: false, code: "invalid_dsl" })
     expect(calls).toBe(1) // no retry, because nothing in the matrix matched
   })

@@ -57,7 +57,7 @@ describe("submitReducer preconditions", () => {
   })
 
   test("submitReducer_setQ1ThirdParty_dropsNowDisabledQ2", () => {
-    // 第三者 (repos = ddbj-trad / metabobank) は全 Q2 が依然 intersect するため disable されない
+    // 第三者 (repos = ddbj / metabobank) は全 Q2 が依然 intersect するため disable されない
     const seeded = withPreconditions("public", "human")
     const next = submitReducer(seeded, { type: "SET_Q1", q1: "third-party" })
     expect(next.submission.preconditions.q2).toBe("human")

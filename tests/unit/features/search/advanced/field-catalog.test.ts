@@ -9,8 +9,8 @@ import { DB_SLUGS } from "~/lib/search-scope"
 
 const CROSS_FIELDS = fieldsForScope(null)
 // ES-backed single-DB scopes share the cross (Tier 1/2) fields; Solr-backed
-// scopes (trad / taxonomy) carry their own curated fields instead.
-const ES_DBS = DB_SLUGS.filter((db) => db !== "trad" && db !== "taxonomy")
+// scopes (ddbj / taxonomy) carry their own curated fields instead.
+const ES_DBS = DB_SLUGS.filter((db) => db !== "ddbj" && db !== "taxonomy")
 
 describe("fieldsForScope", () => {
   test("cross scope offers the common fields, not identifier or Tier 3", () => {
@@ -44,12 +44,12 @@ describe("fieldsForScope", () => {
   })
 
   test("Solr-backed scopes offer their own Solr fields, not degenerate ES fields", () => {
-    const trad = fieldsForScope("trad")
-    expect(trad).toContain("division")
-    expect(trad).toContain("sequence_length")
-    expect(trad).toContain("publication") // maps to the ARSA ReferenceTitle
-    expect(trad).not.toContain("accessibility") // degenerate on Solr
-    expect(trad).not.toContain("identifier")
+    const ddbj = fieldsForScope("ddbj")
+    expect(ddbj).toContain("division")
+    expect(ddbj).toContain("sequence_length")
+    expect(ddbj).toContain("publication") // maps to the ARSA ReferenceTitle
+    expect(ddbj).not.toContain("accessibility") // degenerate on Solr
+    expect(ddbj).not.toContain("identifier")
 
     const taxonomy = fieldsForScope("taxonomy")
     expect(taxonomy).toContain("rank")

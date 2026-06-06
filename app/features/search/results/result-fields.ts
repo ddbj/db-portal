@@ -21,7 +21,7 @@ const ENTRY_BASE = "https://ddbj.nig.ac.jp/search/entry"
 // cross-search lightweight hits (only identifier + type are read).
 export const entryHref = (hit: { identifier: string; type: string }): string => {
   const id = encodeURIComponent(hit.identifier)
-  if (hit.type === "trad") {
+  if (hit.type === "ddbj") {
     return `https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=${id}`
   }
   if (hit.type === "taxonomy") {
@@ -120,7 +120,7 @@ export const ancestryRow = (hit: DbHit): readonly string[] => {
 
     return ranks.filter((x): x is string => typeof x === "string" && x.length > 0)
   }
-  if (hit.type === "trad" && "lineage" in hit && Array.isArray(hit.lineage)) {
+  if (hit.type === "ddbj" && "lineage" in hit && Array.isArray(hit.lineage)) {
     return hit.lineage.filter((x): x is string => typeof x === "string" && x.length > 0)
   }
 
@@ -207,7 +207,7 @@ export const signatureChips = (db: DbSlug, hit: DbHit): DisplayChip[] => {
     if ("experimentType" in hit) freeList(hit.experimentType, 1)
     if ("studyType" in hit) freeList(hit.studyType, 1)
     if ("submissionType" in hit) vocabList(hit.submissionType, 1)
-  } else if (db === "trad") {
+  } else if (db === "ddbj") {
     if ("molecularType" in hit) vocab(hit.molecularType)
     if ("division" in hit) vocab(hit.division)
     if ("sequenceLength" in hit && typeof hit.sequenceLength === "number") {

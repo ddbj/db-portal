@@ -81,7 +81,7 @@ describe("HeroSection navigation", () => {
     selectScope(/^DDBJ$/)
     typeKeyword("cancer")
     submitSearch()
-    expect(await navigatedHref(router)).toBe("/search/results?q=cancer&db=trad")
+    expect(await navigatedHref(router)).toBe("/search/results?q=cancer&db=ddbj")
   })
 
   test("HeroSection_whitespaceOnlyKeyword_navigatesWithTrimmedEmptyQuery", async () => {

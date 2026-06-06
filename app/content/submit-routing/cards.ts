@@ -166,7 +166,7 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
     gotcha: { ja: "データのアップロードは Policy 承認後にのみ可能で、承認には数日〜数週間かかることがあります。", en: "You can upload data only after Policy approval, which can take several days to weeks." },
     issuedNote: { ja: "登録すると Study (JGAS######)・Dataset (JGAD######) ほか各種アクセッションが発行されます。引用番号の指定がなければ Study (JGAS) 番号の引用が推奨されます。", en: "Registration issues accessions such as Study (JGAS######) and Dataset (JGAD######); when no specific accession is required, citing the Study (JGAS) number is recommended." },
   },
-  "ddbj-trad": {
+  "ddbj": {
     wizardSteps: {
       ja: [
         "DDBJ アカウント作成 & 登録ファイル準備：配列 FASTA ファイルとアノテーション TSV ファイルを作成し、UME/Parser/transChecker でチェック実行",

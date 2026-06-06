@@ -14,7 +14,7 @@ ES に実在する field (ddbj-search-converter の mapping) を起点に、各�
 
 ## 前提構造
 
-検索対象は **ES 6 DB** (bioproject / biosample / sra / jga / gea / metabobank、物理 14 index = sra-\* 6 + jga-\* 4 を含む) と **Solr 2 DB** (trad = ARSA / taxonomy = TXSearch)。後者は converter の ES mapping 外で、field は ARSA / TXSearch schema が持つ。本書の ES 対応表は ES 6 DB を対象とする。
+検索対象は **ES 6 DB** (bioproject / biosample / sra / jga / gea / metabobank、物理 14 index = sra-\* 6 + jga-\* 4 を含む) と **Solr 2 DB** (ddbj = ARSA / taxonomy = TXSearch)。後者は converter の ES mapping 外で、field は ARSA / TXSearch schema が持つ。本書の ES 対応表は ES 6 DB を対象とする。
 
 field は **全 DB 共通** (converter common mapping) と **DB ごと** (type-specific mapping) に分かれる。
 
@@ -93,7 +93,7 @@ DSL field type (enum / text / identifier) から op を機械導出する ([§ D
 |            | submissionType (text+keyword)                    | `submission_type`                                | enum       | —              |
 
 - `type` は subtype 識別子。SRA subtype = sra-submission / sra-study / sra-experiment / sra-run / sra-sample / sra-analysis、JGA subtype = jga-study / jga-dataset / jga-policy / jga-dac。`db=sra` / `db=jga` は subtype 横断なので、対応しない subtype の doc では空 bucket になり自然に脱落する。
-- trad / taxonomy (Solr) の field は ARSA / TXSearch schema を参照 (本書の ES 対応表の対象外)。
+- ddbj / taxonomy (Solr) の field は ARSA / TXSearch schema を参照 (本書の ES 対応表の対象外)。
 
 ### subtype plane 不変量 (cross-plane AND = 0 件)
 
@@ -127,4 +127,4 @@ controlled-vocab 系を enum (term) にするか text (match) にするかは、
 
 ## 表示規則
 
-scope (cross / 各 DB) ごとにどの field を Advanced builder / Sidebar / facet に出すか、facet 集計の opt-in、Solr backed (trad / taxonomy) の degenerate 行の扱いは `search.md` § Advanced builder / § Sidebar facet / § scope 別の filter 構成 を参照。本書は ES field → DSL field の写像に専念する。
+scope (cross / 各 DB) ごとにどの field を Advanced builder / Sidebar / facet に出すか、facet 集計の opt-in、Solr backed (ddbj / taxonomy) の degenerate 行の扱いは `search.md` § Advanced builder / § Sidebar facet / § scope 別の filter 構成 を参照。本書は ES field → DSL field の写像に専念する。

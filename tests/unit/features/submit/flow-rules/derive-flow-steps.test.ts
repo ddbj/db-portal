@@ -105,13 +105,13 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj-trad"])
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
 
-    const trad = stepFor(steps, "ddbj-trad")
-    expect(trad.origin).toBe("tier1")
-    expect(trad.scope.entryIds).toEqual(["e1"])
+    const ddbj = stepFor(steps, "ddbj")
+    expect(ddbj.origin).toBe("tier1")
+    expect(ddbj.scope.entryIds).toEqual(["e1"])
     // TPA branch carries the primary-accession warning
-    expect(warningKeys(trad)).toContain("submit.ddbjTrad.tpa.primaryAccessionRequired")
+    expect(warningKeys(ddbj)).toContain("submit.ddbj.tpa.primaryAccessionRequired")
   })
 
   test("deriveFlowSteps_nonHumanVariant_routesToEvaNotTogovar", () => {
@@ -278,10 +278,10 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // 典型に絞る: MAG は Tier1 の assembly-form chip → ddbj-trad 単一 step に簡約 (多段 recipe は持たない)
-    const trad = stepFor(steps, "ddbj-trad")
-    expect(trad.origin).toBe("tier1")
-    expect(trad.scope.entryIds).toEqual(["mag1"])
+    // 典型に絞る: MAG は Tier1 の assembly-form chip → ddbj 単一 step に簡約 (多段 recipe は持たない)
+    const ddbj = stepFor(steps, "ddbj")
+    expect(ddbj.origin).toBe("tier1")
+    expect(ddbj.scope.entryIds).toEqual(["mag1"])
     // 生リードは通常の sequence-read routing で DRA へ
     const draRun = steps.find((s) => s.service === "dra")!
     expect(draRun.scope.entryIds).toEqual(["raw1"])
@@ -402,7 +402,7 @@ describe("deriveFlowSteps", () => {
   })
 
   test("deriveFlowSteps_conflictKind_isExcludedFromFlow", () => {
-    // Q1=第三者 では variant は登録先を持たない (allowedRepos {ddbj-trad, metabobank} と交わらず disable)。
+    // Q1=第三者 では variant は登録先を持たない (allowedRepos {ddbj, metabobank} と交わらず disable)。
     // variant の rule 自体は q2=human→togovar にマッチするため、カスケードを見ずに導出すると TogoVar カードが
     // 出てしまう。導出はカスケードを尊重し、この種別の step を一切出さない
     const submission: Submission = {
@@ -425,8 +425,8 @@ describe("deriveFlowSteps", () => {
   })
 
   test("deriveFlowSteps_mixedEnabledAndConflict_derivesOnlyEnabled", () => {
-    // third-party × eukaryote の allowedRepos = {ddbj-trad, metabobank}:
-    // sequence-nucleotide は enable (ddbj-trad へ)、variant は disable
+    // third-party × eukaryote の allowedRepos = {ddbj, metabobank}:
+    // sequence-nucleotide は enable (ddbj へ)、variant は disable
     const submission: Submission = {
       preconditions: { q1: "third-party", q2: "eukaryote" },
       fileEntries: [
@@ -457,7 +457,7 @@ describe("deriveFlowSteps", () => {
     const steps = deriveFlowSteps(submission)
 
     // enable な sequence-nucleotide だけが導出され、conflict の variant はどの step にも現れない
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj-trad"])
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
     expect(steps.some((s) => s.service === "togovar" || s.service === "eva")).toBe(false)
     const allEntryIds = steps.flatMap((s) => s.scope.entryIds)
     expect(allEntryIds).toContain("e1")

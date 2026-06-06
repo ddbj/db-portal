@@ -263,7 +263,7 @@ export type Resources = {
       "biosample": { title: string; description: string }
       "dra": { title: string; description: string }
       "jga": { title: string; description: string }
-      "ddbj-trad": { title: string; description: string }
+      "ddbj": { title: string; description: string }
       "nsss": { title: string; description: string }
       "togovar": { title: string; description: string }
       "gea": { title: string; description: string }
@@ -281,7 +281,7 @@ export type Resources = {
       jga: { intro: string; dbclsPolicy: string }
       dra: { intro: string; restrictedNonHumanEmbargo: string }
     }
-    ddbjTrad: {
+    ddbj: {
       locusTagPrefix: string
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
@@ -560,7 +560,7 @@ export type Resources = {
     }
     scope: {
       all: string
-      trad: string
+      ddbj: string
       sra: string
       bioproject: string
       biosample: string
@@ -854,7 +854,7 @@ export const ja: Resources = {
       "biosample": { title: "BioSample", description: "サンプルを束ねるメタデータ" },
       "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },
       "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先" },
-      "ddbj-trad": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
+      "ddbj": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
       "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム" },
       "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先" },
       "gea": { title: "GEA", description: "遺伝子発現データの登録先" },
@@ -878,7 +878,7 @@ export const ja: Resources = {
         restrictedNonHumanEmbargo: "非ヒトの制限公開リードは、DRA の公開予定日 (embargo) を設定して非公開期間を扱います。",
       },
     },
-    ddbjTrad: {
+    ddbj: {
       locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
       mag: {
         envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",
@@ -1219,7 +1219,7 @@ export const ja: Resources = {
     },
     scope: {
       all: "全データベース",
-      trad: "DDBJ",
+      ddbj: "DDBJ",
       sra: "SRA",
       bioproject: "BioProject",
       biosample: "BioSample",

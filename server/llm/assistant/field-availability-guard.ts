@@ -1,5 +1,5 @@
 // Deterministic safety net for the per-DB field-availability trap. The Solr-backed
-// DBs (trad / taxonomy) and biosample do not carry every Tier-1/2 cross field, so
+// DBs (ddbj / taxonomy) and biosample do not carry every Tier-1/2 cross field, so
 // ddbj-search-api's validator (search/dsl/allowlist.py `_TIER12_UNAVAILABLE_DBS`)
 // rejects those clauses with a `field-not-available-for-db` 400 instead of dropping
 // them. The prompt steers the model away, but a 32B model still occasionally emits e.g.
@@ -14,7 +14,7 @@
 // one of them is a hard 400, not a silent drop, at /db-portal/parse).
 export const UNAVAILABLE_BY_DB: Record<string, ReadonlySet<string>> = {
   taxonomy: new Set(["name", "date_published", "date_modified", "date_created", "date", "submitter", "publication"]),
-  trad: new Set(["name", "date_modified", "date_created", "date", "submitter"]),
+  ddbj: new Set(["name", "date_modified", "date_created", "date", "submitter"]),
   biosample: new Set(["publication"]),
 }
 

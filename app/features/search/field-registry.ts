@@ -72,7 +72,7 @@ export const FIELD_REGISTRY = {
   // === Tier 3 GEA / MetaboBank ===
   experiment_type: { type: "enum", facetName: "experimentType", labelKey: "experimentType" },
   submission_type: { type: "enum", facetName: "submissionType", labelKey: "submissionType" },
-  // === Solr (ARSA / trad) ===
+  // === Solr (ARSA / ddbj) ===
   division: { type: "enum", facetName: "division", labelKey: "division" },
   molecular_type: { type: "enum", facetName: "molecularType", labelKey: "molecularType" },
   feature_gene_name: { type: "text", labelKey: "featureGeneName" },
@@ -105,7 +105,7 @@ export type Scope = "cross" | DbSlug
 // (organism) → record identity / content → per-DB attributes → access / provenance
 // metadata → dates. Fields are grouped by meaning, not render kind, so related
 // fields stay adjacent (the organism taxID facet sits with its name text; the
-// access / provenance block trails just above the date ranges). Solr scopes (trad /
+// access / provenance block trails just above the date ranges). Solr scopes (ddbj /
 // taxonomy) carry their own curated fields but follow the same shape — subject first,
 // dates last — and taxonomy lays its rank fields out as a Linnaean hierarchy
 // (domain → … → species); degenerate ES fields are omitted there
@@ -200,7 +200,7 @@ export const SCOPE_FIELDS = {
   // ReferenceTitle, so it is searchable here. Subject (organism) leads, the division /
   // molecular_type classification follows, then content, the sequence_length range, and the
   // date last.
-  trad: [
+  ddbj: [
     "organism_id",
     "organism_name",
     "division",
@@ -244,10 +244,10 @@ export const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
 // Scopes where a field is filterable but its facet aggregation is degenerate, so it
 // renders as a text/identifier input instead of facet checkboxes (the API also rejects
 // the facet there). Both Solr scopes suppress organism_id: taxonomy because every
-// TXSearch doc is its own organism (`facets=organism` is rejected), trad because ARSA has
+// TXSearch doc is its own organism (`facets=organism` is rejected), ddbj because ARSA has
 // no taxID index (the API matches organism_id by resolving the taxID to a scientific name).
 const FACET_SUPPRESSED: Partial<Record<Scope, readonly FieldKey[]>> = {
-  trad: ["organism_id"],
+  ddbj: ["organism_id"],
   taxonomy: ["organism_id"],
 }
 

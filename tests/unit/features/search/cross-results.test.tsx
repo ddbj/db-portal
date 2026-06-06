@@ -23,8 +23,8 @@ const renderCross = (databases: unknown[]) =>
   })
 
 describe("CrossResults top-hit links", () => {
-  test("trad uses the getentry host, not the search/entry path", () => {
-    renderCross([dbEntry("trad", [{ identifier: "U01317", type: "trad", title: "Trad entry" }])])
+  test("ddbj uses the getentry host, not the search/entry path", () => {
+    renderCross([dbEntry("ddbj", [{ identifier: "U01317", type: "ddbj", title: "Trad entry" }])])
     expect(screen.getByRole("link", { name: "U01317" }))
       .toHaveAttribute("href", "https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
   })
@@ -63,11 +63,11 @@ describe("CrossResults card order", () => {
       dbEntry("sra", []),
       dbEntry("biosample", []),
       dbEntry("bioproject", []),
-      dbEntry("trad", []),
+      dbEntry("ddbj", []),
     ])
     const order = screen.getAllByTestId("db-card").map((el) => el.getAttribute("data-db"))
     expect(order).toEqual([
-      "trad",
+      "ddbj",
       "bioproject",
       "biosample",
       "sra",

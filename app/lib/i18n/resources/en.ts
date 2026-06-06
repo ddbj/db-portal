@@ -260,7 +260,7 @@ export const en: Resources = {
       "biosample": { title: "BioSample", description: "Metadata grouping your samples." },
       "dra": { title: "DRA", description: "Deposits sequencing reads as runs and analyses." },
       "jga": { title: "JGA", description: "Deposits controlled-access human data under a policy." },
-      "ddbj-trad": { title: "DDBJ", description: "Bulk-submits assembled nucleotide sequences via MSS." },
+      "ddbj": { title: "DDBJ", description: "Bulk-submits assembled nucleotide sequences via MSS." },
       "nsss": { title: "NSSS", description: "Web-based nucleotide sequence submission system." },
       "togovar": { title: "TogoVar", description: "Deposits public human variants." },
       "gea": { title: "GEA", description: "Deposits gene expression and spatial data." },
@@ -284,7 +284,7 @@ export const en: Resources = {
         restrictedNonHumanEmbargo: "Restricted non-human reads use a scheduled release date (embargo) in DRA to keep them private until then.",
       },
     },
-    ddbjTrad: {
+    ddbj: {
       locusTagPrefix: "You will need to obtain a locus_tag prefix.",
       mag: {
         envGenomeEntry: "MAG genomes are submitted as ENV (environmental) genome entries in MSS.",
@@ -625,7 +625,7 @@ export const en: Resources = {
     },
     scope: {
       all: "All databases",
-      trad: "DDBJ",
+      ddbj: "DDBJ",
       sra: "SRA",
       bioproject: "BioProject",
       biosample: "BioSample",

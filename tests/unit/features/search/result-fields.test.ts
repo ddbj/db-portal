@@ -29,7 +29,7 @@ describe("entryHref", () => {
   })
 
   test("Solr hits use their own canonical hosts", () => {
-    expect(entryHref(hit({ type: "trad", identifier: "U01317" })))
+    expect(entryHref(hit({ type: "ddbj", identifier: "U01317" })))
       .toBe("https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
     expect(entryHref(hit({ type: "taxonomy", identifier: "9606" })))
       .toBe("https://ddbj.nig.ac.jp/tx_search/9606?view=info")
@@ -95,7 +95,7 @@ describe("subtypeBadge", () => {
 describe("organismName", () => {
   test("returned where it carries signal", () => {
     expect(organismName("biosample", hit({ organism: { name: "gut metagenome" } }))).toBe("gut metagenome")
-    expect(organismName("trad", hit({ organism: { name: "Homo sapiens" } }))).toBe("Homo sapiens")
+    expect(organismName("ddbj", hit({ organism: { name: "Homo sapiens" } }))).toBe("Homo sapiens")
   })
 
   test("suppressed for jga (always Homo sapiens) and taxonomy (organism is the taxon)", () => {
@@ -133,8 +133,8 @@ describe("rowExcerpt", () => {
     expect(rowExcerpt(hit({}))).toBeNull()
   })
 
-  test("trad / taxonomy carry no excerpt (description is null; reference prose is detail-only)", () => {
-    expect(rowExcerpt(hit({ type: "trad", description: null, referenceTitle: ["A paper title"] }))).toBeNull()
+  test("ddbj / taxonomy carry no excerpt (description is null; reference prose is detail-only)", () => {
+    expect(rowExcerpt(hit({ type: "ddbj", description: null, referenceTitle: ["A paper title"] }))).toBeNull()
     expect(rowExcerpt(hit({ type: "taxonomy", description: null }))).toBeNull()
   })
 })
@@ -197,9 +197,9 @@ describe("signatureChips", () => {
     ])
   })
 
-  test("trad: molecularType + division (vocab) + sequenceLength (num, formatted)", () => {
-    expect(signatureChips("trad", hit({
-      type: "trad",
+  test("ddbj: molecularType + division (vocab) + sequenceLength (num, formatted)", () => {
+    expect(signatureChips("ddbj", hit({
+      type: "ddbj",
       molecularType: "DNA",
       division: "HUM",
       sequenceLength: 73308,
@@ -282,9 +282,9 @@ describe("signatureChips", () => {
       ])
   })
 
-  test("trad surfaces geneName (vocab, capped at 2) after the sequence chips; no publication chip", () => {
-    expect(signatureChips("trad", hit({
-      type: "trad",
+  test("ddbj surfaces geneName (vocab, capped at 2) after the sequence chips; no publication chip", () => {
+    expect(signatureChips("ddbj", hit({
+      type: "ddbj",
       molecularType: "DNA",
       geneName: ["rbcL", "matK", "trnH"],
       referenceJournal: ["Nature 405:1"],
@@ -336,7 +336,7 @@ describe("taxonomyCommonName", () => {
   test("taxonomy commonName, null elsewhere", () => {
     expect(taxonomyCommonName(hit({ type: "taxonomy", commonName: "human" }))).toBe("human")
     expect(taxonomyCommonName(hit({ type: "taxonomy", commonName: null }))).toBeNull()
-    expect(taxonomyCommonName(hit({ type: "trad", commonName: "x" }))).toBeNull()
+    expect(taxonomyCommonName(hit({ type: "ddbj", commonName: "x" }))).toBeNull()
   })
 })
 
@@ -354,14 +354,14 @@ describe("ancestryRow", () => {
     expect(ancestryRow(hit({ type: "taxonomy", kingdom: "Metazoa", genus: "Homo" }))).toEqual(["Metazoa", "Homo"])
   })
 
-  test("trad → raw source-organism lineage (drops empty entries)", () => {
-    expect(ancestryRow(hit({ type: "trad", lineage: ["Eukaryota", "", "Metazoa"] })))
+  test("ddbj → raw source-organism lineage (drops empty entries)", () => {
+    expect(ancestryRow(hit({ type: "ddbj", lineage: ["Eukaryota", "", "Metazoa"] })))
       .toEqual(["Eukaryota", "Metazoa"])
   })
 
   test("empty for other DBs and when no rank / lineage is present", () => {
     expect(ancestryRow(hit({ type: "bioproject" }))).toEqual([])
     expect(ancestryRow(hit({ type: "taxonomy" }))).toEqual([])
-    expect(ancestryRow(hit({ type: "trad" }))).toEqual([])
+    expect(ancestryRow(hit({ type: "ddbj" }))).toEqual([])
   })
 })
