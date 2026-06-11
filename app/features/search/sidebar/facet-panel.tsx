@@ -98,9 +98,15 @@ const FacetSection = ({
   // selected values visible even when they fall outside the cap or top buckets.
   const shown = buckets.slice(0, expanded ? CAP : VISIBLE)
   const shownValues = new Set(shown.map((b) => b.value))
+  // A selected value that sits past the visible slice (or outside the bucket
+  // window entirely) still needs to render. Pull its label / count from the
+  // full bucket list so collapsing the group does not drop a row back to a
+  // bare value (organism, in particular, would lose its scientific name and
+  // become a raw taxID). Fall back to a label-less stub only when the
+  // aggregation truly does not carry the value.
   const extras: Bucket[] = selected
     .filter((v) => !shownValues.has(v))
-    .map((value) => ({ value, count: 0 }))
+    .map((value): Bucket => buckets.find((b) => b.value === value) ?? { value, count: 0 })
   const visible = [...shown, ...extras]
   // No buckets: hold the row with a skeleton while loading, otherwise drop it (an
   // empty facet, e.g. a subtype with no docs in this scope, falls away naturally).
@@ -202,9 +208,15 @@ const OrganismFacetSection = ({
 
   const shown = buckets.slice(0, expanded ? CAP : VISIBLE)
   const shownValues = new Set(shown.map((b) => b.value))
+  // A selected value that sits past the visible slice (or outside the bucket
+  // window entirely) still needs to render. Pull its label / count from the
+  // full bucket list so collapsing the group does not drop a row back to a
+  // bare value (organism, in particular, would lose its scientific name and
+  // become a raw taxID). Fall back to a label-less stub only when the
+  // aggregation truly does not carry the value.
   const extras: Bucket[] = selected
     .filter((v) => !shownValues.has(v))
-    .map((value) => ({ value, count: 0 }))
+    .map((value): Bucket => buckets.find((b) => b.value === value) ?? { value, count: 0 })
   const visible = [...shown, ...extras]
   const canToggle = buckets.length > VISIBLE
   const taxIdLabel = t("search.facets.organismTaxId")
