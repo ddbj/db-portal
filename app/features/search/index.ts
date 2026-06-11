@@ -28,8 +28,11 @@ export {
   SwitchableQueryPreview,
 } from "./components"
 export {
+  DEBOUNCE_MS,
   resolveCrossSearchSync,
   useCrossSearchSync,
+  useDebouncedSync,
+  useDebouncedValue,
   useSearchPending,
 } from "./debounce"
 export {

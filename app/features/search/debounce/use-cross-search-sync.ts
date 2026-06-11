@@ -123,7 +123,7 @@ export const useCrossSearchSync = (
   }, [baseUrl])
 
   // Memoize the debounce input so unrelated re-renders do not reset the timer
-  // (the single 700ms debounce must coalesce, not restart, on every render).
+  // (the single debounce window must coalesce, not restart, on every render).
   const input = useMemo<SyncInput>(
     () => ({ keyword, ast: advancedAst, db }),
     [keyword, advancedAst, db],

@@ -10,6 +10,7 @@ import {
   TextInput,
 } from "~/ui"
 
+import { DEBOUNCE_MS, useDebouncedSync } from "../debounce"
 import { rowByDslField } from "../sidebar/facet-config"
 import {
   type AdvancedField,
@@ -91,6 +92,25 @@ export const ConditionRow = ({
       count: bucket.count,
     }))
 
+  // Three text slots in this row may be active depending on the field kind:
+  // FROM/TO for a range, a free-text value otherwise. Hooks run unconditionally;
+  // the inactive locals just hold their seed and never reach the DOM.
+  const [fromLocal, setFromLocal] = useDebouncedSync(
+    condition.from,
+    (next: string) => onRangeChange({ from: next }),
+    DEBOUNCE_MS,
+  )
+  const [toLocal, setToLocal] = useDebouncedSync(
+    condition.to,
+    (next: string) => onRangeChange({ to: next }),
+    DEBOUNCE_MS,
+  )
+  const [valueLocal, setValueLocal] = useDebouncedSync(
+    condition.value,
+    onValueChange,
+    DEBOUNCE_MS,
+  )
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select
@@ -119,8 +139,8 @@ export const ConditionRow = ({
               size="md"
               type={dateField ? "date" : "number"}
               ariaLabel={t("search.builder.rangeFromLabel")}
-              value={condition.from}
-              onChange={(event) => onRangeChange({ from: event.currentTarget.value })}
+              value={fromLocal}
+              onChange={(event) => setFromLocal(event.currentTarget.value)}
               {...(dateField ? { placeholder: t("search.builder.rangeFromPlaceholder") } : {})}
               mono
               width={156}
@@ -130,8 +150,8 @@ export const ConditionRow = ({
               size="md"
               type={dateField ? "date" : "number"}
               ariaLabel={t("search.builder.rangeToLabel")}
-              value={condition.to}
-              onChange={(event) => onRangeChange({ to: event.currentTarget.value })}
+              value={toLocal}
+              onChange={(event) => setToLocal(event.currentTarget.value)}
               {...(dateField ? { placeholder: t("search.builder.rangeToPlaceholder") } : {})}
               mono
               width={156}
@@ -155,8 +175,8 @@ export const ConditionRow = ({
             <TextInput
               size="md"
               ariaLabel={t("search.builder.valuePlaceholder")}
-              value={condition.value}
-              onChange={(event) => onValueChange(event.currentTarget.value)}
+              value={valueLocal}
+              onChange={(event) => setValueLocal(event.currentTarget.value)}
               placeholder={t("search.builder.valuePlaceholder")}
               width={232}
             />

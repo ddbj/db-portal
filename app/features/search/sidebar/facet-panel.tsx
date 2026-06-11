@@ -4,6 +4,7 @@ import type { DbPortalFacets } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import { type AppliedFilter, AppliedFilters, DateFacet, FacetGroup, FacetRow, SidebarGroupLabel, SidebarHeading, TextInput } from "~/ui"
 
+import { DEBOUNCE_MS, useDebouncedSync } from "../debounce"
 import type { DbSlug } from "../types"
 import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
@@ -177,11 +178,26 @@ const OrganismFacetSection = ({
     setRaw(selected.join(TAX_ID_SEP))
   }, [selected])
 
+  // Defer push to the parent until typing settles so each keystroke does not
+  // refetch results / rewrite `?q=`. lastSent guards the echo back through
+  // `selected`.
+  const onSetValuesRef = useRef(onSetValues)
+  useEffect(() => {
+    onSetValuesRef.current = onSetValues
+  }, [onSetValues])
+  useEffect(() => {
+    const values = parseTaxIds(raw)
+    if (sameValues(values, lastSent.current)) return
+    const id = setTimeout(() => {
+      lastSent.current = values
+      onSetValuesRef.current(values)
+    }, DEBOUNCE_MS)
+
+    return () => clearTimeout(id)
+  }, [raw])
+
   const onRawChange = (value: string): void => {
     setRaw(value)
-    const values = parseTaxIds(value)
-    lastSent.current = values
-    onSetValues(values)
   }
 
   const shown = buckets.slice(0, expanded ? CAP : VISIBLE)
@@ -242,6 +258,7 @@ const TextSection = ({
 }) => {
   const t = useT()
   const label = t(`search.facets.field.${row.key}`)
+  const [local, setLocal] = useDebouncedSync(value, onChange, DEBOUNCE_MS)
 
   return (
     <label className="flex flex-col" data-testid={`text-${row.key}`}>
@@ -249,8 +266,8 @@ const TextSection = ({
       <TextInput
         ariaLabel={label}
         size="sm"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
       />
     </label>
   )
@@ -271,6 +288,8 @@ const NumberRangeSection = ({
 }) => {
   const t = useT()
   const label = t(`search.facets.field.${row.key}`)
+  const [fromLocal, setFromLocal] = useDebouncedSync(from, onFromChange, DEBOUNCE_MS)
+  const [toLocal, setToLocal] = useDebouncedSync(to, onToChange, DEBOUNCE_MS)
 
   return (
     <div className="flex flex-col" data-testid={`range-${row.key}`}>
@@ -281,8 +300,8 @@ const NumberRangeSection = ({
           size="sm"
           type="number"
           grow
-          value={from}
-          onChange={(e) => onFromChange(e.target.value)}
+          value={fromLocal}
+          onChange={(e) => setFromLocal(e.target.value)}
         />
         <span className="text-fs-label text-ink-soft">–</span>
         <TextInput
@@ -290,8 +309,8 @@ const NumberRangeSection = ({
           size="sm"
           type="number"
           grow
-          value={to}
-          onChange={(e) => onToChange(e.target.value)}
+          value={toLocal}
+          onChange={(e) => setToLocal(e.target.value)}
         />
       </div>
     </div>

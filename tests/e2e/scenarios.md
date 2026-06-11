@@ -73,10 +73,10 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **手順**:
   1. 「+ 条件を追加」 (`search.builder.addCondition`) で条件行を 1 つ追加し、field セレクタ (`search.a11y.fieldSelector`「検索フィールド」) で `Organism (TaxID)` (`organism_id`、`search.facets.field.organism`)、述語セレクタ (`search.a11y.predicateSelector`「条件の演算子」) で `と一致` (`search.builder.predicate.eq`、identifier kind の default op)、値の Combobox (`search.builder.valuePlaceholder`「値を入力」) に taxID `9606` を入力 (organism facet の `Homo sapiens (9606)` 候補を選んでも可、いずれも taxID `9606` を commit する)
   2. もう一度「+ 条件を追加」 で 2 行目を追加し、field=`Organism name` (`organism_name`、`search.facets.field.organismName`)、述語=`を含む` (`search.builder.predicate.contains`、text kind)、値の TextInput (`値を入力`) に `Homo sapiens` を入力
-  3. ライブプレビュー (`QueryPreview`) に DSL が反映されるのを待つ (debounce 700 ms)
+  3. ライブプレビュー (`QueryPreview`) に DSL が反映されるのを待つ (debounce 300 ms)
   4. ページ下部の `この条件で検索` (`search.actions.submit`) button をクリック
 - **期待**:
-  - 入力確定後、debounce 700 ms 以内に `/db-portal/serialize` が呼ばれ、`QueryPreview` の `<code>` (`aria-label="クエリプレビュー"`) の DSL に `organism_id:9606` (identifier 行は taxID を emit) と `organism_name:`（text 行は学名文字列を emit) の双方が含まれる
+  - 入力確定後、debounce 300 ms 以内に `/db-portal/serialize` が呼ばれ、`QueryPreview` の `<code>` (`aria-label="クエリプレビュー"`) の DSL に `organism_id:9606` (identifier 行は taxID を emit) と `organism_name:`（text 行は学名文字列を emit) の双方が含まれる
   - `この条件で検索` クリックで `/search/results?q=...` に `navigate(push)` され、`?q=` の DSL に `organism_id` 条件と `organism_name` 条件が両方乗る
   - serialize / parse は scope (`db`) を渡して呼ばれる (cross では `db` 省略)
 - **備考**: identifier field (Organism (TaxID), `organism_id`, 述語 `と一致`) は値を facet aggregation backed の Combobox で受け taxID を commit、text field (Organism name, `organism_name`, 述語 `を含む`) は値を素の TextInput で受け文字列を emit する。両 field kind を 1 シナリオで往復させ、value 入力 affordance (combobox vs text) と emit される DSL field (`organism_id:` vs `organism_name:`) の差を同時に固定する。Combobox は editable なので候補が無くても taxID 直接入力で commit できる。DSL 文字列の正確な形は serialize API (ddbj-search-api 側) が SSOT。

@@ -53,11 +53,6 @@ export const handle = {
 
 export const meta = pageTitleMeta
 
-// Coalesce the URL projection: results render at once from the AST, while the
-// shared `?q=` is rewritten this long after the last edit settles (replace, so it
-// never gates the UI and never floods history).
-const URL_SYNC_DEBOUNCE_MS = 500
-
 const SearchResultsRoute = () => {
   const data = useLoaderData<typeof loader>()
   const t = useT()
@@ -125,7 +120,8 @@ const SearchResultsRoute = () => {
   // The URL is a derived projection, not a gate: once the search resolves, the echoed
   // `dsl` (+ paging) is written into `?q=` (replace; a keyword submit / clear pushes a
   // history entry). A failed / pending search leaves `dsl` null, so the shared URL
-  // stays on the last good query.
+  // stays on the last good query. AST-driving edits already coalesce at the input
+  // (text fields are debounced one layer down), so the projection runs immediately.
   const lastSyncedRef = useRef({ q: data.q, db: data.db })
   const pushNextRef = useRef(false)
   useEffect(() => {
@@ -137,17 +133,13 @@ const SearchResultsRoute = () => {
 
       return
     }
-    const id = setTimeout(() => {
-      lastSyncedRef.current = { q: dsl, db: data.db }
-      const push = pushNextRef.current
-      pushNextRef.current = false
-      navigate(
-        buildResultsHref({ q: dsl, db: data.db, page, perPage, sort }),
-        push ? { preventScrollReset: true } : { replace: true, preventScrollReset: true },
-      )
-    }, URL_SYNC_DEBOUNCE_MS)
-
-    return () => clearTimeout(id)
+    lastSyncedRef.current = { q: dsl, db: data.db }
+    const push = pushNextRef.current
+    pushNextRef.current = false
+    navigate(
+      buildResultsHref({ q: dsl, db: data.db, page, perPage, sort }),
+      push ? { preventScrollReset: true } : { replace: true, preventScrollReset: true },
+    )
   }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, navigate])
 
   // Restore client state from a genuine navigation (cold load / back-forward / scope

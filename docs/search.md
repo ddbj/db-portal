@@ -90,7 +90,7 @@ URL クエリパラメタは **検索状態の共有・復元形**。任意の U
 ### URL 更新規則
 
 - **`/search/results`**: facet / Advanced / paging の変更は client state を即更新し、AST 駆動の検索が解決した時点で返ってきた `dsl` を `?q=` に `replace` 射影する (検索ボタン / Enter / クリアは `push`)。URL は結果を gate せず、解決後に追従する射影
-- **`/search`** (ビルダー): Advanced 編集 → debounce 700 ms → `/db-portal/serialize` → `?q=` を `replace`、検索ボタン / Enter → `push`
+- **`/search`** (ビルダー): Advanced 編集 → debounce 300 ms → `/db-portal/serialize` → `?q=` を `replace`、検索ボタン / Enter → `push`
 - per-DB → cross-DB scope change → 別 route へ遷移し `?db=` を delete
 
 ### URL → state の復元
@@ -292,7 +292,7 @@ DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST �
 
 ### `/search` ビルダーの serialize-sync
 
-`/search` はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 700 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` し、成功で `navigate(?q=..., { replace })`、失敗で `syncStatus = "failed"`。keyword の parse 失敗は `parseError` (構文エラー) として serialize 失敗と区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる。
+`/search` はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 300 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` し、成功で `navigate(?q=..., { replace })`、失敗で `syncStatus = "failed"`。keyword の parse 失敗は `parseError` (構文エラー) として serialize 失敗と区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる。
 
 ### sync-status (`/search` のみ)
 

@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { useReducer } from "react"
 import { I18nextProvider } from "react-i18next"
-import { describe, expect, test } from "vitest"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
 import {
   createInitialSearchFacetState,
+  DEBOUNCE_MS,
   FacetPanel,
   searchFacetReducer,
   type SearchFacetState,
@@ -54,6 +55,22 @@ const taxIdBox = (): HTMLInputElement =>
   screen.getByRole("textbox", { name: "Taxonomy ID" }) as HTMLInputElement
 
 describe("OrganismFacetSection tax id box", () => {
+  // The box debounces commits to the selection so each keystroke does not
+  // refetch results; run pending timers to advance past that window before
+  // asserting the propagated selection.
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const flushDebounce = () => {
+    act(() => {
+      vi.advanceTimersByTime(DEBOUNCE_MS)
+    })
+  }
+
   test("checkboxSelectionFillsTaxIdBox", () => {
     renderPanel(createInitialSearchFacetState(), organismFacets())
     expect(taxIdBox().value).toBe("")
@@ -64,6 +81,7 @@ describe("OrganismFacetSection tax id box", () => {
   test("typingTaxIdsChecksMatchingBuckets", () => {
     renderPanel(createInitialSearchFacetState(), organismFacets())
     fireEvent.change(taxIdBox(), { target: { value: "9606, 10090" } })
+    flushDebounce()
     expect(screen.getByRole("checkbox", { name: /Homo sapiens/ })).toBeChecked()
     expect(screen.getByRole("checkbox", { name: /Mus musculus/ })).toBeChecked()
   })
@@ -71,6 +89,7 @@ describe("OrganismFacetSection tax id box", () => {
   test("typingMinorTaxIdKeepsSelectionAndShowsExtraRow", () => {
     renderPanel(createInitialSearchFacetState(), organismFacets())
     fireEvent.change(taxIdBox(), { target: { value: "99999" } })
+    flushDebounce()
     // 99999 is absent from the buckets but is surfaced as a checked row and kept
     // in the box, so a minor taxID can still be filtered on.
     expect(screen.getByRole("checkbox", { name: "99999" })).toBeChecked()
@@ -80,6 +99,7 @@ describe("OrganismFacetSection tax id box", () => {
   test("trailingCommaNotClobberedWhileTyping", () => {
     renderPanel(createInitialSearchFacetState(), organismFacets())
     fireEvent.change(taxIdBox(), { target: { value: "9606, " } })
+    flushDebounce()
     // The selection commits "9606", but the raw editing buffer keeps the trailing
     // separator so the next id can be typed without the box rewriting itself.
     expect(taxIdBox().value).toBe("9606, ")

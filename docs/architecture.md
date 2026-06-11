@@ -196,7 +196,7 @@ BSI 内で発生する主要な情報の流れ。
   ├─ Advanced builder reducer (app/features/search/)
   └─ Sidebar facet → AST (app/features/search/)
         │
-        ▼ debounce 700 ms (`search.md`)
+        ▼ debounce 300 ms (`search.md`)
   ddbj-search-api POST /db-portal/serialize
         │
         ▼
