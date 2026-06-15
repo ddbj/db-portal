@@ -89,9 +89,12 @@ describe("getDatabaseBySlug / listDatabases / validateAllDatabases", () => {
     expect(db?.title.ja).toBe("BioProject")
   })
 
-  test("listDatabases_includesBioprojectAndBiosample", () => {
+  test("listDatabases_includesAllSubmitServices", () => {
     const slugs = listDatabases().map((d) => d.slug).sort()
-    expect(slugs).toEqual(["biosample", "bioproject"].sort())
+    expect(slugs).toEqual([
+      "bioproject", "biosample", "ddbj", "dra", "eva", "gea",
+      "humandbs", "jga", "jpost", "metabobank", "nsss", "togovar",
+    ].sort())
   })
 
   test("validateAllDatabases_returnsOk", () => {

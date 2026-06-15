@@ -16,7 +16,20 @@ const ExternalLink = z.object({
   href: z.string().url(),
 })
 
-const DatabaseSlug = z.enum(["bioproject", "biosample"])
+const DatabaseSlug = z.enum([
+  "bioproject",
+  "biosample",
+  "dra",
+  "jga",
+  "ddbj",
+  "nsss",
+  "togovar",
+  "gea",
+  "metabobank",
+  "humandbs",
+  "jpost",
+  "eva",
+])
 type DatabaseSlug = z.infer<typeof DatabaseSlug>
 
 export const DatabaseContent = z.object({

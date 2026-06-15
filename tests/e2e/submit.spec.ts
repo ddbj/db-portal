@@ -80,13 +80,6 @@ test.describe("Submit Domain", () => {
     await expect(flowSteps(page).nth(2)).toHaveAttribute("data-service", "dra")
 
     await expect(flowStep(page, "dra").getByText("登録先", { exact: true })).toBeVisible()
-    await expect(flowStep(page, "dra").getByText("配列リード", { exact: true })).toBeVisible()
-
-    await expect(
-      page
-        .locator('[data-testid="flow-overview"]')
-        .getByRole("button", { name: /登録ステップに移動:/ }),
-    ).toHaveCount(3)
   })
 
   test("S-SUBMIT-03: 複数種別で複数 destination が並ぶ", async ({ page }) => {
@@ -242,20 +235,6 @@ test.describe("Submit Domain", () => {
     await conflictKind.click()
     await expect(conflictKind).toHaveAttribute("aria-pressed", "false")
     await expect(validationBanner(page)).toHaveCount(0)
-  })
-
-  test("S-SUBMIT-13: FlowOverview のステーションクリックで該当カードへスクロール", async ({ page }) => {
-    await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
-    await toggleKind(page, "配列リード")
-    await expect(flowSteps(page)).toHaveCount(3)
-
-    await page
-      .locator('[data-testid="flow-overview"]')
-      .getByRole("button", { name: "登録ステップに移動: DRA" })
-      .click()
-
-    await expect(flowStep(page, "dra")).toBeInViewport()
   })
 
   test("E-SUBMIT-01: 未設定の詳細種別が notify で示される", async ({ page }) => {

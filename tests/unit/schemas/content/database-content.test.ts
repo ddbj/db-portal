@@ -58,7 +58,7 @@ describe("DatabaseContent", () => {
     expect(() =>
       DatabaseContent.parse({
         ...validBase,
-        meta: { ...validBase.meta, relatedDbs: ["bioproject", "dra"] },
+        meta: { ...validBase.meta, relatedDbs: ["bioproject", "nonexistent-db"] },
       }),
     ).toThrow()
   })

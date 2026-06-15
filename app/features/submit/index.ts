@@ -8,6 +8,7 @@ export { DataDetailPanel } from "./detail/data-detail-panel"
 export { getSubmitCard } from "./external-links"
 export { FlowOverview } from "./flow-cards/flow-overview"
 export { FlowStepCards } from "./flow-cards/flow-step-cards"
+export { FlowSummaryCard } from "./flow-cards/flow-summary-card"
 export {
   deriveFlowSteps,
 } from "./flow-rules"

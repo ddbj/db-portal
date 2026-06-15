@@ -7,6 +7,7 @@ export default {
     ja: "DBCLS が運用する、制限公開ヒトデータの利用制限ポリシー申請・承認プラットフォーム。",
     en: "DBCLS-operated platform for applying for and approving data-use policies for controlled-access human data.",
   },
+  link: { kind: "internal", to: "/databases/humandbs" },
   submit: {
     service: "humandbs",
     externalUrl: {

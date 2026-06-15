@@ -7,6 +7,7 @@ export default {
     ja: "プロテオーム質量分析の国際的なリポジトリ。プロテオミクスは DDBJ ではなく jPOST に登録する。",
     en: "International repository for proteomics mass-spec. Proteomics goes to jPOST instead of DDBJ.",
   },
+  link: { kind: "internal", to: "/databases/jpost" },
   submit: {
     service: "jpost",
     externalUrl: {

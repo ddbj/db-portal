@@ -260,6 +260,7 @@ export const en: Resources = {
       prepareHeading: "What to prepare",
       roleTag: { destination: "Destination", companion: "Shared metadata", external: "External repository", gate: "Application gate" },
       ctaLabel: "Open submission site",
+      detailLinkLabel: "View details",
       filesHeading: "Files for this step",
       gotchaHeading: "Good to know",
       "bioproject": { title: "BioProject", description: "Metadata grouping the whole project." },

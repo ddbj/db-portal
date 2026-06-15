@@ -7,6 +7,7 @@ export default {
     ja: "公開ヒトゲノムバリアントのデータベース。GRCh37 / GRCh38 を参照とする頻度・アノテーション付き variant を登録できる。",
     en: "Database of public human genome variants. Accepts frequency- and annotation-bearing variants referenced against GRCh37 / GRCh38.",
   },
+  link: { kind: "internal", to: "/databases/togovar" },
   submit: {
     service: "togovar",
     externalUrl: {

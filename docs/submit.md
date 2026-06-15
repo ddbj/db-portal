@@ -34,14 +34,15 @@ UI 全体は前段フィルタを足した 3 段構造になる:
 │   - flow-changing 詳細 (platform / domain / MAG/SAG / pair) は│
 │     種別ごとの詳細カードで答える                             │
 ├─────────────────────────────────────────────────────────────┤
-│  下段: Step カード列 (導出結果 = FlowStep)                   │
-│   - Step カード = 1 つの登録 step                           │
-│   - service バッジ + scope (対象 group/entry)                │
-│   - Intra-DB Tag (pulldown) を埋める                         │
+│  下段: 登録先サマリーカード (導出結果 = FlowStep)              │
+│   - 1 枚のカード内に step をリスト表示                        │
+│   - service バッジ + role タグ + source タグ + scope 件数      │
+│   - 各 service の詳細ページ (/databases/$slug) へのリンク      │
+│   - 登録サイトへの外部リンク                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段で種別を選び、中段の選択肢を狭めるために前段を調整する、という編集モデル。この 3 段は画面では 2 pane に割り付く: 前段 + 中段 (入力) を左 pane、下段 (結果) を右 pane に置く。
+下段は **中段の関数** であり、利用者は下段を直接編集しない。前段は中段の選択肢を絞る。下段に欲しい結果を出すために中段で種別を選び、中段の選択肢を狭めるために前段を調整する、という編集モデル。この 3 段は画面では 2 pane に割り付く: 前段 + 中段 (入力) を左 pane、下段 (結果) を右 pane に置く。各 step の詳細（登録手順・事前準備・注意事項）は `/databases/$slug` の各 service ページに委ね、サマリーカードからリンクする。
 
 ### Cross-DB Tag / Intra-DB Tag
 
@@ -396,9 +397,9 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 | MERFISH / MERSCOPE | Microarray (A-GEAD-247) | 不要 (GEA のみ) | 大容量画像・.vzg は GEA 受入不可。spatial-image は外部 Generalist archive 誘導 note を付ける (`### spatial`) |
 | Stereo-seq | (DDBJ 未文書) | 要 (DRA + GEA) | 公式に登録経路の記載なし。`SEQUENCING_SPATIAL_PLATFORMS` に含め Sequencing 扱い (DRA+GEA) とし、根拠は `## 設計判断` に残す |
 
-### Step カードのバッジ色
+### サマリーカードのバッジ色
 
-カードのバッジ色は role (destination/companion か external か) と notes の warning/error 有無で決まる。判定は `serviceBadgeColor` 純関数 (`schemas/submit/service.ts`、FlowStep 単位のラッパは `flow-rules/service-badge.ts` の `stepBadgeColor`)、具体色値は `app/styles/tailwind.css` の `@theme` トークンが SSOT。
+バッジ色は role (destination/companion か external か) と notes の warning/error 有無で決まる。判定は `serviceBadgeColor` 純関数 (`schemas/submit/service.ts`、FlowStep 単位のラッパは `flow-rules/service-badge.ts` の `stepBadgeColor`)、具体色値は `app/styles/tailwind.css` の `@theme` トークンが SSOT。
 
 ---
 
@@ -451,7 +452,7 @@ submit ナビが採る登録先導出の設計判断とその公式根拠・ト�
 - **`assembly-form` は MAG/SAG の `ddbj` 分岐の軸**: `assembly-form` が routing で意味を持つのは `mag` / `sag` の値による `ddbj` (ENV/SAG ゲノムエントリ) への分岐だけである。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj` 行きで出る service を変えないため、これらは `assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う。チェーン内の段階 (生リード/primary/binned/MAG) は持たない (典型ケースに絞る)
 - **第三者 (TPA) は提出単位 (Q1) で扱い種別ごとには問わない**: 配列系の TPA → `ddbj` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)、メタボローム再解析 → `metabobank`。TPA か否かは 1 提出まるごとで決まる軸なので前段 Q1 だけで判定し、種別ごとの `provenance` 質問・chip は持たない (Q1 と二重に問わない)。種別で割れるため Q1 = 第三者 で振り分け不能な種別は disable される
 - **`assembly-annotation` は 1 step**: 配列 + アノテーションは MSS の 1 ファイルペアであり、配列登録 step とアノテ step に分けない
-- **登録フロー詳細カードは「外部ウィザードの予告」とする**: 登録は外部ページで完結し BSI は代行しないため、各 `FlowStepCard` は外部の登録ウィザード (`ddbj/www` の `submission*.md` 等) で何をどの順で行うかを予告し、依存ゲート (例 JGA は Policy 承認後にアップロード) を伝える役割に徹する。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
+- **サマリーカードは「全体俯瞰 + 詳細への導線」とする**: 登録は外部ページで完結し BSI は代行しないため、右 pane のサマリーカードは導出結果の全体像（service 名・role・routing 理由・依存関係）を一目で把握させ、各 service の詳細ページ (`/databases/$slug`) と外部登録サイトへの導線を示す役割に徹する。登録手順の詳細（ウィザードの手順・事前準備・注意事項）は各 service の詳細ページに委ねる。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
 
 ---
 

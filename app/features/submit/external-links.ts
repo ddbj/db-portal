@@ -8,7 +8,10 @@ type ServiceSource = "DDBJ" | "DBCLS"
 type SubmitMeta = {
   externalUrl: string
   source: ServiceSource | null
+  accessionPrefixes: readonly string[]
 }
+
+const shortenPlaceholder = (ph: string): string => ph.replace(/#+/, "…")
 
 export const getSubmitMeta = (service: Service, lang: Lang): SubmitMeta | undefined => {
   const entry = getServiceBySubmit(service)
@@ -21,6 +24,7 @@ export const getSubmitMeta = (service: Service, lang: Lang): SubmitMeta | undefi
   return {
     externalUrl: resolvedUrl,
     source: submit.source,
+    accessionPrefixes: submit.accessionPlaceholders.map(shortenPlaceholder),
   }
 }
 

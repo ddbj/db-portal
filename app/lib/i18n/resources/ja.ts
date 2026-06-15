@@ -263,6 +263,7 @@ export type Resources = {
       prepareHeading: string
       roleTag: { destination: string; companion: string; external: string; gate: string }
       ctaLabel: string
+      detailLinkLabel: string
       filesHeading: string
       gotchaHeading: string
       "bioproject": { title: string; description: string }
@@ -859,6 +860,7 @@ export const ja: Resources = {
       prepareHeading: "準備するもの",
       roleTag: { destination: "登録先", companion: "共通メタデータ", external: "外部登録先", gate: "申請窓口" },
       ctaLabel: "登録サイトを開く",
+      detailLinkLabel: "詳細を見る",
       filesHeading: "対象ファイル",
       gotchaHeading: "ポイント",
       "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねるメタデータ" },

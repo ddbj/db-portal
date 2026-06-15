@@ -4,12 +4,9 @@ import {
   DataDetailPanel,
   FileTypeGrid,
   FileTypeIcon,
-  FlowOverview,
-  FlowStepCards,
-  getSubmitCard,
+  FlowSummaryCard,
   isKindEnabled,
   isQ2Enabled,
-  PartialFailureBanner,
   RadioCardGroup,
   rowIsConfigured,
   selectSteps,
@@ -18,7 +15,7 @@ import {
   useSubmitState,
 } from "~/features/submit"
 import { pageTitleMeta } from "~/lib/content"
-import { useLang, useT } from "~/lib/i18n"
+import { useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
 import { Access as AccessEnum, Q1 as Q1Enum, Q2 as Q2Enum, serviceRoleTagKey } from "~/schemas/submit"
 import { PageTitle, Section, SectionHeading, Select } from "~/ui"
@@ -33,7 +30,6 @@ export const meta = pageTitleMeta
 
 const SubmitRoute = () => {
   const t = useT()
-  const lang = useLang()
   const { state, actions } = useSubmitState()
   const { q1, q2 } = state.submission.preconditions
   const steps = selectSteps(state)
@@ -47,19 +43,7 @@ const SubmitRoute = () => {
   const fileTypeKindHint = (k: FileTypeKind): string => t(`submit.fileType.${k}.hint`)
   const accessLabel = (a: Access): string => t(`submit.access.${a}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
-  const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
   const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRoleTagKey(s)}`)
-  const cardCopy = (s: Service) => {
-    const card = getSubmitCard(s)
-
-    return {
-      wizardSteps: card.wizardSteps[lang],
-      prepare: card.prepare[lang],
-      gotcha: card.gotcha?.[lang],
-      issuedNote: card.issuedNote?.[lang],
-    }
-  }
-  const sourceTagLabel = (source: "DDBJ" | "DBCLS"): string => source
   const noteKindLabel = (kind: "warning" | "error"): string =>
     kind === "warning" ? t("submit.flow.noteWarning") : t("submit.flow.noteError")
 
@@ -103,13 +87,6 @@ const SubmitRoute = () => {
   )
   const accessOptions = AccessEnum.options.map((a) => ({ value: a, label: accessLabel(a) }))
 
-  const rowIndexOf = (entryId: string): number =>
-    state.submission.fileEntries.findIndex((e) => e.id === entryId)
-  const jumpLabel = (oneBased: number): string => {
-    const entry = state.submission.fileEntries[oneBased - 1]
-
-    return entry ? fileTypeKindLabel(entry.fileTypeKind) : ""
-  }
   const scrollToKinds = (): void => {
     if (typeof document === "undefined") return
     document.getElementById("submit-kind-selection")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -233,45 +210,24 @@ const SubmitRoute = () => {
               >
                 {t("submit.sections.flow")}
               </SectionHeading>
-              <FlowOverview
+              <FlowSummaryCard
                 steps={steps}
-                serviceName={serviceTitle}
-                fileCountLabel={(n) => t("submit.flowOverview.fileCount", { count: n })}
-                gotoLabel={(name) => `${t("submit.a11y.gotoStep")}: ${name}`}
-              />
-            </div>
-            {steps.length > 0 && (
-              <hr className="w-full border-0 border-t border-border-soft m-0" />
-            )}
-            <FlowStepCards
-              steps={steps}
-              entries={state.submission.fileEntries}
-              fileTypeKindLabel={fileTypeKindLabel}
-              emptyMessage={t("submit.flow.empty")}
-              serviceTitle={serviceTitle}
-              serviceDescription={serviceDescription}
-              roleLabel={roleLabel}
-              cardCopy={cardCopy}
-              prereqHeading={t("submit.flow.prereqHeading")}
-              wizardHeading={t("submit.flow.wizardHeading")}
-              prepareHeading={t("submit.flow.prepareHeading")}
-              filesHeading={t("submit.flow.filesHeading")}
-              gotchaHeading={t("submit.flow.gotchaHeading")}
-              resolveNote={resolveNote}
-              noteKindLabel={noteKindLabel}
-              externalCtaLabel={t("submit.flow.ctaLabel")}
-              sourceTagLabel={sourceTagLabel}
-            />
-            {validations.length > 0 && (
-              <PartialFailureBanner
+                entries={state.submission.fileEntries}
+                emptyMessage={t("submit.flow.empty")}
+                serviceTitle={serviceTitle}
+                fileTypeKindLabel={fileTypeKindLabel}
+                roleLabel={roleLabel}
+                resolveNote={resolveNote}
+                noteKindLabel={noteKindLabel}
+                externalCtaLabel={t("submit.flow.ctaLabel")}
+                prereqHeading={t("submit.flow.prereqHeading")}
+                detailLinkLabel={t("submit.flow.detailLinkLabel")}
                 validations={validations}
-                rowIndexOf={rowIndexOf}
-                headingText={validationHeading}
-                rowLabel={jumpLabel}
+                validationHeading={validationHeading}
                 validationLabel={(v) => t(`submit.validations.${v.kind}`)}
                 onJumpToRow={() => scrollToKinds()}
               />
-            )}
+            </div>
           </div>
         </div>
       </Section>
