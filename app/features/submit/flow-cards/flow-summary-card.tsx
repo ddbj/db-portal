@@ -45,17 +45,6 @@ export const FlowSummaryCard = ({
 }: FlowSummaryCardProps) => {
   const lang = useLang()
 
-  if (steps.length === 0) {
-    return (
-      <section
-        data-testid="result-summary"
-        className="border border-border-soft rounded-card bg-surface shadow-card p-5"
-      >
-        <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed">{emptyMessage}</p>
-      </section>
-    )
-  }
-
   const presentServices = new Set(steps.map((s) => s.service))
 
   return (
@@ -63,26 +52,30 @@ export const FlowSummaryCard = ({
       data-testid="result-summary"
       className="border border-border-soft rounded-card bg-surface shadow-card p-5 flex flex-col gap-5"
     >
-      <ol className="flex flex-col m-0 list-none p-0">
-        {steps.map((step, i) => (
-          <SummaryStepItem
-            key={step.id}
-            step={step}
-            index={i}
-            lang={lang}
-            entries={entries}
-            presentServices={presentServices}
-            serviceTitle={serviceTitle}
-            fileTypeKindLabel={fileTypeKindLabel}
-            roleLabel={roleLabel}
-            resolveNote={resolveNote}
-            noteKindLabel={noteKindLabel}
-            externalCtaLabel={externalCtaLabel}
-            prereqHeading={prereqHeading}
-            detailLinkLabel={detailLinkLabel}
-          />
-        ))}
-      </ol>
+      {steps.length === 0
+        ? <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed">{emptyMessage}</p>
+        : (
+          <ol className="flex flex-col m-0 list-none p-0">
+            {steps.map((step, i) => (
+              <SummaryStepItem
+                key={step.id}
+                step={step}
+                index={i}
+                lang={lang}
+                entries={entries}
+                presentServices={presentServices}
+                serviceTitle={serviceTitle}
+                fileTypeKindLabel={fileTypeKindLabel}
+                roleLabel={roleLabel}
+                resolveNote={resolveNote}
+                noteKindLabel={noteKindLabel}
+                externalCtaLabel={externalCtaLabel}
+                prereqHeading={prereqHeading}
+                detailLinkLabel={detailLinkLabel}
+              />
+            ))}
+          </ol>
+        )}
 
       {validations.length > 0 && (
         <Callout tone="warn" role="alert">
