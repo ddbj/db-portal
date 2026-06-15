@@ -1,4 +1,4 @@
-import { useFetcher } from "react-router"
+import { useFetcher, useLocation } from "react-router"
 
 import { type Lang, useLang, useT } from "~/lib/i18n"
 import { cn, GlobeIcon } from "~/ui"
@@ -18,6 +18,7 @@ export const SwitchLang = () => {
   const lang = useLang()
   const t = useT()
   const fetcher = useFetcher()
+  const { pathname, search } = useLocation()
   const target: Lang = lang === "ja" ? "en" : "ja"
 
   return (
@@ -27,6 +28,7 @@ export const SwitchLang = () => {
       className="inline-flex"
     >
       <input type="hidden" name="lang" value={target} />
+      <input type="hidden" name="redirectTo" value={pathname + search} />
       <button
         type="submit"
         aria-label={t("a11y.languageSwitcher")}

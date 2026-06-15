@@ -63,4 +63,29 @@ describe("SwitchLang", () => {
     expect(enPill).toHaveClass("font-bold", "text-ink")
     expect(jaPill).toHaveClass("font-normal", "text-ink-mid")
   })
+
+  test("SwitchLang_formContainsRedirectToWithCurrentPath", () => {
+    renderWithStub({
+      routes: [{ path: "/news", Component: () => <SwitchLang /> }],
+      initialEntries: ["/news"],
+      lang: "ja",
+      withQuery: false,
+    })
+    const form = getForm()
+    const input = form?.querySelector('input[name="redirectTo"]') as HTMLInputElement | null
+    expect(input).not.toBeNull()
+    expect(input?.value).toBe("/news")
+  })
+
+  test("SwitchLang_redirectToPreservesQueryString", () => {
+    renderWithStub({
+      routes: [{ path: "/search/results", Component: () => <SwitchLang /> }],
+      initialEntries: ["/search/results?q=foo"],
+      lang: "en",
+      withQuery: false,
+    })
+    const form = getForm()
+    const input = form?.querySelector('input[name="redirectTo"]') as HTMLInputElement | null
+    expect(input?.value).toBe("/search/results?q=foo")
+  })
 })

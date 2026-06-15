@@ -5,15 +5,24 @@ import { isSecureRuntime, serializeLangCookie } from "~/lib/i18n/lang-cookie.ser
 
 const langSchema = z.union([z.literal("ja"), z.literal("en")])
 
-// Only redirect back to a same-origin path derived from the Referer; anything
-// cross-origin or unparseable falls back to `/` so this endpoint cannot be used
-// as an open redirect.
-const safeRedirectTarget = (referer: string | null, requestUrl: string): string => {
+const isSafeRedirectPath = (raw: unknown): raw is string => {
+  if (typeof raw !== "string") return false
+  if (!raw.startsWith("/")) return false
+  if (raw.startsWith("//")) return false
+  if (raw.startsWith("/\\")) return false
+  return true
+}
+
+const resolveRedirectTarget = (
+  formRedirectTo: FormDataEntryValue | null,
+  referer: string | null,
+  requestUrl: string,
+): string => {
+  if (isSafeRedirectPath(formRedirectTo)) return formRedirectTo
   if (!referer) return "/"
   try {
     const ref = new URL(referer)
     if (ref.origin !== new URL(requestUrl).origin) return "/"
-
     return ref.pathname + ref.search
   } catch {
     return "/"
@@ -26,7 +35,11 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
   if (!parsed.success) {
     return new Response("invalid lang", { status: 400 })
   }
-  const redirectTo = safeRedirectTarget(request.headers.get("Referer"), request.url)
+  const redirectTo = resolveRedirectTarget(
+    formData.get("redirectTo"),
+    request.headers.get("Referer"),
+    request.url,
+  )
   return new Response(null, {
     status: 303,
     headers: {

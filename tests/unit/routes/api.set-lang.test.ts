@@ -100,4 +100,38 @@ describe("api.set-lang action", () => {
     const setCookie = res.headers.get("Set-Cookie") ?? ""
     expect(setCookie.toLowerCase()).toContain("secure")
   })
+
+  test("setLang_withRedirectTo_usesFormDataOverReferer", async () => {
+    const res = await callAction(
+      buildRequest("lang=en&redirectTo=%2Fnews", { referer: "http://localhost/services" }),
+    )
+    expect(res.status).toBe(303)
+    expect(res.headers.get("Location")).toBe("/news")
+  })
+
+  test("setLang_redirectToWithQuery_preservesPathAndSearch", async () => {
+    const res = await callAction(
+      buildRequest("lang=en&redirectTo=%2Fsearch%2Fresults%3Fq%3Dfoo%26db%3Dbiosample"),
+    )
+    expect(res.headers.get("Location")).toBe("/search/results?q=foo&db=biosample")
+  })
+
+  test("setLang_redirectToProtocolRelative_fallsBackToReferer", async () => {
+    const res = await callAction(
+      buildRequest("lang=en&redirectTo=%2F%2Fevil.test%2Fpath", { referer: "http://localhost/news" }),
+    )
+    expect(res.headers.get("Location")).toBe("/news")
+  })
+
+  test("setLang_redirectToBackslash_fallsBackToRoot", async () => {
+    const res = await callAction(buildRequest("lang=en&redirectTo=%2F%5Cevil"))
+    expect(res.headers.get("Location")).toBe("/")
+  })
+
+  test("setLang_emptyRedirectTo_fallsBackToReferer", async () => {
+    const res = await callAction(
+      buildRequest("lang=en&redirectTo=", { referer: "http://localhost/news" }),
+    )
+    expect(res.headers.get("Location")).toBe("/news")
+  })
 })
