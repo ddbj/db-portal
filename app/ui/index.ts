@@ -21,6 +21,7 @@ export {
   CloseIcon,
   ExternalIcon,
   GlobeIcon,
+  HelpIcon,
   InfoIcon,
   SearchIcon,
   UserIcon,

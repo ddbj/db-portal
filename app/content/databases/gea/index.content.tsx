@@ -56,7 +56,7 @@ export default {
     lastUpdated: "2026-06-15T00:00:00Z",
     relatedDbs: ["bioproject", "biosample"],
     externalLinks: [
-      { label: { ja: "GEA 公式ページ", en: "GEA official site" }, href: "https://www.ddbj.nig.ac.jp/gea/index.html" },
+      { label: { ja: "GEA 公式ページ", en: "GEA official site" }, href: { ja: "https://www.ddbj.nig.ac.jp/gea/index.html", en: "https://www.ddbj.nig.ac.jp/gea/index-e.html" } },
     ],
   },
 } satisfies DatabaseContent

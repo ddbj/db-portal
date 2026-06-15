@@ -62,13 +62,13 @@ describe("AdvancedBuilder conditions", () => {
     const predicates = screen.getAllByRole("combobox", { name: "条件の演算子" })
     // The leading row can be negated through its predicate — no separate exclude
     // button, and no pinned first row.
-    expect(predicates[0]).toHaveTextContent("を含む")
-    expect(predicates[0]).not.toHaveTextContent("を含まない")
+    expect(predicates[0]).toHaveTextContent("keyword")
+    expect(predicates[0]).not.toHaveTextContent("not keyword")
 
     fireEvent.click(predicates[0] as HTMLElement)
-    fireEvent.click(screen.getByRole("option", { name: "を含まない" }))
+    fireEvent.click(screen.getByRole("option", { name: "not keyword" }))
 
-    expect(screen.getAllByRole("combobox", { name: "条件の演算子" })[0]).toHaveTextContent("を含まない")
+    expect(screen.getAllByRole("combobox", { name: "条件の演算子" })[0]).toHaveTextContent("not keyword")
     expect(screen.queryByRole("button", { name: "除外" })).toBeNull()
   })
 

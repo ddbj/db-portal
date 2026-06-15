@@ -58,7 +58,7 @@ export default {
     lastUpdated: "2026-06-15T00:00:00Z",
     relatedDbs: ["bioproject", "biosample"],
     externalLinks: [
-      { label: { ja: "MSS 公式ページ", en: "MSS official site" }, href: "https://www.ddbj.nig.ac.jp/ddbj/mss.html" },
+      { label: { ja: "MSS 公式ページ", en: "MSS official site" }, href: { ja: "https://www.ddbj.nig.ac.jp/ddbj/mss.html", en: "https://www.ddbj.nig.ac.jp/ddbj/mss-e.html" } },
     ],
   },
 } satisfies DatabaseContent

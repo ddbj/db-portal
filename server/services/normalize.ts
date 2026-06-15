@@ -16,7 +16,7 @@ const DDBJ_TAG_MAP: Readonly<Record<string, ServiceCategory>> = {
   submission: "repository",
   search: "search",
   analysis: "analysis",
-  annotation: "annotation",
+  annotation: "analysis",
 }
 
 // DBCLS services.json の Category_N → ServiceCategory。domain 軸 (3/4/5/7) は写像しない。
@@ -36,6 +36,30 @@ const DBCLS_CATEGORY_MAP: readonly {
   { key: "Category_9", label: "SPARQL Search", category: "search" },
   { key: "Category_10", label: "RDF creation", category: "integration" },
 ]
+
+// DBCLS の Category_N ベース自動分類では実態と合わないサービスを個別に上書きする。
+// key は itemId("dbcls", nameEn) の結果と一致させる。
+const DBCLS_CATEGORY_OVERRIDES: Readonly<Record<string, ServiceCategory[]>> = {
+  "dbcls-nbdc-human-database": ["repository"],
+  "dbcls-pubannotation": ["repository"],
+  "dbcls-pubdictionaries": ["repository"],
+  "dbcls-togovar": ["repository"],
+  "dbcls-allie": ["search"],
+  "dbcls-colil": ["search"],
+  "dbcls-inmexes": ["search"],
+  "dbcls-gggenome": ["search"],
+  "dbcls-ggrna": ["search"],
+  "dbcls-pubcasefinder": ["search"],
+  "dbcls-refex": ["search"],
+  "dbcls-lsd-rdf-data-portal": ["integration"],
+  "dbcls-togogenome": ["integration"],
+  "dbcls-nanbyodata-nando": ["integration"],
+  "dbcls-crisprdirect": ["analysis"],
+  "dbcls-togoimputation": ["analysis"],
+  "dbcls-sparql-proxy": ["integration"],
+  "dbcls-togostanza": ["visualization"],
+  "dbcls-umakaviewer": ["visualization"],
+}
 
 const truthy = (value: unknown): boolean =>
   value === true
@@ -247,9 +271,12 @@ export const normalizeDbclsServices = (jsonText: string, logger: Logger): Servic
     const nameEn = override?.en ?? nameEnRaw
     const nameJa = override?.ja ?? ((entry.services_name_ja ?? "").trim() || nameEn)
 
-    const { categories, rawCategories } = dbclsCategoriesFrom(
+    const id = itemId("dbcls", override?.en ?? nameEnRaw)
+    const { categories: autoCategories, rawCategories } = dbclsCategoriesFrom(
       rawItem as Record<string, unknown>,
     )
+    const overridden = DBCLS_CATEGORY_OVERRIDES[id]
+    const categories = overridden ?? autoCategories
 
     const href = entry.URL?.trim()
     let url: { ja?: string; en?: string } | undefined
@@ -259,7 +286,7 @@ export const normalizeDbclsServices = (jsonText: string, logger: Logger): Servic
     }
 
     items.push({
-      id: itemId("dbcls", nameEn),
+      id,
       source: "dbcls",
       name: { ja: nameJa, en: nameEn },
       description: {

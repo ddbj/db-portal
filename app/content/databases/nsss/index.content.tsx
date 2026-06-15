@@ -55,7 +55,7 @@ export default {
     lastUpdated: "2026-06-15T00:00:00Z",
     relatedDbs: ["bioproject", "biosample", "ddbj"],
     externalLinks: [
-      { label: { ja: "NSSS 公式ページ", en: "NSSS official site" }, href: "https://www.ddbj.nig.ac.jp/ddbj/web-submission.html" },
+      { label: { ja: "NSSS 公式ページ", en: "NSSS official site" }, href: { ja: "https://www.ddbj.nig.ac.jp/ddbj/web-submission.html", en: "https://www.ddbj.nig.ac.jp/ddbj/web-submission-e.html" } },
     ],
   },
 } satisfies DatabaseContent

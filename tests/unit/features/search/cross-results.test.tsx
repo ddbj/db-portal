@@ -23,10 +23,10 @@ const renderCross = (databases: unknown[]) =>
   })
 
 describe("CrossResults top-hit links", () => {
-  test("ddbj uses the getentry host, not the search/entry path", () => {
-    renderCross([dbEntry("ddbj", [{ identifier: "U01317", type: "ddbj", title: "Trad entry" }])])
+  test("ddbj uses the url the search API provides", () => {
+    renderCross([dbEntry("ddbj", [{ identifier: "U01317", type: "ddbj", title: "Trad entry", url: "https://getentry.ddbj.nig.ac.jp/getentry/na/U01317/" }])])
     expect(screen.getByRole("link", { name: "U01317" }))
-      .toHaveAttribute("href", "https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
+      .toHaveAttribute("href", "https://getentry.ddbj.nig.ac.jp/getentry/na/U01317/")
   })
 
   test("taxonomy uses the tx_search host", () => {

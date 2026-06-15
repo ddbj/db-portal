@@ -8,6 +8,7 @@ type SectionHeadingProps = {
   count?: number | undefined
   countSuffix?: string
   action?: ReactNode
+  hint?: ReactNode
   as?: "h2" | "h3"
   id?: string
 }
@@ -18,6 +19,7 @@ export const SectionHeading = ({
   count,
   countSuffix,
   action,
+  hint,
   as = "h2",
   id,
 }: SectionHeadingProps) => (
@@ -32,6 +34,7 @@ export const SectionHeading = ({
             {count}{countSuffix === undefined || countSuffix === "" ? "" : ` ${countSuffix}`}
           </span>
         )}
+        {hint}
       </div>
       {action}
     </div>

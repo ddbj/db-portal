@@ -14,12 +14,13 @@ type DisplayChip =
 
 const ENTRY_BASE = "https://ddbj.nig.ac.jp/search/entry"
 
-// Detail link, generated from identifier + fine-grained `type` rather than the
-// hit's `url` field (the API response shape may change). ES-backed hits use the
-// DDBJ Search entry path keyed by `type` (e.g. `sra-analysis`); the two
-// Solr-backed DBs have their own canonical hosts. Accepts both per-DB hits and
-// cross-search lightweight hits (only identifier + type are read).
-export const entryHref = (hit: { identifier: string; type: string }): string => {
+// Detail link. Solr-backed DBs (ddbj / taxonomy) use the `url` the search API
+// provides (getentry for ddbj, tx_search for taxonomy); ES-backed DBs use the
+// DDBJ Search entry path keyed by `type` (e.g. `sra-analysis`). Accepts both
+// per-DB hits and cross-search lightweight hits.
+export const entryHref = (hit: { identifier: string; type: string; url?: string | null }): string => {
+  if ((hit.type === "ddbj" || hit.type === "taxonomy") && hit.url) return hit.url
+
   const id = encodeURIComponent(hit.identifier)
   if (hit.type === "ddbj") {
     return `https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=${id}`

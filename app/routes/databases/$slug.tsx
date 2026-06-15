@@ -3,6 +3,7 @@ import { type LoaderFunctionArgs, useLoaderData } from "react-router"
 import { pageTitleMeta } from "~/lib/content"
 import { getDatabaseBySlug } from "~/lib/content/loader"
 import { type Lang, useLang, useT } from "~/lib/i18n"
+import { resolveHref } from "~/lib/i18n/resolve-href"
 import { PageTitle, Section, SectionHeading, Tag, TextLink } from "~/ui"
 
 export const handle = {
@@ -67,8 +68,8 @@ const DatabaseSlugRoute = () => {
           <SectionHeading as="h2">{t("databases.externalLinksHeading")}</SectionHeading>
           <ul className="list-none p-0 m-0 flex flex-col gap-1.5">
             {db.meta.externalLinks.map((link) => (
-              <li key={link.href} className="m-0">
-                <TextLink external href={link.href}>{link.label[lang]}</TextLink>
+              <li key={resolveHref(link.href, "ja")} className="m-0">
+                <TextLink external href={resolveHref(link.href, lang)}>{link.label[lang]}</TextLink>
               </li>
             ))}
           </ul>

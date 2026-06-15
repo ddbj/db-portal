@@ -91,7 +91,7 @@ export default {
     externalLinks: [
       { label: { ja: "NCBI BioProject", en: "NCBI BioProject" }, href: "https://www.ncbi.nlm.nih.gov/bioproject/" },
       { label: { ja: "EBI BioStudies", en: "EBI BioStudies" }, href: "https://www.ebi.ac.uk/biostudies/" },
-      { label: { ja: "DDBJ BioProject 公式ページ", en: "DDBJ BioProject site" }, href: "https://www.ddbj.nig.ac.jp/bioproject/index.html" },
+      { label: { ja: "DDBJ BioProject 公式ページ", en: "DDBJ BioProject site" }, href: { ja: "https://www.ddbj.nig.ac.jp/bioproject/index.html", en: "https://www.ddbj.nig.ac.jp/bioproject/index-e.html" } },
     ],
   },
 } satisfies DatabaseContent

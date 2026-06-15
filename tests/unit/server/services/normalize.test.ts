@@ -25,7 +25,7 @@ describe("normalizeDdbjServices", () => {
   })
 
   test("maps multiple distinct tags and keeps order", () => {
-    expect(byId("ddbj-dfast")?.categories).toEqual(["analysis", "repository", "annotation"])
+    expect(byId("ddbj-dfast")?.categories).toEqual(["analysis", "repository"])
   })
 
   test("falls back to other when no known tag", () => {
@@ -77,9 +77,9 @@ describe("normalizeDbclsServices", () => {
     expect(byId("dbcls-gggenome", dbcls())).toBeDefined()
   })
 
-  test("domain-only categories fall back to other", () => {
-    expect(byId("dbcls-gggenome", dbcls())?.categories).toEqual(["other"])
-    expect(byId("dbcls-refex", dbcls())?.categories).toEqual(["other"])
+  test("domain-only categories are overridden to correct functional category", () => {
+    expect(byId("dbcls-gggenome", dbcls())?.categories).toEqual(["search"])
+    expect(byId("dbcls-refex", dbcls())?.categories).toEqual(["search"])
   })
 
   test("uses the single URL for both languages", () => {

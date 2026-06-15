@@ -9,6 +9,7 @@ export {
   createCondition,
   createInitialState,
   fromAdvanced,
+  PredicateHelpHint,
   toAdvanced,
   useScopeFacets,
 } from "./advanced"

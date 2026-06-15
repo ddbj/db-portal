@@ -7,9 +7,14 @@ const Bilingual = z.object({
   en: z.string().min(1),
 })
 
+const BilingualHref = z.object({
+  ja: z.string().url(),
+  en: z.string().url(),
+})
+
 const ServiceLink = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("internal"), to: z.string().startsWith("/") }),
-  z.object({ kind: z.literal("external"), href: z.string().url() }),
+  z.object({ kind: z.literal("external"), href: z.union([z.string().url(), BilingualHref]) }),
 ])
 
 type ServiceLink = z.infer<typeof ServiceLink>

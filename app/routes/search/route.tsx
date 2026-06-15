@@ -11,6 +11,7 @@ import {
   isIdentityAst,
   mergeAstAnd,
   parseDslToAst,
+  PredicateHelpHint,
   QueryPreview,
   SearchInputPanel,
   serializeAstToDsl,
@@ -175,6 +176,7 @@ const SearchRoute = () => {
           count={conditionCount}
           countSuffix={t("search.builder.countSuffix")}
           action={<SyncStatusChip status={sync.status} />}
+          hint={<PredicateHelpHint />}
         >
           {t("search.builder.heading")}
         </SectionHeading>

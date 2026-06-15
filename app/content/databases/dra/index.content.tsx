@@ -57,7 +57,7 @@ export default {
     lastUpdated: "2026-06-15T00:00:00Z",
     relatedDbs: ["bioproject", "biosample"],
     externalLinks: [
-      { label: { ja: "DRA 公式ページ", en: "DRA official site" }, href: "https://www.ddbj.nig.ac.jp/dra/index.html" },
+      { label: { ja: "DRA 公式ページ", en: "DRA official site" }, href: { ja: "https://www.ddbj.nig.ac.jp/dra/index.html", en: "https://www.ddbj.nig.ac.jp/dra/index-e.html" } },
       { label: { ja: "NCBI SRA", en: "NCBI SRA" }, href: "https://www.ncbi.nlm.nih.gov/sra" },
       { label: { ja: "EBI ENA", en: "EBI ENA" }, href: "https://www.ebi.ac.uk/ena/browser/" },
     ],

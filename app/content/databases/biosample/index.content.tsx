@@ -93,7 +93,7 @@ export default {
     externalLinks: [
       { label: { ja: "NCBI BioSample", en: "NCBI BioSample" }, href: "https://www.ncbi.nlm.nih.gov/biosample" },
       { label: { ja: "EBI BioSamples", en: "EBI BioSamples" }, href: "https://www.ebi.ac.uk/biosamples/" },
-      { label: { ja: "DDBJ BioSample 公式ページ", en: "DDBJ BioSample site" }, href: "https://www.ddbj.nig.ac.jp/biosample/index.html" },
+      { label: { ja: "DDBJ BioSample 公式ページ", en: "DDBJ BioSample site" }, href: { ja: "https://www.ddbj.nig.ac.jp/biosample/index.html", en: "https://www.ddbj.nig.ac.jp/biosample/index-e.html" } },
     ],
   },
 } satisfies DatabaseContent

@@ -22,7 +22,7 @@ describe("ProposalConditions", () => {
     // Resolved field label, not the raw snake_case field.
     expect(screen.getByText("Organism name")).toBeInTheDocument()
     expect(screen.queryByText("organism_name")).toBeNull()
-    expect(screen.getByText("と一致")).toBeInTheDocument()
+    expect(screen.getByText("match (=)")).toBeInTheDocument()
     expect(screen.getByText("Homo sapiens")).toBeInTheDocument()
     // A lone clause carries no combinator badge.
     expect(screen.queryByText("AND")).toBeNull()
@@ -43,8 +43,8 @@ describe("ProposalConditions", () => {
     expect(screen.getByText("Organism name")).toBeInTheDocument()
     expect(screen.getByText("Title")).toBeInTheDocument()
     expect(screen.getByText("Date First Published")).toBeInTheDocument()
-    expect(screen.getByText("を含む")).toBeInTheDocument()
-    expect(screen.getByText("の期間内")).toBeInTheDocument()
+    expect(screen.getByText("keyword")).toBeInTheDocument()
+    expect(screen.getByText("in range")).toBeInTheDocument()
     expect(screen.getByText("2022-01-01 〜 2024-12-31")).toBeInTheDocument()
   })
 
@@ -86,7 +86,7 @@ describe("ProposalConditions", () => {
       rules: [{ op: "eq", field: "accessibility", value: "controlled-access" }],
     })
     // A negated single leaf reads as the negated predicate, no NOT badge.
-    expect(screen.getByText("と一致しない")).toBeInTheDocument()
+    expect(screen.getByText("not match (≠)")).toBeInTheDocument()
     expect(screen.getByText("controlled-access")).toBeInTheDocument()
     expect(screen.queryByText("NOT")).toBeNull()
     expect(screen.queryByText("除外")).toBeNull()
@@ -97,7 +97,7 @@ describe("ProposalConditions", () => {
       op: "NOT",
       rules: [{ op: "between", field: "date_published", from: "2022-01-01", to: "2024-12-31" }],
     })
-    expect(screen.getByText("の期間外")).toBeInTheDocument()
+    expect(screen.getByText("not in range")).toBeInTheDocument()
     expect(screen.queryByText("NOT")).toBeNull()
   })
 
@@ -144,7 +144,7 @@ describe("ProposalConditions", () => {
 
   test("wildcardLeaf_usesPatternPredicate", () => {
     renderNode({ op: "wildcard", field: "identifier", value: "PRJDB*" })
-    expect(screen.getByText("パターンに一致")).toBeInTheDocument()
+    expect(screen.getByText("wildcard (*, ?)")).toBeInTheDocument()
     expect(screen.getByText("PRJDB*")).toBeInTheDocument()
   })
 

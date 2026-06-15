@@ -29,16 +29,36 @@ export const tagsToCategory = (
   tags: readonly string[],
 ): NewsCategory => {
   const table = MAPPING[source]
+  let fallback: NewsCategory | undefined
   for (const tag of tags) {
     const key = tag.trim().toLowerCase()
     if (key === "") continue
-    // Object.hasOwn avoids reaching prototype chain entries (e.g. "__proto__")
     if (!Object.hasOwn(table, key)) continue
     const found = table[key]
-    if (found !== undefined) return found
+    if (found === undefined) continue
+    if (found === "other") {
+      fallback ??= "other"
+      continue
+    }
+
+    return found
   }
 
-  return DEFAULT_CATEGORY
+  return fallback ?? DEFAULT_CATEGORY
+}
+
+const DDBJ_MAINTENANCE_RE = /メンテナンス|停止|一時中断|maintenance/i
+const DDBJ_DATA_RELEASE_RE = /公開しました|データ公開|リリース|release/i
+
+export const categoryFromDdbjTitle = (
+  jaTitle: string | undefined,
+  enTitle: string | undefined,
+): NewsCategory => {
+  const text = `${jaTitle ?? ""} ${enTitle ?? ""}`
+  if (DDBJ_MAINTENANCE_RE.test(text)) return "maintenance"
+  if (DDBJ_DATA_RELEASE_RE.test(text)) return "data-release"
+
+  return "announcement"
 }
 
 export type FrontMatter = {
@@ -69,7 +89,7 @@ const stripQuotes = (raw: string): string => {
 
 const ARRAY_KEYS = new Set(["db", "tags", "category"])
 const KV_RE = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/
-const ARRAY_ITEM_RE = /^\s+-\s+(.+)$/
+const ARRAY_ITEM_RE = /^\s*-\s+(.+)$/
 
 export const parseFrontMatter = (markdown: string): ParsedMarkdown | undefined => {
   if (!markdown.startsWith("---")) return undefined
@@ -228,7 +248,13 @@ export const toNewsItem = (
   if (!publishedAt) return undefined
   const jaTags = ja?.fm.tags ?? []
   const enTags = en?.fm.tags ?? []
-  const category = tagsToCategory(cfg.source, [...jaTags, ...enTags])
+  const tagCategory = tagsToCategory(cfg.source, [...jaTags, ...enTags])
+  const category = tagCategory === "other"
+    && cfg.source === "ddbj"
+    && jaTags.length === 0
+    && enTags.length === 0
+    ? categoryFromDdbjTitle(ja?.fm.title, en?.fm.title)
+    : tagCategory
   const url = {
     ja: ja ? cfg.urlBuilder("ja", slug) : undefined,
     en: en ? cfg.urlBuilder("en", slug) : undefined,

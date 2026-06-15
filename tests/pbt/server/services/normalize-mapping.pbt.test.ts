@@ -37,7 +37,7 @@ describe("ddbjTagsToCategories PBT", () => {
     expect(ddbjTagsToCategories(["submission"])).toEqual(["repository"])
     expect(ddbjTagsToCategories(["search"])).toEqual(["search"])
     expect(ddbjTagsToCategories(["analysis"])).toEqual(["analysis"])
-    expect(ddbjTagsToCategories(["annotation"])).toEqual(["annotation"])
+    expect(ddbjTagsToCategories(["annotation"])).toEqual(["analysis"])
   })
 
   test("unknown tags fall back to other", () => {

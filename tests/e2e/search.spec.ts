@@ -76,7 +76,7 @@ test.describe("Search Domain", () => {
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
     await page.getByRole("option", { name: /Organism \(TaxID\)/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
-    await page.getByRole("option", { name: /^と一致$|^equals$/ }).click()
+    await page.getByRole("option", { name: /^match \(=\)$/ }).click()
     await page.getByRole("combobox", { name: /値を入力|Enter value/ }).last().fill("9606")
 
     // Row 2: Organism name (organism_name, text) を含む Homo sapiens
@@ -84,7 +84,7 @@ test.describe("Search Domain", () => {
     await page.getByRole("combobox", { name: /検索フィールド|Search field/ }).last().click()
     await page.getByRole("option", { name: /Organism name/ }).click()
     await page.getByRole("combobox", { name: /条件の演算子|Operator/ }).last().click()
-    await page.getByRole("option", { name: /を含む|contains/ }).click()
+    await page.getByRole("option", { name: /^keyword$/ }).click()
     await page.getByRole("textbox", { name: /値を入力|Enter value/ }).last().fill("Homo sapiens")
 
     // Live preview reflects both conditions after the debounce / serialize.

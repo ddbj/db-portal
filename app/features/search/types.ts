@@ -60,9 +60,9 @@ export type SyncStatus = "idle" | "syncing" | "synced" | "failed"
 export type AdvancedCombinator = "AND" | "OR" | "NOT"
 
 // A predicate is an operator paired with whether the condition is negated. The
-// builder folds op selection and negation into one dropdown ("を含む" /
-// "を含まない" 等) so a row reads as a clause; negation maps to a NOT wrapper in
-// the AST, not to a separate operator (the DSL allowlist has no neq/not_contains).
+// builder folds op selection and negation into one dropdown ("keyword" /
+// "not keyword" etc.) so a row reads as a clause; negation maps to a NOT wrapper
+// in the AST, not to a separate operator (the DSL allowlist has no neq/not_contains).
 export type Predicate = { op: AdvancedOp; negated: boolean }
 
 export const predicateValue = ({ op, negated }: Predicate): string =>

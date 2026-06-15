@@ -11,9 +11,14 @@ const BilingualBody = z.object({
   en: z.custom<ReactNode>(),
 })
 
+const BilingualHref = z.object({
+  ja: z.string().url(),
+  en: z.string().url(),
+})
+
 const ExternalLink = z.object({
   label: Bilingual,
-  href: z.string().url(),
+  href: z.union([z.string().url(), BilingualHref]),
 })
 
 const DatabaseSlug = z.enum([

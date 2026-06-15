@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  categoryFromDdbjTitle,
   parseFrontMatter,
   type RawArticle,
   stripHtmlTags,
@@ -95,6 +96,32 @@ describe("parseFrontMatter", () => {
     ].join("\n"))
     expect(parseFrontMatter(md)?.fm.title).toBe("Quoted title")
   })
+
+  test("parseFrontMatter_unindentedArrayItems_extractsCorrectly", () => {
+    const md = buildMarkdown([
+      "title: 'Post'",
+      "tags:",
+      "- public_relations",
+      "- services",
+      "date: 2024-06-01",
+    ].join("\n"))
+    expect(parseFrontMatter(md)?.fm.tags).toEqual(["public_relations", "services"])
+  })
+})
+
+describe("categoryFromDdbjTitle", () => {
+  test.each([
+    ["システム障害に伴うサービスの一時停止", undefined, "maintenance"],
+    ["DDBJメンテナンスのお知らせ", undefined, "maintenance"],
+    [undefined, "Temporary suspension of services", "announcement"],
+    [undefined, "Scheduled maintenance", "maintenance"],
+    ["DDBJ リリースノート 100 を公開しました", undefined, "data-release"],
+    [undefined, "Data release of XXX", "data-release"],
+    ["新規サービスのお知らせ", undefined, "announcement"],
+    [undefined, undefined, "announcement"],
+  ])("categoryFromDdbjTitle(%j, %j) → %s", (ja, en, expected) => {
+    expect(categoryFromDdbjTitle(ja, en)).toBe(expected)
+  })
 })
 
 describe("toNewsItem", () => {
@@ -160,6 +187,37 @@ describe("toNewsItem", () => {
     const item = toNewsItem(dbclsCfg, dbclsJa, undefined)
     expect(item?.id).toBe("dbcls-2026-05-01-post1")
     expect(item?.publishedAt).toBe("2026-05-01T00:00:00+09:00")
+  })
+
+  test("toNewsItem_ddbjNoTags_fallsBackToCategoryFromTitle", () => {
+    const noTags: RawArticle = {
+      source: "ddbj",
+      lang: "ja",
+      slug: "2015-07-02",
+      fm: {
+        title: "システム障害に伴うサービスの一時停止",
+        date: "2015-07-02T00:00:00+09:00",
+        category: "news",
+      },
+      body: "",
+    }
+    const item = toNewsItem(ddbjCfg, noTags, undefined)
+    expect(item?.category).toBe("maintenance")
+  })
+
+  test("toNewsItem_ddbjNoTagsGenericTitle_fallsBackToAnnouncement", () => {
+    const noTags: RawArticle = {
+      source: "ddbj",
+      lang: "ja",
+      slug: "2015-08-01",
+      fm: {
+        title: "新規サービスのお知らせ",
+        date: "2015-08-01T00:00:00+09:00",
+      },
+      body: "",
+    }
+    const item = toNewsItem(ddbjCfg, noTags, undefined)
+    expect(item?.category).toBe("announcement")
   })
 
   test("toNewsItem_publishedFalse_returnsUndefined", () => {

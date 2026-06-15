@@ -28,10 +28,21 @@ describe("entryHref", () => {
       .toBe("https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000228")
   })
 
-  test("Solr hits use their own canonical hosts", () => {
+  test("Solr hits use the url the search API provides", () => {
+    expect(entryHref(hit({ type: "ddbj", identifier: "AB000001", url: "https://getentry.ddbj.nig.ac.jp/getentry/na/AB000001/" })))
+      .toBe("https://getentry.ddbj.nig.ac.jp/getentry/na/AB000001/")
+    expect(entryHref(hit({ type: "ddbj", identifier: "PE665887", url: "https://getentry.ddbj.nig.ac.jp/getentry/aa/PE665887/" })))
+      .toBe("https://getentry.ddbj.nig.ac.jp/getentry/aa/PE665887/")
+    expect(entryHref(hit({ type: "taxonomy", identifier: "9606", url: "https://ddbj.nig.ac.jp/tx_search/9606?view=info" })))
+      .toBe("https://ddbj.nig.ac.jp/tx_search/9606?view=info")
+  })
+
+  test("Solr hits fall back to constructed URL when url field is absent", () => {
     expect(entryHref(hit({ type: "ddbj", identifier: "U01317" })))
       .toBe("https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
-    expect(entryHref(hit({ type: "taxonomy", identifier: "9606" })))
+    expect(entryHref(hit({ type: "ddbj", identifier: "U01317", url: null })))
+      .toBe("https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
+    expect(entryHref(hit({ type: "taxonomy", identifier: "9606", url: null })))
       .toBe("https://ddbj.nig.ac.jp/tx_search/9606?view=info")
   })
 

@@ -1,4 +1,5 @@
 import type { Lang } from "~/lib/i18n"
+import { resolveHref } from "~/lib/i18n/resolve-href"
 import type { ServiceContent } from "~/schemas/content/service-content"
 import { ExternalIcon, Heading, LinkCard } from "~/ui"
 
@@ -34,5 +35,5 @@ export const ServiceCard = ({ service, lang }: ServiceCardProps) => {
 
   return link.kind === "internal"
     ? <LinkCard to={link.to}>{inner}</LinkCard>
-    : <LinkCard external href={link.href}>{inner}</LinkCard>
+    : <LinkCard external href={resolveHref(link.href, lang)}>{inner}</LinkCard>
 }

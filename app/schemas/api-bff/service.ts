@@ -4,7 +4,6 @@ export const ServiceCategory = z.enum([
   "repository",
   "search",
   "analysis",
-  "annotation",
   "integration",
   "visualization",
   "other",
@@ -43,7 +42,7 @@ export type ServiceList = z.infer<typeof ServiceList>
 // Bump when the cache shape changes; the server rebuilds caches whose stored
 // schemaVersion no longer matches. Single source for both the schema literal and
 // the writer (server/services/cache.ts).
-export const SERVICE_CACHE_SCHEMA_VERSION = 2
+export const SERVICE_CACHE_SCHEMA_VERSION = 3
 
 export const ServiceCache = z.object({
   schemaVersion: z.literal(SERVICE_CACHE_SCHEMA_VERSION),

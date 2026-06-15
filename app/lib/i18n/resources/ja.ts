@@ -127,7 +127,6 @@ export type Resources = {
       repository: string
       search: string
       analysis: string
-      annotation: string
       integration: string
       visualization: string
       other: string
@@ -387,6 +386,17 @@ export type Resources = {
         between: string
         notBetween: string
       }
+      predicateHelp: {
+        eq: string
+        notEq: string
+        contains: string
+        notContains: string
+        wildcard: string
+        notWildcard: string
+        between: string
+        notBetween: string
+      }
+      predicateHelpLabel: string
       rangeFromLabel: string
       rangeToLabel: string
       rangeFromPlaceholder: string
@@ -724,7 +734,6 @@ export const ja: Resources = {
       repository: "登録・公開",
       search: "検索",
       analysis: "解析",
-      annotation: "アノテーション",
       integration: "統合・RDF",
       visualization: "可視化・教材",
       other: "その他",
@@ -1035,15 +1044,26 @@ export const ja: Resources = {
       removeCondition: "条件を削除",
       removeGroup: "グループを削除",
       predicate: {
-        eq: "と一致",
-        notEq: "と一致しない",
-        contains: "を含む",
-        notContains: "を含まない",
-        wildcard: "パターンに一致",
-        notWildcard: "パターンに一致しない",
-        between: "の期間内",
-        notBetween: "の期間外",
+        eq: "match (=)",
+        notEq: "not match (≠)",
+        contains: "keyword",
+        notContains: "not keyword",
+        wildcard: "wildcard (*, ?)",
+        notWildcard: "not wildcard (*, ?)",
+        between: "in range",
+        notBetween: "not in range",
       },
+      predicateHelp: {
+        eq: "入力した値と完全に一致するレコードを検索します",
+        notEq: "入力した値と一致しないレコードを検索します",
+        contains: "入力をスペース区切りで単語に分割し、いずれかの単語を含むレコードを検索します",
+        notContains: "入力した単語のいずれも含まないレコードを検索します",
+        wildcard: "* は任意の文字列、? は任意の1文字に一致します。例: DRA*",
+        notWildcard: "パターンに一致しないレコードを検索します",
+        between: "指定した範囲内のレコードを検索します",
+        notBetween: "指定した範囲外のレコードを検索します",
+      },
+      predicateHelpLabel: "演算子ヘルプ",
       rangeFromLabel: "FROM",
       rangeToLabel: "TO",
       rangeFromPlaceholder: "YYYY-MM-DD",

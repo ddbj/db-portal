@@ -1,5 +1,6 @@
 export { AdvancedBuilder } from "./builder"
 export { fromAdvanced } from "./from-advanced"
+export { PredicateHelpHint } from "./predicate-help"
 export {
   type AdvancedAction,
   type AdvancedCondition,

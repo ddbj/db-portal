@@ -61,7 +61,7 @@ export default {
     lastUpdated: "2026-06-15T00:00:00Z",
     relatedDbs: ["humandbs"],
     externalLinks: [
-      { label: { ja: "JGA 公式ページ", en: "JGA official site" }, href: "https://www.ddbj.nig.ac.jp/jga/index.html" },
+      { label: { ja: "JGA 公式ページ", en: "JGA official site" }, href: { ja: "https://www.ddbj.nig.ac.jp/jga/index.html", en: "https://www.ddbj.nig.ac.jp/jga/index-e.html" } },
     ],
   },
 } satisfies DatabaseContent
