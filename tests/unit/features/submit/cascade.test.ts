@@ -35,14 +35,11 @@ describe("submit cascade", () => {
     expect(new Set(enabledKinds("restricted", "human"))).toEqual(new Set(FileTypeKind.options))
   })
 
-  test("enabledKinds_thirdParty_onlyTradAndMetabobankKinds", () => {
+  test("enabledKinds_thirdParty_onlyTradKinds", () => {
     expect(new Set(enabledKinds("third-party", "human"))).toEqual(
       new Set([
         "sequence-nucleotide",
         "sequence-annotation",
-        "mass-spectrometry",
-        "nmr",
-        "metabolite-assignment",
       ]),
     )
   })

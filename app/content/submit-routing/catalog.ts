@@ -10,7 +10,7 @@ const catalogData = {
   q1Options: [
     { id: "public", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
     { id: "restricted", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jga"] },
-    { id: "third-party", repos: ["ddbj", "metabobank"] },
+    { id: "third-party", repos: ["ddbj"] },
   ],
   q2Options: [
     { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
