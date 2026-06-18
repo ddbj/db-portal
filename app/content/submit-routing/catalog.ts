@@ -1,23 +1,18 @@
-import { type SubmitKindRoute,SubmitRoutingCatalog } from "~/schemas/content/submit-routing-content"
-import type { FileTypeKind, Q1, Q2, Service } from "~/schemas/submit"
+import { type SubmitKindRoute, SubmitRoutingCatalog } from "~/schemas/content/submit-routing-content"
+import type { FileTypeKind, Q2, Service } from "~/schemas/submit"
 
 // Tier1 ルーティング・カタログ (データ駆動)。DDBJ が編集し、起動時 Zod 検証で typo が落ちる。
 // rules は first-match。emit.service は登録エンドポイント (destination ∪ {jpost, eva})。
-// JGA 分岐は access=restricted ∧ q2=human (ヒト個人のみ。メタゲノム/環境は対象外)。
+// JGA 分岐は access=restricted ∧ q2=human (ヒト個人の全種別。メタゲノム/環境は対象外)。
 const catalogData = {
-  // カスケード: allowedRepos = Q1.repos ∩ Q2.repos。rules を実行せず repos を読むだけで判定する。
+  // カスケード: allowedRepos = Q2.repos。rules を実行せず repos を読むだけで判定する。
   // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
-  q1Options: [
-    { id: "public", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "restricted", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jga"] },
-    { id: "third-party", repos: ["ddbj"] },
-  ],
   q2Options: [
-    { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "virus", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
-    { id: "metagenome", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank"] },
+    { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "virus", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "metagenome", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
   ],
   kindRoutes: [
     {
@@ -53,8 +48,8 @@ const catalogData = {
       ],
     },
     {
-      id: "sequence-nucleotide",
-      candidateRepos: ["ddbj", "nsss", "dra"],
+      id: "sequence",
+      candidateRepos: ["ddbj", "nsss"],
       rules: [
         {
           when: { anyChip: { axis: "assembly-form", value: "mag" } },
@@ -76,7 +71,7 @@ const catalogData = {
           },
         },
         {
-          when: { q1: "third-party" },
+          when: { anyChip: { axis: "tpa", value: "true" } },
           emit: {
             service: "ddbj",
             scope: "entry",
@@ -94,50 +89,6 @@ const catalogData = {
             notes: [
               { kind: "info", messageKey: "submit.nsss.intro" },
               { kind: "info", messageKey: "submit.nsss.specialToMss" },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: "sequence-annotation",
-      candidateRepos: ["ddbj"],
-      rules: [
-        {
-          when: { groupType: "assembly-annotation" },
-          emit: {
-            service: "ddbj",
-            scope: "group",
-            notes: [
-              { kind: "info", messageKey: "submit.ddbj.assemblyAnnotation.intro" },
-              { kind: "info", messageKey: "submit.ddbj.assemblyAnnotation.filenamePairing" },
-              {
-                kind: "info",
-                messageKey: "submit.ddbj.locusTagPrefix",
-                whenAny: { anyChip: { axis: "assembly-form", value: "mag" } },
-              },
-            ],
-          },
-        },
-        {
-          when: { q1: "third-party" },
-          emit: {
-            service: "ddbj",
-            scope: "entry",
-            notes: [
-              { kind: "info", messageKey: "submit.ddbj.tpa.intro" },
-              { kind: "warning", messageKey: "submit.ddbj.tpa.primaryAccessionRequired" },
-            ],
-          },
-        },
-        {
-          when: { always: true },
-          emit: {
-            service: "ddbj",
-            scope: "entry",
-            notes: [
-              { kind: "info", messageKey: "submit.ddbj.annotation.intro" },
-              { kind: "warning", messageKey: "submit.ddbj.annotation.needsSequencePair" },
             ],
           },
         },
@@ -182,8 +133,16 @@ const catalogData = {
     },
     {
       id: "expression-matrix",
-      candidateRepos: ["gea"],
+      candidateRepos: ["gea", "jga"],
       rules: [
+        {
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          emit: {
+            service: "jga",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
+          },
+        },
         {
           when: { always: true },
           emit: {
@@ -218,8 +177,16 @@ const catalogData = {
     },
     {
       id: "spatial-transcriptomics",
-      candidateRepos: ["gea", "dra"],
+      candidateRepos: ["gea", "dra", "jga"],
       rules: [
+        {
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          emit: {
+            service: "jga",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
+          },
+        },
         {
           when: { always: true },
           emit: {
@@ -244,8 +211,16 @@ const catalogData = {
     },
     {
       id: "spatial-image",
-      candidateRepos: ["gea", "dra"],
+      candidateRepos: ["gea", "dra", "jga"],
       rules: [
+        {
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          emit: {
+            service: "jga",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
+          },
+        },
         {
           when: { always: true },
           emit: {
@@ -264,15 +239,15 @@ const catalogData = {
       ],
     },
     {
-      id: "mass-spectrometry",
-      candidateRepos: ["metabobank", "jpost"],
+      id: "metabolomics",
+      candidateRepos: ["metabobank", "jga"],
       rules: [
         {
-          when: { anyChip: { axis: "mass-spec-domain", value: "proteomics" } },
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
           emit: {
-            service: "jpost",
+            service: "jga",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.jpost.proteomics" }],
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
           },
         },
         {
@@ -281,41 +256,30 @@ const catalogData = {
             service: "metabobank",
             scope: "entry",
             notes: [
-              { kind: "info", messageKey: "submit.metabobank.ms.intro" },
-              {
-                kind: "info",
-                messageKey: "submit.metabobank.ms.imagingImageFiles",
-                whenAny: { groupType: "imaging-ms" },
-              },
+              { kind: "info", messageKey: "submit.metabobank.intro" },
             ],
           },
         },
       ],
     },
     {
-      id: "nmr",
-      candidateRepos: ["metabobank"],
+      id: "proteome",
+      candidateRepos: ["jpost", "jga"],
       rules: [
         {
-          when: { always: true },
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
           emit: {
-            service: "metabobank",
+            service: "jga",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.metabobank.nmr.intro" }],
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
           },
         },
-      ],
-    },
-    {
-      id: "metabolite-assignment",
-      candidateRepos: ["metabobank"],
-      rules: [
         {
           when: { always: true },
           emit: {
-            service: "metabobank",
+            service: "jpost",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.metabobank.maf.intro" }],
+            notes: [{ kind: "info", messageKey: "submit.jpost.proteomics" }],
           },
         },
       ],
@@ -338,7 +302,6 @@ export const SUBMIT_ROUTING = parsed.data
 const routeByKind = new Map<FileTypeKind, SubmitKindRoute>(
   SUBMIT_ROUTING.kindRoutes.map((r) => [r.id, r]),
 )
-const q1ReposById = new Map<Q1, readonly Service[]>(SUBMIT_ROUTING.q1Options.map((o) => [o.id, o.repos]))
 const q2ReposById = new Map<Q2, readonly Service[]>(SUBMIT_ROUTING.q2Options.map((o) => [o.id, o.repos]))
 
 export const listKindRoutes = (): readonly SubmitKindRoute[] => SUBMIT_ROUTING.kindRoutes
@@ -349,8 +312,6 @@ export const getKindRoute = (kind: FileTypeKind): SubmitKindRoute => {
 
   return route
 }
-
-export const getQ1Repos = (q1: Q1): readonly Service[] => q1ReposById.get(q1) ?? []
 
 export const getQ2Repos = (q2: Q2): readonly Service[] => q2ReposById.get(q2) ?? []
 

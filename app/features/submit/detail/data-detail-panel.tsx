@@ -10,7 +10,6 @@ type DataDetailPanelLabels = {
   empty: string
   configured: string
   unset: string
-  pairNeedsFasta: string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   groupLabel: (labelKey: string) => string
   optionLabel: (labelKey: string) => string
@@ -25,8 +24,6 @@ type DataDetailPanelProps = {
   onCommit: (entryId: string, patch: DataDetailPatch) => void
 }
 
-const PAIR_GROUP_TYPE: GroupType = "assembly-annotation"
-
 export const DataDetailPanel = ({
   entries,
   groups,
@@ -36,11 +33,8 @@ export const DataDetailPanel = ({
 }: DataDetailPanelProps) => {
   const groupOf = (entry: FileEntry): FileGroup | undefined =>
     groups.find((g) => g.id === entry.groupId)
-  // 相方に取り込まれた FASTA はアノテーション側で管理するため panel に質問を出さない
-  const isPairedPartner = (entry: FileEntry): boolean =>
-    entry.fileTypeKind === "sequence-nucleotide" && groupOf(entry)?.groupType === PAIR_GROUP_TYPE
 
-  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind) && !isPairedPartner(e))
+  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind))
 
   if (detailEntries.length === 0) {
     return <Callout tone="info">{labels.empty}</Callout>
@@ -53,14 +47,6 @@ export const DataDetailPanel = ({
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)
-        // 配列ペアを選んだが相方 FASTA が未選択のとき入力を促す
-        const needsFasta = entry.fileTypeKind === "sequence-annotation"
-          && draft.groupType === PAIR_GROUP_TYPE
-          && !entries.some(
-            (e) => e.id !== entry.id
-              && e.groupId === entry.groupId
-              && e.fileTypeKind === "sequence-nucleotide",
-          )
 
         return (
           <li
@@ -124,9 +110,6 @@ export const DataDetailPanel = ({
                 })}
               </FormGroup>
             ))}
-            {needsFasta && (
-              <span className="text-fs-micro text-ink-mid">{labels.pairNeedsFasta}</span>
-            )}
           </li>
         )
       })}

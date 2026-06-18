@@ -16,8 +16,8 @@ export type EntryRouting = {
 const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
   const route = getKindRoute(entry.fileTypeKind)
   const group = groupOf(submission, entry.groupId)
-  const { q1, q2 } = submission.preconditions
-  const ctx: PredicateContext = { entry, group, q1, q2 }
+  const { q2 } = submission.preconditions
+  const ctx: PredicateContext = { entry, group, q2 }
   // 末尾の {always} fallback が必ずあるため find は常にマッチする
   const rule = route.rules.find((r) => evalWhen(r.when, ctx))
   if (rule === undefined) throw new Error(`no matching rule for "${entry.fileTypeKind}"`)
@@ -27,7 +27,7 @@ const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
       // group emit でも disable 種別の member は含めない (経路導出に乗る active member だけを scope に出す)
       entryIds: sortUnique(
         groupMembers(submission, entry.groupId)
-          .filter((m) => isKindEnabled(q1, q2, m.fileTypeKind))
+          .filter((m) => isKindEnabled(q2, m.fileTypeKind))
           .map((e) => e.id),
       ),
       groupIds: [entry.groupId],

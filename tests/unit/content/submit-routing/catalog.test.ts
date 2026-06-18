@@ -2,9 +2,8 @@ import { describe, expect, test } from "vitest"
 
 import { listKindRoutes, SUBMIT_ROUTING, validateSubmitRouting } from "../../../../app/content/submit-routing/catalog"
 import { RECIPE_ALLOWLIST } from "../../../../app/features/submit/flow-rules/recipes"
-import { DESTINATION_SERVICES, FileTypeKind, SUBMISSION_ENDPOINTS } from "../../../../app/schemas/submit"
+import { FileTypeKind, SUBMISSION_ENDPOINTS } from "../../../../app/schemas/submit"
 
-const DESTINATION = new Set<string>(DESTINATION_SERVICES)
 const ENDPOINT = new Set<string>(SUBMISSION_ENDPOINTS)
 
 describe("submit routing catalog", () => {
@@ -47,9 +46,9 @@ describe("submit routing catalog", () => {
     expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial"])
   })
 
-  test("catalog_q1AndQ2Repos_areDestinationServices", () => {
-    for (const o of [...SUBMIT_ROUTING.q1Options, ...SUBMIT_ROUTING.q2Options]) {
-      for (const r of o.repos) expect(DESTINATION.has(r)).toBe(true)
+  test("catalog_q2Repos_areSubmissionEndpoints", () => {
+    for (const o of SUBMIT_ROUTING.q2Options) {
+      for (const r of o.repos) expect(ENDPOINT.has(r)).toBe(true)
     }
   })
 })

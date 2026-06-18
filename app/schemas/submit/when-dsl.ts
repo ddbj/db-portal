@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { Access, ChipAxis, DataForm, FileTypeKind, GroupType, Q1, Q2 } from "./vocabulary"
+import { Access, ChipAxis, DataForm, FileTypeKind, GroupType, Q2 } from "./vocabulary"
 
 // 条件記述語彙。単一 FileEntry / 単一 FileGroup / 前段でのみ評価でき、submission 集約は参照しない
 export type When =
@@ -11,8 +11,6 @@ export type When =
   | { groupType: GroupType }
   | { groupTypeIn: GroupType[] }
   | { anyChip: { axis: ChipAxis; value?: string } }
-  | { q1: Q1 }
-  | { q1In: Q1[] }
   | { q2: Q2 }
   | { q2In: Q2[] }
   | { and: When[] }
@@ -31,8 +29,6 @@ export const When = z.lazy(() =>
     z.object({ groupType: GroupType }).strict(),
     z.object({ groupTypeIn: z.array(GroupType).min(1) }).strict(),
     z.object({ anyChip: AnyChip }).strict(),
-    z.object({ q1: Q1 }).strict(),
-    z.object({ q1In: z.array(Q1).min(1) }).strict(),
     z.object({ q2: Q2 }).strict(),
     z.object({ q2In: z.array(Q2).min(1) }).strict(),
     z.object({ and: z.array(When).min(1) }).strict(),

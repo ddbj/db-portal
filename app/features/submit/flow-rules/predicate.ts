@@ -1,9 +1,8 @@
-import type { FileEntry, FileGroup, Q1, Q2, When } from "~/schemas/submit"
+import type { FileEntry, FileGroup, Q2, When } from "~/schemas/submit"
 
 export type PredicateContext = {
   entry: FileEntry
   group: FileGroup | undefined
-  q1: Q1 | null
   q2: Q2 | null
 }
 
@@ -28,8 +27,6 @@ export const evalWhen = (when: When, ctx: PredicateContext): boolean => {
       (c) => c.axis === axis && (value === undefined || c.value === value),
     )
   }
-  if ("q1" in when) return ctx.q1 === when.q1
-  if ("q1In" in when) return ctx.q1 !== null && when.q1In.includes(ctx.q1)
   if ("q2" in when) return ctx.q2 === when.q2
   if ("q2In" in when) return ctx.q2 !== null && when.q2In.includes(ctx.q2)
 

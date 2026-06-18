@@ -3,26 +3,16 @@ import { z } from "zod"
 // データファイルの種別。真の一次登録単位のみを値域とする (テーブルの行を生む単位)
 export const FileTypeKind = z.enum([
   "sequence-read",
-  "sequence-nucleotide",
-  "sequence-annotation",
+  "sequence",
   "variant",
   "expression-matrix",
   "microarray-expression",
   "spatial-transcriptomics",
   "spatial-image",
-  "mass-spectrometry",
-  "nmr",
-  "metabolite-assignment",
+  "metabolomics",
+  "proteome",
 ])
 export type FileTypeKind = z.infer<typeof FileTypeKind>
-
-// Q1 登録種別。前段の単一選択。行レベル Access の default を注入する
-export const Q1 = z.enum([
-  "public",
-  "restricted",
-  "third-party",
-])
-export type Q1 = z.infer<typeof Q1>
 
 // Q2 生物ドメイン。前段の単一選択で、submission 全体の唯一の生物軸
 export const Q2 = z.enum([
@@ -47,7 +37,6 @@ export const GroupType = z.enum([
   "mag-sag-chain",
   "jga-dataset",
   "pacbio-hdf5",
-  "assembly-annotation",
 ])
 export type GroupType = z.infer<typeof GroupType>
 
@@ -68,48 +57,49 @@ export type DataForm = z.infer<typeof DataForm>
 
 // テーブル列・前段で表現できない、かつ出る service / step を変える (flow-changing) 細部区分を
 // 行内 chip の {axis, value} ペアで表現する。出る service を変えない区分 (バリアントの
-// SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う。
-// 第三者 (TPA) は提出単位 (Q1) で決まる軸なので ChipAxis には持たない
+// SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う
 export const ChipAxis = z.enum([
   "assembly-form",
-  "mass-spec-domain",
+  "tpa",
   "spatial-platform",
 ])
 export type ChipAxis = z.infer<typeof ChipAxis>
 
+export const IDENTIFIABLE_KINDS: ReadonlySet<FileTypeKind> = new Set([
+  "sequence-read",
+  "sequence",
+  "variant",
+])
+
 // 行追加時に注入する種別ごとの default data form
 export const TYPICAL_DATA_FORM_FOR_KIND: Readonly<Record<FileTypeKind, DataForm>> = {
   "sequence-read": "raw",
-  "sequence-nucleotide": "assembled",
-  "sequence-annotation": "annotation",
+  "sequence": "assembled",
   "variant": "variant-call",
   "expression-matrix": "matrix",
   "microarray-expression": "matrix",
   "spatial-transcriptomics": "matrix",
   "spatial-image": "image",
-  "mass-spectrometry": "spectrum",
-  "nmr": "spectrum",
-  "metabolite-assignment": "assignment",
+  "metabolomics": "spectrum",
+  "proteome": "spectrum",
 }
 
 // 行追加時に自動生成する単純 group の default group type
 export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupType>> = {
   "sequence-read": "single",
-  "sequence-nucleotide": "single",
-  "sequence-annotation": "single",
+  "sequence": "single",
   "variant": "single",
   "expression-matrix": "single",
   "microarray-expression": "mage-tab",
   "spatial-transcriptomics": "single",
   "spatial-image": "single",
-  "mass-spectrometry": "single",
-  "nmr": "single",
-  "metabolite-assignment": "single",
+  "metabolomics": "single",
+  "proteome": "single",
 }
 
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
-  "mass-spec-domain": ["proteomics", "metabolomics"],
+  "tpa": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
 }
 

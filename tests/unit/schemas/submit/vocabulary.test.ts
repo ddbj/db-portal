@@ -8,7 +8,6 @@ import {
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
-  Q1,
   Q2,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
@@ -19,7 +18,6 @@ describe("vocabulary enum option invariants", () => {
   // bug); exact counts are change-detectors that fire on benign vocab growth.
   test.each<[string, readonly string[]]>([
     ["FileTypeKind", FileTypeKind.options],
-    ["Q1", Q1.options],
     ["Q2", Q2.options],
     ["GroupType", GroupType.options],
     ["DataForm", DataForm.options],
@@ -45,14 +43,6 @@ describe("vocabulary enum parsing", () => {
 
   test("FileTypeKind_parse_emptyString_throws", () => {
     expect(() => FileTypeKind.parse("")).toThrow()
-  })
-
-  test.each(Q1.options)("Q1_parse_%s_returnsSameValue", (q1) => {
-    expect(Q1.parse(q1)).toBe(q1)
-  })
-
-  test("Q1_parse_unknown_throws", () => {
-    expect(() => Q1.parse("private")).toThrow()
   })
 
   test.each(Q2.options)("Q2_parse_%s_returnsSameValue", (q2) => {
@@ -198,7 +188,7 @@ describe("isAllowedChipValue", () => {
   test("isAllowedChipValue_valueFromAnotherAxis_rejected", () => {
     // "visium" は spatial-platform 専用で、他軸では許可されない
     expect(isAllowedChipValue("spatial-platform", "visium")).toBe(true)
-    expect(isAllowedChipValue("mass-spec-domain", "visium")).toBe(false)
+    expect(isAllowedChipValue("tpa", "visium")).toBe(false)
     expect(isAllowedChipValue("assembly-form", "visium")).toBe(false)
   })
 

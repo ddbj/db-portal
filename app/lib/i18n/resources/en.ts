@@ -196,6 +196,7 @@ export const en: Resources = {
       statusReady: "Ready",
       formGroupLabels: {
         form: "Data form",
+        tpa: "TPA (Third Party Annotation)",
         target: "Target",
         platform: "Platform",
         domain: "Domain",
@@ -205,6 +206,7 @@ export const en: Resources = {
           standalone: { label: "Standalone", sub: "Sequence on its own" },
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
+          tpa: { label: "Submit as TPA", sub: "Sequence and annotation based on third-party data" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "With sequence", sub: "Paired with a nucleotide sequence" },
@@ -231,21 +233,25 @@ export const en: Resources = {
     },
     fileType: {
       "sequence-read": { label: "Sequence reads", hint: "Raw sequencing reads from a run." },
-      "sequence-nucleotide": { label: "Nucleotide sequences", hint: "Assembled or annotated nucleotide sequences." },
-      "sequence-annotation": { label: "Sequence annotation", hint: "Feature table for a nucleotide sequence." },
+      "sequence": { label: "Nucleotide sequences", hint: "Assembled nucleotide sequences and annotations." },
       "variant": { label: "Variants", hint: "Variant calls against a reference genome." },
       "expression-matrix": { label: "Expression matrix", hint: "Gene expression quantification matrix." },
       "microarray-expression": { label: "Microarray", hint: "Microarray-based measurements including expression, SNP genotyping, and methylation." },
       "spatial-transcriptomics": { label: "Spatial transcriptomics", hint: "Expression with spatial coordinates." },
       "spatial-image": { label: "Spatial Tx tissue image", hint: "Tissue section image (e.g. H&E stain) from a spatial transcriptomics experiment." },
-      "mass-spectrometry": { label: "Mass spectrometry", hint: "Mass spectrometry measurements." },
-      "nmr": { label: "NMR", hint: "Nuclear magnetic resonance measurements." },
-      "metabolite-assignment": { label: "Metabolite assignment", hint: "Identified metabolites and their assignments." },
+      "metabolomics": { label: "Metabolomics", hint: "Mass spectrometry, NMR, and metabolite assignment." },
+      "proteome": { label: "Proteome", hint: "Proteomics data including non-MS approaches." },
     },
     access: {
       "heading": "Access level",
       "open": "Open",
       "restricted": "Restricted",
+      "restrictedPreference": { label: "Prefer restricted access", sub: "Sharing among researchers approved through a review process" },
+      "ethicsCompliance": { label: "Human research under ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
+      "publiclyAvailable": { label: "Analysis of publicly available specimens", sub: "Analysis of specimens with established academic value and wide availability" },
+      "microbialAnalysis": { label: "Microbial analysis (human sequences removed)", sub: "Analysis of microbes or viruses isolated from the human body, with human sequences removed" },
+      "nonHumanReason": "Non-human data is always open access",
+      "basisHeading": "Basis for access level",
     },
     progress: {
       heading: "Data details",
@@ -345,6 +351,9 @@ export const en: Resources = {
       },
     },
     jga: {
+      analysis: {
+        intro: "Analysis results of controlled-access human data are deposited as JGA Analysis.",
+      },
       array: {
         intro: "Restricted-access human individual array data are deposited as JGA Analysis.",
       },
@@ -355,6 +364,7 @@ export const en: Resources = {
       nbdcPolicy: "You can use the standard NBDC policy, or register your own policy with DBCLS to issue a JGAP.",
     },
     metabobank: {
+      intro: "Metabolomics data (mass spectrometry, NMR, metabolite assignment) is deposited in MetaboBank.",
       ms: {
         intro: "Mass spectrometry data is deposited in MetaboBank.",
         imagingImageFiles: "Tissue section images for imaging mass spectrometry are bundled as additional files with this data.",

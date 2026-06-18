@@ -1,6 +1,7 @@
 import { useCallback, useReducer, useRef } from "react"
 
-import type { FileEntry, FileTypeKind, Q1, Q2 } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind, Q2 } from "~/schemas/submit"
+import type { AccessSection } from "~/schemas/submit/submission"
 
 import { initialState, submitReducer } from "./reducer"
 import type { RowEditPatch, UIState } from "./types"
@@ -19,8 +20,8 @@ const buildIdGenerator = () => {
 }
 
 type SubmitDispatch = {
-  setQ1: (q1: Q1 | null) => void
   setQ2: (q2: Q2 | null) => void
+  setAccessSection: (patch: Partial<AccessSection>) => void
   addRow: (fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
@@ -37,12 +38,12 @@ export const useSubmitState = (
   }
   const newId = newIdRef.current
 
-  const setQ1 = useCallback((q1: Q1 | null) => {
-    dispatch({ type: "SET_Q1", q1 })
-  }, [])
-
   const setQ2 = useCallback((q2: Q2 | null) => {
     dispatch({ type: "SET_Q2", q2 })
+  }, [])
+
+  const setAccessSection = useCallback((accessSection: Partial<AccessSection>) => {
+    dispatch({ type: "SET_ACCESS_SECTION", accessSection })
   }, [])
 
   const addRow = useCallback(
@@ -68,8 +69,8 @@ export const useSubmitState = (
   }, [])
 
   const actions: SubmitDispatch = {
-    setQ1,
     setQ2,
+    setAccessSection,
     addRow,
     editRowCell,
     commitRowEdit,

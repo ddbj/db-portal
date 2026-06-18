@@ -24,14 +24,6 @@ const nucleotideIcon: IconBody = (color) => (
   </g>
 )
 
-const annotationIcon: IconBody = (color) => (
-  <g stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round">
-    <line x1="3" y1="10" x2="14" y2="10" />
-    <polyline points="11,7 14,10 11,13" />
-    <circle cx="16.5" cy="10" r="0.8" fill={color} />
-  </g>
-)
-
 const variantIcon: IconBody = (color) => (
   <g stroke={color} strokeWidth="1.5" strokeLinecap="round">
     <line x1="5" y1="3" x2="5" y2="17" />
@@ -98,34 +90,16 @@ const massSpecIcon: IconBody = (color) => (
   </g>
 )
 
-const nmrIcon: IconBody = (color) => (
-  <g stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round">
-    <path d="M 2 10 Q 5 3 8 10 T 14 10 T 18 10" />
-  </g>
-)
-
-const assignmentIcon: IconBody = (color) => (
-  <g stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round">
-    <circle cx="6" cy="6" r="2" />
-    <circle cx="14" cy="9" r="2" />
-    <circle cx="8" cy="15" r="2" />
-    <line x1="7.6" y1="7.4" x2="12.4" y2="8" />
-    <line x1="7" y1="8" x2="7.6" y2="13" />
-  </g>
-)
-
 const ICONS: Readonly<Record<FileTypeKind, IconBody>> = {
   "sequence-read": sequenceReadIcon,
-  "sequence-nucleotide": nucleotideIcon,
-  "sequence-annotation": annotationIcon,
+  "sequence": nucleotideIcon,
   "variant": variantIcon,
   "expression-matrix": matrixIcon,
   "microarray-expression": microarrayIcon,
   "spatial-transcriptomics": spatialIcon,
   "spatial-image": imageIcon,
-  "mass-spectrometry": massSpecIcon,
-  "nmr": nmrIcon,
-  "metabolite-assignment": assignmentIcon,
+  "metabolomics": massSpecIcon,
+  "proteome": massSpecIcon,
 }
 
 export const FileTypeIcon = ({ fileTypeKind, size = 18 }: FileTypeIconProps) => {

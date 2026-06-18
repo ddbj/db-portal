@@ -1,11 +1,9 @@
 import { z } from "zod"
 
 import {
-  DESTINATION_SERVICES,
   FileTypeKind,
   FlowNoteKind,
   MAX_WHEN_DEPTH,
-  Q1,
   Q2,
   Service,
   SUBMISSION_ENDPOINTS,
@@ -13,9 +11,8 @@ import {
   whenDepth,
 } from "~/schemas/submit"
 
-// q1/q2 カスケード repos は DDBJ 内登録先 (role=destination) のみ。
-// emit.service / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva}) を許す。
-const DESTINATION_SET: ReadonlySet<Service> = new Set(DESTINATION_SERVICES)
+// q2 カスケード repos / emit.service / candidateRepos は登録エンドポイント
+// (destination ∪ {jpost, eva}) を許す
 const ENDPOINT_SET: ReadonlySet<Service> = new Set(SUBMISSION_ENDPOINTS)
 
 const RoutingScope = z.enum(["entry", "group"])
@@ -64,7 +61,6 @@ const allWhensOf = (rule: z.infer<typeof Rule>): When[] => [
 
 export const SubmitRoutingCatalog = z
   .object({
-    q1Options: z.array(QOption(Q1)),
     q2Options: z.array(QOption(Q2)),
     kindRoutes: z.array(KindRoute),
   })
@@ -73,28 +69,17 @@ export const SubmitRoutingCatalog = z
     const fail = (message: string, path: (string | number)[]) =>
       ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
 
-    // q1/q2 カスケード repos は role=destination のみ
-    const checkDestinationRepos = (repos: Service[], path: (string | number)[]) => {
-      for (const r of repos) {
-        if (!DESTINATION_SET.has(r)) fail(`repos "${r}" is not a destination service`, path)
-      }
-    }
-    // candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
+    // q2 カスケード repos / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
     const checkEndpointRepos = (repos: Service[], path: (string | number)[]) => {
       for (const r of repos) {
         if (!ENDPOINT_SET.has(r)) fail(`repos "${r}" is not a submission endpoint`, path)
       }
     }
-    const q1Ids = cat.q1Options.map((o) => o.id)
     const q2Ids = cat.q2Options.map((o) => o.id)
-    if (new Set(q1Ids).size !== Q1.options.length || !Q1.options.every((q) => q1Ids.includes(q))) {
-      fail("q1Options must cover every Q1 exactly once", ["q1Options"])
-    }
     if (new Set(q2Ids).size !== Q2.options.length || !Q2.options.every((q) => q2Ids.includes(q))) {
       fail("q2Options must cover every Q2 exactly once", ["q2Options"])
     }
-    cat.q1Options.forEach((o, i) => checkDestinationRepos(o.repos, ["q1Options", i, "repos"]))
-    cat.q2Options.forEach((o, i) => checkDestinationRepos(o.repos, ["q2Options", i, "repos"]))
+    cat.q2Options.forEach((o, i) => checkEndpointRepos(o.repos, ["q2Options", i, "repos"]))
 
     // kindRoutes は全 FileTypeKind をちょうど 1 つずつ持つ
     const kindIds = cat.kindRoutes.map((k) => k.id)

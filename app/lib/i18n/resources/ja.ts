@@ -199,6 +199,7 @@ export type Resources = {
       statusReady: string
       formGroupLabels: {
         form: string
+        tpa: string
         target: string
         platform: string
         domain: string
@@ -208,6 +209,7 @@ export type Resources = {
           standalone: { label: string; sub: string }
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
+          tpa: { label: string; sub: string }
         }
         sequenceAnnotation: {
           assemblyPair: { label: string; sub: string }
@@ -234,21 +236,25 @@ export type Resources = {
     }
     fileType: {
       "sequence-read": { label: string; hint: string }
-      "sequence-nucleotide": { label: string; hint: string }
-      "sequence-annotation": { label: string; hint: string }
+      "sequence": { label: string; hint: string }
       "variant": { label: string; hint: string }
       "expression-matrix": { label: string; hint: string }
       "microarray-expression": { label: string; hint: string }
       "spatial-transcriptomics": { label: string; hint: string }
       "spatial-image": { label: string; hint: string }
-      "mass-spectrometry": { label: string; hint: string }
-      "nmr": { label: string; hint: string }
-      "metabolite-assignment": { label: string; hint: string }
+      "metabolomics": { label: string; hint: string }
+      "proteome": { label: string; hint: string }
     }
     access: {
       "heading": string
       "open": string
       "restricted": string
+      "restrictedPreference": { label: string; sub: string }
+      "ethicsCompliance": { label: string; sub: string }
+      "publiclyAvailable": { label: string; sub: string }
+      "microbialAnalysis": { label: string; sub: string }
+      "nonHumanReason": string
+      "basisHeading": string
     }
     progress: {
       heading: string
@@ -311,12 +317,14 @@ export type Resources = {
       spatialImage: { intro: string; largeImageGeneralist: string }
     }
     jga: {
+      analysis: { intro: string }
       array: { intro: string }
       dataset: { intro: string }
       policyApplication: string
       nbdcPolicy: string
     }
     metabobank: {
+      intro: string
       ms: { intro: string; imagingImageFiles: string }
       nmr: { intro: string }
       maf: { intro: string }
@@ -806,6 +814,7 @@ export const ja: Resources = {
       statusReady: "設定済み",
       formGroupLabels: {
         form: "データ形態",
+        tpa: "TPA (Third Party Annotation)",
         target: "対象",
         platform: "プラットフォーム",
         domain: "分析ドメイン",
@@ -815,6 +824,7 @@ export const ja: Resources = {
           standalone: { label: "単独配列", sub: "アノテーションを伴わない配列" },
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
+          tpa: { label: "TPA として登録する", sub: "第三者データに基づく配列・アノテーション" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },
@@ -841,21 +851,25 @@ export const ja: Resources = {
     },
     fileType: {
       "sequence-read": { label: "配列リード", hint: "シーケンサーが出力した生リード" },
-      "sequence-nucleotide": { label: "FASTA 塩基配列", hint: "組み上げ済みの塩基配列" },
-      "sequence-annotation": { label: "配列アノテーション", hint: "配列に付与する feature 情報" },
+      "sequence": { label: "塩基配列", hint: "組み上げ済みの塩基配列とアノテーション" },
       "variant": { label: "バリアント", hint: "変異・多型の一覧" },
       "expression-matrix": { label: "発現マトリクス", hint: "遺伝子発現の数値マトリクス" },
       "microarray-expression": { label: "マイクロアレイ", hint: "マイクロアレイによる発現・SNP genotyping・メチル化等の測定" },
       "spatial-transcriptomics": { label: "空間トランスクリプトーム", hint: "空間座標に対応した発現データ" },
       "spatial-image": { label: "空間 Tx 組織画像", hint: "空間トランスクリプトーム実験の組織切片画像（HE 染色等）" },
-      "mass-spectrometry": { label: "質量分析", hint: "質量分析計の測定データ" },
-      "nmr": { label: "NMR", hint: "核磁気共鳴の測定データ" },
-      "metabolite-assignment": { label: "代謝物アサインメント", hint: "代謝物の同定結果テーブル" },
+      "metabolomics": { label: "メタボロミクス", hint: "質量分析・NMR・代謝物アサインメント" },
+      "proteome": { label: "プロテオーム", hint: "プロテオーム解析データ" },
     },
     access: {
       "heading": "公開区分",
       "open": "公開",
       "restricted": "制限公開",
+      "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
+      "ethicsCompliance": { label: "倫理指針に沿ったヒト研究", sub: "法令や研究倫理指針に沿って実施された研究" },
+      "publiclyAvailable": { label: "一般入手可能な試料の解析", sub: "学術的価値が定まり広く利用可能な試料の解析" },
+      "microbialAnalysis": { label: "微生物自体の分析（ヒト配列除去済み）", sub: "人体から分離した微生物・ウイルス自体の分析でヒト配列を除去済み" },
+      "nonHumanReason": "ヒト以外は常に公開です",
+      "basisHeading": "公開区分の根拠",
     },
     progress: {
       heading: "入力状況",
@@ -955,6 +969,9 @@ export const ja: Resources = {
       },
     },
     jga: {
+      analysis: {
+        intro: "制限公開ヒトデータの解析結果を JGA に Analysis として登録します。",
+      },
       array: {
         intro: "制限公開のヒト個人データのアレイは、JGA の Analysis に登録します。",
       },
@@ -965,6 +982,7 @@ export const ja: Resources = {
       nbdcPolicy: "NBDC 標準ポリシーを利用できます。独自ポリシーは DBCLS 登録で JGAP を発行します。",
     },
     metabobank: {
+      intro: "メタボロミクスデータ (質量分析・NMR・代謝物アサインメント) を MetaboBank に登録します。",
       ms: {
         intro: "質量分析データは MetaboBank に登録します。",
         imagingImageFiles: "イメージング質量分析 (imaging MS) の組織切片画像は、本データの追加ファイルとして同梱します。",

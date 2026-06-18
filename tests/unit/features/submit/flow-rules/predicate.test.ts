@@ -32,7 +32,6 @@ const mkGroup = (over: Partial<FileGroup> = {}): FileGroup => ({
 const mkCtx = (over: Partial<PredicateContext> = {}): PredicateContext => ({
   entry: mkEntry(),
   group: mkGroup(),
-  q1: "public",
   q2: "human",
   ...over,
 })
@@ -49,13 +48,13 @@ describe("evalWhen atoms", () => {
   })
 
   test("evalWhen_fileTypeKindInIncludesEntryKind_true", () => {
-    const ctx = mkCtx({ entry: mkEntry({ fileTypeKind: "nmr" }) })
-    expect(evalWhen({ fileTypeKindIn: ["mass-spectrometry", "nmr"] }, ctx)).toBe(true)
+    const ctx = mkCtx({ entry: mkEntry({ fileTypeKind: "metabolomics" }) })
+    expect(evalWhen({ fileTypeKindIn: ["metabolomics", "proteome"] }, ctx)).toBe(true)
   })
 
   test("evalWhen_fileTypeKindInExcludesEntryKind_false", () => {
     const ctx = mkCtx({ entry: mkEntry({ fileTypeKind: "sequence-read" }) })
-    expect(evalWhen({ fileTypeKindIn: ["mass-spectrometry", "nmr"] }, ctx)).toBe(false)
+    expect(evalWhen({ fileTypeKindIn: ["metabolomics", "proteome"] }, ctx)).toBe(false)
   })
 
   test("evalWhen_accessMatch_true", () => {
@@ -95,37 +94,17 @@ describe("evalWhen atoms", () => {
 
   test("evalWhen_groupTypeInIncludesGroupType_true", () => {
     const ctx = mkCtx({ group: mkGroup({ groupType: "mag-sag-chain" }) })
-    expect(evalWhen({ groupTypeIn: ["mag-sag-chain", "assembly-annotation"] }, ctx)).toBe(true)
+    expect(evalWhen({ groupTypeIn: ["mag-sag-chain", "hybrid"] }, ctx)).toBe(true)
   })
 
   test("evalWhen_groupTypeInExcludesGroupType_false", () => {
     const ctx = mkCtx({ group: mkGroup({ groupType: "single" }) })
-    expect(evalWhen({ groupTypeIn: ["mag-sag-chain", "assembly-annotation"] }, ctx)).toBe(false)
+    expect(evalWhen({ groupTypeIn: ["mag-sag-chain", "hybrid"] }, ctx)).toBe(false)
   })
 
   test("evalWhen_groupTypeInWhenGroupUndefined_false", () => {
     const ctx = mkCtx({ group: undefined })
     expect(evalWhen({ groupTypeIn: ["single", "pair-end"] }, ctx)).toBe(false)
-  })
-
-  test("evalWhen_q1Match_true", () => {
-    const ctx = mkCtx({ q1: "third-party" })
-    expect(evalWhen({ q1: "third-party" }, ctx)).toBe(true)
-  })
-
-  test("evalWhen_q1Mismatch_false", () => {
-    const ctx = mkCtx({ q1: "public" })
-    expect(evalWhen({ q1: "third-party" }, ctx)).toBe(false)
-  })
-
-  test("evalWhen_q1InIncludesQ1_true", () => {
-    const ctx = mkCtx({ q1: "restricted" })
-    expect(evalWhen({ q1In: ["restricted", "third-party"] }, ctx)).toBe(true)
-  })
-
-  test("evalWhen_q1InExcludesQ1_false", () => {
-    const ctx = mkCtx({ q1: "public" })
-    expect(evalWhen({ q1In: ["restricted", "third-party"] }, ctx)).toBe(false)
   })
 
   test("evalWhen_q2Match_true", () => {
@@ -172,13 +151,12 @@ describe("evalWhen anyChip", () => {
 
   test("evalWhen_anyChipAxisOnlyWithNoMatchingAxis_false", () => {
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "mass-spec-domain" } }, ctx)).toBe(false)
+    expect(evalWhen({ anyChip: { axis: "tpa" } }, ctx)).toBe(false)
   })
 
   test("evalWhen_anyChipValueMatchesWrongAxis_false", () => {
-    // value "visium" exists, but only on the spatial-platform axis, not mass-spec-domain
     const ctx = mkCtx({ entry: mkEntry({ chipTags: chips }) })
-    expect(evalWhen({ anyChip: { axis: "mass-spec-domain", value: "visium" } }, ctx)).toBe(false)
+    expect(evalWhen({ anyChip: { axis: "tpa", value: "visium" } }, ctx)).toBe(false)
   })
 
   test("evalWhen_anyChipOnEmptyChipTags_false", () => {
@@ -203,16 +181,6 @@ describe("evalWhen anyChip", () => {
 })
 
 describe("evalWhen null preconditions", () => {
-  test("evalWhen_q1WhenNull_false", () => {
-    const ctx = mkCtx({ q1: null })
-    expect(evalWhen({ q1: "public" }, ctx)).toBe(false)
-  })
-
-  test("evalWhen_q1InWhenNull_false", () => {
-    const ctx = mkCtx({ q1: null })
-    expect(evalWhen({ q1In: ["public", "restricted", "third-party"] }, ctx)).toBe(false)
-  })
-
   test("evalWhen_q2WhenNull_false", () => {
     const ctx = mkCtx({ q2: null })
     expect(evalWhen({ q2: "human" }, ctx)).toBe(false)
@@ -223,16 +191,6 @@ describe("evalWhen null preconditions", () => {
     expect(
       evalWhen({ q2In: ["human", "eukaryote", "prokaryote", "virus", "metagenome"] }, ctx),
     ).toBe(false)
-  })
-
-  test("evalWhen_q1NullDoesNotAffectQ2Predicate_true", () => {
-    const ctx = mkCtx({ q1: null, q2: "human" })
-    expect(evalWhen({ q2: "human" }, ctx)).toBe(true)
-  })
-
-  test("evalWhen_q2NullDoesNotAffectQ1Predicate_true", () => {
-    const ctx = mkCtx({ q1: "public", q2: null })
-    expect(evalWhen({ q1: "public" }, ctx)).toBe(true)
   })
 })
 
@@ -260,27 +218,17 @@ describe("evalWhen combinators", () => {
   })
 
   test("evalWhen_orOneTrue_true", () => {
-    const ctx = mkCtx({ q1: "third-party", entry: mkEntry({ chipTags: [] }) })
+    const ctx = mkCtx({ entry: mkEntry({ chipTags: [{ axis: "tpa", value: "true" }] }) })
     expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
+      evalWhen({ or: [{ anyChip: { axis: "tpa", value: "true" } }, { access: "restricted" }] }, ctx),
     ).toBe(true)
   })
 
   test("evalWhen_orAllFalse_false", () => {
-    const ctx = mkCtx({ q1: "public", entry: mkEntry({ chipTags: [] }) })
+    const ctx = mkCtx({ entry: mkEntry({ chipTags: [] }) })
     expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
+      evalWhen({ or: [{ anyChip: { axis: "tpa", value: "true" } }, { access: "restricted" }] }, ctx),
     ).toBe(false)
-  })
-
-  test("evalWhen_orSecondTrueFirstFalse_true", () => {
-    const ctx = mkCtx({
-      q1: "public",
-      entry: mkEntry({ chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }] }),
-    })
-    expect(
-      evalWhen({ or: [{ q1: "third-party" }, { anyChip: { axis: "mass-spec-domain", value: "proteomics" } }] }, ctx),
-    ).toBe(true)
   })
 
   test("evalWhen_orEmpty_false", () => {
@@ -304,47 +252,33 @@ describe("evalWhen combinators", () => {
   })
 
   test("evalWhen_nestedAndOrNot_evaluatesAtThreeLevels", () => {
-    // not( and( or(q1=third-party, access=restricted), q2In[human,metagenome] ) )
     const when: When = {
       not: {
         and: [
-          { or: [{ q1: "third-party" }, { access: "restricted" }] },
+          { or: [{ anyChip: { axis: "tpa", value: "true" } }, { access: "restricted" }] },
           { q2In: ["human", "metagenome"] },
         ],
       },
     }
-    const inner = mkCtx({ q1: "third-party", entry: mkEntry({ access: "open" }), q2: "human" })
+    const inner = mkCtx({ entry: mkEntry({ access: "restricted" }), q2: "human" })
     expect(evalWhen(when, inner)).toBe(false)
 
-    const outer = mkCtx({ q1: "public", entry: mkEntry({ access: "open" }), q2: "human" })
+    const outer = mkCtx({ entry: mkEntry({ access: "open" }), q2: "human" })
     expect(evalWhen(when, outer)).toBe(true)
   })
 })
 
 describe("evalWhen unknown shape", () => {
   test("evalWhen_unrecognizedKey_false", () => {
-    // an object with no known discriminant key falls through to the default false
     expect(evalWhen({} as unknown as When, mkCtx())).toBe(false)
   })
 })
 
 describe("evalWhen does not read across context", () => {
-  test("evalWhen_q1Predicate_ignoresEntryAndGroup", () => {
-    const a = mkCtx({ q1: "restricted", entry: mkEntry({ access: "open" }), group: undefined })
-    const b = mkCtx({
-      q1: "restricted",
-      entry: mkEntry({ access: "restricted", fileTypeKind: "variant" }),
-      group: mkGroup({ groupType: "jga-dataset" }),
-    })
-    const when: When = { q1: "restricted" }
-    expect(evalWhen(when, a)).toBe(true)
-    expect(evalWhen(when, b)).toBe(true)
-  })
-
-  test("evalWhen_accessPredicate_ignoresQ1Q2AndGroup", () => {
+  test("evalWhen_accessPredicate_ignoresQ2AndGroup", () => {
     const when: When = { access: "restricted" }
-    const a = mkCtx({ q1: null, q2: null, group: undefined, entry: mkEntry({ access: "restricted" }) })
-    const b = mkCtx({ q1: "public", q2: "virus", entry: mkEntry({ access: "restricted" }) })
+    const a = mkCtx({ q2: null, group: undefined, entry: mkEntry({ access: "restricted" }) })
+    const b = mkCtx({ q2: "virus", entry: mkEntry({ access: "restricted" }) })
     expect(evalWhen(when, a)).toBe(true)
     expect(evalWhen(when, b)).toBe(true)
   })

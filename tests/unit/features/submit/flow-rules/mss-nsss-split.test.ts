@@ -12,13 +12,20 @@ const destinationOf = (steps: readonly FlowStep[]): FlowStep => {
   return dests[0]!
 }
 
-const singleNucleotide = (
+const defaultAccessSection = {
+  restrictedPreference: false,
+  ethicsCompliance: false,
+  publiclyAvailable: false,
+  microbialAnalysis: false,
+}
+
+const singleSequence = (
   preconditions: Submission["preconditions"],
   overrides: Partial<FileEntry> = {},
 ): Submission => {
   const entry: FileEntry = {
     id: "e1",
-    fileTypeKind: "sequence-nucleotide",
+    fileTypeKind: "sequence",
     access: "open",
     dataForm: "assembled",
     groupId: "g1",
@@ -27,16 +34,12 @@ const singleNucleotide = (
   }
   const group: FileGroup = { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }
 
-  return { preconditions, fileEntries: [entry], fileGroups: [group], notes: "" }
+  return { preconditions, accessSection: defaultAccessSection, fileEntries: [entry], fileGroups: [group], notes: "" }
 }
 
-// 塩基配列アノテーション登録の MSS (ddbj) / NSSS (nsss) 振り分け境界を固定する。
-// 契約は docs/submit.md「### MSS / NSSS の振り分け」: NSSS 非対応種別 (TPA など) と
-// 完成ゲノムは MSS (ddbj)、小規模・非完成は NSSS (nsss)。
 describe("MSS/NSSS split", () => {
-  test("deriveFlowSteps_publicEukaryoteSequenceNucleotide_routesToNsssNotDdbjTrad", () => {
-    // 第三者でなく mag-sag-chain でもない素の配列は fallback で NSSS Web 登録窓口に行く
-    const steps = deriveFlowSteps(singleNucleotide({ q1: "public", q2: "eukaryote" }))
+  test("deriveFlowSteps_eukaryoteSequence_routesToNsssNotDdbj", () => {
+    const steps = deriveFlowSteps(singleSequence({ q2: "eukaryote" }))
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "nsss"])
 
@@ -45,13 +48,13 @@ describe("MSS/NSSS split", () => {
     expect(dest.origin).toBe("tier1")
     expect(dest.scope.entryIds).toEqual(["e1"])
     expect(dest.notes.map((n) => n.messageKey)).toContain("submit.nsss.intro")
-    // collapse 検知: ddbj に流れ込んでいない
     expect(steps.some((s) => s.service === "ddbj")).toBe(false)
   })
 
-  test("deriveFlowSteps_thirdPartySequenceNucleotide_routesToDdbjTradNotNsss", () => {
-    // TPA は NSSS 非対応種別なので MSS (ddbj) のみ。前段 Q1=third-party が唯一の起点
-    const steps = deriveFlowSteps(singleNucleotide({ q1: "third-party", q2: "eukaryote" }))
+  test("deriveFlowSteps_sequenceWithTpaChip_routesToDdbjNotNsss", () => {
+    const steps = deriveFlowSteps(
+      singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "tpa", value: "true" }] }),
+    )
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
 
@@ -61,14 +64,13 @@ describe("MSS/NSSS split", () => {
     expect(dest.notes.map((n) => n.messageKey)).toContain(
       "submit.ddbj.tpa.primaryAccessionRequired",
     )
-    // collapse 検知: NSSS に流れ込んでいない
     expect(steps.some((s) => s.service === "nsss")).toBe(false)
   })
 
-  test("deriveFlowSteps_magCompletedGenomeChain_routesToDdbjTradNotNsss", () => {
-    // 完成度・連携で MSS に回す代表例: MAG ゲノムエントリは ENV division (ddbj) へ
+  test("deriveFlowSteps_magCompletedGenomeChain_routesToDdbjNotNsss", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "metagenome" },
+      preconditions: { q2: "metagenome" },
+      accessSection: defaultAccessSection,
       fileEntries: [
         {
           id: "raw1",
@@ -80,7 +82,7 @@ describe("MSS/NSSS split", () => {
         },
         {
           id: "mag1",
-          fileTypeKind: "sequence-nucleotide",
+          fileTypeKind: "sequence",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",
@@ -98,18 +100,17 @@ describe("MSS/NSSS split", () => {
     const trad = steps.filter((s) => s.service === "ddbj")
     expect(trad).toHaveLength(1)
     expect(trad[0]!.scope.entryIds).toContain("mag1")
-    // 完成ゲノムの配列は NSSS Web 窓口には行かない
     expect(steps.some((s) => s.service === "nsss")).toBe(false)
   })
 
-  test("deriveFlowSteps_nsssVsDdbjTradBoundary_doesNotCollapseOntoOneService", () => {
-    // 同じ fileTypeKind=sequence-nucleotide でも Q1 の差だけで destination が割れることを固定し、
-    // 両ケースが片方の service に潰れる回帰を捕まえる
+  test("deriveFlowSteps_nsssVsDdbjBoundary_doesNotCollapseOntoOneService", () => {
     const nsssDest = destinationOf(
-      deriveFlowSteps(singleNucleotide({ q1: "public", q2: "eukaryote" })),
+      deriveFlowSteps(singleSequence({ q2: "eukaryote" })),
     )
     const tradDest = destinationOf(
-      deriveFlowSteps(singleNucleotide({ q1: "third-party", q2: "eukaryote" })),
+      deriveFlowSteps(
+        singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "tpa", value: "true" }] }),
+      ),
     )
 
     expect(nsssDest.service).toBe("nsss")

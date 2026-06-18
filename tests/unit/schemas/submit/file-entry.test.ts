@@ -8,7 +8,7 @@ const validEntry = {
   access: "restricted",
   dataForm: "raw",
   groupId: "g1",
-  chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
+  chipTags: [{ axis: "tpa", value: "true" }],
 }
 
 describe("FileEntry", () => {
@@ -45,7 +45,7 @@ describe("FileEntry", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,
-        chipTags: [{ axis: "mass-spec-domain", value: "" }],
+        chipTags: [{ axis: "tpa", value: "" }],
       }),
     ).toThrow()
   })
@@ -54,7 +54,7 @@ describe("FileEntry", () => {
     expect(() =>
       FileEntry.parse({
         ...validEntry,
-        chipTags: [{ axis: "mass-spec-domain", value: "first-party" }],
+        chipTags: [{ axis: "tpa", value: "invalid-value" }],
       }),
     ).toThrow()
   })
@@ -75,8 +75,8 @@ describe("FileEntry", () => {
       FileEntry.parse({
         ...validEntry,
         chipTags: [
-          { axis: "mass-spec-domain", value: "proteomics" },
-          { axis: "mass-spec-domain", value: "metabolomics" },
+          { axis: "assembly-form", value: "mag" },
+          { axis: "assembly-form", value: "sag" },
         ],
       }),
     ).toThrow()
@@ -86,7 +86,7 @@ describe("FileEntry", () => {
     const parsed = FileEntry.parse({
       ...validEntry,
       chipTags: [
-        { axis: "mass-spec-domain", value: "proteomics" },
+        { axis: "tpa", value: "true" },
         { axis: "spatial-platform", value: "visium" },
       ],
     })

@@ -1,6 +1,6 @@
-export { accessToggleVisible } from "./access"
+export { deriveAccess } from "./access"
 export { FileTypeGrid } from "./buttons/file-type-grid"
-export { enabledKinds, isKindEnabled, isQ2Enabled } from "./cascade"
+export { enabledKinds, isKindEnabled } from "./cascade"
 export { FileTypeIcon } from "./components/file-type-icon"
 export { RadioCardGroup } from "./components/radio-card-group"
 export { TagProgress } from "./components/tag-progress"

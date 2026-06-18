@@ -11,7 +11,7 @@ const RUNS = { numRuns: 2000 }
 
 // 前段カスケードで enable された (= 経路導出に乗る) entry か
 const isActive = (submission: Submission, e: FileEntry): boolean =>
-  isKindEnabled(submission.preconditions.q1, submission.preconditions.q2, e.fileTypeKind)
+  isKindEnabled(submission.preconditions.q2, e.fileTypeKind)
 
 const entryIdsWhere = (steps: readonly FlowStep[], pred: (s: FlowStep) => boolean): Set<string> => {
   const ids = new Set<string>()
@@ -61,10 +61,12 @@ test.prop([arbSubmission], RUNS)(
   (submission) => {
     const steps = deriveFlowSteps(submission)
     const tier2Ids = entryIdsWhere(steps, (s) => s.origin === "tier2")
-    // spatial recipe は default companion を維持する: spatial entry は gea (非 jga) に route され companion に含まれる
+    const jgaIds = entryIdsWhere(steps, (s) => s.service === "jga")
+    // spatial recipe は default companion を維持する (JGA に行った spatial は jga-submission recipe が companion 抑制)
     for (const e of submission.fileEntries) {
       if (!isSpatialKind(e.fileTypeKind)) continue
       if (!isActive(submission, e)) continue
+      if (jgaIds.has(e.id)) continue
       expect(tier2Ids.has(e.id)).toBe(true)
     }
   },

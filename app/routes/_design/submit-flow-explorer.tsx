@@ -1,19 +1,20 @@
 import { useState } from "react"
 
-import { deriveFlowSteps, enabledKinds, isKindEnabled, isQ2Enabled, RadioCardGroup } from "~/features/submit"
+import { deriveFlowSteps, enabledKinds, isKindEnabled, RadioCardGroup } from "~/features/submit"
+import { deriveAccess } from "~/features/submit/access"
 import { useT } from "~/lib/i18n"
-import type { Access, ChipAxis, FileEntry, FlowStep, FlowStepOrigin, GroupType, Q1, Q2, Submission } from "~/schemas/submit"
+import type { Access, ChipAxis, FileEntry, FlowStep, FlowStepOrigin, GroupType, Q2, Submission } from "~/schemas/submit"
 import {
   Access as AccessEnum,
   ALLOWED_CHIP_VALUES,
   ChipAxis as ChipAxisEnum,
   FileTypeKind as FileTypeKindEnum,
   GroupType as GroupTypeEnum,
-  Q1 as Q1Enum,
   Q2 as Q2Enum,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
+import type { AccessSection } from "~/schemas/submit/submission"
 import { Button, Callout, cn, PageTitle, Select, Tag } from "~/ui"
 
 const ORIGIN_LABEL: Record<FlowStepOrigin, string> = {
@@ -28,8 +29,16 @@ const ORIGIN_CLASS: Record<FlowStepOrigin, string> = {
   recipe: "bg-brand-soft text-brand-deep border-brand-light/50",
 }
 
+const DEFAULT_ACCESS_SECTION: AccessSection = {
+  restrictedPreference: false,
+  ethicsCompliance: true,
+  publiclyAvailable: false,
+  microbialAnalysis: false,
+}
+
 const emptySubmission = (): Submission => ({
-  preconditions: { q1: null, q2: null },
+  preconditions: { q2: null },
+  accessSection: { ...DEFAULT_ACCESS_SECTION },
   fileEntries: [],
   fileGroups: [],
   notes: "",
@@ -39,9 +48,8 @@ const SubmitFlowExplorer = () => {
   const t = useT()
   const [mode, setMode] = useState<"builder" | "matrix">("builder")
   const [submission, setSubmission] = useState<Submission>(emptySubmission)
-  const { q1, q2 } = submission.preconditions
+  const { q2 } = submission.preconditions
 
-  const setQ1 = (value: Q1) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, q1: value } }))
   const setQ2 = (value: Q2) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, q2: value } }))
 
   const addEntry = (kind: FileEntry["fileTypeKind"]) => {
@@ -54,7 +62,7 @@ const SubmitFlowExplorer = () => {
         {
           id,
           fileTypeKind: kind,
-          access: q1 === "restricted" ? "restricted" : "open",
+          access: deriveAccess(s.preconditions.q2, s.accessSection, kind),
           dataForm: TYPICAL_DATA_FORM_FOR_KIND[kind],
           groupId,
           chipTags: [],
@@ -106,7 +114,7 @@ const SubmitFlowExplorer = () => {
       <PageTitle
         eyebrow="Design preview"
         title="Submit flow explorer"
-        subtitle="任意の入力から導出される FlowStep を全件プレビューし、由来 (Tier1 / Tier2 / recipe) を確認する。マトリクスモードで Q1 x Q2 x 種別の到達可能性を一覧する。"
+        subtitle="任意の入力から導出される FlowStep を全件プレビューし、由来 (Tier1 / Tier2 / recipe) を確認する。マトリクスモードで Q2 x 種別の到達可能性を一覧する。"
       />
       <Callout tone="info">この画面は production build では生成されない開発専用ツール。</Callout>
 
@@ -123,28 +131,13 @@ const SubmitFlowExplorer = () => {
         <div className="grid grid-cols-2 gap-6">
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q1</p>
-              <RadioCardGroup
-                ariaLabel="Q1"
-                name="explorer-q1"
-                value={q1}
-                options={Q1Enum.options.map((v) => ({ value: v, label: v }))}
-                onChange={(v) => setQ1(v as Q1)}
-              />
-            </div>
-            <div>
               <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q2</p>
               <RadioCardGroup
                 ariaLabel="Q2"
                 name="explorer-q2"
                 value={q2}
-                options={Q2Enum.options.map((v) => ({
-                  value: v,
-                  label: v,
-                  disabled: !isQ2Enabled(q1, v),
-                  disabledReason: "disabled by Q1",
-                }))}
-                onChange={(v) => setQ2(v as Q2)}
+                options={Q2Enum.options.map((v) => ({ value: v, label: v }))}
+                onChange={(v: string) => setQ2(v as Q2)}
               />
             </div>
             <div>
@@ -155,7 +148,7 @@ const SubmitFlowExplorer = () => {
                     key={kind}
                     kind="secondary"
                     size="sm"
-                    disabled={!isKindEnabled(q1, q2, kind)}
+                    disabled={!isKindEnabled(q2, kind)}
                     onClick={() => addEntry(kind)}
                   >
                     {kind}
@@ -238,40 +231,25 @@ const SubmitFlowExplorer = () => {
           <table className="border-collapse text-fs-micro">
             <thead>
               <tr>
-                <th className="border border-border-soft px-2 py-1 text-left">Q1 \\ Q2</th>
-                {Q2Enum.options.map((qq2) => (
-                  <th key={qq2} className="border border-border-soft px-2 py-1 text-left">{qq2}</th>
-                ))}
+                <th className="border border-border-soft px-2 py-1 text-left">Q2</th>
+                <th className="border border-border-soft px-2 py-1 text-left">Enabled kinds</th>
               </tr>
             </thead>
             <tbody>
-              {Q1Enum.options.map((qq1) => (
-                <tr key={qq1}>
-                  <th className="border border-border-soft px-2 py-1 text-left">{qq1}</th>
-                  {Q2Enum.options.map((qq2) => {
-                    const enabled = isQ2Enabled(qq1, qq2)
-                    const kinds = enabled ? enabledKinds(qq1, qq2) : []
+              {Q2Enum.options.map((qq2) => {
+                const kinds = enabledKinds(qq2)
 
-                    return (
-                      <td
-                        key={qq2}
-                        className={cn(
-                          "border border-border-soft px-2 py-1 align-top",
-                          enabled ? "bg-surface" : "bg-surface-subtle text-ink-soft",
-                        )}
-                      >
-                        {!enabled
-                          ? <span>dead-end (disabled)</span>
-                          : (
-                            <ul className="list-none m-0 p-0 flex flex-col gap-0.5">
-                              {kinds.map((k) => <li key={k} className="font-mono">{k}</li>)}
-                            </ul>
-                          )}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+                return (
+                  <tr key={qq2}>
+                    <th className="border border-border-soft px-2 py-1 text-left">{qq2}</th>
+                    <td className="border border-border-soft px-2 py-1 align-top bg-surface">
+                      <ul className="list-none m-0 p-0 flex flex-col gap-0.5">
+                        {kinds.map((k) => <li key={k} className="font-mono">{k}</li>)}
+                      </ul>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

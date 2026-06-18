@@ -25,9 +25,9 @@ const allEffects = () =>
   )
 
 describe("ROW_FORM_DEFS_kindCoverage", () => {
-  test("ROW_FORM_DEFS_keys_coverAllElevenFileTypeKinds", () => {
+  test("ROW_FORM_DEFS_keys_coverAllNineFileTypeKinds", () => {
     expect(new Set(KEYS)).toStrictEqual(new Set(ALL_KINDS))
-    expect(KEYS).toHaveLength(11)
+    expect(KEYS).toHaveLength(9)
   })
 
   test("ROW_FORM_DEFS_keys_containNoExtraKinds", () => {
@@ -44,11 +44,9 @@ describe("ROW_FORM_DEFS_kindCoverage", () => {
 
 // flow-changing 軸を持つ種別だけが file 詳細質問 (group) を持つ。残りは質問なし (空 def)
 const DETAIL_KINDS = new Set<FileTypeKind>([
-  "sequence-nucleotide",
-  "sequence-annotation",
+  "sequence",
   "spatial-transcriptomics",
   "spatial-image",
-  "mass-spectrometry",
 ])
 
 describe("ROW_FORM_DEFS_groupStructure", () => {
@@ -146,6 +144,6 @@ describe("ROW_FORM_DEFS_chipAddConsistency", () => {
       .find((c) => c !== undefined)
     expect(spatial).toBeDefined()
     expect(isAllowedChipValue(spatial!.axis, spatial!.value)).toBe(true)
-    expect(isAllowedChipValue("mass-spec-domain", spatial!.value)).toBe(false)
+    expect(isAllowedChipValue("tpa", spatial!.value)).toBe(false)
   })
 })

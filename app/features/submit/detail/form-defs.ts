@@ -33,29 +33,8 @@ type RowFormDef = {
 
 const EMPTY_DEF: RowFormDef = { groups: [] }
 
-const domainGroup = (kindKey: string): FormGroupDef => ({
-  id: "domain",
-  num: "1.",
-  labelKey: "submit.detail.formGroupLabels.domain",
-  kind: "radio",
-  options: [
-    {
-      value: "metabolomics",
-      labelKey: `submit.detail.options.${kindKey}.metabolomics.label`,
-      subKey: `submit.detail.options.${kindKey}.metabolomics.sub`,
-      effect: { chipAdd: { axis: "mass-spec-domain", value: "metabolomics" } },
-    },
-    {
-      value: "proteomics",
-      labelKey: `submit.detail.options.${kindKey}.proteomics.label`,
-      subKey: `submit.detail.options.${kindKey}.proteomics.sub`,
-      effect: { chipAdd: { axis: "mass-spec-domain", value: "proteomics" } },
-    },
-  ],
-})
-
-// 単独 / MAG チェーン / SAG チェーン。MAG/SAG だけが recipe を起動して flow を変える
-const sequenceNucleotideDef: RowFormDef = {
+// 塩基配列: 単独 / MAG / SAG / TPA。MAG/SAG は ddbj ENV genome に分岐、TPA は ddbj MSS に分岐
+const sequenceDef: RowFormDef = {
   groups: [
     {
       id: "form",
@@ -83,29 +62,17 @@ const sequenceNucleotideDef: RowFormDef = {
         },
       ],
     },
-  ],
-}
-
-// 配列とペア (MSS 1 step に束ねる scope) / 単独
-const sequenceAnnotationDef: RowFormDef = {
-  groups: [
     {
-      id: "target",
-      num: "1.",
-      labelKey: "submit.detail.formGroupLabels.target",
-      kind: "radio",
+      id: "tpa",
+      num: "2.",
+      labelKey: "submit.detail.formGroupLabels.tpa",
+      kind: "check",
       options: [
         {
-          value: "assembly-pair",
-          labelKey: "submit.detail.options.sequenceAnnotation.assemblyPair.label",
-          subKey: "submit.detail.options.sequenceAnnotation.assemblyPair.sub",
-          effect: { groupType: "assembly-annotation" },
-        },
-        {
-          value: "standalone",
-          labelKey: "submit.detail.options.sequenceAnnotation.standalone.label",
-          subKey: "submit.detail.options.sequenceAnnotation.standalone.sub",
-          effect: { groupType: "single" },
+          value: "tpa",
+          labelKey: "submit.detail.options.sequenceNucleotide.tpa.label",
+          subKey: "submit.detail.options.sequenceNucleotide.tpa.sub",
+          effect: { chipAdd: { axis: "tpa", value: "true" } },
         },
       ],
     },
@@ -174,23 +141,16 @@ const spatialImageDef: RowFormDef = {
   ],
 }
 
-// メタボロミクス → MetaboBank / プロテオミクス → jPOST。生の質量分析だけが分岐する
-const massSpectrometryDef: RowFormDef = {
-  groups: [domainGroup("massSpectrometry")],
-}
-
 export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "sequence-read": EMPTY_DEF,
-  "sequence-nucleotide": sequenceNucleotideDef,
-  "sequence-annotation": sequenceAnnotationDef,
+  "sequence": sequenceDef,
   "variant": EMPTY_DEF,
   "expression-matrix": EMPTY_DEF,
   "microarray-expression": EMPTY_DEF,
   "spatial-transcriptomics": spatialTranscriptomicsDef,
   "spatial-image": spatialImageDef,
-  "mass-spectrometry": massSpectrometryDef,
-  "nmr": EMPTY_DEF,
-  "metabolite-assignment": EMPTY_DEF,
+  "metabolomics": EMPTY_DEF,
+  "proteome": EMPTY_DEF,
 }
 
 // flow-changing 軸を持つ種別だけが file 詳細質問を持つ。持たない種別はデータ詳細セルを出さない

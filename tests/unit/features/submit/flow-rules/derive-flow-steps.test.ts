@@ -18,7 +18,8 @@ const warningKeys = (step: FlowStep): string[] =>
 describe("deriveFlowSteps", () => {
   test("deriveFlowSteps_publicHumanSequenceRead_emitsDraWithDefaultCompanions", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -52,7 +53,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedHumanSequenceRead_routesToJgaWithExternalsAndNoDefaultCompanion", () => {
     const submission: Submission = {
-      preconditions: { q1: "restricted", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -84,17 +86,18 @@ describe("deriveFlowSteps", () => {
     expect(stepFor(steps, "humandbs").origin).toBe("recipe")
   })
 
-  test("deriveFlowSteps_thirdPartySequenceNucleotide_routesToDdbjTradWithTpaWarning", () => {
+  test("deriveFlowSteps_sequenceWithTpaChip_routesToDdbjWithTpaWarning", () => {
     const submission: Submission = {
-      preconditions: { q1: "third-party", q2: "eukaryote" },
+      preconditions: { q2: "eukaryote" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
-          fileTypeKind: "sequence-nucleotide",
+          fileTypeKind: "sequence",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",
-          chipTags: [],
+          chipTags: [{ axis: "tpa", value: "true" }],
         },
       ],
       fileGroups: [
@@ -110,13 +113,13 @@ describe("deriveFlowSteps", () => {
     const ddbj = stepFor(steps, "ddbj")
     expect(ddbj.origin).toBe("tier1")
     expect(ddbj.scope.entryIds).toEqual(["e1"])
-    // TPA branch carries the primary-accession warning
     expect(warningKeys(ddbj)).toContain("submit.ddbj.tpa.primaryAccessionRequired")
   })
 
   test("deriveFlowSteps_nonHumanVariant_routesToEvaNotTogovar", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "eukaryote" },
+      preconditions: { q2: "eukaryote" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -147,7 +150,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_publicHumanVariant_routesToTogovar", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -174,7 +178,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedHumanVariant_routesToJga", () => {
     const submission: Submission = {
-      preconditions: { q1: "restricted", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -200,7 +205,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_publicMetagenomeVariant_routesToEva", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "metagenome" },
+      preconditions: { q2: "metagenome" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -225,7 +231,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedMetagenomeVariant_routesToEvaNotJga", () => {
     const submission: Submission = {
-      preconditions: { q1: "restricted", q2: "metagenome" },
+      preconditions: { q2: "metagenome" },
+      accessSection: { restrictedPreference: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -250,7 +257,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_magChip_routesAssemblyToDdbjTradViaTier1WithDefaultCompanion", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "metagenome" },
+      preconditions: { q2: "metagenome" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "raw1",
@@ -262,7 +270,7 @@ describe("deriveFlowSteps", () => {
         },
         {
           id: "mag1",
-          fileTypeKind: "sequence-nucleotide",
+          fileTypeKind: "sequence",
           access: "open",
           dataForm: "assembled",
           groupId: "g1",
@@ -292,7 +300,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_visiumSpatialTranscriptomics_emitsDraAndGeaTwoStep", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -319,7 +328,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_sequenceReadAndVisiumSpatial_unionsIntoSingleDraStep", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -355,7 +365,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_xeniumSpatialTranscriptomics_emitsGeaOnly", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -379,7 +390,8 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_merfishSpatialImage_emitsGeaWithGeneralistWarningNoDra", () => {
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -401,12 +413,10 @@ describe("deriveFlowSteps", () => {
     expect(warningKeys(stepFor(steps, "gea"))).toContain("submit.gea.spatialImage.largeImageGeneralist")
   })
 
-  test("deriveFlowSteps_conflictKind_isExcludedFromFlow", () => {
-    // Q1=第三者 では variant は登録先を持たない (allowedRepos {ddbj, metabobank} と交わらず disable)。
-    // variant の rule 自体は q2=human→togovar にマッチするため、カスケードを見ずに導出すると TogoVar カードが
-    // 出てしまう。導出はカスケードを尊重し、この種別の step を一切出さない
+  test("deriveFlowSteps_disabledKindByQ2_isExcludedFromFlow", () => {
     const submission: Submission = {
-      preconditions: { q1: "third-party", q2: "human" },
+      preconditions: { q2: null },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
@@ -424,52 +434,10 @@ describe("deriveFlowSteps", () => {
     expect(deriveFlowSteps(submission)).toEqual([])
   })
 
-  test("deriveFlowSteps_mixedEnabledAndConflict_derivesOnlyEnabled", () => {
-    // third-party × eukaryote の allowedRepos = {ddbj, metabobank}:
-    // sequence-nucleotide は enable (ddbj へ)、variant は disable
-    const submission: Submission = {
-      preconditions: { q1: "third-party", q2: "eukaryote" },
-      fileEntries: [
-        {
-          id: "e1",
-          fileTypeKind: "sequence-nucleotide",
-          access: "open",
-          dataForm: "assembled",
-          groupId: "g1",
-          chipTags: [],
-        },
-        {
-          id: "e2",
-          fileTypeKind: "variant",
-          access: "open",
-          dataForm: "variant-call",
-          groupId: "g2",
-          chipTags: [],
-        },
-      ],
-      fileGroups: [
-        { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] },
-        { id: "g2", groupType: "single", memberFileIds: ["e2"], linkedGroupIds: [] },
-      ],
-      notes: "",
-    }
-
-    const steps = deriveFlowSteps(submission)
-
-    // enable な sequence-nucleotide だけが導出され、conflict の variant はどの step にも現れない
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
-    expect(steps.some((s) => s.service === "togovar" || s.service === "eva")).toBe(false)
-    const allEntryIds = steps.flatMap((s) => s.scope.entryIds)
-    expect(allEntryIds).toContain("e1")
-    expect(allEntryIds).not.toContain("e2")
-    // companion も enable entry のみを束ねる
-    expect(stepFor(steps, "bioproject").scope.entryIds).toContain("e1")
-    expect(stepFor(steps, "bioproject").scope.entryIds).not.toContain("e2")
-  })
-
   test("deriveFlowSteps_emptySubmission_returnsNoSteps", () => {
     const submission: Submission = {
-      preconditions: { q1: null, q2: null },
+      preconditions: { q2: null },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [],
       fileGroups: [],
       notes: "",

@@ -1,20 +1,21 @@
 import { useState } from "react"
 
-import { deriveFlowSteps, isKindEnabled, isQ2Enabled, RadioCardGroup, selectValidations } from "~/features/submit"
+import { deriveFlowSteps, isKindEnabled, RadioCardGroup, selectValidations } from "~/features/submit"
+import { deriveAccess } from "~/features/submit/access"
 import { ExternalLinkButton } from "~/features/submit/components/external-link-button"
 import { StepBadge } from "~/features/submit/components/step-badge"
 import { getSubmitCard, getSubmitMeta } from "~/features/submit/external-links"
 import { useLang, useT } from "~/lib/i18n"
-import type { FileEntry, FlowStep, Q1, Q2, Service, Submission } from "~/schemas/submit"
+import type { FileEntry, FlowStep, Q2, Service, Submission } from "~/schemas/submit"
 import {
   FileTypeKind as FileTypeKindEnum,
-  Q1 as Q1Enum,
   Q2 as Q2Enum,
   serviceRoleTagKey,
   stepPrerequisites,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
+import type { AccessSection } from "~/schemas/submit/submission"
 import { Button, Callout, PageTitle, Tag } from "~/ui"
 
 type EntrySpec = {
@@ -23,7 +24,14 @@ type EntrySpec = {
   chips?: FileEntry["chipTags"]
 }
 
-const buildSubmission = (q1: Q1, q2: Q2, specs: readonly EntrySpec[]): Submission => {
+const DEFAULT_ACCESS_SECTION: AccessSection = {
+  restrictedPreference: false,
+  ethicsCompliance: true,
+  publiclyAvailable: false,
+  microbialAnalysis: false,
+}
+
+const buildSubmission = (q2: Q2, accessSection: AccessSection, specs: readonly EntrySpec[]): Submission => {
   const fileEntries: FileEntry[] = []
   const fileGroups: Submission["fileGroups"] = []
   for (const spec of specs) {
@@ -32,7 +40,7 @@ const buildSubmission = (q1: Q1, q2: Q2, specs: readonly EntrySpec[]): Submissio
     fileEntries.push({
       id,
       fileTypeKind: spec.kind,
-      access: spec.access ?? (q1 === "restricted" ? "restricted" : "open"),
+      access: spec.access ?? deriveAccess(q2, accessSection, spec.kind),
       dataForm: TYPICAL_DATA_FORM_FOR_KIND[spec.kind],
       groupId,
       chipTags: spec.chips ?? [],
@@ -45,34 +53,35 @@ const buildSubmission = (q1: Q1, q2: Q2, specs: readonly EntrySpec[]): Submissio
     })
   }
 
-  return { preconditions: { q1, q2 }, fileEntries, fileGroups, notes: "" }
+  return { preconditions: { q2 }, accessSection, fileEntries, fileGroups, notes: "" }
 }
 
 const emptySubmission = (): Submission => ({
-  preconditions: { q1: null, q2: null },
+  preconditions: { q2: null },
+  accessSection: { ...DEFAULT_ACCESS_SECTION },
   fileEntries: [],
   fileGroups: [],
   notes: "",
 })
 
-// 登録先の違いが一目で出る代表ケース。単一登録先 / 前提ゲート / 第三者の確認 / 複数登録先を網羅する。
+const RESTRICTED_SECTION: AccessSection = { restrictedPreference: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }
+const OPEN_SECTION: AccessSection = { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false }
+
 const PRESETS: readonly { label: string; build: () => Submission }[] = [
-  { label: "公開ヒト reads → DRA", build: () => buildSubmission("public", "human", [{ kind: "sequence-read" }]) },
-  { label: "制限公開ヒト reads → JGA", build: () => buildSubmission("restricted", "human", [{ kind: "sequence-read" }]) },
-  { label: "第三者 配列 → DDBJ (MSS)", build: () => buildSubmission("third-party", "eukaryote", [{ kind: "sequence-nucleotide" }]) },
+  { label: "公開ヒト reads → DRA", build: () => buildSubmission("human", OPEN_SECTION, [{ kind: "sequence-read" }]) },
+  { label: "制限公開ヒト reads → JGA", build: () => buildSubmission("human", RESTRICTED_SECTION, [{ kind: "sequence-read" }]) },
+  { label: "TPA 配列 → DDBJ (MSS)", build: () => buildSubmission("eukaryote", DEFAULT_ACCESS_SECTION, [{ kind: "sequence", chips: [{ axis: "tpa", value: "true" }] }]) },
   {
     label: "公開ヒト multi-omics",
-    build: () => buildSubmission("public", "human", [
+    build: () => buildSubmission("human", OPEN_SECTION, [
       { kind: "sequence-read" },
       { kind: "expression-matrix" },
-      { kind: "mass-spectrometry" },
+      { kind: "metabolomics" },
     ]),
   },
   {
     label: "プロテオミクス → jPOST",
-    build: () => buildSubmission("public", "human", [
-      { kind: "mass-spectrometry", chips: [{ axis: "mass-spec-domain", value: "proteomics" }] },
-    ]),
+    build: () => buildSubmission("human", OPEN_SECTION, [{ kind: "proteome" }]),
   },
 ]
 
@@ -80,9 +89,8 @@ const SubmitResultSummary = () => {
   const t = useT()
   const lang = useLang()
   const [submission, setSubmission] = useState<Submission>(emptySubmission)
-  const { q1, q2 } = submission.preconditions
+  const { q2 } = submission.preconditions
 
-  const setQ1 = (value: Q1) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, q1: value } }))
   const setQ2 = (value: Q2) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, q2: value } }))
 
   const addEntry = (kind: FileEntry["fileTypeKind"]) =>
@@ -97,7 +105,7 @@ const SubmitResultSummary = () => {
           {
             id,
             fileTypeKind: kind,
-            access: q1 === "restricted" ? "restricted" : "open",
+            access: deriveAccess(s.preconditions.q2, s.accessSection, kind),
             dataForm: TYPICAL_DATA_FORM_FOR_KIND[kind],
             groupId,
             chipTags: [],
@@ -156,16 +164,6 @@ const SubmitResultSummary = () => {
         <div className="flex flex-col gap-4">
           <p className="text-fs-h2 font-bold text-ink m-0">入力 (builder)</p>
           <div>
-            <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q1 公開方法</p>
-            <RadioCardGroup
-              ariaLabel="Q1"
-              name="summary-q1"
-              value={q1}
-              options={Q1Enum.options.map((v) => ({ value: v, label: t(`submit.preconditions.q1.${v}.label`) }))}
-              onChange={(v) => setQ1(v as Q1)}
-            />
-          </div>
-          <div>
             <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q2 生物ドメイン</p>
             <RadioCardGroup
               ariaLabel="Q2"
@@ -174,10 +172,8 @@ const SubmitResultSummary = () => {
               options={Q2Enum.options.map((v) => ({
                 value: v,
                 label: t(`submit.preconditions.q2.${v}.label`),
-                disabled: !isQ2Enabled(q1, v),
-                disabledReason: t("submit.preconditions.q2DisabledReason"),
               }))}
-              onChange={(v) => setQ2(v as Q2)}
+              onChange={(v: string) => setQ2(v as Q2)}
             />
           </div>
           <div>
@@ -188,7 +184,7 @@ const SubmitResultSummary = () => {
                   key={kind}
                   kind="secondary"
                   size="sm"
-                  disabled={!isKindEnabled(q1, q2, kind)}
+                  disabled={!isKindEnabled(q2, kind)}
                   onClick={() => addEntry(kind)}
                 >
                   {t(`submit.fileType.${kind}.label`)}

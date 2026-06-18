@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { isKindEnabled, isQ2Enabled } from "../../../../../app/features/submit/cascade"
+import { isKindEnabled } from "../../../../../app/features/submit/cascade"
 import { initialState, submitReducer } from "../../../../../app/features/submit/state/reducer"
 import {
   countConfiguredRows,
@@ -12,7 +12,6 @@ import type { UIState } from "../../../../../app/features/submit/state/types"
 import {
   FileTypeKind,
   isDestinationService,
-  Q1,
   Q2,
   type Submission,
 } from "../../../../../app/schemas/submit"
@@ -22,46 +21,39 @@ const stateOf = (submission: Submission): UIState => ({ submission })
 const addRow = (state: UIState, fileTypeKind: FileTypeKind, entryId: string, groupId: string): UIState =>
   submitReducer(state, { type: "ADD_ROW", fileTypeKind, entryId, groupId })
 
-const withPrecond = (q1: Q1, q2: Q2): UIState => {
-  const a = submitReducer(initialState, { type: "SET_Q1", q1 })
-
-  return submitReducer(a, { type: "SET_Q2", q2 })
-}
+const withQ2 = (q2: Q2): UIState =>
+  submitReducer(initialState, { type: "SET_Q2", q2 })
 
 const kindsOf = (state: UIState, kind: string): boolean =>
   selectValidations(state).some((v) => v.kind === kind)
 
+const defaultAccessSection = {
+  restrictedPreference: false,
+  ethicsCompliance: true,
+  publiclyAvailable: false,
+  microbialAnalysis: false,
+}
+
 describe("selectValidations", () => {
-  test("selectValidations_kindDisabledByPrecond_reportsPreconditionConflict", () => {
-    // 第三者 (repos = ddbj / metabobank) では expression-matrix (gea) は disable される
-    expect(isKindEnabled("third-party", "human", "expression-matrix")).toBe(false)
-    const state = addRow(withPrecond("third-party", "human"), "expression-matrix", "e1", "g1")
-
-    expect(selectValidations(state)).toContainEqual({ kind: "precondition-conflict", entryId: "e1" })
-  })
-
-  test("selectValidations_kindEnabledByPrecond_noPreconditionConflict", () => {
-    // sequence-read is JGA-capable, so it stays enabled under restricted/human
-    expect(isKindEnabled("restricted", "human", "sequence-read")).toBe(true)
-    const state = addRow(withPrecond("restricted", "human"), "sequence-read", "e1", "g1")
+  test("selectValidations_kindEnabledByQ2_noPreconditionConflict", () => {
+    expect(isKindEnabled("human", "sequence-read")).toBe(true)
+    const state = addRow(withQ2("human"), "sequence-read", "e1", "g1")
 
     expect(kindsOf(state, "precondition-conflict")).toBe(false)
   })
 
-  test("selectValidations_q2ClearedByQ1Change_reportsPreconditionConflict", () => {
-    // SET_Q1=restricted clears the now-incompatible Q2 to null; the disabled row must still surface a conflict
-    const state = addRow(submitReducer(initialState, { type: "SET_Q1", q1: "restricted" }), "expression-matrix", "e1", "g1")
+  test("selectValidations_q2Null_reportsPreconditionConflict", () => {
+    const state = addRow(initialState, "sequence-read", "e1", "g1")
 
-    expect(state.submission.preconditions).toEqual({ q1: "restricted", q2: null })
-    expect(isKindEnabled("restricted", null, "expression-matrix")).toBe(false)
+    expect(state.submission.preconditions.q2).toBeNull()
+    expect(isKindEnabled(null, "sequence-read")).toBe(false)
     expect(selectValidations(state)).toContainEqual({ kind: "precondition-conflict", entryId: "e1" })
   })
 
   test("selectValidations_entryGroupIdNotInGroups_reportsDanglingGroupId", () => {
-    // enable 種別 (public/human の sequence-read) で dangling-group-id を分離して検査する
-    // (disable 種別だと precondition-conflict に集約され dangling は出ない)
     const state = stateOf({
-      preconditions: { q1: "public", q2: "human" },
+      preconditions: { q2: "human" },
+      accessSection: defaultAccessSection,
       fileEntries: [
         {
           id: "e1",
@@ -80,14 +72,13 @@ describe("selectValidations", () => {
   })
 
   test("selectValidations_reducerBuiltRow_hasNoDanglingGroupId", () => {
-    // ADD_ROW always creates the matching group, so the group id resolves
     const state = addRow(initialState, "sequence-read", "e1", "g1")
 
     expect(kindsOf(state, "dangling-group-id")).toBe(false)
   })
 
   test("selectValidations_normalEnabledRow_isEmpty", () => {
-    const seeded = addRow(withPrecond("public", "human"), "sequence-read", "e1", "g1")
+    const seeded = addRow(withQ2("human"), "sequence-read", "e1", "g1")
 
     expect(selectValidations(seeded)).toEqual([])
   })
@@ -96,45 +87,40 @@ describe("selectValidations", () => {
     expect(selectValidations(initialState)).toEqual([])
   })
 
-  // Every enabled entry is routed into a destination step by the catalog fallback,
-  // so no-destination-service must never surface for a well-formed submission.
   test("selectValidations_anyEnabledEntryAcrossCatalog_neverReportsNoDestinationService", () => {
-    for (const q1 of Q1.options) {
-      for (const q2 of Q2.options) {
-        if (!isQ2Enabled(q1, q2)) continue
-        const access = q1 === "public" ? "open" : "restricted"
-        for (const kind of FileTypeKind.options) {
-          const state = stateOf({
-            preconditions: { q1, q2 },
-            fileEntries: [
-              {
-                id: "e0",
-                fileTypeKind: kind,
-                access,
-                dataForm: "raw",
-                groupId: "g0",
-                chipTags: [],
-              },
-            ],
-            fileGroups: [{ id: "g0", groupType: "single", memberFileIds: ["e0"], linkedGroupIds: [] }],
-            notes: "",
-          })
+    for (const q2 of Q2.options) {
+      for (const kind of FileTypeKind.options) {
+        if (!isKindEnabled(q2, kind)) continue
+        const state = stateOf({
+          preconditions: { q2 },
+          accessSection: defaultAccessSection,
+          fileEntries: [
+            {
+              id: "e0",
+              fileTypeKind: kind,
+              access: "open",
+              dataForm: "raw",
+              groupId: "g0",
+              chipTags: [],
+            },
+          ],
+          fileGroups: [{ id: "g0", groupType: "single", memberFileIds: ["e0"], linkedGroupIds: [] }],
+          notes: "",
+        })
 
-          expect(kindsOf(state, "no-destination-service")).toBe(false)
-        }
+        expect(kindsOf(state, "no-destination-service")).toBe(false)
       }
     }
   })
 
   test("selectValidations_recipeOwnedEntry_stillCoveredByDestinationStep", () => {
-    // a mag-sag-chain/mag group routes through the mag-project recipe; its entry must
-    // still appear in a destination step's scope, so no-destination-service stays silent
     const submission: Submission = {
-      preconditions: { q1: "public", q2: "prokaryote" },
+      preconditions: { q2: "prokaryote" },
+      accessSection: defaultAccessSection,
       fileEntries: [
         {
           id: "e0",
-          fileTypeKind: "sequence-nucleotide",
+          fileTypeKind: "sequence",
           access: "open",
           dataForm: "assembled",
           groupId: "g0",
@@ -152,29 +138,6 @@ describe("selectValidations", () => {
     expect(destEntryIds.has("e0")).toBe(true)
     expect(kindsOf(stateOf(submission), "no-destination-service")).toBe(false)
   })
-
-  test("selectValidations_conflictRow_reportsOnlyPreconditionConflict", () => {
-    // conflict 種別は flow から除外され解除を促す対象なので precondition-conflict 1 件に集約する。
-    // ghost group や宛先なしを同時に抱えていても、dangling-group-id / no-destination-service と二重計上しない
-    const state = stateOf({
-      preconditions: { q1: "third-party", q2: "human" },
-      fileEntries: [
-        {
-          id: "e1",
-          fileTypeKind: "expression-matrix",
-          access: "open",
-          dataForm: "matrix",
-          groupId: "ghost",
-          chipTags: [],
-        },
-      ],
-      fileGroups: [],
-      notes: "",
-    })
-    const kinds = selectValidations(state).map((v) => v.kind)
-
-    expect(kinds).toEqual(["precondition-conflict"])
-  })
 })
 
 describe("rowIsConfigured / countConfiguredRows", () => {
@@ -183,27 +146,18 @@ describe("rowIsConfigured / countConfiguredRows", () => {
   })
 
   test("rowIsConfigured_noDetailKind_returnsTrue", () => {
-    // 詳細質問を持たない種別は設定するものが無いので設定済み扱い
     const state = addRow(initialState, "sequence-read", "e1", "g1")
 
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
-  test("rowIsConfigured_freshStandaloneSequence_returnsTrue", () => {
-    // 単独配列 (既定 single) はそのまま妥当な答えなので最初から設定済み
-    const state = addRow(initialState, "sequence-nucleotide", "e1", "g1")
-
-    expect(rowIsConfigured(state, "e1")).toBe(true)
-  })
-
-  test("rowIsConfigured_freshStandaloneAnnotation_returnsTrue", () => {
-    const state = addRow(initialState, "sequence-annotation", "e1", "g1")
+  test("rowIsConfigured_freshSequence_returnsTrue", () => {
+    const state = addRow(initialState, "sequence", "e1", "g1")
 
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
   test("rowIsConfigured_freshSpatialWithoutPlatform_returnsFalse", () => {
-    // platform を選ぶまでは未設定 (既定ではどのラジオも選ばれていない)
     const state = addRow(initialState, "spatial-transcriptomics", "e1", "g1")
 
     expect(rowIsConfigured(state, "e1")).toBe(false)
@@ -221,14 +175,14 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
-  test("rowIsConfigured_freshMassSpectrometry_returnsFalse", () => {
-    const state = addRow(initialState, "mass-spectrometry", "e1", "g1")
+  test("rowIsConfigured_freshMetabolomics_returnsTrue", () => {
+    const state = addRow(initialState, "metabolomics", "e1", "g1")
 
-    expect(rowIsConfigured(state, "e1")).toBe(false)
+    expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
   test("rowIsConfigured_magChainSequence_returnsTrue", () => {
-    const seeded = addRow(initialState, "sequence-nucleotide", "e1", "g1")
+    const seeded = addRow(initialState, "sequence", "e1", "g1")
     const state = submitReducer(seeded, {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
@@ -239,43 +193,10 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
-  const pairedState = (): UIState => {
-    let state = addRow(initialState, "sequence-nucleotide", "fa", "g-fa")
-    state = addRow(state, "sequence-annotation", "ann", "g-ann")
-
-    // アノテーションで「配列ペア」を commit すると単独 FASTA が自動でペアになる
-    return submitReducer(state, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "ann",
-      patch: { groupType: "assembly-annotation" },
-      releasedGroupId: "rel-a",
-    })
-  }
-
-  test("rowIsConfigured_annotationPairWithoutPartner_returnsFalse", () => {
-    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
-    state = submitReducer(state, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "ann",
-      patch: { groupType: "assembly-annotation" },
-      releasedGroupId: "rel",
-    })
-
-    expect(rowIsConfigured(state, "ann")).toBe(false)
-  })
-
-  test("rowIsConfigured_annotationPairWithPartner_returnsTrue", () => {
-    expect(rowIsConfigured(pairedState(), "ann")).toBe(true)
-  })
-
-  test("rowIsConfigured_pairedNucleotidePartner_returnsTrue", () => {
-    expect(rowIsConfigured(pairedState(), "fa")).toBe(true)
-  })
-
   test("countConfiguredRows_countsAnsweredAndNoDetailRowsAsDone", () => {
-    let state = addRow(initialState, "sequence-nucleotide", "e1", "g1") // single default → 設定済み
-    state = addRow(state, "spatial-transcriptomics", "e2", "g2") // platform 未選択 → 未設定
-    state = addRow(state, "sequence-read", "e3", "g3") // 詳細なし → 完了扱い
+    let state = addRow(initialState, "sequence", "e1", "g1")
+    state = addRow(state, "spatial-transcriptomics", "e2", "g2")
+    state = addRow(state, "sequence-read", "e3", "g3")
 
     expect(countConfiguredRows(state)).toEqual({ configured: 2, total: 3 })
   })

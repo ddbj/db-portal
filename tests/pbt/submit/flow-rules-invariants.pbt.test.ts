@@ -1,17 +1,19 @@
 import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
+import { deriveAccess } from "../../../app/features/submit/access"
 import { isKindEnabled } from "../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
 import {
   type FileEntry,
   type FlowStep,
+  IDENTIFIABLE_KINDS,
   isSequencingSpatialPlatform,
   isSubmissionEndpoint,
   SERVICE_DEPENDENCY_ORDER,
   type Submission,
 } from "../../../app/schemas/submit"
-import { arbSubmission } from "../arbitraries/submission"
+import { arbAccessSection, arbFileTypeKind, arbQ2, arbSubmission } from "../arbitraries/submission"
 
 const RUNS = { numRuns: 1000 }
 
@@ -27,7 +29,7 @@ const entryIdsOfService = (steps: readonly FlowStep[], pred: (s: FlowStep) => bo
 
 // 前段カスケードで enable された (= 経路導出に乗る) entry か
 const isActive = (submission: Submission, e: FileEntry): boolean =>
-  isKindEnabled(submission.preconditions.q1, submission.preconditions.q2, e.fileTypeKind)
+  isKindEnabled(submission.preconditions.q2, e.fileTypeKind)
 
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_anySubmission_isDeterministic",
@@ -171,10 +173,12 @@ test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_spatialGroupKind_stepCoversWholeGroup",
   (submission) => {
     const steps = deriveFlowSteps(submission)
+    const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
       if (!isActive(submission, e)) continue
+      if (jgaIds.has(e.id)) continue
       const geaStep = steps.find((s) => s.service === "gea" && s.scope.entryIds.includes(e.id))
       expect(geaStep).toBeDefined()
       expect(geaStep!.scope.groupIds).toContain(e.groupId)
@@ -188,16 +192,35 @@ test.prop([arbSubmission], RUNS)(
     const steps = deriveFlowSteps(submission)
     const geaIds = entryIdsOfService(steps, (s) => s.service === "gea")
     const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
+    const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
     const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
       if (!isActive(submission, e)) continue
+      if (jgaIds.has(e.id)) continue
       const sequencing = e.chipTags.some(
         (c) => c.axis === "spatial-platform" && isSequencingSpatialPlatform(c.value),
       )
-      // Sequencing 系 platform は DRA + GEA の 2 段、それ以外 (Microarray / 未指定) は GEA のみ
       expect(geaIds.has(e.id)).toBe(true)
       expect(draIds.has(e.id)).toBe(sequencing)
+    }
+  },
+)
+
+test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+  "deriveAccess_consistency_matchesIdentifiabilityRule",
+  (q2, accessSection, kind) => {
+    const access = deriveAccess(q2, accessSection, kind)
+    if (q2 !== "human") {
+      expect(access).toBe("open")
+    } else if (accessSection.restrictedPreference) {
+      expect(access).toBe("restricted")
+    } else if (accessSection.ethicsCompliance) {
+      expect(access).toBe(IDENTIFIABLE_KINDS.has(kind) ? "restricted" : "open")
+    } else if (accessSection.publiclyAvailable || accessSection.microbialAnalysis) {
+      expect(access).toBe("open")
+    } else {
+      expect(access).toBe("restricted")
     }
   },
 )

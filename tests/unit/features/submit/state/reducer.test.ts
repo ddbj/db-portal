@@ -17,59 +17,79 @@ const addRow = (
 ): UIState =>
   submitReducer(state, { type: "ADD_ROW", fileTypeKind, entryId, groupId })
 
-const withPreconditions = (
-  q1: "public" | "restricted" | "third-party",
-  q2: "human" | "eukaryote" | "prokaryote" | "virus" | "metagenome" | null,
-): UIState => {
-  let state = submitReducer(initialState, { type: "SET_Q1", q1 })
-  if (q2 !== null) state = submitReducer(state, { type: "SET_Q2", q2 })
-
-  return state
-}
+const withQ2 = (q2: "human" | "eukaryote" | "prokaryote" | "virus" | "metagenome"): UIState =>
+  submitReducer(initialState, { type: "SET_Q2", q2 })
 
 describe("submitReducer preconditions", () => {
-  test("submitReducer_setQ1_updatesPreconditionQ1", () => {
-    const next = submitReducer(initialState, { type: "SET_Q1", q1: "public" })
-    expect(next.submission.preconditions.q1).toBe("public")
-    expect(next.submission.preconditions.q2).toBeNull()
-  })
-
-  test("submitReducer_setQ2_updatesPreconditionQ2WithoutTouchingQ1", () => {
+  test("submitReducer_setQ2_updatesPreconditionQ2", () => {
     const next = submitReducer(initialState, { type: "SET_Q2", q2: "human" })
     expect(next.submission.preconditions.q2).toBe("human")
-    expect(next.submission.preconditions.q1).toBe(initialState.submission.preconditions.q1)
   })
 
-  test("submitReducer_setQ1Null_clearsQ1WithoutTouchingQ2", () => {
-    const seeded = withPreconditions("public", "human")
-    const next = submitReducer(seeded, { type: "SET_Q1", q1: null })
-    expect(next.submission.preconditions.q1).toBeNull()
-    // q1=null では絞り込み材料が無いので enable のまま、human は維持される
-    expect(next.submission.preconditions.q2).toBe("human")
+  test("submitReducer_setAccessSection_updatesAccessSection", () => {
+    const next = submitReducer(initialState, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { restrictedPreference: true },
+    })
+    expect(next.submission.accessSection.restrictedPreference).toBe(true)
   })
 
-  test("submitReducer_setQ1Restricted_keepsNonHumanQ2Enabled", () => {
-    // 公開+制限 の repos は公開系 ∪ JGA = 全 destination なので、非ヒト Q2 も enable のまま維持される
-    const seeded = withPreconditions("public", "eukaryote")
-    const next = submitReducer(seeded, { type: "SET_Q1", q1: "restricted" })
-    expect(next.submission.preconditions.q1).toBe("restricted")
-    expect(next.submission.preconditions.q2).toBe("eukaryote")
+  test("submitReducer_setAccessSection_exclusiveToggles", () => {
+    const next = submitReducer(initialState, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { publiclyAvailable: true },
+    })
+    expect(next.submission.accessSection.publiclyAvailable).toBe(true)
+    expect(next.submission.accessSection.ethicsCompliance).toBe(false)
+    expect(next.submission.accessSection.microbialAnalysis).toBe(false)
   })
 
-  test("submitReducer_setQ1ThirdParty_dropsNowDisabledQ2", () => {
-    // 第三者 (repos = ddbj / metabobank) は全 Q2 が依然 intersect するため disable されない
-    const seeded = withPreconditions("public", "human")
-    const next = submitReducer(seeded, { type: "SET_Q1", q1: "third-party" })
-    expect(next.submission.preconditions.q2).toBe("human")
-  })
-
-  test("submitReducer_changingQ1_recomputesEntryAccessDefaults", () => {
-    // restricted + human で reads を追加すると restricted、public に変えると open に追従する
-    let state = withPreconditions("restricted", "human")
+  test("submitReducer_setAccessSection_recomputesEntryAccess", () => {
+    let state = withQ2("human")
     state = addRow(state, "sequence-read", "e1", "g1")
     expect(state.submission.fileEntries[0]!.access).toBe("restricted")
-    const next = submitReducer(state, { type: "SET_Q1", q1: "public" })
+    const next = submitReducer(state, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { publiclyAvailable: true },
+    })
     expect(next.submission.fileEntries[0]!.access).toBe("open")
+  })
+
+  test("submitReducer_setAccessSection_ethicsCompliance_splitsAccessByIdentifiability", () => {
+    let state = withQ2("human")
+    state = addRow(state, "sequence-read", "e1", "g1")
+    state = addRow(state, "expression-matrix", "e2", "g2")
+    const reads = state.submission.fileEntries.find((e) => e.fileTypeKind === "sequence-read")!
+    const expr = state.submission.fileEntries.find((e) => e.fileTypeKind === "expression-matrix")!
+    expect(reads.access).toBe("restricted")
+    expect(expr.access).toBe("open")
+  })
+
+  test("submitReducer_setAccessSection_restrictedPreference_allRestricted", () => {
+    let state = withQ2("human")
+    state = addRow(state, "sequence-read", "e1", "g1")
+    state = addRow(state, "expression-matrix", "e2", "g2")
+    const next = submitReducer(state, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { restrictedPreference: true },
+    })
+    expect(next.submission.fileEntries.every((e) => e.access === "restricted")).toBe(true)
+  })
+
+  test("submitReducer_setQ2_resetsAccessSectionToDefault", () => {
+    let state = submitReducer(initialState, { type: "SET_Q2", q2: "human" })
+    state = submitReducer(state, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { restrictedPreference: true },
+    })
+    expect(state.submission.accessSection.restrictedPreference).toBe(true)
+    const next = submitReducer(state, { type: "SET_Q2", q2: "eukaryote" })
+    expect(next.submission.accessSection).toEqual({
+      restrictedPreference: false,
+      ethicsCompliance: true,
+      publiclyAvailable: false,
+      microbialAnalysis: false,
+    })
   })
 })
 
@@ -95,95 +115,19 @@ describe("submitReducer ADD_ROW", () => {
     }
   })
 
-  test("submitReducer_addRowWithPublicQ1_injectsOpenAccess", () => {
-    const next = addRow(withPreconditions("public", "human"), "sequence-read", "e1", "g1")
-    expect(next.submission.fileEntries[0]!.access).toBe("open")
-  })
-
-  test("submitReducer_addRowWithThirdPartyQ1_injectsOpenAccess", () => {
-    const next = addRow(withPreconditions("third-party", null), "sequence-nucleotide", "e1", "g1")
-    expect(next.submission.fileEntries[0]!.access).toBe("open")
-  })
-
-  test("submitReducer_addRowRestrictedHumanSensitiveKind_injectsRestrictedAccess", () => {
-    const next = addRow(withPreconditions("restricted", "human"), "sequence-read", "e1", "g1")
+  test("submitReducer_addRowHumanDefaultAccess_identifiableKindGetsRestricted", () => {
+    const next = addRow(withQ2("human"), "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("restricted")
   })
 
-  test("submitReducer_addRowRestrictedHumanNonSensitiveKind_injectsOpenAccess", () => {
-    // expression-matrix は access で登録先が変わらないため公開+制限でも open default
-    const next = addRow(withPreconditions("restricted", "human"), "expression-matrix", "e1", "g1")
+  test("submitReducer_addRowHumanDefaultAccess_nonIdentifiableKindGetsOpen", () => {
+    const next = addRow(withQ2("human"), "expression-matrix", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 
-  test("submitReducer_addRowRestrictedNonHumanReads_injectsOpenAccess", () => {
-    // 非ヒトは JGA 対象外。reads の制限公開は embargo の opt-in なので default は open
-    const next = addRow(withPreconditions("restricted", "prokaryote"), "sequence-read", "e1", "g1")
+  test("submitReducer_addRowNonHuman_injectsOpenAccess", () => {
+    const next = addRow(withQ2("prokaryote"), "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
-  })
-})
-
-describe("submitReducer assembly-annotation auto-pairing", () => {
-  // 配列 (FASTA) とアノテーションを選び、アノテーションで「配列ペア」を commit する
-  const pairAnnotation = (state: UIState): UIState =>
-    submitReducer(state, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "ann",
-      patch: { groupType: "assembly-annotation", dataForm: "annotation", chipTags: [] },
-      releasedGroupId: "rel-a",
-    })
-
-  test("submitReducer_commitAssemblyPairWithFastaPresent_autoPairsTheSingleFasta", () => {
-    let state = addRow(initialState, "sequence-nucleotide", "fa", "g-fa")
-    state = addRow(state, "sequence-annotation", "ann", "g-ann")
-    const next = pairAnnotation(state)
-    const annGroup = next.submission.fileGroups.find((g) => g.id === "g-ann")!
-    expect(annGroup.groupType).toBe("assembly-annotation")
-    expect(new Set(annGroup.memberFileIds)).toEqual(new Set(["ann", "fa"]))
-    expect(next.submission.fileEntries.find((e) => e.id === "fa")!.groupId).toBe("g-ann")
-    // 相方の元 group は空になり drop される
-    expect(next.submission.fileGroups.some((g) => g.id === "g-fa")).toBe(false)
-  })
-
-  test("submitReducer_addFastaAfterPairSelected_joinsWaitingAnnotationGroup", () => {
-    // 先にアノテーションでペアを選び (相方未定)、後から FASTA を追加すると待機 group に取り込む
-    let state = addRow(initialState, "sequence-annotation", "ann", "g-ann")
-    state = pairAnnotation(state)
-    expect(state.submission.fileGroups.find((g) => g.id === "g-ann")!.memberFileIds).toEqual(["ann"])
-    state = addRow(state, "sequence-nucleotide", "fa", "g-fa")
-    const annGroup = state.submission.fileGroups.find((g) => g.id === "g-ann")!
-    expect(new Set(annGroup.memberFileIds)).toEqual(new Set(["ann", "fa"]))
-    expect(state.submission.fileEntries.find((e) => e.id === "fa")!.groupId).toBe("g-ann")
-  })
-
-  test("submitReducer_commitStandaloneAfterPairing_dissolvesPairAndRestoresPartner", () => {
-    let state = addRow(initialState, "sequence-nucleotide", "fa", "g-fa")
-    state = addRow(state, "sequence-annotation", "ann", "g-ann")
-    state = pairAnnotation(state)
-    // 単独アノテーション (groupType single) に戻すとペアは解消し、相方は単独 group に戻る
-    const next = submitReducer(state, {
-      type: "COMMIT_ROW_EDIT",
-      entryId: "ann",
-      patch: { groupType: "single", dataForm: "annotation", chipTags: [] },
-      releasedGroupId: "rel-c",
-    })
-    expect(next.submission.fileGroups.find((g) => g.id === "g-ann")!.groupType).toBe("single")
-    const faEntry = next.submission.fileEntries.find((e) => e.id === "fa")!
-    expect(faEntry.groupId).not.toBe("g-ann")
-    const faGroup = next.submission.fileGroups.find((g) => g.id === faEntry.groupId)!
-    expect(faGroup.groupType).toBe("single")
-    expect(faGroup.memberFileIds).toEqual(["fa"])
-  })
-
-  test("submitReducer_removePairedFasta_keepsAnnotationAndRestoresSingle", () => {
-    let state = addRow(initialState, "sequence-nucleotide", "fa", "g-fa")
-    state = addRow(state, "sequence-annotation", "ann", "g-ann")
-    state = pairAnnotation(state)
-    const next = submitReducer(state, { type: "REMOVE_ROW", entryId: "fa" })
-    expect(next.submission.fileEntries.map((e) => e.id)).toEqual(["ann"])
-    const annGroup = next.submission.fileGroups.find((g) => g.id === "g-ann")!
-    expect(annGroup.memberFileIds).toEqual(["ann"])
-    expect(annGroup.groupType).toBe("single")
   })
 })
 
@@ -199,17 +143,16 @@ describe("submitReducer EDIT_ROW_CELL", () => {
         groupId: "g-hijack",
         access: "restricted",
         dataForm: "assembled",
-        chipTags: [{ axis: "mass-spec-domain", value: "proteomics" }],
+        chipTags: [{ axis: "tpa", value: "true" }],
       },
     })
     const entry = next.submission.fileEntries[0]!
     expect(entry.id).toBe("e1")
     expect(entry.fileTypeKind).toBe("sequence-read")
     expect(entry.groupId).toBe("g1")
-    // 上書き可能なフィールドは反映される
     expect(entry.access).toBe("restricted")
     expect(entry.dataForm).toBe("assembled")
-    expect(entry.chipTags).toEqual([{ axis: "mass-spec-domain", value: "proteomics" }])
+    expect(entry.chipTags).toEqual([{ axis: "tpa", value: "true" }])
   })
 
   test("submitReducer_editRowCellUnknownEntry_leavesEntriesUntouched", () => {
