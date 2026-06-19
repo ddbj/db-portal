@@ -168,7 +168,7 @@ export const en: Resources = {
     preconditions: {
       q1Heading: "What kind of submission is this?",
       q2Heading: "Which biological domain?",
-      q1Required: "Choose a submission type to continue.",
+      q2Required: "Choose a biological domain to continue.",
       q2DisabledReason: "Not available for the selected submission type.",
       kindDisabledReason: "Not available for the selected submission type and biological domain.",
       kindConflictReason: "No destination under the current submission basics. Click to deselect.",

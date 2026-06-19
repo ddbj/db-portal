@@ -171,7 +171,7 @@ export type Resources = {
     preconditions: {
       q1Heading: string
       q2Heading: string
-      q1Required: string
+      q2Required: string
       q2DisabledReason: string
       kindDisabledReason: string
       kindConflictReason: string
@@ -809,7 +809,7 @@ export const ja: Resources = {
     preconditions: {
       q1Heading: "登録種別",
       q2Heading: "生物ドメイン",
-      q1Required: "登録種別を選択してください",
+      q2Required: "生物ドメインを選択してください",
       q2DisabledReason: "選択した登録種別では、この生物ドメインは登録先を持ちません",
       kindDisabledReason: "選択した登録種別と生物ドメインの組み合わせでは、登録先がありません",
       kindConflictReason: "現在の登録前提では登録先がありません。クリックで選択を解除できます",
