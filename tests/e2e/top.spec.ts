@@ -192,7 +192,7 @@ test.describe("Top Domain", () => {
     await expect(page.getByRole("alert")).toHaveCount(0)
   })
 
-  test("E-TOP-02: LLM unavailable のとき hero に AI モードトグルが現れない", async ({ page }) => {
+  test("E-TOP-02: LLM unavailable のとき hero に AI クエリビルダートグルが現れない", async ({ page }) => {
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
         status: 200,
@@ -206,8 +206,8 @@ test.describe("Top Domain", () => {
     await expect(input).toBeVisible()
     await expect(input).toHaveAttribute("placeholder", HERO_PLACEHOLDER_JA)
 
-    // AI モード toggle (a button with aria-pressed) must not exist.
-    await expect(page.getByRole("button", { name: /AI モード|AI mode/ })).toHaveCount(0)
+    // AI クエリビルダー toggle (a button with aria-pressed) must not exist.
+    await expect(page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ })).toHaveCount(0)
 
     await expect(page.getByRole("alert")).toHaveCount(0)
   })

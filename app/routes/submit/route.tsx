@@ -88,8 +88,7 @@ const SubmitRoute = () => {
 
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
-  const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}.label`)
-  const fileTypeKindHint = (k: FileTypeKind): string => t(`submit.fileType.${k}.hint`)
+  const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
   const noteKindLabel = (kind: "warning" | "error"): string =>
@@ -164,7 +163,6 @@ const SubmitRoute = () => {
               <FileTypeGrid
                 onToggle={onToggleKind}
                 getLabel={fileTypeKindLabel}
-                getHint={fileTypeKindHint}
                 isSelected={(k) => selectedKinds.has(k)}
                 isEnabled={(k) => isKindEnabled(q2, k)}
                 disabledReason={gridDisabledReason}

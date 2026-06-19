@@ -14,7 +14,6 @@ const renderGrid = (opts: {
     <FileTypeGrid
       onToggle={onToggle}
       getLabel={(k) => k}
-      getHint={(k) => `${k} hint`}
       isSelected={(k) => opts.selected.has(k)}
       isEnabled={(k) => opts.enabled.has(k)}
       disabledReason="disabled"

@@ -27,7 +27,7 @@ const allEffects = () =>
 describe("ROW_FORM_DEFS_kindCoverage", () => {
   test("ROW_FORM_DEFS_keys_coverAllNineFileTypeKinds", () => {
     expect(new Set(KEYS)).toStrictEqual(new Set(ALL_KINDS))
-    expect(KEYS).toHaveLength(9)
+    expect(KEYS).toHaveLength(8)
   })
 
   test("ROW_FORM_DEFS_keys_containNoExtraKinds", () => {
@@ -46,7 +46,6 @@ describe("ROW_FORM_DEFS_kindCoverage", () => {
 const DETAIL_KINDS = new Set<FileTypeKind>([
   "sequence",
   "spatial-transcriptomics",
-  "spatial-image",
 ])
 
 describe("ROW_FORM_DEFS_groupStructure", () => {

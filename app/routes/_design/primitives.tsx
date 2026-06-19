@@ -144,7 +144,7 @@ const HeadingGallery = () => (
   <Block title="Headings & Labels">
     <SectionHeading>SectionHeading (default, no count, no action)</SectionHeading>
     <SectionHeading
-      subtitle="AI 検索アシスタント — heading の直下に説明文を添えたいときの subtitle prop"
+      subtitle="AI クエリビルダー — heading の直下に説明文を添えたいときの subtitle prop"
       action={<TextLink to="#">編集</TextLink>}
     >
       SectionHeading with subtitle + action
@@ -557,7 +557,7 @@ const SearchBoxGallery = () => (
         disabledScopeOptions={["既存に追加"]}
         scopeAriaLabel="生成モード"
         submitLabel="生成"
-        trailing={<Button kind="primary" size="md" pill aria-pressed>AI モード</Button>}
+        trailing={<Button kind="primary" size="md" pill aria-pressed>AI クエリビルダー</Button>}
         onSubmit={() => undefined}
       />
     </Row>

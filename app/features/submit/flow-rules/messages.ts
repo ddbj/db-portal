@@ -9,6 +9,7 @@ export const ENGINE_MESSAGE_KEYS = {
   jgaNbdcPolicy: "submit.jga.nbdcPolicy",
 
   spatialDraRaw: "submit.spatial.dra.raw",
+  sequenceDraRaw: "submit.sequenceDra.raw",
 } as const
 
 export const ALL_ENGINE_MESSAGE_KEYS: readonly string[] = Object.values(ENGINE_MESSAGE_KEYS)

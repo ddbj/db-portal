@@ -84,7 +84,7 @@ export const SearchInputPanel = ({
     }
   }, [mode, availability.ready, resetStream])
 
-  // The single "AI モード" toggle enters AI mode and, pressed again, returns to
+  // The single "AI クエリビルダー" toggle enters AI mode and, pressed again, returns to
   // the keyword input — discarding the prompt and any pending proposal.
   const toggleMode = () => {
     setAiInput("")

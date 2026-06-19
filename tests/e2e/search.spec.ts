@@ -64,7 +64,7 @@ test.describe("Search Domain", () => {
 
     // AI is folded into the box toggle; there is no separate assistant region.
     await expect(
-      page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i }),
+      page.getByRole("region", { name: /AI クエリビルダー|AI Query Builder/i }),
     ).toHaveCount(0)
   })
 
@@ -259,7 +259,7 @@ test.describe("Search Domain", () => {
     await expect(callout.getByRole("button", { name: /再試行|Retry/ })).toBeVisible()
   })
 
-  test("E-SEARCH-03: LLM unset で AI モード toggle が非表示", async ({ page }) => {
+  test("E-SEARCH-03: LLM unset で AI クエリビルダー toggle が非表示", async ({ page }) => {
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
         status: 200,
@@ -271,7 +271,7 @@ test.describe("Search Domain", () => {
     await page.goto("/search")
     await expect(page.getByRole("search")).toBeVisible({ timeout: 15_000 })
     await expect(
-      page.getByRole("button", { name: /AI モード|AI mode/ }),
+      page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ }),
     ).toHaveCount(0)
     // The keyword input stays usable; no error banner is shown.
     await expect(
@@ -281,7 +281,7 @@ test.describe("Search Domain", () => {
     await page.goto("/search/results?q=cancer&db=bioproject")
     await expect(page.getByRole("search")).toBeVisible({ timeout: 15_000 })
     await expect(
-      page.getByRole("button", { name: /AI モード|AI mode/ }),
+      page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ }),
     ).toHaveCount(0)
   })
 })

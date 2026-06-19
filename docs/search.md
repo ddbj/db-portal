@@ -1,6 +1,6 @@
 # Search
 
-検索機能の SSOT。`/search` (検索ビルダ) と `/search/results` (結果) の責務、3 経路 UI (Simple query / Advanced builder / Sidebar facet) を ParseNode (AST) に正規化する規則、`/db-portal/serialize` への debounce 呼び出し、AI 検索アシスタントの方針を定義する。
+検索機能の SSOT。`/search` (検索ビルダ) と `/search/results` (結果) の責務、3 経路 UI (Simple query / Advanced builder / Sidebar facet) を ParseNode (AST) に正規化する規則、`/db-portal/serialize` への debounce 呼び出し、AI クエリビルダーの方針を定義する。
 
 AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,serialize}` 仕様) を SSOT とする。本書は BSI 側 UI 状態と API 呼び出し境界のみを扱う。
 
@@ -43,7 +43,7 @@ cross-DB から per-DB への遷移はカードの「結果一覧」link、per-D
 
 3 経路の AST は AND 結合関数で 1 つの ParseNode に畳む。これを `/db-portal/serialize` に投げて DSL を得る。
 
-`/search` (cross-search ビルダー) では Simple query (キーワード) と AI アシスタントを 1 つの統合入力 (`SearchInputPanel`) に畳む。キーワードは Advanced builder の先頭に **keyword 行** として双方向同期して表示する (上部ボックス submit / keyword 行の編集のどちらからでも sync する)。キーワードの parse → merge → serialize は `useCrossSearchSync` が単一 debounce で行い、live preview / URL に反映する。上部ボックス submit はキービルダーへの集約のみで、cross-search の実行 (results への遷移) は「この条件で検索」 button が担う。
+`/search` (cross-search ビルダー) では Simple query (キーワード) と AI クエリビルダーを 1 つの統合入力 (`SearchInputPanel`) に畳む。キーワードは Advanced builder の先頭に **keyword 行** として双方向同期して表示する (上部ボックス submit / keyword 行の編集のどちらからでも sync する)。キーワードの parse → merge → serialize は `useCrossSearchSync` が単一 debounce で行い、live preview / URL に反映する。上部ボックス submit はキービルダーへの集約のみで、cross-search の実行 (results への遷移) は「この条件で検索」 button が担う。
 
 ### BSI 側に thin serializer を持たない
 
@@ -55,9 +55,9 @@ AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委
 
 BSI 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar ↔ AST、AND merge) のみ。
 
-### AI 検索アシスタントの位置付け
+### AI クエリビルダーの位置付け
 
-AI 検索アシスタントは「自然言語入力 → Advanced builder への提案 (新規生成 / 既存への融合)」 という UX を担う。提案はフルスペック DSL (`AND` / `OR` / `NOT` / グルーピング) を表す ParseNode AST。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
+AI クエリビルダーは「自然言語入力 → Advanced builder への提案 (新規生成 / 既存への融合)」 という UX を担う。提案はフルスペック DSL (`AND` / `OR` / `NOT` / グルーピング) を表す ParseNode AST。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
 
 server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では client 側 UI 配線のみ。
 
@@ -118,7 +118,7 @@ free_text node の扱いは経路で **非対称**:
 
 system 側の serialize / 同期失敗 (ユーザーが直せない) は **この警告として出さない**。それらは sync chip のみが示し、表示中の検索結果は古いまま使える。生クエリを `?q=` に載せて results に飛ばすと再 parse で必ず失敗しユーザーが抜け出せないため、parse エラーは `/search` 内で完結させる。
 
-`/search/results` のキーワードボックスでも、submit 時の keyword parse が失敗したらボックスを invalid 表示にし、box 直下に構文エラー文言を出す。遷移はせずその場で直せる。results / top の box は構文ヒント (スペース=AND 等) や AI モードの補助文を出さない (それらは `/search` ビルダーのみ)。
+`/search/results` のキーワードボックスでも、submit 時の keyword parse が失敗したらボックスを invalid 表示にし、box 直下に構文エラー文言を出す。遷移はせずその場で直せる。results / top の box は構文ヒント (スペース=AND 等) や AI クエリビルダーの補助文を出さない (それらは `/search` ビルダーのみ)。
 
 `/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が parse 失敗を同期フラグ (`parseError`) として返し (parse は loader 内で await するので即座に確定する)、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。検索本体 (cross / per-DB) の失敗は AST 駆動の query 側で `<Callout>` に落とす (右端の「再試行」= refetch、§ cross-DB 結果の error)。
 
@@ -168,7 +168,7 @@ Advanced builder の state 遷移 (追加 / 削除 / 内部結合の AND・OR �
 
 ## Sidebar facet
 
-結果ページ (`/search/results`) で **ユーザが直接フィルタを操作できる唯一の UI**。編集可能な Advanced builder は `/search` 側にしか無く、結果ページの右ペインは read-only のクエリプレビュー + AI アシスタントなので、scope 固有の絞り込みは Sidebar が担う。
+結果ページ (`/search/results`) で **ユーザが直接フィルタを操作できる唯一の UI**。編集可能な Advanced builder は `/search` 側にしか無く、結果ページの右ペインは read-only のクエリプレビュー + AI クエリビルダーなので、scope 固有の絞り込みは Sidebar が担う。
 
 ### filter の 3 制御種別
 
@@ -303,7 +303,7 @@ DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST �
 - `/search`: 表示中の結果は古い URL のまま (URL を書き換えない)。serialize / 同期失敗 (system 側、ユーザーが直せない) は警告も disable も伴わず sync chip だけが示す。`useMutation` で retry なし
 - `/search/results`: AST 駆動の検索が最終失敗したら **URL を書き換えず直前の結果を残し**、結果側に warn `<Callout>` (「再試行」= refetch) を出す。`dsl` が返らない限り `?q=` 射影は走らないので、共有 URL は最後の成功クエリのまま留まる
 
-## AI 検索アシスタント
+## AI クエリビルダー
 
 ### LLM availability
 
@@ -320,7 +320,7 @@ AI 補助は **top / cross-DB results / per-DB results / `/search`** の検索 b
 - **`/search`** (検索ビルダ): `SearchInputPanel`。提案を read-only カードで見せ、ユーザの「適用」で反映する。反映は `?q=` 復元と同じ経路で提案 AST を分割する: top-level の `free_text` は `splitFreeText` でキーワードボックスへ、構造化部分は `toAdvanced` でビルダーへ (`replaceRoot`)。ビルダーは `free_text` leaf を持てないため、この分割をしないと生成キーワードが落ちる。`new` はキーワードを提案の free text で置換、`append` は既存キーワードを保ちつつ生成 free text をマージする (append は builder AST のみをモデルに送るので、生成 free text は純粋に新規)。
 - **top / results** (`NavigableSearchInput`): 提案カードを出さず、生成された AST を serialize して即 `/search/results` へ遷移する。top は `new` 固定、results は `new` / `append` を選べる。
 
-`/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI モード」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI モード (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI モードでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI モードの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。
+`/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI クエリビルダー」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI クエリビルダー (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI クエリビルダーでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI クエリビルダーの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。
 
 ### db スコープ (locked / auto)
 
@@ -337,7 +337,7 @@ AI 生成の db スコープは **呼び出し面で決まる**。生成結果�
 
 ### 生成モード (cross-search ビルダー)
 
-AI モードには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがあり、**生成 prompt がモードで変わりうるため生成前に選ぶ**。UI は検索ボックス左の scope 選択スロット (キーワードモードでは DB scope = 全データベース等) を AI モードでそのまま流用し、`新規生成 / 既存に追加` を選ばせる。入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
+AI クエリビルダーには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがあり、**生成 prompt がモードで変わりうるため生成前に選ぶ**。UI は検索ボックス左の scope 選択スロット (キーワードモードでは DB scope = 全データベース等) を AI クエリビルダーでそのまま流用し、`新規生成 / 既存に追加` を選ばせる。入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
 
 | 件数 | default | 既存に追加 |
 |---|---|---|
@@ -374,4 +374,4 @@ client は `event: done` で受け取った ParseNode AST をそのまま propos
 - **`/search` (ビルダー)**: ユーザーの「適用」操作時に純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。`done.db` が非 null なら DB scope セレクタをその db に合わせる (導出された Tier-3 を扱えるように)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL。
 - **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化し、`done.db` を `?db=` に載せて `/search/results` へ `navigate` する (`db` null なら横断)。loader が新 `?q=` (+ `db`) を再 split して keyword / facet / 保持 state を組み直す。**per-DB results は locked** で、`current`・遷移先ともその DB に固定する (別 DB へ寄らない)。cross results / top の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = ライブ merged AST) で free_text も含む。top は `new` 固定。
 
-per-DB results の AI アシスタントの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI モード」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
+per-DB results の AI クエリビルダーの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI クエリビルダー」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。

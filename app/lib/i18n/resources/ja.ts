@@ -200,6 +200,7 @@ export type Resources = {
       formGroupLabels: {
         form: string
         tpa: string
+        smallScale: string
         target: string
         platform: string
         domain: string
@@ -210,6 +211,7 @@ export type Resources = {
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
           tpa: { label: string; sub: string }
+          smallScale: { label: string; sub: string }
         }
         sequenceAnnotation: {
           assemblyPair: { label: string; sub: string }
@@ -221,10 +223,6 @@ export type Resources = {
           merfish: { label: string; sub: string }
           stereoSeq: { label: string; sub: string }
         }
-        spatialImage: {
-          visium: { label: string; sub: string }
-          merfish: { label: string; sub: string }
-        }
         massSpectrometry: {
           metabolomics: { label: string; sub: string }
           proteomics: { label: string; sub: string }
@@ -235,15 +233,14 @@ export type Resources = {
       fileCount: string
     }
     fileType: {
-      "sequence-read": { label: string; hint: string }
-      "sequence": { label: string; hint: string }
-      "variant": { label: string; hint: string }
-      "expression-matrix": { label: string; hint: string }
-      "microarray-expression": { label: string; hint: string }
-      "spatial-transcriptomics": { label: string; hint: string }
-      "spatial-image": { label: string; hint: string }
-      "metabolomics": { label: string; hint: string }
-      "proteome": { label: string; hint: string }
+      "sequence-read": string
+      "sequence": string
+      "variant": string
+      "expression-matrix": string
+      "microarray-expression": string
+      "spatial-transcriptomics": string
+      "metabolomics": string
+      "proteome": string
     }
     access: {
       "heading": string
@@ -317,6 +314,7 @@ export type Resources = {
     }
     ddbj: {
       locusTagPrefix: string
+      mss: { intro: string }
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
       tpa: { intro: string; primaryAccessionRequired: string }
@@ -358,6 +356,9 @@ export type Resources = {
     biosample: { intro: string }
     spatial: {
       dra: { raw: string }
+    }
+    sequenceDra: {
+      raw: string
     }
     validations: {
       heading: string
@@ -837,6 +838,7 @@ export const ja: Resources = {
       formGroupLabels: {
         form: "データ形態",
         tpa: "TPA (Third Party Annotation)",
+        smallScale: "登録規模",
         target: "対象",
         platform: "プラットフォーム",
         domain: "分析ドメイン",
@@ -847,6 +849,7 @@ export const ja: Resources = {
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
           tpa: { label: "TPA として登録する", sub: "第三者データに基づく配列・アノテーション" },
+          smallScale: { label: "少数の短い配列", sub: "NSSS (Web フォーム) で登録する場合にチェック" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },
@@ -858,10 +861,6 @@ export const ja: Resources = {
           merfish: { label: "MERFISH", sub: "MERFISH (Microarray、DRA 不要)" },
           stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq (Sequencing + DRA 2 段)" },
         },
-        spatialImage: {
-          visium: { label: "Visium", sub: "Visium の組織画像" },
-          merfish: { label: "MERFISH", sub: "MERFISH の大容量画像" },
-        },
         massSpectrometry: {
           metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
@@ -872,15 +871,14 @@ export const ja: Resources = {
       fileCount: "{{count}} ファイル",
     },
     fileType: {
-      "sequence-read": { label: "配列リード", hint: "シーケンサーが出力した生リード" },
-      "sequence": { label: "塩基配列", hint: "組み上げ済みの塩基配列とアノテーション" },
-      "variant": { label: "バリアント", hint: "変異・多型の一覧" },
-      "expression-matrix": { label: "発現マトリクス", hint: "遺伝子発現の数値マトリクス" },
-      "microarray-expression": { label: "マイクロアレイ", hint: "マイクロアレイによる発現・SNP genotyping・メチル化等の測定" },
-      "spatial-transcriptomics": { label: "空間トランスクリプトーム", hint: "空間座標に対応した発現データ" },
-      "spatial-image": { label: "空間 Tx 組織画像", hint: "空間トランスクリプトーム実験の組織切片画像（HE 染色等）" },
-      "metabolomics": { label: "メタボロミクス", hint: "質量分析・NMR・代謝物アサインメント" },
-      "proteome": { label: "プロテオーム", hint: "プロテオーム解析データ" },
+      "sequence-read": "配列リード",
+      "sequence": "塩基配列",
+      "variant": "バリアント",
+      "expression-matrix": "発現マトリクス",
+      "microarray-expression": "マイクロアレイ",
+      "spatial-transcriptomics": "空間トランスクリプトーム",
+      "metabolomics": "メタボロミクス",
+      "proteome": "プロテオーム",
     },
     access: {
       "heading": "公開区分",
@@ -960,6 +958,9 @@ export const ja: Resources = {
     },
     ddbj: {
       locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
+      mss: {
+        intro: "塩基配列は DDBJ (MSS: Mass Submission System) で登録します。",
+      },
       mag: {
         envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",
         rawReadsToDraRequired: "MAG の登録には、元の生リードを先に DRA へ登録しておく必要があります。",
@@ -1051,6 +1052,9 @@ export const ja: Resources = {
       dra: {
         raw: "シーケンス由来 (Visium / Stereo-seq) の生リードは、processed データ (GEA) より先に DRA に登録します (DRA + GEA の 2 段)。",
       },
+    },
+    sequenceDra: {
+      raw: "MAG / SAG / primary / binned のアセンブリでは、元の生リードを DRA に登録する必要があります。",
     },
     validations: {
       heading: "確認事項が {{count}} 件あります",
@@ -1278,7 +1282,7 @@ export const ja: Resources = {
       retry: "再試行",
     },
     assistant: {
-      heading: "AI 検索アシスタント",
+      heading: "AI クエリビルダー",
       description: "自然文で条件を書くと、クエリビルダーへの追加候補を提案します。",
       descriptionNew: "自然文で書くと、新しいクエリの候補を提案します。",
       descriptionAppend: "自然文で書くと、現在の {{count}} 件に追加する条件を提案します。",
@@ -1297,13 +1301,13 @@ export const ja: Resources = {
       ],
       generate: "提案を生成",
       generating: "生成中…",
-      proposalHeading: "AI による生成結果",
+      proposalHeading: "AI クエリビルダーの生成結果",
       proposalLabel: "提案",
       proposalDescription: "内容を確認してください",
       apply: "クエリビルダーに追加",
       reset: "やり直す",
       regenerate: "再生成",
-      enterMode: "AI モード",
+      enterMode: "AI クエリビルダー",
       generateShort: "生成",
       modeGroupLabel: "生成モード",
       modeNew: "新規生成",
@@ -1341,7 +1345,7 @@ export const ja: Resources = {
       facetGroup: "ファセット",
       queryPreview: "クエリプレビュー",
       resultsRegion: "検索結果",
-      assistantInput: "AI 検索アシスタントへの入力",
+      assistantInput: "AI クエリビルダーへの入力",
       assistantStop: "提案の生成を停止",
     },
   },

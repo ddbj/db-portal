@@ -27,7 +27,7 @@ const recipeSteps = (steps: readonly FlowStep[]): FlowStep[] =>
   steps.filter((s) => s.origin === "recipe")
 
 const isSpatialKind = (k: string): boolean =>
-  k === "spatial-transcriptomics" || k === "spatial-image"
+  k === "spatial-transcriptomics"
 
 test.prop([arbSubmission], RUNS)(
   "RECIPE_ALLOWLIST_isImmutableAndAllRecipeStepIdsTraceToAllowlist",
@@ -35,7 +35,7 @@ test.prop([arbSubmission], RUNS)(
     // allowlist は重複なし・空でない不変集合 (jga / spatial の 2 named recipe)
     expect(new Set(RECIPE_ALLOWLIST).size).toBe(RECIPE_ALLOWLIST.length)
     expect(RECIPE_ALLOWLIST.length).toBeGreaterThan(0)
-    const allowedPrefixes = ["recipe-jga", "recipe-spatial"]
+    const allowedPrefixes = ["recipe-jga", "recipe-spatial", "recipe-sequence"]
     for (const s of recipeSteps(deriveFlowSteps(submission))) {
       expect(allowedPrefixes.some((p) => s.id.startsWith(p))).toBe(true)
     }

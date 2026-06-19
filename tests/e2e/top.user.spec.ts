@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("Top Domain (authenticated)", () => {
-  test("E-TOP-03: hero AI モード generate → serialize → 結果ページ遷移", async ({ page }) => {
+  test("E-TOP-03: hero AI クエリビルダー generate → serialize → 結果ページ遷移", async ({ page }) => {
     // hero の AI 生成は vLLM 非依存にするため health=ok と SSE(done) を mock 固定する。
     // done AST の serialize (/db-portal/serialize、実) → navigate → 結果領域は実物を通す。
     await page.route("**/api/llm/health", (route) =>
@@ -23,15 +23,15 @@ test.describe("Top Domain (authenticated)", () => {
 
     await page.goto("/")
 
-    // hero の「AI モード」 トグル: aria-pressed=false → click で true へ。
-    const aiToggle = page.getByRole("button", { name: /AI モード|AI mode/i })
+    // hero の「AI クエリビルダー」 トグル: aria-pressed=false → click で true へ。
+    const aiToggle = page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/i })
     await expect(aiToggle).toHaveAttribute("aria-pressed", "false")
     await aiToggle.click()
     await expect(aiToggle).toHaveAttribute("aria-pressed", "true")
 
-    // AI モードでは SearchBox の input が AI 入力欄 (aria-label = search.a11y.assistantInput) に切り替わる。
+    // AI クエリビルダーでは SearchBox の input が AI 入力欄 (aria-label = search.a11y.assistantInput) に切り替わる。
     const aiInput = page.getByRole("textbox", {
-      name: /AI 検索アシスタントへの入力|AI search assistant input/i,
+      name: /AI クエリビルダーへの入力|AI Query Builder input/i,
     })
     await expect(aiInput).toBeVisible()
     await aiInput.fill("human breast cancer rna-seq from 2023")

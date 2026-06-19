@@ -81,7 +81,7 @@ describe("NavigableSearchInput keyword mode", () => {
     renderInput({ allowAppend: true, onSearch: noop, onGenerated: noop })
 
     expect(await screen.findByRole("textbox", { name: "検索キーワード" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "AI モード" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "AI クエリビルダー" })).toBeNull()
   })
 })
 
@@ -90,7 +90,7 @@ describe("NavigableSearchInput AI mode", () => {
     server.use(llmHealth({ status: "ok", model: "qwen" }))
     renderInput({ allowAppend: false, onSearch: noop, onGenerated: noop })
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
+    fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
 
     expect(screen.getByRole("button", { name: "検索対象データベース" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "生成モード" })).toBeNull()
@@ -103,7 +103,7 @@ describe("NavigableSearchInput AI mode", () => {
     const current: ParseNode = { op: "contains", field: "title", value: "cancer" }
     renderInput({ allowAppend: true, appendCurrentAst: current, onSearch: noop, onGenerated: noop })
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
+    fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
 
     const modeTrigger = screen.getByRole("button", { name: "生成モード" })
     expect(modeTrigger).toHaveTextContent("既存に追加")
@@ -113,10 +113,10 @@ describe("NavigableSearchInput AI mode", () => {
     server.use(llmHealth({ status: "ok", model: "qwen" }))
     renderInput({ allowAppend: true, onSearch: noop, onGenerated: noop })
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI モード" }))
+    fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
 
     // The navigate flow hands the AST off instead of reviewing it in place, so
     // the builder's proposal heading is never present.
-    expect(screen.queryByText("AI による生成結果")).toBeNull()
+    expect(screen.queryByText("AI クエリビルダーの生成結果")).toBeNull()
   })
 })

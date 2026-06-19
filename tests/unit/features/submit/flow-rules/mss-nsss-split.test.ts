@@ -38,15 +38,28 @@ const singleSequence = (
 }
 
 describe("MSS/NSSS split", () => {
-  test("deriveFlowSteps_eukaryoteSequence_routesToNsssNotDdbj", () => {
+  test("deriveFlowSteps_defaultSequence_routesToDdbj", () => {
     const steps = deriveFlowSteps(singleSequence({ q2: "eukaryote" }))
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
+
+    const dest = destinationOf(steps)
+    expect(dest.service).toBe("ddbj")
+    expect(dest.origin).toBe("tier1")
+    expect(dest.notes.map((n) => n.messageKey)).toContain("submit.ddbj.mss.intro")
+    expect(steps.some((s) => s.service === "nsss")).toBe(false)
+  })
+
+  test("deriveFlowSteps_smallScaleChip_routesToNsss", () => {
+    const steps = deriveFlowSteps(
+      singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
+    )
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "nsss"])
 
     const dest = destinationOf(steps)
     expect(dest.service).toBe("nsss")
     expect(dest.origin).toBe("tier1")
-    expect(dest.scope.entryIds).toEqual(["e1"])
     expect(dest.notes.map((n) => n.messageKey)).toContain("submit.nsss.intro")
     expect(steps.some((s) => s.service === "ddbj")).toBe(false)
   })
@@ -104,17 +117,17 @@ describe("MSS/NSSS split", () => {
   })
 
   test("deriveFlowSteps_nsssVsDdbjBoundary_doesNotCollapseOntoOneService", () => {
-    const nsssDest = destinationOf(
+    const ddbjDest = destinationOf(
       deriveFlowSteps(singleSequence({ q2: "eukaryote" })),
     )
-    const tradDest = destinationOf(
+    const nsssDest = destinationOf(
       deriveFlowSteps(
-        singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "tpa", value: "true" }] }),
+        singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
       ),
     )
 
+    expect(ddbjDest.service).toBe("ddbj")
     expect(nsssDest.service).toBe("nsss")
-    expect(tradDest.service).toBe("ddbj")
-    expect(nsssDest.service).not.toBe(tradDest.service)
+    expect(ddbjDest.service).not.toBe(nsssDest.service)
   })
 })

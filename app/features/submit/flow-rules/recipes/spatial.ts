@@ -3,11 +3,8 @@ import { type FileEntry, type FlowStep, isSequencingSpatialPlatform } from "~/sc
 import { ENGINE_MESSAGE_KEYS as MK } from "../messages"
 import { makeStep, scopeOfEntries } from "../shared"
 
-const isSpatialKind = (e: FileEntry): boolean =>
-  e.fileTypeKind === "spatial-transcriptomics" || e.fileTypeKind === "spatial-image"
-
 const isSequencingSpatial = (e: FileEntry): boolean =>
-  isSpatialKind(e)
+  e.fileTypeKind === "spatial-transcriptomics"
   && e.chipTags.some((c) => c.axis === "spatial-platform" && isSequencingSpatialPlatform(c.value))
 
 // Sequencing 系 platform (Visium 等) の spatial entry は生リードを DRA に出し、processed を GEA に出す

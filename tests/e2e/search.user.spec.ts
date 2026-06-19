@@ -31,10 +31,10 @@ test.describe("Search Domain (authenticated)", () => {
 
     await page.goto("/search/results?q=cancer&db=bioproject")
 
-    // AI モード toggle (search.assistant.enterMode) は health=ok のときだけ出る。
+    // AI クエリビルダー toggle (search.assistant.enterMode) は health=ok のときだけ出る。
     const aiToggle = page
       .getByRole("search")
-      .getByRole("button", { name: /AI モード|AI mode/ })
+      .getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ })
     await expect(aiToggle).toBeVisible({ timeout: 15_000 })
     await expect(aiToggle).toHaveAttribute("aria-pressed", "false")
     await aiToggle.click()
@@ -51,7 +51,7 @@ test.describe("Search Domain (authenticated)", () => {
       .click()
 
     const aiInput = page.getByRole("textbox", {
-      name: /AI 検索アシスタントへの入力|AI search assistant input/,
+      name: /AI クエリビルダーへの入力|AI Query Builder input/,
     })
     await aiInput.fill("2023 年以降に公開されたものに限定する")
 

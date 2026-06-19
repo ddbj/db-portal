@@ -18,7 +18,7 @@ BSI の LLM 機能は **vLLM (OpenAI compatible API、`DB_PORTAL_LLM_MODEL` で�
 | 入出力 redaction | log は email / phone / クレジットカード / API key 風 token を `[REDACTED]` 化 |
 | 未設定時 | `DB_PORTAL_LLM_BASE_URL` が空のとき BFF は `{status: "unset"}` を返し、`/api/llm/search-assistant` は 503 `{error: "llm_unset"}`、UI は AI 補助機能を hide |
 | 未到達時 | health check が失敗のとき `{status: "unreachable", reason}`、UI は表示したまま (送信時に error event が流れる) |
-| 用途 | AI 検索アシスタント (`/api/llm/search-assistant`) |
+| 用途 | AI クエリビルダー (`/api/llm/search-assistant`) |
 
 ## サービング基盤
 

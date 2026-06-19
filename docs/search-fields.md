@@ -107,7 +107,7 @@ SRA / JGA の DB ごと field は **subtype 別の独立 doc** に分かれて�
 | jga | study (jga-study) | `study_type` / `vendor` / `grant_title` / `grant_agency` (organism も study に同居) |
 | jga | dataset (jga-dataset) | `dataset_type` |
 
-`type:<subtype>` は 1 plane の doc に固定するので、別 plane の field と AND しても同様に 0 件。代表例: `organism_name AND library_strategy`、`organism_name AND platform`、`study_type AND type:jga-dataset` はいずれも 0。AI 検索アシスタントがこの罠を避けるための変換規約 (organism は残し sequencing 概念を free-text 1 語へ降格する等) は `llm.md` § 検索アシスタント / `server/llm/assistant/prompt.ts` を参照。
+`type:<subtype>` は 1 plane の doc に固定するので、別 plane の field と AND しても同様に 0 件。代表例: `organism_name AND library_strategy`、`organism_name AND platform`、`study_type AND type:jga-dataset` はいずれも 0。AI クエリビルダーがこの罠を避けるための変換規約 (organism は残し sequencing 概念を free-text 1 語へ降格する等) は `llm.md` § AI クエリビルダー / `server/llm/assistant/prompt.ts` を参照。
 
 ## DSL field type 規約
 

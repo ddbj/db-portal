@@ -286,13 +286,12 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // 典型に絞る: MAG は Tier1 の assembly-form chip → ddbj 単一 step に簡約 (多段 recipe は持たない)
     const ddbj = stepFor(steps, "ddbj")
     expect(ddbj.origin).toBe("tier1")
     expect(ddbj.scope.entryIds).toEqual(["mag1"])
-    // 生リードは通常の sequence-read routing で DRA へ
     const draRun = steps.find((s) => s.service === "dra")!
-    expect(draRun.scope.entryIds).toEqual(["raw1"])
+    expect(draRun.scope.entryIds).toContain("raw1")
+    expect(draRun.scope.entryIds).toContain("mag1")
     // companion は既定どおり 1 + 1 (recipe による複数 BioSample 分裂はしない)
     expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
     expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
@@ -388,16 +387,16 @@ describe("deriveFlowSteps", () => {
     expect(steps.some((s) => s.service === "dra")).toBe(false)
   })
 
-  test("deriveFlowSteps_merfishSpatialImage_emitsGeaWithGeneralistWarningNoDra", () => {
+  test("deriveFlowSteps_merfishSpatial_emitsGeaWithGeneralistWarningNoDra", () => {
     const submission: Submission = {
       preconditions: { q2: "human" },
       accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
           id: "e1",
-          fileTypeKind: "spatial-image",
+          fileTypeKind: "spatial-transcriptomics",
           access: "open",
-          dataForm: "image",
+          dataForm: "matrix",
           groupId: "g1",
           chipTags: [{ axis: "spatial-platform", value: "merfish" }],
         },
@@ -408,7 +407,6 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // MERFISH images stay GEA-only (no DRA) and carry the external generalist-archive warning
     expect(steps.some((s) => s.service === "dra")).toBe(false)
     expect(warningKeys(stepFor(steps, "gea"))).toContain("submit.gea.spatialImage.largeImageGeneralist")
   })

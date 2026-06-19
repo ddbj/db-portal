@@ -115,7 +115,7 @@ ddbj-search-api / Keycloak / vLLM / GitHub API の遅延は 1-3 秒、ピーク�
 LLM SSE (`/api/llm/search-assistant`) のテストは Playwright の `request` API + `EventSource` polyfill ではなく、**UI 経由で network response を観測する** 形に統一する:
 
 ```ts
-const assistant = page.getByRole("region", { name: /AI 検索アシスタント|AI search assistant/i })
+const assistant = page.getByRole("region", { name: /AI クエリビルダー|AI Query Builder/i })
 const response = page.waitForResponse(
   (r) => r.url().includes("/api/llm/search-assistant") && r.status() === 200,
 )

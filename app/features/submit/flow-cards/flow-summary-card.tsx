@@ -2,7 +2,7 @@ import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
 import { isCompanionService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
-import { AlertIcon, Button, Callout, cn, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
+import { AlertIcon, Button, Callout, cn, ExternalIcon, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { StepBadge } from "../components/step-badge"
@@ -339,7 +339,7 @@ const TimelineStepItem = ({
               {warnNotes.length > 0 && (
                 <ul className="flex flex-col gap-1 m-0 list-none p-0">
                   {warnNotes.map((note, ni) => (
-                    <li key={ni} className="flex gap-1.5 items-start">
+                    <li key={ni} className="flex gap-1.5 items-center">
                       <Tag kind="status" tone={note.kind === "error" ? "critical" : "warning"} size="sm">
                         {noteKindLabel(note.kind)}
                       </Tag>
@@ -373,6 +373,11 @@ const TimelineStepItem = ({
 
 const DDBJ_ACCOUNT_URL = "https://accounts.ddbj.nig.ac.jp"
 
+const openExternal = (url: string) => {
+  if (typeof window === "undefined") return
+  window.open(url, "_blank", "noopener,noreferrer")
+}
+
 const navigateToLogin = () => {
   if (typeof window === "undefined") return
   window.location.href = buildLoginUrl("/submit")
@@ -393,12 +398,13 @@ const AccountStep = ({ labels }: { labels: AccountStepLabels }) => (
       <div className="flex-1 border border-border-soft rounded-card p-4 min-w-0 bg-surface">
         <p className="text-fs-micro text-ink-mid m-0 leading-relaxed">{labels.description}</p>
         <div className="flex items-center gap-3 flex-wrap mt-3">
-          <TextLink href={DDBJ_ACCOUNT_URL} external>{labels.register}</TextLink>
+          <Button kind="accent" size="sm" onClick={() => openExternal(DDBJ_ACCOUNT_URL)}>
+            {labels.register}
+            <ExternalIcon size={14} aria-hidden />
+          </Button>
           <Button kind="secondary" size="sm" onClick={navigateToLogin}>
-            <span className="inline-flex items-center gap-1.5">
-              <UserIcon size={14} aria-hidden />
-              {labels.login}
-            </span>
+            <UserIcon size={14} aria-hidden />
+            {labels.login}
           </Button>
         </div>
       </div>

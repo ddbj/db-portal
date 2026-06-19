@@ -1,15 +1,15 @@
 import { expect, test } from "./helpers"
 
-const enterMode = /AI モード|AI mode/
-const assistantInput = /AI 検索アシスタントへの入力|AI search assistant input/
+const enterMode = /AI クエリビルダー|AI Query Builder/
+const assistantInput = /AI クエリビルダーへの入力|AI Query Builder input/
 const keywordInput = /検索キーワード|Search keywords/
 const generateError = /クエリの生成に失敗しました|Could not generate a query/
 const retryGeneration = /再試行|Try again/
 const fieldSelector = /検索フィールド|Search field/
-const proposalHeading = /AI による生成結果|AI-generated query/
+const proposalHeading = /AI クエリビルダーの生成結果|AI Query Builder result/
 
 test.describe("LLM Domain", () => {
-  test("S-LLM-02: /api/llm/health が ok のとき AI モードトグルが表示される", async ({ page }) => {
+  test("S-LLM-02: /api/llm/health が ok のとき AI クエリビルダートグルが表示される", async ({ page }) => {
     const health = await page.request.get("/api/llm/health")
     expect(health.status()).toBe(200)
     expect(health.headers()["cache-control"]).toContain("no-store")
@@ -131,7 +131,7 @@ test.describe("LLM Domain", () => {
     expect(await rows.count()).toBeGreaterThanOrEqual(1)
   })
 
-  test("E-LLM-01: health=unreachable のとき AI モードトグルは表示される (送信時のみ失敗)", async ({ page }) => {
+  test("E-LLM-01: health=unreachable のとき AI クエリビルダートグルは表示される (送信時のみ失敗)", async ({ page }) => {
     await page.route("**/api/llm/health", (route) =>
       route.fulfill({
         status: 200,

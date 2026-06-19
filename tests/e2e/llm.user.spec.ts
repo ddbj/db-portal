@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
-const aiInputName = /AI 検索アシスタントへの入力|AI search assistant input/i
-const proposalName = /AI による生成結果|AI-generated query/i
+const aiInputName = /AI クエリビルダーへの入力|AI Query Builder input/i
+const proposalName = /AI クエリビルダーの生成結果|AI Query Builder result/i
 
 // AI 生成は vLLM の生成揺れ/timeout に依存しないよう health=ok と SSE(done) を
 // page.route で mock 固定する (llm.spec.ts の E-LLM-* と同流儀)。
@@ -26,11 +26,11 @@ const mockLlm = async (page: Page): Promise<void> => {
 }
 
 test.describe("LLM Domain (authenticated)", () => {
-  test("S-LLM-01: /search で AI モード生成 → proposal が in-place 表示される", async ({ page }) => {
+  test("S-LLM-01: /search で AI クエリビルダー生成 → proposal が in-place 表示される", async ({ page }) => {
     await mockLlm(page)
     await page.goto("/search")
 
-    const toggle = page.getByRole("button", { name: /AI モード|AI mode/i })
+    const toggle = page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/i })
     await expect(toggle).toBeVisible({ timeout: 10_000 })
     await expect(toggle).toHaveAttribute("aria-pressed", "false")
 
@@ -62,7 +62,7 @@ test.describe("LLM Domain (authenticated)", () => {
     await mockLlm(page)
     await page.goto("/search")
 
-    const toggle = page.getByRole("button", { name: /AI モード|AI mode/i })
+    const toggle = page.getByRole("button", { name: /AI クエリビルダー|AI Query Builder/i })
     await expect(toggle).toBeVisible({ timeout: 10_000 })
     await toggle.click()
     await expect(toggle).toHaveAttribute("aria-pressed", "true")

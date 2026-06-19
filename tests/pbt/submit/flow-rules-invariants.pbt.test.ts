@@ -174,7 +174,7 @@ test.prop([arbSubmission], RUNS)(
   (submission) => {
     const steps = deriveFlowSteps(submission)
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
-    const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
+    const isSpatial = (k: string) => k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
       if (!isActive(submission, e)) continue
@@ -193,7 +193,7 @@ test.prop([arbSubmission], RUNS)(
     const geaIds = entryIdsOfService(steps, (s) => s.service === "gea")
     const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
-    const isSpatial = (k: string) => k === "spatial-image" || k === "spatial-transcriptomics"
+    const isSpatial = (k: string) => k === "spatial-transcriptomics"
     for (const e of submission.fileEntries) {
       if (!isSpatial(e.fileTypeKind)) continue
       if (!isActive(submission, e)) continue

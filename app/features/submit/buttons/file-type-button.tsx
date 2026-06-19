@@ -6,7 +6,6 @@ import { FileTypeIcon } from "../components/file-type-icon"
 type FileTypeButtonProps = {
   fileTypeKind: FileTypeKind
   label: string
-  hint: string
   selected: boolean
   disabled?: boolean
   conflict?: boolean
@@ -18,7 +17,6 @@ type FileTypeButtonProps = {
 export const FileTypeButton = ({
   fileTypeKind,
   label,
-  hint,
   selected,
   disabled,
   conflict,
@@ -33,7 +31,7 @@ export const FileTypeButton = ({
     aria-pressed={selected}
     disabled={disabled}
     onClick={onClick}
-    title={conflict ? conflictReason : disabled ? disabledReason : hint}
+    title={conflict ? conflictReason : disabled ? disabledReason : undefined}
   >
     <span className="text-brand-deep shrink-0 inline-flex items-center">
       <FileTypeIcon fileTypeKind={fileTypeKind} size={20} />

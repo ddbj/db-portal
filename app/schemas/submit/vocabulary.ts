@@ -8,7 +8,6 @@ export const FileTypeKind = z.enum([
   "expression-matrix",
   "microarray-expression",
   "spatial-transcriptomics",
-  "spatial-image",
   "metabolomics",
   "proteome",
 ])
@@ -61,6 +60,7 @@ export type DataForm = z.infer<typeof DataForm>
 export const ChipAxis = z.enum([
   "assembly-form",
   "tpa",
+  "small-scale",
   "spatial-platform",
 ])
 export type ChipAxis = z.infer<typeof ChipAxis>
@@ -79,7 +79,6 @@ export const TYPICAL_DATA_FORM_FOR_KIND: Readonly<Record<FileTypeKind, DataForm>
   "expression-matrix": "matrix",
   "microarray-expression": "matrix",
   "spatial-transcriptomics": "matrix",
-  "spatial-image": "image",
   "metabolomics": "spectrum",
   "proteome": "spectrum",
 }
@@ -92,7 +91,6 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
   "expression-matrix": "single",
   "microarray-expression": "mage-tab",
   "spatial-transcriptomics": "single",
-  "spatial-image": "single",
   "metabolomics": "single",
   "proteome": "single",
 }
@@ -100,6 +98,7 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
   "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
   "tpa": ["true"],
+  "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
 }
 

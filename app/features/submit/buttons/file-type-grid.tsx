@@ -6,7 +6,6 @@ import { FileTypeButton } from "./file-type-button"
 type FileTypeGridProps = {
   onToggle: (fileTypeKind: FileTypeKind) => void
   getLabel: (fileTypeKind: FileTypeKind) => string
-  getHint: (fileTypeKind: FileTypeKind) => string
   isSelected: (fileTypeKind: FileTypeKind) => boolean
   isEnabled: (fileTypeKind: FileTypeKind) => boolean
   disabledReason: string
@@ -16,7 +15,6 @@ type FileTypeGridProps = {
 export const FileTypeGrid = ({
   onToggle,
   getLabel,
-  getHint,
   isSelected,
   isEnabled,
   disabledReason,
@@ -33,7 +31,6 @@ export const FileTypeGrid = ({
           key={kind}
           fileTypeKind={kind}
           label={getLabel(kind)}
-          hint={getHint(kind)}
           selected={selected}
           // disable は「新規選択」だけをブロックする。選択済みは conflict でも解除できるよう clickable に保つ
           disabled={!enabled && !selected}

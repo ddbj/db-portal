@@ -19,7 +19,7 @@ URL は lang 中立 (cookie で言語が決まる、`i18n.md` 参照)。
 | URL | route file | 役割 |
 |---|---|---|
 | `/` | `routes/top/route.tsx` | トップ (hero 検索 + サービス tile + Services list + News aside) |
-| `/search` | `routes/search/route.tsx` | クエリビルダー / AI アシスタント / 検索条件構築 |
+| `/search` | `routes/search/route.tsx` | クエリビルダー / AI クエリビルダー / 検索条件構築 |
 | `/search/results` | `routes/search-results/route.tsx` | cross-DB / per-DB の検索結果 |
 | `/submit` | `routes/submit/route.tsx` | 登録ナビ (テーブル + FlowStep カード + modal) |
 | `/news` | `routes/news/route.tsx` | ニュース一覧 + facet panel |
@@ -250,7 +250,7 @@ session store は logout 時の `id_token_hint` 用 idToken・ユーザー情報
 [Server] vLLM へ pass-through (検証済み結果のみ: event: done / error、`llm.md`)
 ```
 
-vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/llm/health` が `{status:"unset"}` を返し、UI 側で AI アシスタント機能を非表示にする。
+vLLM 接続情報 (`DB_PORTAL_LLM_BASE_URL`) が空の dev 環境では `/api/llm/health` が `{status:"unset"}` を返し、UI 側で AI クエリビルダー機能を非表示にする。
 
 ## テストの位置付け
 

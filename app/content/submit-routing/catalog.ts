@@ -82,13 +82,22 @@ const catalogData = {
           },
         },
         {
-          when: { always: true },
+          when: { anyChip: { axis: "small-scale", value: "true" } },
           emit: {
             service: "nsss",
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.nsss.intro" },
-              { kind: "info", messageKey: "submit.nsss.specialToMss" },
+            ],
+          },
+        },
+        {
+          when: { always: true },
+          emit: {
+            service: "ddbj",
+            scope: "entry",
+            notes: [
+              { kind: "info", messageKey: "submit.ddbj.mss.intro" },
             ],
           },
         },
@@ -204,30 +213,6 @@ const catalogData = {
                   ],
                 },
               },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: "spatial-image",
-      candidateRepos: ["gea", "dra", "jga"],
-      rules: [
-        {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
-          emit: {
-            service: "jga",
-            scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
-          },
-        },
-        {
-          when: { always: true },
-          emit: {
-            service: "gea",
-            scope: "group",
-            notes: [
-              { kind: "info", messageKey: "submit.gea.spatialImage.intro" },
               {
                 kind: "warning",
                 messageKey: "submit.gea.spatialImage.largeImageGeneralist",

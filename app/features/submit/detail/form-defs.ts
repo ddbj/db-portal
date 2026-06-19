@@ -76,6 +76,20 @@ const sequenceDef: RowFormDef = {
         },
       ],
     },
+    {
+      id: "small-scale",
+      num: "3.",
+      labelKey: "submit.detail.formGroupLabels.smallScale",
+      kind: "check",
+      options: [
+        {
+          value: "small-scale",
+          labelKey: "submit.detail.options.sequenceNucleotide.smallScale.label",
+          subKey: "submit.detail.options.sequenceNucleotide.smallScale.sub",
+          effect: { chipAdd: { axis: "small-scale", value: "true" } },
+        },
+      ],
+    },
   ],
 }
 
@@ -116,31 +130,6 @@ const spatialTranscriptomicsDef: RowFormDef = {
   ],
 }
 
-const spatialImageDef: RowFormDef = {
-  groups: [
-    {
-      id: "platform",
-      num: "1.",
-      labelKey: "submit.detail.formGroupLabels.platform",
-      kind: "radio",
-      options: [
-        {
-          value: "visium",
-          labelKey: "submit.detail.options.spatialImage.visium.label",
-          subKey: "submit.detail.options.spatialImage.visium.sub",
-          effect: { chipAdd: { axis: "spatial-platform", value: "visium" } },
-        },
-        {
-          value: "merfish",
-          labelKey: "submit.detail.options.spatialImage.merfish.label",
-          subKey: "submit.detail.options.spatialImage.merfish.sub",
-          effect: { chipAdd: { axis: "spatial-platform", value: "merfish" } },
-        },
-      ],
-    },
-  ],
-}
-
 export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "sequence-read": EMPTY_DEF,
   "sequence": sequenceDef,
@@ -148,7 +137,6 @@ export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "expression-matrix": EMPTY_DEF,
   "microarray-expression": EMPTY_DEF,
   "spatial-transcriptomics": spatialTranscriptomicsDef,
-  "spatial-image": spatialImageDef,
   "metabolomics": EMPTY_DEF,
   "proteome": EMPTY_DEF,
 }

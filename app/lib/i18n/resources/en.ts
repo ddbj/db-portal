@@ -197,6 +197,7 @@ export const en: Resources = {
       formGroupLabels: {
         form: "Data form",
         tpa: "TPA (Third Party Annotation)",
+        smallScale: "Submission scale",
         target: "Target",
         platform: "Platform",
         domain: "Domain",
@@ -207,6 +208,7 @@ export const en: Resources = {
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
           tpa: { label: "Submit as TPA", sub: "Sequence and annotation based on third-party data" },
+          smallScale: { label: "Small number of short sequences", sub: "Submit via NSSS (web form) instead of MSS (bulk file submission)" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "With sequence", sub: "Paired with a nucleotide sequence" },
@@ -218,10 +220,6 @@ export const en: Resources = {
           merfish: { label: "MERFISH", sub: "MERFISH (Microarray, no DRA)" },
           stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq (Sequencing + DRA two-step)" },
         },
-        spatialImage: {
-          visium: { label: "Visium", sub: "Visium tissue image" },
-          merfish: { label: "MERFISH", sub: "Large imaging-based dataset" },
-        },
         massSpectrometry: {
           metabolomics: { label: "Metabolomics", sub: "Small-molecule mass spectrometry" },
           proteomics: { label: "Proteomics", sub: "Protein mass spectrometry" },
@@ -232,15 +230,14 @@ export const en: Resources = {
       fileCount: "{{count}} files",
     },
     fileType: {
-      "sequence-read": { label: "Sequence reads", hint: "Raw sequencing reads from a run." },
-      "sequence": { label: "Nucleotide sequences", hint: "Assembled nucleotide sequences and annotations." },
-      "variant": { label: "Variants", hint: "Variant calls against a reference genome." },
-      "expression-matrix": { label: "Expression matrix", hint: "Gene expression quantification matrix." },
-      "microarray-expression": { label: "Microarray", hint: "Microarray-based measurements including expression, SNP genotyping, and methylation." },
-      "spatial-transcriptomics": { label: "Spatial transcriptomics", hint: "Expression with spatial coordinates." },
-      "spatial-image": { label: "Spatial Tx tissue image", hint: "Tissue section image (e.g. H&E stain) from a spatial transcriptomics experiment." },
-      "metabolomics": { label: "Metabolomics", hint: "Mass spectrometry, NMR, and metabolite assignment." },
-      "proteome": { label: "Proteome", hint: "Proteomics data including non-MS approaches." },
+      "sequence-read": "Sequence reads",
+      "sequence": "Nucleotide sequences",
+      "variant": "Variants",
+      "expression-matrix": "Expression matrix",
+      "microarray-expression": "Microarray",
+      "spatial-transcriptomics": "Spatial transcriptomics",
+      "metabolomics": "Metabolomics",
+      "proteome": "Proteome",
     },
     access: {
       "heading": "Access level",
@@ -327,6 +324,9 @@ export const en: Resources = {
       sag: {
         misagPackage: "SAGs are handled with the MISAG package, separate from MAGs.",
       },
+      mss: {
+        intro: "Nucleotide sequences are submitted through DDBJ (MSS: Mass Submission System).",
+      },
       tpa: {
         intro: "Third-party (TPA) sequences and annotation are accepted through DDBJ (MSS).",
         primaryAccessionRequired: "A TPA submission must cite the source INSDC accession it is based on.",
@@ -411,6 +411,9 @@ export const en: Resources = {
       dra: {
         raw: "Sequencing-based platforms (Visium / Stereo-seq) deposit their raw reads to DRA before the processed data goes to GEA (DRA + GEA two-step).",
       },
+    },
+    sequenceDra: {
+      raw: "MAG / SAG / primary / binned assemblies require the underlying raw reads to be deposited in DRA.",
     },
     validations: {
       heading: "{{count}} things to check",
@@ -638,7 +641,7 @@ export const en: Resources = {
       retry: "Retry",
     },
     assistant: {
-      heading: "AI search assistant",
+      heading: "AI Query Builder",
       description: "Describe your need in natural language; the assistant proposes query builder conditions.",
       descriptionNew: "Describe it in natural language and get a fresh query suggestion.",
       descriptionAppend: "Describe it in natural language to get conditions added to your current {{count}}.",
@@ -657,13 +660,13 @@ export const en: Resources = {
       ],
       generate: "Generate suggestions",
       generating: "Generating…",
-      proposalHeading: "AI-generated query",
+      proposalHeading: "AI Query Builder result",
       proposalLabel: "Proposal",
       proposalDescription: "Please review the suggested conditions",
       apply: "Add to query builder",
       reset: "Start over",
       regenerate: "Regenerate",
-      enterMode: "AI mode",
+      enterMode: "AI Query Builder",
       generateShort: "Generate",
       modeGroupLabel: "Generation mode",
       modeNew: "Generate new",
@@ -701,7 +704,7 @@ export const en: Resources = {
       facetGroup: "Facet",
       queryPreview: "Query preview",
       resultsRegion: "Search results",
-      assistantInput: "AI search assistant input",
+      assistantInput: "AI Query Builder input",
       assistantStop: "Stop generating suggestions",
     },
   },

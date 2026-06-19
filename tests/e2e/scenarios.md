@@ -19,7 +19,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 | NEWS | `S-NEWS` / `E-NEWS` | ニュース一覧 |
 | SERVICES | `S-SERVICES` / `E-SERVICES` | サービス一覧 |
 | AUTH | `S-AUTH` / `E-AUTH` | サインイン / サインアウト |
-| LLM | `S-LLM` / `E-LLM` | AI アシスタント |
+| LLM | `S-LLM` / `E-LLM` | AI クエリビルダー |
 | CONTENT | `S-CONTENT` / `E-CONTENT` | データベース解説 |
 | FLOW | `S-FLOW` / `E-FLOW` | 機能横断シナリオ |
 
@@ -63,8 +63,8 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 左 sidebar (`<aside>`) に `search.facets.heading`(「絞り込み」)の `SidebarHeading` と、bioproject scope の filter 行 (`data-testid="facet-organism"` / `facet-objectType` / `text-organization` の facet/text 行と、Date First Published / Date Last Published / Date Submitted の date 行 — date 行は `DateFacet` で `data-testid` を持たないためラベルで参照。`range-*` testid は numberRange を持つ ddbj scope 専用で bioproject には無い) が描画される
   - main 結果領域に `role="region"` + `aria-label="検索結果"` (`search.a11y.resultsRegion`) の wrapper があり、`PerDbResults` の区切り線リストが入る
   - 上部に `NavigableSearchInput` の太い検索ボックス、その下に `SwitchableQueryPreview` (`search.preview.label`「クエリプレビュー」) が出る
-  - **AI 検索アシスタント専用の右ペイン (region) は存在しない**。AI は検索ボックス内の「AI モード」 toggle に集約される (S-SEARCH-11 / E-SEARCH-03 参照)
-- **備考**: 旧版が assert していた「右 pane に AI 検索アシスタント region」 は現行 UI に存在しないため削除。AI は box 内 toggle へ realign。
+  - **AI クエリビルダー専用の右ペイン (region) は存在しない**。AI は検索ボックス内の「AI クエリビルダー」 toggle に集約される (S-SEARCH-11 / E-SEARCH-03 参照)
+- **備考**: 旧版が assert していた「右 pane に AI クエリビルダー region」 は現行 UI に存在しないため削除。AI は box 内 toggle へ realign。
 
 ### S-SEARCH-04: Advanced builder → `?q=` 更新と検索実行 (Organism (TaxID) + Organism name の 2 条件)
 
@@ -164,9 +164,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-USER
 - **前提**: `page.route` で `/api/llm/health`=ok と `/api/llm/search-assistant` の SSE (`event: done`、organism_name leaf) を mock 固定し、`/search/results?q=cancer&db=bioproject` を開く
 - **手順**:
-  1. 検索ボックス内 (`role="search"`) の `AI モード` (`search.assistant.enterMode`) toggle button (`aria-pressed="false"`) をクリック → `aria-pressed="true"` になり box が AI tone に変わる
-  2. AI モードの scope セレクタ (`search.assistant.modeGroupLabel`「生成モード」) で `既存に追加` (`search.assistant.modeAppend`) が選択可能であること (append は `appendCurrentAst = data.ast` が non-identity のとき有効)
-  3. `aria-label="AI 検索アシスタントへの入力"` の input に `2023 年以降に公開されたものに限定する` と入力し、Enter で送信 (NavigableSearchInput の AI モード送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
+  1. 検索ボックス内 (`role="search"`) の `AI クエリビルダー` (`search.assistant.enterMode`) toggle button (`aria-pressed="false"`) をクリック → `aria-pressed="true"` になり box が AI tone に変わる
+  2. AI クエリビルダーの scope セレクタ (`search.assistant.modeGroupLabel`「生成モード」) で `既存に追加` (`search.assistant.modeAppend`) が選択可能であること (append は `appendCurrentAst = data.ast` が non-identity のとき有効)
+  3. `aria-label="AI クエリビルダーへの入力"` の input に `2023 年以降に公開されたものに限定する` と入力し、Enter で送信 (NavigableSearchInput の AI クエリビルダー送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
   4. `page.waitForResponse((r) => r.url().includes("/api/llm/search-assistant") && r.status() === 200)` で SSE 完了を待つ
 - **期待**:
   - `event: done` 後、生成された AST を `serializeAstToDsl` (scope=`bioproject`) で DSL 化し `/search/results` へ `navigate(push)` する
@@ -206,7 +206,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **担保**: `tests/unit/routes/search-results.loader.test.ts` の `crossSearch_networkError_returnsCrossErrorKey` が、`/db-portal/cross-search` 500 → loader が `params.db === null` 経路で catch し `errorKey: "cross"` を返すことを assert。UI 側の warn `Callout` + 再試行 button の描画は E-SEARCH-01 (parse 失敗 Callout) と共通経路。
 - **備考**: cross = `crossSearchFailure` / db = `dbSearchFailure` の文言出し分けは E-SEARCH-04 と対で固定。
 
-### E-SEARCH-03: LLM unset で AI モード toggle が非表示
+### E-SEARCH-03: LLM unset で AI クエリビルダー toggle が非表示
 
 - **ペルソナ**: P-ANON
 - **前提**: `page.route()` で `/api/llm/health` を `{ status: "unset" }` に差し替える (`notes.md §7`、staging で再現できないため intercept)
@@ -214,9 +214,9 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `/search` を開く
   2. `/search/results?q=cancer&db=bioproject` を開く
 - **期待**:
-  - 両画面とも、検索ボックス内に `AI モード` (`search.assistant.enterMode`) toggle button (`aria-pressed` を持つ button) が **0 件** (`useLlmAvailability` が `ready: false` を返し `aiToggle` が `undefined` になる)
+  - 両画面とも、検索ボックス内に `AI クエリビルダー` (`search.assistant.enterMode`) toggle button (`aria-pressed` を持つ button) が **0 件** (`useLlmAvailability` が `ready: false` を返し `aiToggle` が `undefined` になる)
   - キーワードモードの検索ボックス (`aria-label="検索キーワード"` input) は通常通り使え、エラーバナーや placeholder は出ない
-- **備考**: 旧版の「AI 検索アシスタント セクションが DOM に描画されない (`null` return)」 は、現行は独立 region ではなく box 内 toggle の非表示 (`aiToggle === undefined`) に realign。`unreachable` のときは toggle を出し、送信時に SSE error で fail を伝える (`ready: true`)。
+- **備考**: 旧版の「AI クエリビルダー セクションが DOM に描画されない (`null` return)」 は、現行は独立 region ではなく box 内 toggle の非表示 (`aiToggle === undefined`) に realign。`unreachable` のときは toggle を出し、送信時に SSE error で fail を伝える (`ready: true`)。
 
 ### E-SEARCH-04: per-DB search 5xx で errorKey:db の Callout (cross とは別文言)
 
@@ -811,33 +811,33 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 
 ## LLM Domain
 
-AI 補助は独立した region ではなく、検索ボックス内の「AI モード」トグル (`search.assistant.enterMode`、`aria-pressed` を持つ Button) として実装されている。トグルは `/api/llm/health` の状態に応じて `useLlmAvailability` でゲートされ、`unset` のとき非表示、`ok` / `unreachable` のとき表示される (`app/features/search/assistant/llm-availability.ts`)。
+AI 補助は独立した region ではなく、検索ボックス内の「AI クエリビルダー」トグル (`search.assistant.enterMode`、`aria-pressed` を持つ Button) として実装されている。トグルは `/api/llm/health` の状態に応じて `useLlmAvailability` でゲートされ、`unset` のとき非表示、`ok` / `unreachable` のとき表示される (`app/features/search/assistant/llm-availability.ts`)。
 
 入口コンポーネントは 2 系統:
 
 - `/search` の `SearchInputPanel`: 生成結果を in-place の proposal `<section>` で見せ、Apply で Advanced builder に反映する。
 - トップ (`/`) / 結果 (`/search/results`) の `NavigableSearchInput`: proposal を出さず、`event: done` の AST を serialize して `/search/results?q=<DSL>` に遷移する。
 
-AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (`AI 検索アシスタントへの入力` / `AI search assistant input`)。送信ボタンのラベルは入口で異なる: `/search` の `SearchInputPanel` は AI モードで `search.assistant.generateShort` (`生成` / `Generate`)、トップ (`/`) / 結果 (`/search/results`) の `NavigableSearchInput` は AI モードでも `search.a11y.submit` (`検索` / `Search`) のまま (idle 時)。どちらも生成中は `search.assistant.generating` (`生成中…` / `Generating…`) になる。`NavigableSearchInput` 文脈では送信ボタンのラベルに依存せず AI 入力欄で Enter 送信するのが堅牢。エラーは toast ではなく、`NavigableSearchInput` のみ inline の `<p role="alert">` (`search.assistant.generateError`) で表示する。`SearchInputPanel` は error 表示を持たず、AI モードのまま proposal が出ないだけ (keyword には戻らない)。
+AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (`AI クエリビルダーへの入力` / `AI Query Builder input`)。送信ボタンのラベルは入口で異なる: `/search` の `SearchInputPanel` は AI クエリビルダーで `search.assistant.generateShort` (`生成` / `Generate`)、トップ (`/`) / 結果 (`/search/results`) の `NavigableSearchInput` は AI クエリビルダーでも `search.a11y.submit` (`検索` / `Search`) のまま (idle 時)。どちらも生成中は `search.assistant.generating` (`生成中…` / `Generating…`) になる。`NavigableSearchInput` 文脈では送信ボタンのラベルに依存せず AI 入力欄で Enter 送信するのが堅牢。エラーは toast ではなく、`NavigableSearchInput` のみ inline の `<p role="alert">` (`search.assistant.generateError`) で表示する。`SearchInputPanel` は error 表示を持たず、AI クエリビルダーのまま proposal が出ないだけ (keyword には戻らない)。
 
-### S-LLM-01: /search で AI モード生成 → proposal が in-place 表示される
+### S-LLM-01: /search で AI クエリビルダー生成 → proposal が in-place 表示される
 
 - **ペルソナ**: P-USER
 - **前提**: `page.route` で `/api/llm/health`=ok と `/api/llm/search-assistant` の SSE (`event: done`) を mock 固定する
 - **手順**:
   1. `/search` を開く
-  2. 検索ボックス右端の「AI モード」 button (`aria-pressed="false"`) をクリック
-  3. AI 入力欄 (`getByRole("textbox", { name: /AI 検索アシスタントへの入力|AI search assistant input/ })`) に `human breast cancer rna-seq from 2023` を入力
-  4. 送信ボタン (AI モードでは `生成` / `Generate`) をクリック
+  2. 検索ボックス右端の「AI クエリビルダー」 button (`aria-pressed="false"`) をクリック
+  3. AI 入力欄 (`getByRole("textbox", { name: /AI クエリビルダーへの入力|AI Query Builder input/ })`) に `human breast cancer rna-seq from 2023` を入力
+  4. 送信ボタン (AI クエリビルダーでは `生成` / `Generate`) をクリック
 - **期待**:
-  - 「AI モード」 button が `aria-pressed="true"` に変わり、ボックスが AI tone (`tone="ai"`) になる
+  - 「AI クエリビルダー」 button が `aria-pressed="true"` に変わり、ボックスが AI tone (`tone="ai"`) になる
   - `/api/llm/search-assistant` への POST が `200` を返し、`Content-Type: text/event-stream` で SSE が流れる (`event: message` 連続 → `event: done`)
   - 生成中は送信ボタンが `生成中…` / `Generating…` になり、「提案の生成を停止」 button (`search.a11y.assistantStop`) が表示される
-  - 完了後、proposal `<section>` (`getByRole("region", { name: /AI による生成結果|AI-generated query/ })`、見出しは `h2`) が描画され、`ProposalConditions` に条件が並ぶ
+  - 完了後、proposal `<section>` (`getByRole("region", { name: /AI クエリビルダーの生成結果|AI Query Builder result/ })`、見出しは `h2`) が描画され、`ProposalConditions` に条件が並ぶ
   - 「クエリビルダーに追加」 / 「この内容で作成」 button と「再生成」 button が表示される
 - **備考**: SSE を mock 固定するため vLLM 非依存で決定的 (health-gate skip なし)。SearchInputPanel は `done` で proposal を in-place 描画する (NavigableSearchInput と違い navigate しない)。
 
-### S-LLM-02: /api/llm/health が ok のとき AI モードトグルが表示される
+### S-LLM-02: /api/llm/health が ok のとき AI クエリビルダートグルが表示される
 
 - **ペルソナ**: P-ANON
 - **前提**: `/api/llm/health` が `{status:"ok",model}` を返す環境
@@ -846,7 +846,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   2. `/search` を開く
 - **期待**:
   - `/api/llm/health` が `200` で `{ status: "ok", model: <string> }` を返し、`Cache-Control: no-store` ヘッダが付く
-  - 検索ボックス内に「AI モード」 button (`getByRole("button", { name: /AI モード|AI mode/ })`、初期 `aria-pressed="false"`) が `visible`
+  - 検索ボックス内に「AI クエリビルダー」 button (`getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ })`、初期 `aria-pressed="false"`) が `visible`
   - 押下すると `aria-pressed="true"` に変わり、AI 入力欄が現れる
 - **備考**: health-gated。staging vLLM 到達時のみ `ok` になる。到達不可時は E-LLM-04 の `unreachable` パスで表示確認する。
 
@@ -855,14 +855,14 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`、organism_name leaf) を mock 固定。`/search` を開き、Advanced builder は空 (keyword 行なし、`root.children` 0 件) の初期状態
 - **手順**:
-  1. 「AI モード」 button をクリックして AI モードに入る
+  1. 「AI クエリビルダー」 button をクリックして AI クエリビルダーに入る
   2. AI 入力欄に `Homo sapiens single cell published between 2022 and 2024` を入力し、`生成` をクリック
   3. proposal `<section>` が表示されるのを待つ
   4. 「この内容で作成」 button (`search.assistant.applyReplace`、空 builder なので生成モードは `new`) をクリック
 - **期待**:
   - 生成モードが `new` のため、scope セレクタの「既存に追加」 (`search.assistant.modeAppend`) は `disabledScopeOptions` で無効表示
   - `event: done` の AST が `dispatch({ type: "replaceRoot" })` で Advanced builder に反映され、proposal が条件として並んだ通りに builder 行が描画される
-  - Apply 後、モードが keyword に戻り (「AI モード」 button が `aria-pressed="false"`)、AI 入力欄が消える
+  - Apply 後、モードが keyword に戻り (「AI クエリビルダー」 button が `aria-pressed="false"`)、AI 入力欄が消える
   - keyword 行は `new` モードのためクリアされる
 - **備考**: SSE を mock 固定するため決定的 (health-gate skip なし)。done AST は固定値だが、行の存在・件数 (`>= 1`) と builder への反映有無のみ assert し、特定 field/value への厳密一致は assert しない (mock 値に過度に結合しない)。
 
@@ -871,26 +871,26 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`、`organism_name` leaf + top-level `free_text` フレーズの AND) を mock 固定。`/search` を空 builder で開く
 - **手順**:
-  1. 「AI モード」 button をクリックして AI モードに入る
+  1. 「AI クエリビルダー」 button をクリックして AI クエリビルダーに入る
   2. AI 入力欄に prompt を入力し、`生成` をクリック
   3. proposal `<section>` が表示されるのを待つ
   4. 「この内容で作成」 button (`search.assistant.applyReplace`、空 builder なので生成モードは `new`) をクリック
 - **期待**:
-  - Apply 後、モードが keyword に戻る (「AI モード」 button が `aria-pressed="false"`)
+  - Apply 後、モードが keyword に戻る (「AI クエリビルダー」 button が `aria-pressed="false"`)
   - 上部キーワードボックス (`search.a11y.input`「検索キーワード」) に top-level free_text が phrase 再クオートで載る (`"single-cell RNA-seq"`)。Advanced builder は `free_text` leaf を表現できないため、`?q=` 復元と同じ `splitFreeText` 経路でキーワードボックスへ振り分ける (`new` はキーワードを置換)
   - 構造化 leaf (organism_name) は Advanced builder の行 (`検索フィールド` combobox >= 1 件) として残る
 - **備考**: free_text を含む proposal の Apply 経路を固定する (S-LLM-03 は free_text を含まない proposal で builder 再構築のみを見るため、生成キーワードの取りこぼしを検出できない)。SSE mock 固定で決定的。
 
-### E-LLM-01: health=unreachable のとき AI モードトグルは表示される (送信時のみ失敗)
+### E-LLM-01: health=unreachable のとき AI クエリビルダートグルは表示される (送信時のみ失敗)
 
 - **ペルソナ**: P-ANON
 - **前提**: `page.route("**/api/llm/health", ...)` で `{ status: "unreachable", reason: "status 503" }` を返すよう intercept (staging で vLLM 停止を再現できないため、notes.md §7 のとおり health レスポンスを route mock で差し替える)
 - **手順**:
   1. `/search` を開く
 - **期待**:
-  - `llmAvailabilityFromHealth` が `unreachable` → `ready: true` を返すため、「AI モード」 button (`getByRole("button", { name: /AI モード|AI mode/ })`) が `visible`
+  - `llmAvailabilityFromHealth` が `unreachable` → `ready: true` を返すため、「AI クエリビルダー」 button (`getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ })`) が `visible`
   - 送信前にエラーバナーや placeholder は出ない (機能は表示されたまま)
-  - トグルを押して AI モードに入り送信すると `event: error` 経路で失敗が通知される (詳細は E-LLM-03)
+  - トグルを押して AI クエリビルダーに入り送信すると `event: error` 経路で失敗が通知される (詳細は E-LLM-03)
 - **備考**: `unset` との差を E-LLM-04 で区別する。route mock は外部境界 mock の一種で、staging 再現不可の health 状態のみ許容 (notes.md §7)。
 
 ### E-LLM-02: SSE 切断で inline alert + 入力欄保持
@@ -899,7 +899,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route("**/api/llm/health", ...)` で `{status:"ok",model:"e2e"}`、`page.route("**/api/llm/search-assistant", ...)` で `event: error` を 1 件流して接続を閉じる SSE レスポンスを返す
 - **手順**:
   1. `/search/results?q=cancer&db=bioproject` を開く (NavigableSearchInput がマウントされる)
-  2. 「AI モード」 button をクリック
+  2. 「AI クエリビルダー」 button をクリック
   3. AI 入力欄に `breast cancer rna-seq` を入力し、Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - `useAssistantStream` が `event: error` を受信し state が `error` になる
@@ -907,7 +907,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - AI 入力欄に `breast cancer rna-seq` が残る (内容ロストしない)
   - `/search/results` から遷移しない (URL 不変)
   - toast component は DOM に存在しない (実装に toast は無い)
-- **備考**: `page.route()` で response を途中切断する (notes.md §7 の E-LLM-02 再現方法)。NavigableSearchInput のみ inline alert を描画する (SearchInputPanel は error 表示を持たず、AI モードのまま proposal を出さないだけ; keyword には戻らない)。
+- **備考**: `page.route()` で response を途中切断する (notes.md §7 の E-LLM-02 再現方法)。NavigableSearchInput のみ inline alert を描画する (SearchInputPanel は error 表示を持たず、AI クエリビルダーのまま proposal を出さないだけ; keyword には戻らない)。
 
 ### E-LLM-03: event:error が UI に inline alert として届き入力が保持される
 
@@ -915,7 +915,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route` で health=`{status:"ok",model:"e2e"}`、`/api/llm/search-assistant` を `200 text/event-stream` で `: stream-open` → `event: error\ndata: {"code":"upstream-disconnect","message":"stream interrupted"}` を流すレスポンスに固定
 - **手順**:
   1. `/` を開く (トップ hero の NavigableSearchInput)
-  2. 「AI モード」 button をクリックして AI モードに入る
+  2. 「AI クエリビルダー」 button をクリックして AI クエリビルダーに入る
   3. AI 入力欄に `single cell human pancreas` を入力し、Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - SSE は `200` だが `event: error` を含むため state が `error` に遷移し、proposal は出ず `/search/results` へ遷移しない (URL は `/`)
@@ -932,7 +932,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   1. health=`{status:"unset"}` に固定して `/search` を開く
   2. health=`{status:"unreachable",reason:"status 503"}` に差し替えて `/search` を reload する
 - **期待**:
-  - `unset` のとき「AI モード」 button が DOM に存在しない (`getByRole("button", { name: /AI モード|AI mode/ }).count()` が `0`)。`useLlmAvailability` が `ready: false` を返すため `aiToggle` が `undefined`
+  - `unset` のとき「AI クエリビルダー」 button が DOM に存在しない (`getByRole("button", { name: /AI クエリビルダー|AI Query Builder/ }).count()` が `0`)。`useLlmAvailability` が `ready: false` を返すため `aiToggle` が `undefined`
   - `unset` のときエラーバナーや placeholder は出ず、検索ボックスは通常の keyword 入力として機能する
   - `unreachable` のとき同 button が `visible` (`ready: true`)
 - **備考**: 既存の region 名 locator では両状態を区別できなかった。トグルの有無で `unset` (非表示) と `unreachable` (表示) の契約差を直接検証する。
@@ -943,9 +943,9 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route` で health=`{status:"ok",model:"e2e"}`、`/api/llm/search-assistant` を複数の `event: message` delta + `event: done\ndata: <AST JSON>` を流す `200` SSE に固定。AST は `{"op":"contains","field":"organism_name","value":"Homo sapiens"}` 相当
 - **手順**:
   1. `/` を開く
-  2. 「AI モード」 button をクリックし、AI 入力欄に `human samples` を入力して Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
+  2. 「AI クエリビルダー」 button をクリックし、AI 入力欄に `human samples` を入力して Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
-  - 生成中は送信ボタンが `生成中…` になり、`event: message` delta が来ても proposal `<section>` (`AI による生成結果`) は描画されない (NavigableSearchInput は preview を持たない)
+  - 生成中は送信ボタンが `生成中…` になり、`event: message` delta が来ても proposal `<section>` (`AI クエリビルダーの生成結果`) は描画されない (NavigableSearchInput は preview を持たない)
   - `event: done` 受信後、`/db-portal/serialize` で AST を DSL に直し、URL が `/search/results?q=<serialized DSL>` に遷移する (`q` パラメータが非空)
   - 遷移後 AI 入力欄はクリアされ、モードは keyword に戻る
 - **備考**: SearchInputPanel (S-LLM-03) の in-place Apply とは別の done パス。serialize は `/db-portal/serialize` への到達が必要なため、health route-mock 時も ddbj-search-api staging 到達を前提とする。
@@ -956,7 +956,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: `page.route` で health=`{status:"ok",model:"e2e"}`、`/api/llm/search-assistant` を `429` JSON `{ "error": "rate_limited", "axis": "ip" }` + `Retry-After: 30` を返すよう固定 (SSE は開かない)
 - **手順**:
   1. `/search/results?q=cancer` を開く
-  2. 「AI モード」 button → AI 入力欄に `lung cancer` を入力 → Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
+  2. 「AI クエリビルダー」 button → AI 入力欄に `lung cancer` を入力 → Enter で送信 (NavigableSearchInput の送信ボタンは `search.a11y.submit`「検索」、生成中のみ「生成中…」)
 - **期待**:
   - レスポンスが `429`、`Retry-After: 30`、body `{ error: "rate_limited", axis: "ip" }`、`Content-Type` は `text/event-stream` ではない
   - `useAssistantStream` は `!response.ok` で state を `error` にするため、ボックス直下に inline `<p role="alert">` (`search.assistant.generateError`) が出る
@@ -968,7 +968,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-USER
 - **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`) を mock 固定する
 - **手順**:
-  1. `/search` を開き「AI モード」に入る
+  1. `/search` を開き「AI クエリビルダー」に入る
   2. AI 入力欄に email / 電話番号を含む文 (例: `contact me at user@example.com about human cancer rna-seq`) を入力し `生成` をクリック
 - **期待**:
   - PII を含む prompt でも生成は完了し (mock SSE が `event: done` を返す)、proposal `<section>` が描画される
@@ -1074,25 +1074,25 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - エラーバナー (`role="alert"`) は出ない
 - **備考**: staging で mirror 空を再現できないため `page.route()` で `/api/news` を境界 mock する (notes.md §7)。BFF の本物契約破壊は unit + msw 側で主に検証。
 
-### E-TOP-02: LLM unavailable のとき hero に AI モードトグルが現れない
+### E-TOP-02: LLM unavailable のとき hero に AI クエリビルダートグルが現れない
 
 - **ペルソナ**: P-ANON
 - **前提**: `/api/llm/health` が `{ status: "unset" }` を返す環境 (`DB_PORTAL_LLM_BASE_URL` 未設定)、staging で再現できない場合は `page.route()` で `/api/llm/health` を `{ status: "unset" }` に差し替える
 - **手順**:
   1. `/` を訪問
 - **期待**:
-  - hero に keyword 検索入力のみが表示され、「AI モード」 トグルボタン (`aria-pressed` を持つ Button) が DOM に存在しない (`useLlmAvailability().ready === false`)
+  - hero に keyword 検索入力のみが表示され、「AI クエリビルダー」 トグルボタン (`aria-pressed` を持つ Button) が DOM に存在しない (`useLlmAvailability().ready === false`)
   - placeholder は keyword 用「キーワード、accession、学名で検索」 のまま
   - エラーバナー / placeholder メッセージは出ない (機能の存在自体を隠す)
 - **備考**: `ready` は health `ok` / `unreachable` で true、`unset` で false。staging が `ok` 固定の場合は `page.route()` で health を `unset` に固定して再現する (health-gated)。
 
-### E-TOP-03: hero AI モード generate → serialize → 結果ページ遷移
+### E-TOP-03: hero AI クエリビルダー generate → serialize → 結果ページ遷移
 
 - **ペルソナ**: P-USER
 - **前提**: `page.route` で `/api/llm/health`=ok と SSE (`event: done`) を mock 固定。ddbj-search-api `/serialize` + 検索は実物 (到達可能)
 - **手順**:
   1. `/` を訪問
-  2. hero の「AI モード」 トグル (`aria-pressed=false`) を click → `aria-pressed=true` に変わる
+  2. hero の「AI クエリビルダー」 トグル (`aria-pressed=false`) を click → `aria-pressed=true` に変わる
   3. AI 入力欄に `human breast cancer rna-seq from 2023` と入力
   4. submit
   5. SSE 完了 (`/api/llm/search-assistant` response 200) と `/serialize` 呼び出しを待つ

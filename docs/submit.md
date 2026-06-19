@@ -274,7 +274,7 @@ emit する FlowStep は「Policy 申請・承認」 (`humandbs`、JGA の前提
 
 発現・空間 Tx の platform が決める GEA Submission Type に応じて、生リード → DRA と processed → GEA の 2 段を構築する。**1 種別が複数 destination に出る**点が特徴で (group 間グラフではなく cross-archive 依存: raw が GEA より先に DRA に要る)、Tier1 の単一 emit に収まらないため Tier2 に置く。
 
-トリガー: `spatial-transcriptomics` / `spatial-image` の種別で `spatial-platform` chip を持つもの。
+トリガー: `spatial-transcriptomics` 種別で `spatial-platform` chip を持つもの。
 
 platform → Submission Type 分類 (`_gea/spatial-gene-expression.md`)。対応 platform 値は `ALLOWED_CHIP_VALUES['spatial-platform']` が SSOT で、Sequencing 系の判定は `isSequencingSpatialPlatform` (`SEQUENCING_SPATIAL_PLATFORMS`) が SSOT:
 
@@ -425,7 +425,7 @@ GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空�
 |---|---|---|---|
 | Visium | Sequencing | 要 (DRA + GEA) | fastq/bam を DRA、GEX matrix 等を GEA |
 | Xenium | Microarray (A-GEAD-246) | 不要 (GEA のみ) | raw も processed も GEA |
-| MERFISH / MERSCOPE | Microarray (A-GEAD-247) | 不要 (GEA のみ) | 大容量画像・.vzg は GEA 受入不可。spatial-image は外部 Generalist archive 誘導 note を付ける (`### spatial`) |
+| MERFISH / MERSCOPE | Microarray (A-GEAD-247) | 不要 (GEA のみ) | 大容量画像・.vzg は GEA 受入不可。MERFISH 選択時に外部 Generalist archive 誘導 warning を表示 |
 | Stereo-seq | (DDBJ 未文書) | 要 (DRA + GEA) | 公式に登録経路の記載なし。`SEQUENCING_SPATIAL_PLATFORMS` に含め Sequencing 扱い (DRA+GEA) とし、根拠は `## 設計判断` に残す |
 
 ### サマリーカードのバッジ色
