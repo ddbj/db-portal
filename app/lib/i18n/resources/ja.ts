@@ -271,6 +271,22 @@ export type Resources = {
       detailLinkLabel: string
       filesHeading: string
       gotchaHeading: string
+      group: {
+        companion: { title: string; sub: string }
+        restricted: { title: string; sub: string }
+        open: { title: string; sub: string }
+        destination: { title: string; sub: string }
+      }
+      accessOverview: {
+        mixed: string
+        mixedSub: string
+        allOpen: string
+        allOpenSub: string
+        allRestricted: string
+        allRestrictedSub: string
+        empty: string
+        emptySub: string
+      }
       "bioproject": { title: string; description: string }
       "biosample": { title: string; description: string }
       "dra": { title: string; description: string }
@@ -862,7 +878,7 @@ export const ja: Resources = {
     },
     access: {
       "heading": "公開区分",
-      "open": "公開",
+      "open": "非制限公開",
       "restricted": "制限公開",
       "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
       "ethicsCompliance": { label: "倫理指針に沿ったヒト研究", sub: "法令や研究倫理指針に沿って実施された研究" },
@@ -886,6 +902,22 @@ export const ja: Resources = {
       detailLinkLabel: "詳細を見る",
       filesHeading: "対象ファイル",
       gotchaHeading: "ポイント",
+      group: {
+        companion: { title: "プロジェクト・試料の情報", sub: "すべての登録で必要" },
+        restricted: { title: "制限公開のデータ", sub: "先に申請が必要" },
+        open: { title: "非制限公開のデータ", sub: "申請は不要" },
+        destination: { title: "登録先", sub: "データ種別ごと" },
+      },
+      accessOverview: {
+        mixed: "このデータは制限公開と非制限公開の両方を含みます",
+        mixedSub: "登録は下の 2 ルートに分かれます。",
+        allOpen: "このデータはすべて非制限公開です",
+        allOpenSub: "申請は不要です。そのまま登録できます。",
+        allRestricted: "このデータはすべて制限公開です",
+        allRestrictedSub: "登録前に Policy 申請が必要です。",
+        empty: "ファイルを追加すると、データ種別ごとの公開区分が表示されます",
+        emptySub: "",
+      },
       "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねるメタデータ" },
       "biosample": { title: "BioSample", description: "サンプルを束ねるメタデータ" },
       "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },

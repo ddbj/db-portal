@@ -40,15 +40,6 @@ const DesignIndex = () => (
           /_design/submit-flow-explorer →
         </Link>
       </li>
-      <li className="border border-border-soft rounded-card p-4 bg-surface">
-        <h2 className="text-fs-h2 font-bold text-ink m-0 mb-2">Submit result summary</h2>
-        <p className="text-ink-mid m-0 mb-3 text-fs-body-sm leading-relaxed">
-          登録ナビ右側の step 一覧を「登録先サマリー」として rich にした案の試作。導出した登録先 (粒度 / 順序 / 確認・前提) を見せる。
-        </p>
-        <Link to="/_design/submit-result-summary" className="text-brand font-semibold no-underline hover:underline">
-          /_design/submit-result-summary →
-        </Link>
-      </li>
     </ul>
   </div>
 )

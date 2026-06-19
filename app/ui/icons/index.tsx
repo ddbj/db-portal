@@ -93,6 +93,20 @@ export const HelpIcon = ({ size = 14, title, ...rest }: IconProps) => (
   </svg>
 )
 
+export const LockClosedIcon = ({ size = 14, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" fill="currentColor" stroke="none" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+)
+
+export const LockOpenIcon = ({ size = 14, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0" />
+  </svg>
+)
+
 export const ArrowLeftIcon = ({ size = 14, title, ...rest }: IconProps) => (
   <svg {...baseProps(size, title)} {...rest}>
     <line x1="20" y1="12" x2="4" y2="12" />

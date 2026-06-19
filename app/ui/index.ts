@@ -23,6 +23,8 @@ export {
   GlobeIcon,
   HelpIcon,
   InfoIcon,
+  LockClosedIcon,
+  LockOpenIcon,
   SearchIcon,
   UserIcon,
 } from "./icons"

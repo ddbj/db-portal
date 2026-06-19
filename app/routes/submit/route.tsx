@@ -16,7 +16,7 @@ import {
 import { pageTitleMeta } from "~/lib/content"
 import { useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q2, Service } from "~/schemas/submit"
-import { Q2 as Q2Enum, serviceRoleTagKey } from "~/schemas/submit"
+import { Q2 as Q2Enum } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
 import { PageTitle, Section, SectionHeading, Toggle } from "~/ui"
 import { cn } from "~/ui/cn"
@@ -38,27 +38,58 @@ const SubmitRoute = () => {
 
   const { fileEntries } = state.submission
   const accessByKind = useMemo(() => {
-    if (q2 === null || fileEntries.length === 0) return new Map<Access, FileTypeKind[]>()
+    if (q2 === null) return new Map<Access, FileTypeKind[]>()
     const map = new Map<Access, FileTypeKind[]>()
     for (const e of fileEntries) {
       const list = map.get(e.access) ?? []
       if (!list.includes(e.fileTypeKind)) list.push(e.fileTypeKind)
       map.set(e.access, list)
     }
-
+    if (fileEntries.length === 0 && q2 === "human") {
+      const { restrictedPreference, ethicsCompliance, publiclyAvailable, microbialAnalysis } = accessSection
+      if (restrictedPreference) {
+        map.set("restricted", [])
+      } else if (ethicsCompliance) {
+        map.set("restricted", [])
+        map.set("open", [])
+      } else if (publiclyAvailable || microbialAnalysis) {
+        map.set("open", [])
+      } else {
+        map.set("restricted", [])
+      }
+    }
     return map
-  }, [q2, fileEntries])
+  }, [q2, fileEntries, accessSection])
   const steps = selectSteps(state)
   const validations = selectValidations(state)
   const { configured, total } = countConfiguredRows(state)
 
-  const countSuffix = t("common.countSuffix")
+  const accessOverview = (() => {
+    if (!isHuman || accessByKind.size === 0) return null
+    const hasRestricted = accessByKind.has("restricted")
+    const hasOpen = accessByKind.has("open")
+    if (hasRestricted && hasOpen) {
+      return { description: t("submit.flow.accessOverview.mixed"), sub: t("submit.flow.accessOverview.mixedSub") }
+    }
+    if (hasRestricted) {
+      return { description: t("submit.flow.accessOverview.allRestricted"), sub: t("submit.flow.accessOverview.allRestrictedSub") }
+    }
+    return { description: t("submit.flow.accessOverview.allOpen"), sub: t("submit.flow.accessOverview.allOpenSub") }
+  })()
+
+  const groupLabels = {
+    companion: { title: t("submit.flow.group.companion.title"), sub: t("submit.flow.group.companion.sub") },
+    restricted: { title: t("submit.flow.group.restricted.title"), sub: t("submit.flow.group.restricted.sub") },
+    open: { title: t("submit.flow.group.open.title"), sub: t("submit.flow.group.open.sub") },
+    destination: { title: t("submit.flow.group.destination.title"), sub: t("submit.flow.group.destination.sub") },
+  }
+
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
   const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}.label`)
   const fileTypeKindHint = (k: FileTypeKind): string => t(`submit.fileType.${k}.hint`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
-  const roleLabel = (s: Service): string => t(`submit.flow.roleTag.${serviceRoleTagKey(s)}`)
+  const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
   const noteKindLabel = (kind: "warning" | "error"): string =>
     kind === "warning" ? t("submit.flow.noteWarning") : t("submit.flow.noteError")
 
@@ -171,22 +202,22 @@ const SubmitRoute = () => {
 
           <div className="flex flex-col gap-6 min-w-0 lg:col-span-6">
             <div>
-              <SectionHeading
-                count={steps.length > 0 ? steps.length : undefined}
-                countSuffix={countSuffix}
-              >
+              <SectionHeading>
                 {t("submit.sections.flow")}
               </SectionHeading>
               <FlowSummaryCard
                 steps={steps}
                 entries={state.submission.fileEntries}
+                isHuman={isHuman}
                 accessByKind={accessByKind}
                 accessHeading={t("submit.access.heading")}
                 accessLabel={(a) => a === "restricted" ? t("submit.access.restricted") : t("submit.access.open")}
+                accessOverview={accessOverview}
+                groupLabels={groupLabels}
                 emptyMessage={t("submit.flow.empty")}
                 serviceTitle={serviceTitle}
+                serviceDescription={serviceDescription}
                 fileTypeKindLabel={fileTypeKindLabel}
-                roleLabel={roleLabel}
                 resolveNote={resolveNote}
                 noteKindLabel={noteKindLabel}
                 externalCtaLabel={t("submit.flow.ctaLabel")}
