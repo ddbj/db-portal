@@ -13,6 +13,7 @@ import {
   TagProgress,
   useSubmitState,
 } from "~/features/submit"
+import { useAuth } from "~/lib/auth"
 import { pageTitleMeta } from "~/lib/content"
 import { useT } from "~/lib/i18n"
 import type { Access, FileTypeKind, Q2, Service } from "~/schemas/submit"
@@ -31,6 +32,7 @@ export const meta = pageTitleMeta
 
 const SubmitRoute = () => {
   const t = useT()
+  const auth = useAuth()
   const { state, actions } = useSubmitState()
   const { q2 } = state.submission.preconditions
   const { accessSection } = state.submission
@@ -209,12 +211,18 @@ const SubmitRoute = () => {
                 steps={steps}
                 entries={state.submission.fileEntries}
                 isHuman={isHuman}
+                isAuthenticated={auth.status === "authenticated"}
                 accessByKind={accessByKind}
                 accessHeading={t("submit.access.heading")}
                 accessLabel={(a) => a === "restricted" ? t("submit.access.restricted") : t("submit.access.open")}
                 accessOverview={accessOverview}
                 groupLabels={groupLabels}
-                emptyMessage={t("submit.flow.empty")}
+                accountLabels={{
+                  title: t("submit.flow.account.title"),
+                  description: t("submit.flow.account.description"),
+                  register: t("submit.flow.account.register"),
+                  login: t("submit.flow.account.login"),
+                }}
                 serviceTitle={serviceTitle}
                 serviceDescription={serviceDescription}
                 fileTypeKindLabel={fileTypeKindLabel}

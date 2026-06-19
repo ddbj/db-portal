@@ -56,7 +56,7 @@ export const DataDetailPanel = ({
             className="border border-border-soft rounded-card bg-surface px-4 py-3.5 flex flex-col gap-3 [&_fieldset]:mb-0"
           >
             <div className="flex items-center gap-2 flex-wrap">
-              <Tag kind="tag" size="sm">{labels.fileTypeKindLabel(entry.fileTypeKind)}</Tag>
+              <Tag kind="brand" size="sm">{labels.fileTypeKindLabel(entry.fileTypeKind)}</Tag>
               <span className="ml-auto shrink-0">
                 {configured
                   ? (

@@ -247,11 +247,11 @@ export const en: Resources = {
       "open": "Unrestricted",
       "restricted": "Restricted",
       "restrictedPreference": { label: "Prefer restricted access", sub: "Sharing among researchers approved through a review process" },
-      "ethicsCompliance": { label: "Human research under ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
-      "publiclyAvailable": { label: "Analysis of publicly available specimens", sub: "Analysis of specimens with established academic value and wide availability" },
-      "microbialAnalysis": { label: "Microbial analysis (human sequences removed)", sub: "Analysis of microbes or viruses isolated from the human body, with human sequences removed" },
+      "ethicsCompliance": { label: "Research under laws and ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
+      "publiclyAvailable": { label: "Publicly available specimens", sub: "Analysis of commercially or publicly available specimens" },
+      "microbialAnalysis": { label: "Human sequences removed", sub: "Microbial or viral analysis from the human body, with identifiable human sequences removed" },
       "nonHumanReason": "Non-human data is always open access",
-      "basisHeading": "Basis for access level",
+      "basisHeading": "Access conditions",
     },
     progress: {
       heading: "Data details",
@@ -268,6 +268,12 @@ export const en: Resources = {
       detailLinkLabel: "View details",
       filesHeading: "Files for this step",
       gotchaHeading: "Good to know",
+      account: {
+        title: "Create a DDBJ account",
+        description: "A DDBJ account is required to submit data. Create one if you don't have one yet, or sign in if you already do.",
+        register: "Create account",
+        login: "Sign in with your DDBJ account",
+      },
       group: {
         companion: { title: "Project & sample info", sub: "Required for all submissions" },
         restricted: { title: "Restricted-access data", sub: "Policy application required first" },

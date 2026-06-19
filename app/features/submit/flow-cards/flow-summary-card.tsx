@@ -1,7 +1,8 @@
+import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
 import { isCompanionService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
-import { AlertIcon, Button, Callout, cn, LockClosedIcon, LockOpenIcon, Tag, TextLink } from "~/ui"
+import { AlertIcon, Button, Callout, cn, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { StepBadge } from "../components/step-badge"
@@ -11,10 +12,18 @@ import type { Validation } from "../state/types"
 type AccessSummary = ReadonlyMap<Access, FileTypeKind[]>
 type GroupLabel = { title: string; sub: string }
 
+type AccountStepLabels = {
+  title: string
+  description: string
+  register: string
+  login: string
+}
+
 type FlowSummaryCardProps = {
   steps: readonly FlowStep[]
   entries: readonly FileEntry[]
   isHuman: boolean
+  isAuthenticated: boolean
   accessByKind: AccessSummary
   accessHeading: string
   accessLabel: (access: Access) => string
@@ -25,7 +34,7 @@ type FlowSummaryCardProps = {
     open: GroupLabel
     destination: GroupLabel
   }
-  emptyMessage: string
+  accountLabels: AccountStepLabels
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
   fileTypeKindLabel: (kind: FileTypeKind) => string
@@ -42,13 +51,14 @@ type FlowSummaryCardProps = {
 
 export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
   const {
-    steps, entries, isHuman, accessByKind, accessHeading,
-    accessLabel, accessOverview, groupLabels, emptyMessage,
+    steps, entries, isHuman, isAuthenticated, accessByKind, accessHeading,
+    accessLabel, accessOverview, groupLabels, accountLabels,
     serviceTitle, serviceDescription, fileTypeKindLabel,
     resolveNote, noteKindLabel, externalCtaLabel,
     prereqHeading, detailLinkLabel,
     validations, validationHeading, validationLabel, onJumpToRow,
   } = props
+  const showAccountStep = !isAuthenticated
   const lang = useLang() as "ja" | "en"
   const presentServices = new Set(steps.map((s) => s.service))
 
@@ -111,18 +121,19 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
           fileTypeKindLabel={fileTypeKindLabel}
         />
       )}
-      {steps.length === 0
-        ? accessOverview === null && <p className="text-fs-body-sm text-ink-soft m-0 leading-relaxed">{emptyMessage}</p>
-        : groups.map((g, i) => (
-          <StepGroup
-            key={g.groupKey}
-            groupIndex={i + 1}
-            label={g.label}
-            steps={g.steps}
-            accessBadge={g.accessBadge}
-            {...stepProps}
-          />
-        ))}
+      {showAccountStep && (
+        <AccountStep labels={accountLabels} />
+      )}
+      {steps.length > 0 && groups.map((g, i) => (
+        <StepGroup
+          key={g.groupKey}
+          groupIndex={i + 1}
+          label={g.label}
+          steps={g.steps}
+          accessBadge={g.accessBadge}
+          {...stepProps}
+        />
+      ))}
 
       {validations.length > 0 && (
         <Callout tone="warn" role="alert">
@@ -359,3 +370,38 @@ const TimelineStepItem = ({
     </li>
   )
 }
+
+const DDBJ_ACCOUNT_URL = "https://accounts.ddbj.nig.ac.jp"
+
+const navigateToLogin = () => {
+  if (typeof window === "undefined") return
+  window.location.href = buildLoginUrl("/submit")
+}
+
+const AccountStep = ({ labels }: { labels: AccountStepLabels }) => (
+  <div>
+    <div className="flex items-center gap-2 mb-1">
+      <StepBadge index={0} pending={true} />
+      <span className="text-fs-body font-bold text-ink leading-snug">{labels.title}</span>
+    </div>
+    <div className="ml-3 flex gap-2.5">
+      <div className="flex flex-col items-center w-2 shrink-0">
+        <div className="w-0.5 h-6 shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-ink-softer shrink-0" />
+        <div className="w-0.5 flex-1" />
+      </div>
+      <div className="flex-1 border border-border-soft rounded-card p-4 min-w-0 bg-surface">
+        <p className="text-fs-micro text-ink-mid m-0 leading-relaxed">{labels.description}</p>
+        <div className="flex items-center gap-3 flex-wrap mt-3">
+          <TextLink href={DDBJ_ACCOUNT_URL} external>{labels.register}</TextLink>
+          <Button kind="secondary" size="sm" onClick={navigateToLogin}>
+            <span className="inline-flex items-center gap-1.5">
+              <UserIcon size={14} aria-hidden />
+              {labels.login}
+            </span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+)

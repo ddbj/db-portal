@@ -271,6 +271,12 @@ export type Resources = {
       detailLinkLabel: string
       filesHeading: string
       gotchaHeading: string
+      account: {
+        title: string
+        description: string
+        register: string
+        login: string
+      }
       group: {
         companion: { title: string; sub: string }
         restricted: { title: string; sub: string }
@@ -881,11 +887,11 @@ export const ja: Resources = {
       "open": "非制限公開",
       "restricted": "制限公開",
       "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
-      "ethicsCompliance": { label: "倫理指針に沿ったヒト研究", sub: "法令や研究倫理指針に沿って実施された研究" },
-      "publiclyAvailable": { label: "一般入手可能な試料の解析", sub: "学術的価値が定まり広く利用可能な試料の解析" },
-      "microbialAnalysis": { label: "微生物自体の分析（ヒト配列除去済み）", sub: "人体から分離した微生物・ウイルス自体の分析でヒト配列を除去済み" },
+      "ethicsCompliance": { label: "法令・倫理指針に沿った研究", sub: "法令や研究倫理指針に沿って実施された研究" },
+      "publiclyAvailable": { label: "一般入手可能な試料", sub: "市販・公開リソースなど、広く入手可能な試料を対象とした解析" },
+      "microbialAnalysis": { label: "ヒト配列除去済み", sub: "人体から分離した微生物・ウイルスの解析で、個人識別につながるヒト配列を除去" },
       "nonHumanReason": "ヒト以外は常に公開です",
-      "basisHeading": "公開区分の根拠",
+      "basisHeading": "公開条件",
     },
     progress: {
       heading: "入力状況",
@@ -902,6 +908,12 @@ export const ja: Resources = {
       detailLinkLabel: "詳細を見る",
       filesHeading: "対象ファイル",
       gotchaHeading: "ポイント",
+      account: {
+        title: "DDBJ アカウントの取得",
+        description: "データ登録には DDBJ アカウントが必要です。お持ちでない方はアカウントを作成してください。すでにお持ちの方はログインしてください。",
+        register: "アカウントを作成する",
+        login: "DDBJ アカウントでログイン",
+      },
       group: {
         companion: { title: "プロジェクト・試料の情報", sub: "すべての登録で必要" },
         restricted: { title: "制限公開のデータ", sub: "先に申請が必要" },
