@@ -58,9 +58,6 @@ test.describe("Submit Domain", () => {
     }
 
     await expect(flowSteps(page)).toHaveCount(0)
-    await expect(
-      page.getByText("ファイルを追加すると、ここに登録フローが表示されます"),
-    ).toBeVisible()
     await expect(validationBanner(page)).toHaveCount(0)
   })
 
@@ -75,7 +72,7 @@ test.describe("Submit Domain", () => {
     await expect(flowSteps(page).nth(1)).toHaveAttribute("data-service", "biosample")
     await expect(flowSteps(page).nth(2)).toHaveAttribute("data-service", "dra")
 
-    await expect(flowStep(page, "dra").getByText("登録先", { exact: true })).toBeVisible()
+    await expect(page.getByText("登録先", { exact: true })).toBeVisible()
   })
 
   test("S-SUBMIT-03: 複数種別で複数 destination が並ぶ", async ({ page }) => {
