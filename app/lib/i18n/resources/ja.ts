@@ -820,7 +820,7 @@ export const ja: Resources = {
         "third-party": { label: "第三者による解析結果の登録", sub: "他者が登録したデータに対する解析結果" },
       },
       q2: {
-        "human": { label: "ヒト", sub: "ヒト個人由来のデータ" },
+        "human": { label: "ヒト", sub: "ヒト個体・ヒト由来試料" },
         "eukaryote": { label: "ヒト以外の真核生物", sub: "動植物・菌類など" },
         "prokaryote": { label: "原核生物", sub: "細菌・古細菌" },
         "virus": { label: "ファージ・ウイルス", sub: "ファージ・ウイルス" },
