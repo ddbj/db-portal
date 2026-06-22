@@ -183,6 +183,7 @@ export const en: Resources = {
         "prokaryote": { label: "Prokaryote", sub: "Bacteria and archaea" },
         "virus": { label: "Phage / virus", sub: "Bacteriophages and viruses" },
         "metagenome": { label: "Metagenome", sub: "Environmental samples" },
+        "other": { label: "Other", sub: "Artificial sequences, food-derived samples, etc." },
       },
     },
     table: {
@@ -247,7 +248,7 @@ export const en: Resources = {
       "ethicsCompliance": { label: "Research under laws and ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
       "publiclyAvailable": { label: "Publicly available specimens", sub: "Analysis of commercially or publicly available specimens" },
       "microbialAnalysis": { label: "Human sequences removed", sub: "Microbial or viral analysis from the human body, with identifiable human sequences removed" },
-      "nonHumanReason": "Non-human data is always open access",
+      "nonHumanReason": "Non-human data is always unrestricted access",
       "basisHeading": "Access conditions",
     },
     progress: {

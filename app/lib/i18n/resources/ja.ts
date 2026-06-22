@@ -186,6 +186,7 @@ export type Resources = {
         "prokaryote": { label: string; sub: string }
         "virus": { label: string; sub: string }
         "metagenome": { label: string; sub: string }
+        "other": { label: string; sub: string }
       }
     }
     table: {
@@ -824,6 +825,7 @@ export const ja: Resources = {
         "prokaryote": { label: "原核生物", sub: "細菌・古細菌" },
         "virus": { label: "ファージ・ウイルス", sub: "ファージ・ウイルス" },
         "metagenome": { label: "環境サンプル", sub: "メタゲノム・環境由来サンプル" },
+        "other": { label: "その他", sub: "人工配列・食品由来サンプルなど" },
       },
     },
     table: {
@@ -888,7 +890,7 @@ export const ja: Resources = {
       "ethicsCompliance": { label: "法令・倫理指針に沿った研究", sub: "法令や研究倫理指針に沿って実施された研究" },
       "publiclyAvailable": { label: "一般入手可能な試料", sub: "市販・公開リソースなど、広く入手可能な試料を対象とした解析" },
       "microbialAnalysis": { label: "ヒト配列除去済み", sub: "人体から分離した微生物・ウイルスの解析で、個人識別につながるヒト配列を除去" },
-      "nonHumanReason": "ヒト以外は常に公開です",
+      "nonHumanReason": "ヒト以外は常に非制限公開です",
       "basisHeading": "公開条件",
     },
     progress: {

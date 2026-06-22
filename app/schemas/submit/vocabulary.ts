@@ -20,6 +20,7 @@ export const Q2 = z.enum([
   "prokaryote",
   "virus",
   "metagenome",
+  "other",
 ])
 export type Q2 = z.infer<typeof Q2>
 

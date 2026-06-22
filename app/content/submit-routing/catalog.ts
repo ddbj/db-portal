@@ -13,6 +13,7 @@ const catalogData = {
     { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
     { id: "virus", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
     { id: "metagenome", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "other", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
   ],
   kindRoutes: [
     {

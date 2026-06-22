@@ -134,21 +134,18 @@ const SubmitRoute = () => {
       <Section padTop="none" padBottom="lg">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-10 items-start">
           <div className="flex flex-col gap-8 min-w-0 lg:col-span-6">
-            <div>
-              <SectionHeading>{t("submit.sections.preconditions")}</SectionHeading>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">
-                    {t("submit.preconditions.q2Heading")}
-                  </p>
-                  <RadioCardGroup
-                    ariaLabel={t("submit.preconditions.q2Heading")}
-                    name="precondition-q2"
-                    value={q2}
-                    options={q2Options}
-                    onChange={(v) => actions.setQ2(v as Q2)}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <SectionHeading>{t("submit.preconditions.q2Heading")}</SectionHeading>
+                <RadioCardGroup
+                  ariaLabel={t("submit.preconditions.q2Heading")}
+                  name="precondition-q2"
+                  value={q2}
+                  options={q2Options}
+                  onChange={(v) => actions.setQ2(v as Q2)}
+                />
+              </div>
+              <div>
                 <AccessSectionPanel
                   q2={q2}
                   section={accessSection}
@@ -260,21 +257,20 @@ const AccessSectionPanel = ({
 
   return (
     <div>
-      <div className="flex items-baseline gap-2 mt-0 mb-2">
-        <p className="text-fs-body-sm font-semibold text-ink m-0">
-          {t("submit.access.heading")}
-        </p>
-        {disabled && q2 !== null && (
-          <p className="text-fs-micro font-normal text-ink-mid m-0">
+      <SectionHeading
+        hint={disabled && q2 !== null ? (
+          <span className="rounded-full bg-brand/10 px-2.5 py-1 text-fs-micro font-semibold leading-none text-brand">
             {t("submit.access.nonHumanReason")}
-          </p>
-        )}
-      </div>
+          </span>
+        ) : undefined}
+      >
+        {t("submit.access.heading")}
+      </SectionHeading>
       <div className={cn("flex flex-col gap-3", disabled && "pointer-events-none")}>
         <Toggle
           label={t("submit.access.restrictedPreference.label")}
           sub={t("submit.access.restrictedPreference.sub")}
-          checked={section.restrictedPreference}
+          checked={!disabled && section.restrictedPreference}
           disabled={disabled}
           onChange={() => onChange({ restrictedPreference: !section.restrictedPreference })}
         />
@@ -286,7 +282,7 @@ const AccessSectionPanel = ({
             key={key}
             label={t(`submit.access.${key}.label`)}
             sub={t(`submit.access.${key}.sub`)}
-            checked={section[key]}
+            checked={!disabled && section[key]}
             disabled={disabled || section.restrictedPreference}
             onChange={() => onChange({ [key]: !section[key] })}
           />

@@ -22,7 +22,7 @@ export const Toggle = ({ label, sub, checked, disabled, onChange }: ToggleProps)
       aria-checked={checked}
       className={cn(
         "relative inline-flex shrink-0 h-5 w-9 rounded-full transition-colors",
-        disabled && "opacity-40",
+        disabled && "opacity-25",
         checked ? "bg-brand" : "bg-border-soft",
       )}
     >
