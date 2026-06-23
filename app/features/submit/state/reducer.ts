@@ -63,7 +63,11 @@ const applyRowEditPatch = (
 
   const entryPatch: Partial<FileEntry> = {}
   if (patch.dataForm !== undefined) entryPatch.dataForm = patch.dataForm
-  if (patch.chipTags !== undefined) entryPatch.chipTags = patch.chipTags
+  if (patch.chipTags !== undefined) {
+    entryPatch.chipTags = patch.chipTags
+    const { q2 } = submission.preconditions
+    entryPatch.access = deriveAccess(q2, submission.accessSection, entry.fileTypeKind, patch.chipTags)
+  }
 
   const fileGroups = patch.groupType !== undefined
     ? replaceGroup(submission.fileGroups, entry.groupId, { groupType: patch.groupType })
@@ -96,7 +100,7 @@ const setAccessSection = (state: UIState, patch: Partial<AccessSection>): UIStat
   const { q2 } = state.submission.preconditions
   const fileEntries = state.submission.fileEntries.map((e) => ({
     ...e,
-    access: deriveAccess(q2, accessSection, e.fileTypeKind),
+    access: deriveAccess(q2, accessSection, e.fileTypeKind, e.chipTags),
   }))
 
   return { submission: { ...state.submission, accessSection, fileEntries } }
@@ -107,7 +111,7 @@ const setQ2 = (state: UIState, q2: Submission["preconditions"]["q2"]): UIState =
   const accessSection = DEFAULT_ACCESS_SECTION
   const fileEntries = state.submission.fileEntries.map((e) => ({
     ...e,
-    access: deriveAccess(q2, accessSection, e.fileTypeKind),
+    access: deriveAccess(q2, accessSection, e.fileTypeKind, e.chipTags),
   }))
 
   return { submission: { ...state.submission, preconditions, accessSection, fileEntries } }

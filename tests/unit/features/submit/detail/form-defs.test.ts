@@ -1,20 +1,22 @@
 import { describe, expect, test } from "vitest"
 
-import { hasRowDetail, ROW_FORM_DEFS } from "../../../../../app/features/submit/detail/form-defs"
+import type { FormOptionEffect } from "../../../../../app/features/submit/detail/form-defs"
+import { getRowFormDef, hasRowDetail } from "../../../../../app/features/submit/detail/form-defs"
 import {
   ChipAxis,
   DataForm,
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
+  Q2,
 } from "../../../../../app/schemas/submit"
 
 const ALL_KINDS = FileTypeKind.options
-const KEYS = Object.keys(ROW_FORM_DEFS) as FileTypeKind[]
+const ALL_Q2S: (Q2 | null)[] = [null, ...Q2.options]
 
-const allEffects = () =>
-  KEYS.flatMap((kind) =>
-    ROW_FORM_DEFS[kind].groups.flatMap((group) =>
+const allEffects = (q2: Q2 | null) =>
+  ALL_KINDS.flatMap((kind) =>
+    getRowFormDef(kind, q2).groups.flatMap((group) =>
       group.options.map((option) => ({
         kind,
         groupId: group.id,
@@ -24,49 +26,74 @@ const allEffects = () =>
     ),
   )
 
-describe("ROW_FORM_DEFS_kindCoverage", () => {
-  test("ROW_FORM_DEFS_keys_coverAllNineFileTypeKinds", () => {
-    expect(new Set(KEYS)).toStrictEqual(new Set(ALL_KINDS))
-    expect(KEYS).toHaveLength(8)
-  })
-
-  test("ROW_FORM_DEFS_keys_containNoExtraKinds", () => {
-    const allowed = new Set<string>(ALL_KINDS)
-    for (const key of KEYS) {
-      expect(allowed.has(key)).toBe(true)
+describe("getRowFormDef_kindCoverage", () => {
+  test("getRowFormDef_returnsDefForAllKinds", () => {
+    for (const kind of ALL_KINDS) {
+      expect(getRowFormDef(kind, null)).toBeDefined()
     }
-  })
-
-  test.each(ALL_KINDS)("ROW_FORM_DEFS_kind_%s_isPresent", (kind) => {
-    expect(ROW_FORM_DEFS[kind]).toBeDefined()
   })
 })
 
-// flow-changing 軸を持つ種別だけが file 詳細質問 (group) を持つ。残りは質問なし (空 def)
-const DETAIL_KINDS = new Set<FileTypeKind>([
+const BASE_DETAIL_KINDS = new Set<FileTypeKind>([
   "sequence",
   "spatial-transcriptomics",
 ])
 
-describe("ROW_FORM_DEFS_groupStructure", () => {
-  test("ROW_FORM_DEFS_onlyFlowChangingKinds_haveGroups", () => {
-    for (const kind of KEYS) {
-      expect(ROW_FORM_DEFS[kind].groups.length > 0).toBe(DETAIL_KINDS.has(kind))
+const IDENTIFIABLE_KINDS = new Set<FileTypeKind>([
+  "sequence-read",
+  "sequence",
+  "variant",
+])
+
+describe("getRowFormDef_groupStructure", () => {
+  test("nonHumanQ2_onlyBaseFlowChangingKindsHaveGroups", () => {
+    for (const kind of ALL_KINDS) {
+      expect(getRowFormDef(kind, null).groups.length > 0).toBe(BASE_DETAIL_KINDS.has(kind))
     }
   })
 
-  test("hasRowDetail_matchesPresenceOfGroups", () => {
-    for (const kind of KEYS) {
-      expect(hasRowDetail(kind)).toBe(ROW_FORM_DEFS[kind].groups.length > 0)
+  test("humanQ2_identifiableKindsAlsoHaveGroups", () => {
+    for (const kind of ALL_KINDS) {
+      const hasGroups = getRowFormDef(kind, "human").groups.length > 0
+      const expected = BASE_DETAIL_KINDS.has(kind) || IDENTIFIABLE_KINDS.has(kind)
+      expect(hasGroups).toBe(expected)
     }
   })
 
-  test("ROW_FORM_DEFS_everyGroup_hasNonEmptyOptions", () => {
+  test("humanQ2_identifiableKinds_haveIdentifiabilityGroup", () => {
+    for (const kind of IDENTIFIABLE_KINDS) {
+      const def = getRowFormDef(kind, "human")
+      const idGroup = def.groups.find((g) => g.id === "identifiability")
+      expect(idGroup).toBeDefined()
+      expect(idGroup!.kind).toBe("check")
+      expect(idGroup!.options).toHaveLength(1)
+    }
+  })
+
+  test("nonHumanQ2_identifiableKinds_doNotHaveIdentifiabilityGroup", () => {
+    for (const kind of IDENTIFIABLE_KINDS) {
+      const def = getRowFormDef(kind, null)
+      const idGroup = def.groups.find((g) => g.id === "identifiability")
+      expect(idGroup).toBeUndefined()
+    }
+  })
+
+  test("hasRowDetail_matchesPresenceOfGroups_forAllQ2", () => {
+    for (const q2 of ALL_Q2S) {
+      for (const kind of ALL_KINDS) {
+        expect(hasRowDetail(kind, q2)).toBe(getRowFormDef(kind, q2).groups.length > 0)
+      }
+    }
+  })
+
+  test("everyGroup_hasNonEmptyOptions", () => {
     const empty: string[] = []
-    for (const kind of KEYS) {
-      for (const group of ROW_FORM_DEFS[kind].groups) {
-        if (group.options.length === 0) {
-          empty.push(`${kind}/${group.id}`)
+    for (const q2 of ALL_Q2S) {
+      for (const kind of ALL_KINDS) {
+        for (const group of getRowFormDef(kind, q2).groups) {
+          if (group.options.length === 0) {
+            empty.push(`${kind}/${group.id}(q2=${q2})`)
+          }
         }
       }
     }
@@ -74,10 +101,10 @@ describe("ROW_FORM_DEFS_groupStructure", () => {
   })
 })
 
-describe("ROW_FORM_DEFS_effectVocabulary", () => {
-  test("ROW_FORM_DEFS_everyEffectGroupType_isValidGroupType", () => {
+describe("getRowFormDef_effectVocabulary", () => {
+  test("everyEffectGroupType_isValidGroupType", () => {
     const invalid: string[] = []
-    for (const { kind, groupId, value, effect } of allEffects()) {
+    for (const { kind, groupId, value, effect } of allEffects("human")) {
       if (effect.groupType === undefined) continue
       if (!GroupType.safeParse(effect.groupType).success) {
         invalid.push(`${kind}/${groupId}/${value}=${effect.groupType}`)
@@ -86,9 +113,9 @@ describe("ROW_FORM_DEFS_effectVocabulary", () => {
     expect(invalid).toStrictEqual([])
   })
 
-  test("ROW_FORM_DEFS_everyEffectDataForm_isValidDataForm", () => {
+  test("everyEffectDataForm_isValidDataForm", () => {
     const invalid: string[] = []
-    for (const { kind, groupId, value, effect } of allEffects()) {
+    for (const { kind, groupId, value, effect } of allEffects("human")) {
       if (effect.dataForm === undefined) continue
       if (!DataForm.safeParse(effect.dataForm).success) {
         invalid.push(`${kind}/${groupId}/${value}=${effect.dataForm}`)
@@ -97,9 +124,9 @@ describe("ROW_FORM_DEFS_effectVocabulary", () => {
     expect(invalid).toStrictEqual([])
   })
 
-  test("ROW_FORM_DEFS_everyChipRemoveAxis_isValidChipAxis", () => {
+  test("everyChipRemoveAxis_isValidChipAxis", () => {
     const invalid: string[] = []
-    for (const { kind, groupId, value, effect } of allEffects()) {
+    for (const { kind, groupId, value, effect } of allEffects("human")) {
       if (effect.chipRemoveAxis === undefined) continue
       if (!ChipAxis.safeParse(effect.chipRemoveAxis).success) {
         invalid.push(`${kind}/${groupId}/${value}=${effect.chipRemoveAxis}`)
@@ -109,10 +136,10 @@ describe("ROW_FORM_DEFS_effectVocabulary", () => {
   })
 })
 
-describe("ROW_FORM_DEFS_chipAddConsistency", () => {
-  test("ROW_FORM_DEFS_everyChipAddAxis_isValidChipAxis", () => {
+describe("getRowFormDef_chipAddConsistency", () => {
+  test("everyChipAddAxis_isValidChipAxis", () => {
     const invalid: string[] = []
-    for (const { kind, groupId, value, effect } of allEffects()) {
+    for (const { kind, groupId, value, effect } of allEffects("human")) {
       if (effect.chipAdd === undefined) continue
       if (!ChipAxis.safeParse(effect.chipAdd.axis).success) {
         invalid.push(`${kind}/${groupId}/${value}=${effect.chipAdd.axis}`)
@@ -121,9 +148,9 @@ describe("ROW_FORM_DEFS_chipAddConsistency", () => {
     expect(invalid).toStrictEqual([])
   })
 
-  test("ROW_FORM_DEFS_everyChipAddValue_isAllowedForItsAxis", () => {
+  test("everyChipAddValue_isAllowedForItsAxis", () => {
     const invalid: string[] = []
-    for (const { kind, groupId, value, effect } of allEffects()) {
+    for (const { kind, groupId, value, effect } of allEffects("human")) {
       if (effect.chipAdd === undefined) continue
       const axisOk = ChipAxis.safeParse(effect.chipAdd.axis).success
       if (!axisOk) continue
@@ -136,11 +163,11 @@ describe("ROW_FORM_DEFS_chipAddConsistency", () => {
     expect(invalid).toStrictEqual([])
   })
 
-  test("ROW_FORM_DEFS_chipAdd_rejectsValueFromWrongAxis", () => {
-    const spatial = ROW_FORM_DEFS["spatial-transcriptomics"].groups
+  test("chipAdd_rejectsValueFromWrongAxis", () => {
+    const spatial = getRowFormDef("spatial-transcriptomics", null).groups
       .flatMap((g) => g.options)
       .map((o) => o.effect.chipAdd)
-      .find((c) => c !== undefined)
+      .find((c): c is NonNullable<FormOptionEffect["chipAdd"]> => c !== undefined)
     expect(spatial).toBeDefined()
     expect(isAllowedChipValue(spatial!.axis, spatial!.value)).toBe(true)
     expect(isAllowedChipValue("tpa", spatial!.value)).toBe(false)

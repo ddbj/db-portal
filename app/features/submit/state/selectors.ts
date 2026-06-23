@@ -3,7 +3,7 @@ import { isSubmissionEndpoint, TYPICAL_GROUP_TYPE_FOR_KIND } from "~/schemas/sub
 
 import { isKindEnabled } from "../cascade"
 import { optionMatches } from "../detail/form-apply"
-import { hasRowDetail, ROW_FORM_DEFS } from "../detail/form-defs"
+import { getRowFormDef, hasRowDetail } from "../detail/form-defs"
 import { deriveFlowSteps } from "../flow-rules"
 import type { UIState, Validation } from "./types"
 
@@ -43,19 +43,21 @@ export const rowIsConfigured = (state: UIState, entryId: string): boolean => {
   if (!entry) return false
   const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
   const groupType = group?.groupType ?? TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]
+  const { q2 } = state.submission.preconditions
 
   const draft = { groupType, dataForm: entry.dataForm, chipTags: entry.chipTags }
 
-  return ROW_FORM_DEFS[entry.fileTypeKind].groups.every(
+  return getRowFormDef(entry.fileTypeKind, q2).groups.every(
     (g) => g.kind !== "radio" || g.options.some((opt) => optionMatches(opt, draft)),
   )
 }
 
 export const countConfiguredRows = (state: UIState): { configured: number; total: number } => {
+  const { q2 } = state.submission.preconditions
   const total = state.submission.fileEntries.length
   let configured = 0
   for (const e of state.submission.fileEntries) {
-    if (!hasRowDetail(e.fileTypeKind) || rowIsConfigured(state, e.id)) configured++
+    if (!hasRowDetail(e.fileTypeKind, q2) || rowIsConfigured(state, e.id)) configured++
   }
 
   return { configured, total }

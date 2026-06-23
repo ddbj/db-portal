@@ -1,8 +1,8 @@
-import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType } from "~/schemas/submit"
-import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Tag } from "~/ui"
+import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType, Q2 } from "~/schemas/submit"
+import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Tag, Toggle } from "~/ui"
 
 import { applyRadio, initDraft, optionMatches, toggleCheck } from "./form-apply"
-import { hasRowDetail, ROW_FORM_DEFS } from "./form-defs"
+import { getRowFormDef, hasRowDetail } from "./form-defs"
 
 type DataDetailPatch = { groupType: GroupType; dataForm: DataForm; chipTags: FileEntryChip[] }
 
@@ -17,6 +17,7 @@ type DataDetailPanelLabels = {
 }
 
 type DataDetailPanelProps = {
+  q2: Q2 | null
   entries: readonly FileEntry[]
   groups: readonly FileGroup[]
   labels: DataDetailPanelLabels
@@ -25,6 +26,7 @@ type DataDetailPanelProps = {
 }
 
 export const DataDetailPanel = ({
+  q2,
   entries,
   groups,
   labels,
@@ -34,7 +36,7 @@ export const DataDetailPanel = ({
   const groupOf = (entry: FileEntry): FileGroup | undefined =>
     groups.find((g) => g.id === entry.groupId)
 
-  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind))
+  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind, q2))
 
   if (detailEntries.length === 0) {
     return <Callout tone="info">{labels.empty}</Callout>
@@ -43,7 +45,7 @@ export const DataDetailPanel = ({
   return (
     <ol className="flex flex-col gap-3 m-0 list-none p-0">
       {detailEntries.map((entry) => {
-        const def = ROW_FORM_DEFS[entry.fileTypeKind]
+        const def = getRowFormDef(entry.fileTypeKind, q2)
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)
@@ -93,6 +95,17 @@ export const DataDetailPanel = ({
                         value={opt.value}
                         checked={checked}
                         onChange={() => onCommit(entry.id, applyRadio(draft, opt, g.options))}
+                      />
+                    )
+                  }
+                  if (g.options.length === 1) {
+                    return (
+                      <Toggle
+                        key={opt.value}
+                        label={label}
+                        sub={sub}
+                        checked={checked}
+                        onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
                       />
                     )
                   }

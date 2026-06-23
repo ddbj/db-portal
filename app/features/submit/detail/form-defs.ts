@@ -3,6 +3,7 @@ import type {
   DataForm,
   FileTypeKind,
   GroupType,
+  Q2,
 } from "~/schemas/submit"
 
 export type FormOptionEffect = {
@@ -130,7 +131,7 @@ const spatialTranscriptomicsDef: RowFormDef = {
   ],
 }
 
-export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
+const BASE_ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "sequence-read": EMPTY_DEF,
   "sequence": sequenceDef,
   "variant": EMPTY_DEF,
@@ -141,6 +142,43 @@ export const ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "proteome": EMPTY_DEF,
 }
 
+const IDENTIFIABILITY_KEYS: Partial<Record<FileTypeKind, { labelKey: string; subKey: string }>> = {
+  "sequence-read": {
+    labelKey: "submit.detail.options.identifiability.sequenceRead.label",
+    subKey: "submit.detail.options.identifiability.sequenceRead.sub",
+  },
+  "sequence": {
+    labelKey: "submit.detail.options.identifiability.sequence.label",
+    subKey: "submit.detail.options.identifiability.sequence.sub",
+  },
+  "variant": {
+    labelKey: "submit.detail.options.identifiability.variant.label",
+    subKey: "submit.detail.options.identifiability.variant.sub",
+  },
+}
+
+export const getRowFormDef = (kind: FileTypeKind, q2: Q2 | null): RowFormDef => {
+  const base = BASE_ROW_FORM_DEFS[kind]
+  const keys = IDENTIFIABILITY_KEYS[kind]
+  if (q2 === "human" && keys !== undefined) {
+    const num = `${base.groups.length + 1}.`
+    const group: FormGroupDef = {
+      id: "identifiability",
+      num,
+      labelKey: "submit.detail.formGroupLabels.identifiability",
+      kind: "check",
+      options: [{
+        value: "non-identifiable",
+        labelKey: keys.labelKey,
+        subKey: keys.subKey,
+        effect: { chipAdd: { axis: "identifiability", value: "non-identifiable" } },
+      }],
+    }
+    return { groups: [...base.groups, group] }
+  }
+  return base
+}
+
 // flow-changing 軸を持つ種別だけが file 詳細質問を持つ。持たない種別はデータ詳細セルを出さない
-export const hasRowDetail = (kind: FileTypeKind): boolean =>
-  ROW_FORM_DEFS[kind].groups.length > 0
+export const hasRowDetail = (kind: FileTypeKind, q2: Q2 | null): boolean =>
+  getRowFormDef(kind, q2).groups.length > 0

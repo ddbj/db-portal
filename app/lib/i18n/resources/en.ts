@@ -202,6 +202,7 @@ export const en: Resources = {
         target: "Target",
         platform: "Platform",
         domain: "Domain",
+        identifiability: "Identifiability",
       },
       options: {
         sequenceNucleotide: {
@@ -224,6 +225,11 @@ export const en: Resources = {
         massSpectrometry: {
           metabolomics: { label: "Metabolomics", sub: "Small-molecule mass spectrometry" },
           proteomics: { label: "Proteomics", sub: "Protein mass spectrometry" },
+        },
+        identifiability: {
+          sequenceRead: { label: "Not personally identifiable", sub: "RNA-seq, ChIP-seq, etc. — reads other than whole genome / whole exome" },
+          sequence: { label: "Not personally identifiable", sub: "Transcript assemblies, etc. — sequences other than genome assemblies" },
+          variant: { label: "Not personally identifiable", sub: "Population allele frequencies, etc. — data without individual-level genotypes" },
         },
       },
     },

@@ -178,6 +178,7 @@ const SubmitRoute = () => {
                     countLabel={`${configured} / ${total}`}
                   />
                   <DataDetailPanel
+                    q2={state.submission.preconditions.q2}
                     entries={state.submission.fileEntries}
                     groups={state.submission.fileGroups}
                     labels={{

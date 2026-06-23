@@ -63,6 +63,7 @@ export const ChipAxis = z.enum([
   "tpa",
   "small-scale",
   "spatial-platform",
+  "identifiability",
 ])
 export type ChipAxis = z.infer<typeof ChipAxis>
 
@@ -101,6 +102,7 @@ export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> 
   "tpa": ["true"],
   "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
+  "identifiability": ["non-identifiable"],
 }
 
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>

@@ -205,6 +205,7 @@ export type Resources = {
         target: string
         platform: string
         domain: string
+        identifiability: string
       }
       options: {
         sequenceNucleotide: {
@@ -227,6 +228,11 @@ export type Resources = {
         massSpectrometry: {
           metabolomics: { label: string; sub: string }
           proteomics: { label: string; sub: string }
+        }
+        identifiability: {
+          sequenceRead: { label: string; sub: string }
+          sequence: { label: string; sub: string }
+          variant: { label: string; sub: string }
         }
       }
     }
@@ -844,6 +850,7 @@ export const ja: Resources = {
         target: "対象",
         platform: "プラットフォーム",
         domain: "分析ドメイン",
+        identifiability: "個人識別性",
       },
       options: {
         sequenceNucleotide: {
@@ -866,6 +873,11 @@ export const ja: Resources = {
         massSpectrometry: {
           metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
+        },
+        identifiability: {
+          sequenceRead: { label: "個人識別符号に該当しない", sub: "RNA-seq・ChIP-seq 等、全ゲノム・全エクソーム以外のリードデータ" },
+          sequence: { label: "個人識別符号に該当しない", sub: "トランスクリプトアセンブリ等、ゲノム配列以外の塩基配列" },
+          variant: { label: "個人識別符号に該当しない", sub: "集団アリル頻度等、個体レベルの genotype を含まないデータ" },
         },
       },
     },
