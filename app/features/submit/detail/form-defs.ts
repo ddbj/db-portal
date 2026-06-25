@@ -128,6 +128,31 @@ const sequenceDef: RowFormDef = {
   ],
 }
 
+const expressionMatrixDef: RowFormDef = {
+  groups: [
+    {
+      id: "expression-source",
+      num: "1.",
+      labelKey: "submit.detail.formGroupLabels.expressionSource",
+      kind: "radio",
+      options: [
+        {
+          value: "ngs",
+          labelKey: "submit.detail.options.expressionMatrix.ngs.label",
+          subKey: "submit.detail.options.expressionMatrix.ngs.sub",
+          effect: { chipAdd: { axis: "expression-source", value: "ngs" } },
+        },
+        {
+          value: "non-ngs",
+          labelKey: "submit.detail.options.expressionMatrix.nonNgs.label",
+          subKey: "submit.detail.options.expressionMatrix.nonNgs.sub",
+          effect: { chipRemoveAxis: "expression-source" },
+        },
+      ],
+    },
+  ],
+}
+
 const spatialTranscriptomicsDef: RowFormDef = {
   groups: [
     {
@@ -169,7 +194,7 @@ const BASE_ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "sequence-read": EMPTY_DEF,
   "sequence": sequenceDef,
   "variant": EMPTY_DEF,
-  "expression-matrix": EMPTY_DEF,
+  "expression-matrix": expressionMatrixDef,
   "microarray-expression": EMPTY_DEF,
   "spatial-transcriptomics": spatialTranscriptomicsDef,
   "metabolomics": EMPTY_DEF,

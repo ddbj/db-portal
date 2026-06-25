@@ -43,7 +43,7 @@ describe("submit routing catalog", () => {
   })
 
   test("recipeAllowlist_isFixed", () => {
-    expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial", "sequence-dra", "haplotype"])
+    expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial", "sequence-dra", "expression-dra", "haplotype"])
   })
 
   test("catalog_q2Repos_areSubmissionEndpoints", () => {

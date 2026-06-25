@@ -64,6 +64,7 @@ export const ChipAxis = z.enum([
   "tpa",
   "small-scale",
   "spatial-platform",
+  "expression-source",
   "identifiability",
 ])
 export type ChipAxis = z.infer<typeof ChipAxis>
@@ -113,6 +114,7 @@ export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> 
   "tpa": ["true"],
   "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
+  "expression-source": ["ngs"],
   "identifiability": ["non-identifiable"],
 }
 
@@ -125,3 +127,6 @@ const SEQUENCING_SPATIAL_PLATFORMS: readonly string[] = ["visium", "stereo-seq"]
 
 export const isSequencingSpatialPlatform = (value: string): boolean =>
   SEQUENCING_SPATIAL_PLATFORMS.includes(value)
+
+export const isNgsExpressionSource = (entry: { chipTags: readonly { axis: string; value: string }[] }): boolean =>
+  entry.chipTags.some((c) => c.axis === "expression-source" && c.value === "ngs")

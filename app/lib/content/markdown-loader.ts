@@ -1,6 +1,7 @@
 import type { PageContent } from "~/schemas/content/page-content"
 import { PageFrontmatter } from "~/schemas/content/page-content"
 
+import { extractHeadings } from "./heading-extractor"
 import { markdownToHtml } from "./markdown-pipeline"
 import type { ValidationFailure, ValidationResult } from "./types"
 
@@ -114,6 +115,10 @@ const renderEntries = (entries: BuildEntry[]): PageContent[] =>
       ja: markdownToHtml(entry.ja.body),
       en: entry.en ? markdownToHtml(entry.en.body) : undefined,
     },
+    toc: {
+      ja: extractHeadings(entry.ja.body),
+      en: entry.en ? extractHeadings(entry.en.body) : undefined,
+    },
   }))
 
 const { entries, errors: buildErrors } = buildEntries()
@@ -170,6 +175,7 @@ export const validateAllPages = (): ValidationResult<PageContent> => {
       urlPath: e.urlPath,
       frontmatter: { ja: e.ja.frontmatter, en: e.en?.frontmatter },
       html: { ja: "", en: undefined },
+      toc: { ja: [], en: undefined },
     },
   }))
 

@@ -38,7 +38,7 @@ const titleResolvers: Record<string, TitleResolver> = {
     if (page === undefined) return null
     const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
 
-    return ["Databases", title]
+    return ["Contents", "Databases", title]
   },
 }
 

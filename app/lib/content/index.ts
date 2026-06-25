@@ -1,5 +1,12 @@
 
 export {
+  type ContentTree,
+  type ContentTreeNode,
+  type ContentTreeSection,
+  getContentTree,
+} from "./content-tree"
+export { extractHeadings } from "./heading-extractor"
+export {
   collectFromModules,
   formatValidationErrors,
   getServiceBySubmit,
@@ -20,3 +27,4 @@ export {
   resolvePageTitle,
   type TitleMatch,
 } from "./page-title"
+export { searchContent, type SearchResult } from "./search-index"

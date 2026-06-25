@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { TocHeading } from "./toc-heading"
+
 export const PageFrontmatter = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
@@ -17,6 +19,10 @@ export const PageContent = z.object({
   html: z.object({
     ja: z.string(),
     en: z.string().optional(),
+  }),
+  toc: z.object({
+    ja: z.array(TocHeading),
+    en: z.array(TocHeading).optional(),
   }),
 })
 

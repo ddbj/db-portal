@@ -10,6 +10,7 @@ export const ENGINE_MESSAGE_KEYS = {
 
   spatialDraRaw: "submit.spatial.dra.raw",
   sequenceDraRaw: "submit.sequenceDra.raw",
+  expressionDraRaw: "submit.expressionDra.raw",
   umbrellaBioprojectIntro: "submit.umbrellaBioproject.intro",
 } as const
 

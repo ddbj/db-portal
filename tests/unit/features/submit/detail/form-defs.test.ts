@@ -36,6 +36,7 @@ describe("getRowFormDef_kindCoverage", () => {
 
 const BASE_DETAIL_KINDS = new Set<FileTypeKind>([
   "sequence",
+  "expression-matrix",
   "spatial-transcriptomics",
 ])
 

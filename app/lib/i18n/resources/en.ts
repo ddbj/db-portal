@@ -215,10 +215,15 @@ export const en: Resources = {
         assemblyForm: "Assembly form",
         target: "Target",
         platform: "Platform",
+        expressionSource: "Data source",
         domain: "Domain",
         identifiability: "Identifiability",
       },
       options: {
+        expressionMatrix: {
+          ngs: { label: "NGS (RNA-seq, ChIP-seq, etc.)", sub: "Raw reads must be deposited in DRA first (DRA + GEA two-step)" },
+          nonNgs: { label: "Non-NGS", sub: "Deposit the matrix directly in GEA" },
+        },
         sequenceNucleotide: {
           hasAnnotation: { label: "Annotated", sub: "Includes structural/functional annotation (CDS, rRNA, etc.)" },
           genome: { label: "Genome", sub: "WGS, finished genome, TSA, TLS, and other general sequences" },
@@ -390,6 +395,7 @@ export const en: Resources = {
     gea: {
       expressionMatrix: {
         intro: "Expression matrices are deposited in GEA.",
+        ngsRawToDra: "NGS-derived raw reads (FASTQ/BAM) must be deposited in DRA as a separate entry (DRA + GEA two-step).",
       },
       microarray: {
         intro: "Microarray expression is deposited as a GEA Experiment.",
@@ -442,6 +448,9 @@ export const en: Resources = {
       dra: {
         raw: "Sequencing-based platforms (Visium / Stereo-seq) deposit their raw reads to DRA before the processed data goes to GEA (DRA + GEA two-step).",
       },
+    },
+    expressionDra: {
+      raw: "NGS-derived expression matrices require raw reads (FASTQ/BAM) to be deposited in DRA before the processed data goes to GEA (DRA + GEA two-step).",
     },
     sequenceDra: {
       raw: "MAG / SAG / primary / binned assemblies require the underlying raw reads to be deposited in DRA.",

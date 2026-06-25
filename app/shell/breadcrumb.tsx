@@ -16,6 +16,10 @@ type BreadcrumbProps = {
 export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   const lang = useLang()
   const t = useT()
+  const contentsRootResolver: BreadcrumbResolver = () => ({
+    label: t("breadcrumb.contents"),
+    href: "/contents",
+  })
   const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
     const slug = params.slug
     if (slug === undefined) return null
@@ -27,7 +31,11 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
 
     return { label: fm.title, href: pathname }
   }
-  const mergedResolvers = { "database-content": databaseResolver, ...(resolvers ?? {}) }
+  const mergedResolvers = {
+    "contents-root": contentsRootResolver,
+    "database-content": databaseResolver,
+    ...(resolvers ?? {}),
+  }
   const raw = useBreadcrumb({ resolvers: mergedResolvers })
   if (raw.length === 0) return null
 

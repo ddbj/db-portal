@@ -75,7 +75,7 @@ describe("databases/$slug route render", () => {
     expect(
       screen.getByText(/研究プロジェクトと、そのプロジェクトに由来する/),
     ).toBeInTheDocument()
-    expect(screen.getByText("BioProject とは")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "BioProject とは", level: 2 })).toBeInTheDocument()
   })
 
   test("DatabaseSlugRoute_biosampleEn_rendersEnglishTitleAndDescription", async () => {

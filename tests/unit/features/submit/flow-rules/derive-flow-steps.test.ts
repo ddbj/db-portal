@@ -411,6 +411,92 @@ describe("deriveFlowSteps", () => {
     expect(warningKeys(stepFor(steps, "gea"))).toContain("submit.gea.spatialImage.largeImageGeneralist")
   })
 
+  test("deriveFlowSteps_ngsExpressionMatrix_emitsDraAndGeaTwoStep", () => {
+    const submission: Submission = {
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "expression-matrix",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g1",
+          chipTags: [{ axis: "expression-source", value: "ngs" }],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "dra", "gea"])
+    const dra = stepFor(steps, "dra")
+    expect(dra.origin).toBe("recipe")
+    expect(dra.scope.entryIds).toEqual(["e1"])
+    expect(stepFor(steps, "gea").scope.entryIds).toContain("e1")
+  })
+
+  test("deriveFlowSteps_nonNgsExpressionMatrix_emitsGeaOnly", () => {
+    const submission: Submission = {
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "expression-matrix",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "gea"])
+    expect(steps.some((s) => s.service === "dra")).toBe(false)
+  })
+
+  test("deriveFlowSteps_ngsExpressionAndSequenceRead_unionsIntoSingleDraStep", () => {
+    const submission: Submission = {
+      preconditions: { q2: "human" },
+      accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "sequence-read",
+          access: "open",
+          dataForm: "raw",
+          groupId: "g1",
+          chipTags: [],
+        },
+        {
+          id: "e2",
+          fileTypeKind: "expression-matrix",
+          access: "open",
+          dataForm: "matrix",
+          groupId: "g2",
+          chipTags: [{ axis: "expression-source", value: "ngs" }],
+        },
+      ],
+      fileGroups: [
+        { id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] },
+        { id: "g2", groupType: "single", memberFileIds: ["e2"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    const dra = stepFor(steps, "dra")
+    expect(dra.scope.entryIds).toEqual(["e1", "e2"])
+  })
+
   test("deriveFlowSteps_disabledKindByQ2_isExcludedFromFlow", () => {
     const submission: Submission = {
       preconditions: { q2: null },

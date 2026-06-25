@@ -64,10 +64,10 @@ Cross-DB Tag は前段フィルタ / 種別トグル / 種別ごとの access・
 | 区分 | 例 | 置き場所 |
 |---|---|---|
 | flow-changing・**前段**で判定 | Q2 ヒト/非ヒト (variant→TogoVar/EVA, reads→DRA/JGA) / ② 公開区分 (JGA 分岐) | 前段 Q2・② 公開区分 |
-| flow-changing・**種別ごと**に判定 | `assembly-form` ゲノム/MAG/SAG/ハプロタイプ (`ddbj` ENV genome 経路・`umbrella-bioproject` 導出) / `has-annotation` アノテーション有無 (ゲノム + アノテーションなし → unannotated 経路) / `tpa` (TPA→MSS) / `small-scale` (小規模→NSSS) / `spatial-platform` (Sequencing→DRA+GEA / Microarray→GEA) / `identifiability` (ヒト配列リード・塩基配列・バリアントの個人識別性。DRA/DDBJ/TogoVar ↔ JGA) | データ詳細 (種別ごとの質問) |
+| flow-changing・**種別ごと**に判定 | `assembly-form` ゲノム/MAG/SAG/ハプロタイプ (`ddbj` ENV genome 経路・`umbrella-bioproject` 導出) / `has-annotation` アノテーション有無 (ゲノム + アノテーションなし → unannotated 経路) / `tpa` (TPA→MSS) / `small-scale` (小規模→NSSS) / `spatial-platform` (Sequencing→DRA+GEA / Microarray→GEA) / `expression-source` (NGS 由来→DRA+GEA / Non-NGS→GEA のみ) / `identifiability` (ヒト配列リード・塩基配列・バリアントの個人識別性。DRA/DDBJ/TogoVar ↔ JGA) | データ詳細 (種別ごとの質問) |
 | service / step 不変・DB 内部の細部 | reads の single/paired/10x/多重化 (DRA Library Layout・Instrument・BioSample 粒度) / 発現の MAGE-TAB・アレイ single/two-color (GEA 内の形式・IDF/SDRF) / variant の reference 有無・SNP/SV (TogoVar 内登録種別) / 質量分析の測定方式・MSI イメージング (MetaboBank 内のファイル差) / MSS data type の WGS/TSA/TLS/EST/HTG/HTC/GSS / BS package / DRA Library Strategy | Step カードの Intra-DB Tag pulldown |
 
-詳細質問は「flow-changing・種別ごと」の軸だけを持つ。該当軸が無い種別 (`expression-matrix` / `microarray-expression` / `metabolomics` / `proteome`) は **詳細質問を持たず、詳細カードを出さない** (行先は前段 Q2 + ② 公開区分で確定する)。TPA は `sequence` 種別の ChipAxis として持ち、TPA 対象外の種別には出さない。`identifiability` は `sequence-read` / `sequence` / `variant` 種別の ChipAxis として Q2=human 時に表示し、非ヒト Q2 では出さない。
+詳細質問は「flow-changing・種別ごと」の軸だけを持つ。該当軸が無い種別 (`microarray-expression` / `metabolomics` / `proteome`) は **詳細質問を持たず、詳細カードを出さない** (行先は前段 Q2 + ② 公開区分で確定する)。TPA は `sequence` 種別の ChipAxis として持ち、TPA 対象外の種別には出さない。`identifiability` は `sequence-read` / `sequence` / `variant` 種別の ChipAxis として Q2=human 時に表示し、非ヒト Q2 では出さない。
 
 flow を変えない区分を詳細質問に出すと「答えさせても経路に反映されない」死んだ質問になり、flow を変える区分を Intra-DB に隠すと「経路が誤って導出される」。両方向の事故を防ぐのがこの基準である。
 
@@ -101,7 +101,7 @@ submit ナビは典型的な提出 (1 種別 = 1 つの論理データ) を案�
 - **② 公開区分 (accessSection)**: ヒト時のみ active (非ヒト時は表示 + 全体 disable)。4 つのトグルボタンで制限公開の希望と公開区分の根拠を設定し、access を**種別ごとに**導出する。倫理指針に沿ったヒト研究の場合、個人識別性のある種別 (配列リード・塩基配列・バリアント) は restricted、それ以外は open になり、同一 submission 内で制限と公開が混在しうる。詳細は `## 公開区分 (access) の規約`
 - **FileTypeKind**: データファイルの種別で、**真の一次登録単位だけ**を値域とする (配列リード / 塩基配列 / バリアント / 発現マトリクス / マイクロアレイ / 空間トランスクリプトーム / 空間画像 / メタボロミクス / プロテオーム)。中段の選択トグルの単位で、利用者は手元にある種別を on にする (同一種別は高々 1 個)。附随メタデータ (表現型・サンプル属性) は BioSample の Intra-DB Tag、付随ファイル (processed 画像 / 解析レポート / 可視化オブジェクト) は主データ step の追加ファイル枠で扱い、FileTypeKind には含めない。ベンダー raw データも独立種別を作らずメタボロミクスの file_format に含める
 - **Access**: `open` / `restricted`。**per-file の混合を持たず種別単位**で扱う軸。② 公開区分の導出結果として**種別ごとに**値が入る (`## 公開区分 (access) の規約`)。倫理指針に沿ったヒト研究では、個人識別性のある種別 (配列リード等) が restricted、ない種別 (発現マトリクス等) が open になり、同一 submission 内で値が分かれうる。`restricted ∧ Q2 = ヒト` の組合せが JGA への分岐起点で、restricted な種別が JGA に振られる。非ヒトは既定 open で INSDC が制限公開を持たないため DRA に公開予定日 (embargo) 付きで出す
-- **ChipAxis**: 前段で表現できない、かつ **出る service / step を変える (flow-changing)** 細部区分を、種別ごとの `{axis, value}` ペアで表現する。`assembly-form` (ゲノム / MAG / SAG / ハプロタイプの 4 択 radio。MAG/SAG を `ddbj` ENV genome 経路に振り分ける、ハプロタイプの `umbrella-bioproject` 導出) / `has-annotation` (アノテーション付きかどうかのトグル。`assembly-form=genome` でアノテーションなしの場合に unannotated 経路に分岐) / `tpa` (TPA → MSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `small-scale` (小規模 → NSSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `spatial-platform` (GEA Sequencing/Microarray・DRA 2 段の振り分け) / `identifiability` (個人識別性の有無。`sequence-read` / `sequence` / `variant` の 3 種別で Q2=human 時に表示。デフォルト `identifiable`。倫理指針 ON 時に `non-identifiable` を選ぶと当該種別の access が open になり JGA ではなく公開系 destination に振られる)。出る service を変えない区分 (バリアントの SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う (`### 詳細質問の選別基準`)。`assembly-form` の routing 上の意味は `## 設計判断` を参照
+- **ChipAxis**: 前段で表現できない、かつ **出る service / step を変える (flow-changing)** 細部区分を、種別ごとの `{axis, value}` ペアで表現する。`assembly-form` (ゲノム / MAG / SAG / ハプロタイプの 4 択 radio。MAG/SAG を `ddbj` ENV genome 経路に振り分ける、ハプロタイプの `umbrella-bioproject` 導出) / `has-annotation` (アノテーション付きかどうかのトグル。`assembly-form=genome` でアノテーションなしの場合に unannotated 経路に分岐) / `tpa` (TPA → MSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `small-scale` (小規模 → NSSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `spatial-platform` (GEA Sequencing/Microarray・DRA 2 段の振り分け) / `expression-source` (発現マトリクスの由来。`ngs` で DRA+GEA 2 段、未選択で GEA のみ) / `identifiability` (個人識別性の有無。`sequence-read` / `sequence` / `variant` の 3 種別で Q2=human 時に表示。デフォルト `identifiable`。倫理指針 ON 時に `non-identifiable` を選ぶと当該種別の access が open になり JGA ではなく公開系 destination に振られる)。出る service を変えない区分 (バリアントの SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う (`### 詳細質問の選別基準`)。`assembly-form` の routing 上の意味は `## 設計判断` を参照
 - **GroupType**: 複数ファイルが論理的に 1 単位を成す関係 (MAGE-TAB、imaging-ms 等)。経路導出の分岐要素として効く。詳細は `### group と Tier1 分岐` を参照
 - **Service**: 登録先・導出物・外部誘導を表す単一の enum。各値は **role** を持つ (`destination` = 利用者のデータが行く登録先 / `companion` = submission 全体に共通する導出物 / `external` = DDBJ 外への誘導)。詳細は `## Service と role / 外向き契約`
 
@@ -249,17 +249,18 @@ GroupType による分岐は、単一 group で完結するものを Tier1 (`emi
 | BioSample 生成 (companion、種別 ≥ 1 で 1 つ) | submission 全体に共通。実サンプル数・生物種・package は Intra-DB Tag |
 | JGA 前提ゲート + companion 抑制 (`jga-submission` recipe) | JGA は BioProject/BioSample を使わず Policy 承認を前提とする。submission 全体を見て判定 |
 | spatial の DRA 2 段 (`spatial` recipe) | 1 種別 → DRA + GEA の cross-archive で Tier1 の単一 emit に収まらない |
+| 発現マトリクスの DRA 2 段 (`expression-dra` recipe) | NGS 由来の発現マトリクスは生リードを DRA に出す cross-archive 2 段。`expression-source: ngs` 時に DRA step を emit |
 | ハプロタイプの Umbrella BioProject (`haplotype` recipe) | DDBJ/NCBI 公式でハプロタイプ登録にはUmbrella BioProject が必須。`assembly-form: haplotype` 時に `umbrella-bioproject` companion step を emit |
 | no-destination 警告 | 全種別評価後の集約 |
 | 順序 / id 一意 / 同 service scope union | 出力整形 |
 
-`named recipe` の集合は allowlist (`jga-submission` / `spatial` / `sequence-dra` / `haplotype`、`RECIPE_ALLOWLIST` が SSOT) として固定し、勝手に増えないことを PBT で担保する (Tier1 骨抜き防止)。BioProject / BioSample は通常 1 つずつの companion とする。
+`named recipe` の集合は allowlist (`jga-submission` / `spatial` / `sequence-dra` / `expression-dra` / `haplotype`、`RECIPE_ALLOWLIST` が SSOT) として固定し、勝手に増えないことを PBT で担保する (Tier1 骨抜き防止)。BioProject / BioSample は通常 1 つずつの companion とする。
 
 ---
 
 ## Tier2 recipe 詳細
 
-named recipe (`jga-submission` / `spatial`、allowlist 固定) は、薄インタプリタが確定した service+scope を受け、その上に submission 全体の構造を足す。
+named recipe (`jga-submission` / `spatial` / `sequence-dra` / `expression-dra` / `haplotype`、allowlist 固定) は、薄インタプリタが確定した service+scope を受け、その上に submission 全体の構造を足す。
 
 ### jga-submission
 
@@ -302,7 +303,7 @@ emit する FlowStep は `umbrella-bioproject` (companion、Umbrella BioProject 
 
 `## 経路導出と不変量` の構造不変量に足す、`RECIPE_ALLOWLIST` の全 recipe 横断の性質:
 
-- **recipe-companion-override**: `jga-submission` は BioProject/BioSample をともに抑制、`spatial` / `haplotype` は既定 companion (BioProject 1 + BioSample 1) を保つ
+- **recipe-companion-override**: `jga-submission` は BioProject/BioSample をともに抑制、`spatial` / `expression-dra` / `haplotype` は既定 companion (BioProject 1 + BioSample 1) を保つ
 - **recipe-no-orphan-destination**: recipe 適用後も全種別が destination service step に入る
 - **recipe-service-exclusive**: 同一種別が排他 service の両方の scope に入らない
 
@@ -344,7 +345,7 @@ deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission �
 | candidateRepos-parity | `KindRoute.candidateRepos` ⊇ rules の全 `emit.service`、かつ前段データの種別 repos と一致 |
 | messageKey-existence | 全 note の messageKey が i18n (ja/en) に存在 |
 | every-kind-has-fallback | 全 KindRoute が `{always}` rule または named recipe を持つ (孤児ゼロの構造保証) |
-| recipe-allowlist | named recipe の集合が固定 allowlist (`jga-submission` / `spatial`) 内 |
+| recipe-allowlist | named recipe の集合が固定 allowlist (`jga-submission` / `spatial` / `sequence-dra` / `expression-dra` / `haplotype`) 内 |
 
 **エンジン不変量** (Tier2 が後段で必ず保証):
 
@@ -431,6 +432,8 @@ JGA は **ヒト個人由来の制限公開データ** (個人特定可能な遺
 
 GEA の Submission Type が **Sequencing** のとき (NGS 由来の発現・空間 Tx)、生リード (fastq/bam) を先に DRA に登録し、processed データを GEA に出す **2 段**になる (`_gea/submit-sequence.md` は DRA タブ必須、`_gea/datafile.md` は「生データは DRA に事前登録」)。Submission Type が **Microarray** のときは生データも GEA に直接登録し DRA を経由しない (`_gea/submit-array.md` に DRA タブ無し)。
 
+発現マトリクスも同様に、NGS 由来かどうかで DRA 2 段の要否が分かれる。`expression-source` ChipAxis で `ngs` を選択すると `expression-dra` recipe が DRA step を emit し、未選択 (Non-NGS) なら GEA のみになる。
+
 空間 Tx は platform で Submission Type と DRA 2 段の要否が割れる (`_gea/spatial-gene-expression.md`)。これは **出る service の集合が変わる flow-changing 軸**なので、`spatial-platform` を note 止まりにせず Tier2 `spatial` recipe で実際に DRA step を emit する (`### spatial`)。
 
 | platform | GEA Submission Type | DRA 2 段 | 備考 |
@@ -492,6 +495,7 @@ submit ナビが採る登録先導出の設計判断とその公式根拠・ト�
 - **塩基配列の窓口は MSS と NSSS の 2 つ**: 「DDBJ」の登録先 DB は 1 つだが投入窓口が 2 つあり、両者を別 destination service (`ddbj` = MSS / `nsss` = NSSS) として持つ。振り分け基準・規模境界の note 案内は `### MSS / NSSS の振り分け`。リードは対象外で DRA に回る
 - **変異の登録先はヒト/非ヒトと公開区分で割れる**: 公開ヒト → `togovar`、制限公開ヒト → `jga`、非ヒト (公開/制限問わず) → `eva`。TogoVar はヒト専用なので非ヒトを警告で済ませず `eva` を実 emit する。短い/構造バリアントの差は TogoVar・EVA いずれも同 service 内の登録種別差で出る service を変えないため Intra-DB Tag で扱い、reference 配列の有無も公式に routing 軸が無く同様 (`variant` は詳細質問を持たず行先は Q2 + access で確定)。旧 DGVa は EVA に統合済みで独立 service にしない。TogoVar の reference assembly 制約 (GRCh37/38 等) は一次情報未確認のため hard-constraint にせず登録時 validator に委ねる
 - **メタボロミクスとプロテオームは独立種別**: メタボロミクス (質量分析 / NMR / 代謝物アサインメント) は `metabolomics` として 1 種別に統合し MetaboBank 一択。プロテオーム (非 MS 含む) は `proteome` として独立種別に昇格し jPOST 一択。旧設計の `mass-spec-domain` ChipAxis は廃止する (proteome が独立種別になるため分岐が不要)。MSI イメージングは MetaboBank 内のファイル要求差 (出る service は不変) なので groupType `imaging-ms` で構造を表す
+- **発現マトリクスの NGS 由来は recipe で実 DRA step を出す**: `expression-source` は発現マトリクスの由来を表す flow-changing 軸で、`ngs` 選択時は `expression-dra` recipe が DRA step を emit する (DRA + GEA 2 段)。Non-NGS 選択時は GEA のみ (microarray は別種別 `microarray-expression` で分離済み)
 - **空間 Tx の platform は recipe で実 DRA step を出す**: `spatial-platform` は GEA Submission Type と DRA 2 段の要否を変える flow-changing 軸なので、note 止まりにせず Tier2 `spatial` recipe で Sequencing platform に実 DRA step を emit する (platform 値域・分類・MERFISH 画像の外部誘導は `### spatial` / `### 発現・空間の DRA 2 段`)
 - **`assembly-form` と `has-annotation` は塩基配列の直交する 2 軸**: `assembly-form` は 4 択 radio (ゲノム / MAG / SAG / ハプロタイプ) でアセンブリ形式を選択する。`has-annotation` は独立トグルでアノテーション有無を表す。(1) ゲノム (`genome`) + アノテーション付き = 標準の `ddbj` MSS 登録。(2) ゲノム + アノテーションなし = FASTA のみ、`ddbj` unannotated 経路。(3) MAG (`mag`) = `ddbj` ENV genome エントリ。(4) SAG (`sag`) = `ddbj` SAG エントリ。(5) ハプロタイプ (`haplotype`) = `ddbj` + `haplotype` recipe が `umbrella-bioproject` companion step を emit (DDBJ/NCBI 公式でUmbrella BioProject 必須)。MAG/SAG/ハプロタイプ選択時は TPA・小規模トグルを false にして disabled にする (これらの assembly form では NSSS や TPA が不適用のため)。WGS/GNM/TSA/TLS/EST/HTG/HTC/GSS は全て同じ `ddbj` 行きで出る service を変えないため、`assembly-form` の値域に持たず Step カードの MSS data type pulldown (Intra-DB Tag) で扱う
 - **第三者 (TPA) は `sequence` 種別の ChipAxis で扱う**: 配列系の TPA → `ddbj` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)。TPA は `sequence` 種別でのみ ChipAxis `tpa` として表示し、TPA 対象外の種別には出さない。MAG/SAG/ハプロタイプ選択時は disabled。MetaboBank の第三者再解析は正式サポート未確認のため当面除外する

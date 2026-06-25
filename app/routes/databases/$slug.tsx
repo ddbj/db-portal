@@ -1,6 +1,7 @@
 import { type MouseEvent, useCallback } from "react"
 import { type LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router"
 
+import { ContentToc } from "~/features/contents"
 import { pageTitleMeta } from "~/lib/content"
 import { getPageBySlug } from "~/lib/content/markdown-loader"
 import { useProseEnhance } from "~/lib/content/use-prose-enhance"
@@ -9,6 +10,7 @@ import { PageTitle, Section } from "~/ui"
 
 export const handle = {
   titleResolver: "database-content",
+  breadcrumbResolver: "database-content",
   i18n: { en: "complete" },
 } as const
 
@@ -49,11 +51,15 @@ const DatabaseSlugRoute = () => {
   const html = lang === "en" && page.html.en
     ? page.html.en
     : page.html.ja
+  const toc = lang === "en" && page.toc.en
+    ? page.toc.en
+    : page.toc.ja
 
   return (
     <article className="pb-section-lg">
       <PageTitle title={fm.title} subtitle={fm.description} maxWidth={880} />
       <Section padY="sm">
+        <ContentToc headings={toc} />
         <div
           className="prose prose-bsi"
           dangerouslySetInnerHTML={{ __html: html }}

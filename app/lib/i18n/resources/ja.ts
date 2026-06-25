@@ -218,10 +218,15 @@ export type Resources = {
         assemblyForm: string
         target: string
         platform: string
+        expressionSource: string
         domain: string
         identifiability: string
       }
       options: {
+        expressionMatrix: {
+          ngs: { label: string; sub: string }
+          nonNgs: { label: string; sub: string }
+        }
         sequenceNucleotide: {
           hasAnnotation: { label: string; sub: string }
           genome: { label: string; sub: string }
@@ -357,11 +362,12 @@ export type Resources = {
       eva: { nonHuman: string }
     }
     gea: {
-      expressionMatrix: { intro: string }
+      expressionMatrix: { intro: string; ngsRawToDra: string }
       microarray: { intro: string }
       spatial: { intro: string; sequencingRawToDra: string }
       spatialImage: { intro: string; largeImageGeneralist: string }
     }
+    expressionDra: { raw: string }
     jga: {
       analysis: { intro: string }
       array: { intro: string }
@@ -883,10 +889,15 @@ export const ja: Resources = {
         assemblyForm: "アセンブリ形式",
         target: "対象",
         platform: "プラットフォーム",
+        expressionSource: "データの由来",
         domain: "分析ドメイン",
         identifiability: "個人識別性",
       },
       options: {
+        expressionMatrix: {
+          ngs: { label: "NGS (RNA-seq, ChIP-seq 等)", sub: "生リードは DRA に登録が必要です (DRA + GEA 2 段)" },
+          nonNgs: { label: "Non-NGS", sub: "マトリクスを GEA に直接登録します" },
+        },
         sequenceNucleotide: {
           hasAnnotation: { label: "アノテーション付き", sub: "CDS, rRNA 等の構造・機能アノテーションを含む" },
           genome: { label: "ゲノム", sub: "WGS, 完成ゲノム, TSA, TLS 等の一般的な配列" },
@@ -1058,6 +1069,7 @@ export const ja: Resources = {
     gea: {
       expressionMatrix: {
         intro: "発現マトリクスは GEA に登録します。",
+        ngsRawToDra: "NGS 由来の生リード (FASTQ/BAM) は、別 entry として DRA に登録してください (DRA + GEA の 2 段)。",
       },
       microarray: {
         intro: "マイクロアレイ発現は、GEA の Experiment として登録します。",
@@ -1110,6 +1122,9 @@ export const ja: Resources = {
       dra: {
         raw: "シーケンス由来 (Visium / Stereo-seq) の生リードは、processed データ (GEA) より先に DRA に登録します (DRA + GEA の 2 段)。",
       },
+    },
+    expressionDra: {
+      raw: "NGS 由来の発現マトリクスでは、生リード (FASTQ/BAM) を processed データ (GEA) より先に DRA に登録します (DRA + GEA の 2 段)。",
     },
     sequenceDra: {
       raw: "MAG / SAG / primary / binned のアセンブリでは、元の生リードを DRA に登録する必要があります。",

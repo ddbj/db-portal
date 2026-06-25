@@ -212,9 +212,23 @@ remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype
 
 `app/styles/tailwind.css` の `.prose-bsi` が Markdown HTML のスタイルを定義。`@tailwindcss/typography` の `prose` をベースに、BSI デザイントークンで上書き。`max-width` は `content-narrow` (880px) で中央揃え。
 
+#### TOC 抽出
+
+`app/lib/content/heading-extractor.ts` が Markdown AST から h2/h3 見出しを抽出し、`github-slugger` で `rehype-slug` と同一の ID を生成する。抽出結果は `PageContent.toc` に格納され、各ページの折りたたみ式目次として表示される。
+
+#### コンテンツツリー
+
+`app/lib/content/content-tree.ts` が `listAllPages()` からセクション別にグループ化したナビゲーションツリーを構築する。`_dev/` セクションは除外。ツリーは起動時に 1 度だけ計算されキャッシュされる。
+
+#### 全文検索
+
+`app/lib/content/search-index.ts` が MiniSearch でクライアントサイド全文検索インデックスを構築する。ja / en 別にインデックスを持ち、title (boost 3) > description (boost 2) > body (boost 1) でランク付け。prefix 検索と fuzzy 検索に対応。
+
 #### ルーティング
 
-現在は `databases/:slug` が明示ルート (`app/routes/databases/$slug.tsx`)。`_dev/*` は dev 環境のみの catch-all (`app/routes/_dev/page-content.tsx`)。今後 `policy` 等を追加する際に汎用 catch-all route に拡張予定。
+`/contents` がコンテンツのハブページ (検索 + セクション一覧)。pathless layout route (`app/routes/contents/layout.tsx`) が左サイドバーナビを提供し、`/contents` と `databases/:slug` を子ルートとして収容する。URL はフラットのまま (`/contents/` にネストしない)。`_dev/*` は layout の外に残る。
+
+パンくず: Home → コンテンツ(`/contents`) → ページタイトル。
 
 #### バリデーション
 
@@ -268,6 +282,14 @@ BSI 内 navigation の Service tiles (トップ左 main の primary tiles) と s
 - `getPageByPath(urlPath)` / `getPageBySlug(section, slug)`: 1 件取得
 - `listPagesBySection(section)` / `listAllPages()`: 一覧
 - `validateAllPages()`: Zod 検証
+
+**`app/lib/content/content-tree.ts`** (ナビゲーションツリー):
+
+- `getContentTree()`: セクション別にグループ化されたコンテンツツリー
+
+**`app/lib/content/search-index.ts`** (全文検索):
+
+- `searchContent(query, lang)`: MiniSearch による全文検索
 
 **`app/lib/content/loader.ts`** (TypeScript collection 用):
 

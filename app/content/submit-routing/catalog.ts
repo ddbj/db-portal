@@ -169,7 +169,7 @@ const catalogData = {
     },
     {
       id: "expression-matrix",
-      candidateRepos: ["gea", "jga"],
+      candidateRepos: ["gea", "dra", "jga"],
       rules: [
         {
           when: { and: [{ access: "restricted" }, { q2: "human" }] },
@@ -184,7 +184,14 @@ const catalogData = {
           emit: {
             service: "gea",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.gea.expressionMatrix.intro" }],
+            notes: [
+              { kind: "info", messageKey: "submit.gea.expressionMatrix.intro" },
+              {
+                kind: "info",
+                messageKey: "submit.gea.expressionMatrix.ngsRawToDra",
+                whenAny: { anyChip: { axis: "expression-source", value: "ngs" } },
+              },
+            ],
           },
         },
       ],

@@ -26,7 +26,7 @@ describe("resolvePageTitle", () => {
       handle: { titleResolver: "database-content" },
       params: { slug: "bioproject" },
     })
-    expect(resolvePageTitle(matches)).toBe("BioProject | Databases | BSI")
+    expect(resolvePageTitle(matches)).toBe("BioProject | Databases | Contents | BSI")
   })
 
   test("resolvePageTitle_databaseResolverUnknownSlug_fallsBackToBrand", () => {
