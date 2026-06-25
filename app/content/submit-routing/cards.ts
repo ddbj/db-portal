@@ -12,6 +12,31 @@ export type CardCopy = {
 }
 
 export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
+  "umbrella-bioproject": {
+    wizardSteps: {
+      ja: [
+        "D-way にログインして BioProject メニューを選択",
+        "「New submission」で Umbrella BioProject を新規作成（Project type: Umbrella を選択）",
+        "配下にリンクする BioProject（Principal/Alternate haplotype 用）のアクセッション番号と区別を記入",
+      ],
+      en: [
+        "Log in to D-way and navigate to the BioProject menu",
+        "Click [New submission] and create an umbrella BioProject (select Project type: Umbrella)",
+        "Enter the accession numbers and labels of the child BioProjects (for Principal/Alternate haplotypes) to link under the umbrella",
+      ],
+    },
+    prepare: {
+      ja: [
+        "配下にリンクする各ハプロタイプ用 BioProject のアクセッション番号（PRJDB######）",
+        "各ハプロタイプの区別ラベル（Principal/Alternate、Haplotype 1/2、Maternal/Paternal のいずれか）",
+      ],
+      en: [
+        "Accession numbers (PRJDB######) of the child BioProjects for each haplotype",
+        "Label for each haplotype (Principal/Alternate, Haplotype 1/2, or Maternal/Paternal)",
+      ],
+    },
+    issuedNote: { ja: "Umbrella BioProject ID (PRJDB######) が発行され、各ハプロタイプの BioProject を束ねます。", en: "An umbrella BioProject ID (PRJDB######) is issued and groups the child BioProjects for each haplotype." },
+  },
   "humandbs": {
     wizardSteps: {
       ja: [

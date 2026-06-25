@@ -206,9 +206,11 @@ export const en: Resources = {
       },
       options: {
         sequenceNucleotide: {
-          standalone: { label: "Standalone", sub: "Sequence on its own" },
+          annotated: { label: "Annotated sequence", sub: "Includes structural/functional annotation (CDS, rRNA, etc.)" },
+          unannotated: { label: "Unannotated sequence", sub: "Sequence data only (FASTA format)" },
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
+          haplotype: { label: "Haplotype", sub: "Submit each haplotype of a diploid/polyploid assembly" },
           tpa: { label: "Submit as TPA", sub: "Sequence and annotation based on third-party data" },
           smallScale: { label: "Small number of short sequences", sub: "Submit via NSSS (web form) instead of MSS (bulk file submission)" },
         },
@@ -294,6 +296,7 @@ export const en: Resources = {
         empty: "Add files to see the access level for each data type",
         emptySub: "",
       },
+      "umbrella-bioproject": { title: "Umbrella BioProject", description: "Groups child BioProjects for each haplotype under one umbrella." },
       "bioproject": { title: "BioProject", description: "Metadata grouping the whole project." },
       "biosample": { title: "BioSample", description: "Metadata grouping your samples." },
       "dra": { title: "DRA", description: "Deposits sequencing reads as runs and analyses." },
@@ -330,6 +333,13 @@ export const en: Resources = {
       },
       sag: {
         misagPackage: "SAGs are handled with the MISAG package, separate from MAGs.",
+      },
+      haplotype: {
+        intro: "Each haplotype is submitted under its own BioProject (Principal/Alternate or Haplotype 1/2).",
+        stComment: "The Genome-Assembly-Data ST_COMMENT must specify which haplotype (e.g. Diploid :: Principal haplotype).",
+      },
+      unannotated: {
+        intro: "Sequence-only submission via DDBJ (MSS). A minimal annotation file (at least source feature) is still required.",
       },
       mss: {
         intro: "Nucleotide sequences are submitted through DDBJ (MSS: Mass Submission System).",
@@ -421,6 +431,9 @@ export const en: Resources = {
     },
     sequenceDra: {
       raw: "MAG / SAG / primary / binned assemblies require the underlying raw reads to be deposited in DRA.",
+    },
+    umbrellaBioproject: {
+      intro: "Haplotype registration requires an umbrella BioProject that links the child BioProjects (one per haplotype) together.",
     },
     validations: {
       heading: "{{count}} things to check",

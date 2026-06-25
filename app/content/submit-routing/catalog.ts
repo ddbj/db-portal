@@ -72,6 +72,27 @@ const catalogData = {
           },
         },
         {
+          when: { anyChip: { axis: "assembly-form", value: "haplotype" } },
+          emit: {
+            service: "ddbj",
+            scope: "entry",
+            notes: [
+              { kind: "info", messageKey: "submit.ddbj.haplotype.intro" },
+              { kind: "info", messageKey: "submit.ddbj.haplotype.stComment" },
+            ],
+          },
+        },
+        {
+          when: { anyChip: { axis: "assembly-form", value: "unannotated" } },
+          emit: {
+            service: "ddbj",
+            scope: "entry",
+            notes: [
+              { kind: "info", messageKey: "submit.ddbj.unannotated.intro" },
+            ],
+          },
+        },
+        {
           when: { anyChip: { axis: "tpa", value: "true" } },
           emit: {
             service: "ddbj",

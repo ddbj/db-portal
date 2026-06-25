@@ -34,7 +34,7 @@ type RowFormDef = {
 
 const EMPTY_DEF: RowFormDef = { groups: [] }
 
-// 塩基配列: 単独 / MAG / SAG / TPA。MAG/SAG は ddbj ENV genome に分岐、TPA は ddbj MSS に分岐
+// 塩基配列: アノテーション付き / なし / MAG / SAG / ハプロタイプ / TPA
 const sequenceDef: RowFormDef = {
   groups: [
     {
@@ -44,10 +44,16 @@ const sequenceDef: RowFormDef = {
       kind: "radio",
       options: [
         {
-          value: "single",
-          labelKey: "submit.detail.options.sequenceNucleotide.standalone.label",
-          subKey: "submit.detail.options.sequenceNucleotide.standalone.sub",
+          value: "annotated",
+          labelKey: "submit.detail.options.sequenceNucleotide.annotated.label",
+          subKey: "submit.detail.options.sequenceNucleotide.annotated.sub",
           effect: { chipRemoveAxis: "assembly-form" },
+        },
+        {
+          value: "unannotated",
+          labelKey: "submit.detail.options.sequenceNucleotide.unannotated.label",
+          subKey: "submit.detail.options.sequenceNucleotide.unannotated.sub",
+          effect: { chipAdd: { axis: "assembly-form", value: "unannotated" } },
         },
         {
           value: "mag-chain",
@@ -60,6 +66,12 @@ const sequenceDef: RowFormDef = {
           labelKey: "submit.detail.options.sequenceNucleotide.sagChain.label",
           subKey: "submit.detail.options.sequenceNucleotide.sagChain.sub",
           effect: { chipAdd: { axis: "assembly-form", value: "sag" } },
+        },
+        {
+          value: "haplotype",
+          labelKey: "submit.detail.options.sequenceNucleotide.haplotype.label",
+          subKey: "submit.detail.options.sequenceNucleotide.haplotype.sub",
+          effect: { chipAdd: { axis: "assembly-form", value: "haplotype" } },
         },
       ],
     },

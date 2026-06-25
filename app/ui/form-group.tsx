@@ -20,7 +20,7 @@ export const FormGroup = ({
   children,
 }: FormGroupProps) => (
   <fieldset
-    className="mb-5 border-0 p-0 m-0"
+    className="border-0 p-0 m-0"
     aria-describedby={hint !== undefined && hintId !== undefined ? hintId : undefined}
   >
     <legend className="flex items-baseline gap-2 mb-2 flex-wrap p-0">

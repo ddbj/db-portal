@@ -209,9 +209,11 @@ export type Resources = {
       }
       options: {
         sequenceNucleotide: {
-          standalone: { label: string; sub: string }
+          annotated: { label: string; sub: string }
+          unannotated: { label: string; sub: string }
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
+          haplotype: { label: string; sub: string }
           tpa: { label: string; sub: string }
           smallScale: { label: string; sub: string }
         }
@@ -297,6 +299,7 @@ export type Resources = {
         empty: string
         emptySub: string
       }
+      "umbrella-bioproject": { title: string; description: string }
       "bioproject": { title: string; description: string }
       "biosample": { title: string; description: string }
       "dra": { title: string; description: string }
@@ -324,6 +327,8 @@ export type Resources = {
       mss: { intro: string }
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
+      haplotype: { intro: string; stComment: string }
+      unannotated: { intro: string }
       tpa: { intro: string; primaryAccessionRequired: string }
       assemblyAnnotation: { intro: string; filenamePairing: string }
       annotation: { intro: string; needsSequencePair: string }
@@ -367,6 +372,7 @@ export type Resources = {
     sequenceDra: {
       raw: string
     }
+    umbrellaBioproject: { intro: string }
     validations: {
       heading: string
       rowReference: string
@@ -854,9 +860,11 @@ export const ja: Resources = {
       },
       options: {
         sequenceNucleotide: {
-          standalone: { label: "単独配列", sub: "アノテーションを伴わない配列" },
+          annotated: { label: "アノテーション付き配列", sub: "CDS, rRNA 等の構造機能アノテーションを含む" },
+          unannotated: { label: "アノテーションなし配列", sub: "配列データのみ（FASTA 形式）" },
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
+          haplotype: { label: "ハプロタイプ", sub: "diploid/polyploid assembly の各ハプロタイプを個別に登録" },
           tpa: { label: "TPA として登録する", sub: "第三者データに基づく配列・アノテーション" },
           smallScale: { label: "少数の短い配列", sub: "NSSS (Web フォーム) で登録する場合にチェック" },
         },
@@ -942,6 +950,7 @@ export const ja: Resources = {
         empty: "ファイルを追加すると、データ種別ごとの公開区分が表示されます",
         emptySub: "",
       },
+      "umbrella-bioproject": { title: "Umbrella BioProject", description: "各ハプロタイプの BioProject をまとめる Umbrella" },
       "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねるメタデータ" },
       "biosample": { title: "BioSample", description: "サンプルを束ねるメタデータ" },
       "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },
@@ -981,6 +990,13 @@ export const ja: Resources = {
       },
       sag: {
         misagPackage: "SAG は MAG とは別の MISAG package で扱います。",
+      },
+      haplotype: {
+        intro: "各ハプロタイプは個別の BioProject で登録します（Principal/Alternate または Haplotype 1/2）。",
+        stComment: "Genome-Assembly-Data の ST_COMMENT でハプロタイプの区別（例: Diploid :: Principal haplotype）を記述する必要があります。",
+      },
+      unannotated: {
+        intro: "配列データのみの登録です（DDBJ MSS）。source feature 等の最低限のアノテーションファイルは別途必要です。",
       },
       tpa: {
         intro: "第三者 (TPA) の配列・アノテーションは、DDBJ (MSS) で受け付けます。",
@@ -1069,6 +1085,9 @@ export const ja: Resources = {
     },
     sequenceDra: {
       raw: "MAG / SAG / primary / binned のアセンブリでは、元の生リードを DRA に登録する必要があります。",
+    },
+    umbrellaBioproject: {
+      intro: "ハプロタイプ登録では、各ハプロタイプの BioProject をまとめる Umbrella BioProject の作成が必要です。",
     },
     validations: {
       heading: "確認事項が {{count}} 件あります",

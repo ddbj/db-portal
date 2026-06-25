@@ -98,7 +98,7 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
 }
 
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
-  "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid"],
+  "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid", "unannotated", "haplotype"],
   "tpa": ["true"],
   "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],

@@ -4,7 +4,7 @@ import { isKindEnabled } from "../cascade"
 import { type EntryRouting, routeEntries } from "./interpreter"
 import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
 import { byServiceDependencyOrder } from "./ordering"
-import { jgaSubmissionSteps, sequenceDraSteps, spatialSteps } from "./recipes"
+import { haplotypeSteps, jgaSubmissionSteps, sequenceDraSteps, spatialSteps } from "./recipes"
 import { makeStep, mergeScopes, scopeOfEntries } from "./shared"
 
 // 薄インタプリタ: 同一 service の per-entry routing を 1 枚にまとめる
@@ -75,6 +75,7 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
     ...jgaSubmissionSteps(jgaEntries),
     ...spatialSteps(activeEntries),
     ...sequenceDraSteps(activeEntries),
+    ...haplotypeSteps(activeEntries),
   ])
 
   return [...steps].sort(byServiceDependencyOrder)

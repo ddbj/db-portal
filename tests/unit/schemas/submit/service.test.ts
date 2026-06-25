@@ -22,7 +22,7 @@ const ALL_SERVICES = Service.options
 
 describe("Service enum and role partition", () => {
   test("Service_twelveOptions", () => {
-    expect(ALL_SERVICES).toHaveLength(12)
+    expect(ALL_SERVICES).toHaveLength(13)
   })
 
   test("SERVICE_ROLE_keysExactlyMatchServiceOptions", () => {

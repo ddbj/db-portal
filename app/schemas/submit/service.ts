@@ -2,6 +2,7 @@ import { z } from "zod"
 
 // 登録先・導出物・外部誘導を表す単一 enum。各値は role を持つ
 export const Service = z.enum([
+  "umbrella-bioproject",
   "bioproject",
   "biosample",
   "dra",
@@ -21,6 +22,7 @@ export const ServiceRole = z.enum(["destination", "companion", "external"])
 export type ServiceRole = z.infer<typeof ServiceRole>
 
 export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
+  "umbrella-bioproject": "companion",
   "bioproject": "companion",
   "biosample": "companion",
   "dra": "destination",
@@ -104,7 +106,8 @@ export const serviceBadgeColor = ({
 // companion (bioproject/biosample) は destination の前提、humandbs (Policy ゲート) は jga の前提、
 // dra は gea (sequencing 2 段) / ddbj (MAG) の前提。jga は companion を抑制するので bioproject/biosample に依存しない。
 export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>> = {
-  "bioproject": [],
+  "umbrella-bioproject": [],
+  "bioproject": ["umbrella-bioproject"],
   "biosample": [],
   "humandbs": [],
   "jpost": [],
@@ -123,6 +126,7 @@ export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>>
 // SERVICE_DEPENDENCIES の妥当な線形拡張であることは PBT/unit で固定する。
 export const SERVICE_DEPENDENCY_ORDER: readonly Service[] = [
   "humandbs",
+  "umbrella-bioproject",
   "bioproject",
   "biosample",
   "dra",
