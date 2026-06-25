@@ -8,8 +8,11 @@ type ValidateResult = {
 }
 
 type LoaderModule = {
-  validateAllDatabases: () => ValidateResult
   validateAllServices: () => ValidateResult
+}
+
+type MarkdownLoaderModule = {
+  validateAllPages: () => ValidateResult
 }
 
 type CatalogModule = {
@@ -38,20 +41,28 @@ const main = async (): Promise<void> => {
       fileURLToPath(new URL("../app/lib/content/loader.ts", import.meta.url)),
     )) as LoaderModule
 
-    const databaseResult = mod.validateAllDatabases()
-    if (!databaseResult.ok) {
-      hasFailure = true
-      for (const e of databaseResult.errors ?? []) {
-        console.error("Database content validation failed", e.filepath, e.error)
-      }
-    }
-
     const serviceResult = mod.validateAllServices()
     if (!serviceResult.ok) {
       hasFailure = true
       for (const e of serviceResult.errors ?? []) {
         console.error("Service content validation failed", e.filepath, e.error)
       }
+    }
+
+    try {
+      const markdownMod = (await vite.ssrLoadModule(
+        fileURLToPath(new URL("../app/lib/content/markdown-loader.ts", import.meta.url)),
+      )) as MarkdownLoaderModule
+      const pageResult = markdownMod.validateAllPages()
+      if (!pageResult.ok) {
+        hasFailure = true
+        for (const e of pageResult.errors ?? []) {
+          console.error("Page content validation failed", e.filepath, e.error)
+        }
+      }
+    } catch (e) {
+      hasFailure = true
+      console.error("Page content validation failed", e)
     }
 
     try {

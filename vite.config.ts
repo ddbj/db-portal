@@ -22,6 +22,9 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: Number(process.env.DB_PORTAL_APP_INTERNAL_PORT ?? 3000),
+    fs: {
+      allow: ["."],
+    },
   },
   test: {
     globals: true,

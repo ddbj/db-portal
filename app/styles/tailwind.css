@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* BSI デザイントークン (Tailwind v4 @theme).
  *
@@ -164,4 +165,72 @@ body {
   font-family: var(--font-sans);
   color: var(--color-ink);
   background: var(--color-surface);
+}
+
+/* === Prose (Markdown content pages) ======================================= */
+
+.prose-bsi {
+  --tw-prose-body: var(--color-ink-mid);
+  --tw-prose-headings: var(--color-ink);
+  --tw-prose-links: var(--color-brand);
+  --tw-prose-code: var(--color-ink);
+  --tw-prose-bold: var(--color-ink);
+  --tw-prose-counters: var(--color-ink-soft);
+  --tw-prose-bullets: var(--color-ink-soft);
+  --tw-prose-hr: var(--color-border-soft);
+  --tw-prose-th-borders: var(--color-border-soft);
+  --tw-prose-td-borders: var(--color-border-soft);
+  font-size: var(--text-fs-body);
+  line-height: var(--leading-relaxed);
+}
+
+.prose-bsi h2 {
+  padding-left: 10px;
+  border-left: 3px solid var(--color-brand);
+  font-size: var(--text-fs-h2);
+  line-height: var(--leading-tight);
+}
+
+.prose-bsi h3 {
+  font-size: var(--text-fs-h3);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+}
+
+.prose-bsi a:hover {
+  text-decoration: underline;
+}
+
+.prose-bsi code {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-mono);
+}
+
+.prose-bsi th {
+  background: var(--color-surface-subtle);
+}
+
+.prose-bsi .markdown-alert {
+  border-radius: var(--radius-card);
+  padding: 10px 14px;
+  font-size: var(--text-fs-body-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.prose-bsi .markdown-alert-note {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-soft);
+  color: var(--color-ink-mid);
+}
+
+.prose-bsi .markdown-alert-warning {
+  background: var(--color-warn-bg);
+  border: 1px solid var(--color-warn-border);
+  color: var(--color-warn-fg);
+}
+
+.prose-bsi .markdown-alert-tip {
+  background: var(--color-ok-bg);
+  border: 1px solid var(--color-ok-border);
+  color: var(--color-ok-fg);
 }

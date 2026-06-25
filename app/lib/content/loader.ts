@@ -1,12 +1,10 @@
 import { type z, type ZodTypeAny } from "zod"
 
-import { DatabaseContent } from "~/schemas/content/database-content"
 import { ServiceContent, type ServiceTopCategory } from "~/schemas/content/service-content"
 import type { Service as SubmitService } from "~/schemas/submit"
 
 import type {
   Collection,
-  DatabaseCollection,
   ServiceCollection,
   ValidationFailure,
   ValidationResult,
@@ -52,21 +50,11 @@ const formatValidationFailure = (failure: ValidationFailure): string => {
 export const formatValidationErrors = (errors: ValidationFailure[]): string =>
   errors.map(formatValidationFailure).join("\n\n")
 
-const databaseModules = import.meta.glob<{ default: unknown }>(
-  "/app/content/databases/**/*.content.tsx",
-  { eager: true },
-)
 const serviceModules = import.meta.glob<{ default: unknown }>(
   "/app/content/services/**/*.content.tsx",
   { eager: true },
 )
 
-const databaseResult = collectFromModules(DatabaseContent, databaseModules)
-if (!databaseResult.ok) {
-  throw new Error(
-    `Database content validation failed:\n\n${formatValidationErrors(databaseResult.errors)}`,
-  )
-}
 const serviceResult = collectFromModules(ServiceContent, serviceModules)
 if (!serviceResult.ok) {
   throw new Error(
@@ -74,10 +62,8 @@ if (!serviceResult.ok) {
   )
 }
 
-const databases: DatabaseCollection[] = databaseResult.items
 const services: ServiceCollection[] = serviceResult.items
 
-const databaseBySlug = new Map(databases.map((i) => [i.content.slug, i.content]))
 const serviceById = new Map(services.map((i) => [i.content.id, i.content]))
 const serviceBySubmit = new Map<SubmitService, ServiceContent>()
 for (const item of services) {
@@ -92,15 +78,6 @@ for (const item of services) {
   }
   serviceBySubmit.set(submit.service, item.content)
 }
-
-export const getDatabaseBySlug = (slug: string): DatabaseContent | undefined =>
-  databaseBySlug.get(slug)
-
-export const listDatabases = (): readonly DatabaseContent[] =>
-  databases.map((i) => i.content)
-
-export const validateAllDatabases = (): ValidationResult<DatabaseContent> =>
-  collectFromModules(DatabaseContent, databaseModules)
 
 export const getServiceById = (id: string): ServiceContent | undefined =>
   serviceById.get(id)

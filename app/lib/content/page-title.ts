@@ -1,6 +1,6 @@
 import type { MetaArgs, MetaDescriptor } from "react-router"
 
-import { getDatabaseBySlug } from "./loader"
+import { getPageBySlug } from "./markdown-loader"
 
 const BRAND = "BSI"
 
@@ -34,9 +34,11 @@ const titleResolvers: Record<string, TitleResolver> = {
   "database-content": ({ params }) => {
     const slug = params.slug
     if (slug === undefined) return null
-    const db = getDatabaseBySlug(slug)
+    const page = getPageBySlug("databases", slug)
+    if (page === undefined) return null
+    const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
 
-    return db ? ["Databases", db.title.en] : null
+    return ["Databases", title]
   },
 }
 

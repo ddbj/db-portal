@@ -4,7 +4,7 @@ import { buildSitemapEntries, renderSitemapXml } from "../../../../server/api/si
 
 describe("buildSitemapEntries", () => {
   test("buildSitemapEntries_emitsJaAndEnQueryUrlsForEachPath", () => {
-    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["bioproject", "biosample"])
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["/databases/bioproject", "/databases/biosample"])
     const locs = entries.map((e) => e.loc)
 
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/?lang=ja")
@@ -22,7 +22,7 @@ describe("buildSitemapEntries", () => {
   })
 
   test("buildSitemapEntries_emitsTwoEntriesPerLogicalPath", () => {
-    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["a", "b", "c"])
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["/a", "/b", "/c"])
     expect(entries).toHaveLength((4 + 3) * 2)
   })
 

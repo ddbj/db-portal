@@ -6,7 +6,7 @@ import {
   type BreadcrumbResolver,
   useBreadcrumb,
 } from "~/lib/content/breadcrumb"
-import { getDatabaseBySlug } from "~/lib/content/loader"
+import { getPageBySlug } from "~/lib/content/markdown-loader"
 import { useLang, useT } from "~/lib/i18n"
 
 type BreadcrumbProps = {
@@ -19,10 +19,13 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
     const slug = params.slug
     if (slug === undefined) return null
-    const db = getDatabaseBySlug(slug)
-    if (db === undefined) return null
+    const page = getPageBySlug("databases", slug)
+    if (page === undefined) return null
+    const fm = lang === "en" && page.frontmatter.en
+      ? page.frontmatter.en
+      : page.frontmatter.ja
 
-    return { label: db.title[lang], href: pathname }
+    return { label: fm.title, href: pathname }
   }
   const mergedResolvers = { "database-content": databaseResolver, ...(resolvers ?? {}) }
   const raw = useBreadcrumb({ resolvers: mergedResolvers })

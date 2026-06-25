@@ -3,102 +3,77 @@ import { describe, expect, test } from "vitest"
 import {
   collectFromModules,
   formatValidationErrors,
-  getDatabaseBySlug,
-  listDatabases,
-  validateAllDatabases,
+  getPageBySlug,
+  listPagesBySection,
+  validateAllPages,
 } from "~/lib/content"
-import { DatabaseContent } from "~/schemas/content/database-content"
-
-const validDatabase = {
-  slug: "sample",
-  title: { ja: "サンプル", en: "Sample" },
-  description: { ja: "説明", en: "Description" },
-  body: { ja: "本文", en: "Body" },
-  meta: {
-    lastUpdated: "2026-05-21T00:00:00Z",
-    relatedDbs: [],
-    externalLinks: [],
-  },
-}
+import { PageFrontmatter } from "~/schemas/content/page-content"
+import { ServiceContent } from "~/schemas/content/service-content"
 
 describe("collectFromModules", () => {
   test("collectFromModules_allValid_returnsOk", () => {
     const modules = {
-      "/app/content/databases/sample/index.content.ts": { default: validDatabase },
-    }
-    const result = collectFromModules(DatabaseContent, modules)
-    expect(result).toMatchObject({
-      ok: true,
-      items: [{ content: { slug: "sample" } }],
-    })
-  })
-
-  test("collectFromModules_someInvalid_returnsErrors", () => {
-    const modules = {
-      "/app/content/databases/sample/index.content.ts": { default: validDatabase },
-      "/app/content/databases/broken/index.content.ts": {
-        default: { ...validDatabase, slug: "BROKEN" },
+      "/app/content/services/sample/index.content.ts": {
+        default: {
+          id: "sample",
+          title: { ja: "サンプル", en: "Sample" },
+          description: { ja: "説明", en: "Description" },
+          top: { category: "primary-service", order: 0 },
+          link: { kind: "internal", to: "/sample" },
+        },
       },
     }
-    const result = collectFromModules(DatabaseContent, modules)
-    expect(result).toMatchObject({
-      ok: false,
-      errors: [{ filepath: expect.stringContaining("broken") }],
-    })
-  })
-
-  test("collectFromModules_emptyModules_returnsOkWithEmptyItems", () => {
-    const result = collectFromModules(DatabaseContent, {})
-    expect(result).toEqual({ ok: true, items: [] })
-  })
-
-  test("collectFromModules_invalidLastUpdated_reportsError", () => {
-    const modules = {
-      "/x/bad.content.ts": {
-        default: { ...validDatabase, meta: { ...validDatabase.meta, lastUpdated: "yesterday" } },
-      },
-    }
-    const result = collectFromModules(DatabaseContent, modules)
-    expect(result.ok).toBe(false)
+    const result = collectFromModules(ServiceContent, modules)
+    expect(result.ok).toBe(true)
   })
 })
 
 describe("formatValidationErrors", () => {
   test("formatValidationErrors_includesFilepathAndPath", () => {
-    const modules = {
-      "/x/bad.content.ts": {
-        default: { ...validDatabase, slug: "WRONG" },
-      },
-    }
-    const result = collectFromModules(DatabaseContent, modules)
-    const errors = result.ok ? [] : result.errors
+    const parsed = PageFrontmatter.safeParse({ title: "" })
+    expect(parsed.success).toBe(false)
+    if (parsed.success) return
+    const errors = [{ filepath: "/x/bad.md", error: parsed.error }]
     const text = formatValidationErrors(errors)
-    expect(text).toContain("/x/bad.content.ts")
-    expect(text).toContain("slug")
+    expect(text).toContain("/x/bad.md")
+    expect(text).toContain("title")
   })
 })
 
-describe("getDatabaseBySlug / listDatabases / validateAllDatabases", () => {
-  test("getDatabaseBySlug_unknownSlug_returnsUndefined", () => {
-    expect(getDatabaseBySlug("nope")).toBeUndefined()
+describe("getPageBySlug / listPagesBySection / validateAllPages", () => {
+  test("getPageBySlug_unknownSlug_returnsUndefined", () => {
+    expect(getPageBySlug("databases", "nope")).toBeUndefined()
   })
 
-  test("getDatabaseBySlug_bioproject_returnsContent", () => {
-    const db = getDatabaseBySlug("bioproject")
-    expect(db?.slug).toBe("bioproject")
-    expect(db?.title.ja).toBe("BioProject")
+  test("getPageBySlug_bioproject_returnsContent", () => {
+    const page = getPageBySlug("databases", "bioproject")
+    expect(page?.slug).toBe("bioproject")
+    expect(page?.frontmatter.ja.title).toBe("BioProject")
   })
 
-  test("listDatabases_includesAllSubmitServices", () => {
-    const slugs = listDatabases().map((d) => d.slug).sort()
+  test("listPagesBySection_includesAllDatabases", () => {
+    const slugs = listPagesBySection("databases").map((p) => p.slug).sort()
     expect(slugs).toEqual([
       "bioproject", "biosample", "ddbj", "dra", "eva", "gea",
       "humandbs", "jga", "jpost", "metabobank", "nsss", "togovar",
     ].sort())
   })
 
-  test("validateAllDatabases_returnsOk", () => {
-    const result = validateAllDatabases()
+  test("validateAllPages_returnsOk", () => {
+    const result = validateAllPages()
     expect(result.ok).toBe(true)
+  })
+
+  test("getPageBySlug_bioproject_hasEnglishVersion", () => {
+    const page = getPageBySlug("databases", "bioproject")
+    expect(page?.frontmatter.en).toBeDefined()
+    expect(page?.frontmatter.en?.title).toBe("BioProject")
+    expect(page?.html.en).toBeDefined()
+  })
+
+  test("getPageBySlug_bioproject_htmlContainsRenderedMarkdown", () => {
+    const page = getPageBySlug("databases", "bioproject")
+    expect(page?.html.ja).toContain("<h2>")
+    expect(page?.html.ja).toContain("BioProject とは")
   })
 })

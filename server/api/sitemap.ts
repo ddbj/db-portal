@@ -7,20 +7,36 @@ import type { ServerEnv } from "../lib/env"
 
 const STATIC_PATHS = ["/", "/search", "/submit", "/news"] as const
 
-const CONTENT_DATABASES_DIR = "app/content/databases"
+const PAGE_CONTENTS_DIR = "page-contents"
 
-const listDatabaseSlugs = async (): Promise<readonly string[]> => {
-  const dir = path.resolve(process.cwd(), CONTENT_DATABASES_DIR)
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true })
+const listContentPaths = async (): Promise<readonly string[]> => {
+  const root = path.resolve(process.cwd(), PAGE_CONTENTS_DIR)
+  const paths: string[] = []
 
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
-      .sort()
-  } catch {
-    return []
+  const walk = async (dir: string, prefix: string): Promise<void> => {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const childDir = path.join(dir, entry.name)
+          const childPrefix = `${prefix}/${entry.name}`
+          try {
+            await fs.access(path.join(childDir, "index.md"))
+            paths.push(childPrefix)
+          } catch {
+            // no index.md
+          }
+          await walk(childDir, childPrefix)
+        }
+      }
+    } catch {
+      // dir does not exist
+    }
   }
+
+  await walk(root, "")
+
+  return paths.sort()
 }
 
 const escapeXml = (s: string): string =>
@@ -52,12 +68,12 @@ type SitemapEntry = {
 
 export const buildSitemapEntries = (
   origin: string,
-  databaseSlugs: readonly string[],
+  contentPaths: readonly string[],
 ): readonly SitemapEntry[] => {
   const base = trimOrigin(origin)
   const paths = [
     ...STATIC_PATHS,
-    ...databaseSlugs.map((slug) => `/databases/${slug}`),
+    ...contentPaths,
   ]
 
   return paths.flatMap((rawPath): SitemapEntry[] => {
@@ -99,7 +115,7 @@ ${body}
 
 export const handleSitemap = (env: ServerEnv): RequestHandler =>
   async (_req, res) => {
-    const slugs = await listDatabaseSlugs()
-    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, slugs)
+    const contentPaths = await listContentPaths()
+    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, contentPaths)
     res.type("application/xml").send(renderSitemapXml(entries))
   }

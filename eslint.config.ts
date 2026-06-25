@@ -29,6 +29,7 @@ export default tseslint.config(
       "playwright-report/",
       "repos/",
       "test-results/",
+      "page-contents/",
       "app/lib/api/openapi-types.ts",
     ],
   },
