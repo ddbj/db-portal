@@ -2,9 +2,12 @@ import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, Group
 import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Tag, Toggle } from "~/ui"
 
 import { applyRadio, initDraft, optionMatches, toggleCheck } from "./form-apply"
+import type { FormGroupDef } from "./form-defs"
 import { getRowFormDef, hasRowDetail } from "./form-defs"
 
 type DataDetailPatch = { groupType: GroupType; dataForm: DataForm; chipTags: FileEntryChip[] }
+
+type Draft = { groupType: GroupType; dataForm: DataForm; chipTags: FileEntryChip[] }
 
 type DataDetailPanelLabels = {
   empty: string
@@ -23,6 +26,41 @@ type DataDetailPanelProps = {
   labels: DataDetailPanelLabels
   isConfigured: (entryId: string) => boolean
   onCommit: (entryId: string, patch: DataDetailPatch) => void
+}
+
+type Section =
+  | { kind: "toggle-section"; headingKey: string; groups: FormGroupDef[] }
+  | { kind: "single"; group: FormGroupDef }
+
+const buildSections = (groups: readonly FormGroupDef[]): Section[] => {
+  const sections: Section[] = []
+  for (const g of groups) {
+    if (g.sectionHeadingKey !== undefined) {
+      sections.push({ kind: "toggle-section", headingKey: g.sectionHeadingKey, groups: [g] })
+    } else if (g.kind === "check" && g.options.length === 1) {
+      const last = sections[sections.length - 1]
+      if (last !== undefined && last.kind === "toggle-section") {
+        last.groups.push(g)
+        continue
+      }
+      sections.push({ kind: "single", group: g })
+    } else {
+      sections.push({ kind: "single", group: g })
+    }
+  }
+  return sections
+}
+
+const isGroupDisabled = (g: FormGroupDef, draft: Draft): boolean => {
+  const hasBlocking = g.disabledWhenAnyChip !== undefined
+    && g.disabledWhenAnyChip.some(({ axis, value }) =>
+      draft.chipTags.some((c) => c.axis === axis && c.value === value),
+    )
+  const missingRequired = g.disabledUnlessAnyChip !== undefined
+    && !g.disabledUnlessAnyChip.some(({ axis, value }) =>
+      draft.chipTags.some((c) => c.axis === axis && c.value === value),
+    )
+  return hasBlocking || missingRequired
 }
 
 export const DataDetailPanel = ({
@@ -49,6 +87,7 @@ export const DataDetailPanel = ({
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)
+        const sections = buildSections(def.groups)
 
         return (
           <li
@@ -79,50 +118,81 @@ export const DataDetailPanel = ({
                   )}
               </span>
             </div>
-            {def.groups.map((g) => (
-              <FormGroup key={g.id} num={g.num} label={labels.groupLabel(g.labelKey)}>
-                {g.options.map((opt) => {
-                  const checked = optionMatches(opt, draft)
-                  const label = labels.optionLabel(opt.labelKey)
-                  const sub = labels.optionSub(opt.subKey)
-                  if (g.kind === "radio") {
+            {sections.map((section) => {
+              if (section.kind === "toggle-section") {
+                return (
+                  <FormGroup key={section.groups[0]!.id} num={section.groups[0]!.num} label={labels.groupLabel(section.headingKey)}>
+                    {section.groups.map((g) => {
+                      const opt = g.options[0]!
+                      const disabled = isGroupDisabled(g, draft)
+                      const checked = !disabled && optionMatches(opt, draft)
+                      return (
+                        <Toggle
+                          key={g.id}
+                          label={labels.optionLabel(opt.labelKey)}
+                          sub={labels.optionSub(opt.subKey)}
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
+                        />
+                      )
+                    })}
+                  </FormGroup>
+                )
+              }
+
+              const g = section.group
+              if (g.kind === "check" && g.options.length === 1) {
+                const opt = g.options[0]!
+                const disabled = isGroupDisabled(g, draft)
+                const checked = !disabled && optionMatches(opt, draft)
+                return (
+                  <FormGroup key={g.id} num={g.num} label={labels.groupLabel(g.labelKey)}>
+                    <Toggle
+                      label={labels.optionLabel(opt.labelKey)}
+                      sub={labels.optionSub(opt.subKey)}
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
+                    />
+                  </FormGroup>
+                )
+              }
+
+              return (
+                <FormGroup key={g.id} num={g.num} label={labels.groupLabel(g.labelKey)}>
+                  {g.options.map((opt) => {
+                    const checked = optionMatches(opt, draft)
+                    const label = labels.optionLabel(opt.labelKey)
+                    const sub = labels.optionSub(opt.subKey)
+                    if (g.kind === "radio") {
+                      return (
+                        <FmtRadio
+                          key={opt.value}
+                          name={`detail-${entry.id}-${g.id}`}
+                          label={label}
+                          sub={sub}
+                          value={opt.value}
+                          checked={checked}
+                          onChange={() => onCommit(entry.id, applyRadio(draft, opt, g.options))}
+                        />
+                      )
+                    }
                     return (
-                      <FmtRadio
+                      <FmtCheck
                         key={opt.value}
                         name={`detail-${entry.id}-${g.id}`}
                         label={label}
                         sub={sub}
                         value={opt.value}
                         checked={checked}
-                        onChange={() => onCommit(entry.id, applyRadio(draft, opt, g.options))}
-                      />
-                    )
-                  }
-                  if (g.options.length === 1) {
-                    return (
-                      <Toggle
-                        key={opt.value}
-                        label={label}
-                        sub={sub}
-                        checked={checked}
                         onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
                       />
                     )
-                  }
-                  return (
-                    <FmtCheck
-                      key={opt.value}
-                      name={`detail-${entry.id}-${g.id}`}
-                      label={label}
-                      sub={sub}
-                      value={opt.value}
-                      checked={checked}
-                      onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
-                    />
-                  )
-                })}
-              </FormGroup>
-            ))}
+                  })}
+                </FormGroup>
+              )
+            })}
           </li>
         )
       })}

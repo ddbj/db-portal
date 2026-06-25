@@ -60,6 +60,7 @@ export type DataForm = z.infer<typeof DataForm>
 // SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う
 export const ChipAxis = z.enum([
   "assembly-form",
+  "has-annotation",
   "tpa",
   "small-scale",
   "spatial-platform",
@@ -97,8 +98,18 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
   "proteome": "single",
 }
 
+export type FileEntryChipLiteral = { axis: ChipAxis; value: string }
+
+export const DEFAULT_CHIPS_FOR_KIND: Readonly<Partial<Record<FileTypeKind, readonly FileEntryChipLiteral[]>>> = {
+  "sequence": [
+    { axis: "assembly-form", value: "genome" },
+    { axis: "has-annotation", value: "true" },
+  ],
+}
+
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
-  "assembly-form": ["raw", "primary", "binned", "mag", "sag", "hybrid", "unannotated", "haplotype"],
+  "assembly-form": ["raw", "primary", "binned", "genome", "mag", "sag", "hybrid", "haplotype"],
+  "has-annotation": ["true"],
   "tpa": ["true"],
   "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],

@@ -57,6 +57,10 @@ export const applyRadio = (
   if (effect.chipRemoveAxis !== undefined) {
     chipTags = chipTags.filter((c) => c.axis !== effect.chipRemoveAxis)
   }
+  if (effect.chipRemoveAxes !== undefined) {
+    const axesToRemove = new Set(effect.chipRemoveAxes)
+    chipTags = chipTags.filter((c) => !axesToRemove.has(c.axis))
+  }
   return {
     groupType: effect.groupType ?? draft.groupType,
     dataForm: effect.dataForm ?? draft.dataForm,
@@ -78,11 +82,19 @@ export const toggleCheck = (
         (c) => !(c.axis === chipAdd.axis && c.value === chipAdd.value),
       )
     }
+    if (effect.chipClearOnUncheck !== undefined) {
+      const axesToClear = new Set(effect.chipClearOnUncheck)
+      chipTags = chipTags.filter((c) => !axesToClear.has(c.axis))
+    }
     return { ...draft, chipTags }
   }
   if (chipAdd !== undefined) {
     chipTags = chipTags.filter((c) => c.axis !== chipAdd.axis)
     chipTags.push(chipAdd)
+  }
+  if (effect.chipRemoveAxes !== undefined) {
+    const axesToRemove = new Set(effect.chipRemoveAxes)
+    chipTags = chipTags.filter((c) => !axesToRemove.has(c.axis))
   }
   return {
     groupType: effect.groupType ?? draft.groupType,

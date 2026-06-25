@@ -32,7 +32,19 @@ export type Resources = {
   }
   breadcrumb: {
     home: string
+    contents: string
     databases: string
+  }
+  contents: {
+    pageTitle: string
+    pageDescription: string
+    sidebarHeading: string
+    tocHeading: string
+    searchPlaceholder: string
+    searchNoResults: string
+    section: {
+      databases: string
+    }
   }
   top: {
     hero: {
@@ -199,9 +211,11 @@ export type Resources = {
       pairNeedsFasta: string
       statusReady: string
       formGroupLabels: {
-        form: string
+        conditionSection: string
+        hasAnnotation: string
         tpa: string
         smallScale: string
+        assemblyForm: string
         target: string
         platform: string
         domain: string
@@ -209,8 +223,8 @@ export type Resources = {
       }
       options: {
         sequenceNucleotide: {
-          annotated: { label: string; sub: string }
-          unannotated: { label: string; sub: string }
+          hasAnnotation: { label: string; sub: string }
+          genome: { label: string; sub: string }
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
           haplotype: { label: string; sub: string }
@@ -688,7 +702,19 @@ export const ja: Resources = {
   },
   breadcrumb: {
     home: "ホーム",
+    contents: "コンテンツ",
     databases: "データベース",
+  },
+  contents: {
+    pageTitle: "コンテンツ",
+    pageDescription: "データベースやポリシーに関するドキュメントを一覧・検索できます。",
+    sidebarHeading: "コンテンツ",
+    tocHeading: "目次",
+    searchPlaceholder: "コンテンツを検索",
+    searchNoResults: "該当するコンテンツはありません",
+    section: {
+      databases: "データベース",
+    },
   },
   top: {
     hero: {
@@ -850,9 +876,11 @@ export const ja: Resources = {
       pairNeedsFasta: "先に FASTA 塩基配列を選んでください",
       statusReady: "設定済み",
       formGroupLabels: {
-        form: "データ形態",
-        tpa: "TPA (Third Party Annotation)",
+        conditionSection: "登録条件",
+        hasAnnotation: "アノテーション",
+        tpa: "TPA (Third Party Data)",
         smallScale: "登録規模",
+        assemblyForm: "アセンブリ形式",
         target: "対象",
         platform: "プラットフォーム",
         domain: "分析ドメイン",
@@ -860,13 +888,13 @@ export const ja: Resources = {
       },
       options: {
         sequenceNucleotide: {
-          annotated: { label: "アノテーション付き配列", sub: "CDS, rRNA 等の構造機能アノテーションを含む" },
-          unannotated: { label: "アノテーションなし配列", sub: "配列データのみ（FASTA 形式）" },
+          hasAnnotation: { label: "アノテーション付き", sub: "CDS, rRNA 等の構造・機能アノテーションを含む" },
+          genome: { label: "ゲノム", sub: "WGS, 完成ゲノム, TSA, TLS 等の一般的な配列" },
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
           haplotype: { label: "ハプロタイプ", sub: "diploid/polyploid assembly の各ハプロタイプを個別に登録" },
-          tpa: { label: "TPA として登録する", sub: "第三者データに基づく配列・アノテーション" },
-          smallScale: { label: "少数の短い配列", sub: "NSSS (Web フォーム) で登録する場合にチェック" },
+          tpa: { label: "TPA (Third Party Data)", sub: "第三者データに基づく配列・アノテーション" },
+          smallScale: { label: "少数の短い配列", sub: "配列数が少なく短い（目安: 100 件未満、各 500 kb 未満）" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },

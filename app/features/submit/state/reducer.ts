@@ -1,5 +1,6 @@
 import type { Access, FileEntry, FileGroup, Submission } from "~/schemas/submit"
 import {
+  DEFAULT_CHIPS_FOR_KIND,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
@@ -47,7 +48,7 @@ const newEntryFor = (
   access,
   dataForm: TYPICAL_DATA_FORM_FOR_KIND[fileTypeKind],
   groupId,
-  chipTags: [],
+  chipTags: [...(DEFAULT_CHIPS_FOR_KIND[fileTypeKind] ?? [])],
 })
 
 const applyRowEditPatch = (

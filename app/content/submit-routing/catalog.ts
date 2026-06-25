@@ -83,7 +83,12 @@ const catalogData = {
           },
         },
         {
-          when: { anyChip: { axis: "assembly-form", value: "unannotated" } },
+          when: {
+            and: [
+              { anyChip: { axis: "assembly-form", value: "genome" } },
+              { not: { anyChip: { axis: "has-annotation", value: "true" } } },
+            ],
+          },
           emit: {
             service: "ddbj",
             scope: "entry",

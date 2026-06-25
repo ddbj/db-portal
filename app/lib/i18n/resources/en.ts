@@ -34,7 +34,19 @@ export const en: Resources = {
   },
   breadcrumb: {
     home: "Home",
+    contents: "Contents",
     databases: "Databases",
+  },
+  contents: {
+    pageTitle: "Contents",
+    pageDescription: "Browse and search documentation about databases and policies.",
+    sidebarHeading: "Contents",
+    tocHeading: "Table of Contents",
+    searchPlaceholder: "Search contents",
+    searchNoResults: "No matching contents found",
+    section: {
+      databases: "Databases",
+    },
   },
   top: {
     hero: {
@@ -196,9 +208,11 @@ export const en: Resources = {
       pairNeedsFasta: "Select the FASTA nucleotide type first.",
       statusReady: "Ready",
       formGroupLabels: {
-        form: "Data form",
-        tpa: "TPA (Third Party Annotation)",
+        conditionSection: "Submission conditions",
+        hasAnnotation: "Annotation",
+        tpa: "TPA (Third Party Data)",
         smallScale: "Submission scale",
+        assemblyForm: "Assembly form",
         target: "Target",
         platform: "Platform",
         domain: "Domain",
@@ -206,13 +220,13 @@ export const en: Resources = {
       },
       options: {
         sequenceNucleotide: {
-          annotated: { label: "Annotated sequence", sub: "Includes structural/functional annotation (CDS, rRNA, etc.)" },
-          unannotated: { label: "Unannotated sequence", sub: "Sequence data only (FASTA format)" },
+          hasAnnotation: { label: "Annotated", sub: "Includes structural/functional annotation (CDS, rRNA, etc.)" },
+          genome: { label: "Genome", sub: "WGS, finished genome, TSA, TLS, and other general sequences" },
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
           haplotype: { label: "Haplotype", sub: "Submit each haplotype of a diploid/polyploid assembly" },
-          tpa: { label: "Submit as TPA", sub: "Sequence and annotation based on third-party data" },
-          smallScale: { label: "Small number of short sequences", sub: "Submit via NSSS (web form) instead of MSS (bulk file submission)" },
+          tpa: { label: "TPA (Third Party Data)", sub: "Sequence and annotation based on third-party data" },
+          smallScale: { label: "Small number of short sequences", sub: "Few short sequences (guideline: under 100, each under ~500 kb)" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "With sequence", sub: "Paired with a nucleotide sequence" },
