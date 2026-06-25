@@ -149,43 +149,76 @@ dev 環境 (および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した 
 
 ## Content system
 
-データベース解説、サービス紹介、各種ガイドのコンテンツを TypeScript ファイル (`*.content.tsx`) として書く collection 方式を採用する。`architecture.md` の zones に従い、コンテンツは `app/content/` に集約する。
+コンテンツは 2 系統で管理する: **Markdown ページ** (`page-contents/`) と **TypeScript collection** (`app/content/`)。
 
-### 方針
+### Markdown ページ (`page-contents/`)
 
-- コンテンツは **`*.content.tsx`** ファイルで書き、本文 (`body.ja` / `body.en`) は **TSX fragment 直書き**。リッチ表現 (Callout / Section / Table / TextLink) は `app/ui/` の primitive を JSX で組む
-- Frontmatter 相当のメタ (title / slug / description / 関連 DB / 外部リンク / サービス分類) は **Zod schema で型検証**。ビルド時に壊れていれば即エラー
-- Breadcrumb は content 側に書かず、**route handle + i18n リソースで自動生成** する
-- 翻訳は同一ファイル内 `{ ja, en }` 並びで持ち、diff が読みやすい形を取る
+データベース解説、ポリシー、ガイド等の読み物コンテンツを素の Markdown で管理する。非エンジニアが編集できることを重視し、JSX や TypeScript の知識を不要にしている。
 
-この方式が保証する性質:
+#### ディレクトリ構成と URL マッピング
 
-- 型安全: Zod schema による frontmatter 検証 + `satisfies` による本文構造の型 error
-- リッチ表現: JSX で `app/ui/` primitive を直接使える
-- i18n diff の読みやすさ: 同一ファイルに `{ja, en}` 並走、レビュー時に両言語の差を 1 ファイルで確認
-- CMS 化への移行余地: loader (`app/lib/content/loader.ts`) を差し替えれば外部 CMS への切替が可能
+`page-contents/<path>/index.md` → `/<path>` にマッピング。`index.en.md` が英語版。
 
-全件・表示名・top/submit usage は collection が SSOT (top primary tile は `service-icon.tsx` の switch と対応)。対応する Zod schema は `app/schemas/content/` に置く (`database-content.ts` / `service-content.ts`、submit-routing カタログ用の `submit-routing-content.ts`)。loader / type / breadcrumb hook は `app/lib/content/` に置く (`loader.ts` / `breadcrumb.ts` / `types.ts` / `index.ts`)。
+```
+page-contents/
+  databases/
+    bioproject/
+      index.md          <- ja
+      index.en.md       <- en
+    dra/
+      index.md
+      index.en.md
+  policy/               <- databases 以外も同じ仕組みで追加可能
+    index.md
+```
 
-zone 関係は `architecture.md` を参照。`content` は `ui` / `lib` / `schemas` / `content` を import 可、`features` / `shell` への import は禁止 (ESLint `no-restricted-paths` で物理強制)。
+#### Frontmatter
 
-### DatabaseContent
+ミニマル設計。コンテンツはすべて本文に Markdown で書く。
 
-`/databases/:slug` 各エントリの schema。フィールド一覧:
+| フィールド | 型 | 必須 | 備考 |
+|---|---|---|---|
+| `title` | string | yes | ページタイトル（`<title>` タグ、ナビ生成用） |
+| `description` | string | yes | 1 行説明（SEO・検索結果表示用） |
 
-| フィールド | 型 | 備考 |
-|---|---|---|
-| `slug` | kebab-case 文字列 | URL の `:slug` と一致 |
-| `title` | `{ ja, en }` 各 min(1) | |
-| `description` | `{ ja, en }` 各 min(1) | 1 行説明 |
-| `body` | `{ ja: ReactNode, en: ReactNode }` | TSX fragment、Zod では `z.custom<ReactNode>` で素通し |
-| `meta.lastUpdated` | ISO 8601 文字列 | 手書きで運用 (`development.md` の content 更新フロー) |
-| `meta.relatedDbs` | `DatabaseSlug` enum の配列 | 実装済み slug union に narrow、未知 / タイポは build 時に弾く。新規 DB を追加する時は `DatabaseSlug` enum にも追記する |
-| `meta.externalLinks` | `{ label: { ja, en }, href: URL }` の配列 | INSDC / EBI / NCBI 等への外部リンク集 |
+外部リンク、関連ページ、更新日等は frontmatter に入れない。外部リンクは本文に Markdown リンクで書き、更新日は git log から自動取得する想定。
 
-実装側 (`app/content/databases/<slug>/index.content.tsx`) は `satisfies DatabaseContent` で書き、フィールド書き忘れ / 型違い / 余計なフィールドが全て type error になるようにする。
+#### Markdown 処理パイプライン
 
-Breadcrumb は本 schema に書かない (route handle + i18n で自動生成、本書「Breadcrumb 自動生成」 節)。
+`app/lib/content/markdown-pipeline.ts` が unified パイプラインを構成:
+
+remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype → rehype-slug → rehype-autolink-headings → rehype-external-links → rehype-highlight → rehype-stringify
+
+対応する GFM 拡張: テーブル、取り消し線、タスクリスト、脚注、GitHub blockquote alerts (`> [!NOTE]` 等)。コードブロックはシンタックスハイライト付き (highlight.js)。見出しに自動で `id` とアンカーリンクを生成。外部リンクに `target="_blank" rel="noopener noreferrer"` を自動付与。
+
+#### クライアントサイド拡張 (`useProseEnhance`)
+
+`app/lib/content/use-prose-enhance.ts` が DOM 操作でコピーボタンと Mermaid レンダリングを注入:
+
+- **コードブロック コピーボタン**: hover で右上にクリップボードアイコン表示。クリックでコピー、チェックマークにフィードバック
+- **Mermaid ダイアグラム**: ` ```mermaid ` ブロックを検出し、mermaid.js を lazy load して SVG にレンダリング
+
+#### ローダー
+
+`app/lib/content/markdown-loader.ts` が `import.meta.glob` で `page-contents/` の `.md` ファイルを eager ロード。frontmatter を Zod 検証し、Markdown を HTML に変換して in-memory Map に格納。
+
+公開 API: `getPageByPath(urlPath)` / `getPageBySlug(section, slug)` / `listPagesBySection(section)` / `listAllPages()` / `validateAllPages()`
+
+#### i18n
+
+`index.md` = 日本語 (デフォルト)、`index.en.md` = 英語。各ファイルはモノリンガル。`index.en.md` が存在しない場合、日本語にフォールバック + 翻訳未提供バナー表示。
+
+#### スタイリング (`prose-bsi`)
+
+`app/styles/tailwind.css` の `.prose-bsi` が Markdown HTML のスタイルを定義。`@tailwindcss/typography` の `prose` をベースに、BSI デザイントークンで上書き。`max-width` は `content-narrow` (880px) で中央揃え。
+
+#### ルーティング
+
+現在は `databases/:slug` が明示ルート (`app/routes/databases/$slug.tsx`)。`_dev/*` は dev 環境のみの catch-all (`app/routes/_dev/page-content.tsx`)。今後 `policy` 等を追加する際に汎用 catch-all route に拡張予定。
+
+#### バリデーション
+
+`scripts/validate-content.ts` が `validateAllPages()` を呼び、frontmatter の Zod 検証を実行。`npm run validate:content` で dev / build の前段に走る。
 
 ### ServiceContent
 
@@ -228,23 +261,27 @@ BSI 内 navigation の Service tiles (トップ左 main の primary tiles) と s
 
 ### Loader 公開 API
 
-`app/lib/content/loader.ts` が公開する操作 (シグネチャは同ファイルが SSOT):
+2 つのローダーが共存する:
 
-- slug / id 引き: database を slug で、service を id で 1 件取得 (未知は `undefined`)
-- 一覧: database / service の全件取得
-- top category 別一覧: 指定 top category を持つ service を `top.order` 昇順で取得
-- submit 逆引き: submit `Service` enum 値から service entry を逆引き
-- validateAllDatabases / validateAllServices: database / service それぞれを Zod parse し直し、結果を返す
+**`app/lib/content/markdown-loader.ts`** (Markdown ページ用):
 
-CLI (`scripts/validate-content.ts`) は `validateAllDatabases` / `validateAllServices` に加えて submit-routing catalog (`validateSubmitRouting`) を順に呼び、いずれかが失敗すれば `process.exit(1)` する。
+- `getPageByPath(urlPath)` / `getPageBySlug(section, slug)`: 1 件取得
+- `listPagesBySection(section)` / `listAllPages()`: 一覧
+- `validateAllPages()`: Zod 検証
+
+**`app/lib/content/loader.ts`** (TypeScript collection 用):
+
+- `getServiceById(id)` / `listServices()` / `listServicesByTopCategory(category)`: service 操作
+- `getServiceBySubmit(service)`: submit Service enum から逆引き
+- `validateAllServices()`: Zod 検証
+
+CLI (`scripts/validate-content.ts`) は `validateAllPages` / `validateAllServices` / `validateSubmitRouting` を順に呼び、いずれかが失敗すれば `process.exit(1)` する。
 
 ### 起動時 fail-fast
 
-`loader.ts` は `import.meta.glob` で `*.content.tsx` を eager load + Zod parse する。1 件でも parse 失敗があれば module top で throw し、loader を import した時点で起動を止める。
+`markdown-loader.ts` と `loader.ts` はそれぞれ `import.meta.glob` で対象ファイルを eager load し、Zod parse する。1 件でも parse 失敗があれば module top で throw し、import した時点で起動を止める。
 
-`server/index.ts` は zones の制約 (`server → app/lib` 禁止) で loader を直接 import しない。代わりに、`npm run dev` / `npm run start` / `npm run build` の前段で `npm run validate:content` を必ず通すことで、collection 不整合を起動前に検出する。dev / staging / production / CI すべてで同じ fail-fast が効き、「production で初めて気付く」 事故を防ぐ。
-
-server プロセスを `node server/index.ts` のように直接起動した場合は破損 content が runtime まで検知されない。`npm run *` 経由で `validate:content` を必ず前置する運用が fail-fast の唯一の担保となる。
+`npm run dev` / `npm run start` / `npm run build` の前段で `npm run validate:content` を必ず通すことで、collection 不整合を起動前に検出する。
 
 ### Breadcrumb 自動生成
 
@@ -268,54 +305,19 @@ handle の 2 系統と用途:
 
 shell の `<Breadcrumb />` wrapper が hook の出力を受け取り、先頭に Home entry を prepend する。prepend 後の合計が 0-1 件 (= Home のみ、handle item 0 件) のとき、何も render しない (`null`)。top page で breadcrumb が冗長になるのを避けるため。
 
-### TSX fragment スコープ
+### TSX fragment スコープ (TypeScript collection)
 
-#### Import 可能な範囲
+`app/content/` 配下の TSX ファイル (`services/*.content.tsx` 等) に適用されるスコープ。Markdown ページ (`page-contents/`) には適用されない。
 
-`content` zone は次を import できる (`architecture.md`):
-
-- `app/ui/` のリッチコンポーネント (Callout / Section / TextLink / Tag / SectionHeading 等)
-- `app/lib/` のヘルパ (URL 生成 / format 等)
-- `app/schemas/` の型 (`satisfies DatabaseContent` のため)
-- `app/content/` 内の他コンテンツ (相互リンク等)
-
-`app/features/` / `app/shell/` への import は **禁止**。コンテンツは feature ロジックに依存させない (依存させると content の差し替えが feature 修正を巻き込む)。
-
-#### 生 HTML 要素の制約
-
-ESLint `react/forbid-elements` (`app/{features,routes,content}/**`) で次を禁止する:
-
-| 要素 | 代替 |
-|---|---|
-| `<button>` | `~/ui` の `Button` / `IconButton` |
-| `<a>` | `~/ui` の `TextLink` または `react-router` の `Link` |
-| `<input>` | `~/ui` の form primitive |
-| `<select>` | `~/ui` の `Select` (popover combobox) |
-| `<textarea>` | `~/ui` の form primitive (必要なら primitive を追加) |
-
-許容される構造タグ: `<p>` / `<div>` / `<ul>` / `<ol>` / `<li>` / `<dl>` / `<dt>` / `<dd>` / `<h2>` / `<h3>` / `<strong>` / `<em>` 等。生 hex / Tailwind arbitrary value は ESLint で禁止される。
-
-### 翻訳運用
-
-#### ja / en 並走
-
-両言語を 1 ファイルに持つ (`body: { ja: <>...</>, en: <>...</> }`)。レビュー時に diff で両言語の差を確認できる。
-
-#### 未翻訳の扱い
-
-en は schema 上必須として扱う。`body.en` が未提供の段階では「This page is not yet translated. See the Japanese version for now.」 のような翻訳予定スタブを書き、route の `handle.i18n.en` を `"missing"` にして `<TranslationUnavailable />` バナーで明示する (型では強制し、UI では fallback を見せる二段構え)。
-
-#### 翻訳完了 flag
-
-route 単位の翻訳完了状態を `handle.i18n.en` (`"complete"` / `"missing"` / `"partial"`) で持つ。dynamic ルート (`databases/$slug` 等) で content の en が個別に欠落する場合は、route 側の handle を `"partial"` に下げる運用 (route handle はコンテンツ全体の最大値を表す)。
+`content` zone は `ui` / `lib` / `schemas` / `content` を import 可。`features` / `shell` への import は禁止 (ESLint `no-restricted-paths` で物理強制)。
 
 ### Build と runtime の境界
 
 | フェーズ | 何が起きるか |
 |---|---|
-| Build 時 | `validate:content` が全 collection (databases + services) と submit-routing catalog を Zod parse、1 件でも失敗で fail |
-| 起動時 | `loader.ts` が `import.meta.glob` で eager load + parse、1 件でも失敗で server / dev が起動失敗 |
-| Runtime | `getDatabaseBySlug` / `getServiceById` / `listServicesByTopCategory` は in-memory lookup (1 度だけ初期化) |
+| Build 時 | `validate:content` が Markdown ページ + service collection + submit-routing catalog を Zod parse、1 件でも失敗で fail |
+| 起動時 | `markdown-loader.ts` / `loader.ts` が `import.meta.glob` で eager load + parse、1 件でも失敗で起動失敗 |
+| Runtime | `getPageBySlug` / `getServiceById` 等は in-memory lookup (1 度だけ初期化) |
 
 Runtime には Zod parse の overhead がない (起動時に終わっている)。
 
@@ -329,13 +331,12 @@ UI primitives:
 
 Content system:
 
-- 不正な fixture で `validateAll*` が `errors` を返す、`getDatabaseBySlug` / `getServiceById` が存在しない id で `undefined`
-- DatabaseContent の parse + `body.ja` / `body.en` の render
-- submit `Service` enum の全値が submit usage 付きの service entry を持つ (= flow card で URL が落ちない不変量)
+- Markdown ページ: frontmatter 検証、`getPageBySlug` の存在/不在、HTML 出力に見出しが含まれること
+- Service collection: `validateAllServices` のエラー検出、`getServiceById` の存在/不在
+- submit `Service` enum の全値が submit usage 付きの service entry を持つ不変量
 
 ### PBT
 
 - shell が追加する全 i18n キーで ja / en のキーセット同一
 - routes-helpers の path / id 対称性
-- 任意の有効な `DatabaseContent` 入力で Zod parse 成功
-- 任意の有効な `ServiceContent` 入力で Zod parse 成功、無効な組み合わせ (top も submit も無い / top あるのに link 無い) で必ず失敗
+- 任意の有効な `ServiceContent` 入力で Zod parse 成功、無効な組み合わせで必ず失敗
