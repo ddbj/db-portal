@@ -21,4 +21,9 @@ export const designRoutes = (): RouteConfigEntry[] =>
     ]
     : []
 
+export const devContentRoutes = (): RouteConfigEntry[] =>
+  isDesignPreviewEnabled
+    ? [route("_dev/*", "routes/_dev/page-content.tsx")]
+    : []
+
 export { index, layout, route }

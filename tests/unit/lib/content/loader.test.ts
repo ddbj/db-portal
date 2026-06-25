@@ -73,7 +73,7 @@ describe("getPageBySlug / listPagesBySection / validateAllPages", () => {
 
   test("getPageBySlug_bioproject_htmlContainsRenderedMarkdown", () => {
     const page = getPageBySlug("databases", "bioproject")
-    expect(page?.html.ja).toContain("<h2>")
+    expect(page?.html.ja).toContain("<h2 id=")
     expect(page?.html.ja).toContain("BioProject とは")
   })
 })

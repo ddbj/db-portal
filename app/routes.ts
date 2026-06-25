@@ -1,6 +1,6 @@
 import { type RouteConfig } from "@react-router/dev/routes"
 
-import { designRoutes, index, layout, route } from "./lib/routes-helpers"
+import { designRoutes, devContentRoutes, index, layout, route } from "./lib/routes-helpers"
 
 export default [
   index("routes/top/route.tsx"),
@@ -17,4 +17,5 @@ export default [
     route("auth/logout-callback", "routes/auth/logout-callback.tsx"),
   ]),
   ...designRoutes(),
+  ...devContentRoutes(),
 ] satisfies RouteConfig
