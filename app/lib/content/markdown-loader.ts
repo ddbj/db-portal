@@ -1,10 +1,26 @@
-import matter from "gray-matter"
-
 import type { PageContent } from "~/schemas/content/page-content"
 import { PageFrontmatter } from "~/schemas/content/page-content"
 
 import { markdownToHtml } from "./markdown-pipeline"
 import type { ValidationFailure, ValidationResult } from "./types"
+
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/
+
+const splitFrontmatter = (raw: string): { data: Record<string, string>; content: string } => {
+  const match = raw.match(FRONTMATTER_RE)
+  if (!match) return { data: {}, content: raw }
+  const yaml = match[1] ?? ""
+  const content = match[2] ?? ""
+  const data: Record<string, string> = {}
+  for (const line of yaml.split("\n")) {
+    const m = line.match(/^(\w+):\s*(.+)$/)
+    if (m && m[1] !== undefined && m[2] !== undefined) {
+      data[m[1]] = m[2].trim()
+    }
+  }
+
+  return { data, content }
+}
 
 type RawModule = Record<string, string>
 
@@ -36,7 +52,7 @@ const parseFrontmatter = (
   raw: string,
   filepath: string,
 ): { frontmatter: PageFrontmatter; body: string } | { error: ValidationFailure } => {
-  const { data, content } = matter(raw)
+  const { data, content } = splitFrontmatter(raw)
   const parsed = PageFrontmatter.safeParse(data)
   if (!parsed.success) {
     return { error: { filepath, error: parsed.error } }
