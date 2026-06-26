@@ -11,7 +11,7 @@ export default {
   submit: {
     service: "gea",
     externalUrl: {
-      ja: "https://www.ddbj.nig.ac.jp/gea/submission.html",
+      ja: "https://www.ddbj.nig.ac.jp/gea/",
       en: null,
     },
     source: "DDBJ",

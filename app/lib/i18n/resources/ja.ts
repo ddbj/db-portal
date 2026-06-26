@@ -42,9 +42,6 @@ export type Resources = {
     tocHeading: string
     searchPlaceholder: string
     searchNoResults: string
-    section: {
-      databases: string
-    }
   }
   top: {
     hero: {
@@ -325,7 +322,6 @@ export type Resources = {
       "jga": { title: string; description: string }
       "ddbj": { title: string; description: string }
       "nsss": { title: string; description: string }
-      "togovar": { title: string; description: string }
       "gea": { title: string; description: string }
       "metabobank": { title: string; description: string }
       "humandbs": { title: string; description: string }
@@ -358,7 +354,6 @@ export type Resources = {
     }
     variant: {
       jga: { intro: string; policyDelegated: string }
-      togovar: { intro: string }
       eva: { nonHuman: string }
     }
     gea: {
@@ -391,6 +386,7 @@ export type Resources = {
     }
     sequenceDra: {
       raw: string
+      sagOptional: string
     }
     umbrellaBioproject: { intro: string }
     validations: {
@@ -718,9 +714,6 @@ export const ja: Resources = {
     tocHeading: "目次",
     searchPlaceholder: "コンテンツを検索",
     searchNoResults: "該当するコンテンツはありません",
-    section: {
-      databases: "データベース",
-    },
   },
   top: {
     hero: {
@@ -996,7 +989,6 @@ export const ja: Resources = {
       "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先" },
       "ddbj": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
       "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム" },
-      "togovar": { title: "TogoVar", description: "公開ヒト variant の登録先" },
       "gea": { title: "GEA", description: "遺伝子発現データの登録先" },
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
       "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (DBCLS 運営)" },
@@ -1058,9 +1050,6 @@ export const ja: Resources = {
       jga: {
         intro: "制限公開のヒト個人データの variant は、JGA の Analysis に登録します。",
         policyDelegated: "JGA の Policy 承認は DBCLS / NBDC に委譲されています。",
-      },
-      togovar: {
-        intro: "公開ヒトの variant は TogoVar (TogoVar-repository) に登録します。短いバリアントと構造バリアントは、いずれも TogoVar 内の登録種別で扱います。",
       },
       eva: {
         nonHuman: "非ヒトの variant は、EBI の European Variation Archive (EVA) に登録します。短いバリアントも構造バリアントも EVA が受け付けます。",
@@ -1127,7 +1116,8 @@ export const ja: Resources = {
       raw: "NGS 由来の発現マトリクスでは、生リード (FASTQ/BAM) を processed データ (GEA) より先に DRA に登録します (DRA + GEA の 2 段)。",
     },
     sequenceDra: {
-      raw: "MAG / SAG / primary / binned のアセンブリでは、元の生リードを DRA に登録する必要があります。",
+      raw: "MAG / primary / binned のアセンブリでは、元の生リードを DRA に登録する必要があります。",
+      sagOptional: "SAG のアセンブリでは、元の生リードの DRA 登録は任意です。",
     },
     umbrellaBioproject: {
       intro: "ハプロタイプ登録では、各ハプロタイプの BioProject をまとめる Umbrella BioProject の作成が必要です。",

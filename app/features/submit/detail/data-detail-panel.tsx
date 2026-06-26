@@ -120,10 +120,13 @@ export const DataDetailPanel = ({
             </div>
             {sections.map((section) => {
               if (section.kind === "toggle-section") {
+                const head = section.groups[0]
+                if (!head) return null
                 return (
-                  <FormGroup key={section.groups[0]!.id} num={section.groups[0]!.num} label={labels.groupLabel(section.headingKey)}>
+                  <FormGroup key={head.id} num={head.num} label={labels.groupLabel(section.headingKey)}>
                     {section.groups.map((g) => {
-                      const opt = g.options[0]!
+                      const opt = g.options[0]
+                      if (!opt) return null
                       const disabled = isGroupDisabled(g, draft)
                       const checked = !disabled && optionMatches(opt, draft)
                       return (
@@ -143,7 +146,8 @@ export const DataDetailPanel = ({
 
               const g = section.group
               if (g.kind === "check" && g.options.length === 1) {
-                const opt = g.options[0]!
+                const opt = g.options[0]
+                if (!opt) return null
                 const disabled = isGroupDisabled(g, draft)
                 const checked = !disabled && optionMatches(opt, draft)
                 return (

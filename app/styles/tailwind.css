@@ -191,6 +191,11 @@ body {
 .prose-bsi > :first-child { margin-top: 0; }
 .prose-bsi > :last-child { margin-bottom: 0; }
 
+.prose-bsi p {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+
 /* --- Headings ------------------------------------------------------------ */
 
 .prose-bsi h1 {
@@ -409,6 +414,8 @@ body {
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-button);
   overflow: hidden;
+  margin-top: 1em;
+  margin-bottom: 1em;
 }
 
 .prose-bsi th {
@@ -438,8 +445,8 @@ body {
 
 .prose-bsi ul,
 .prose-bsi ol {
-  margin-top: 0.4em;
-  margin-bottom: 0.4em;
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
   padding-left: 2em;
 }
 
@@ -505,6 +512,7 @@ body {
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-card);
   padding: 10px 14px;
+  margin: 0.8em 0;
 }
 
 .prose-bsi details > summary {

@@ -1,6 +1,6 @@
 import type { MetaArgs, MetaDescriptor } from "react-router"
 
-import { getPageBySlug } from "./markdown-loader"
+import { getPageByPath, getPageBySlug } from "./markdown-loader"
 
 const BRAND = "BSI"
 
@@ -39,6 +39,15 @@ const titleResolvers: Record<string, TitleResolver> = {
     const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
 
     return ["Contents", "Databases", title]
+  },
+  "page-content": ({ params }) => {
+    const splat = params["*"]
+    if (splat === undefined || splat === "") return null
+    const page = getPageByPath(`/${splat}`)
+    if (page === undefined) return null
+    const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
+
+    return [title]
   },
 }
 

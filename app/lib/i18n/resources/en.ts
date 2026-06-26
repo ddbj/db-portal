@@ -44,9 +44,6 @@ export const en: Resources = {
     tocHeading: "Table of Contents",
     searchPlaceholder: "Search contents",
     searchNoResults: "No matching contents found",
-    section: {
-      databases: "Databases",
-    },
   },
   top: {
     hero: {
@@ -322,7 +319,6 @@ export const en: Resources = {
       "jga": { title: "JGA", description: "Deposits controlled-access human data under a policy." },
       "ddbj": { title: "DDBJ", description: "Bulk-submits assembled nucleotide sequences via MSS." },
       "nsss": { title: "NSSS", description: "Web-based nucleotide sequence submission system." },
-      "togovar": { title: "TogoVar", description: "Deposits public human variants." },
       "gea": { title: "GEA", description: "Deposits gene expression and spatial data." },
       "metabobank": { title: "MetaboBank", description: "Deposits mass spectrometry, NMR, and metabolite data." },
       "humandbs": { title: "NBDC Human Database", description: "Apply for and obtain the data-use policy for controlled-access human data (operated by DBCLS)." },
@@ -384,9 +380,6 @@ export const en: Resources = {
       jga: {
         intro: "Restricted-access human individual variants are deposited as JGA Analysis.",
         policyDelegated: "Policy approval for JGA is delegated to DBCLS/NBDC.",
-      },
-      togovar: {
-        intro: "Public human variants are deposited in TogoVar (TogoVar-repository). Both short and structural variants are handled as registration types within TogoVar.",
       },
       eva: {
         nonHuman: "Non-human variants are submitted to the EBI European Variation Archive (EVA), which accepts both short and structural variants.",
@@ -453,7 +446,8 @@ export const en: Resources = {
       raw: "NGS-derived expression matrices require raw reads (FASTQ/BAM) to be deposited in DRA before the processed data goes to GEA (DRA + GEA two-step).",
     },
     sequenceDra: {
-      raw: "MAG / SAG / primary / binned assemblies require the underlying raw reads to be deposited in DRA.",
+      raw: "MAG / primary / binned assemblies require the underlying raw reads to be deposited in DRA.",
+      sagOptional: "For SAG assemblies, depositing raw reads in DRA is optional.",
     },
     umbrellaBioproject: {
       intro: "Haplotype registration requires an umbrella BioProject that links the child BioProjects (one per haplotype) together.",

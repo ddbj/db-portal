@@ -83,7 +83,7 @@ test.describe("Services Domain", () => {
 
     // DDBJ whitelist 由来の名前 と DBCLS の Togo prefix link がともに 1 件以上
     const ddbjWhitelist
-      = /^(BioProject|BioSample|DDBJ|JGA|DRA|GEA|MetaboBank|TogoVar-repository)/
+      = /^(BioProject|BioSample|DDBJ|JGA|DRA|GEA|MetaboBank)/
     await expect(
       page.getByRole("link", { name: ddbjWhitelist }).first(),
     ).toBeVisible({ timeout: 15_000 })

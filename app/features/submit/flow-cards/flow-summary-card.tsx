@@ -1,7 +1,7 @@
 import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
-import { isCompanionService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
+import { internalDetailHref, isCompanionService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, ExternalIcon, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
@@ -286,6 +286,7 @@ const TimelineStepItem = ({
 }: { step: FlowStep; isFirst: boolean; isLast: boolean } & StepItemProps) => {
   const meta = getSubmitMeta(step.service, lang)
   const isComp = isCompanionService(step.service)
+  const detailHref = internalDetailHref(step.service)
 
   const scopeKinds = isComp ? [] : [...new Set(
     entries.filter((e) => step.scope.entryIds.includes(e.id)).map((e) => e.fileTypeKind),
@@ -312,7 +313,9 @@ const TimelineStepItem = ({
                 {serviceTitle(step.service)}
               </span>
               <div className="flex items-center gap-3 shrink-0">
-                <TextLink to={`/databases/${step.service}`} arrow>{detailLinkLabel}</TextLink>
+                {detailHref !== undefined && (
+                  <TextLink to={detailHref} arrow>{detailLinkLabel}</TextLink>
+                )}
                 {meta?.externalUrl !== undefined && (
                   <ExternalLinkButton url={meta.externalUrl} label={externalCtaLabel} />
                 )}
@@ -359,7 +362,9 @@ const TimelineStepItem = ({
               )}
 
               <div className="flex items-center gap-3 flex-wrap justify-end">
-                <TextLink to={`/databases/${step.service}`} arrow>{detailLinkLabel}</TextLink>
+                {detailHref !== undefined && (
+                  <TextLink to={detailHref} arrow>{detailLinkLabel}</TextLink>
+                )}
                 {meta?.externalUrl !== undefined && (
                   <ExternalLinkButton url={meta.externalUrl} label={externalCtaLabel} />
                 )}

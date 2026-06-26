@@ -13,7 +13,6 @@ export const DDBJ_FEATURED_NAMES: ReadonlySet<string> = new Set([
   "DRA",
   "GEA",
   "MetaboBank",
-  "TogoVar-repository",
 ])
 
 /** featuredTop となる DBCLS サービスは `services_name_en` がこの prefix で始まるもの。 */

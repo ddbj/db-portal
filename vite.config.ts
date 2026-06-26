@@ -19,6 +19,9 @@ export default defineConfig({
       "~": path.resolve(__dirname, "./app"),
     },
   },
+  optimizeDeps: {
+    include: ["mermaid"],
+  },
   server: {
     host: "0.0.0.0",
     port: Number(process.env.DB_PORTAL_APP_INTERNAL_PORT ?? 3000),

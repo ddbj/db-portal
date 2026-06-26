@@ -9,7 +9,6 @@ export const Service = z.enum([
   "jga",
   "ddbj",
   "nsss",
-  "togovar",
   "gea",
   "metabobank",
   "humandbs",
@@ -29,7 +28,6 @@ export const SERVICE_ROLE: Readonly<Record<Service, ServiceRole>> = {
   "jga": "destination",
   "ddbj": "destination",
   "nsss": "destination",
-  "togovar": "destination",
   "gea": "destination",
   "metabobank": "destination",
   "humandbs": "external",
@@ -115,7 +113,7 @@ export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>>
   "jga": ["humandbs"],
   "ddbj": ["bioproject", "biosample", "dra"],
   "nsss": ["bioproject", "biosample"],
-  "togovar": ["bioproject", "biosample"],
+
   "gea": ["bioproject", "biosample", "dra"],
   "metabobank": ["bioproject", "biosample"],
   "eva": ["bioproject", "biosample"],
@@ -133,7 +131,6 @@ export const SERVICE_DEPENDENCY_ORDER: readonly Service[] = [
   "jga",
   "ddbj",
   "nsss",
-  "togovar",
   "gea",
   "metabobank",
   "jpost",
@@ -149,3 +146,31 @@ export const stepPrerequisites = (
   const present = new Set(presentServices)
   return (SERVICE_DEPENDENCIES[service] ?? []).filter((dep) => present.has(dep))
 }
+
+// 詳細ページの URL マッピング。`/databases/<slug>` の URL を生成する。
+// umbrella-bioproject は BioProject ページの Umbrella BioProject セクションに飛ばす。
+// nsss は DB ではなく塩基配列の Web 登録窓口 (MSS と並ぶ submission system) なので、
+// DDBJ ページの NSSS セクションに deep link する (独立ページを持たない)。
+// jpost / eva は DDBJ 外の登録窓口で、本サイトに内部詳細ページを持たないため undefined。
+const SERVICE_INTERNAL_PAGE: Readonly<Partial<Record<Service, { slug: string; hash?: string }>>> = {
+  "umbrella-bioproject": { slug: "bioproject", hash: "umbrella-bioproject" },
+  "bioproject": { slug: "bioproject" },
+  "biosample": { slug: "biosample" },
+  "dra": { slug: "dra" },
+  "jga": { slug: "jga" },
+  "ddbj": { slug: "ddbj" },
+  "nsss": { slug: "ddbj", hash: "nsss" },
+  "gea": { slug: "gea" },
+  "metabobank": { slug: "metabobank" },
+  "humandbs": { slug: "humandbs" },
+}
+
+export const internalDetailHref = (service: Service): string | undefined => {
+  const page = SERVICE_INTERNAL_PAGE[service]
+  if (page === undefined) return undefined
+
+  return page.hash !== undefined ? `/databases/${page.slug}#${page.hash}` : `/databases/${page.slug}`
+}
+
+export const hasInternalDetailPage = (service: Service): boolean =>
+  SERVICE_INTERNAL_PAGE[service] !== undefined

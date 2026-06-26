@@ -54,8 +54,8 @@ describe("getPageBySlug / listPagesBySection / validateAllPages", () => {
   test("listPagesBySection_includesAllDatabases", () => {
     const slugs = listPagesBySection("databases").map((p) => p.slug).sort()
     expect(slugs).toEqual([
-      "bioproject", "biosample", "ddbj", "dra", "eva", "gea",
-      "humandbs", "jga", "jpost", "metabobank", "nsss", "togovar",
+      "bioproject", "biosample", "ddbj", "dra", "gea",
+      "humandbs", "jga", "metabobank",
     ].sort())
   })
 

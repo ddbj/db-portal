@@ -8,12 +8,12 @@ const catalogData = {
   // カスケード: allowedRepos = Q2.repos。rules を実行せず repos を読むだけで判定する。
   // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
   q2Options: [
-    { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
-    { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
-    { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
-    { id: "virus", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
-    { id: "metagenome", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
-    { id: "other", repos: ["dra", "ddbj", "nsss", "togovar", "gea", "metabobank", "jpost", "eva"] },
+    { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
+    { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
+    { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
+    { id: "virus", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
+    { id: "metagenome", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
+    { id: "other", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
   ],
   kindRoutes: [
     {
@@ -50,8 +50,16 @@ const catalogData = {
     },
     {
       id: "sequence",
-      candidateRepos: ["ddbj", "nsss"],
+      candidateRepos: ["ddbj", "nsss", "jga"],
       rules: [
+        {
+          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          emit: {
+            service: "jga",
+            scope: "entry",
+            notes: [{ kind: "info", messageKey: "submit.jga.analysis.intro" }],
+          },
+        },
         {
           when: { anyChip: { axis: "assembly-form", value: "mag" } },
           emit: {
@@ -132,7 +140,7 @@ const catalogData = {
     },
     {
       id: "variant",
-      candidateRepos: ["togovar", "eva", "jga"],
+      candidateRepos: ["eva", "jga"],
       rules: [
         {
           when: { and: [{ access: "restricted" }, { q2: "human" }] },
@@ -142,16 +150,6 @@ const catalogData = {
             notes: [
               { kind: "info", messageKey: "submit.variant.jga.intro" },
               { kind: "info", messageKey: "submit.variant.jga.policyDelegated" },
-            ],
-          },
-        },
-        {
-          when: { q2: "human" },
-          emit: {
-            service: "togovar",
-            scope: "entry",
-            notes: [
-              { kind: "info", messageKey: "submit.variant.togovar.intro" },
             ],
           },
         },

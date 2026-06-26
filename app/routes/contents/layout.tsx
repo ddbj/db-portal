@@ -15,12 +15,12 @@ const ContentsLayout = () => {
 
   return (
     <div className="max-w-content-max mx-auto px-page-gutter">
-      <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
-        <aside className="hidden sm:block sticky top-4">
+      <div className="grid gap-6 lg:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
+        <aside className="hidden lg:block sticky top-4">
           <ContentSidebar />
         </aside>
 
-        <div className="sm:hidden">
+        <div className="lg:hidden">
           <Button kind="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {t("contents.sidebarHeading")}
           </Button>

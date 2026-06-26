@@ -87,7 +87,7 @@ describe("byServiceDependencyOrder", () => {
     const sorted = [
       mkStep({ id: "u-zebra", service: "ghost" as FlowStep["service"] }),
       mkStep({ id: "u-apple", service: "phantom" as FlowStep["service"] }),
-      mkStep({ id: "real", service: "togovar" }),
+      mkStep({ id: "real", service: "gea" }),
     ].sort(byServiceDependencyOrder)
     expect(sorted.map((s) => s.id)).toEqual(["real", "u-apple", "u-zebra"])
   })

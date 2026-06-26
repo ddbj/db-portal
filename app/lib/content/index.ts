@@ -3,7 +3,11 @@ export {
   type ContentTree,
   type ContentTreeNode,
   type ContentTreeSection,
+  findNavPath,
   getContentTree,
+  getNavTree,
+  type NavNode,
+  type NavTree,
 } from "./content-tree"
 export { extractHeadings } from "./heading-extractor"
 export {

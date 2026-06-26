@@ -4,6 +4,8 @@ import {
   COMPANION_SERVICES,
   DESTINATION_SERVICES,
   EXTERNAL_SERVICES,
+  hasInternalDetailPage,
+  internalDetailHref,
   isCompanionService,
   isDestinationService,
   isExternalService,
@@ -22,7 +24,7 @@ const ALL_SERVICES = Service.options
 
 describe("Service enum and role partition", () => {
   test("Service_twelveOptions", () => {
-    expect(ALL_SERVICES).toHaveLength(13)
+    expect(ALL_SERVICES).toHaveLength(12)
   })
 
   test("SERVICE_ROLE_keysExactlyMatchServiceOptions", () => {
@@ -204,5 +206,66 @@ describe("serviceRoleTagKey", () => {
     for (const s of ALL_SERVICES.filter(isSubmissionEndpoint)) {
       expect(serviceRoleTagKey(s)).not.toBe("gate")
     }
+  })
+})
+
+describe("internalDetailHref / hasInternalDetailPage", () => {
+  const WITH_PAGE: readonly Service[] = [
+    "umbrella-bioproject",
+    "bioproject",
+    "biosample",
+    "dra",
+    "jga",
+    "ddbj",
+    "nsss",
+    "gea",
+    "metabobank",
+    "humandbs",
+  ]
+  const WITHOUT_PAGE: readonly Service[] = ["jpost", "eva"]
+
+  test("hasInternalDetailPage_returnsTrueForInternalServices", () => {
+    for (const s of WITH_PAGE) expect(hasInternalDetailPage(s)).toBe(true)
+  })
+
+  test("hasInternalDetailPage_returnsFalseForExternalEndpoints", () => {
+    for (const s of WITHOUT_PAGE) expect(hasInternalDetailPage(s)).toBe(false)
+  })
+
+  test("internalDetailHref_returnsUndefinedForServicesWithoutPage", () => {
+    for (const s of WITHOUT_PAGE) expect(internalDetailHref(s)).toBeUndefined()
+  })
+
+  test("internalDetailHref_returnsDatabasesPathForRegularServices", () => {
+    expect(internalDetailHref("bioproject")).toBe("/databases/bioproject")
+    expect(internalDetailHref("biosample")).toBe("/databases/biosample")
+    expect(internalDetailHref("dra")).toBe("/databases/dra")
+    expect(internalDetailHref("ddbj")).toBe("/databases/ddbj")
+    expect(internalDetailHref("gea")).toBe("/databases/gea")
+    expect(internalDetailHref("jga")).toBe("/databases/jga")
+    expect(internalDetailHref("metabobank")).toBe("/databases/metabobank")
+    expect(internalDetailHref("humandbs")).toBe("/databases/humandbs")
+  })
+
+  test("internalDetailHref_umbrellaBioprojectDeepLinksToBioprojectAnchor", () => {
+    expect(internalDetailHref("umbrella-bioproject"))
+      .toBe("/databases/bioproject#umbrella-bioproject")
+  })
+
+  test("internalDetailHref_nsssDeepLinksToDdbjAnchor", () => {
+    expect(internalDetailHref("nsss"))
+      .toBe("/databases/ddbj#nsss")
+  })
+
+  test("internalDetailHref_andHasInternalDetailPage_agreeForEveryService", () => {
+    for (const s of ALL_SERVICES) {
+      expect(internalDetailHref(s) === undefined).toBe(!hasInternalDetailPage(s))
+    }
+  })
+
+  test("internalDetailHref_partitionEnumerates12Services", () => {
+    expect(WITH_PAGE.length + WITHOUT_PAGE.length).toBe(ALL_SERVICES.length)
+    const union = new Set([...WITH_PAGE, ...WITHOUT_PAGE])
+    expect(union).toEqual(new Set(ALL_SERVICES))
   })
 })

@@ -38,14 +38,23 @@ describe("i18n resource parity", () => {
     }
   }
 
-  test.prop([fc.constantFrom(...jaKeys)], { numRuns: 100 })(
+  // 意図的に空文字列を入れるキー (UI 側で `sub !== ""` 等で出力を抑制する設計)。
+  // 翻訳漏れ検知の対象から除外する。
+  const intentionalEmpty = new Set<string>([
+    "submit.flow.accessOverview.emptySub",
+  ])
+
+  const nonEmptyJaKeys = jaKeys.filter((k) => !intentionalEmpty.has(k))
+  const nonEmptyEnKeys = enKeys.filter((k) => !intentionalEmpty.has(k))
+
+  test.prop([fc.constantFrom(...nonEmptyJaKeys)], { numRuns: 100 })(
     "i18n_anyJaKey_resolvesToNonEmptyString",
     (key) => {
       expectNonEmptyLeaf(lookupValue(ja, key))
     },
   )
 
-  test.prop([fc.constantFrom(...enKeys)], { numRuns: 100 })(
+  test.prop([fc.constantFrom(...nonEmptyEnKeys)], { numRuns: 100 })(
     "i18n_anyEnKey_resolvesToNonEmptyString",
     (key) => {
       expectNonEmptyLeaf(lookupValue(en, key))

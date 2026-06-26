@@ -21,7 +21,7 @@ DDBJ・DBCLS が提供する各サービスの一覧を、upstream の実デー�
 
 ## source 分割 (重複回避)
 
-取得元ファイルと対象条件は方針表に集約する。2 source が disjoint なのは、`services.yml` 由来の entry を `provider === "DDBJ"` で絞るため。`services.yml` には `provider: DBCLS` の entry (TogoVar / GGGenome / CRISPRdirect / RefEx / NBDC Human Database 等) も含まれるが、この filter で落ちるので `services.json` 側 (DBCLS) と二重計上されない。
+取得元ファイルと対象条件は方針表に集約する。2 source が disjoint なのは、`services.yml` 由来の entry を `provider === "DDBJ"` で絞るため。`services.yml` には `provider: DBCLS` の entry (GGGenome / CRISPRdirect / RefEx / NBDC Human Database 等) も含まれるが、この filter で落ちるので `services.json` 側 (DBCLS) と二重計上されない。
 
 `掲載` の判定は truthy 規約 (boolean `true`、または文字列 `"true"` / `"1"` を真とする) に従う。
 
@@ -98,10 +98,10 @@ top page の services セクションは `featuredTop === true` の item だけ�
 
 | source | 条件 |
 |---|---|
-| `ddbj` | `name` が whitelist に完全一致: `BioProject`, `BioSample`, `DDBJ`, `JGA`, `DRA`, `GEA`, `MetaboBank`, `TogoVar-repository` |
+| `ddbj` | `name` が whitelist に完全一致: `BioProject`, `BioSample`, `DDBJ`, `JGA`, `DRA`, `GEA`, `MetaboBank` |
 | `dbcls` | `services_name_en` が `Togo` で始まる (掲載 true のもの) |
 
-DDBJ whitelist は BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank / jVar(=`TogoVar-repository`) に対応する。
+DDBJ whitelist は BP / BS / DDBJ / JGA / DRA / GEA / MetaboBank に対応する。
 
 ## 取得フロー
 

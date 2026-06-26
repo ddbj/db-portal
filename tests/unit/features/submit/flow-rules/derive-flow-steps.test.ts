@@ -138,17 +138,15 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // non-human variants go to EVA (an external submission endpoint), never TogoVar
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
 
     const eva = stepFor(steps, "eva")
     expect(eva.origin).toBe("tier1")
     expect(eva.notes.map((n) => n.messageKey)).toContain("submit.variant.eva.nonHuman")
-    expect(steps.some((s) => s.service === "togovar")).toBe(false)
     expect(steps.some((s) => s.service === "jga")).toBe(false)
   })
 
-  test("deriveFlowSteps_publicHumanVariant_routesToTogovar", () => {
+  test("deriveFlowSteps_publicHumanVariant_routesToEva", () => {
     const submission: Submission = {
       preconditions: { q2: "human" },
       accessSection: { restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
@@ -170,10 +168,9 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "togovar"])
-    const togovar = stepFor(steps, "togovar")
-    expect(togovar.origin).toBe("tier1")
-    expect(steps.some((s) => s.service === "eva")).toBe(false)
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
+    const eva = stepFor(steps, "eva")
+    expect(eva.origin).toBe("tier1")
   })
 
   test("deriveFlowSteps_restrictedHumanVariant_routesToJga", () => {
@@ -197,7 +194,6 @@ describe("deriveFlowSteps", () => {
     const steps = deriveFlowSteps(submission)
 
     expect(servicesOf(steps)).toEqual(["humandbs", "jga"])
-    expect(steps.some((s) => s.service === "togovar")).toBe(false)
     expect(steps.some((s) => s.service === "eva")).toBe(false)
     const jga = stepFor(steps, "jga")
     expect(jga.origin).toBe("recipe")
@@ -223,9 +219,7 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // metagenome is non-human, so its variants go to EVA (not TogoVar, not JGA)
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
-    expect(steps.some((s) => s.service === "togovar")).toBe(false)
     expect(steps.some((s) => s.service === "jga")).toBe(false)
   })
 
@@ -249,10 +243,8 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    // restricted metagenome is still non-human: JGA is human-only, so it falls to EVA
     expect(steps.some((s) => s.service === "eva")).toBe(true)
     expect(steps.some((s) => s.service === "jga")).toBe(false)
-    expect(steps.some((s) => s.service === "togovar")).toBe(false)
   })
 
   test("deriveFlowSteps_magChip_routesAssemblyToDdbjTradViaTier1WithDefaultCompanion", () => {

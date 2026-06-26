@@ -73,8 +73,8 @@ describe("databases/$slug route render", () => {
       await screen.findByRole("heading", { name: "BioProject", level: 1 }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/研究プロジェクトと、そのプロジェクトに由来する/),
-    ).toBeInTheDocument()
+      screen.getAllByText(/INSDC 共通のメタデータカタログ/).length,
+    ).toBeGreaterThan(0)
     expect(screen.getByRole("heading", { name: "BioProject とは", level: 2 })).toBeInTheDocument()
   })
 
@@ -85,19 +85,17 @@ describe("databases/$slug route render", () => {
     ).toBeInTheDocument()
   })
 
-  test("DatabaseSlugRoute_bioprojectJa_rendersExternalLinksInBody", async () => {
+  test("DatabaseSlugRoute_bioprojectJa_rendersHeadingsInBody", async () => {
     renderRoute("bioproject", "ja")
     expect(
-      await screen.findByRole("heading", { name: "外部リンク", level: 2 }),
+      await screen.findByRole("heading", { name: "アクセッション番号", level: 2 }),
     ).toBeInTheDocument()
-    const ncbi = screen.getByRole("link", { name: /NCBI BioProject/ })
-    expect(ncbi).toHaveAttribute("href", "https://www.ncbi.nlm.nih.gov/bioproject/")
   })
 
   test("DatabaseSlugRoute_bioprojectJa_rendersCallout", async () => {
     renderRoute("bioproject", "ja")
     await screen.findByRole("heading", { name: "BioProject", level: 1 })
-    expect(screen.getByText(/DDBJ Account が必要です/)).toBeInTheDocument()
+    expect(screen.getByText(/登録ナビ/)).toBeInTheDocument()
   })
 
   test("DatabaseSlugRoute_bioprojectJa_rendersInternalLinksInBody", async () => {

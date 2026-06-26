@@ -21,4 +21,5 @@ export default [
   ]),
   ...designRoutes(),
   ...devContentRoutes(),
+  route("*", "routes/page-content/route.tsx"),
 ] satisfies RouteConfig

@@ -2,30 +2,30 @@ import { type MouseEvent, useCallback } from "react"
 import { type LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router"
 
 import { pageTitleMeta } from "~/lib/content"
-import { getPageBySlug } from "~/lib/content/markdown-loader"
+import { getPageByPath } from "~/lib/content/markdown-loader"
 import { useProseEnhance } from "~/lib/content/use-prose-enhance"
 import { useLang } from "~/lib/i18n"
 import { PageTitle, Section } from "~/ui"
 
 export const handle = {
-  titleResolver: "database-content",
-  breadcrumbResolver: "database-content",
+  titleResolver: "page-content",
   i18n: { en: "complete" },
 } as const
 
 export const meta = pageTitleMeta
 
-export const loader = ({ params }: LoaderFunctionArgs): { slug: string } => {
-  const slug = params.slug ?? ""
-  if (getPageBySlug("databases", slug) === undefined) {
+export const loader = ({ params }: LoaderFunctionArgs): { urlPath: string } => {
+  const splat = params["*"] ?? ""
+  const urlPath = `/${splat}`
+  if (getPageByPath(urlPath) === undefined) {
     throw new Response("Not Found", { status: 404 })
   }
 
-  return { slug }
+  return { urlPath }
 }
 
-const DatabaseSlugRoute = () => {
-  const { slug } = useLoaderData<typeof loader>()
+const PageContentRoute = () => {
+  const { urlPath } = useLoaderData<typeof loader>()
   const lang = useLang()
   const navigate = useNavigate()
   useProseEnhance(".prose-bsi")
@@ -41,7 +41,7 @@ const DatabaseSlugRoute = () => {
     }
   }, [navigate])
 
-  const page = getPageBySlug("databases", slug)
+  const page = getPageByPath(urlPath)
   if (page === undefined) return null
 
   const fm = lang === "en" && page.frontmatter.en
@@ -65,4 +65,4 @@ const DatabaseSlugRoute = () => {
   )
 }
 
-export default DatabaseSlugRoute
+export default PageContentRoute

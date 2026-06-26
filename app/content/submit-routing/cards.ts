@@ -255,40 +255,6 @@ export const SUBMIT_CARDS: Readonly<Record<Service, CardCopy>> = {
     gotcha: { ja: "小規模・非完成の配列が対象です。EST/TSA/WGS、ゲノム・染色体・プラスミド等のレプリコン規模配列 (完成・ドラフト問わず)、配列数 100 超などは MSS に回されます。", en: "Intended for small, non-complete sequences; EST/TSA/WGS, replicon-scale sequences such as genomes, chromosomes, or plasmids (whether finished or draft), or more than 100 sequences are routed to MSS instead." },
     issuedNote: { ja: "登録すると 配列アクセッション番号 (AB 型) が発行されます。論文引用に使います。", en: "Registration issues sequence accession numbers (AB-style), used for publication citation." },
   },
-  "togovar": {
-    wizardSteps: {
-      ja: [
-        "DDBJ アカウント作成と SSH 公開鍵登録",
-        "TogoVar 登録申し込みフォーム送付",
-        "BioProject と BioSample を別途登録",
-        "メタデータ (Excel テンプレート TogoVar_v1.4.xlsx) と VCF ファイル (dbSNP/dbVar 形式) を準備",
-        "SFTP でメタデータと VCF をアップロード",
-      ],
-      en: [
-        "Create a DDBJ account and register your public key for SSH access",
-        "Submit the TogoVar-repository application form",
-        "Register BioProject and BioSample separately",
-        "Prepare metadata (Excel template TogoVar_v1.4.xlsx) and VCF files (dbSNP/dbVar format)",
-        "Upload metadata and VCF files via SFTP",
-      ],
-    },
-    prepare: {
-      ja: [
-        "DDBJ アカウント (https://accounts.ddbj.nig.ac.jp) と SSH 公開鍵・秘密鍵ペア",
-        "TogoVar-repository 登録 Excel テンプレート (TogoVar_v1.4.xlsx、公式リポジトリから入手)",
-        "VCF ファイル: 短いバリアントは dbSNP 形式、構造バリアントは dbVar 形式に準拠",
-        "BioProject アクセッション (PRJDB) と BioSample アクセッション (SAMD) リスト",
-      ],
-      en: [
-        "DDBJ account (https://accounts.ddbj.nig.ac.jp) and SSH key pair (public and private keys)",
-        "TogoVar-repository Excel template (TogoVar_v1.4.xlsx, download from official repository)",
-        "VCF files: short variants in dbSNP format; large structural variants in dbVar format",
-        "BioProject accession (PRJDB) and BioSample accession (SAMD) numbers",
-      ],
-    },
-    gotcha: { ja: "ヒト由来データでは、研究対象者を直接特定し得る情報をメタデータから必ず除去してください。", en: "For human-derived data, you must remove any direct personal identifiers of research subjects from the metadata." },
-    issuedNote: { ja: "登録すると Study (dstd) と、バリアントのアクセッション番号 (短いバリアントは dss、構造バリアントは variant call=dssv・variant region=dsv) が発行されます。論文引用に使います。", en: "Registration issues a Study accession (dstd) plus variant accessions (dss for short variants; dssv variant call and dsv variant region for structural variants), used for publication citation." },
-  },
   "gea": {
     wizardSteps: {
       ja: [

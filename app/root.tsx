@@ -80,7 +80,13 @@ export const meta = ({ data: loaderData, location, matches }: MetaArgs<typeof lo
   ]
 }
 
-const useRootLoaderData = () => useRouteLoaderData<typeof loader>("root")
+const useRootLoaderData = () => {
+  try {
+    return useRouteLoaderData<typeof loader>("root")
+  } catch {
+    return undefined
+  }
+}
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const rootData = useRootLoaderData()

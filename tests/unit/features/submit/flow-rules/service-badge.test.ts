@@ -81,7 +81,7 @@ describe("stepBadgeColor", () => {
       { kind: "info", messageKey: "tpaHint" },
       { kind: "warning", messageKey: "humanRefOnly" },
     ]
-    expect(stepBadgeColor(mkStep({ service: "togovar", notes }))).toBe("rose")
+    expect(stepBadgeColor(mkStep({ service: "gea", notes }))).toBe("rose")
   })
 
   test("stepBadgeColor_warningBeforeInfo_isRose", () => {
@@ -89,7 +89,7 @@ describe("stepBadgeColor", () => {
       { kind: "warning", messageKey: "humanRefOnly" },
       { kind: "info", messageKey: "tpaHint" },
     ]
-    expect(stepBadgeColor(mkStep({ service: "togovar", notes }))).toBe("rose")
+    expect(stepBadgeColor(mkStep({ service: "gea", notes }))).toBe("rose")
   })
 
   test("stepBadgeColor_errorOnExternalService_isRose", () => {
