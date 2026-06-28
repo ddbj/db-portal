@@ -14,6 +14,7 @@ const destinationOf = (steps: readonly FlowStep[]): FlowStep => {
 
 const defaultAccessSection = {
   restrictedPreference: false,
+  hasIdentifier: false,
   ethicsCompliance: false,
   publiclyAvailable: false,
   microbialAnalysis: false,

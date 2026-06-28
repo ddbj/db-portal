@@ -14,9 +14,9 @@ import {
 const ALL_KINDS = FileTypeKind.options
 const ALL_Q2S: (Q2 | null)[] = [null, ...Q2.options]
 
-const allEffects = (q2: Q2 | null) =>
+const allEffects = (q2: Q2 | null, hasIdentifier = true) =>
   ALL_KINDS.flatMap((kind) =>
-    getRowFormDef(kind, q2).groups.flatMap((group) =>
+    getRowFormDef(kind, q2, hasIdentifier).groups.flatMap((group) =>
       group.options.map((option) => ({
         kind,
         groupId: group.id,
@@ -29,7 +29,7 @@ const allEffects = (q2: Q2 | null) =>
 describe("getRowFormDef_kindCoverage", () => {
   test("getRowFormDef_returnsDefForAllKinds", () => {
     for (const kind of ALL_KINDS) {
-      expect(getRowFormDef(kind, null)).toBeDefined()
+      expect(getRowFormDef(kind, null, true)).toBeDefined()
     }
   })
 })
@@ -49,13 +49,13 @@ const IDENTIFIABLE_KINDS = new Set<FileTypeKind>([
 describe("getRowFormDef_groupStructure", () => {
   test("nonHumanQ2_onlyBaseFlowChangingKindsHaveGroups", () => {
     for (const kind of ALL_KINDS) {
-      expect(getRowFormDef(kind, null).groups.length > 0).toBe(BASE_DETAIL_KINDS.has(kind))
+      expect(getRowFormDef(kind, null, true).groups.length > 0).toBe(BASE_DETAIL_KINDS.has(kind))
     }
   })
 
   test("humanQ2_identifiableKindsAlsoHaveGroups", () => {
     for (const kind of ALL_KINDS) {
-      const hasGroups = getRowFormDef(kind, "human").groups.length > 0
+      const hasGroups = getRowFormDef(kind, "human", true).groups.length > 0
       const expected = BASE_DETAIL_KINDS.has(kind) || IDENTIFIABLE_KINDS.has(kind)
       expect(hasGroups).toBe(expected)
     }
@@ -63,7 +63,7 @@ describe("getRowFormDef_groupStructure", () => {
 
   test("humanQ2_identifiableKinds_haveIdentifiabilityGroup", () => {
     for (const kind of IDENTIFIABLE_KINDS) {
-      const def = getRowFormDef(kind, "human")
+      const def = getRowFormDef(kind, "human", true)
       const idGroup = def.groups.find((g) => g.id === "identifiability")
       expect(idGroup).toBeDefined()
       expect(idGroup!.kind).toBe("check")
@@ -73,16 +73,27 @@ describe("getRowFormDef_groupStructure", () => {
 
   test("nonHumanQ2_identifiableKinds_doNotHaveIdentifiabilityGroup", () => {
     for (const kind of IDENTIFIABLE_KINDS) {
-      const def = getRowFormDef(kind, null)
+      const def = getRowFormDef(kind, null, true)
       const idGroup = def.groups.find((g) => g.id === "identifiability")
       expect(idGroup).toBeUndefined()
+    }
+  })
+
+  test("identifiabilityGroupOption_flipsWithHasIdentifier", () => {
+    for (const kind of IDENTIFIABLE_KINDS) {
+      const onYes = getRowFormDef(kind, "human", true).groups.find((g) => g.id === "identifiability")
+      const onNo = getRowFormDef(kind, "human", false).groups.find((g) => g.id === "identifiability")
+      expect(onYes!.options[0]!.value).toBe("non-identifiable")
+      expect(onNo!.options[0]!.value).toBe("identifiable")
+      expect(onYes!.options[0]!.effect.chipAdd?.value).toBe("non-identifiable")
+      expect(onNo!.options[0]!.effect.chipAdd?.value).toBe("identifiable")
     }
   })
 
   test("hasRowDetail_matchesPresenceOfGroups_forAllQ2", () => {
     for (const q2 of ALL_Q2S) {
       for (const kind of ALL_KINDS) {
-        expect(hasRowDetail(kind, q2)).toBe(getRowFormDef(kind, q2).groups.length > 0)
+        expect(hasRowDetail(kind, q2)).toBe(getRowFormDef(kind, q2, true).groups.length > 0)
       }
     }
   })
@@ -91,7 +102,7 @@ describe("getRowFormDef_groupStructure", () => {
     const empty: string[] = []
     for (const q2 of ALL_Q2S) {
       for (const kind of ALL_KINDS) {
-        for (const group of getRowFormDef(kind, q2).groups) {
+        for (const group of getRowFormDef(kind, q2, true).groups) {
           if (group.options.length === 0) {
             empty.push(`${kind}/${group.id}(q2=${q2})`)
           }
@@ -165,12 +176,28 @@ describe("getRowFormDef_chipAddConsistency", () => {
   })
 
   test("chipAdd_rejectsValueFromWrongAxis", () => {
-    const spatial = getRowFormDef("spatial-transcriptomics", null).groups
+    const spatial = getRowFormDef("spatial-transcriptomics", null, true).groups
       .flatMap((g) => g.options)
       .map((o) => o.effect.chipAdd)
       .find((c): c is NonNullable<FormOptionEffect["chipAdd"]> => c !== undefined)
     expect(spatial).toBeDefined()
     expect(isAllowedChipValue(spatial!.axis, spatial!.value)).toBe(true)
     expect(isAllowedChipValue("tpa", spatial!.value)).toBe(false)
+  })
+
+  test("identifiabilityChipAdd_isAllowedForBothHasIdentifierValues", () => {
+    const invalid: string[] = []
+    for (const hasIdentifier of [true, false]) {
+      for (const { kind, groupId, value, effect } of allEffects("human", hasIdentifier)) {
+        if (effect.chipAdd === undefined) continue
+        if (effect.chipAdd.axis !== "identifiability") continue
+        if (!isAllowedChipValue(effect.chipAdd.axis, effect.chipAdd.value)) {
+          invalid.push(
+            `hasIdentifier=${hasIdentifier} ${kind}/${groupId}/${value}: ${effect.chipAdd.axis}=${effect.chipAdd.value}`,
+          )
+        }
+      }
+    }
+    expect(invalid).toStrictEqual([])
   })
 })

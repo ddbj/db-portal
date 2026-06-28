@@ -11,15 +11,21 @@ export const deriveAccess = (
 ): Access => {
   if (q2 !== "human") return "open"
   if (section.restrictedPreference) return "restricted"
+
+  const chip = chips.find((c) => c.axis === "identifiability")
+
+  if (section.hasIdentifier) {
+    return chip?.value === "non-identifiable" ? "open" : "restricted"
+  }
   if (section.ethicsCompliance) {
-    const chip = chips.find((c) => c.axis === "identifiability")
     const identifiable = chip === undefined
       ? IDENTIFIABLE_KINDS.has(fileTypeKind)
       : chip.value !== "non-identifiable"
     return identifiable ? "restricted" : "open"
   }
-  if (section.publiclyAvailable) return "open"
-  if (section.microbialAnalysis) return "open"
+  if (section.publiclyAvailable || section.microbialAnalysis) {
+    return chip?.value === "identifiable" ? "restricted" : "open"
+  }
 
   return "restricted"
 }

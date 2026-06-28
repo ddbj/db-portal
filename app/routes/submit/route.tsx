@@ -48,8 +48,10 @@ const SubmitRoute = () => {
       map.set(e.access, list)
     }
     if (fileEntries.length === 0 && q2 === "human") {
-      const { restrictedPreference, ethicsCompliance, publiclyAvailable, microbialAnalysis } = accessSection
+      const { restrictedPreference, hasIdentifier, ethicsCompliance, publiclyAvailable, microbialAnalysis } = accessSection
       if (restrictedPreference) {
+        map.set("restricted", [])
+      } else if (hasIdentifier) {
         map.set("restricted", [])
       } else if (ethicsCompliance) {
         map.set("restricted", [])
@@ -179,6 +181,7 @@ const SubmitRoute = () => {
                   />
                   <DataDetailPanel
                     q2={state.submission.preconditions.q2}
+                    hasIdentifier={accessSection.hasIdentifier}
                     entries={state.submission.fileEntries}
                     groups={state.submission.fileGroups}
                     labels={{
@@ -255,6 +258,8 @@ const AccessSectionPanel = ({
 }) => {
   const t = useT()
   const disabled = q2 === null || !isHuman
+  const radioDisabled = disabled || section.restrictedPreference
+  const basisDisabled = disabled || section.restrictedPreference || section.hasIdentifier
 
   return (
     <div>
@@ -275,6 +280,26 @@ const AccessSectionPanel = ({
           disabled={disabled}
           onChange={() => onChange({ restrictedPreference: !section.restrictedPreference })}
         />
+        <RadioCardGroup
+          ariaLabel={t("submit.access.hasIdentifier.ariaLabel")}
+          name="access-has-identifier"
+          value={disabled ? null : section.hasIdentifier ? "yes" : "no"}
+          options={[
+            {
+              value: "yes",
+              label: t("submit.access.hasIdentifier.yes.label"),
+              sub: t("submit.access.hasIdentifier.yes.sub"),
+              disabled: radioDisabled,
+            },
+            {
+              value: "no",
+              label: t("submit.access.hasIdentifier.no.label"),
+              sub: t("submit.access.hasIdentifier.no.sub"),
+              disabled: radioDisabled,
+            },
+          ]}
+          onChange={(v) => onChange({ hasIdentifier: v === "yes" })}
+        />
         <p className="text-fs-micro font-semibold text-ink-mid mt-1 mb-0">
           {t("submit.access.basisHeading")}
         </p>
@@ -284,7 +309,7 @@ const AccessSectionPanel = ({
             label={t(`submit.access.${key}.label`)}
             sub={t(`submit.access.${key}.sub`)}
             checked={!disabled && section[key]}
-            disabled={disabled || section.restrictedPreference}
+            disabled={basisDisabled}
             onChange={() => onChange({ [key]: !section[key] })}
           />
         ))}

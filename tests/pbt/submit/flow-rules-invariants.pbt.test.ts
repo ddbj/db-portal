@@ -208,17 +208,61 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
-  "deriveAccess_consistency_matchesIdentifiabilityRule",
+  "deriveAccess_consistency_matchesPriorityChain",
   (q2, accessSection, kind) => {
     const access = deriveAccess(q2, accessSection, kind)
     if (q2 !== "human") {
       expect(access).toBe("open")
     } else if (accessSection.restrictedPreference) {
       expect(access).toBe("restricted")
+    } else if (accessSection.hasIdentifier) {
+      expect(access).toBe("restricted")
     } else if (accessSection.ethicsCompliance) {
       expect(access).toBe(IDENTIFIABLE_KINDS.has(kind) ? "restricted" : "open")
     } else if (accessSection.publiclyAvailable || accessSection.microbialAnalysis) {
       expect(access).toBe("open")
+    } else {
+      expect(access).toBe("restricted")
+    }
+  },
+)
+
+test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+  "deriveAccess_chipNonIdentifiable_flipsToOpen_whenIdentifierAssumed",
+  (q2, accessSection, kind) => {
+    const chips = [{ axis: "identifiability" as const, value: "non-identifiable" }]
+    const access = deriveAccess(q2, accessSection, kind, chips)
+    if (q2 !== "human") {
+      expect(access).toBe("open")
+    } else if (accessSection.restrictedPreference) {
+      expect(access).toBe("restricted")
+    } else if (accessSection.hasIdentifier) {
+      expect(access).toBe("open")
+    } else if (accessSection.ethicsCompliance) {
+      expect(access).toBe("open")
+    } else if (accessSection.publiclyAvailable || accessSection.microbialAnalysis) {
+      expect(access).toBe("open")
+    } else {
+      expect(access).toBe("restricted")
+    }
+  },
+)
+
+test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+  "deriveAccess_chipIdentifiable_flipsToRestricted_whenIdentifierDenied",
+  (q2, accessSection, kind) => {
+    const chips = [{ axis: "identifiability" as const, value: "identifiable" }]
+    const access = deriveAccess(q2, accessSection, kind, chips)
+    if (q2 !== "human") {
+      expect(access).toBe("open")
+    } else if (accessSection.restrictedPreference) {
+      expect(access).toBe("restricted")
+    } else if (accessSection.hasIdentifier) {
+      expect(access).toBe("restricted")
+    } else if (accessSection.ethicsCompliance) {
+      expect(access).toBe("restricted")
+    } else if (accessSection.publiclyAvailable || accessSection.microbialAnalysis) {
+      expect(access).toBe("restricted")
     } else {
       expect(access).toBe("restricted")
     }

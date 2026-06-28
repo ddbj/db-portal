@@ -31,6 +31,7 @@ const ORIGIN_CLASS: Record<FlowStepOrigin, string> = {
 
 const DEFAULT_ACCESS_SECTION: AccessSection = {
   restrictedPreference: false,
+  hasIdentifier: true,
   ethicsCompliance: true,
   publiclyAvailable: false,
   microbialAnalysis: false,

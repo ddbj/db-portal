@@ -44,10 +44,11 @@ export const rowIsConfigured = (state: UIState, entryId: string): boolean => {
   const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
   const groupType = group?.groupType ?? TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]
   const { q2 } = state.submission.preconditions
+  const { hasIdentifier } = state.submission.accessSection
 
   const draft = { groupType, dataForm: entry.dataForm, chipTags: entry.chipTags }
 
-  return getRowFormDef(entry.fileTypeKind, q2).groups.every(
+  return getRowFormDef(entry.fileTypeKind, q2, hasIdentifier).groups.every(
     (g) => g.kind !== "radio" || g.options.some((opt) => optionMatches(opt, draft)),
   )
 }

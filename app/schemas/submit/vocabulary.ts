@@ -115,7 +115,7 @@ export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> 
   "small-scale": ["true"],
   "spatial-platform": ["visium", "xenium", "merfish", "stereo-seq"],
   "expression-source": ["ngs"],
-  "identifiability": ["non-identifiable"],
+  "identifiability": ["non-identifiable", "identifiable"],
 }
 
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>

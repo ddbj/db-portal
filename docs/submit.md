@@ -8,7 +8,7 @@ DDBJ の登録窓口は service ごとに分かれており、利用者は最初
 
 ### 「自分のデータの DB は何か」を訊かない設計
 
-利用者は登録窓口に来た時点では、DDBJ の service 構造 (BioProject / BioSample / DRA / JGA / DDBJ / GEA / MetaboBank / TogoVar …) を必ずしも理解していない。「自分が持っているのは FASTQ で、ヒトの制限公開データ」のような **データ側の言葉** で考えている。
+利用者は登録窓口に来た時点では、DDBJ の service 構造 (BioProject / BioSample / DRA / JGA / DDBJ / GEA / MetaboBank …) を必ずしも理解していない。「自分が持っているのは FASTQ で、ヒトの制限公開データ」のような **データ側の言葉** で考えている。
 
 submit ナビゲーションはこの状態を出発点とする:
 
@@ -28,8 +28,8 @@ UI 全体は前段フィルタを足した 3 段構造になる:
 │  前段: 登録前提                                               │
 │   - Q2 生物ドメイン (単一選択・後段の絞り込みカスケード)       │
 │   - ② 公開区分 (ヒト時のみ active・非ヒト時は disable 表示)   │
-│     制限公開の希望と非制限公開の根拠をトグルで設定し            │
-│     access を全種別一括で導出する                              │
+│     制限公開の希望・個人識別符号の有無・非制限公開の根拠を      │
+│     設定し、access を種別ごとに導出する (per-file 反転可)      │
 ├─────────────────────────────────────────────────────────────┤
 │  中段: データ種別の選択 (手元のデータ種別を on/off で選ぶ)    │
 │   - 各種別 = 1 つのトグル。Q2 で enable/disable               │
@@ -63,11 +63,11 @@ Cross-DB Tag は前段フィルタ / 種別トグル / 種別ごとの access・
 
 | 区分 | 例 | 置き場所 |
 |---|---|---|
-| flow-changing・**前段**で判定 | Q2 ヒト/非ヒト (variant→TogoVar/EVA, reads→DRA/JGA) / ② 公開区分 (JGA 分岐) | 前段 Q2・② 公開区分 |
-| flow-changing・**種別ごと**に判定 | `assembly-form` ゲノム/MAG/SAG/ハプロタイプ (`ddbj` ENV genome 経路・`umbrella-bioproject` 導出) / `has-annotation` アノテーション有無 (ゲノム + アノテーションなし → unannotated 経路) / `tpa` (TPA→MSS) / `small-scale` (小規模→NSSS) / `spatial-platform` (Sequencing→DRA+GEA / Microarray→GEA) / `expression-source` (NGS 由来→DRA+GEA / Non-NGS→GEA のみ) / `identifiability` (ヒト配列リード・塩基配列・バリアントの個人識別性。DRA/DDBJ/TogoVar ↔ JGA) | データ詳細 (種別ごとの質問) |
-| service / step 不変・DB 内部の細部 | reads の single/paired/10x/多重化 (DRA Library Layout・Instrument・BioSample 粒度) / 発現の MAGE-TAB・アレイ single/two-color (GEA 内の形式・IDF/SDRF) / variant の reference 有無・SNP/SV (TogoVar 内登録種別) / 質量分析の測定方式・MSI イメージング (MetaboBank 内のファイル差) / MSS data type の WGS/TSA/TLS/EST/HTG/HTC/GSS / BS package / DRA Library Strategy | Step カードの Intra-DB Tag pulldown |
+| flow-changing・**前段**で判定 | Q2 ヒト/非ヒト (variant→JGA/EVA, reads→DRA/JGA) / ② 公開区分 (JGA 分岐) / `hasIdentifier` (個人識別符号の有無で全 restricted ↔ 種別ごと) | 前段 Q2・② 公開区分 |
+| flow-changing・**種別ごと**に判定 | `assembly-form` ゲノム/MAG/SAG/ハプロタイプ (`ddbj` ENV genome 経路・`umbrella-bioproject` 導出) / `has-annotation` アノテーション有無 (ゲノム + アノテーションなし → unannotated 経路) / `tpa` (TPA→MSS) / `small-scale` (小規模→NSSS) / `spatial-platform` (Sequencing→DRA+GEA / Microarray→GEA) / `expression-source` (NGS 由来→DRA+GEA / Non-NGS→GEA のみ) / `identifiability` (上部 `hasIdentifier` radio に対する種別単位の反転上書き。DRA/DDBJ/EVA ↔ JGA) | データ詳細 (種別ごとの質問) |
+| service / step 不変・DB 内部の細部 | reads の single/paired/10x/多重化 (DRA Library Layout・Instrument・BioSample 粒度) / 発現の MAGE-TAB・アレイ single/two-color (GEA 内の形式・IDF/SDRF) / variant の reference 有無・SNP/SV (EVA 内登録種別) / 質量分析の測定方式・MSI イメージング (MetaboBank 内のファイル差) / MSS data type の WGS/TSA/TLS/EST/HTG/HTC/GSS / BS package / DRA Library Strategy | Step カードの Intra-DB Tag pulldown |
 
-詳細質問は「flow-changing・種別ごと」の軸だけを持つ。該当軸が無い種別 (`microarray-expression` / `metabolomics` / `proteome`) は **詳細質問を持たず、詳細カードを出さない** (行先は前段 Q2 + ② 公開区分で確定する)。TPA は `sequence` 種別の ChipAxis として持ち、TPA 対象外の種別には出さない。`identifiability` は `sequence-read` / `sequence` / `variant` 種別の ChipAxis として Q2=human 時に表示し、非ヒト Q2 では出さない。
+詳細質問は「flow-changing・種別ごと」の軸だけを持つ。該当軸が無い種別 (`microarray-expression` / `metabolomics` / `proteome`) は **詳細質問を持たず、詳細カードを出さない** (行先は前段 Q2 + ② 公開区分で確定する)。TPA は `sequence` 種別の ChipAxis として持ち、TPA 対象外の種別には出さない。`identifiability` は `sequence-read` / `sequence` / `variant` 種別の ChipAxis として Q2=human 時に表示し、非ヒト Q2 では出さない。chip の文言と効果は上部 `hasIdentifier` radio の値によって反転する (Yes 時は「該当しない (open に逆転)」、No 時は「該当する (restricted に逆転)」)。
 
 flow を変えない区分を詳細質問に出すと「答えさせても経路に反映されない」死んだ質問になり、flow を変える区分を Intra-DB に隠すと「経路が誤って導出される」。両方向の事故を防ぐのがこの基準である。
 
@@ -98,10 +98,10 @@ submit ナビは典型的な提出 (1 種別 = 1 つの論理データ) を案�
 値域は `app/schemas/submit/vocabulary.ts` と `app/schemas/submit/service.ts` を SSOT とする。本章では各語彙の **意図と使い分け** を述べる。種別 → 登録先の対応は `## 前段カスケード・フィルタ` の規約表で扱う。
 
 - **Q2 (生物ドメイン)**: 「ヒト」「ヒト以外の真核生物」「原核生物」「ファージ・ウイルス」「環境サンプル (メタゲノム)」。前段の単一選択で、**submission 全体の唯一の生物軸**。種・属レベルの phylogeny は持たない (それは BioSample の Intra-DB Tag で扱う)。`human` (ヒト個人由来) のみが ② 公開区分の active 化と JGA への分岐起点になり、`metagenome` (環境サンプル) は非ヒト扱いで JGA に入れない (`### JGA は「ヒト個人」限定`)
-- **② 公開区分 (accessSection)**: ヒト時のみ active (非ヒト時は表示 + 全体 disable)。4 つのトグルボタンで制限公開の希望と公開区分の根拠を設定し、access を**種別ごとに**導出する。倫理指針に沿ったヒト研究の場合、個人識別性のある種別 (配列リード・塩基配列・バリアント) は restricted、それ以外は open になり、同一 submission 内で制限と公開が混在しうる。詳細は `## 公開区分 (access) の規約`
+- **② 公開区分 (accessSection)**: ヒト時のみ active (非ヒト時は表示 + 全体 disable)。5 つの入力 (1 トグル + 1 radio + 3 トグル) で「制限公開の希望」「個人識別符号の有無 (radio、default Yes)」「公開区分の根拠 (倫理指針 / 一般入手 / 微生物)」 を設定し、access を**種別ごとに**導出する。radio が Yes (含む) のあいだは全種別 restricted (= JGA 行き) に倒れ、No に切り替えると倫理指針の種別ごとロジックや一般入手の全 open ロジックに委ねられる。同一 submission 内で制限と公開が混在しうる。詳細は `## 公開区分 (access) の規約`
 - **FileTypeKind**: データファイルの種別で、**真の一次登録単位だけ**を値域とする (配列リード / 塩基配列 / バリアント / 発現マトリクス / マイクロアレイ / 空間トランスクリプトーム / 空間画像 / メタボロミクス / プロテオーム)。中段の選択トグルの単位で、利用者は手元にある種別を on にする (同一種別は高々 1 個)。附随メタデータ (表現型・サンプル属性) は BioSample の Intra-DB Tag、付随ファイル (processed 画像 / 解析レポート / 可視化オブジェクト) は主データ step の追加ファイル枠で扱い、FileTypeKind には含めない。ベンダー raw データも独立種別を作らずメタボロミクスの file_format に含める
-- **Access**: `open` / `restricted`。**per-file の混合を持たず種別単位**で扱う軸。② 公開区分の導出結果として**種別ごとに**値が入る (`## 公開区分 (access) の規約`)。倫理指針に沿ったヒト研究では、個人識別性のある種別 (配列リード等) が restricted、ない種別 (発現マトリクス等) が open になり、同一 submission 内で値が分かれうる。`restricted ∧ Q2 = ヒト` の組合せが JGA への分岐起点で、restricted な種別が JGA に振られる。非ヒトは既定 open で INSDC が制限公開を持たないため DRA に公開予定日 (embargo) 付きで出す
-- **ChipAxis**: 前段で表現できない、かつ **出る service / step を変える (flow-changing)** 細部区分を、種別ごとの `{axis, value}` ペアで表現する。`assembly-form` (ゲノム / MAG / SAG / ハプロタイプの 4 択 radio。MAG/SAG を `ddbj` ENV genome 経路に振り分ける、ハプロタイプの `umbrella-bioproject` 導出) / `has-annotation` (アノテーション付きかどうかのトグル。`assembly-form=genome` でアノテーションなしの場合に unannotated 経路に分岐) / `tpa` (TPA → MSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `small-scale` (小規模 → NSSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `spatial-platform` (GEA Sequencing/Microarray・DRA 2 段の振り分け) / `expression-source` (発現マトリクスの由来。`ngs` で DRA+GEA 2 段、未選択で GEA のみ) / `identifiability` (個人識別性の有無。`sequence-read` / `sequence` / `variant` の 3 種別で Q2=human 時に表示。デフォルト `identifiable`。倫理指針 ON 時に `non-identifiable` を選ぶと当該種別の access が open になり JGA ではなく公開系 destination に振られる)。出る service を変えない区分 (バリアントの SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う (`### 詳細質問の選別基準`)。`assembly-form` の routing 上の意味は `## 設計判断` を参照
+- **Access**: `open` / `restricted`。**per-file の混合を持たず種別単位**で扱う軸。② 公開区分の導出結果として**種別ごとに**値が入る (`## 公開区分 (access) の規約`)。`hasIdentifier` radio が Yes (default) なら全種別 restricted。No に倒すと倫理指針 ON 時は個人識別性のある種別 (配列リード等) が restricted、ない種別 (発現マトリクス等) が open になり、同一 submission 内で値が分かれうる。`restricted ∧ Q2 = ヒト` の組合せが JGA への分岐起点で、restricted な種別が JGA に振られる。非ヒトは既定 open で INSDC が制限公開を持たないため DRA に公開予定日 (embargo) 付きで出す
+- **ChipAxis**: 前段で表現できない、かつ **出る service / step を変える (flow-changing)** 細部区分を、種別ごとの `{axis, value}` ペアで表現する。`assembly-form` (ゲノム / MAG / SAG / ハプロタイプの 4 択 radio。MAG/SAG を `ddbj` ENV genome 経路に振り分ける、ハプロタイプの `umbrella-bioproject` 導出) / `has-annotation` (アノテーション付きかどうかのトグル。`assembly-form=genome` でアノテーションなしの場合に unannotated 経路に分岐) / `tpa` (TPA → MSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `small-scale` (小規模 → NSSS。`sequence` 種別のみ。MAG/SAG/ハプロタイプ選択時は disabled) / `spatial-platform` (GEA Sequencing/Microarray・DRA 2 段の振り分け) / `expression-source` (発現マトリクスの由来。`ngs` で DRA+GEA 2 段、未選択で GEA のみ) / `identifiability` (上部 `hasIdentifier` radio に対する **per-file の反転上書きスイッチ**。`sequence-read` / `sequence` / `variant` の 3 種別で Q2=human 時に表示。値域は `non-identifiable` / `identifiable` の 2 値で、上部 radio が Yes なら `non-identifiable` で当該種別だけ open に逆転、上部 radio が No なら `identifiable` で当該種別だけ restricted に逆転する)。出る service を変えない区分 (バリアントの SNP/SV、MSS data type の WGS/TSA/TLS 等) は chip にせず Step カードの Intra-DB Tag で扱う (`### 詳細質問の選別基準`)。`assembly-form` の routing 上の意味は `## 設計判断` を参照
 - **GroupType**: 複数ファイルが論理的に 1 単位を成す関係 (MAGE-TAB、imaging-ms 等)。経路導出の分岐要素として効く。詳細は `### group と Tier1 分岐` を参照
 - **Service**: 登録先・導出物・外部誘導を表す単一の enum。各値は **role** を持つ (`destination` = 利用者のデータが行く登録先 / `companion` = submission 全体に共通する導出物 / `external` = DDBJ 外への誘導)。詳細は `## Service と role / 外向き契約`
 
@@ -133,59 +133,68 @@ Q2 = human の `repos` は JGA を含む全 destination で、非ヒト Q2 の `
 
 Q2 が種別を disable するため、`allowedRepos = ∅` の組合せや「選んでも宛先が無い種別」は選択不能になる。これを PBT で固定する (`## 経路導出と不変量` の `cascade-no-deadend`)。
 
-前段は種別の enable/disable を決め、② 公開区分は access を全種別一括で導出する。種別を選んだ後は `ChipAxis`・詳細回答が経路導出を駆動する (生物 = ヒトかは Q2、公開区分は ② で全種別一括に判定)。
+前段は種別の enable/disable を決め、② 公開区分は access を種別ごとに導出する (`hasIdentifier` radio + 補助トグル + per-file 反転 chip の組合せで混在しうる)。種別を選んだ後は `ChipAxis`・詳細回答が経路導出を駆動する (生物 = ヒトかは Q2、公開区分は ② で判定)。
 
 ---
 
 ## 公開区分 (access) の規約
 
-`Access` は `open` / `restricted` の 2 値。**per-file の混合を持たず、種別単位**で扱う。② 公開区分が access を**種別ごとに**導出する。倫理指針に沿ったヒト研究では個人識別性のある種別と無い種別で access が分かれ、同一 submission 内で制限と公開が混在しうる。
+`Access` は `open` / `restricted` の 2 値。**per-file の混合を持たず、種別単位**で扱う。② 公開区分が access を**種別ごとに**導出する。`hasIdentifier` radio が Yes (default) のあいだは全種別 restricted、No に倒すと倫理指針の種別ごとロジックや一般入手の全 open ロジックに委ねられ、同一 submission 内で制限と公開が混在しうる。
 
 ### 個人識別性 (identifiability)
 
-個人情報保護法施行規則の「個人識別符号」(全ゲノム配列・全エキソーム配列・全ゲノム SNP・独立 40 箇所以上の SNP 等) に該当しうるかで 2 値に分類する。デフォルト値は種別から決まるが、個人識別性ありの 3 種別 (配列リード・塩基配列・バリアント) は Q2=human 時に `identifiability` ChipAxis で利用者が上書きできる (RNA-seq のように個人識別符号に該当しないリードデータ等)。デフォルトは安全側 (`identifiable`):
+個人情報保護法施行規則の「個人識別符号」(全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等) に該当しうるかを上部 `hasIdentifier` radio で **submission 全体に対して 1 回** 答える。default は安全側 (Yes = 含む)。Q2=human 時のみ active。
+
+per-file の個別反転は `identifiability` ChipAxis で表現する。chip の効果は上部 radio に応じて逆転する (`### ② 公開区分 (accessSection)` の導出ルール参照)。
+
+`IDENTIFIABLE_KINDS` (`app/schemas/submit/vocabulary.ts`) は、上部 radio が No (含まない) + 倫理指針 ON のときに「ヒト研究なら個人識別符号該当の 3 種別だけ安全側で restricted」 とする種別ごと既定値を表す:
 
 | 種別 | 個人識別性 | 根拠 |
 |---|---|---|
 | 配列リード | **あり** | 生リード = 個人ゲノム。個人識別符号に該当 |
-| 塩基配列 | **あり** | アセンブリ済みだが 40+ SNP を含みうる |
-| バリアント | **あり** | 個体 genotype = 個人識別符号。頻度データは非該当だが現状の種別粒度で分離不可。全体を HIGH 扱い |
+| 塩基配列 | **あり** | アセンブリ済みだが個人レベル SNP を含みうる |
+| バリアント | **あり** | 個体 genotype = 個人識別符号。頻度データは非該当だが現状の種別粒度で分離不可。全体を該当扱い |
 | 発現マトリクス | なし | 集約データ。法的には非該当 |
-| マイクロアレイ | なし | 発現・methylation は非該当。SNP genotyping は該当するが「制限公開を希望する」で対処 |
+| マイクロアレイ | なし | 発現・methylation は非該当。SNP genotyping は該当するが上部 radio = Yes で対処 |
 | 空間 Tx / 空間画像 | なし | 空間座標付きデータ。個人識別リスクは低い |
 | メタボロミクス | なし | 代謝物プロファイル。低リスク |
 | プロテオーム | なし | タンパク質プロファイル。低リスク |
 
 ### ② 公開区分 (accessSection)
 
-ヒト時のみ active (非ヒト時は表示 + 全体 disable → 全種別 open)。4 つのトグルボタンで構成し、access を種別ごとに導出する:
+ヒト時のみ active (非ヒト時は表示 + 全体 disable → 全種別 open)。1 トグル + 1 radio + 3 トグルで構成し、access を種別ごとに導出する:
 
 ```
-[⬛] 制限公開を希望する                     ← default OFF
-     ON → 全種別 restricted、下の 3 条件 disable
+[⬛] 制限公開を希望する                      ← default OFF
+     ON → 全種別 restricted、下の radio + 3 条件 disable
 
-▼ 公開区分の根拠 (制限=OFF のとき)
-[■■] 倫理指針に沿ったヒト研究               ← default ON  → 種別で分かれる
-[⬛] 一般入手可能な試料の解析               ← default OFF → 全種別 open
-[⬛] 微生物自体の分析 (ヒト配列除去済み)    ← default OFF → 全種別 open
+(◉) 個人識別符号を含む / ( ) 含まない        ← default = 含む (Yes)
+     sub: 全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等
+     Yes → 全種別 restricted、下の 3 条件 disable
+
+▼ 公開区分の根拠 (制限=OFF かつ radio=No のとき)
+[■■] 倫理指針に沿ったヒト研究                ← default ON  → 種別で分かれる
+[⬛] 一般入手可能な試料の解析                ← default OFF → 全種別 open
+[⬛] 微生物自体の分析 (ヒト配列除去済み)     ← default OFF → 全種別 open
 ```
 
-**導出ルール** (SSOT は `app/features/submit/access.ts` の `deriveAccess` 純関数):
+**導出ルール** (SSOT は `app/features/submit/access.ts` の `deriveAccess` 純関数、優先度の高い順):
 
 | 条件 | access | 根拠 |
 |---|---|---|
 | 非ヒト (Q2 ≠ human) | 全種別 open | INSDC は制限公開を持たない。非公開は embargo |
 | 制限公開を希望する = ON | 全種別 restricted | 利用者の明示的な制限希望。安全側 |
-| 倫理指針に沿ったヒト研究 = ON (default) | **種別で分かれる** | 個人識別性あり → restricted、なし → open。個人識別性は種別のデフォルト値を `identifiability` chip で上書き可 |
-| 一般入手可能な試料の解析 = ON | 全種別 open | 倫理指針の適用外 (policies-e.md:270) |
-| 微生物自体の分析 (ヒト配列除去) = ON | 全種別 open | 倫理指針の適用外。ヒト配列除去が条件 |
-| 上記いずれにも該当しない | 全種別 restricted | 安全側 |
+| `hasIdentifier` = Yes (default) | 全種別 restricted。chip = `non-identifiable` の種別だけ open に逆転 | 個人識別符号を含む = 法的に制限公開対象 |
+| 倫理指針に沿ったヒト研究 = ON (default、`hasIdentifier`=No 時) | **種別で分かれる** | `IDENTIFIABLE_KINDS` で既定値を決め、chip があれば `non-identifiable` / `identifiable` で上書き |
+| 一般入手可能な試料の解析 = ON | 全種別 open。chip = `identifiable` の種別だけ restricted に逆転 | 倫理指針の適用外 (policies-e.md:270) |
+| 微生物自体の分析 (ヒト配列除去) = ON | 全種別 open。chip = `identifiable` の種別だけ restricted に逆転 | 倫理指針の適用外。ヒト配列除去が条件 |
+| 上記いずれにも該当しない | 全種別 restricted | 安全側 fallback |
 
-**デフォルト状態 (ヒト)**: 倫理指針 = ON (default) → 個人識別性ありの種別 (配列リード・塩基配列・バリアント) は restricted、なしの種別 (発現マトリクス等) は open。ゲノム解析で得た genotype を JGA に、集計した頻度データを TogoVar に出す、といった一般的なケースがデフォルトで表現される。RNA-seq のように個人識別符号に該当しないリードデータを登録する場合は、配列リードの `identifiability` chip で `non-identifiable` を選ぶと DRA (公開) に振られる。
+**デフォルト状態 (ヒト)**: `hasIdentifier` = Yes (default) → 全種別 restricted (JGA + Policy 申請)。「含まない」 を選んだ時に倫理指針 ON で `IDENTIFIABLE_KINDS` に従って分かれる。RNA-seq のように個人識別符号に該当しないリードデータを登録する場合は、上部 radio を No に倒した上で必要なら配列リードの `identifiability` chip で個別調整できる。
 
-**排他制御**: 「一般入手可能な試料」「微生物自体の分析」は倫理指針の**適用外**であり、倫理指針 ON と同時に ON にするのは矛盾する。いずれかを ON にすると倫理指針が自動で OFF になり、倫理指針を ON にすると他 2 つが自動で OFF になる。「一般入手可能な試料」と「微生物自体の分析」は同時に ON にできる (どちらも倫理指針適用外で矛盾しない)。
+**排他制御**: 「制限公開を希望する」 = ON と `hasIdentifier` = Yes は**いずれも下のサブ条件を disable する強い意思表示**で、片方でも該当すれば下 3 トグル (倫理指針 / 一般入手 / 微生物) は disabled になる。「一般入手可能な試料」「微生物自体の分析」は倫理指針の**適用外**で、倫理指針 ON と同時に ON にするのは矛盾する。いずれかを ON にすると倫理指針が自動で OFF になり、倫理指針を ON にすると他 2 つが自動で OFF になる。「一般入手可能な試料」と「微生物自体の分析」は同時に ON にできる。
 
-**根拠**: 旧 NBDC ヒトデータベースナビの画面2 (公開区分の希望) と画面3 (非制限公開の妥当性ゲート) を統合。「倫理指針に沿った研究でも非制限アクセスと制限アクセスの両方がありうる」ケース (ゲノム解析で genotype は JGA、頻度データは TogoVar 等) に対応するため、倫理指針 ON 時の access 導出に個人識別性を加味する。
+**根拠**: 旧 NBDC ヒトデータベースナビの画面2 (公開区分の希望) と画面3 (非制限公開の妥当性ゲート) を統合。客フィードバック「個別 genotype は JGA、集計頻度データは TogoVar 公開」 のような混在ケースを、上部 1 質問 + per-file 反転 chip で表現する。`restrictedPreference` と `hasIdentifier` は機能的に同じ「全 restricted トリガー」 だが、前者は主観的な希望、後者は客観的な事実 (個人情報保護法施行規則上の該否) を表す別軸として並置する。
 
 ### JGA 一般化
 
@@ -209,11 +218,11 @@ restricted な**全種別**が JGA に振られる。sequence-read → JGA Data�
 
 `rule.emit` は `{ service, scope, notes }`: `service` は登録エンドポイント、`scope` は `entry` (その種別だけ) / `group` (所属 group の全 member + group)、`notes` は `{ kind (info/warning/error), messageKey }` の配列 (各 note は optional な `whenAny` を 1 階で持ち、scope 内に該当があるときだけ出る)。
 
-例として `variant` 種別は、制限公開ヒトを `jga`・公開ヒトを `togovar`・非ヒトを `eva` に first-match で振り分ける (ヒト/非ヒトと公開区分で登録先が割れる)。短いバリアント (≤ 50 bp) と構造バリアント (> 50 bp) は **同じ service 内の登録種別差** (TogoVar の SNP/SV、EVA の short/SV) であって出る service を変えないため、詳細質問にせず Step カードの Intra-DB Tag (登録種別 pulldown) で扱う。`variant` 種別で **flow を割るのは Q2 (ヒト/非ヒト) と access** だけである。`eva` が非ヒトの正規の登録先で、非ヒトを TogoVar に流して警告で済ませない (TogoVar はヒト専用)。
+例として `variant` 種別は、制限公開ヒトを `jga`・それ以外を `eva` に first-match で振り分ける。短いバリアント (≤ 50 bp) と構造バリアント (> 50 bp) は **同じ service 内の登録種別差** (EVA の short/SV) であって出る service を変えないため、詳細質問にせず Step カードの Intra-DB Tag (登録種別 pulldown) で扱う。`variant` 種別で **flow を割るのは Q2 (ヒト/非ヒト) と access** だけである。
 
 ### first-match が排他を保証する
 
-`rules` は first-match のため、1 種別は同一カタログ内で高々 1 つのルールにマッチする。これにより「同じ種別が排他 service (JGA / DRA, JGA / TogoVar) の両方の scope に出ない」が機械的に成立する。否定 (NOT) は条件を先に置き末尾を `{always}` fallback にして順序で表す。
+`rules` は first-match のため、1 種別は同一カタログ内で高々 1 つのルールにマッチする。これにより「同じ種別が排他 service (JGA / DRA, JGA / EVA) の両方の scope に出ない」が機械的に成立する。否定 (NOT) は条件を先に置き末尾を `{always}` fallback にして順序で表す。
 
 ### group と Tier1 分岐
 
@@ -324,7 +333,7 @@ Submission
 deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission を変更しない)
 ```
 
-- 利用者は手元の種別を on にし (同一種別は高々 1 個)、種別ごとに flow-changing 詳細を答える。access は ② 公開区分から全種別一括で導出される
+- 利用者は手元の種別を on にし (同一種別は高々 1 個)、種別ごとに flow-changing 詳細を答える。access は ② 公開区分 (`hasIdentifier` radio + 補助トグル + per-file 反転 chip) から種別ごとに導出される
 - `FlowStep.scope` は groupIds か entryIds の少なくとも一方が非空 (`scope-nonempty` 不変量)
 
 ---
@@ -364,7 +373,7 @@ deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission �
 | conflict-kind-no-step | 前段で disable された選択種別は step を生成せず、その entryId はどの step scope にも現れない (右 pane に無効な登録先を出さない) |
 | cascade-no-deadend | 任意 q2 で enable された種別を選ぶと destination service が 1 枚以上出る (allowedRepos = ∅ や宛先なしの種別が選べない) |
 | group-scope-completeness | `emit.scope=group` の step は flagged group の groupIds と、その group の enable な member を含む (disable された種別の member は scope に出さない) |
-| access-derivation-consistency | 非ヒトは常に全種別 open。ヒトかつ倫理指針 ON のときは個人識別性ありの種別 (配列リード・塩基配列・バリアント) が restricted、なしの種別が open (`identifiability` chip で `non-identifiable` に上書きされた種別は open)。それ以外の分岐 (restrictedPreference / publiclyAvailable / microbialAnalysis / fallback) では全種別同一値 |
+| access-derivation-consistency | 非ヒトは常に全種別 open。ヒト時の優先度は `restrictedPreference` > `hasIdentifier` > `ethicsCompliance` > `publiclyAvailable`/`microbialAnalysis` > fallback。`restrictedPreference` ON → 全種別 restricted。`hasIdentifier`=Yes → 全種別 restricted (`identifiability` chip = `non-identifiable` の種別だけ open に逆転)。`hasIdentifier`=No かつ `ethicsCompliance` ON → `IDENTIFIABLE_KINDS` で種別ごと既定 (chip があれば値で上書き)。`publiclyAvailable` or `microbialAnalysis` ON → 全種別 open (chip = `identifiable` の種別だけ restricted に逆転)。fallback → 全種別 restricted |
 | spatial-dra-2step | Sequencing 系 platform の spatial 種別は dra と gea の両 step に入り、Microarray 系 platform の種別は gea のみで dra に入らない |
 
 ### ステップ依存とカード順序
@@ -391,7 +400,7 @@ Service は単一の enum で、各値が **role** を持つ。利用者向け�
 | `jga` | destination | 制限公開**ヒト個人**データ (Dataset 単位アクセス制御)。restricted な全種別が JGA に振られる (sequence-read → JGA Data、それ以外 → JGA Analysis)。Policy 承認は DBCLS/NBDC に委譲。メタゲノム / 環境は対象外 (`### JGA は「ヒト個人」限定`) |
 | `gea` | destination | 遺伝子発現 (発現マトリクス / マイクロアレイ / 空間)。NGS 由来は raw を DRA に出す 2 段 (`### 発現・空間の DRA 2 段`) |
 | `metabobank` | destination | メタボロミクス (質量分析 / NMR / 代謝物アサインメント・MSI イメージング)。`metabolomics` 種別の一択先 |
-| `togovar` | destination | ヒト variant (TogoVar-repository)。短いバリアント (≤ 50 bp) と構造バリアント (> 50 bp) の 2 登録種別を持つが、いずれも同 service (種別差は Intra-DB Tag)。非ヒトは受け付けない (→ `eva`) |
+
 | `ddbj` | destination | 塩基配列の一括登録のうち **MSS** (Mass Submission System) 経路。大規模・完成ゲノム・NSSS 非対応種別 (WGS / TSA / TLS / EST / HTG / HTC / GSS / TPA) と MAG/SAG の ENV/SAG ゲノムエントリを扱う。Division × data type の 2 軸で分類 |
 | `nsss` | destination | 塩基配列の Web 登録 (Nucleotide Sequence Submission System)。MSS と同じ登録先 DB への並行窓口で、**小規模・非完成・NSSS 対応種別**を担う。MSS / NSSS の振り分け基準は `### MSS / NSSS の振り分け` |
 | `umbrella-bioproject` | companion | ハプロタイプ登録時のUmbrella BioProject。各ハプロタイプの BioProject を束ねる。`haplotype` recipe が `assembly-form: haplotype` 時に emit |
@@ -483,17 +492,17 @@ canonical 1 ソース (DDBJ 由来、内部整合を機械検証)
 submit ナビが採る登録先導出の設計判断とその公式根拠・トレードオフを記録する。routing の詳細規約は前段の該当セクションが持つ。
 
 - **典型ケースに絞る (多段・多 Dataset の表現を持たない)**: navigator は「1 種別 = 1 つの論理データ」を出発点とし、1 提出内で同一種別を複数ファイルに分けて段階や属性を割る高度ケースは単一ガイド step に簡約する。具体的には (1) メタゲノムアセンブリ (MAG) / 単一増幅ゲノム (SAG) の生リード→primary→binned→MAG/SAG の多段チェーンと複数 BioSample (derived_from 放射状) は持たず、`ddbj` の ENV/SAG ゲノムエントリと「生リードは DRA に出す」note に簡約する。(2) JGA の Policy 単位 Dataset 分割は持たず、「Policy 承認 (humandbs) → JGA 登録」の単一ガイドにする。これらの段構造・Dataset 分割は各登録ウィザード側の Intra-DB の話であり、複数ファイルを束ねる入力を navigator に持たせるとシンプルさが相殺されるため。同一種別の公開版+制限公開版を 1 提出で同時に出す等の「同一種別の多重化」も対象外とし、必要なら提出を分ける
-- **公開区分 (access) は ② 公開区分から全種別一括で導出する**: access は種別単位で持つが、全種別に同一の値が入る (種別ごとのトグルは持たない)。② 公開区分は旧 NBDC ヒトデータベースナビの画面2 (公開区分の希望) と画面3 (非制限公開の妥当性ゲート) を統合したもので、ヒトデータを安易に非制限公開に流さない安全機構として機能する (UI 規約と導出ルールは `## 公開区分 (access) の規約`)
+- **公開区分 (access) は ② 公開区分から種別ごとに導出する**: access は種別単位で持ち、上部 radio + 補助トグルの組合せ次第で同一 submission 内に restricted / open が混在しうる (per-file の混合は依然として持たない)。② 公開区分は旧 NBDC ヒトデータベースナビの画面2 (公開区分の希望) と画面3 (非制限公開の妥当性ゲート) を統合したもので、ヒトデータを安易に非制限公開に流さない安全機構として機能する (UI 規約と導出ルールは `## 公開区分 (access) の規約`)
 - **種別間の相互排他は持たない**: 種別を選ぶほど他種別を disable するような種別間依存は導入しない。9 種別の `candidateRepos` は独立した destination に散っており、DDBJ 公式の登録手順にも「この 2 種別は同一提出に共存不可」という根拠が無い。reads + variant + expression のような multi-omics の 1 提出は正当であり、種別間 disable はそれを誤ってブロックするだけで、`no-destination-service` / `cascade-no-deadend` の構造保証とも衝突する。種別の絞り込みは前段 Q2 カスケードだけが担う
 - **生物軸は Q2 のみ**: 種別単位の細かい生物分類は持たない。Q2 (生物ドメイン) と重複し、細かい生物種は BioSample の Intra-DB Tag で扱うため。これに伴い「organism ごとに BioProject を分裂させ、BP ≥ 2 で Umbrella を出す」挙動は持たず、実 DDBJ の **「1 BioProject + 複数 BioSample」** に合わせる (BioSample の数・生物種は Intra-DB で確定する)
 - **FileTypeKind は一次登録単位のみ**: 附随メタデータ・付随ファイルを独立種別にせず Intra-DB Tag / 追加ファイル枠に降ろす (値域と扱いは `## Controlled vocabulary` の FileTypeKind)。公式 docs がこれらを Sample メタデータ・付随ファイルと位置づけるため
 - **filename / 拡張子を持たない**: navigator は実ファイルを読まず登録もしないため、ファイル名や拡張子は経路導出に寄与しない。中段・詳細カード・フロー詳細カードは種別をラベル + アイコンで示し、ファイル名の自動採番や拡張子の表示は持たない。配列 + アノテーションを「拡張子を除いてファイル名を揃える」という DDBJ MSS の実運用要件は、ファイル名表示を持たないため Step note で「配列とアノテーションは対応づけて提出する」と表現する
 - **JGA はヒト個人の全種別 (メタゲノムは含めない)**: `access = restricted ∧ Q2 = ヒト` を唯一の JGA 分岐条件とし、restricted な**全種別**を JGA に振る (sequence-read → JGA Data、それ以外 → JGA Analysis。`_jga/submission.md` で Analysis にメタボ・プロテオ・アレイ・VCF・表現型を受付)。ヒト宿主のマイクロバイオームの要望が生じても「由来がヒト個人か」は Q2 (生物ドメイン) と別軸であり、`Q2 = metagenome` を JGA トリガにはしない
-- **個人識別性は種別デフォルト + 利用者上書き**: 配列リード・塩基配列・バリアントの 3 種別はデフォルトで個人識別性あり (安全側) だが、RNA-seq のように個人識別符号に該当しないデータもある。倫理指針に沿った研究であっても非制限公開で DRA に登録するケースに対応するため、Q2=human 時にこれらの種別に `identifiability` ChipAxis を表示し、利用者が `non-identifiable` を選ぶと当該種別の access が open になる。デフォルトは安全側 (`identifiable` = restricted) を維持し、カタログの routing rules は変更不要 (access 導出が変わるだけで既存の `{ access: "restricted" }` 条件がそのまま効く)
+- **個人識別性は上部 radio (default Yes) + per-file 反転上書き**: 個人情報保護法施行規則の「個人識別符号」 該否は submission 全体に 1 回だけ問う (`hasIdentifier` radio、default Yes = 安全側)。`restrictedPreference` と機能は同じ「全 restricted トリガー」 だが、根拠が違う (主観的希望 vs 客観的事実) ので別軸として並置する。per-file の `identifiability` chip は上部 radio に対する反転スイッチで、Yes 時は「この種別だけ該当しない (open に逆転)」、No 時は「この種別だけ該当する (restricted に逆転)」 を表す。これにより「個別 genotype は JGA、集計頻度は TogoVar 公開」 のような混在ケースを per-file で表現できる。`IDENTIFIABLE_KINDS` は radio = No かつ倫理指針 ON 時の種別ごと既定値として残す。カタログの routing rules は変更不要 (access 導出だけが変わり、既存の `{ access: "restricted" }` 条件はそのまま効く)
 - **Service は role 付きの単一 enum**: 利用者向けの登録エンドポイントと内部 service はほぼ 1:1 なので、別 enum を 2 本持たず role (destination / companion / external) で区別する (role の割り当ては `## Service と role / 外向き契約`)
 - **制限公開ヒトの Policy 窓口は `humandbs` 1 つに統合する**: 提供申請 (data submission application) と利用制限ポリシー (NBDC 標準 / 独自 JGAP) は、いずれも DBCLS が運営する NBDC ヒトデータベース (HumanDBs) という単一プラットフォームで完結する。別 service (`humandbs` と `dbcls`) に分けると JGA フローに重複した外部窓口カードが 2 枚出て利用者を混乱させるため、`humandbs` 1 service・1 step に統合する (submit の Service enum から `dbcls` を持たない)。なお news / services 機能が情報「源」として扱う `dbcls` (NewsSource / ServiceSource) は別概念であり submit の統合とは無関係
 - **塩基配列の窓口は MSS と NSSS の 2 つ**: 「DDBJ」の登録先 DB は 1 つだが投入窓口が 2 つあり、両者を別 destination service (`ddbj` = MSS / `nsss` = NSSS) として持つ。振り分け基準・規模境界の note 案内は `### MSS / NSSS の振り分け`。リードは対象外で DRA に回る
-- **変異の登録先はヒト/非ヒトと公開区分で割れる**: 公開ヒト → `togovar`、制限公開ヒト → `jga`、非ヒト (公開/制限問わず) → `eva`。TogoVar はヒト専用なので非ヒトを警告で済ませず `eva` を実 emit する。短い/構造バリアントの差は TogoVar・EVA いずれも同 service 内の登録種別差で出る service を変えないため Intra-DB Tag で扱い、reference 配列の有無も公式に routing 軸が無く同様 (`variant` は詳細質問を持たず行先は Q2 + access で確定)。旧 DGVa は EVA に統合済みで独立 service にしない。TogoVar の reference assembly 制約 (GRCh37/38 等) は一次情報未確認のため hard-constraint にせず登録時 validator に委ねる
+- **変異の登録先はヒト/非ヒトと公開区分で割れる**: 制限公開ヒト → `jga`、それ以外 → `eva`。短い/構造バリアントの差は EVA 内の登録種別差で出る service を変えないため Intra-DB Tag で扱い、reference 配列の有無も公式に routing 軸が無く同様 (`variant` は詳細質問を持たず行先は Q2 + access で確定)。旧 DGVa は EVA に統合済みで独立 service にしない
 - **メタボロミクスとプロテオームは独立種別**: メタボロミクス (質量分析 / NMR / 代謝物アサインメント) は `metabolomics` として 1 種別に統合し MetaboBank 一択。プロテオーム (非 MS 含む) は `proteome` として独立種別に昇格し jPOST 一択。旧設計の `mass-spec-domain` ChipAxis は廃止する (proteome が独立種別になるため分岐が不要)。MSI イメージングは MetaboBank 内のファイル要求差 (出る service は不変) なので groupType `imaging-ms` で構造を表す
 - **発現マトリクスの NGS 由来は recipe で実 DRA step を出す**: `expression-source` は発現マトリクスの由来を表す flow-changing 軸で、`ngs` 選択時は `expression-dra` recipe が DRA step を emit する (DRA + GEA 2 段)。Non-NGS 選択時は GEA のみ (microarray は別種別 `microarray-expression` で分離済み)
 - **空間 Tx の platform は recipe で実 DRA step を出す**: `spatial-platform` は GEA Submission Type と DRA 2 段の要否を変える flow-changing 軸なので、note 止まりにせず Tier2 `spatial` recipe で Sequencing platform に実 DRA step を emit する (platform 値域・分類・MERFISH 画像の外部誘導は `### spatial` / `### 発現・空間の DRA 2 段`)
@@ -501,6 +510,7 @@ submit ナビが採る登録先導出の設計判断とその公式根拠・ト�
 - **第三者 (TPA) は `sequence` 種別の ChipAxis で扱う**: 配列系の TPA → `ddbj` (MSS、引用元 INSDC accession 必須。`_ddbj/tpa-e.md` / `_ddbj/web-submission-e.md`: TPA は NSSS では受け付けず MSS のみ)。TPA は `sequence` 種別でのみ ChipAxis `tpa` として表示し、TPA 対象外の種別には出さない。MAG/SAG/ハプロタイプ選択時は disabled。MetaboBank の第三者再解析は正式サポート未確認のため当面除外する
 - **塩基配列は 1 種別に統合し、アセンブリ形式とアノテーション有無を独立軸で表現する**: 旧設計の `sequence-nucleotide` と `sequence-annotation` を `sequence` 1 種別に統合する。アセンブリ形式は `assembly-form` ChipAxis の 4 択 radio (ゲノム / MAG / SAG / ハプロタイプ)、アノテーション有無は `has-annotation` ChipAxis のトグル、TPA と小規模は独立トグルで表現する。3 つのトグル (アノテーション / TPA / 小規模) は公開条件セクションと同じ Toggle パターンで配置する
 - **サマリーカードは「全体俯瞰 + 詳細への導線」とする**: 登録は外部ページで完結し BSI は代行しないため、右 pane のサマリーカードは導出結果の全体像（service 名・role・routing 理由・依存関係）を一目で把握させ、各 service の詳細ページ (`/databases/$slug`) と外部登録サイトへの導線を示す役割に徹する。登録手順の詳細（ウィザードの手順・事前準備・注意事項）は各 service の詳細ページに委ねる。登録後にしか得られない accession 書式はナビ価値が無いため主要素から外す。順序の導出は `### ステップ依存とカード順序` に従う
+- **「詳細を見る」link は内部詳細ページがある service だけに出す**: 内部詳細ページ (`/databases/<slug>`) を持つのは 8 service (bioproject / biosample / dra / jga / ddbj / gea / metabobank / humandbs)。`umbrella-bioproject` は BioProject ページの `#umbrella-bioproject` セクション、`nsss` は DDBJ ページの `#nsss` セクション (NSSS は DB ではなく塩基配列の Web 登録窓口で、MSS と並列に DDBJ ページ内で扱うため独立ページを持たない) へ deep link する。`eva` / `jpost` は DDBJ 外の登録窓口で本サイトに内部詳細ページを持たないため、flow card の「詳細を見る」link を出さず、外部登録サイトへのリンクのみ表示する。slug マッピングと判定は `app/schemas/submit/service.ts` の `internalDetailHref` / `hasInternalDetailPage` が SSOT。flow card 側 (`flow-summary-card.tsx`) は `internalDetailHref(step.service)` が undefined のとき `TextLink` を出さない
 
 ---
 

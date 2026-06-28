@@ -248,9 +248,18 @@ export type Resources = {
           proteomics: { label: string; sub: string }
         }
         identifiability: {
-          sequenceRead: { label: string; sub: string }
-          sequence: { label: string; sub: string }
-          variant: { label: string; sub: string }
+          sequenceRead: {
+            exclude: { label: string; sub: string }
+            include: { label: string; sub: string }
+          }
+          sequence: {
+            exclude: { label: string; sub: string }
+            include: { label: string; sub: string }
+          }
+          variant: {
+            exclude: { label: string; sub: string }
+            include: { label: string; sub: string }
+          }
         }
       }
     }
@@ -272,6 +281,11 @@ export type Resources = {
       "open": string
       "restricted": string
       "restrictedPreference": { label: string; sub: string }
+      "hasIdentifier": {
+        ariaLabel: string
+        yes: { label: string; sub: string }
+        no: { label: string; sub: string }
+      }
       "ethicsCompliance": { label: string; sub: string }
       "publiclyAvailable": { label: string; sub: string }
       "microbialAnalysis": { label: string; sub: string }
@@ -915,9 +929,18 @@ export const ja: Resources = {
           proteomics: { label: "プロテオミクス", sub: "タンパク質の質量分析" },
         },
         identifiability: {
-          sequenceRead: { label: "個人識別符号に該当しない", sub: "RNA-seq・ChIP-seq 等、全ゲノム・全エクソーム以外のリードデータ" },
-          sequence: { label: "個人識別符号に該当しない", sub: "トランスクリプトアセンブリ等、ゲノム配列以外の塩基配列" },
-          variant: { label: "個人識別符号に該当しない", sub: "集団アリル頻度等、個体レベルの genotype を含まないデータ" },
+          sequenceRead: {
+            exclude: { label: "この種別だけ個人識別符号に該当しない", sub: "RNA-seq・ChIP-seq 等、全ゲノム・全エクソーム以外のリードデータ" },
+            include: { label: "この種別だけ個人識別符号に該当する", sub: "RNA-seq として登録するが全ゲノム・全エクソームのリードを含む等" },
+          },
+          sequence: {
+            exclude: { label: "この種別だけ個人識別符号に該当しない", sub: "トランスクリプトアセンブリ等、ゲノム配列以外の塩基配列" },
+            include: { label: "この種別だけ個人識別符号に該当する", sub: "全ゲノム配列・全エクソーム配列等を含む塩基配列" },
+          },
+          variant: {
+            exclude: { label: "この種別だけ個人識別符号に該当しない", sub: "集団アリル頻度等、個体レベルの genotype を含まないデータ" },
+            include: { label: "この種別だけ個人識別符号に該当する", sub: "個体ごとの genotype を含むバリアントデータ" },
+          },
         },
       },
     },
@@ -939,6 +962,17 @@ export const ja: Resources = {
       "open": "非制限公開",
       "restricted": "制限公開",
       "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
+      "hasIdentifier": {
+        ariaLabel: "個人識別符号の有無",
+        yes: {
+          label: "個人識別符号を含む",
+          sub: "全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等",
+        },
+        no: {
+          label: "個人識別符号を含まない",
+          sub: "ゲノムレベル個人データを含まないデータ",
+        },
+      },
       "ethicsCompliance": { label: "法令・倫理指針に沿った研究", sub: "法令や研究倫理指針に沿って実施された研究" },
       "publiclyAvailable": { label: "一般入手可能な試料", sub: "市販・公開リソースなど、広く入手可能な試料を対象とした解析" },
       "microbialAnalysis": { label: "ヒト配列除去済み", sub: "人体から分離した微生物・ウイルスの解析で、個人識別につながるヒト配列を除去" },

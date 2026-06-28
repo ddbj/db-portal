@@ -38,6 +38,7 @@ describe("submit cascade", () => {
           preconditions: { q2 },
           accessSection: {
             restrictedPreference: false,
+            hasIdentifier: false,
             ethicsCompliance: true,
             publiclyAvailable: false,
             microbialAnalysis: false,

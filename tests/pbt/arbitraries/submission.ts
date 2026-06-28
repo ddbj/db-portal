@@ -22,10 +22,12 @@ const arbDataForm = fc.constantFrom(...DataForm.options)
 const arbQ2OrNull = fc.option(arbQ2, { nil: null })
 
 export const arbAccessSection: fc.Arbitrary<AccessSection> = fc.oneof(
-  fc.constant({ restrictedPreference: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }),
-  fc.constant({ restrictedPreference: false, ethicsCompliance: true, publiclyAvailable: false, microbialAnalysis: false }),
-  fc.constant({ restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false }),
-  fc.constant({ restrictedPreference: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: true }),
+  fc.constant({ restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }),
+  fc.constant({ restrictedPreference: false, hasIdentifier: true, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }),
+  fc.constant({ restrictedPreference: false, hasIdentifier: false, ethicsCompliance: true, publiclyAvailable: false, microbialAnalysis: false }),
+  fc.constant({ restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false }),
+  fc.constant({ restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: true }),
+  fc.constant({ restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }),
 )
 
 const allowedChipPairs: readonly { axis: ChipAxis; value: string }[] = Object.entries(

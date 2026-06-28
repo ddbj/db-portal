@@ -11,6 +11,7 @@ import type { Action, RowEditPatch, UIState } from "./types"
 
 const DEFAULT_ACCESS_SECTION: AccessSection = {
   restrictedPreference: false,
+  hasIdentifier: true,
   ethicsCompliance: true,
   publiclyAvailable: false,
   microbialAnalysis: false,

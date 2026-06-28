@@ -29,6 +29,7 @@ const kindsOf = (state: UIState, kind: string): boolean =>
 
 const defaultAccessSection = {
   restrictedPreference: false,
+  hasIdentifier: false,
   ethicsCompliance: true,
   publiclyAvailable: false,
   microbialAnalysis: false,

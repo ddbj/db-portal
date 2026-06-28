@@ -201,18 +201,39 @@ const BASE_ROW_FORM_DEFS: Readonly<Record<FileTypeKind, RowFormDef>> = {
   "proteome": EMPTY_DEF,
 }
 
-const IDENTIFIABILITY_KEYS: Partial<Record<FileTypeKind, { labelKey: string; subKey: string }>> = {
+type IdentifiabilityCopy = { labelKey: string; subKey: string }
+type IdentifiabilityEntry = { exclude: IdentifiabilityCopy; include: IdentifiabilityCopy }
+
+const IDENTIFIABILITY_KEYS: Partial<Record<FileTypeKind, IdentifiabilityEntry>> = {
   "sequence-read": {
-    labelKey: "submit.detail.options.identifiability.sequenceRead.label",
-    subKey: "submit.detail.options.identifiability.sequenceRead.sub",
+    exclude: {
+      labelKey: "submit.detail.options.identifiability.sequenceRead.exclude.label",
+      subKey: "submit.detail.options.identifiability.sequenceRead.exclude.sub",
+    },
+    include: {
+      labelKey: "submit.detail.options.identifiability.sequenceRead.include.label",
+      subKey: "submit.detail.options.identifiability.sequenceRead.include.sub",
+    },
   },
   "sequence": {
-    labelKey: "submit.detail.options.identifiability.sequence.label",
-    subKey: "submit.detail.options.identifiability.sequence.sub",
+    exclude: {
+      labelKey: "submit.detail.options.identifiability.sequence.exclude.label",
+      subKey: "submit.detail.options.identifiability.sequence.exclude.sub",
+    },
+    include: {
+      labelKey: "submit.detail.options.identifiability.sequence.include.label",
+      subKey: "submit.detail.options.identifiability.sequence.include.sub",
+    },
   },
   "variant": {
-    labelKey: "submit.detail.options.identifiability.variant.label",
-    subKey: "submit.detail.options.identifiability.variant.sub",
+    exclude: {
+      labelKey: "submit.detail.options.identifiability.variant.exclude.label",
+      subKey: "submit.detail.options.identifiability.variant.exclude.sub",
+    },
+    include: {
+      labelKey: "submit.detail.options.identifiability.variant.include.label",
+      subKey: "submit.detail.options.identifiability.variant.include.sub",
+    },
   },
 }
 
@@ -233,21 +254,27 @@ const countVisualSections = (groups: readonly FormGroupDef[]): number => {
   return count
 }
 
-export const getRowFormDef = (kind: FileTypeKind, q2: Q2 | null): RowFormDef => {
+export const getRowFormDef = (
+  kind: FileTypeKind,
+  q2: Q2 | null,
+  hasIdentifier: boolean,
+): RowFormDef => {
   const base = BASE_ROW_FORM_DEFS[kind]
-  const keys = IDENTIFIABILITY_KEYS[kind]
-  if (q2 === "human" && keys !== undefined) {
+  const entry = IDENTIFIABILITY_KEYS[kind]
+  if (q2 === "human" && entry !== undefined) {
     const num = `${countVisualSections(base.groups) + 1}.`
+    const copy = hasIdentifier ? entry.exclude : entry.include
+    const value = hasIdentifier ? "non-identifiable" : "identifiable"
     const group: FormGroupDef = {
       id: "identifiability",
       num,
       labelKey: "submit.detail.formGroupLabels.identifiability",
       kind: "check",
       options: [{
-        value: "non-identifiable",
-        labelKey: keys.labelKey,
-        subKey: keys.subKey,
-        effect: { chipAdd: { axis: "identifiability", value: "non-identifiable" } },
+        value,
+        labelKey: copy.labelKey,
+        subKey: copy.subKey,
+        effect: { chipAdd: { axis: "identifiability", value } },
       }],
     }
     return { groups: [...base.groups, group] }
@@ -255,6 +282,8 @@ export const getRowFormDef = (kind: FileTypeKind, q2: Q2 | null): RowFormDef => 
   return base
 }
 
-// flow-changing 軸を持つ種別だけが file 詳細質問を持つ。持たない種別はデータ詳細セルを出さない
+// flow-changing 軸を持つ種別だけが file 詳細質問を持つ。持たない種別はデータ詳細セルを出さない。
+// identifiability section の有無は groups.length に影響しない (Yes/No いずれでも 1 section) ため
+// 判定はどちらの hasIdentifier 値でも同じ結果になる
 export const hasRowDetail = (kind: FileTypeKind, q2: Q2 | null): boolean =>
-  getRowFormDef(kind, q2).groups.length > 0
+  getRowFormDef(kind, q2, true).groups.length > 0

@@ -245,9 +245,18 @@ export const en: Resources = {
           proteomics: { label: "Proteomics", sub: "Protein mass spectrometry" },
         },
         identifiability: {
-          sequenceRead: { label: "Not personally identifiable", sub: "RNA-seq, ChIP-seq, etc. — reads other than whole genome / whole exome" },
-          sequence: { label: "Not personally identifiable", sub: "Transcript assemblies, etc. — sequences other than genome assemblies" },
-          variant: { label: "Not personally identifiable", sub: "Population allele frequencies, etc. — data without individual-level genotypes" },
+          sequenceRead: {
+            exclude: { label: "This type does not contain a personal identifier", sub: "RNA-seq, ChIP-seq, etc. — reads other than whole genome / whole exome" },
+            include: { label: "This type contains a personal identifier", sub: "Reads that contain whole genome or whole exome data" },
+          },
+          sequence: {
+            exclude: { label: "This type does not contain a personal identifier", sub: "Transcript assemblies, etc. — sequences other than genome assemblies" },
+            include: { label: "This type contains a personal identifier", sub: "Whole genome / whole exome sequences" },
+          },
+          variant: {
+            exclude: { label: "This type does not contain a personal identifier", sub: "Population allele frequencies, etc. — data without individual-level genotypes" },
+            include: { label: "This type contains a personal identifier", sub: "Variant data with individual-level genotypes" },
+          },
         },
       },
     },
@@ -269,6 +278,17 @@ export const en: Resources = {
       "open": "Unrestricted",
       "restricted": "Restricted",
       "restrictedPreference": { label: "Prefer restricted access", sub: "Sharing among researchers approved through a review process" },
+      "hasIdentifier": {
+        ariaLabel: "Personal identifier presence",
+        yes: {
+          label: "Contains a personal identifier",
+          sub: "Whole genome sequence / whole exome sequence / whole-genome SNP data, etc.",
+        },
+        no: {
+          label: "Does not contain a personal identifier",
+          sub: "Data without genome-level individual data",
+        },
+      },
       "ethicsCompliance": { label: "Research under laws and ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
       "publiclyAvailable": { label: "Publicly available specimens", sub: "Analysis of commercially or publicly available specimens" },
       "microbialAnalysis": { label: "Human sequences removed", sub: "Microbial or viral analysis from the human body, with identifiable human sequences removed" },

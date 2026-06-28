@@ -21,6 +21,7 @@ type DataDetailPanelLabels = {
 
 type DataDetailPanelProps = {
   q2: Q2 | null
+  hasIdentifier: boolean
   entries: readonly FileEntry[]
   groups: readonly FileGroup[]
   labels: DataDetailPanelLabels
@@ -65,6 +66,7 @@ const isGroupDisabled = (g: FormGroupDef, draft: Draft): boolean => {
 
 export const DataDetailPanel = ({
   q2,
+  hasIdentifier,
   entries,
   groups,
   labels,
@@ -83,7 +85,7 @@ export const DataDetailPanel = ({
   return (
     <ol className="flex flex-col gap-3 m-0 list-none p-0">
       {detailEntries.map((entry) => {
-        const def = getRowFormDef(entry.fileTypeKind, q2)
+        const def = getRowFormDef(entry.fileTypeKind, q2, hasIdentifier)
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)

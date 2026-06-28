@@ -50,13 +50,17 @@ describe("submitReducer preconditions", () => {
     expect(state.submission.fileEntries[0]!.access).toBe("restricted")
     const next = submitReducer(state, {
       type: "SET_ACCESS_SECTION",
-      accessSection: { publiclyAvailable: true },
+      accessSection: { hasIdentifier: false, publiclyAvailable: true },
     })
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 
   test("submitReducer_setAccessSection_ethicsCompliance_splitsAccessByIdentifiability", () => {
     let state = withQ2("human")
+    state = submitReducer(state, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { hasIdentifier: false },
+    })
     state = addRow(state, "sequence-read", "e1", "g1")
     state = addRow(state, "expression-matrix", "e2", "g2")
     const reads = state.submission.fileEntries.find((e) => e.fileTypeKind === "sequence-read")!
@@ -86,6 +90,7 @@ describe("submitReducer preconditions", () => {
     const next = submitReducer(state, { type: "SET_Q2", q2: "eukaryote" })
     expect(next.submission.accessSection).toEqual({
       restrictedPreference: false,
+      hasIdentifier: true,
       ethicsCompliance: true,
       publiclyAvailable: false,
       microbialAnalysis: false,
@@ -121,7 +126,14 @@ describe("submitReducer ADD_ROW", () => {
   })
 
   test("submitReducer_addRowHumanDefaultAccess_nonIdentifiableKindGetsOpen", () => {
-    const next = addRow(withQ2("human"), "expression-matrix", "e1", "g1")
+    // hasIdentifier=true (default) は全 restricted に倒すため、
+    // 「ethicsCompliance 単独で非識別種別が open」 を確認するには radio を No に倒す
+    let state = withQ2("human")
+    state = submitReducer(state, {
+      type: "SET_ACCESS_SECTION",
+      accessSection: { hasIdentifier: false },
+    })
+    const next = addRow(state, "expression-matrix", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 
