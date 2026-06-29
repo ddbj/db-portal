@@ -17,7 +17,7 @@ const DocsLayout = () => {
   return (
     <div className="max-w-content-max mx-auto px-page-gutter">
       <div className="grid gap-4 lg:gap-6 lg:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
-        <aside className="hidden lg:block sticky top-4 mt-section-sm">
+        <aside className="hidden lg:block sticky top-4 mt-2">
           <ContentSidebar />
         </aside>
 
