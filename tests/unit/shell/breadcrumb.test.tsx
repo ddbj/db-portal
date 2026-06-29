@@ -6,6 +6,8 @@ import { Breadcrumb } from "~/shell/breadcrumb"
 
 import { renderWithStub } from "../_helpers/render"
 
+// docs-root (handle 静的なシンボル) と page-content (handle 動的 resolver) を
+// 組み合わせて、ja/en 双方の crumb をテストする。
 const renderBreadcrumb = (
   initialEntries: string[],
   lang: "ja" | "en" = "ja",
@@ -22,14 +24,13 @@ const renderBreadcrumb = (
         ),
         children: [
           {
-            path: "databases",
-            handle: { breadcrumbI18nKey: "breadcrumb.databases" },
+            handle: { breadcrumbResolver: "docs-root" },
             Component: () => <Outlet />,
             children: [
               {
-                path: ":slug",
-                handle: { breadcrumbResolver: "database-content" },
-                Component: () => <span>db</span>,
+                path: "*",
+                handle: { breadcrumbResolver: "page-content" },
+                Component: () => <span>page</span>,
               },
             ],
           },
@@ -50,18 +51,18 @@ describe("Breadcrumb", () => {
     expect(container.querySelector("nav")).toBeNull()
   })
 
-  test("Breadcrumb_databasesPath_rendersHomeLinkAndCurrentMarker", () => {
-    renderBreadcrumb(["/databases"], "ja")
+  test("Breadcrumb_knownPage_rendersHomeDocsAndCurrent", () => {
+    renderBreadcrumb(["/bioproject"], "ja")
     expect(screen.getByRole("navigation", { name: "パンくずリスト" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
-    const current = screen.getByText("データベース")
+    expect(screen.getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
+    const current = screen.getByText("BioProject")
     expect(current).toHaveAttribute("aria-current", "page")
     expect(current.tagName).toBe("SPAN")
-    expect(screen.queryByRole("link", { name: "データベース" })).toBeNull()
   })
 
-  test("Breadcrumb_databasesPath_separatorMatchesItemCountMinusOne", () => {
-    const { container } = renderBreadcrumb(["/databases"], "ja")
+  test("Breadcrumb_knownPage_separatorMatchesItemCountMinusOne", () => {
+    const { container } = renderBreadcrumb(["/bioproject"], "ja")
     const items = container.querySelectorAll("ol > li")
     const separators = container.querySelectorAll("ol > li > span[aria-hidden='true']")
     expect(separators).toHaveLength(items.length - 1)
@@ -70,14 +71,14 @@ describe("Breadcrumb", () => {
     })
   })
 
-  test("Breadcrumb_enLang_homeHrefIsRoot", () => {
-    renderBreadcrumb(["/databases"], "en")
+  test("Breadcrumb_enLang_homeAndDocsLabelsAreEnglish", () => {
+    renderBreadcrumb(["/bioproject"], "en")
     expect(screen.getByRole("link", { name: /Home/i })).toHaveAttribute("href", "/")
+    expect(screen.getByRole("link", { name: "Knowledge Base" })).toHaveAttribute("href", "/docs")
   })
 
-  test("Breadcrumb_unknownDatabaseSlug_resolverReturnsNull", () => {
-    renderBreadcrumb(["/databases/__non_existent__"], "ja")
-    expect(screen.queryByText("__non_existent__")).toBeNull()
-    expect(screen.getByText("データベース")).toHaveAttribute("aria-current", "page")
+  test("Breadcrumb_unknownPath_fallsBackToSegmentLabel", () => {
+    renderBreadcrumb(["/__non_existent__"], "ja")
+    expect(screen.getByText("__non_existent__")).toHaveAttribute("aria-current", "page")
   })
 })

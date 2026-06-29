@@ -7,14 +7,14 @@ description: BioSample is DDBJ's central database for descriptive metadata of bi
 
 BioSample is a central database that captures descriptive information about the biological source materials (samples) used to generate experimental data registered in DDBJ's primary databases. Records are bidirectionally mirrored across the three INSDC sites (DDBJ / EBI / NCBI); submitting at one site makes the record available at the others.
 
-It sits alongside [BioProject](/databases/bioproject) as a parallel metadata layer that the underlying experimental data ([DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ Sequence](/databases/ddbj)) reference.
+It sits alongside [BioProject](/bioproject) as a parallel metadata layer that the underlying experimental data ([DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ Sequence](/ddbj)) reference.
 
 > [!NOTE]
 > If you are not sure which service fits your study, narrow it down with the flowchart-style [Submit Navigator](/submit).
 
 ## Data accepted
 
-What you submit is the descriptive information (attribute metadata) of the sample itself. Sequence data and experimental files are not registered in BioSample; they go to [DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ Sequence](/databases/ddbj).
+What you submit is the descriptive information (attribute metadata) of the sample itself. Sequence data and experimental files are not registered in BioSample; they go to [DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ Sequence](/ddbj).
 
 | Sample type | Example |
 | --- | --- |
@@ -83,20 +83,20 @@ Download the attribute file template from the package definition and fill it in.
 - One **package** chosen for the sample type (no mixing)
 - The attribute tab-separated text file (built from the package template)
 - Required attributes: `organism` (NCBI Taxonomy scientific name) / `collection_date` / `geo_loc_name`, plus any others required by the chosen package
-- If you plan to register a genome sequence to [DDBJ Sequence](/databases/ddbj), include the desired `locus_tag_prefix` (staff will reserve it with NCBI)
+- If you plan to register a genome sequence to [DDBJ Sequence](/ddbj), include the desired `locus_tag_prefix` (staff will reserve it with NCBI)
 
 ## INSDC sharing and the release chain
 
-BioSample is INSDC-mirrored metadata that is intended to become public. Samples that need controlled access at the human-individual level are handled by [JGA](/databases/jga) and must not be registered to BioSample.
+BioSample is INSDC-mirrored metadata that is intended to become public. Samples that need controlled access at the human-individual level are handled by [JGA](/jga) and must not be registered to BioSample.
 
 The release trigger behaves the same way as BioProject:
 
 - Releasing a BioProject or BioSample on its own does not release any underlying data.
-- Releasing a record in [DDBJ Sequence](/databases/ddbj) / [DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) automatically releases the linked BioProject and BioSample.
+- Releasing a record in [DDBJ Sequence](/ddbj) / [DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) automatically releases the linked BioProject and BioSample.
 - When a BioSample is released, any upstream BioSample referenced via the `derived_from` attribute is released along with it.
 
 > [!WARNING]
-> BioSample is a public-by-design database. If your samples need controlled access at the human-individual level, use [JGA](/databases/jga) instead.
+> BioSample is a public-by-design database. If your samples need controlled access at the human-individual level, use [JGA](/jga) instead.
 
 ## Post-submission updates
 
@@ -113,4 +113,4 @@ Attribute updates and withdrawals of existing records are handled on a request b
 - Update request FAQ: <https://www.ddbj.nig.ac.jp/faq/en/sample-update-e.html>
 - D-way submission portal: <https://ddbj.nig.ac.jp/D-way>
 - DDBJ account registration: <https://www.ddbj.nig.ac.jp/ddbj-account.html>
-- Related services: [BioProject](/databases/bioproject) / [DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ Sequence](/databases/ddbj) / [JGA](/databases/jga)
+- Related services: [BioProject](/bioproject) / [DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ Sequence](/ddbj) / [JGA](/jga)

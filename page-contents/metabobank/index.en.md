@@ -7,7 +7,7 @@ description: DDBJ's public metabolomics repository, accepting metabolome data fr
 
 MetaboBank is a public metabolomics data repository operated by DDBJ. It accepts metabolome data acquired by mass spectrometry (MS), NMR, and mass spectrometry imaging (MSI), together with metabolite assignments.
 
-Metadata uses the MAGE-TAB format, the same family as [GEA](/databases/gea), and is compatible with the ISA-TAB format used by MetaboLights at EBI. MetaboBank and MetaboLights cooperate in data standardization.
+Metadata uses the MAGE-TAB format, the same family as [GEA](/gea), and is compatible with the ISA-TAB format used by MetaboLights at EBI. MetaboBank and MetaboLights cooperate in data standardization.
 
 > [!NOTE]
 > For an overview of service selection and submission steps, see the [Submit Navigator](/submit). MetaboBank submissions proceed as individually-handled cases coordinated through an application form.
@@ -37,7 +37,7 @@ File names may use only alphanumerics, `_`, `-`, and `.`, and must be unique wit
 
 ## Accession numbers
 
-The following accession numbers are issued for a MetaboBank Study and its associated [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) records.
+The following accession numbers are issued for a MetaboBank Study and its associated [BioProject](/bioproject) / [BioSample](/biosample) records.
 
 | Target | Format | Example |
 | --- | --- | --- |
@@ -51,8 +51,8 @@ Data are typically cited as a set of `MTBKS####` + `PRJDB######` + `SAMD########
 
 1. Obtain a DDBJ account and register your public key (for scp / sftp).
 2. Apply for submission via the **MetaboBank registration application form**.
-3. Register a [BioProject](/databases/bioproject) to obtain a `PRJDB######`.
-4. Register each sample via the [BioSample](/databases/biosample) Omics package to obtain `SAMD#####` accessions.
+3. Register a [BioProject](/bioproject) to obtain a `PRJDB######`.
+4. Register each sample via the [BioSample](/biosample) Omics package to obtain `SAMD#####` accessions.
 5. Fill in **IDF + SDRF** in the MAGE-TAB Excel template that matches your measurement type, and prepare a **MAF** if applicable.
 6. Compute MD5 checksums and prepare a file list for the raw data, processed data, and MAF.
 7. Upload files to the file server via scp / sftp (tar / zip archives per Study are recommended).
@@ -67,7 +67,7 @@ Data are typically cited as a set of `MTBKS####` + `PRJDB######` + `SAMD########
 Prepare the following before applying:
 
 - A DDBJ account, with a public key registered for scp / sftp.
-- A [BioProject](/databases/bioproject) (PRJDB) and [BioSample](/databases/biosample) Omics package (SAMD) records.
+- A [BioProject](/bioproject) (PRJDB) and [BioSample](/biosample) Omics package (SAMD) records.
 - The **MAGE-TAB Excel template** (IDF + SDRF) for your measurement type.
 - A **MAF template** (MS or NMR) if applicable.
 - File list and MD5 checksums.
@@ -97,7 +97,7 @@ A dedicated metadata template is provided for MSI, capturing image data together
 
 ## Relationship with MetaboLights
 
-MetaboBank's MAGE-TAB format is compatible with the ISA-TAB format used by MetaboLights at EBI. The two repositories cooperate in data standardization, and the metadata format belongs to the same MAGE-TAB family as [GEA](/databases/gea) (ArrayExpress lineage) and SDRF-Proteomics.
+MetaboBank's MAGE-TAB format is compatible with the ISA-TAB format used by MetaboLights at EBI. The two repositories cooperate in data standardization, and the metadata format belongs to the same MAGE-TAB family as [GEA](/gea) (ArrayExpress lineage) and SDRF-Proteomics.
 
 > [!NOTE]
 > According to the official documentation, public MetaboBank data are not currently exchanged with EBI MetaboLights.
@@ -106,7 +106,7 @@ MetaboBank's MAGE-TAB format is compatible with the ISA-TAB format used by Metab
 
 - Immediate release, or hold (embargo) until publication, can be selected.
 - The release date can be set up to three years ahead, and may be extended.
-- Release follows the [DDBJ data release policy](https://www.ddbj.nig.ac.jp/documents/data-release-policy-e.html), and aligns with the release timing of the linked [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) records.
+- Release follows the [DDBJ data release policy](https://www.ddbj.nig.ac.jp/documents/data-release-policy-e.html), and aligns with the release timing of the linked [BioProject](/bioproject) / [BioSample](/biosample) records.
 - Reviewer access for peer review is arranged with the MetaboBank team and provided via a password-protected site.
 - Post-submission updates are requested through a dedicated form to the MetaboBank team.
 
@@ -124,4 +124,4 @@ Released Studies can be browsed and searched from the MetaboBank search UI at <h
 - Search UI: <https://mb2.ddbj.nig.ac.jp/>
 - DDBJ FAQ (linked release): <https://www.ddbj.nig.ac.jp/faq/en/bp-bs-seq-release-e.html>
 - DDBJ FAQ (reviewer access): <https://www.ddbj.nig.ac.jp/faq/en/reviewer-access-e.html>
-- Related services: [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) / [GEA](/databases/gea) / [DRA](/databases/dra)
+- Related services: [BioProject](/bioproject) / [BioSample](/biosample) / [GEA](/gea) / [DRA](/dra)

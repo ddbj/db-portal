@@ -16,7 +16,7 @@ export type BreadcrumbResolverInput = {
   params: Readonly<Record<string, string | undefined>>
 }
 
-export type BreadcrumbResolver = (input: BreadcrumbResolverInput) => BreadcrumbItem | null
+export type BreadcrumbResolver = (input: BreadcrumbResolverInput) => BreadcrumbItem | BreadcrumbItem[] | null
 
 const isStaticHandle = (h: unknown): h is StaticHandle =>
   !!h && typeof h === "object" && typeof (h as Partial<StaticHandle>).breadcrumbI18nKey === "string"
@@ -42,8 +42,10 @@ export const useBreadcrumb = (options: BreadcrumbOptions = {}): BreadcrumbItem[]
     if (isDynamicHandle(handle)) {
       const resolver = resolvers[handle.breadcrumbResolver]
       if (!resolver) continue
-      const item = resolver({ data: m.data, pathname: m.pathname, params: m.params })
-      if (item) items.push(item)
+      const result = resolver({ data: m.data, pathname: m.pathname, params: m.params })
+      if (result === null) continue
+      if (Array.isArray(result)) items.push(...result)
+      else items.push(result)
     }
   }
 

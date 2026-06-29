@@ -34,20 +34,20 @@ describe("useBreadcrumb", () => {
     const Stub = createRoutesStub([
       {
         path: "/databases",
-        handle: { breadcrumbI18nKey: "breadcrumb.databases" },
+        handle: { breadcrumbI18nKey: "breadcrumb.docs" },
         Component: () => <BreadcrumbProbe />,
       },
     ])
     renderWithI18n(<Stub initialEntries={["/databases"]} />)
     const list = screen.getByTestId("breadcrumb")
-    expect(list).toHaveTextContent("データベース")
+    expect(list).toHaveTextContent("ナレッジベース")
   })
 
   test("useBreadcrumb_dynamicResolver_invokedWithParams", () => {
     const Stub = createRoutesStub([
       {
         path: "/databases",
-        handle: { breadcrumbI18nKey: "breadcrumb.databases" },
+        handle: { breadcrumbI18nKey: "breadcrumb.docs" },
         Component: () => <Outlet />,
         children: [
           {
@@ -69,7 +69,7 @@ describe("useBreadcrumb", () => {
     ])
     renderWithI18n(<Stub initialEntries={["/databases/bioproject"]} />)
     const list = screen.getByTestId("breadcrumb")
-    expect(list).toHaveTextContent("データベース")
+    expect(list).toHaveTextContent("ナレッジベース")
     expect(list).toHaveTextContent("db:bioproject")
   })
 
@@ -77,7 +77,7 @@ describe("useBreadcrumb", () => {
     const Stub = createRoutesStub([
       {
         path: "/databases",
-        handle: { breadcrumbI18nKey: "breadcrumb.databases" },
+        handle: { breadcrumbI18nKey: "breadcrumb.docs" },
         Component: () => <Outlet />,
         children: [
           {
@@ -109,7 +109,7 @@ describe("useBreadcrumb", () => {
     const Stub = createRoutesStub([
       {
         path: "/databases",
-        handle: { breadcrumbI18nKey: "breadcrumb.databases" },
+        handle: { breadcrumbI18nKey: "breadcrumb.docs" },
         Component: () => <Outlet />,
         children: [
           {
@@ -145,7 +145,7 @@ describe("useBreadcrumb", () => {
     const Stub = createRoutesStub([
       {
         path: "/databases",
-        handle: { breadcrumbI18nKey: "breadcrumb.databases", breadcrumbResolver: "dyn" },
+        handle: { breadcrumbI18nKey: "breadcrumb.docs", breadcrumbResolver: "dyn" },
         Component: () => (
           <BreadcrumbProbe
             resolvers={{
@@ -157,7 +157,7 @@ describe("useBreadcrumb", () => {
     ])
     renderWithI18n(<Stub initialEntries={["/databases"]} />)
     const list = screen.getByTestId("breadcrumb")
-    expect(list).toHaveTextContent("データベース")
+    expect(list).toHaveTextContent("ナレッジベース")
     expect(list).not.toHaveTextContent("DYNAMIC_LABEL")
   })
 })

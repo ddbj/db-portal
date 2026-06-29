@@ -21,8 +21,8 @@ describe("useT", () => {
   test.each([
     ["ja" as const, "breadcrumb.home", "ホーム"],
     ["en" as const, "breadcrumb.home", "Home"],
-    ["ja" as const, "breadcrumb.databases", "データベース"],
-    ["en" as const, "breadcrumb.databases", "Databases"],
+    ["ja" as const, "breadcrumb.docs", "ナレッジベース"],
+    ["en" as const, "breadcrumb.docs", "Knowledge Base"],
   ])("useT_%s_%s_resolvesToLocale", (lang, key, expected) => {
     renderProbe(lang, key)
     expect(screen.getByTestId("t")).toHaveTextContent(expected)

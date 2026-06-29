@@ -7,7 +7,7 @@ export default {
     ja: "DBCLS が運用する、ヒトに関する様々なデータを共有するためのプラットフォーム。",
     en: "DBCLS-operated platform for sharing a wide range of data related to humans.",
   },
-  link: { kind: "internal", to: "/databases/humandbs" },
+  link: { kind: "internal", to: "/humandbs" },
   submit: {
     service: "humandbs",
     externalUrl: {

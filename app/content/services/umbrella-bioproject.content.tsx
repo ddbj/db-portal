@@ -7,7 +7,7 @@ export default {
     ja: "各ハプロタイプの BioProject を束ねる Umbrella",
     en: "Groups child BioProjects for each haplotype under one umbrella",
   },
-  link: { kind: "internal", to: "/databases/bioproject" },
+  link: { kind: "internal", to: "/bioproject" },
   submit: {
     service: "umbrella-bioproject",
     externalUrl: {

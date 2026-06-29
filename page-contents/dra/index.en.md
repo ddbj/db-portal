@@ -1,5 +1,5 @@
 ---
-title: DRA (DDBJ Sequence Read Archive)
+title: DRA
 description: DDBJ's public archive for next-generation sequencer raw reads and alignments. As the Japanese node of INSDC SRA, it mirrors with NCBI SRA and EBI ENA.
 ---
 
@@ -12,11 +12,11 @@ DRA is the Japanese member of INSDC SRA and is mirrored with NCBI Sequence Read 
 Registering at any one of the three INSDC nodes is sufficient to make the data globally discoverable.
 
 > [!NOTE]
-> If you are unsure where to register, or if the boundary between DRA, JGA, and GEA is unclear, the [Submit Navigator](/submit) asks about the nature of your data and assembles the appropriate destination together with required prerequisites such as [BioProject](/databases/bioproject) and [BioSample](/databases/biosample).
+> If you are unsure where to register, or if the boundary between DRA, JGA, and GEA is unclear, the [Submit Navigator](/submit) asks about the nature of your data and assembles the appropriate destination together with required prerequisites such as [BioProject](/bioproject) and [BioSample](/biosample).
 
 > [!WARNING]
 > DRA is an open archive and does not support access control (restricted release).
-> Human data that require access restrictions must be registered to [JGA](/databases/jga) after approval by the NBDC Human Data Review Committee.
+> Human data that require access restrictions must be registered to [JGA](/jga) after approval by the NBDC Human Data Review Committee.
 
 ## Accepted data
 
@@ -60,8 +60,8 @@ A DRA submission consists of several objects, each receiving its own accession n
 | Experiment | `DRX` | Library + instrument metadata. References one BioProject and one BioSample |
 | Run | `DRR` | The actual data files attached to an Experiment. Read IDs are rewritten to `DRR<accession>.<serial>` |
 | Analysis | `DRZ` | Optional. Derived or processed data |
-| BioProject (referenced) | `PRJDB######` | Obtained beforehand from [BioProject](/databases/bioproject) |
-| BioSample (referenced) | `SAMD########` | Obtained beforehand from [BioSample](/databases/biosample) |
+| BioProject (referenced) | `PRJDB######` | Obtained beforehand from [BioProject](/bioproject) |
+| BioSample (referenced) | `SAMD########` | Obtained beforehand from [BioSample](/biosample) |
 
 Accession numbers are issued after metadata and file validation pass and DRA staff complete their review.
 
@@ -106,8 +106,8 @@ Have all of the following ready before starting registration.
 
 - A DDBJ account on D-way.
 - An SSH public key registered on that account.
-- A [BioProject](/databases/bioproject) (`PRJDB######`) already obtained.
-- At least one [BioSample](/databases/biosample) (`SAMD########`).
+- A [BioProject](/bioproject) (`PRJDB######`) already obtained.
+- At least one [BioSample](/biosample) (`SAMD########`).
 - Prepared read files (gzip-compressed FASTQ or uncompressed BAM; no directory structure; names following the rules).
 - An MD5 checksum for each file (entered in the Run metadata).
 - A contact email address for release and inquiry notifications.
@@ -125,7 +125,7 @@ A release policy is set per submission at registration time.
 
 > [!IMPORTANT]
 > All data within a single submission are released **at the same time**. Per-Run staggered release is not supported.
-> In addition, [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) / DRA / [GEA](/databases/gea) records are released together ("linked release") aligned to the latest Hold Until among the referenced objects.
+> In addition, [BioProject](/bioproject) / [BioSample](/biosample) / DRA / [GEA](/gea) records are released together ("linked release") aligned to the latest Hold Until among the referenced objects.
 
 A submission whose inquiries go unanswered for more than three months during the embargo period is treated as cancelled.
 
@@ -139,17 +139,17 @@ Released DRA records propagate worldwide through the following routes.
 
 > [!NOTE]
 > INSDC covers open archives only and has no framework for restricted release.
-> Data requiring access control must instead be registered to [JGA](/databases/jga) (which requires the [humandbs](/databases/humandbs) review process).
+> Data requiring access control must instead be registered to [JGA](/jga) (which requires the [humandbs](/humandbs) review process).
 
 ## Choosing between services
 
 | Data characteristics | Destination |
 | --- | --- |
 | Raw NGS reads from non-human samples, or human-derived raw reads that can be released openly | **DRA** |
-| Human-derived NGS reads requiring access control | [JGA](/databases/jga) (after NBDC approval via the [humandbs](/databases/humandbs) flow) |
-| Processed expression data such as RNA-seq count matrices | [GEA](/databases/gea) (raw reads must be pre-registered to DRA) |
-| Assembled or annotated sequences | [DDBJ](/databases/ddbj) (MSS / WGS / TLS / TSA) |
-| Metabolome data | [MetaboBank](/databases/metabobank) |
+| Human-derived NGS reads requiring access control | [JGA](/jga) (after NBDC approval via the [humandbs](/humandbs) flow) |
+| Processed expression data such as RNA-seq count matrices | [GEA](/gea) (raw reads must be pre-registered to DRA) |
+| Assembled or annotated sequences | [DDBJ](/ddbj) (MSS / WGS / TLS / TSA) |
+| Metabolome data | [MetaboBank](/metabobank) |
 
 ## Related resources
 

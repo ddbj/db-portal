@@ -7,7 +7,7 @@ export default {
     ja: "研究プロジェクトのメタデータ",
     en: "Research project metadata",
   },
-  link: { kind: "internal", to: "/databases/bioproject" },
+  link: { kind: "internal", to: "/bioproject" },
   submit: {
     service: "bioproject",
     externalUrl: {

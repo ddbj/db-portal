@@ -21,18 +21,26 @@ describe("resolvePageTitle", () => {
     expect(resolvePageTitle(matches)).toBe("Results | Search | BSI")
   })
 
-  test("resolvePageTitle_databaseResolverKnownSlug_usesEnglishDbTitle", () => {
+  test("resolvePageTitle_pageContentResolverKnownPath_usesPageTitle", () => {
     const matches = chain({
-      handle: { titleResolver: "database-content" },
-      params: { slug: "bioproject" },
+      handle: { titleResolver: "page-content" },
+      params: { "*": "bioproject" },
     })
-    expect(resolvePageTitle(matches)).toBe("BioProject | Databases | Contents | BSI")
+    expect(resolvePageTitle(matches)).toBe("BioProject | Contents | BSI")
   })
 
-  test("resolvePageTitle_databaseResolverUnknownSlug_fallsBackToBrand", () => {
+  test("resolvePageTitle_pageContentResolverNestedPath_usesPageTitle", () => {
     const matches = chain({
-      handle: { titleResolver: "database-content" },
-      params: { slug: "does-not-exist" },
+      handle: { titleResolver: "page-content" },
+      params: { "*": "policy/term-of-use" },
+    })
+    expect(resolvePageTitle(matches)).toBe("Terms of Use | Contents | BSI")
+  })
+
+  test("resolvePageTitle_pageContentResolverUnknownPath_fallsBackToBrand", () => {
+    const matches = chain({
+      handle: { titleResolver: "page-content" },
+      params: { "*": "does-not-exist" },
     })
     expect(resolvePageTitle(matches)).toBe("BSI")
   })
@@ -52,8 +60,8 @@ describe("resolvePageTitle", () => {
 
   test("resolvePageTitle_staticAndDynamicOnSameHandle_staticWins", () => {
     const matches = chain({
-      handle: { titleSegments: ["Static"], titleResolver: "database-content" },
-      params: { slug: "bioproject" },
+      handle: { titleSegments: ["Static"], titleResolver: "page-content" },
+      params: { "*": "bioproject" },
     })
     expect(resolvePageTitle(matches)).toBe("Static | BSI")
   })

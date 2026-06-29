@@ -4,7 +4,7 @@ import { buildSitemapEntries, renderSitemapXml } from "../../../../server/api/si
 
 describe("buildSitemapEntries", () => {
   test("buildSitemapEntries_emitsJaAndEnQueryUrlsForEachPath", () => {
-    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["/databases/bioproject", "/databases/biosample"])
+    const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["/bioproject", "/biosample"])
     const locs = entries.map((e) => e.loc)
 
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/?lang=ja")
@@ -15,10 +15,10 @@ describe("buildSitemapEntries", () => {
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/submit?lang=en")
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/news?lang=ja")
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/news?lang=en")
-    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/bioproject?lang=ja")
-    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/bioproject?lang=en")
-    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/biosample?lang=ja")
-    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/databases/biosample?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/bioproject?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/bioproject?lang=en")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/biosample?lang=ja")
+    expect(locs).toContain("https://portal.ddbj.nig.ac.jp/biosample?lang=en")
   })
 
   test("buildSitemapEntries_emitsTwoEntriesPerLogicalPath", () => {

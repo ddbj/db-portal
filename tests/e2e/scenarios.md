@@ -733,7 +733,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: portal staging が起動済
 - **手順**:
-  1. `request` (リダイレクト追従なし、`maxRedirects: 0` 相当) で `GET /api/auth/login?return_to=/databases/bioproject` を実行
+  1. `request` (リダイレクト追従なし、`maxRedirects: 0` 相当) で `GET /api/auth/login?return_to=/bioproject` を実行
 - **期待**:
   - status が 302
   - `Location` ヘッダの origin が Keycloak realm (`https://idp-staging.ddbj.nig.ac.jp`)、path が `/realms/master/protocol/openid-connect/auth`
@@ -746,10 +746,10 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-USER
 - **前提**: `DB_PORTAL_E2E_USER_PASSWORD` が設定済。staging Keycloak が到達可能
 - **手順**:
-  1. `loginViaKeycloak(page, "/databases/bioproject")` で `/api/auth/login?return_to=/databases/bioproject` から Keycloak ログインフォーム (`#username` / `#password` / `#kc-login`) を経由する
+  1. `loginViaKeycloak(page, "/bioproject")` で `/api/auth/login?return_to=/bioproject` から Keycloak ログインフォーム (`#username` / `#password` / `#kc-login`) を経由する
   2. `/api/auth/callback` のレスポンスを `waitForResponse` で捕捉する
 - **期待**:
-  - 最終 URL が `/databases/bioproject` で終わる
+  - 最終 URL が `/bioproject` で終わる
   - callback レスポンスの `Set-Cookie` が `sid=` を含み、`HttpOnly`、`Secure`、`SameSite=Lax`、`Path=/` 属性を全て持つ (staging は https origin のため `Secure` が付く)
   - その後の `GET /api/me` が 200 で `{ user: { sub, name, email } }` を返し、`Cache-Control: no-store` を持つ
   - Header に test user 名が表示される
@@ -1104,47 +1104,47 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 
 ## Content (Databases) Domain
 
-### S-CONTENT-01: /databases/bioproject ja 表示と breadcrumb
+### S-CONTENT-01: /bioproject ja 表示と breadcrumb
 
 - **ペルソナ**: P-ANON
 - **前提**: portal staging が起動済、cookie 未設定 (default lang ja)
 - **手順**:
-  1. `/databases/bioproject` を訪問
+  1. `/bioproject` を訪問
 - **期待**:
   - `<html lang="ja">`
   - `<h1>BioProject</h1>` (level 1) + description subtitle
   - 本文 Section に body[ja] が描画される
   - Breadcrumb nav (`aria-label` = `a11y.breadcrumbNav`) の `<ol>` は **ちょうど 2 セグメント**: 先頭が `ホーム` link (`href="/"`)、末尾が `aria-current="page"` の span `BioProject`。`データベース` の中間セグメントは存在しない (flat route 構成のため、`databases` breadcrumbI18nKey を持つ親 route が無い)
-  - 関連データベース section (見出し `関連データベース`) に `BioSample` の TextLink (`href="/databases/biosample"`) が 1 件
+  - 関連データベース section (見出し `関連データベース`) に `BioSample` の TextLink (`href="/biosample"`) が 1 件
   - 外部リンク section (見出し `外部リンク`) に `NCBI BioProject` / `EBI BioStudies` / `DDBJ BioProject 公式ページ` の 3 link
   - 最終更新 row に `最終更新` Tag + `<time dateTime="2026-05-25T00:00:00Z">` の可視テキスト `2026年5月25日`
 
-### S-CONTENT-02: ?lang=en で /databases/bioproject の en 表示
+### S-CONTENT-02: ?lang=en で /bioproject の en 表示
 
 - **ペルソナ**: P-ANON
 - **前提**: cookie 未設定 (lang cookie が無い初期状態)
 - **手順**:
-  1. `/databases/bioproject?lang=en` を訪問
+  1. `/bioproject?lang=en` を訪問
 - **期待**:
-  - root loader が `?lang=en` を検出 → `lang` param を削除した URL `/databases/bioproject` へ HTTP 302 redirect
+  - root loader が `?lang=en` を検出 → `lang` param を削除した URL `/bioproject` へ HTTP 302 redirect
   - redirect レスポンスに `Set-Cookie: db_portal_lang=en` (`SameSite=Lax`、`Path=/`、`Max-Age=31536000`、staging では `Secure` 付き)
   - redirect 先で `<html lang="en">`
   - `<h1>BioProject</h1>` + en description、本文 Section に body[en]
   - Breadcrumb は 2 セグメント `Home` link (`href="/"`) → `aria-current="page"` span `BioProject`。URL / 内部 link に `/en` prefix は付かない (`/en` route は存在しない)
   - 関連データベース見出しが `Related databases`、外部リンク見出しが `External links`、最終更新ラベルが `Last updated` で、`<time>` の可視テキストが `May 25, 2026` (en-US locale)
   - `data-testid="translation-unavailable"` 要素が 0 件 (handle.i18n.en === "complete")
-- **備考**: 言語選択は cookie 永続。redirect 後に同一 context で `/databases/biosample` を訪問しても (`?lang` 無し) cookie により en 表示が維持されることを確認してもよい
+- **備考**: 言語選択は cookie 永続。redirect 後に同一 context で `/biosample` を訪問しても (`?lang` 無し) cookie により en 表示が維持されることを確認してもよい
 
-### S-CONTENT-03: /databases/biosample ja 表示
+### S-CONTENT-03: /biosample ja 表示
 
 - **ペルソナ**: P-ANON
 - **前提**: cookie 未設定 (default lang ja)
 - **手順**:
-  1. `/databases/biosample` を訪問
+  1. `/biosample` を訪問
 - **期待**:
   - `<h1>BioSample</h1>` (level 1) + body[ja]
   - 本文に SAMD アクセッション説明テキスト (`/SAMD/` に一致する可視テキスト) が含まれる
-  - 関連データベース section に `BioProject` の TextLink (`href="/databases/bioproject"`)
+  - 関連データベース section に `BioProject` の TextLink (`href="/bioproject"`)
   - 外部リンク section に `NCBI BioSample` / `EBI BioSamples` / `DDBJ BioSample 公式ページ` の 3 link
   - 最終更新 row の `<time dateTime="2026-05-25T00:00:00Z">` 可視テキストが `2026年5月25日`
 
@@ -1153,8 +1153,8 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: なし
 - **手順**:
-  1. `/databases/bioproject` を訪問
-  2. 同一 context で `/databases/bioproject?lang=en` を訪問 (302 redirect 後 `/databases/bioproject`)
+  1. `/bioproject` を訪問
+  2. 同一 context で `/bioproject?lang=en` を訪問 (302 redirect 後 `/bioproject`)
 - **期待**:
   - ja: breadcrumb nav の `<li>` が **正確に 2 件**。`getByRole("link", { name: "ホーム" })` の `href="/"`、最後のセグメントが `getByRole` で取得できない `aria-current="page"` span `BioProject`。`データベース` テキストを含む `<li>` は **存在しない**
   - en: 同様に 2 件で `Home` link (`href="/"`) → `aria-current="page"` span `BioProject`。`Databases` の中間セグメントは存在しない
@@ -1166,8 +1166,8 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: なし
 - **手順**:
-  1. `/databases/bioproject` を訪問し `page.title()` を取得
-  2. `/databases/bioproject?lang=en` を訪問し (redirect 後) `page.title()` を取得
+  1. `/bioproject` を訪問し `page.title()` を取得
+  2. `/bioproject?lang=en` を訪問し (redirect 後) `page.title()` を取得
 - **期待**:
   - 両方とも document title が `BioProject | Databases | BSI` (leaf-first reverse-breadcrumb + brand `BSI`)
   - title は lang に依存せず英語固定 (ja 訪問でも `データベース` ではなく `Databases`、brand は常に `BSI`)
@@ -1178,8 +1178,8 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: なし
 - **手順**:
-  1. `/databases/bioproject` を訪問
-  2. `/databases/bioproject?lang=en` を訪問 (redirect 後)
+  1. `/bioproject` を訪問
+  2. `/bioproject?lang=en` を訪問 (redirect 後)
 - **期待**:
   - 外部リンク section の 3 link がそれぞれ `target="_blank"` かつ `rel` に `noopener` と `noreferrer` を含む。href は順に `https://www.ncbi.nlm.nih.gov/bioproject/` / `https://www.ebi.ac.uk/biostudies/` / `https://www.ddbj.nig.ac.jp/bioproject/index.html`
   - ja: `<time dateTime="2026-05-25T00:00:00Z">` の可視テキストが `2026年5月25日` (ja-JP `toLocaleDateString`)
@@ -1191,7 +1191,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **ペルソナ**: P-ANON
 - **前提**: なし
 - **手順**:
-  1. `/databases/unknown-slug` を訪問 (URL を直接 navigation。server / API は通常運転)
+  1. `/unknown-slug` を訪問 (URL を直接 navigation。server / API は通常運転)
 - **期待**:
   - HTTP 404 (loader が `getDatabaseBySlug` undefined で `throw new Response("Not Found", { status: 404 })`)
   - root ErrorBoundary が not-found 表示 (`<h1>` が `/ページが見つかりません|not found/i` に一致)
@@ -1214,7 +1214,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   1. `/` を開く
   2. Hero の SearchBox に `cancer` と入力し submit → `/search/results?q=cancer` に遷移
   3. BioProject のクロス DB カード (`[data-testid="db-card"][data-db="bioproject"]`) の「結果一覧」 (`search.results.cross.viewAll`) link をクリック → `/search/results?q=cancer&db=bioproject` に遷移
-  4. `/databases/bioproject` を開く (per-DB 結果カードとコンテンツ route は loader を共有しないクロスドメインのホップ)
+  4. `/bioproject` を開く (per-DB 結果カードとコンテンツ route は loader を共有しないクロスドメインのホップ)
   5. ブラウザの戻る (`page.goBack()`) を実行
 - **期待**:
   - 手順 2 後、URL が `/search/results?q=cancer`、クロス DB ヒット数カード群が描画される
@@ -1246,11 +1246,11 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
 - **前提**: fresh context (lang cookie 未設定)。`DB_PORTAL_DEFAULT_LANG` は `ja` (staging default)
 - **手順**:
   1. `/?lang=en` を開く
-  2. 続けて `/search`、`/news`、`/services`、`/databases/bioproject` を順に開く (クエリ無し)
+  2. 続けて `/search`、`/news`、`/services`、`/bioproject` を順に開く (クエリ無し)
   3. Header の言語切替ボタン (`a11y.languageSwitcher` = "言語切替") をクリックして `ja` に戻す
 - **期待**:
   - 手順 1 で 302 redirect により `lang` param が除去され、最終 URL は `/` (prefix 無し)。`<html lang="en">`。`Set-Cookie: db_portal_lang=en; Path=/; SameSite=Lax; Max-Age=31536000; Secure`
-  - 手順 2 の全 route で `<html lang="en">` が維持され、URL に `/en` prefix が一切付かない (`/search`、`/news`、`/services`、`/databases/bioproject` のまま)。Header nav が英語表記 (`nav.search` = "Search"、`nav.submit` = "Submit")
+  - 手順 2 の全 route で `<html lang="en">` が維持され、URL に `/en` prefix が一切付かない (`/search`、`/news`、`/services`、`/bioproject` のまま)。Header nav が英語表記 (`nav.search` = "Search"、`nav.submit` = "Submit")
   - 内部リンク (Header nav、Breadcrumb、関連 DB の TextLink) の href がいずれも `/en` prefix を含まない
   - 手順 3 で `/api/set-lang` に POST → 303 (`Location` は Referer)、`Set-Cookie: db_portal_lang=ja; ...`。リロード後 `<html lang="ja">`、Header nav が日本語 (`nav.search` = "検索")
 - **備考**: routes.ts に `/en` route は存在しない (lang は cookie + `?lang=` のみ)。この不変量を 1 シナリオで横断的に固定し、`/en` prefix 前提の stale 記述を 1 箇所で排除する。
@@ -1281,7 +1281,7 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   2. `page.request.get("/sitemap.xml")` で取得する
 - **期待**:
   - `/robots.txt`: HTTP 200、`content-type` が `text/plain` を含む。本文に `User-agent: *` を含む。production では `Sitemap: <origin>/sitemap.xml` 行を含み、非 production (staging) では `Disallow: /` を含む
-  - `/sitemap.xml`: HTTP 200、`content-type` が `application/xml` を含む。`<urlset>` 配下に `app/content/databases` の実 slug を反映した `/databases/bioproject?lang=ja` および `?lang=en` の `<loc>` を含み、各 `<url>` が `<xhtml:link rel="alternate" hreflang="ja|en|x-default">` の 3 alternates を持つ。静的 path (`/`、`/search`、`/submit`、`/news`) も ja/en 2 件ずつ含む
+  - `/sitemap.xml`: HTTP 200、`content-type` が `application/xml` を含む。`<urlset>` 配下に `app/content/databases` の実 slug を反映した `/bioproject?lang=ja` および `?lang=en` の `<loc>` を含み、各 `<url>` が `<xhtml:link rel="alternate" hreflang="ja|en|x-default">` の 3 alternates を持つ。静的 path (`/`、`/search`、`/submit`、`/news`) も ja/en 2 件ずつ含む
 - **備考**: 純関数 (`renderRobotsTxt` / `buildSitemapEntries` / `renderSitemapXml`) は unit + pbt 済だが、express handler の wiring・content-type・`listDatabaseSlugs` の実ファイルシステム読み取りは served エンドポイントを叩かないと検証できない。robots の production 分岐 (`Sitemap:` 行) は production deploy でのみ確認可能で、staging では `Disallow: /` 側を確認する (production 側は production smoke test で確認、定義のみ until production)。
 
 ### E-FLOW-02: 未知のトップレベル route で汎用 404 ErrorBoundary
@@ -1294,4 +1294,4 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - HTTP 404 (routes.ts に catch-all / splat route が無いため、React Router の no-match → root ErrorBoundary の `not-found` kind に解決される)
   - `role="alert"` の ErrorPage が描画され、`PageTitle` に `errors.notFound.title` (= "ページが見つかりません") が表示される
   - 「トップへ戻る」 (`errors.notFound.backToTop`) の TextLink が `/` を href に持ち、Header / SkipLink を含む app shell ごと描画される (ErrorBoundary が ShellLayout でラップされる)
-- **備考**: E-CONTENT-01 (`/databases/unknown-slug`) は `$slug` loader が `Response(404)` を投げる別経路。本シナリオは loader を持たない no-match 経路を分離して固定し、root ErrorBoundary の 404 マッピング回帰を検出する。
+- **備考**: E-CONTENT-01 (`/unknown-slug`) は `$slug` loader が `Response(404)` を投げる別経路。本シナリオは loader を持たない no-match 経路を分離して固定し、root ErrorBoundary の 404 マッピング回帰を検出する。

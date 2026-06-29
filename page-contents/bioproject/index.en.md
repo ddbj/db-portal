@@ -7,7 +7,7 @@ description: BioProject is the INSDC-shared metadata catalog that bundles resear
 
 BioProject is the INSDC-shared metadata catalog that bundles a research project together with the various data derived from it. The project entry itself holds no sequences or experimental data; instead it captures the project overview, objectives, target organisms, and related publications in a single record.
 
-The actual data are submitted to other services such as [DRA](/databases/dra), [GEA](/databases/gea), [DDBJ](/databases/ddbj), MetaboBank, and [JGA](/databases/jga). Those entries cite the BioProject accession number so that data can be browsed together at the project level. After release, metadata are exchanged with NCBI BioProject and EBI BioStudies.
+The actual data are submitted to other services such as [DRA](/dra), [GEA](/gea), [DDBJ](/ddbj), MetaboBank, and [JGA](/jga). Those entries cite the BioProject accession number so that data can be browsed together at the project level. After release, metadata are exchanged with NCBI BioProject and EBI BioStudies.
 
 There are two kinds of project.
 
@@ -48,7 +48,7 @@ A single BioProject citation in a paper or data release lets readers trace all t
 
 ## Submission flow
 
-1. Obtain a [DDBJ account](https://www.ddbj.nig.ac.jp/ddbj-account.html) (shared across BioProject / [BioSample](/databases/biosample) / [DRA](/databases/dra) etc.).
+1. Obtain a [DDBJ account](https://www.ddbj.nig.ac.jp/ddbj-account.html) (shared across BioProject / [BioSample](/biosample) / [DRA](/dra) etc.).
 2. Log in to the submission tool [D-way](https://ddbj.nig.ac.jp/D-way/) and go to the BioProject submission page.
 3. Click **[New submission]** to start a new entry.
 4. Fill in each tab from left to right in English (submitter / project type / organism / publication etc.).
@@ -64,8 +64,8 @@ A single BioProject citation in a paper or data release lets readers trace all t
 - **DDBJ account**: shared with BioSample / DRA / GEA and the other DDBJ services.
 - **Organizational email address**: free personal email is not accepted as a rule.
 - **English metadata**: prepare the title, a description of at least 100 characters, the official (unabbreviated) organization name, target organism, material / capture / methodology, and related publications.
-- **When handling human data**: to submit human-derived data to [DRA](/databases/dra) / [GEA](/databases/gea) / [DDBJ](/databases/ddbj), you must first file the DBCLS "application for providing unrestricted-access human data" and obtain approval. Enter the issued application ID in the private comment field of the submission form. For restricted-access human data, use [JGA](/databases/jga) instead.
-- **When submitting annotated genome sequences**: register a locus_tag prefix on the [BioSample](/databases/biosample) side beforehand.
+- **When handling human data**: to submit human-derived data to [DRA](/dra) / [GEA](/gea) / [DDBJ](/ddbj), you must first file the DBCLS "application for providing unrestricted-access human data" and obtain approval. Enter the issued application ID in the private comment field of the submission form. For restricted-access human data, use [JGA](/jga) instead.
+- **When submitting annotated genome sequences**: register a locus_tag prefix on the [BioSample](/biosample) side beforehand.
 - **When linking to an umbrella**: prepare the `PRJDB` number of the primary project in advance.
 
 ## Umbrella BioProject
@@ -99,11 +99,11 @@ DDBJ BioProject follows the INSDC (DDBJ / NCBI / EBI) common schema, and after r
 
 BioProject itself holds no sequences or experimental data. The actual data are submitted to the services below, each of which cites the BioProject accession number.
 
-- [BioSample](/databases/biosample): metadata for the samples that produced the sequences.
-- [DRA](/databases/dra): raw reads from next-generation sequencers.
-- [GEA](/databases/gea): gene expression data.
-- [DDBJ](/databases/ddbj): annotated sequences.
-- [JGA](/databases/jga): restricted-access human data.
+- [BioSample](/biosample): metadata for the samples that produced the sequences.
+- [DRA](/dra): raw reads from next-generation sequencers.
+- [GEA](/gea): gene expression data.
+- [DDBJ](/ddbj): annotated sequences.
+- [JGA](/jga): restricted-access human data.
 
 ## Related resources
 

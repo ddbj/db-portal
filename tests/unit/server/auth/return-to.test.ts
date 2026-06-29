@@ -4,7 +4,7 @@ import { normalizeReturnTo } from "../../../../server/auth/return-to"
 
 describe("normalizeReturnTo", () => {
   test.each([
-    ["/databases/bioproject", "/databases/bioproject"],
+    ["/bioproject", "/bioproject"],
     ["/en/search", "/en/search"],
     [undefined, "/"],
     [null, "/"],

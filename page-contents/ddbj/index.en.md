@@ -14,7 +14,7 @@ Two submission windows feed into the same database:
 | [NSSS](#nsss) (DDBJ Nucleotide Sequence Submission System) | Web wizard for small / standard entries |
 | [MSS](#mss) (Mass Submission System) | File-based upload (FASTA + annotation TSV) for large-scale, full-replicon, or BioProject/BioSample-linked data |
 
-Raw sequencer reads do not belong here; submit them to [DRA](/databases/dra) instead.
+Raw sequencer reads do not belong here; submit them to [DRA](/dra) instead.
 
 > [!NOTE]
 > If you are unsure which window to use, the [Submit Navigator](/submit) walks you through your data type and recommends NSSS or MSS.
@@ -111,7 +111,7 @@ When in doubt, default to NSSS and only switch to MSS when one of the conditions
 
 - A **DDBJ account** (D-way). SCP / SFTP transfer additionally requires a registered public key.
 - **Contact person information** (name, affiliation, address, phone). Multiple contacts (at minimum the operator and a supervisor) are strongly recommended so future correspondence does not stall.
-- For genome-scale, metagenome, TPA, and other linkage-required cases, obtain a [BioProject ID](/databases/bioproject) and [BioSample ID](/databases/biosample) beforehand.
+- For genome-scale, metagenome, TPA, and other linkage-required cases, obtain a [BioProject ID](/bioproject) and [BioSample ID](/biosample) beforehand.
 - If the annotation uses `locus_tag`, reserve a **locus_tag prefix** when registering the BioSample (prefixes cannot be changed after issuance).
 - Decide the **scheduled release date** (immediate release or hold).
 - MSS-only local validation tools:
@@ -169,7 +169,7 @@ When submitting a diploid genome as separate Principal and Alternate haplotypes,
 - Record `Diploid :: Principal haplotype` or `Diploid :: Alternate haplotype` in ST_COMMENT.
 - Both haplotypes must reference the same BioSample (use the MIGS package).
 - Submitters choose the labelling convention: Principal / Alternate, Haplotype 1 / 2, or Maternal / Paternal.
-- An [Umbrella BioProject](/databases/bioproject#umbrella-bioproject) can also bundle the corresponding raw-reads project under [DRA](/databases/dra).
+- An [Umbrella BioProject](/bioproject#umbrella-bioproject) can also bundle the corresponding raw-reads project under [DRA](/dra).
 
 ## TPA (Third Party Annotation)
 
@@ -214,6 +214,6 @@ Key constraints:
 
 ### Related services
 
-- [BioProject](/databases/bioproject) - Project registration ([Umbrella BioProject](/databases/bioproject#umbrella-bioproject))
-- [BioSample](/databases/biosample) - Sample metadata registration
-- [DRA](/databases/dra) - NGS raw reads submission
+- [BioProject](/bioproject) - Project registration ([Umbrella BioProject](/bioproject#umbrella-bioproject))
+- [BioSample](/biosample) - Sample metadata registration
+- [DRA](/dra) - NGS raw reads submission

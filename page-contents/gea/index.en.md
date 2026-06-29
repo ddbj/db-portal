@@ -1,5 +1,5 @@
 ---
-title: GEA (Genomic Expression Archive)
+title: GEA
 description: GEA is the DDBJ Center public archive for functional genomics data, accepting microarray and sequencing experiments in MAGE-TAB format with E-GEAD-n accessions.
 ---
 
@@ -28,7 +28,7 @@ GEA covers the following functional genomics experiments.
 The required files differ depending on the route.
 
 - **Microarray**: Upload both raw data and processed data to GEA.
-- **Sequencing**: Processed (analyzed) data are required at GEA. Raw reads are submitted to [DRA](/databases/dra), and the GEA submission references the DRA submission.
+- **Sequencing**: Processed (analyzed) data are required at GEA. Raw reads are submitted to [DRA](/dra), and the GEA submission references the DRA submission.
 
 > [!WARNING]
 > BAM / SAM / BED files alone cannot be registered as processed data. Quantitative data such as an expression matrix are required. If you only have those files, please contact GEA in advance.
@@ -42,9 +42,9 @@ GEA has two submission routes, which differ in the prerequisites and in where ra
 
 | Aspect | Microarray | Sequencing |
 | --- | --- | --- |
-| Raw data location | GEA | [DRA](/databases/dra) |
+| Raw data location | GEA | [DRA](/dra) |
 | Processed data | Required at GEA | Required at GEA |
-| Prerequisite submissions to reference | [BioProject](/databases/bioproject) + [BioSample](/databases/biosample) | [DRA](/databases/dra) submission + [BioProject](/databases/bioproject) (BioSample is referenced via DRA) |
+| Prerequisite submissions to reference | [BioProject](/bioproject) + [BioSample](/biosample) | [DRA](/dra) submission + [BioProject](/bioproject) (BioSample is referenced via DRA) |
 | SDRF template source | BioSample | DRA submission |
 | Array Design | `A-XXXX-n` (existing) or upload an ADF to issue a new one | Not required |
 | Spatial transcriptome | Xenium, MERFISH, etc. | Visium, etc. |
@@ -86,9 +86,9 @@ GEA metadata are centered on the MAGE-TAB format. At minimum prepare an IDF and 
 In addition, prepare the following beforehand.
 
 - **D-way account**: required to sign in to the GEA submission UI
-- **[BioProject](/databases/bioproject)**: one BioProject is referenced by both the microarray and the sequencing route
-- **[BioSample](/databases/biosample)**: selected directly in the microarray route as the source for SDRF auto-generation (in the sequencing route it is referenced via the DRA submission)
-- **[DRA](/databases/dra) submission**: pre-register raw reads in the sequencing route
+- **[BioProject](/bioproject)**: one BioProject is referenced by both the microarray and the sequencing route
+- **[BioSample](/biosample)**: selected directly in the microarray route as the source for SDRF auto-generation (in the sequencing route it is referenced via the DRA submission)
+- **[DRA](/dra) submission**: pre-register raw reads in the sequencing route
 - **Array Design**: in the microarray route, reference an existing `A-XXXX-n`, or upload an ADF for a new design
 - **Data files**: raw / processed files for each assay, with md5 values
 
@@ -113,7 +113,7 @@ The submission route for spatial transcriptome data depends on the platform.
 
 ## Two-step submission with DRA
 
-The sequencing route does not complete within GEA alone; it is a two-step submission with [DRA](/databases/dra).
+The sequencing route does not complete within GEA alone; it is a two-step submission with [DRA](/dra).
 
 ```text
 [raw read fastq/BAM]
@@ -144,4 +144,4 @@ When creating a GEA submission, select one DRA submission registered under your 
 - Data file specifications: <https://www.ddbj.nig.ac.jp/gea/datafile.html>
 - Spatial gene expression: <https://www.ddbj.nig.ac.jp/gea/spatial-gene-expression.html>
 - NAR 2019 paper "DDBJ update: the Genomic Expression Archive (GEA) for functional genomics data": <https://academic.oup.com/nar/article/47/D1/D69/5144146>
-- Related services: [DRA](/databases/dra) / [BioProject](/databases/bioproject) / [BioSample](/databases/biosample)
+- Related services: [DRA](/dra) / [BioProject](/bioproject) / [BioSample](/biosample)

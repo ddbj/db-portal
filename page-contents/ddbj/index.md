@@ -14,7 +14,7 @@ DDBJ は、INSDC (DDBJ / NCBI GenBank / EBI ENA) を構成するアノテーシ�
 | [NSSS](#nsss) (DDBJ Nucleotide Sequence Submission System) | Web フォームから小規模・通常エントリ向けに登録 |
 | [MSS](#mss) (Mass Submission System) | FASTA + アノテーション TSV のファイル送付で大規模・全長レプリコン・BioProject/BioSample 連携データを登録 |
 
-シークエンサ生 reads は本データベースでは扱わず、[DRA](/databases/dra) に登録します。
+シークエンサ生 reads は本データベースでは扱わず、[DRA](/dra) に登録します。
 
 > [!NOTE]
 > どちらの窓口を使うべきか分からない場合は [登録ナビ](/submit) でデータ種別を選ぶと案内されます。
@@ -111,7 +111,7 @@ NSSS と MSS は INSDC への登録窓口の振り分けで、最終的な出力
 
 - **DDBJ アカウント** (D-way)。SCP/SFTP 転送には公開鍵の登録が必要。
 - **コンタクトパーソン情報** (氏名 / 所属 / 住所 / 電話)。連絡途絶を避けるため複数名 (実作業者 + 研究指導者) を強く推奨します。
-- ゲノム規模・メタゲノム・TPA など連携必須ケースは [BioProject ID](/databases/bioproject) と [BioSample ID](/databases/biosample) を事前取得。
+- ゲノム規模・メタゲノム・TPA など連携必須ケースは [BioProject ID](/bioproject) と [BioSample ID](/biosample) を事前取得。
 - アノテーションに `locus_tag` を含める場合、BioSample 登録時に **locus_tag prefix** を予約 (取得後の変更不可)。
 - **公開予定日** (即時公開 / hold) を決定。
 - MSS のローカル検証ツール:
@@ -169,7 +169,7 @@ NSSS と MSS は INSDC への登録窓口の振り分けで、最終的な出力
 - ST_COMMENT に `Diploid :: Principal haplotype` または `Diploid :: Alternate haplotype` を記載します。
 - BioSample は両ハプロタイプで共通のものを参照します (パッケージは MIGS)。
 - 区別名は Principal/Alternate、Haplotype 1/2、Maternal/Paternal のいずれかを登録者が選択します。
-- [Umbrella BioProject](/databases/bioproject#umbrella-bioproject) には [DRA](/databases/dra) の生 reads プロジェクトも束ねることができます。
+- [Umbrella BioProject](/bioproject#umbrella-bioproject) には [DRA](/dra) の生 reads プロジェクトも束ねることができます。
 
 ## TPA (Third Party Annotation)
 
@@ -214,6 +214,6 @@ TPA は他者が公開済みのプライマリエントリに対し、第三者�
 
 ### 関連サービス
 
-- [BioProject](/databases/bioproject) - プロジェクト登録 ([Umbrella BioProject](/databases/bioproject#umbrella-bioproject))
-- [BioSample](/databases/biosample) - サンプル情報登録
-- [DRA](/databases/dra) - NGS raw reads 登録
+- [BioProject](/bioproject) - プロジェクト登録 ([Umbrella BioProject](/bioproject#umbrella-bioproject))
+- [BioSample](/biosample) - サンプル情報登録
+- [DRA](/dra) - NGS raw reads 登録

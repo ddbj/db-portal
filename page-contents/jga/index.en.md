@@ -1,11 +1,11 @@
 ---
-title: JGA (Japanese Genotype-phenotype Archive)
+title: JGA
 description: Controlled-access archive at DDBJ Center for individual-level human genetic and phenotypic data, accepting only de-identified data under a policy approved through the NBDC Human Database; data use requires review by the Data Access Committee.
 ---
 
 ## About JGA
 
-The Japanese Genotype-phenotype Archive (JGA) is a controlled-access archive for individual-level human genetic and phenotypic data. It is hosted by the Bioinformation and DDBJ Center, while both data submission and data use applications are received through the [NBDC Human Database](/databases/humandbs) and reviewed by its Data Access Committee. JGA holds and shares human data that cannot be made openly public beyond the scope of participant consent, under explicit data use policies.
+The Japanese Genotype-phenotype Archive (JGA) is a controlled-access archive for individual-level human genetic and phenotypic data. It is hosted by the Bioinformation and DDBJ Center, while both data submission and data use applications are received through the [NBDC Human Database](/humandbs) and reviewed by its Data Access Committee. JGA holds and shares human data that cannot be made openly public beyond the scope of participant consent, under explicit data use policies.
 
 JGA is the same kind of controlled-access archive as EBI EGA and NCBI dbGaP, but no data is exchanged among the three archives. Summary metadata for Study, Dataset, and Policy objects is openly browsable on DDBJ Search, but sequence files and other primary data can only be downloaded by approved data users.
 
@@ -33,7 +33,7 @@ File-level constraints include: no spaces in file names, do not bundle multiple 
 
 ## Data model
 
-JGA does not use the BioProject / BioSample model adopted by [DRA](/databases/dra). Its metadata model is built by extending that of the [Sequence Read Archive](https://www.ddbj.nig.ac.jp/dra/metadata-e.html) and consists of seven content object types — Study, Sample, Experiment, Data, Analysis, Dataset, Policy — plus a Submission object that represents the registration transaction. Each object receives an independent accession number.
+JGA does not use the BioProject / BioSample model adopted by [DRA](/dra). Its metadata model is built by extending that of the [Sequence Read Archive](https://www.ddbj.nig.ac.jp/dra/metadata-e.html) and consists of seven content object types — Study, Sample, Experiment, Data, Analysis, Dataset, Policy — plus a Submission object that represents the registration transaction. Each object receives an independent accession number.
 
 | Object | Role |
 |--------|------|
@@ -102,7 +102,7 @@ Metadata must be written in English. Submitters who want to validate XML in adva
 
 ## Prerequisites
 
-- Obtain policy approval at the [NBDC Human Database](/databases/humandbs) (mandatory prerequisite)
+- Obtain policy approval at the [NBDC Human Database](/humandbs) (mandatory prerequisite)
 - Create a DDBJ (D-way) account and register an SSH public key
 - Create a "data submitter group" on the NBDC application system and include the PI and all submitters as members
 - Prepare de-identified data whose disclosure and use restrictions can be confirmed against participant consent forms
@@ -110,7 +110,7 @@ Metadata must be written in English. Submitters who want to validate XML in adva
 
 ## Relationship with the NBDC Human Database
 
-JGA is coupled with the [NBDC Human Database](/databases/humandbs) at two stages.
+JGA is coupled with the [NBDC Human Database](/humandbs) at two stages.
 
 - **Before submission**: The data use policy applied to the study must be applied for on the NBDC Human Database side and approved by DBCLS before JGA submission can proceed. Data without an approved policy is not accepted by JGA.
 - **At release**: JGA data is released when the corresponding NBDC Human Database research page (hum###### number) is published. Submitters cannot control the release on their own schedule; the release timing is aligned with the publication status on the NBDC Human Database side.
@@ -128,5 +128,5 @@ JGA is coupled with the [NBDC Human Database](/databases/humandbs) at two stages
 - [submission-excel2xml (Excel-to-XML converter)](https://github.com/ddbj/submission-excel2xml)
 - [JGA XML schema (xsd)](https://github.com/ddbj/pub/tree/master/docs/jga)
 - [Example JGA Dataset entry on DDBJ Search](https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000948)
-- [NBDC Human Database](/databases/humandbs) (policy approval before submission and release coupling)
-- [DRA](/databases/dra) (sibling service for open human and non-human data)
+- [NBDC Human Database](/humandbs) (policy approval before submission and release coupling)
+- [DRA](/dra) (sibling service for open human and non-human data)

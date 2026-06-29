@@ -7,7 +7,7 @@ description: DDBJ が運営する公開メタボロミクスデータリポジ�
 
 MetaboBank は DDBJ が運営する公開メタボロミクスデータリポジトリです。質量分析 (MS)、NMR、質量分析イメージング (MSI) で取得したメタボロームデータと、同定した代謝物のアサインメントを受け付けます。
 
-メタデータには [GEA](/databases/gea) と同系統の MAGE-TAB 形式を採用しており、EBI が運営する MetaboLights の ISA-TAB と互換性を持ちます。MetaboBank と MetaboLights はデータ標準化で連携しています。
+メタデータには [GEA](/gea) と同系統の MAGE-TAB 形式を採用しており、EBI が運営する MetaboLights の ISA-TAB と互換性を持ちます。MetaboBank と MetaboLights はデータ標準化で連携しています。
 
 > [!NOTE]
 > サービスの選択や登録手順の全体像は [登録ナビ](/submit) から確認できます。MetaboBank の登録は申請フォーム経由の個別対応で進みます。
@@ -37,7 +37,7 @@ MetaboBank は DDBJ が運営する公開メタボロミクスデータリポジ
 
 ## アクセッション番号
 
-MetaboBank に登録した Study と、関連する [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) には次のアクセッション番号が発行されます。
+MetaboBank に登録した Study と、関連する [BioProject](/bioproject) / [BioSample](/biosample) には次のアクセッション番号が発行されます。
 
 | 対象 | 形式 | 例 |
 | --- | --- | --- |
@@ -51,8 +51,8 @@ MetaboBank に登録した Study と、関連する [BioProject](/databases/biop
 
 1. DDBJ アカウントを取得し、公開鍵を登録 (scp / sftp 用)
 2. **MetaboBank registration application form** で登録申請
-3. [BioProject](/databases/bioproject) を登録して `PRJDB######` を取得
-4. [BioSample](/databases/biosample) の Omics package で各サンプルの `SAMD#####` を取得
+3. [BioProject](/bioproject) を登録して `PRJDB######` を取得
+4. [BioSample](/biosample) の Omics package で各サンプルの `SAMD#####` を取得
 5. 測定タイプに対応する MAGE-TAB Excel テンプレートに **IDF + SDRF** を記入、必要に応じて **MAF** を作成
 6. raw data / processed data / MAF の MD5 チェックサムとファイル一覧を準備
 7. scp / sftp でファイルサーバへアップロード (Study 単位で tar / zip 圧縮を推奨)
@@ -67,7 +67,7 @@ MetaboBank に登録した Study と、関連する [BioProject](/databases/biop
 登録申請前に次を揃えておきます。
 
 - DDBJ アカウントと、scp / sftp 用の公開鍵
-- [BioProject](/databases/bioproject) (PRJDB) と [BioSample](/databases/biosample) Omics package (SAMD) の取得
+- [BioProject](/bioproject) (PRJDB) と [BioSample](/biosample) Omics package (SAMD) の取得
 - 測定タイプに対応する **MAGE-TAB Excel テンプレート** (IDF + SDRF)
 - 該当する場合は **MAF テンプレート** (MS 用 / NMR 用)
 - ファイル名一覧と MD5 チェックサム
@@ -97,7 +97,7 @@ MSI 専用のメタデータテンプレートが用意されており、image d
 
 ## MetaboLights との関係
 
-MetaboBank の MAGE-TAB は、EBI の MetaboLights が採用する ISA-TAB と互換性を持ちます。両リポジトリはデータ標準化で連携しており、メタデータ形式は MAGE-TAB ファミリの [GEA](/databases/gea) (ArrayExpress 系) や SDRF-Proteomics と同系統の枠組みです。
+MetaboBank の MAGE-TAB は、EBI の MetaboLights が採用する ISA-TAB と互換性を持ちます。両リポジトリはデータ標準化で連携しており、メタデータ形式は MAGE-TAB ファミリの [GEA](/gea) (ArrayExpress 系) や SDRF-Proteomics と同系統の枠組みです。
 
 > [!NOTE]
 > 公式ドキュメントによれば、MetaboBank と MetaboLights の間で公開済みデータの相互交換は現時点では行われていません。
@@ -106,7 +106,7 @@ MetaboBank の MAGE-TAB は、EBI の MetaboLights が採用する ISA-TAB と�
 
 - 即時公開、または論文公開までの hold (embargo) を選択可能
 - release date は最大 3 年まで設定でき、延長も可能
-- 公開は [DDBJ データ公開原則](https://www.ddbj.nig.ac.jp/documents/data-release-policy.html) に従って行われ、リンクされた [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) の公開タイミングと整合します
+- 公開は [DDBJ データ公開原則](https://www.ddbj.nig.ac.jp/documents/data-release-policy.html) に従って行われ、リンクされた [BioProject](/bioproject) / [BioSample](/biosample) の公開タイミングと整合します
 - 査読者向けの非公開閲覧 (reviewer access) は MetaboBank チームに依頼し、password 付きサイト経由で提供されます
 - 登録後の修正は MetaboBank チームへ専用フォームで連絡します
 
@@ -124,4 +124,4 @@ MetaboBank の MAGE-TAB は、EBI の MetaboLights が採用する ISA-TAB と�
 - 検索 UI: <https://mb2.ddbj.nig.ac.jp/>
 - DDBJ FAQ (公開連動): <https://www.ddbj.nig.ac.jp/faq/en/bp-bs-seq-release-e.html>
 - DDBJ FAQ (reviewer access): <https://www.ddbj.nig.ac.jp/faq/en/reviewer-access-e.html>
-- 関連サービス: [BioProject](/databases/bioproject) / [BioSample](/databases/biosample) / [GEA](/databases/gea) / [DRA](/databases/dra)
+- 関連サービス: [BioProject](/bioproject) / [BioSample](/biosample) / [GEA](/gea) / [DRA](/dra)

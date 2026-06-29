@@ -26,20 +26,32 @@ const splitFrontmatter = (raw: string): { data: Record<string, string>; content:
 
 type RawModule = Record<string, string>
 
-const jaModules: RawModule = import.meta.glob(
-  "/page-contents/**/index.md",
+const allMdModules: RawModule = import.meta.glob(
+  "/page-contents/**/*.md",
   { eager: true, query: "?raw", import: "default" },
 )
 
-const enModules: RawModule = import.meta.glob(
-  "/page-contents/**/index.en.md",
-  { eager: true, query: "?raw", import: "default" },
+const isEnglishFile = (filepath: string): boolean => filepath.endsWith(".en.md")
+
+const jaModules: RawModule = Object.fromEntries(
+  Object.entries(allMdModules).filter(([fp]) => !isEnglishFile(fp)),
+)
+
+const enModules: RawModule = Object.fromEntries(
+  Object.entries(allMdModules).filter(([fp]) => isEnglishFile(fp)),
 )
 
 const PREFIX = "/page-contents/"
 
+// `index.md` は親 dir の URL に畳む。`foo.md` はそのファイル名で URL の最後の
+// segment になる。英語版は同じ URL に `.en` 拡張子だけ差をつけて並ぶ。
 const extractUrlPath = (filepath: string): string => {
-  const stripped = filepath.slice(PREFIX.length).replace(/\/index(\.en)?\.md$/, "")
+  const rel = filepath.slice(PREFIX.length)
+  const stripped = rel
+    .replace(/\/index\.en\.md$/, "")
+    .replace(/\/index\.md$/, "")
+    .replace(/\.en\.md$/, "")
+    .replace(/\.md$/, "")
 
   return `/${stripped}`
 }
@@ -66,6 +78,7 @@ const parseFrontmatter = (
 type BuildEntry = {
   urlPath: string
   slug: string
+  jaFilepath: string
   ja: { frontmatter: PageFrontmatter; body: string }
   en?: { frontmatter: PageFrontmatter; body: string }
 }
@@ -84,6 +97,7 @@ const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } 
     entryMap.set(urlPath, {
       urlPath,
       slug: extractSlug(urlPath),
+      jaFilepath: filepath,
       ja: result,
     })
   }
@@ -138,30 +152,13 @@ if (buildErrors.length > 0) {
 const pages = renderEntries(entries)
 
 const pageByPath = new Map<string, PageContent>()
-const pagesBySection = new Map<string, PageContent[]>()
 
 for (const page of pages) {
   pageByPath.set(page.urlPath, page)
-  const section = page.urlPath.split("/").filter(Boolean)[0] ?? ""
-  const list = pagesBySection.get(section) ?? []
-  list.push(page)
-  pagesBySection.set(section, list)
 }
 
 export const getPageByPath = (urlPath: string): PageContent | undefined =>
   pageByPath.get(urlPath)
-
-export const getPageBySlug = (
-  section: string,
-  slug: string,
-): PageContent | undefined => {
-  const sectionPages = pagesBySection.get(section) ?? []
-
-  return sectionPages.find((p) => p.slug === slug)
-}
-
-export const listPagesBySection = (section: string): readonly PageContent[] =>
-  pagesBySection.get(section) ?? []
 
 export const listAllPages = (): readonly PageContent[] =>
   Array.from(pageByPath.values())
@@ -171,7 +168,7 @@ export const validateAllPages = (): ValidationResult<PageContent> => {
   if (errors.length > 0) return { ok: false, errors }
 
   const items = validEntries.map((e) => ({
-    filepath: `page-contents${e.urlPath}/index.md`,
+    filepath: e.jaFilepath.replace(/^\//, ""),
     content: {
       slug: e.slug,
       urlPath: e.urlPath,

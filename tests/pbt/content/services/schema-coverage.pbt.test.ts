@@ -13,7 +13,7 @@ const submitServiceArb = fc.constantFrom(...SubmitService.options)
 
 const internalLinkArb = fc.record({
   kind: fc.constant("internal" as const),
-  to: fc.constantFrom("/search", "/submit", "/databases/x"),
+  to: fc.constantFrom("/search", "/submit", "/x"),
 })
 
 const externalLinkArb = fc.record({

@@ -147,7 +147,7 @@ export const stepPrerequisites = (
   return (SERVICE_DEPENDENCIES[service] ?? []).filter((dep) => present.has(dep))
 }
 
-// 詳細ページの URL マッピング。`/databases/<slug>` の URL を生成する。
+// 詳細ページの URL マッピング。`/<slug>` の URL を生成する。
 // umbrella-bioproject は BioProject ページの Umbrella BioProject セクションに飛ばす。
 // nsss は DB ではなく塩基配列の Web 登録窓口 (MSS と並ぶ submission system) なので、
 // DDBJ ページの NSSS セクションに deep link する (独立ページを持たない)。
@@ -169,7 +169,7 @@ export const internalDetailHref = (service: Service): string | undefined => {
   const page = SERVICE_INTERNAL_PAGE[service]
   if (page === undefined) return undefined
 
-  return page.hash !== undefined ? `/databases/${page.slug}#${page.hash}` : `/databases/${page.slug}`
+  return page.hash !== undefined ? `/${page.slug}#${page.hash}` : `/${page.slug}`
 }
 
 export const hasInternalDetailPage = (service: Service): boolean =>

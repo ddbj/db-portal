@@ -11,25 +11,25 @@ describe("searchContent — base behavior", () => {
   test("knownPageTitle_returnsPageHit", () => {
     const results = searchContent("BioProject", "ja")
     const pageHit = results.find((r) =>
-      r.kind === "page" && r.pageUrlPath === "/databases/bioproject",
+      r.kind === "page" && r.pageUrlPath === "/bioproject",
     )
     expect(pageHit).toBeDefined()
-    expect(pageHit?.urlPath).toBe("/databases/bioproject")
+    expect(pageHit?.urlPath).toBe("/bioproject")
     expect(pageHit?.title).toBe("BioProject")
-    expect(pageHit?.section).toBe("databases")
+    expect(pageHit?.section).toBe("bioproject")
     expect(pageHit?.anchor).toBeUndefined()
   })
 
   test("h2Heading_returnsSectionHitWithAnchor", () => {
-    // "受け付けるデータ" is an h2 in /databases/bioproject (page-contents/databases/bioproject/index.md)
+    // "受け付けるデータ" is an h2 in /bioproject (page-contents/bioproject/index.md)
     const results = searchContent("受け付けるデータ", "ja")
     const sectionHit = results.find((r) =>
-      r.kind === "section" && r.pageUrlPath === "/databases/bioproject",
+      r.kind === "section" && r.pageUrlPath === "/bioproject",
     )
     expect(sectionHit).toBeDefined()
     expect(sectionHit?.anchor).toBeDefined()
     expect(sectionHit?.urlPath).toBe(
-      `/databases/bioproject#${sectionHit?.anchor ?? ""}`,
+      `/bioproject#${sectionHit?.anchor ?? ""}`,
     )
     expect(sectionHit?.pageTitle).toBe("BioProject")
     expect(sectionHit?.title).toContain("受け付けるデータ")
@@ -73,7 +73,7 @@ describe("searchContent — i18n", () => {
   test("englishQuery_onEnIndex_returnsEnglishTitles", () => {
     const results = searchContent("BioProject", "en")
     const pageHit = results.find((r) =>
-      r.kind === "page" && r.pageUrlPath === "/databases/bioproject",
+      r.kind === "page" && r.pageUrlPath === "/bioproject",
     )
     expect(pageHit?.title).toBe("BioProject")
     expect(pageHit?.pageTitle).toBe("BioProject")

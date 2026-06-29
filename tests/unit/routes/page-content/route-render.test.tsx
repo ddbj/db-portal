@@ -8,22 +8,22 @@ import {
 import { describe, expect, test } from "vitest"
 
 import { createI18nInstance, LangProvider } from "~/lib/i18n"
-import DatabaseSlugRoute, { loader } from "~/routes/databases/$slug"
+import PageContentRoute, { loader } from "~/routes/page-content/route"
 
-const callLoader = (slug: string | undefined): { slug: string } =>
+const callLoader = (splat: string | undefined): { urlPath: string } =>
   loader({
-    params: slug === undefined ? {} : { slug },
-    request: new Request(`http://localhost/databases/${slug ?? ""}`),
+    params: splat === undefined ? {} : { "*": splat },
+    request: new Request(`http://localhost/${splat ?? ""}`),
     context: {},
   } as unknown as LoaderFunctionArgs)
 
-const renderRoute = (slug: string, lang: "ja" | "en" = "ja"): RenderResult => {
-  const data = callLoader(slug)
+const renderRoute = (splat: string, lang: "ja" | "en" = "ja"): RenderResult => {
+  const data = callLoader(splat)
   const router = createMemoryRouter(
-    [{ path: "/databases/:slug", id: "db", loader, Component: DatabaseSlugRoute }],
+    [{ path: "/*", id: "pc", loader, Component: PageContentRoute }],
     {
-      initialEntries: [`/databases/${slug}`],
-      hydrationData: { loaderData: { db: data } },
+      initialEntries: [`/${splat}`],
+      hydrationData: { loaderData: { pc: data } },
     },
   )
   const i18n = createI18nInstance(lang)
@@ -37,13 +37,17 @@ const renderRoute = (slug: string, lang: "ja" | "en" = "ja"): RenderResult => {
   )
 }
 
-describe("databases/$slug loader", () => {
-  test("loader_knownSlug_returnsSlug", () => {
-    expect(callLoader("bioproject")).toEqual({ slug: "bioproject" })
-    expect(callLoader("biosample")).toEqual({ slug: "biosample" })
+describe("page-content loader", () => {
+  test("loader_knownPath_returnsUrlPath", () => {
+    expect(callLoader("bioproject")).toEqual({ urlPath: "/bioproject" })
+    expect(callLoader("biosample")).toEqual({ urlPath: "/biosample" })
   })
 
-  test("loader_unknownSlug_throws404Response", () => {
+  test("loader_nestedKnownPath_returnsUrlPath", () => {
+    expect(callLoader("policy/term-of-use")).toEqual({ urlPath: "/policy/term-of-use" })
+  })
+
+  test("loader_unknownPath_throws404Response", () => {
     let thrown: unknown
     try {
       callLoader("does-not-exist")
@@ -54,7 +58,7 @@ describe("databases/$slug loader", () => {
     expect((thrown as Response).status).toBe(404)
   })
 
-  test("loader_emptySlugParam_throws404Response", () => {
+  test("loader_emptySplatParam_throws404Response", () => {
     let thrown: unknown
     try {
       callLoader(undefined)
@@ -66,8 +70,8 @@ describe("databases/$slug loader", () => {
   })
 })
 
-describe("databases/$slug route render", () => {
-  test("DatabaseSlugRoute_bioprojectJa_rendersTitleSubtitleAndBody", async () => {
+describe("page-content route render", () => {
+  test("PageContentRoute_bioprojectJa_rendersTitleSubtitleAndBody", async () => {
     renderRoute("bioproject", "ja")
     expect(
       await screen.findByRole("heading", { name: "BioProject", level: 1 }),
@@ -78,27 +82,27 @@ describe("databases/$slug route render", () => {
     expect(screen.getByRole("heading", { name: "BioProject とは", level: 2 })).toBeInTheDocument()
   })
 
-  test("DatabaseSlugRoute_biosampleEn_rendersEnglishTitleAndDescription", async () => {
+  test("PageContentRoute_biosampleEn_rendersEnglishTitle", async () => {
     renderRoute("biosample", "en")
     expect(
       await screen.findByRole("heading", { name: "BioSample", level: 1 }),
     ).toBeInTheDocument()
   })
 
-  test("DatabaseSlugRoute_bioprojectJa_rendersHeadingsInBody", async () => {
+  test("PageContentRoute_bioprojectJa_rendersHeadingsInBody", async () => {
     renderRoute("bioproject", "ja")
     expect(
       await screen.findByRole("heading", { name: "アクセッション番号", level: 2 }),
     ).toBeInTheDocument()
   })
 
-  test("DatabaseSlugRoute_bioprojectJa_rendersCallout", async () => {
+  test("PageContentRoute_bioprojectJa_rendersCallout", async () => {
     renderRoute("bioproject", "ja")
     await screen.findByRole("heading", { name: "BioProject", level: 1 })
     expect(screen.getByText(/登録ナビ/)).toBeInTheDocument()
   })
 
-  test("DatabaseSlugRoute_bioprojectJa_rendersInternalLinksInBody", async () => {
+  test("PageContentRoute_bioprojectJa_rendersInternalLinksInBody", async () => {
     renderRoute("bioproject", "ja")
     await screen.findByRole("heading", { name: "BioProject", level: 1 })
     const link = screen.getByRole("link", { name: "登録ナビ" })

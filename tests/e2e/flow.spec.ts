@@ -23,8 +23,8 @@ test.describe("Flow (cross-cutting) Domain", () => {
       timeout: 15_000,
     })
 
-    // 手順 4: /databases/bioproject を開く (検索結果 route とは loader を共有しないホップ)。
-    await page.goto("/databases/bioproject")
+    // 手順 4: /bioproject を開く (検索結果 route とは loader を共有しないホップ)。
+    await page.goto("/bioproject")
     await expect(
       page.getByRole("heading", { name: "BioProject", level: 1 }),
     ).toBeVisible({ timeout: 10_000 })
@@ -54,7 +54,7 @@ test.describe("Flow (cross-cutting) Domain", () => {
     await expect(nav.getByRole("link", { name: "Submit" })).toBeVisible()
 
     // 手順 2: 続けて各 route を開く (クエリ無し)。/en prefix が一切付かないこと。
-    for (const path of ["/search", "/news", "/services", "/databases/bioproject"]) {
+    for (const path of ["/search", "/news", "/services", "/bioproject"]) {
       await page.goto(path)
       await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, "\\/")}$`))
       await expect(page.locator("html")).toHaveAttribute("lang", "en")
@@ -151,8 +151,8 @@ test.describe("Flow (cross-cutting) Domain", () => {
     const xml = await sitemap.text()
     expect(xml).toContain("<urlset")
     // app/content/databases の実 slug を反映した ja/en の <loc>。
-    expect(xml).toMatch(/\/databases\/bioproject\?lang=ja/)
-    expect(xml).toMatch(/\/databases\/bioproject\?lang=en/)
+    expect(xml).toMatch(/\/bioproject\?lang=ja/)
+    expect(xml).toMatch(/\/bioproject\?lang=en/)
     // 各 url が ja/en/x-default の 3 alternates を持つ。
     expect(xml).toContain('hreflang="ja"')
     expect(xml).toContain('hreflang="en"')

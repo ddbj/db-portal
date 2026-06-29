@@ -51,10 +51,10 @@ test.describe("Auth Domain (authenticated)", () => {
       (r) => r.url().includes("/api/auth/callback") && r.request().method() === "GET",
       { timeout: 30_000 },
     )
-    await loginViaKeycloak(page, "/databases/bioproject")
+    await loginViaKeycloak(page, "/bioproject")
     const callback = await callbackResponse
 
-    await expect(page).toHaveURL(/\/databases\/bioproject$/)
+    await expect(page).toHaveURL(/\/bioproject$/)
 
     const setCookie = (await callback.headersArray())
       .filter((h) => h.name.toLowerCase() === "set-cookie")

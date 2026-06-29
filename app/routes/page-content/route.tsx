@@ -9,6 +9,7 @@ import { PageTitle, Section } from "~/ui"
 
 export const handle = {
   titleResolver: "page-content",
+  breadcrumbResolver: "page-content",
   i18n: { en: "complete" },
 } as const
 

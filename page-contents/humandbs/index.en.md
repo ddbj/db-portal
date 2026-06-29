@@ -7,7 +7,7 @@ description: The NBDC Human Database handles policy review and Data Submission/U
 
 The NBDC Human Database (NBDC ヒトデータベース) is operated by the Database Division for Life Science (DBCLS), BioData Science Initiative (BSI), National Institute of Genetics (NIG), Research Organization of Information and Systems (ROIS). It promotes sharing and reuse of human-derived data, accepting diverse human data including genome sequences, SNP arrays, epigenomic data, brain images, and clinical information, and routing them to the appropriate distribution archive (JGA / DRA) according to each access class.
 
-It acts as the **front gate for registering controlled-access human data in [JGA](/databases/jga)**: policy review and application intake happen at NBDC Human Database, and approved data is then released through JGA.
+It acts as the **front gate for registering controlled-access human data in [JGA](/jga)**: policy review and application intake happen at NBDC Human Database, and approved data is then released through JGA.
 
 > [!NOTE]
 > To decide between unrestricted and controlled access, or to identify which application you need, use the [Submit Navigator](/submit) to narrow down the destination archive by access class and data type.
@@ -27,9 +27,9 @@ Data is accepted under the following access classes, which determine the distrib
 
 | Access class | Distributed via | Use |
 |---|---|---|
-| Unrestricted | [DRA](/databases/dra) | Reference sequences and other data usable without restriction |
-| Restricted Type I | [JGA](/databases/jga) | Data requiring a use application under the NBDC standard policy (JGAP000001) |
-| Restricted Type II | [JGA](/databases/jga) | Data requiring a use application under a stricter custom policy (a dedicated JGAP) |
+| Unrestricted | [DRA](/dra) | Reference sequences and other data usable without restriction |
+| Restricted Type I | [JGA](/jga) | Data requiring a use application under the NBDC standard policy (JGAP000001) |
+| Restricted Type II | [JGA](/jga) | Data requiring a use application under a stricter custom policy (a dedicated JGAP) |
 
 > [!WARNING]
 > JGA does not accept submissions on its own. **Approval at NBDC Human Database is a prerequisite for JGA registration.** To register controlled-access data in JGA, you must first proceed through the NBDC Human Database Data Submission application.
@@ -65,8 +65,8 @@ Data submission to NBDC Human Database typically proceeds through these seven st
 4. **Submit through the application system** — Send the Data Submission application via the online portal.
 5. **Receive review results** — Reviewed by the Data Access Committee (DAC); usually around two weeks once all documents are in.
 6. **Upload data** — The destination is decided by the access class:
-    - Unrestricted → upload to [DRA](/databases/dra)
-    - Restricted → upload to [JGA](/databases/jga)
+    - Unrestricted → upload to [DRA](/dra)
+    - Restricted → upload to [JGA](/jga)
 7. **Update applications** — Use the `J-DS` number to amend or add data after approval.
 
 ## Policy (NBDC standard / custom JGAP)
@@ -103,12 +103,12 @@ Main obligations after use approval:
 
 ## Relationship with JGA
 
-NBDC Human Database and [JGA](/databases/jga) form a clear division of labor: **NBDC is where policy review happens, JGA is where the data itself lives.**
+NBDC Human Database and [JGA](/jga) form a clear division of labor: **NBDC is where policy review happens, JGA is where the data itself lives.**
 
 - **At NBDC Human Database**: Receives Data Submission applications, has the Data Access Committee review policy adequacy and documents, and approves submissions. Issues the project-level identifier `HUM####.vN`.
 - **At JGA**: Stores and distributes the approved data as Study (`JGAS######`) and Dataset (`JGAD######`). Each Dataset is bound to one `JGAP######` (standard or custom).
 
-NGS data classified as unrestricted is routed to [DRA](/databases/dra) instead of JGA, as part of this same routing decision.
+NGS data classified as unrestricted is routed to [DRA](/dra) instead of JGA, as part of this same routing decision.
 
 ## Preparation
 
@@ -134,4 +134,4 @@ The Data Submission application goes more smoothly when the following are ready 
 - [FAQ](https://humandbs.dbcls.jp/faq)
 - [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
 - [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission.html)
-- Related services: [JGA](/databases/jga) / [DRA](/databases/dra) / [DDBJ Center](/databases/ddbj)
+- Related services: [JGA](/jga) / [DRA](/dra) / [DDBJ Center](/ddbj)

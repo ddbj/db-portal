@@ -6,11 +6,12 @@ import { Breadcrumb } from "~/shell/breadcrumb"
 
 import { renderWithStub } from "../_helpers/render"
 
-// Mirrors the real app/routes.ts: `databases/:slug` is a single flat route whose
-// handle carries only `breadcrumbResolver: "database-content"`. There is no parent
-// `databases` route contributing a static `breadcrumbI18nKey`, so the rendered trail
-// is exactly two levels: Home > <database title> (no intermediate "データベース" crumb).
-const renderRealDatabaseRoute = (
+// app/routes.ts と同じ構造をミラーリング。docs layout (handle: docs-root) の
+// 配下に catch-all `*` → page-content/route.tsx (handle: page-content) が並ぶ。
+// page-content resolver は URL を segment 単位で分解し、各 segment の page を
+// 見つけて breadcrumb 配列を返す。なので /bioproject の trail は
+// Home > Docs > BioProject の 3 段。
+const renderRealPageContentRoute = (
   initialEntries: string[],
   lang: "ja" | "en" = "ja",
 ) =>
@@ -26,9 +27,15 @@ const renderRealDatabaseRoute = (
         ),
         children: [
           {
-            path: "databases/:slug",
-            handle: { breadcrumbResolver: "database-content" },
-            Component: () => <span>db page</span>,
+            handle: { breadcrumbResolver: "docs-root" },
+            Component: () => <Outlet />,
+            children: [
+              {
+                path: "*",
+                handle: { breadcrumbResolver: "page-content" },
+                Component: () => <span>page</span>,
+              },
+            ],
           },
         ],
       },
@@ -38,71 +45,70 @@ const renderRealDatabaseRoute = (
   })
 
 describe("Breadcrumb real route config", () => {
-  test("Breadcrumb_flatDatabaseSlug_ja_rendersHomeThenDbTitleOnly", () => {
-    const { container } = renderRealDatabaseRoute(["/databases/bioproject"], "ja")
+  test("Breadcrumb_pageContent_ja_rendersHomeDocsThenDbTitle", () => {
+    renderRealPageContentRoute(["/bioproject"], "ja")
 
     const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
     const crumbs = within(nav).getAllByRole("listitem")
-    expect(crumbs).toHaveLength(2)
+    expect(crumbs).toHaveLength(3)
 
-    const home = within(nav).getByRole("link", { name: "ホーム" })
-    expect(home).toHaveAttribute("href", "/")
+    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
+    expect(within(nav).getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
 
     const current = within(nav).getByText("BioProject")
     expect(current).toHaveAttribute("aria-current", "page")
     expect(current.tagName).toBe("SPAN")
-
-    // The flat route has no static parent crumb, so "データベース" must never appear.
-    expect(within(nav).queryByText("データベース")).toBeNull()
-    expect(within(container).queryByRole("link", { name: "BioProject" })).toBeNull()
   })
 
-  test("Breadcrumb_flatDatabaseSlug_en_rendersHomeThenDbTitleOnly", () => {
-    const { container } = renderRealDatabaseRoute(["/databases/biosample"], "en")
+  test("Breadcrumb_pageContent_en_rendersHomeDocsThenDbTitle", () => {
+    renderRealPageContentRoute(["/biosample"], "en")
 
     const nav = screen.getByRole("navigation", { name: "Breadcrumb" })
     const crumbs = within(nav).getAllByRole("listitem")
-    expect(crumbs).toHaveLength(2)
+    expect(crumbs).toHaveLength(3)
 
     expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
+    expect(within(nav).getByRole("link", { name: "Knowledge Base" })).toHaveAttribute("href", "/docs")
 
     const current = within(nav).getByText("BioSample")
     expect(current).toHaveAttribute("aria-current", "page")
-    expect(current.tagName).toBe("SPAN")
-
-    expect(within(nav).queryByText("Databases")).toBeNull()
-    expect(within(container).queryByText("データベース")).toBeNull()
   })
 
-  test("Breadcrumb_flatDatabaseSlug_exactlyOneSeparatorBetweenTwoCrumbs", () => {
-    const { container } = renderRealDatabaseRoute(["/databases/bioproject"], "ja")
+  test("Breadcrumb_nestedPageContent_rendersAllAncestorCrumbs", () => {
+    renderRealPageContentRoute(["/policy/term-of-use"], "ja")
+
+    const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
+    const crumbs = within(nav).getAllByRole("listitem")
+    expect(crumbs).toHaveLength(4)
+
+    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
+    expect(within(nav).getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
+    expect(within(nav).getByRole("link", { name: "BSI ウェブサイトポリシー" })).toHaveAttribute(
+      "href",
+      "/policy",
+    )
+
+    const current = within(nav).getByText("利用規約")
+    expect(current).toHaveAttribute("aria-current", "page")
+  })
+
+  test("Breadcrumb_pageContent_separatorBetweenCrumbs", () => {
+    const { container } = renderRealPageContentRoute(["/bioproject"], "ja")
 
     const items = container.querySelectorAll("ol > li")
     const separators = container.querySelectorAll("ol > li > span[aria-hidden='true']")
-    expect(items).toHaveLength(2)
+    expect(items).toHaveLength(3)
     expect(separators).toHaveLength(items.length - 1)
     separators.forEach((sep) => {
       expect(sep).toHaveTextContent("›")
     })
   })
 
-  test("Breadcrumb_flatDatabaseSlug_currentCrumbHrefMatchesPathname", () => {
-    renderRealDatabaseRoute(["/databases/bioproject"], "ja")
+  test("Breadcrumb_unknownPath_lastCrumbFallsBackToSegment", () => {
+    renderRealPageContentRoute(["/__not_a_real_page__"], "ja")
 
-    // The resolver sets the crumb href to the match pathname, but the last crumb is a
-    // non-link <span>, so only the Home link exposes an href in the trail.
-    const links = screen.getAllByRole("link")
-    expect(links).toHaveLength(1)
-    expect(links[0]).toHaveAttribute("href", "/")
-  })
-
-  test("Breadcrumb_unknownDatabaseSlug_resolverReturnsNull_noCrumbRendered", () => {
-    const { container } = renderRealDatabaseRoute(["/databases/__not_a_real_db__"], "ja")
-
-    // The only dynamic crumb resolves to null for an unknown slug, leaving just Home,
-    // which the component suppresses (length <= 1 renders nothing).
-    expect(container.querySelector("nav")).toBeNull()
-    expect(screen.queryByText("__not_a_real_db__")).toBeNull()
-    expect(screen.queryByText("データベース")).toBeNull()
+    const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
+    const current = within(nav).getByText("__not_a_real_page__")
+    expect(current).toHaveAttribute("aria-current", "page")
   })
 })

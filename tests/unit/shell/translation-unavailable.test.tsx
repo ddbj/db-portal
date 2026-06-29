@@ -35,12 +35,12 @@ describe("TranslationUnavailable", () => {
       "ja",
       [
         {
-          path: "/databases/:slug",
+          path: "/:slug",
           handle: { i18n: { en: "missing" } },
           Component: () => <TranslationUnavailable />,
         },
       ],
-      "/databases/bioproject",
+      "/bioproject",
     )
     expect(container.textContent).toBe("")
   })
@@ -50,12 +50,12 @@ describe("TranslationUnavailable", () => {
       "en",
       [
         {
-          path: "/en/databases/:slug",
+          path: "/en/:slug",
           handle: { i18n: { en: "complete" } },
           Component: () => <TranslationUnavailable />,
         },
       ],
-      "/en/databases/bioproject",
+      "/en/bioproject",
     )
     expect(container.textContent).toBe("")
   })
@@ -65,12 +65,12 @@ describe("TranslationUnavailable", () => {
       "en",
       [
         {
-          path: "/en/databases/:slug",
+          path: "/en/:slug",
           handle: { i18n: { en: "missing" } },
           Component: () => <TranslationUnavailable />,
         },
       ],
-      "/en/databases/bioproject",
+      "/en/bioproject",
     )
     const banner = screen.getByRole("status")
     expect(banner).toHaveAttribute("aria-live", "polite")
@@ -86,12 +86,12 @@ describe("TranslationUnavailable", () => {
       "en",
       [
         {
-          path: "/en/databases/:slug",
+          path: "/en/:slug",
           handle: { i18n: { en: "partial" } },
           Component: () => <TranslationUnavailable />,
         },
       ],
-      "/en/databases/bioproject",
+      "/en/bioproject",
     )
     const btn = screen.getByRole("button", { name: /Switch to Japanese/i })
     expect(btn.getAttribute("type")).toBe("submit")
@@ -108,11 +108,11 @@ describe("TranslationUnavailable", () => {
       "en",
       [
         {
-          path: "/en/databases/:slug",
+          path: "/en/:slug",
           Component: () => <TranslationUnavailable />,
         },
       ],
-      "/en/databases/bioproject",
+      "/en/bioproject",
     )
     expect(container.textContent).toBe("")
   })

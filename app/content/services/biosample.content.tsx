@@ -7,7 +7,7 @@ export default {
     ja: "生物試料のメタデータ",
     en: "Biological sample metadata",
   },
-  link: { kind: "internal", to: "/databases/biosample" },
+  link: { kind: "internal", to: "/biosample" },
   submit: {
     service: "biosample",
     externalUrl: {

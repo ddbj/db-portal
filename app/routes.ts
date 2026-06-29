@@ -11,7 +11,7 @@ export default [
   route("services", "routes/services/route.tsx"),
   layout("routes/docs/layout.tsx", [
     route("docs", "routes/docs/index.tsx"),
-    route("databases/:slug", "routes/databases/$slug.tsx"),
+    route("*", "routes/page-content/route.tsx"),
   ]),
   route("api/set-lang", "routes/api.set-lang.ts"),
   layout("routes/auth/layout.tsx", [
@@ -21,5 +21,4 @@ export default [
   ]),
   ...designRoutes(),
   ...devContentRoutes(),
-  route("*", "routes/page-content/route.tsx"),
 ] satisfies RouteConfig

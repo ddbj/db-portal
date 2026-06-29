@@ -1,6 +1,6 @@
 import type { MetaArgs, MetaDescriptor } from "react-router"
 
-import { getPageByPath, getPageBySlug } from "./markdown-loader"
+import { getPageByPath } from "./markdown-loader"
 
 const BRAND = "BSI"
 
@@ -31,15 +31,6 @@ export const buildTitle = (segments: readonly string[]): string =>
     : [...segments].reverse().concat(BRAND).join(" | ")
 
 const titleResolvers: Record<string, TitleResolver> = {
-  "database-content": ({ params }) => {
-    const slug = params.slug
-    if (slug === undefined) return null
-    const page = getPageBySlug("databases", slug)
-    if (page === undefined) return null
-    const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
-
-    return ["Contents", "Databases", title]
-  },
   "page-content": ({ params }) => {
     const splat = params["*"]
     if (splat === undefined || splat === "") return null
@@ -47,7 +38,7 @@ const titleResolvers: Record<string, TitleResolver> = {
     if (page === undefined) return null
     const title = page.frontmatter.en?.title ?? page.frontmatter.ja.title
 
-    return [title]
+    return ["Contents", title]
   },
 }
 

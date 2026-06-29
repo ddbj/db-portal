@@ -237,24 +237,24 @@ describe("internalDetailHref / hasInternalDetailPage", () => {
   })
 
   test("internalDetailHref_returnsDatabasesPathForRegularServices", () => {
-    expect(internalDetailHref("bioproject")).toBe("/databases/bioproject")
-    expect(internalDetailHref("biosample")).toBe("/databases/biosample")
-    expect(internalDetailHref("dra")).toBe("/databases/dra")
-    expect(internalDetailHref("ddbj")).toBe("/databases/ddbj")
-    expect(internalDetailHref("gea")).toBe("/databases/gea")
-    expect(internalDetailHref("jga")).toBe("/databases/jga")
-    expect(internalDetailHref("metabobank")).toBe("/databases/metabobank")
-    expect(internalDetailHref("humandbs")).toBe("/databases/humandbs")
+    expect(internalDetailHref("bioproject")).toBe("/bioproject")
+    expect(internalDetailHref("biosample")).toBe("/biosample")
+    expect(internalDetailHref("dra")).toBe("/dra")
+    expect(internalDetailHref("ddbj")).toBe("/ddbj")
+    expect(internalDetailHref("gea")).toBe("/gea")
+    expect(internalDetailHref("jga")).toBe("/jga")
+    expect(internalDetailHref("metabobank")).toBe("/metabobank")
+    expect(internalDetailHref("humandbs")).toBe("/humandbs")
   })
 
   test("internalDetailHref_umbrellaBioprojectDeepLinksToBioprojectAnchor", () => {
     expect(internalDetailHref("umbrella-bioproject"))
-      .toBe("/databases/bioproject#umbrella-bioproject")
+      .toBe("/bioproject#umbrella-bioproject")
   })
 
   test("internalDetailHref_nsssDeepLinksToDdbjAnchor", () => {
     expect(internalDetailHref("nsss"))
-      .toBe("/databases/ddbj#nsss")
+      .toBe("/ddbj#nsss")
   })
 
   test("internalDetailHref_andHasInternalDetailPage_agreeForEveryService", () => {

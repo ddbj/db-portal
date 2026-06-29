@@ -7,14 +7,14 @@ description: BioSample は DDBJ の実験データを得るために用いられ
 
 BioSample は、DDBJ の一次データベースに登録された実験データを得るために用いられた生物試料 (サンプル) の記述情報を集中して管理するデータベースです。INSDC 三拠点 (DDBJ / EBI / NCBI) で双方向にミラーされ、いずれかに登録すれば他拠点でも保持されます。
 
-[BioProject](/databases/bioproject) と並ぶメタデータ層で、配下の実データ ([DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ 塩基配列](/databases/ddbj)) から参照されます。
+[BioProject](/bioproject) と並ぶメタデータ層で、配下の実データ ([DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ 塩基配列](/ddbj)) から参照されます。
 
 > [!NOTE]
 > 自分の研究にどのサービスが必要かが分からない場合は、[登録ナビ](/submit) でフローチャート形式に絞り込めます。
 
 ## 受け付けるデータ
 
-受け付けるのは試料そのものの記述情報 (属性メタデータ) です。配列データや実験ファイルは BioSample には登録せず、[DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ 塩基配列](/databases/ddbj) 側に登録します。
+受け付けるのは試料そのものの記述情報 (属性メタデータ) です。配列データや実験ファイルは BioSample には登録せず、[DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ 塩基配列](/ddbj) 側に登録します。
 
 | 試料タイプ | 例 |
 | --- | --- |
@@ -83,20 +83,20 @@ BioSample では試料タイプに応じた **package** を 1 つ選ぶことで
 - 試料タイプに対応する **package** を 1 つ決定 (混在不可)
 - 属性のタブ区切りテキストファイル (package のテンプレートから作成)
 - 必須属性: `organism` (NCBI Taxonomy scientific name) / `collection_date` / `geo_loc_name` 他、package が指定する項目
-- ゲノム塩基配列を [DDBJ](/databases/ddbj) に登録予定なら `locus_tag_prefix` を希望値で記入 (スタッフが NCBI に予約申請)
+- ゲノム塩基配列を [DDBJ](/ddbj) に登録予定なら `locus_tag_prefix` を希望値で記入 (スタッフが NCBI に予約申請)
 
 ## INSDC との共有と公開連鎖
 
-BioSample は INSDC 三拠点で内容が共有される公開前提のメタデータです。ヒト個人レベルの制限公開試料は [JGA](/databases/jga) 側で扱い、BioSample には登録しません。
+BioSample は INSDC 三拠点で内容が共有される公開前提のメタデータです。ヒト個人レベルの制限公開試料は [JGA](/jga) 側で扱い、BioSample には登録しません。
 
 公開トリガーは BioProject と共通の以下の挙動を持ちます。
 
 - 単体の BioProject / BioSample の公開は、配下データの公開をトリガーしません。
-- [DDBJ](/databases/ddbj) / [DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) の公開は、リンクされた BioProject / BioSample の公開を自動的にトリガーします。
+- [DDBJ](/ddbj) / [DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) の公開は、リンクされた BioProject / BioSample の公開を自動的にトリガーします。
 - BioSample 公開時、`derived_from` 属性で参照されている上流 BioSample も連鎖して公開されます。
 
 > [!WARNING]
-> BioSample は公開前提のデータベースです。ヒト個人の制限公開試料を扱う場合は [JGA](/databases/jga) を選択してください。
+> BioSample は公開前提のデータベースです。ヒト個人の制限公開試料を扱う場合は [JGA](/jga) を選択してください。
 
 ## 登録後の更新
 
@@ -113,4 +113,4 @@ BioSample は INSDC 三拠点で内容が共有される公開前提のメタデ
 - 更新申請 FAQ: <https://www.ddbj.nig.ac.jp/faq/en/sample-update-e.html>
 - D-way 登録ポータル: <https://ddbj.nig.ac.jp/D-way>
 - DDBJ アカウント取得: <https://www.ddbj.nig.ac.jp/ddbj-account.html>
-- 関連サービス: [BioProject](/databases/bioproject) / [DRA](/databases/dra) / [GEA](/databases/gea) / [MetaboBank](/databases/metabobank) / [DDBJ 塩基配列](/databases/ddbj) / [JGA](/databases/jga)
+- 関連サービス: [BioProject](/bioproject) / [DRA](/dra) / [GEA](/gea) / [MetaboBank](/metabobank) / [DDBJ 塩基配列](/ddbj) / [JGA](/jga)

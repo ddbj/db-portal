@@ -6,7 +6,7 @@ import {
   type BreadcrumbResolver,
   useBreadcrumb,
 } from "~/lib/content/breadcrumb"
-import { getPageBySlug } from "~/lib/content/markdown-loader"
+import { getPageByPath } from "~/lib/content/markdown-loader"
 import { useLang, useT } from "~/lib/i18n"
 
 type BreadcrumbProps = {
@@ -20,20 +20,29 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
     label: t("breadcrumb.docs"),
     href: "/docs",
   })
-  const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
-    const slug = params.slug
-    if (slug === undefined) return null
-    const page = getPageBySlug("databases", slug)
-    if (page === undefined) return null
-    const fm = lang === "en" && page.frontmatter.en
-      ? page.frontmatter.en
-      : page.frontmatter.ja
+  // catch-all で受ける page-contents 配下のページの breadcrumb を、URL の
+  // 各 segment について順に組み立てる。中間 segment はそのセグメントを
+  // urlPath とする index ページがあればそのタイトルとリンクで、なければ
+  // クリック不可のラベルだけで表現する。
+  const pageContentResolver: BreadcrumbResolver = ({ pathname }) => {
+    const segments = pathname.split("/").filter(Boolean)
+    if (segments.length === 0) return null
+    const items: BreadcrumbItem[] = []
+    for (let i = 0; i < segments.length; i++) {
+      const subPath = `/${segments.slice(0, i + 1).join("/")}`
+      const page = getPageByPath(subPath)
+      const fm = page
+        ? (lang === "en" && page.frontmatter.en ? page.frontmatter.en : page.frontmatter.ja)
+        : undefined
+      const label = fm?.title ?? segments[i] ?? ""
+      items.push({ label, href: subPath })
+    }
 
-    return { label: fm.title, href: pathname }
+    return items
   }
   const mergedResolvers = {
     "docs-root": docsRootResolver,
-    "database-content": databaseResolver,
+    "page-content": pageContentResolver,
     ...(resolvers ?? {}),
   }
   const raw = useBreadcrumb({ resolvers: mergedResolvers })

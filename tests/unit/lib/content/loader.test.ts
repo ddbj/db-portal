@@ -3,8 +3,8 @@ import { describe, expect, test } from "vitest"
 import {
   collectFromModules,
   formatValidationErrors,
-  getPageBySlug,
-  listPagesBySection,
+  getPageByPath,
+  listAllPages,
   validateAllPages,
 } from "~/lib/content"
 import { PageFrontmatter } from "~/schemas/content/page-content"
@@ -40,23 +40,31 @@ describe("formatValidationErrors", () => {
   })
 })
 
-describe("getPageBySlug / listPagesBySection / validateAllPages", () => {
-  test("getPageBySlug_unknownSlug_returnsUndefined", () => {
-    expect(getPageBySlug("databases", "nope")).toBeUndefined()
+describe("getPageByPath / listAllPages / validateAllPages", () => {
+  test("getPageByPath_unknownPath_returnsUndefined", () => {
+    expect(getPageByPath("/nope")).toBeUndefined()
   })
 
-  test("getPageBySlug_bioproject_returnsContent", () => {
-    const page = getPageBySlug("databases", "bioproject")
+  test("getPageByPath_bioproject_returnsContent", () => {
+    const page = getPageByPath("/bioproject")
     expect(page?.slug).toBe("bioproject")
     expect(page?.frontmatter.ja.title).toBe("BioProject")
   })
 
-  test("listPagesBySection_includesAllDatabases", () => {
-    const slugs = listPagesBySection("databases").map((p) => p.slug).sort()
-    expect(slugs).toEqual([
+  test("listAllPages_includesAllDatabases", () => {
+    const paths = listAllPages().map((p) => p.urlPath)
+    for (const slug of [
       "bioproject", "biosample", "ddbj", "dra", "gea",
       "humandbs", "jga", "metabobank",
-    ].sort())
+    ]) {
+      expect(paths).toContain(`/${slug}`)
+    }
+  })
+
+  test("listAllPages_includesNestedPolicyTermOfUse", () => {
+    const paths = listAllPages().map((p) => p.urlPath)
+    expect(paths).toContain("/policy")
+    expect(paths).toContain("/policy/term-of-use")
   })
 
   test("validateAllPages_returnsOk", () => {
@@ -64,15 +72,15 @@ describe("getPageBySlug / listPagesBySection / validateAllPages", () => {
     expect(result.ok).toBe(true)
   })
 
-  test("getPageBySlug_bioproject_hasEnglishVersion", () => {
-    const page = getPageBySlug("databases", "bioproject")
+  test("getPageByPath_bioproject_hasEnglishVersion", () => {
+    const page = getPageByPath("/bioproject")
     expect(page?.frontmatter.en).toBeDefined()
     expect(page?.frontmatter.en?.title).toBe("BioProject")
     expect(page?.html.en).toBeDefined()
   })
 
-  test("getPageBySlug_bioproject_htmlContainsRenderedMarkdown", () => {
-    const page = getPageBySlug("databases", "bioproject")
+  test("getPageByPath_bioproject_htmlContainsRenderedMarkdown", () => {
+    const page = getPageByPath("/bioproject")
     expect(page?.html.ja).toContain("<h2 id=")
     expect(page?.html.ja).toContain("BioProject とは")
   })

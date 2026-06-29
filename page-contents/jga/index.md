@@ -1,11 +1,11 @@
 ---
-title: JGA (Japanese Genotype-phenotype Archive)
+title: JGA
 description: DDBJ Center が運用する、ヒト個人レベルの遺伝学的・表現型データのための制限公開アーカイブ。NBDC ヒトデータベースで承認された利用制限ポリシー付きの匿名化データのみを受け付け、利用にはヒトデータ審査委員会の審査が必要です。
 ---
 
 ## JGA とは
 
-Japanese Genotype-phenotype Archive (JGA) は、ヒト個人レベルの遺伝学的データと表現型データを保管・共有するための制限公開アーカイブです。DDBJ Center (Bioinformation and DDBJ Center) が運用し、登録のための提供申請と利用のための利用申請はいずれも [NBDC ヒトデータベース](/databases/humandbs) で受け付け、ヒトデータ審査委員会が審査します。研究参加者の同意の範囲を超えて公開できないデータを、利用制限ポリシー付きで保管し、承認された利用者にのみ提供します。
+Japanese Genotype-phenotype Archive (JGA) は、ヒト個人レベルの遺伝学的データと表現型データを保管・共有するための制限公開アーカイブです。DDBJ Center (Bioinformation and DDBJ Center) が運用し、登録のための提供申請と利用のための利用申請はいずれも [NBDC ヒトデータベース](/humandbs) で受け付け、ヒトデータ審査委員会が審査します。研究参加者の同意の範囲を超えて公開できないデータを、利用制限ポリシー付きで保管し、承認された利用者にのみ提供します。
 
 EBI EGA や NCBI dbGaP と同種の制限公開アーカイブにあたりますが、3 つのアーカイブ間でデータの相互交換は行われません。Study / Dataset / Policy の概要メタデータは DDBJ Search 上で誰でも閲覧できる一方、シークエンスファイル等の実データは利用申請が承認された利用者のみがダウンロードできます。
 
@@ -33,7 +33,7 @@ EBI EGA や NCBI dbGaP と同種の制限公開アーカイブにあたります
 
 ## データ構造
 
-JGA は [DRA](/databases/dra) で使われる BioProject / BioSample のモデルを採用せず、[Sequence Read Archive](https://www.ddbj.nig.ac.jp/dra/metadata.html) のメタデータモデルを拡張した独自のエンティティモデルを持ちます。Study / Sample / Experiment / Data / Analysis / Dataset / Policy の 7 種類のメタデータオブジェクトに加え、登録トランザクションを表す Submission があり、それぞれに独立したアクセッション番号が発行されます。
+JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用せず、[Sequence Read Archive](https://www.ddbj.nig.ac.jp/dra/metadata.html) のメタデータモデルを拡張した独自のエンティティモデルを持ちます。Study / Sample / Experiment / Data / Analysis / Dataset / Policy の 7 種類のメタデータオブジェクトに加え、登録トランザクションを表す Submission があり、それぞれに独立したアクセッション番号が発行されます。
 
 | オブジェクト | 役割 |
 |------------|------|
@@ -94,7 +94,7 @@ JGA は [DRA](/databases/dra) で使われる BioProject / BioSample のモデ�
 
 ## 事前準備
 
-- [NBDC ヒトデータベース](/databases/humandbs) でデータ利用ポリシーの承認を受けておく (必須前提)
+- [NBDC ヒトデータベース](/humandbs) でデータ利用ポリシーの承認を受けておく (必須前提)
 - DDBJ (D-way) アカウントを作成し、SSH 公開鍵を登録する
 - NBDC 申請システムで「データ提出者グループ」を作成し、PI / submitter 全員をメンバーに含める
 - 研究参加者との同意書で公開・利用制限が確認できる、匿名化済みデータを準備する
@@ -102,7 +102,7 @@ JGA は [DRA](/databases/dra) で使われる BioProject / BioSample のモデ�
 
 ## NBDC ヒトデータベースとの関係
 
-JGA は [NBDC ヒトデータベース](/databases/humandbs) と二段階で連動しています。
+JGA は [NBDC ヒトデータベース](/humandbs) と二段階で連動しています。
 
 - **登録前**: 研究で適用する利用制限ポリシーを NBDC ヒトデータベース側で申請し、DBCLS の審査・承認を受けてから JGA への登録に進みます。ポリシー未承認のデータは JGA では受け付けません。
 - **公開時**: JGA データが公開されるのは、対応する NBDC ヒトデータベースの研究公開ページ (hum###### 番号) が公開されたタイミングです。submitter 単独のスケジュールで公開を制御することはできず、公開時期は NBDC ヒトデータベース側の研究公開状況に従います。
@@ -120,5 +120,5 @@ JGA は [NBDC ヒトデータベース](/databases/humandbs) と二段階で連�
 - [submission-excel2xml (Excel → XML 変換ツール)](https://github.com/ddbj/submission-excel2xml)
 - [JGA XML schema (xsd)](https://github.com/ddbj/pub/tree/master/docs/jga)
 - [DDBJ Search での JGA Dataset 検索例](https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000948)
-- [NBDC ヒトデータベース](/databases/humandbs) (登録前のポリシー承認と公開時の連動)
-- [DRA](/databases/dra) (公開ヒトデータ / 非ヒトデータ向け sibling service)
+- [NBDC ヒトデータベース](/humandbs) (登録前のポリシー承認と公開時の連動)
+- [DRA](/dra) (公開ヒトデータ / 非ヒトデータ向け sibling service)

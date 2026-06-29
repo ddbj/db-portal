@@ -8,8 +8,8 @@ describe("buildLoginUrl", () => {
   })
 
   test("buildLoginUrl_returnTo_appendsEncodedParam", () => {
-    expect(buildLoginUrl("/databases/bioproject")).toBe(
-      "/api/auth/login?return_to=%2Fdatabases%2Fbioproject",
+    expect(buildLoginUrl("/bioproject")).toBe(
+      "/api/auth/login?return_to=%2Fbioproject",
     )
   })
 
@@ -26,8 +26,8 @@ describe("buildLogoutUrl", () => {
   })
 
   test("buildLogoutUrl_returnTo_appendsEncodedParam", () => {
-    expect(buildLogoutUrl("/en/databases/bioproject")).toBe(
-      "/api/auth/logout?return_to=%2Fen%2Fdatabases%2Fbioproject",
+    expect(buildLogoutUrl("/en/bioproject")).toBe(
+      "/api/auth/logout?return_to=%2Fen%2Fbioproject",
     )
   })
 })
@@ -50,6 +50,6 @@ describe("buildLoginUrl returnTo sanitization", () => {
   })
 
   test("buildLoginUrl_relativeWithoutSlash_replacedWithRoot", () => {
-    expect(buildLoginUrl("databases/bioproject")).toBe("/api/auth/login?return_to=%2F")
+    expect(buildLoginUrl("bioproject")).toBe("/api/auth/login?return_to=%2F")
   })
 })

@@ -36,7 +36,6 @@ export const en: Resources = {
   breadcrumb: {
     home: "Home",
     docs: "Knowledge Base",
-    databases: "Databases",
   },
   docs: {
     title: "Knowledge Base",
@@ -66,15 +65,6 @@ export const en: Resources = {
     },
     serviceGrid: { heading: "Services" },
     services: { heading: "Services", viewAll: "View all" },
-  },
-  databases: {
-    overviewHeading: "Overview",
-    relatedHeading: "Related databases",
-    externalLinksHeading: "External links",
-    lastUpdatedLabel: "Last updated",
-    notFoundTitle: "Database not found",
-    notFoundDescription: "No page was found for the requested database.",
-    backToTop: "Back to home",
   },
   db: {
     bioproject: { title: "BioProject" },

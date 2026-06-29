@@ -1,5 +1,5 @@
 ---
-title: GEA (Genomic Expression Archive)
+title: GEA
 description: GEA は DDBJ Center の機能ゲノミクスデータの公開アーカイブ。マイクロアレイとシークエンスの 2 経路で発現・エピゲノム・SNP array データを MAGE-TAB 形式で受け付け、E-GEAD-n を発行する。
 ---
 
@@ -28,7 +28,7 @@ GEA は以下の機能ゲノミクス実験を対象とします。
 必須となるファイルは経路によって異なります。
 
 - **Microarray**: raw data と processed data の両方を GEA にアップロードします。
-- **Sequencing**: 解析済み (processed) データが GEA で必須です。raw read は [DRA](/databases/dra) に登録し、GEA からは DRA submission を参照します。
+- **Sequencing**: 解析済み (processed) データが GEA で必須です。raw read は [DRA](/dra) に登録し、GEA からは DRA submission を参照します。
 
 > [!WARNING]
 > BAM / SAM / BED のみを processed data として登録することはできません。発現量行列など定量的なデータが必要です。該当データしかない場合は GEA に事前相談してください。
@@ -42,9 +42,9 @@ GEA には 2 つの登録経路があり、事前に必要な参照物と raw da
 
 | 観点 | Microarray | Sequencing |
 | --- | --- | --- |
-| Raw data の置き場所 | GEA | [DRA](/databases/dra) |
+| Raw data の置き場所 | GEA | [DRA](/dra) |
 | Processed data | GEA に必須 | GEA に必須 |
-| 事前参照する登録物 | [BioProject](/databases/bioproject) + [BioSample](/databases/biosample) | [DRA](/databases/dra) submission + [BioProject](/databases/bioproject) (BioSample は DRA 経由) |
+| 事前参照する登録物 | [BioProject](/bioproject) + [BioSample](/biosample) | [DRA](/dra) submission + [BioProject](/bioproject) (BioSample は DRA 経由) |
 | SDRF テンプレート生成元 | BioSample | DRA submission |
 | Array Design | `A-XXXX-n` (既存) または ADF をアップロードして新規発行 | 不要 |
 | 空間トランスクリプトーム | Xenium、MERFISH 等 | Visium 等 |
@@ -86,9 +86,9 @@ GEA のメタデータは MAGE-TAB 形式が中心です。最低限 IDF と SDR
 加えて、以下の登録物を先に準備しておきます。
 
 - **D-way アカウント**: GEA submission UI にログインするために必要
-- **[BioProject](/databases/bioproject)**: Microarray・Sequencing どちらの経路でも 1 つ参照
-- **[BioSample](/databases/biosample)**: Microarray 経路で直接選択し、SDRF 自動生成の元になる (Sequencing 経路では DRA submission 経由で参照)
-- **[DRA](/databases/dra) submission**: Sequencing 経路で raw read を事前登録
+- **[BioProject](/bioproject)**: Microarray・Sequencing どちらの経路でも 1 つ参照
+- **[BioSample](/biosample)**: Microarray 経路で直接選択し、SDRF 自動生成の元になる (Sequencing 経路では DRA submission 経由で参照)
+- **[DRA](/dra) submission**: Sequencing 経路で raw read を事前登録
 - **Array Design**: Microarray 経路で `A-XXXX-n` を参照、無ければ ADF をアップロード
 - **データファイル**: 各 assay の raw / processed ファイルと md5 値
 
@@ -113,7 +113,7 @@ GEA のメタデータは MAGE-TAB 形式が中心です。最低限 IDF と SDR
 
 ## DRA との 2 段登録
 
-Sequencing 経路は GEA 単独では完結せず、[DRA](/databases/dra) との 2 段登録になります。
+Sequencing 経路は GEA 単独では完結せず、[DRA](/dra) との 2 段登録になります。
 
 ```text
 [raw read fastq/BAM]
@@ -144,4 +144,4 @@ GEA submission 作成時に、自身のアカウントで登録した DRA submis
 - データファイル仕様: <https://www.ddbj.nig.ac.jp/gea/datafile.html>
 - Spatial gene expression: <https://www.ddbj.nig.ac.jp/gea/spatial-gene-expression.html>
 - NAR 2019 paper "DDBJ update: the Genomic Expression Archive (GEA) for functional genomics data": <https://academic.oup.com/nar/article/47/D1/D69/5144146>
-- 関連サービス: [DRA](/databases/dra) / [BioProject](/databases/bioproject) / [BioSample](/databases/biosample)
+- 関連サービス: [DRA](/dra) / [BioProject](/bioproject) / [BioSample](/biosample)

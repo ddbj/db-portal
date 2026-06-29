@@ -18,7 +18,7 @@ test.describe("Auth Domain (anonymous)", () => {
 
   test("S-AUTH-04: `/api/auth/login` が Keycloak authorize URL に 302", async ({ page }) => {
     const res = await page.request.get(
-      "/api/auth/login?return_to=/databases/bioproject",
+      "/api/auth/login?return_to=/bioproject",
       { maxRedirects: 0 },
     )
     expect(res.status()).toBe(302)

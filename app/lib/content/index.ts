@@ -20,9 +20,7 @@ export {
 } from "./loader"
 export {
   getPageByPath,
-  getPageBySlug,
   listAllPages,
-  listPagesBySection,
   validateAllPages,
 } from "./markdown-loader"
 export {

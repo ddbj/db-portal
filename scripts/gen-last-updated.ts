@@ -13,8 +13,8 @@ type Entry = Partial<Record<Lang, string>>
 type EntryMap = Record<string, Entry>
 
 const FILE_TO_LANG = (filename: string): Lang | undefined => {
-  if (filename === "index.md") return "ja"
-  if (filename === "index.en.md") return "en"
+  if (filename.endsWith(".en.md")) return "en"
+  if (filename.endsWith(".md")) return "ja"
 
   return undefined
 }
@@ -24,7 +24,7 @@ const getLastCommitTimestamp = (absPath: string): string | undefined => {
     const rel = path.relative(REPO_ROOT, absPath)
     const out = execFileSync(
       "git",
-      ["-c", "safe.directory=*", "log", "-1", "--format=%cI", "--", rel],
+      ["-c", "safe.directory=*", "log", "--follow", "-1", "--format=%cI", "--", rel],
       {
         cwd: REPO_ROOT,
         encoding: "utf-8",
@@ -38,9 +38,17 @@ const getLastCommitTimestamp = (absPath: string): string | undefined => {
   }
 }
 
+// `index.md` / `index.en.md` は親 dir を URL とし、それ以外の `<name>.md` /
+// `<name>.en.md` はファイル名 `<name>` を最後の segment とする。markdown-loader
+// の URL 抽出と一致させること。
 const toUrlPath = (absMdFile: string): string => {
-  const dir = path.relative(CONTENT_ROOT, path.dirname(absMdFile))
-  const segments = dir.split(path.sep).filter(Boolean)
+  const rel = path.relative(CONTENT_ROOT, absMdFile)
+  const stripped = rel
+    .replace(/[\\/]index\.en\.md$/, "")
+    .replace(/[\\/]index\.md$/, "")
+    .replace(/\.en\.md$/, "")
+    .replace(/\.md$/, "")
+  const segments = stripped.split(path.sep).filter(Boolean)
 
   return `/${segments.join("/")}`
 }

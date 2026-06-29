@@ -34,7 +34,6 @@ export type Resources = {
   breadcrumb: {
     home: string
     docs: string
-    databases: string
   }
   docs: {
     title: string
@@ -69,15 +68,6 @@ export type Resources = {
       heading: string
       viewAll: string
     }
-  }
-  databases: {
-    overviewHeading: string
-    relatedHeading: string
-    externalLinksHeading: string
-    lastUpdatedLabel: string
-    notFoundTitle: string
-    notFoundDescription: string
-    backToTop: string
   }
   db: {
     bioproject: { title: string }
@@ -731,7 +721,6 @@ export const ja: Resources = {
   breadcrumb: {
     home: "ホーム",
     docs: "ナレッジベース",
-    databases: "データベース",
   },
   docs: {
     title: "ナレッジベース",
@@ -761,15 +750,6 @@ export const ja: Resources = {
     },
     serviceGrid: { heading: "サービス" },
     services: { heading: "サービス", viewAll: "すべて見る" },
-  },
-  databases: {
-    overviewHeading: "概要",
-    relatedHeading: "関連データベース",
-    externalLinksHeading: "外部リンク",
-    lastUpdatedLabel: "最終更新",
-    notFoundTitle: "データベースが見つかりません",
-    notFoundDescription: "指定されたデータベースに対応するページが見つかりませんでした。",
-    backToTop: "トップへ戻る",
   },
   db: {
     bioproject: { title: "BioProject" },

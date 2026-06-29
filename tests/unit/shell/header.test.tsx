@@ -57,7 +57,7 @@ describe("computeActiveNav", () => {
   })
 
   test("computeActiveNav_databases_returnsNull", () => {
-    expect(computeActiveNav("/databases/bioproject")).toBe(null)
+    expect(computeActiveNav("/bioproject")).toBe(null)
   })
 
   test("computeActiveNav_submit_returnsSubmit", () => {

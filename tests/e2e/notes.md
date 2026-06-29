@@ -144,7 +144,7 @@ staging で再現困難な異常系 (5xx / 不正 state / vLLM 停止 等) の�
 | E-LLM-06 (rate limit 429) | `page.route()` で `/api/llm/search-assistant` を 429 に差し替える |
 | E-TOP-02 (hero AI toggle 非表示) | `page.route()` で health を `unset` に固定 |
 | E-NEWS-01 (一覧 0 件) | `page.route()` で `/api/news` を `[]` に差し替え、empty 状態 (error banner 不在) を確認 |
-| E-CONTENT-01 (未知 slug) | URL を直接 navigation (`/databases/unknown-slug`) → loader が `Response(404)` |
+| E-CONTENT-01 (未知 slug) | URL を直接 navigation (`/unknown-slug`) → loader が `Response(404)` |
 | E-CONTENT-02 (翻訳未完成) | **e2e 取り下げ** (skip stub 削除済)。i18n.en=complete 固定で再現経路が無い。banner ロジックは unit (`tests/unit/shell/translation-unavailable.test.tsx`、role=status / aria-live / switch button まで) で担保 |
 | E-FLOW-02 (汎用 404) | URL を直接 navigation (`/totally-unknown`) → no-match で root ErrorBoundary |
 

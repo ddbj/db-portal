@@ -1,5 +1,5 @@
 ---
-title: DRA (DDBJ Sequence Read Archive)
+title: DRA
 description: DDBJ が運営する次世代シーケンサー由来の生リードと alignment 情報の公開アーカイブ。INSDC SRA の日本ノードとして NCBI SRA・EBI ENA とミラーされ、研究の再現性を支えます。
 ---
 
@@ -12,11 +12,11 @@ DRA は INSDC SRA の日本側メンバーであり、NCBI Sequence Read Archive
 INSDC のいずれか 1 拠点に登録すれば、世界の研究者から横断的に参照できる状態になります。
 
 > [!NOTE]
-> 「どこに登録すべきか分からない」「DRA と JGA / GEA の境界が曖昧」 という場合は、[登録ナビ](/submit) でデータの性質に回答していくと、適切な登録先と前提となるリソース ([BioProject](/databases/bioproject) / [BioSample](/databases/biosample) など) が自動で組み立てられます。
+> 「どこに登録すべきか分からない」「DRA と JGA / GEA の境界が曖昧」 という場合は、[登録ナビ](/submit) でデータの性質に回答していくと、適切な登録先と前提となるリソース ([BioProject](/bioproject) / [BioSample](/biosample) など) が自動で組み立てられます。
 
 > [!WARNING]
 > DRA は公開アーカイブであり、アクセス制御 (制限公開) には対応していません。
-> ヒト由来でアクセス制限が必要なデータは、NBDC ヒトデータ審査委員会の承認を経て [JGA](/databases/jga) に登録します。
+> ヒト由来でアクセス制限が必要なデータは、NBDC ヒトデータ審査委員会の承認を経て [JGA](/jga) に登録します。
 
 ## 受け付けるデータ
 
@@ -60,8 +60,8 @@ DRA の登録は複数のオブジェクトから構成され、それぞれに�
 | Experiment | `DRX` | ライブラリ + 機器のメタデータ。1 つの BioProject と 1 つの BioSample を参照 |
 | Run | `DRR` | Experiment に紐付く実データファイルの束。read ID は `DRR<番号>.<連番>` に書き換えられる |
 | Analysis | `DRZ` | 任意。派生・処理済みデータ |
-| BioProject (参照) | `PRJDB######` | 事前に [BioProject](/databases/bioproject) で取得 |
-| BioSample (参照) | `SAMD########` | 事前に [BioSample](/databases/biosample) で取得 |
+| BioProject (参照) | `PRJDB######` | 事前に [BioProject](/bioproject) で取得 |
+| BioSample (参照) | `SAMD########` | 事前に [BioSample](/biosample) で取得 |
 
 アクセッション番号は、メタデータとファイルの検証およびスタッフによるレビューが完了した後に発行されます。
 
@@ -106,8 +106,8 @@ D-way submission 作成
 
 - D-way の DDBJ アカウント。
 - アカウントに登録済みの SSH 公開鍵。
-- 取得済みの [BioProject](/databases/bioproject) (`PRJDB######`)。
-- 少なくとも 1 件の [BioSample](/databases/biosample) (`SAMD########`)。
+- 取得済みの [BioProject](/bioproject) (`PRJDB######`)。
+- 少なくとも 1 件の [BioSample](/biosample) (`SAMD########`)。
 - 整形済みの読み込みファイル (gzip 圧縮 FASTQ または無圧縮 BAM、ディレクトリ構造を含まない、命名規約に従ったもの)。
 - 各ファイルの MD5 チェックサム (Run メタデータに記入)。
 - 公開・問い合わせ通知を受け取る担当者の連絡先メールアドレス。
@@ -125,7 +125,7 @@ DRA では、登録時に submission ごとに公開ポリシーを設定しま�
 
 > [!IMPORTANT]
 > 1 submission に含まれるデータは **同時に** 公開されます。Run 単位での段階的な公開はできません。
-> また、[BioProject](/databases/bioproject) / [BioSample](/databases/biosample) / DRA / [GEA](/databases/gea) のレコードは「連動公開」され、参照関係にあるオブジェクトのうち最も遅い公開予定日に揃えて公開されます。
+> また、[BioProject](/bioproject) / [BioSample](/biosample) / DRA / [GEA](/gea) のレコードは「連動公開」され、参照関係にあるオブジェクトのうち最も遅い公開予定日に揃えて公開されます。
 
 非公開期間中に問い合わせへの応答が 3 か月以上途絶えた登録は、キャンセル扱いとなります。
 
@@ -139,17 +139,17 @@ DRA では、登録時に submission ごとに公開ポリシーを設定しま�
 
 > [!NOTE]
 > INSDC は公開アーカイブのみを対象とし、制限公開の枠組みを持ちません。
-> アクセス制御を要するデータの登録先は [JGA](/databases/jga) です ([humandbs](/databases/humandbs) の審査が前提)。
+> アクセス制御を要するデータの登録先は [JGA](/jga) です ([humandbs](/humandbs) の審査が前提)。
 
 ## 他サービスとの使い分け
 
 | データの性質 | 登録先 |
 | --- | --- |
 | 非ヒト試料の生 NGS リード、または公開可能なヒト由来生 NGS リード | **DRA** |
-| アクセス制御が必要なヒト由来 NGS リード | [JGA](/databases/jga) (NBDC 承認後、[humandbs](/databases/humandbs) のフロー) |
-| RNA-seq のカウントマトリクスなど、発現解析の処理済みデータ | [GEA](/databases/gea) (生リードは DRA に先行登録) |
-| 組立・アノテーション済み配列 | [DDBJ](/databases/ddbj) (MSS / WGS / TLS / TSA) |
-| メタボロームデータ | [MetaboBank](/databases/metabobank) |
+| アクセス制御が必要なヒト由来 NGS リード | [JGA](/jga) (NBDC 承認後、[humandbs](/humandbs) のフロー) |
+| RNA-seq のカウントマトリクスなど、発現解析の処理済みデータ | [GEA](/gea) (生リードは DRA に先行登録) |
+| 組立・アノテーション済み配列 | [DDBJ](/ddbj) (MSS / WGS / TLS / TSA) |
+| メタボロームデータ | [MetaboBank](/metabobank) |
 
 ## 関連リソース
 

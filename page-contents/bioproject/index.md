@@ -7,7 +7,7 @@ description: BioProject は研究プロジェクトの情報と、そこから�
 
 BioProject は、研究プロジェクトのメタデータと、そのプロジェクトから生まれた各種データを束ねる INSDC 共通のメタデータカタログです。配列や実験データそのものは登録せず、プロジェクトの概要・目的・対象生物・関連論文といった情報を 1 件のエントリーにまとめます。
 
-実データは [DRA](/databases/dra)、[GEA](/databases/gea)、[DDBJ](/databases/ddbj)、MetaboBank、[JGA](/databases/jga) など別のサービスに登録し、それらのエントリーが BioProject アクセッション番号を引用することで、横断的にプロジェクト単位で参照できるようになります。公開後は NCBI BioProject、EBI BioStudies とメタデータが相互交換されます。
+実データは [DRA](/dra)、[GEA](/gea)、[DDBJ](/ddbj)、MetaboBank、[JGA](/jga) など別のサービスに登録し、それらのエントリーが BioProject アクセッション番号を引用することで、横断的にプロジェクト単位で参照できるようになります。公開後は NCBI BioProject、EBI BioStudies とメタデータが相互交換されます。
 
 プロジェクトには 2 種類あります。
 
@@ -48,7 +48,7 @@ BioProject では配列そのものではなく、プロジェクトのメタデ
 
 ## 登録の流れ
 
-1. [DDBJ アカウント](https://www.ddbj.nig.ac.jp/ddbj-account.html) を取得する (BioProject / [BioSample](/databases/biosample) / [DRA](/databases/dra) などで共通)。
+1. [DDBJ アカウント](https://www.ddbj.nig.ac.jp/ddbj-account.html) を取得する (BioProject / [BioSample](/biosample) / [DRA](/dra) などで共通)。
 2. 登録ツール [D-way](https://ddbj.nig.ac.jp/D-way/) にログインし、BioProject の登録ページへ移動する。
 3. **[New submission]** を押して新規登録を開始する。
 4. 各タブを左から順に英語で入力する (submitter / project type / organism / publication など)。
@@ -64,8 +64,8 @@ BioProject では配列そのものではなく、プロジェクトのメタデ
 - **DDBJ アカウント**: BioSample / DRA / GEA など他サービスと共通で利用できます。
 - **組織ドメインの email アドレス**: 個人のフリーメールは原則不可です。
 - **英語のメタデータ**: title、100 文字以上の description、所属組織名 (略さない正式名称)、対象生物、material / capture / methodology、関連論文情報を準備します。
-- **ヒトデータを扱う場合**: [DRA](/databases/dra) / [GEA](/databases/gea) / [DDBJ](/databases/ddbj) にヒト由来データを登録するには、事前に DBCLS の「制限公開でないヒトデータの提供申請」を提出し承認を得ておく必要があります。承認後に発行される申請 ID を、登録フォームのプライベートコメント欄に記載します。制限公開のヒトデータは [JGA](/databases/jga) を利用してください。
-- **ゲノムアノテーション付き配列を登録する場合**: [BioSample](/databases/biosample) 側で locus_tag prefix を事前に登録しておきます。
+- **ヒトデータを扱う場合**: [DRA](/dra) / [GEA](/gea) / [DDBJ](/ddbj) にヒト由来データを登録するには、事前に DBCLS の「制限公開でないヒトデータの提供申請」を提出し承認を得ておく必要があります。承認後に発行される申請 ID を、登録フォームのプライベートコメント欄に記載します。制限公開のヒトデータは [JGA](/jga) を利用してください。
+- **ゲノムアノテーション付き配列を登録する場合**: [BioSample](/biosample) 側で locus_tag prefix を事前に登録しておきます。
 - **アンブレラに紐付ける場合**: 先にプライマリープロジェクトの `PRJDB` 番号を準備しておきます。
 
 ## Umbrella BioProject
@@ -99,11 +99,11 @@ DDBJ BioProject は INSDC (DDBJ / NCBI / EBI) の共通スキーマに基づい�
 
 BioProject 自体には配列も実験データも入っていません。実データは以下のサービスに登録し、各エントリーから BioProject アクセッション番号を引用します。
 
-- [BioSample](/databases/biosample): 配列の由来となるサンプルのメタデータ。
-- [DRA](/databases/dra): 次世代シーケンサ由来の raw read。
-- [GEA](/databases/gea): 遺伝子発現データ。
-- [DDBJ](/databases/ddbj): アノテーション付き配列。
-- [JGA](/databases/jga): 制限公開ヒトデータ。
+- [BioSample](/biosample): 配列の由来となるサンプルのメタデータ。
+- [DRA](/dra): 次世代シーケンサ由来の raw read。
+- [GEA](/gea): 遺伝子発現データ。
+- [DDBJ](/ddbj): アノテーション付き配列。
+- [JGA](/jga): 制限公開ヒトデータ。
 
 ## 関連リソース
 
