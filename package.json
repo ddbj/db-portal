@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "npm run gen:last-updated",
     "dev": "npm run gen:last-updated && npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
     "build": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production react-router build",
     "start": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production tsx server/index.ts",
