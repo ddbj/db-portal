@@ -200,6 +200,19 @@ per-file の個別反転は `identifiability` ChipAxis で表現する。chip �
 
 restricted な**全種別**が JGA に振られる。sequence-read → JGA Data、それ以外 → JGA Analysis (`_jga/submission.md`)。non-human reads の restricted は DRA に embargo を付ける (JGA 対象外)。いずれも Tier1 catalog の first-match で評価する。
 
+### NHA 直接登録の案内 (hint パネル)
+
+NBDC ヒトデータベース (`humandbs`) には、JGA / DRA / GEA / MetaboBank / jPOST 等の DDBJ 内 archive では受けない**非制限公開ヒトデータ**を直接受ける NHA (Non-restricted Human Archive) の経路がある。対象は以下:
+
+- 統計情報: GWAS / メタ解析統計量、allele / genotype 頻度情報、平均 FPKM 値、エンリッチ領域ピーク情報、eQTL / sQTL 情報、平均メチル化率、PRS、mobile element 多型頻度、SV 頻度情報
+- 病理画像
+
+これらは現状の `FileTypeKind` の値域に含めない (種別追加は別検討)。代わりに、OrganismDomain=human が選択されたタイミングで登録フロー pane の冒頭に **hint パネル**を 1 つ表示し、「これらを持っていれば NHA に直接登録できる」 とリンク付きで案内する。
+
+- **emit しない**: Tier1 catalog / Tier2 recipe いずれの emit 経路にも含めない。`humandbs` は引き続き JGA の前提 gate としてのみ flow step に登場する (`## Service と role / 外向き契約`)
+- **表示条件**: `OrganismDomain === "human"` かつ、登録フローに非制限公開のデータ (open group) が含まれるとき
+- **位置**: 非制限公開のデータグループの最後のステップの直下に置き、「open のデータがあるなら、これらは NHA に直接登録できる」 という文脈で読めるようにする
+
 ---
 
 ## Tier1 ルーティング・カタログ

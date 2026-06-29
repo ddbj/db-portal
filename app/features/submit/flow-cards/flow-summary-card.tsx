@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
@@ -8,6 +10,7 @@ import { ExternalLinkButton } from "../components/external-link-button"
 import { StepBadge } from "../components/step-badge"
 import { getSubmitMeta } from "../external-links"
 import type { Validation } from "../state/types"
+import { type NhaHintLabels, NhaTimelineItem } from "./nha-hint-panel"
 
 type AccessSummary = ReadonlyMap<Access, FileTypeKind[]>
 type GroupLabel = { title: string; sub: string }
@@ -35,8 +38,10 @@ type FlowSummaryCardProps = {
     destination: GroupLabel
   }
   accountLabels: AccountStepLabels
+  nhaHintLabels: NhaHintLabels
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
+  servicePrereqLabel: (service: Service) => string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
@@ -52,8 +57,8 @@ type FlowSummaryCardProps = {
 export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
   const {
     steps, entries, isHuman, isAuthenticated, accessByKind, accessHeading,
-    accessLabel, accessOverview, groupLabels, accountLabels,
-    serviceTitle, serviceDescription, fileTypeKindLabel,
+    accessLabel, accessOverview, groupLabels, accountLabels, nhaHintLabels,
+    serviceTitle, serviceDescription, servicePrereqLabel, fileTypeKindLabel,
     resolveNote, noteKindLabel, externalCtaLabel,
     prereqHeading, detailLinkLabel,
     validations, validationHeading, validationLabel, onJumpToRow,
@@ -102,7 +107,7 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
 
   const stepProps = {
     lang, entries, presentServices,
-    serviceTitle, serviceDescription, fileTypeKindLabel,
+    serviceTitle, serviceDescription, servicePrereqLabel, fileTypeKindLabel,
     resolveNote, noteKindLabel, externalCtaLabel, prereqHeading, detailLinkLabel,
   }
 
@@ -131,6 +136,15 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
           label={g.label}
           steps={g.steps}
           accessBadge={g.accessBadge}
+          extraItem={g.groupKey === "open" && isHuman
+            ? (
+              <NhaTimelineItem
+                labels={nhaHintLabels}
+                isFirst={g.steps.length === 0}
+                externalCtaLabel={stepProps.externalCtaLabel}
+              />
+            )
+            : undefined}
           {...stepProps}
         />
       ))}
@@ -246,6 +260,7 @@ type StepItemProps = {
   presentServices: ReadonlySet<Service>
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
+  servicePrereqLabel: (service: Service) => string
   fileTypeKindLabel: (kind: FileTypeKind) => string
   resolveNote: (messageKey: string) => string
   noteKindLabel: (kind: "warning" | "error") => string
@@ -255,12 +270,13 @@ type StepItemProps = {
 }
 
 const StepGroup = ({
-  groupIndex, label, steps, accessBadge, ...ip
+  groupIndex, label, steps, accessBadge, extraItem, ...ip
 }: {
   groupIndex: number
   label: GroupLabel
   steps: readonly FlowStep[]
   accessBadge: { access: Access; label: string } | undefined
+  extraItem?: ReactNode
 } & StepItemProps) => (
   <div>
     <div className="flex items-center gap-2 mb-1">
@@ -273,15 +289,22 @@ const StepGroup = ({
     </div>
     <ol className="flex flex-col m-0 list-none p-0 ml-3">
       {steps.map((step, i) => (
-        <TimelineStepItem key={step.id} step={step} isFirst={i === 0} isLast={i === steps.length - 1} {...ip} />
+        <TimelineStepItem
+          key={step.id}
+          step={step}
+          isFirst={i === 0}
+          isLast={i === steps.length - 1 && extraItem === undefined}
+          {...ip}
+        />
       ))}
+      {extraItem}
     </ol>
   </div>
 )
 
 const TimelineStepItem = ({
   step, isFirst, isLast, lang, entries, presentServices,
-  serviceTitle, serviceDescription, fileTypeKindLabel,
+  serviceTitle, serviceDescription, servicePrereqLabel, fileTypeKindLabel,
   resolveNote, noteKindLabel, externalCtaLabel, prereqHeading, detailLinkLabel,
 }: { step: FlowStep; isFirst: boolean; isLast: boolean } & StepItemProps) => {
   const meta = getSubmitMeta(step.service, lang)
@@ -295,7 +318,7 @@ const TimelineStepItem = ({
     (n): n is typeof n & { kind: "warning" | "error" } => n.kind === "warning" || n.kind === "error",
   )
   const prereqs = stepPrerequisites(step.service, presentServices)
-    .filter((dep) => !isCompanionService(dep)).map(serviceTitle)
+    .filter((dep) => !isCompanionService(dep)).map(servicePrereqLabel)
 
   return (
     <li data-testid="flow-step" data-service={step.service} className="flex gap-2.5">

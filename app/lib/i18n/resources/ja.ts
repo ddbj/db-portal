@@ -333,16 +333,23 @@ export type Resources = {
         empty: string
         emptySub: string
       }
+      nha: {
+        title: string
+        description: string
+        statisticsLabel: string
+        statisticsItems: string
+        pathologyLabel: string
+      }
       "umbrella-bioproject": { title: string; description: string }
       "bioproject": { title: string; description: string }
       "biosample": { title: string; description: string }
-      "dra": { title: string; description: string }
+      "dra": { title: string; description: string; prereqLabel: string }
       "jga": { title: string; description: string }
       "ddbj": { title: string; description: string }
       "nsss": { title: string; description: string }
       "gea": { title: string; description: string }
       "metabobank": { title: string; description: string }
-      "humandbs": { title: string; description: string }
+      "humandbs": { title: string; description: string; prereqLabel: string }
       "jpost": { title: string; description: string }
       "eva": { title: string; description: string }
     }
@@ -931,10 +938,10 @@ export const ja: Resources = {
           standalone: { label: "単独アノテーション", sub: "配列ファイルと別に登録" },
         },
         spatialTranscriptomics: {
-          visium: { label: "Visium", sub: "10x Visium (Sequencing + DRA 2 段)" },
-          xenium: { label: "Xenium", sub: "10x Xenium (Microarray、DRA 不要)" },
-          merfish: { label: "MERFISH", sub: "MERFISH (Microarray、DRA 不要)" },
-          stereoSeq: { label: "Stereo-seq", sub: "Stereo-seq (Sequencing + DRA 2 段)" },
+          visium: { label: "Visium", sub: "シーケンサベース (DRA + GEA の 2 段登録)" },
+          xenium: { label: "Xenium", sub: "in situ 画像ベース (DRA 不要)" },
+          merfish: { label: "MERFISH", sub: "in situ 画像ベース (DRA 不要)" },
+          stereoSeq: { label: "Stereo-seq", sub: "シーケンサベース (DRA + GEA の 2 段登録)" },
         },
         massSpectrometry: {
           metabolomics: { label: "メタボロミクス", sub: "代謝物の質量分析" },
@@ -973,14 +980,14 @@ export const ja: Resources = {
       "heading": "公開区分",
       "open": "非制限公開",
       "restricted": "制限公開",
-      "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
+      "restrictedPreference": { label: "制限公開を希望する", sub: "ヒトデータ審査委員会の承認を受けた研究者間での共有を希望" },
       "hasIdentifier": {
         label: "個人識別符号を含む",
         sub: "全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等",
       },
       "ethicsCompliance": { label: "法令・倫理指針に沿った研究", sub: "法令や研究倫理指針に沿って実施された研究" },
-      "publiclyAvailable": { label: "一般入手可能な試料", sub: "市販・公開リソースなど、広く入手可能な試料を対象とした解析" },
-      "microbialAnalysis": { label: "ヒト配列除去済み", sub: "人体から分離した微生物・ウイルスの解析で、個人識別につながるヒト配列を除去" },
+      "publiclyAvailable": { label: "一般入手可能な試料", sub: "研究用として広く入手可能な試料 (市販品に限らず国内法令等に適合)" },
+      "microbialAnalysis": { label: "ヒト配列除去済み", sub: "人体から分離した微生物・ウイルス自体の解析で、ヒト配列を除去" },
       "nonHumanReason": "ヒト以外は常に非制限公開です",
       "basisHeading": "公開条件",
     },
@@ -1007,7 +1014,7 @@ export const ja: Resources = {
       },
       group: {
         companion: { title: "プロジェクト・試料の情報", sub: "すべての登録で必要" },
-        restricted: { title: "制限公開のデータ", sub: "先に申請が必要" },
+        restricted: { title: "制限公開のデータ", sub: "データ登録の前にデータ提供申請が必要" },
         open: { title: "非制限公開のデータ", sub: "申請は不要" },
         destination: { title: "登録先", sub: "データ種別ごと" },
       },
@@ -1021,17 +1028,32 @@ export const ja: Resources = {
         empty: "ファイルを追加すると、データ種別ごとの公開区分が表示されます",
         emptySub: "",
       },
+      nha: {
+        title: "NBDC ヒトデータベース (NHA)",
+        description: "以下のデータを持っていれば、NHA に直接登録できます。",
+        statisticsLabel: "統計情報:",
+        statisticsItems: "GWAS / メタ解析統計量、allele / genotype 頻度情報、平均 FPKM 値、エンリッチ領域ピーク情報、eQTL / sQTL 情報、平均メチル化率、PRS、mobile element 多型頻度、SV 頻度情報",
+        pathologyLabel: "病理画像",
+      },
       "umbrella-bioproject": { title: "Umbrella BioProject", description: "各ハプロタイプの BioProject をまとめる Umbrella" },
       "bioproject": { title: "BioProject", description: "プロジェクト全体を束ねるメタデータ" },
       "biosample": { title: "BioSample", description: "サンプルを束ねるメタデータ" },
-      "dra": { title: "DRA", description: "配列リード (Run・Analysis) の登録先" },
-      "jga": { title: "JGA", description: "制限公開ヒト個人データの登録先" },
+      "dra": {
+        title: "DRA",
+        description: "NGS 生リード (FASTQ/BAM) とその解析結果の登録先",
+        prereqLabel: "DRA への生シークエンスリードの登録",
+      },
+      "jga": { title: "JGA", description: "制限公開ヒトデータの登録先" },
       "ddbj": { title: "DDBJ", description: "塩基配列を一括登録する MSS" },
       "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム" },
       "gea": { title: "GEA", description: "遺伝子発現データの登録先" },
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
-      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの提供申請・承認窓口 (DBCLS 運営)" },
-      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先 (DDBJ 外)" },
+      "humandbs": {
+        title: "NBDC ヒトデータベース",
+        description: "制限公開ヒトデータの提供申請・承認窓口",
+        prereqLabel: "NBDC ヒトデータベースへの提供申請",
+      },
+      "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先" },
       "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)" },
     },
     origin: {

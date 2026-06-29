@@ -113,6 +113,11 @@ const SubmitRoute = () => {
   const fileTypeKindLabel = (k: FileTypeKind): string => t(`submit.fileType.${k}`)
   const serviceTitle = (s: Service): string => t(`submit.flow.${s}.title`)
   const serviceDescription = (s: Service): string => t(`submit.flow.${s}.description`)
+  const servicePrereqLabel = (s: Service): string => {
+    if (s === "humandbs") return t("submit.flow.humandbs.prereqLabel")
+    if (s === "dra") return t("submit.flow.dra.prereqLabel")
+    return t(`submit.flow.${s}.title`)
+  }
   const noteKindLabel = (kind: "warning" | "error"): string =>
     kind === "warning" ? t("submit.flow.noteWarning") : t("submit.flow.noteError")
 
@@ -242,8 +247,16 @@ const SubmitRoute = () => {
                   register: t("submit.flow.account.register"),
                   login: t("submit.flow.account.login"),
                 }}
+                nhaHintLabels={{
+                  title: t("submit.flow.nha.title"),
+                  description: t("submit.flow.nha.description"),
+                  statisticsLabel: t("submit.flow.nha.statisticsLabel"),
+                  statisticsItems: t("submit.flow.nha.statisticsItems"),
+                  pathologyLabel: t("submit.flow.nha.pathologyLabel"),
+                }}
                 serviceTitle={serviceTitle}
                 serviceDescription={serviceDescription}
+                servicePrereqLabel={servicePrereqLabel}
                 fileTypeKindLabel={fileTypeKindLabel}
                 resolveNote={resolveNote}
                 noteKindLabel={noteKindLabel}
