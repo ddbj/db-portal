@@ -66,4 +66,18 @@ describe("PageTitle", () => {
     const inner = container.querySelector(".max-w-content-max")
     expect(inner).not.toHaveAttribute("style")
   })
+
+  test("PageTitle_meta_rendersNodeAlongsideH1", () => {
+    render(<PageTitle title="タイトル" meta={<span data-testid="meta">M</span>} />)
+    const h1 = screen.getByRole("heading", { level: 1, name: "タイトル" })
+    const meta = screen.getByTestId("meta")
+    expect(meta).toBeInTheDocument()
+    expect(h1.parentElement).toBe(meta.parentElement?.parentElement ?? null)
+  })
+
+  test("PageTitle_noMeta_doesNotRenderMetaSlot", () => {
+    const { container } = render(<PageTitle title="x" />)
+    const flex = container.querySelector(".flex.items-center")
+    expect(flex?.children.length).toBe(1)
+  })
 })

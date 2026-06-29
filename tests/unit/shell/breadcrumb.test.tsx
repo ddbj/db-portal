@@ -7,7 +7,8 @@ import { Breadcrumb } from "~/shell/breadcrumb"
 import { renderWithStub } from "../_helpers/render"
 
 // docs-root (handle 静的なシンボル) と page-content (handle 動的 resolver) を
-// 組み合わせて、ja/en 双方の crumb をテストする。
+// 組み合わせて、ja/en 双方の crumb をテストする。Breadcrumb は docs root を
+// 起点 (= 「ホーム」 が /docs を指す) として表示する。
 const renderBreadcrumb = (
   initialEntries: string[],
   lang: "ja" | "en" = "ja",
@@ -51,11 +52,11 @@ describe("Breadcrumb", () => {
     expect(container.querySelector("nav")).toBeNull()
   })
 
-  test("Breadcrumb_knownPage_rendersHomeDocsAndCurrent", () => {
+  test("Breadcrumb_knownPage_rendersHomeAndCurrent", () => {
     renderBreadcrumb(["/bioproject"], "ja")
     expect(screen.getByRole("navigation", { name: "パンくずリスト" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
-    expect(screen.getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
+    expect(screen.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
+    expect(screen.queryByRole("link", { name: "ナレッジベース" })).toBeNull()
     const current = screen.getByText("BioProject")
     expect(current).toHaveAttribute("aria-current", "page")
     expect(current.tagName).toBe("SPAN")
@@ -71,10 +72,9 @@ describe("Breadcrumb", () => {
     })
   })
 
-  test("Breadcrumb_enLang_homeAndDocsLabelsAreEnglish", () => {
+  test("Breadcrumb_enLang_homeLabelIsEnglish", () => {
     renderBreadcrumb(["/bioproject"], "en")
-    expect(screen.getByRole("link", { name: /Home/i })).toHaveAttribute("href", "/")
-    expect(screen.getByRole("link", { name: "Knowledge Base" })).toHaveAttribute("href", "/docs")
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/docs")
   })
 
   test("Breadcrumb_unknownPath_fallsBackToSegmentLabel", () => {

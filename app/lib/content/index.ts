@@ -30,3 +30,12 @@ export {
   type TitleMatch,
 } from "./page-title"
 export { searchContent, type SearchResult } from "./search-index"
+export {
+  getSitemap,
+  type RenderedSitemapItem,
+  type RenderedSitemapSection,
+  type SitemapValidationFailure,
+  type SitemapValidationResult,
+  validateSitemap,
+  validateSitemapDoc,
+} from "./sitemap-loader"

@@ -79,6 +79,7 @@ type BuildEntry = {
   urlPath: string
   slug: string
   jaFilepath: string
+  enFilepath?: string
   ja: { frontmatter: PageFrontmatter; body: string }
   en?: { frontmatter: PageFrontmatter; body: string }
 }
@@ -112,16 +113,23 @@ const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } 
     const existing = entryMap.get(urlPath)
     if (existing) {
       existing.en = result
+      existing.enFilepath = filepath
     }
   }
 
   return { entries: Array.from(entryMap.values()), errors }
 }
 
+const stripLeadingSlash = (filepath: string): string => filepath.replace(/^\//, "")
+
 const renderEntries = (entries: BuildEntry[]): PageContent[] =>
   entries.map((entry) => ({
     slug: entry.slug,
     urlPath: entry.urlPath,
+    sourcePath: {
+      ja: stripLeadingSlash(entry.jaFilepath),
+      en: entry.enFilepath ? stripLeadingSlash(entry.enFilepath) : undefined,
+    },
     frontmatter: {
       ja: entry.ja.frontmatter,
       en: entry.en?.frontmatter,
@@ -168,10 +176,14 @@ export const validateAllPages = (): ValidationResult<PageContent> => {
   if (errors.length > 0) return { ok: false, errors }
 
   const items = validEntries.map((e) => ({
-    filepath: e.jaFilepath.replace(/^\//, ""),
+    filepath: stripLeadingSlash(e.jaFilepath),
     content: {
       slug: e.slug,
       urlPath: e.urlPath,
+      sourcePath: {
+        ja: stripLeadingSlash(e.jaFilepath),
+        en: e.enFilepath ? stripLeadingSlash(e.enFilepath) : undefined,
+      },
       frontmatter: { ja: e.ja.frontmatter, en: e.en?.frontmatter },
       html: { ja: "", en: undefined },
       toc: { ja: [], en: undefined },

@@ -1,0 +1,26 @@
+{
+  "sections": [
+    {
+      "id": "repository",
+      "heading": { "ja": "リポジトリ", "en": "Repositories" },
+      "items": [
+        { "kind": "internal", "path": "/ddbj" },
+        { "kind": "internal", "path": "/bioproject" },
+        { "kind": "internal", "path": "/biosample" },
+        { "kind": "internal", "path": "/dra" },
+        { "kind": "internal", "path": "/gea" },
+        { "kind": "internal", "path": "/jga" },
+        { "kind": "internal", "path": "/humandbs" },
+        { "kind": "internal", "path": "/metabobank" }
+      ]
+    },
+    {
+      "id": "policy",
+      "heading": { "ja": "ポリシー", "en": "Policy" },
+      "items": [
+        { "kind": "internal", "path": "/policy" },
+        { "kind": "internal", "path": "/policy/term-of-use" }
+      ]
+    }
+  ]
+}

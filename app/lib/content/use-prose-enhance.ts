@@ -29,7 +29,19 @@ const renderMermaid = async (container: HTMLElement): Promise<void> => {
   if (blocks.length === 0) return
 
   const { default: mermaid } = await import("mermaid")
-  mermaid.initialize({ startOnLoad: false, theme: "default" })
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "default",
+    fontFamily: "var(--font-sans), -apple-system, sans-serif",
+    themeVariables: {
+      fontSize: "13px",
+    },
+    flowchart: {
+      nodeSpacing: 24,
+      rankSpacing: 32,
+      padding: 8,
+    },
+  })
 
   let counter = 0
   for (const block of blocks) {

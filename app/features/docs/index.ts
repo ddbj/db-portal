@@ -1,4 +1,5 @@
 export { ContentSidebar } from "./content-sidebar"
 export { DocsSearchResults } from "./docs-search-results"
+export { EditOnGitHubLink } from "./edit-on-github-link"
 export { RecentlyUpdated } from "./recently-updated"
 export { SitemapColumns } from "./sitemap-columns"

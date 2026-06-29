@@ -22,6 +22,7 @@ export {
   ExternalIcon,
   FileTextIcon,
   FolderIcon,
+  GitHubIcon,
   GlobeIcon,
   HashIcon,
   HelpIcon,

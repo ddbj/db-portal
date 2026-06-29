@@ -70,24 +70,18 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 
 ## 登録の流れ
 
-```text
-[1] D-way アカウント + SSH 公開鍵登録
-        ↓
-[2] NBDC 申請システムで提出者グループ作成 (PI / submitter 全員)
-        ↓
-[3] データ提出申請を送信
-        ↓
-[4] DBCLS による審査 → JSUB###### 発行 + 登録用ディレクトリ作成
-        ↓
-[5] JGA metadata Excel (英語) を記入
-        ↓
-[6] SFTP / WinSCP で jga-gw.ddbj.nig.ac.jp にメタデータ転送
-        ↓
-[7] 同経路でデータファイル転送 (Data / Analysis)
-        ↓
-[8] キュレーターが Excel → XML 変換 + 検証 → accession 発行
-        ↓
-[9] 対応する NBDC ヒトDB の hum 公開と連動して JGA データも公開
+```mermaid
+flowchart TD
+  S1[D-way アカウント + SSH 鍵登録]
+  S2[NBDC で提出者グループ作成]
+  S3[データ提出申請]
+  S4[DBCLS 審査 → JSUB 発行]
+  S5[metadata Excel 記入]
+  S6[メタデータ転送 SFTP]
+  S7[データファイル転送]
+  S8[キュレーターが XML 化 → accession 発行]
+  S9[NBDC ヒトDB の hum 公開と連動して公開]
+  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
 ```
 
 メタデータは英語で記入します。submitter 側で事前に XML 検証したい場合は、Singularity 経由で `excel2xml` を実行できます。

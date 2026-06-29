@@ -37,6 +37,9 @@ export type Resources = {
   }
   docs: {
     title: string
+    lastUpdatedPrefix: string
+    edit: string
+    editAriaLabel: string
     sidebar: {
       heading: string
       totalPages: string
@@ -724,6 +727,9 @@ export const ja: Resources = {
   },
   docs: {
     title: "ナレッジベース",
+    lastUpdatedPrefix: "Updated",
+    edit: "Edit",
+    editAriaLabel: "GitHub でこのページを編集",
     sidebar: {
       heading: "全ドキュメント",
       totalPages: "{{count}} ページ",

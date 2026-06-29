@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react"
-import { useLoaderData, useNavigate } from "react-router"
+import { useLoaderData, useLocation, useNavigate } from "react-router"
 
 import {
   advancedReducer,
@@ -21,6 +21,7 @@ import {
   PerDbResults,
   type PerPageValue,
   searchFacetReducer,
+  type SearchResultsNavState,
   SearchResultsSkeleton,
   serializeAstToDsl,
   type SortKey,
@@ -58,6 +59,27 @@ const SearchResultsRoute = () => {
   const t = useT()
   const lang = useLang()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // The hero (or any caller) may hand the page a raw AI prompt via navigation
+  // state so the box can land in AI mode with the user's natural language still
+  // visible. Snapshot it once and clear history.state below so a reload falls
+  // back to keyword mode.
+  const [pendingAi] = useState(() => {
+    const s = (location.state as SearchResultsNavState | null)?.ai
+    return s ? { prompt: s.prompt, aiMode: s.aiMode } : null
+  })
+  useEffect(() => {
+    if (!(location.state as SearchResultsNavState | null)?.ai) return
+    navigate(location.pathname + location.search, {
+      replace: true,
+      state: null,
+      preventScrollReset: true,
+    })
+    // Run once on mount; later location changes are handled by the existing
+    // navigation flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Seed values for the committed query, split out of the AST the loader parsed from
   // a shared `?q=`: the free-text keyword (shown in the box), the held structured
@@ -307,9 +329,13 @@ const SearchResultsRoute = () => {
           allowAppend
           appendCurrentAst={liveQuery}
           lockedDb={data.db ?? undefined}
-          onGenerated={(ast, _mode, generatedDb) => void handleGenerated(ast, generatedDb)}
+          onGenerated={(ast, _mode, generatedDb, _prompt) =>
+            void handleGenerated(ast, generatedDb)}
           showExamples={false}
           searchPending={keywordBusy}
+          initialMode={pendingAi ? "ai" : "keyword"}
+          initialAiInput={pendingAi?.prompt}
+          initialAiMode={pendingAi?.aiMode}
         />
         <div className="mt-2.5">
           <SwitchableQueryPreview

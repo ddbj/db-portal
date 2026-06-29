@@ -77,23 +77,15 @@ DRA の登録は複数のオブジェクトから構成され、それぞれに�
 8. **DRA スタッフによるレビュー** — 承認されるとアクセッション番号 (`DRX` / `DRR` / `DRZ`) が発行されます。
 9. **公開** — 設定した公開予定日に DDBJ FTP に配置され、DDBJ Search に索引化された後、INSDC パートナーに反映されます。
 
-```text
-D-way submission 作成
-        │
-        ▼
-   SFTP upload (ftp-private.ddbj.nig.ac.jp)
-        │
-        ▼
-   メタデータ入力 (Web tool または Excel→XML)
-        │
-        ▼
-   Validate uploaded data files
-        │
-        ▼
-   DRA スタッフのレビュー → アクセッション発行
-        │
-        ▼
-   公開予定日に公開 → NCBI SRA / EBI ENA にミラー
+```mermaid
+flowchart LR
+  A[D-way submission 作成]
+  B[SFTP upload]
+  C[メタデータ入力]
+  D[Validate]
+  E[レビュー → アクセッション発行]
+  F[公開 → INSDC ミラー]
+  A --> B --> C --> D --> E --> F
 ```
 
 > [!IMPORTANT]

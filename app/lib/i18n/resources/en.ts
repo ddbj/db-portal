@@ -39,6 +39,9 @@ export const en: Resources = {
   },
   docs: {
     title: "Knowledge Base",
+    lastUpdatedPrefix: "Updated",
+    edit: "Edit",
+    editAriaLabel: "Edit this page on GitHub",
     sidebar: {
       heading: "All documents",
       totalPages: "{{count}} pages",

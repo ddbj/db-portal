@@ -184,7 +184,7 @@ const NavTreeItem = ({
     <li>
       <div
         className={cn(
-          "group relative flex items-center min-h-7 rounded-button gap-1",
+          "group relative flex items-center min-h-7 rounded-button gap-1 pr-1",
           isActive && "bg-brand-soft",
         )}
       >
@@ -253,26 +253,26 @@ const NavTreeItem = ({
           )}
 
         {headings.length > 0 && (
-          <span
+          // chip 形 button。IconButton は固定 size、Button は padding ベースの
+          // sizing で、桁数によって幅が変わる chip 表現と噛み合わないため、ここは
+          // 生 button を使う。
+          // eslint-disable-next-line react/forbid-elements
+          <button
+            type="button"
+            aria-label={t("docs.sidebar.headingToggleLabel", { title: label })}
+            aria-expanded={showHeadings}
+            onClick={() => onToggleHeadings(node.urlPath)}
             className={cn(
-              "shrink-0 transition-opacity",
+              "shrink-0 cursor-pointer transition-opacity",
+              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-pill text-fs-micro font-mono font-bold leading-none bg-brand-softer text-brand-deep border border-brand/15",
               showHeadings
                 ? "opacity-100"
                 : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
             )}
           >
-            <IconButton
-              ariaLabel={t("docs.sidebar.headingToggleLabel", { title: label })}
-              size={28}
-              aria-expanded={showHeadings}
-              onClick={() => onToggleHeadings(node.urlPath)}
-            >
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-pill text-fs-micro font-mono font-bold leading-none bg-brand-softer text-brand-deep border border-brand/15">
-                <span aria-hidden>#</span>
-                {headings.length}
-              </span>
-            </IconButton>
-          </span>
+            <span aria-hidden>#</span>
+            {headings.length}
+          </button>
         )}
       </div>
 
@@ -369,6 +369,18 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
       })
     }
   }, [pathname, tree])
+
+  // 個別ページに navigate するたび、heading tree は「現在の page だけ」を開く。
+  // 別 page に移動したら旧 page の heading list は自動で閉じる。page でない
+  // path (= getPageByPath が undefined) では何も開かない。
+  useEffect(() => {
+    if (getPageByPath(pathname) === undefined) {
+      setOpenHeadings(new Set())
+
+      return
+    }
+    setOpenHeadings(new Set([pathname]))
+  }, [pathname])
 
   const effectiveExpanded = useMemo(() => {
     if (debouncedFilter === "") return expanded

@@ -8,9 +8,10 @@ import { renderWithStub } from "../_helpers/render"
 
 // app/routes.ts と同じ構造をミラーリング。docs layout (handle: docs-root) の
 // 配下に catch-all `*` → page-content/route.tsx (handle: page-content) が並ぶ。
+// docs root resolver は breadcrumb の起点「ホーム」 を /docs 指しで出す。
 // page-content resolver は URL を segment 単位で分解し、各 segment の page を
 // 見つけて breadcrumb 配列を返す。なので /bioproject の trail は
-// Home > Docs > BioProject の 3 段。
+// ホーム (/docs) > BioProject の 2 段。
 const renderRealPageContentRoute = (
   initialEntries: string[],
   lang: "ja" | "en" = "ja",
@@ -45,30 +46,28 @@ const renderRealPageContentRoute = (
   })
 
 describe("Breadcrumb real route config", () => {
-  test("Breadcrumb_pageContent_ja_rendersHomeDocsThenDbTitle", () => {
+  test("Breadcrumb_pageContent_ja_rendersHomeThenDbTitle", () => {
     renderRealPageContentRoute(["/bioproject"], "ja")
 
     const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
     const crumbs = within(nav).getAllByRole("listitem")
-    expect(crumbs).toHaveLength(3)
+    expect(crumbs).toHaveLength(2)
 
-    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
-    expect(within(nav).getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
+    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
 
     const current = within(nav).getByText("BioProject")
     expect(current).toHaveAttribute("aria-current", "page")
     expect(current.tagName).toBe("SPAN")
   })
 
-  test("Breadcrumb_pageContent_en_rendersHomeDocsThenDbTitle", () => {
+  test("Breadcrumb_pageContent_en_rendersHomeThenDbTitle", () => {
     renderRealPageContentRoute(["/biosample"], "en")
 
     const nav = screen.getByRole("navigation", { name: "Breadcrumb" })
     const crumbs = within(nav).getAllByRole("listitem")
-    expect(crumbs).toHaveLength(3)
+    expect(crumbs).toHaveLength(2)
 
-    expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
-    expect(within(nav).getByRole("link", { name: "Knowledge Base" })).toHaveAttribute("href", "/docs")
+    expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("href", "/docs")
 
     const current = within(nav).getByText("BioSample")
     expect(current).toHaveAttribute("aria-current", "page")
@@ -79,10 +78,9 @@ describe("Breadcrumb real route config", () => {
 
     const nav = screen.getByRole("navigation", { name: "パンくずリスト" })
     const crumbs = within(nav).getAllByRole("listitem")
-    expect(crumbs).toHaveLength(4)
+    expect(crumbs).toHaveLength(3)
 
-    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
-    expect(within(nav).getByRole("link", { name: "ナレッジベース" })).toHaveAttribute("href", "/docs")
+    expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
     expect(within(nav).getByRole("link", { name: "BSI ウェブサイトポリシー" })).toHaveAttribute(
       "href",
       "/policy",
@@ -97,7 +95,7 @@ describe("Breadcrumb real route config", () => {
 
     const items = container.querySelectorAll("ol > li")
     const separators = container.querySelectorAll("ol > li > span[aria-hidden='true']")
-    expect(items).toHaveLength(3)
+    expect(items).toHaveLength(2)
     expect(separators).toHaveLength(items.length - 1)
     separators.forEach((sep) => {
       expect(sep).toHaveTextContent("›")

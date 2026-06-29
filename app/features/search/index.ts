@@ -52,10 +52,12 @@ export {
   useSearchResults,
 } from "./results"
 export {
+  type AiMode,
   builderConditionCount,
   NavigableSearchInput,
   resolveAiModeDefault,
   SearchInputPanel,
+  type SearchResultsNavState,
 } from "./search-input"
 export {
   createInitialSearchFacetState,

@@ -236,7 +236,7 @@ remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype
 
 `app/lib/content/content-tree.ts` が `listAllPages()` からセクション別にグループ化したナビゲーションツリーを構築する。`_dev/` セクションは除外。ツリーは起動時に 1 度だけ計算されキャッシュされる。
 
-**ノード種別** (= sidebar tree と sitemap 目次の共通モデル):
+**ノード種別** (sidebar / 検索結果 breadcrumb / 最近更新の共通モデル。サイトマップ目次は別 SSOT で扱う、後述):
 
 | 種別 | URL | 子ノード | 例 |
 |---|---|---|---|
@@ -244,7 +244,27 @@ remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype
 | `dir` | 持つ (`index.md` がページ実体、`.md` は URL から畳む) | doc を持てる | `/databases/bioproject` |
 | `doc` | 持つ | 持たない | `/guides/getting-started` |
 
-**設計原則**: 著者にカテゴリ付けを要求しない (frontmatter にタグを持たせない)。**フォルダ構造が唯一の分類軸**。`category` ノードは sidebar / 目次 UI で見出し行を描画せず、子を直接 flat に並べてグループ間は余白で区切る (情報密度を上げるため)。
+**設計原則**: 著者にカテゴリ付けを要求しない (frontmatter にタグを持たせない)。**フォルダ構造が唯一の分類軸**。`category` ノードは sidebar UI で見出し行を描画せず、子を直接 flat に並べてグループ間は余白で区切る (情報密度を上げるため)。
+
+#### サイトマップ目次 (`/docs` hub の columns)
+
+`/docs` のサイトマップ目次 (`app/features/docs/sitemap-columns.tsx`) は **`page-contents/sitemap.json` を SSOT** とする手書き構造。`content-tree.ts` の自動派生は使わない。理由: dir 構造の alphabetical sort では編集者が意図した順序とグループ分け (例: 「リポジトリ」 / 「ポリシー」) を表現できず、外部リンク行も並べられないため。
+
+- セクションは `sections[]` の順序どおりに描画する (sort なし)
+- 各 item は `kind: "internal" | "external"` の discriminated union
+  - `internal` は `path` だけ持ち、ラベルは `page-contents/` の frontmatter `title` (ja / en) から合流
+  - `external` は `url` と `label.{ja,en}` を JSON 側で持ち、`ExternalIcon` 付きで描画
+- 各 section は `id` を持ち React key として固定 (順序変更や i18n 相対化と独立)
+- スキーマ: `app/schemas/content/sitemap.ts` (Zod discriminated union)
+- ローダー: `app/lib/content/sitemap-loader.ts` (`getSitemap()` / `validateSitemap()`)
+
+**双方向 orphan 検査** (module-load 時 throw):
+
+- JSON 内の `internal.path` が `page-contents/` の page と一致しない → エラー
+- `page-contents/` の page (`_dev` 除く) が JSON のどこにも参照されていない → エラー
+- 同一 `internal.path` が複数 section に出現、もしくは `section.id` の重複もエラー
+
+これで「ページ追加 = `sitemap.json` 更新」 が強制される (sidebar / 検索は自動派生で網羅されるが、サイトマップは恣意的に並べる以上、追加忘れを CI で止める)。
 
 #### 全文検索
 
@@ -271,7 +291,7 @@ i18n namespace は `docs.*` (旧 `contents.*` から rename)、ja / en 同一キ
 2. SearchBox (scope なし、placeholder = 「サイト内のドキュメントを全文検索（見出しも対象）」)
 3. (mode = "search" の時のみ) 検索結果ブロック: 結果ヘッダ `「{query}」 の検索結果 {N} 件` + 「× 検索を閉じる」、結果リスト、補足文 (タイトル / 本文 / h2 を横断検索する旨)
 4. 「最近更新したページ」 ブロック (top 5、`lastUpdated` 降順、常設)
-5. 「目次 (サイトマップ)」 ブロック (`columns` レイアウト: 4 カラム grid、カテゴリごとに縦積み、常設)
+5. 「目次 (サイトマップ)」 ブロック (`columns` レイアウト: 4 カラム grid、`sitemap.json` SSOT で恣意的に並ぶ、常設。詳細は前述「サイトマップ目次」)
 
 **state 機械**: `mode = "map" | "search"` (`?q=` の有無で導出)。SearchBox 入力 → URL `?q=xxx` 更新 → search mode に切替。`× 検索を閉じる` で `?q=` を削除 → map mode に戻る。`?q=` で状態を URL に持つので **reload / shareable / browser back** が効く。検索結果ブロックが出ても「最近更新」「目次」 は消えない (hub としての一貫性)。
 
@@ -307,7 +327,7 @@ i18n namespace は `docs.*` (旧 `contents.*` から rename)、ja / en 同一キ
 
 #### バリデーション
 
-`scripts/validate-content.ts` が `validateAllPages()` を呼び、frontmatter の Zod 検証を実行。`npm run validate:content` で dev / build の前段に走る。
+`scripts/validate-content.ts` が `validateAllPages()` (frontmatter Zod 検証) と `validateSitemap()` (`sitemap.json` の schema + 双方向 orphan 検出) を呼ぶ。`npm run validate:content` で dev / build の前段に走る。
 
 ### ServiceContent
 

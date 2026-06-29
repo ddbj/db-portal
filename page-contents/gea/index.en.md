@@ -115,17 +115,15 @@ The submission route for spatial transcriptome data depends on the platform.
 
 The sequencing route does not complete within GEA alone; it is a two-step submission with [DRA](/dra).
 
-```text
-[raw read fastq/BAM]
-      |
-      v
-   DRA submission        <-- registered first
-      |
-      v
-   GEA submission        <-- references the DRA submission
-      |
-      v
-[processed data: expression matrix, etc.]
+```mermaid
+flowchart LR
+  A[raw read fastq/BAM]
+  B[DRA submission]
+  C[GEA submission]
+  D[processed data]
+  A -->|registered first| B
+  B -->|references| C
+  C --> D
 ```
 
 When creating a GEA submission, select one DRA submission registered under your own account. The SDRF template is auto-generated from the experiment / run information of that DRA submission. Submitting sample-level processed data to GEA is strongly recommended.

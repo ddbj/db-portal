@@ -2,6 +2,13 @@ import type { AdvancedState } from "../advanced"
 
 export type AiMode = "append" | "new"
 
+// Navigation state carried from a caller that wants the results page to land in
+// AI mode with the original natural-language prompt preserved. Consumed once on
+// mount and then cleared from history so a reload falls back to keyword mode.
+export type SearchResultsNavState = {
+  ai?: { prompt: string; aiMode: AiMode }
+}
+
 type AiModeDefault = {
   mode: AiMode
   appendDisabled: boolean

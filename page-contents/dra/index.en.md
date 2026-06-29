@@ -77,23 +77,15 @@ Accession numbers are issued after metadata and file validation pass and DRA sta
 8. **Review by DRA staff** — Once approved, accession numbers (`DRX` / `DRR` / `DRZ`) are issued.
 9. **Release** — On the configured release date, the data are placed on the DDBJ public FTP, indexed by DDBJ Search, and propagated to INSDC partners.
 
-```text
-Create D-way submission
-        │
-        ▼
-   SFTP upload (ftp-private.ddbj.nig.ac.jp)
-        │
-        ▼
-   Enter metadata (web tool or Excel -> XML)
-        │
-        ▼
-   Validate uploaded data files
-        │
-        ▼
-   Review by DRA staff -> accession assignment
-        │
-        ▼
-   Release on scheduled date -> mirror to NCBI SRA / EBI ENA
+```mermaid
+flowchart LR
+  A[Create D-way submission]
+  B[SFTP upload]
+  C[Enter metadata]
+  D[Validate]
+  E[Review → accession]
+  F[Release → INSDC mirror]
+  A --> B --> C --> D --> E --> F
 ```
 
 > [!IMPORTANT]

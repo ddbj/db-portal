@@ -19,6 +19,13 @@ type CatalogModule = {
   validateSubmitRouting: () => { success: boolean; error?: { issues: { path: (string | number)[]; message: string }[] } }
 }
 
+type SitemapLoaderModule = {
+  validateSitemap: () => {
+    ok: boolean
+    errors?: { filepath: string; message: string }[]
+  }
+}
+
 const main = async (): Promise<void> => {
   const vite = await createServer({
     configFile: false,
@@ -79,6 +86,22 @@ const main = async (): Promise<void> => {
     } catch (e) {
       hasFailure = true
       console.error("Submit routing catalog validation failed", e)
+    }
+
+    try {
+      const sitemapMod = (await vite.ssrLoadModule(
+        fileURLToPath(new URL("../app/lib/content/sitemap-loader.ts", import.meta.url)),
+      )) as SitemapLoaderModule
+      const sitemapResult = sitemapMod.validateSitemap()
+      if (!sitemapResult.ok) {
+        hasFailure = true
+        for (const e of sitemapResult.errors ?? []) {
+          console.error("Sitemap validation failed", e.filepath, e.message)
+        }
+      }
+    } catch (e) {
+      hasFailure = true
+      console.error("Sitemap validation failed", e)
     }
   } finally {
     await vite.close()

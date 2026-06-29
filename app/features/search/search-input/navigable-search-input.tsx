@@ -29,9 +29,10 @@ type NavigableSearchInputProps = {
   // The locked single-DB scope (per-DB results page): generation stays in this DB
   // (new and append). Undefined on top / cross, where the BFF derives the DB.
   lockedDb?: DbSlug | undefined
-  // Hand off the validated AST + resolved DB (locked or derived; null = cross).
-  // The caller serializes the AST and navigates to that scope.
-  onGenerated: (ast: ParseNode, mode: AiMode, db: DbSlug | null) => void
+  // Hand off the validated AST + resolved DB (locked or derived; null = cross),
+  // along with the raw prompt that produced it so the caller can preserve it
+  // across navigation. The caller serializes the AST and navigates to that scope.
+  onGenerated: (ast: ParseNode, mode: AiMode, db: DbSlug | null, prompt: string) => void
   // Hide the example chip row (results pages omit it). Defaults to shown.
   showExamples?: boolean
   // Rendered at the right end of the example chip row so it shares the line with
@@ -42,6 +43,11 @@ type NavigableSearchInputProps = {
   searchPending?: boolean | undefined
   // Hide the DB scope selector when in AI mode (top page only).
   hideScopeInAiMode?: boolean
+  // Seed the internal state on first mount only; later changes are ignored so a
+  // reload falls back to the default keyword mode.
+  initialMode?: "keyword" | "ai" | undefined
+  initialAiInput?: string | undefined
+  initialAiMode?: AiMode | undefined
 }
 
 const toStringArray = (raw: unknown): readonly string[] => (Array.isArray(raw) ? raw : [])
@@ -67,15 +73,21 @@ export const NavigableSearchInput = ({
   examplesTrailing,
   searchPending = false,
   hideScopeInAiMode = false,
+  initialMode,
+  initialAiInput,
+  initialAiMode,
 }: NavigableSearchInputProps) => {
   const t = useT()
   const availability = useLlmAvailability()
-  const [mode, setMode] = useState<"keyword" | "ai">("keyword")
-  const [aiInput, setAiInput] = useState("")
-  const [aiMode, setAiMode] = useState<AiMode>("new")
+  const [mode, setMode] = useState<"keyword" | "ai">(() => initialMode ?? "keyword")
+  const [aiInput, setAiInput] = useState(() => initialAiInput ?? "")
+  const [aiMode, setAiMode] = useState<AiMode>(() => initialAiMode ?? "new")
   // The mode the in-flight request was started with; the done handler may fire
   // after the user fiddles with the selector, so it must not read live state.
   const pendingModeRef = useRef<AiMode>("new")
+  // The prompt the in-flight request was started with, frozen at submit time so
+  // the caller can stash it into navigation state.
+  const pendingPromptRef = useRef<string>("")
 
   const isAi = mode === "ai"
   const keywordInvalid = invalid && !isAi
@@ -86,7 +98,7 @@ export const NavigableSearchInput = ({
   const effectiveAiMode: AiMode = canAppend ? aiMode : "new"
 
   const stream = useAssistantStream(undefined, (ast, db) => {
-    onGenerated(ast, pendingModeRef.current, db)
+    onGenerated(ast, pendingModeRef.current, db, pendingPromptRef.current)
     setAiInput("")
     setMode("keyword")
   })
@@ -138,6 +150,7 @@ export const NavigableSearchInput = ({
       // retained input is the retry.
       if (value.trim().length === 0) return
       pendingModeRef.current = effectiveAiMode
+      pendingPromptRef.current = value
       void stream.start(value, {
         mode: effectiveAiMode,
         current: effectiveAiMode === "append" ? appendCurrentAst : undefined,

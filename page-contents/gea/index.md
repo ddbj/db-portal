@@ -115,17 +115,15 @@ GEA のメタデータは MAGE-TAB 形式が中心です。最低限 IDF と SDR
 
 Sequencing 経路は GEA 単独では完結せず、[DRA](/dra) との 2 段登録になります。
 
-```text
-[raw read fastq/BAM]
-      |
-      v
-   DRA submission        <-- 先に登録
-      |
-      v
-   GEA submission        <-- DRA submission を参照
-      |
-      v
-[processed data: 発現量行列など]
+```mermaid
+flowchart LR
+  A[raw read fastq/BAM]
+  B[DRA submission]
+  C[GEA submission]
+  D[processed data]
+  A -->|先に登録| B
+  B -->|参照| C
+  C --> D
 ```
 
 GEA submission 作成時に、自身のアカウントで登録した DRA submission を 1 つ選択します。SDRF テンプレートはその DRA submission の experiment / run 情報から自動生成されます。GEA 側には sample-level の processed data を登録することが強く推奨されます。

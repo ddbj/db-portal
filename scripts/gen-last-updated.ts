@@ -38,6 +38,19 @@ const getLastCommitTimestamp = (absPath: string): string | undefined => {
   }
 }
 
+// commit されていない rename / 新規ファイルでも何らかの日付を返したいので、
+// git log で取れなければ filesystem の mtime に fallback する。commit 後は
+// git log --follow が rename を辿って真の last-update を返す。
+const getMtimeTimestamp = async (absPath: string): Promise<string | undefined> => {
+  try {
+    const stat = await fs.stat(absPath)
+
+    return stat.mtime.toISOString()
+  } catch {
+    return undefined
+  }
+}
+
 // `index.md` / `index.en.md` は親 dir を URL とし、それ以外の `<name>.md` /
 // `<name>.en.md` はファイル名 `<name>` を最後の segment とする。markdown-loader
 // の URL 抽出と一致させること。
@@ -80,7 +93,7 @@ const main = async (): Promise<void> => {
     const lang = FILE_TO_LANG(path.basename(file))
     if (lang === undefined) continue
     const urlPath = toUrlPath(file)
-    const iso = getLastCommitTimestamp(file)
+    const iso = getLastCommitTimestamp(file) ?? await getMtimeTimestamp(file)
     if (iso === undefined) continue
     const entry = map[urlPath] ?? {}
     entry[lang] = iso

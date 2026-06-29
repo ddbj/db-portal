@@ -70,32 +70,18 @@ Once the submission request is approved, a working Submission ID (e.g. `JSUB0003
 
 ## Submission flow
 
-```text
-[1] Create a D-way account and register an SSH public key
-        |
-        v
-[2] Create a submitter group on the NBDC application system (PI / all submitters)
-        |
-        v
-[3] Send the data submission request
-        |
-        v
-[4] DBCLS reviews -> JSUB###### is issued and a submission directory is created
-        |
-        v
-[5] Fill in the JGA metadata Excel template (in English)
-        |
-        v
-[6] Transfer metadata to jga-gw.ddbj.nig.ac.jp via SFTP / WinSCP
-        |
-        v
-[7] Transfer data files (Data / Analysis) through the same route
-        |
-        v
-[8] Curator converts Excel -> XML, validates, and issues accessions
-        |
-        v
-[9] JGA data is released in sync with the corresponding NBDC Human DB hum page
+```mermaid
+flowchart TD
+  S1[Create D-way account + SSH key]
+  S2[Create submitter group on NBDC]
+  S3[Send data submission request]
+  S4[DBCLS review → JSUB issued]
+  S5[Fill metadata Excel]
+  S6[Transfer metadata via SFTP]
+  S7[Transfer data files]
+  S8[Curator converts to XML → accession]
+  S9[Release synced with NBDC hum page]
+  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
 ```
 
 Metadata must be written in English. Submitters who want to validate XML in advance can run `excel2xml` via Singularity.

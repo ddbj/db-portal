@@ -16,8 +16,11 @@ type BreadcrumbProps = {
 export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   const lang = useLang()
   const t = useT()
+  // docs (= knowledge base) root を breadcrumb の「ホーム」 として表示する。
+  // サイトトップ (/) は breadcrumb には含めず、docs 配下を navigate する起点と
+  // しての「ホーム」 を docs root の URL (/docs) に貼る。
   const docsRootResolver: BreadcrumbResolver = () => ({
-    label: t("breadcrumb.docs"),
+    label: t("breadcrumb.home"),
     href: "/docs",
   })
   // catch-all で受ける page-contents 配下のページの breadcrumb を、URL の
@@ -45,14 +48,9 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
     "page-content": pageContentResolver,
     ...(resolvers ?? {}),
   }
-  const raw = useBreadcrumb({ resolvers: mergedResolvers })
-  if (raw.length === 0) return null
-
-  const items: BreadcrumbItem[] = [
-    { label: t("breadcrumb.home"), href: "/" },
-    ...raw,
-  ]
-
+  const items = useBreadcrumb({ resolvers: mergedResolvers })
+  // 1 段だけ (= docs root の「ホーム」しかない状態。/docs 自身など) では
+  // breadcrumb を出さない。
   if (items.length <= 1) return null
 
   return (

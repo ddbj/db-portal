@@ -1,106 +1,78 @@
 import { Link } from "react-router"
 
-import { getNavTree, type NavNode } from "~/lib/content/content-tree"
+import {
+  getSitemap,
+  type RenderedSitemapItem,
+  type RenderedSitemapSection,
+} from "~/lib/content"
 import { useLang, useT } from "~/lib/i18n"
-import { SectionHeading } from "~/ui"
+import { SectionHeading, TextLink } from "~/ui"
 
 type Lang = "ja" | "en"
 
-const labelOf = (node: NavNode, lang: Lang): string =>
-  lang === "en" && node.label.en ? node.label.en : node.label.ja
+const labelOf = (label: { ja: string; en?: string }, lang: Lang): string =>
+  lang === "en" && label.en ? label.en : label.ja
 
-type GroupProps = {
-  group: NavNode
+const itemKey = (item: RenderedSitemapItem): string =>
+  item.kind === "internal" ? item.path : item.url
+
+type ItemRowProps = {
+  item: RenderedSitemapItem
   lang: Lang
 }
 
-const Group = ({ group, lang }: GroupProps) => {
-  const isCategory = !group.hasPage && group.children.length > 0
-  const heading = labelOf(group, lang)
-  const children = isCategory ? group.children : []
-
-  if (isCategory) {
+const ItemRow = ({ item, lang }: ItemRowProps) => {
+  if (item.kind === "external") {
     return (
-      <div className="flex flex-col gap-2">
-        <h3 className="text-fs-body-sm font-bold text-ink m-0 pb-1.5 border-b border-border-soft">
-          {heading}
-        </h3>
-        <ul className="list-none p-0 m-0 flex flex-col gap-1">
-          {children.map((child) => (
-            <ChildRow key={child.urlPath} node={child} lang={lang} />
-          ))}
-        </ul>
-      </div>
+      <li>
+        <TextLink href={item.url} external weight="semibold">
+          {labelOf(item.label, lang)}
+        </TextLink>
+      </li>
     )
   }
 
-  // Top-level doc (no category wrapping): render as a single bold link card.
-  return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-fs-body-sm font-bold text-ink m-0 pb-1.5 border-b border-border-soft">
-        <Link
-          to={group.urlPath}
-          className="text-ink no-underline hover:text-brand-deep hover:underline"
-        >
-          {heading}
-        </Link>
-      </h3>
-    </div>
-  )
-}
-
-type ChildRowProps = {
-  node: NavNode
-  lang: Lang
-}
-
-const ChildRow = ({ node, lang }: ChildRowProps) => {
-  const label = labelOf(node, lang)
-  const grandchildren = node.children.filter((c) => c.hasPage)
-
   return (
     <li>
-      {node.hasPage
-        ? (
-          <Link
-            to={node.urlPath}
-            className="text-fs-body-sm font-semibold text-ink no-underline hover:text-brand-deep hover:underline"
-          >
-            {label}
-          </Link>
-        )
-        : (
-          <span className="text-fs-body-sm font-semibold text-ink-mid">{label}</span>
-        )}
-      {grandchildren.length > 0 && (
-        <ul className="list-none p-0 m-0 mt-1 ml-2 pl-2 border-l border-border-soft flex flex-col gap-0.5">
-          {grandchildren.map((gc) => (
-            <li key={gc.urlPath}>
-              <Link
-                to={gc.urlPath}
-                className="text-fs-body-sm text-ink-mid no-underline hover:text-brand-deep hover:underline"
-              >
-                {labelOf(gc, lang)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <Link
+        to={item.path}
+        className="font-semibold text-ink no-underline hover:text-brand-deep hover:underline"
+      >
+        {labelOf(item.label, lang)}
+      </Link>
     </li>
   )
 }
 
+type SectionColumnProps = {
+  section: RenderedSitemapSection
+  lang: Lang
+}
+
+const SectionColumn = ({ section, lang }: SectionColumnProps) => (
+  <div className="flex flex-col gap-2">
+    <h3 className="text-fs-body-sm font-bold text-ink m-0 pb-1.5 border-b border-border-soft">
+      {labelOf(section.heading, lang)}
+    </h3>
+    <ul className="list-none p-0 m-0 flex flex-col gap-1 text-fs-body-sm">
+      {section.items.map((item) => (
+        <ItemRow key={itemKey(item)} item={item} lang={lang} />
+      ))}
+    </ul>
+  </div>
+)
+
 export const SitemapColumns = () => {
   const t = useT()
   const lang = useLang()
-  const tree = getNavTree()
+  const sections = getSitemap()
 
   return (
     <div>
       <SectionHeading>{t("docs.sections.sitemap")}</SectionHeading>
       <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
-        {tree.map((group) => (
-          <Group key={group.urlPath} group={group} lang={lang} />
+        {sections.map((section) => (
+          <SectionColumn key={section.id} section={section} lang={lang} />
         ))}
       </div>
     </div>

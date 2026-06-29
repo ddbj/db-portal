@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 
-import { NavigableSearchInput, serializeAstToDsl, useSearchPending } from "~/features/search"
+import {
+  type AiMode,
+  NavigableSearchInput,
+  type SearchResultsNavState,
+  serializeAstToDsl,
+  useSearchPending,
+} from "~/features/search"
 import { type ParseNode, searchApiBaseUrl } from "~/lib/api"
 import { useT } from "~/lib/i18n"
 import {
@@ -47,12 +53,21 @@ export const HeroSection = () => {
   // The top page only generates new queries, so the AI proposal is serialized
   // and handed straight to the results page (the proposal itself is not shown).
   // The DB comes from the generation (the locked scope, or the BFF-derived DB),
-  // so "RNA-seq" lands on SRA even when the keyword scope is "all".
-  const handleGenerated = async (ast: ParseNode, generatedDb: DbSlug | null) => {
+  // so "RNA-seq" lands on SRA even when the keyword scope is "all". The raw
+  // prompt and AI mode ride along as navigation state so the results page can
+  // land in AI mode with the user's natural-language input still in the box.
+  const handleGenerated = async (
+    ast: ParseNode,
+    generatedDb: DbSlug | null,
+    prompt: string,
+    aiMode: AiMode,
+  ) => {
     search.begin()
     try {
       const dsl = await serializeAstToDsl(ast, { baseUrl: searchApiBaseUrl, db: generatedDb })
-      navigate(buildResultsHref({ q: dsl, db: generatedDb }))
+      navigate(buildResultsHref({ q: dsl, db: generatedDb }), {
+        state: { ai: { prompt, aiMode } } satisfies SearchResultsNavState,
+      })
     } catch {
       // Serialize is a system-side failure; stay on the top page.
       search.end()
@@ -71,7 +86,8 @@ export const HeroSection = () => {
         allowAppend={false}
         hideScopeInAiMode
         lockedDb={db ?? undefined}
-        onGenerated={(ast, _mode, generatedDb) => void handleGenerated(ast, generatedDb)}
+        onGenerated={(ast, mode, generatedDb, prompt) =>
+          void handleGenerated(ast, generatedDb, prompt, mode)}
         examplesTrailing={
           <TextLink to={buildSearchHref()} arrow>{t("top.hero.advancedLink")}</TextLink>
         }

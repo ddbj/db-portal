@@ -1,10 +1,11 @@
 import { type MouseEvent, useCallback } from "react"
 import { type LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router"
 
+import { EditOnGitHubLink } from "~/features/docs"
 import { pageTitleMeta } from "~/lib/content"
 import { getPageByPath } from "~/lib/content/markdown-loader"
 import { useProseEnhance } from "~/lib/content/use-prose-enhance"
-import { useLang } from "~/lib/i18n"
+import { formatDate, useLang, useT } from "~/lib/i18n"
 import { PageTitle, Section } from "~/ui"
 
 export const handle = {
@@ -28,6 +29,7 @@ export const loader = ({ params }: LoaderFunctionArgs): { urlPath: string } => {
 const PageContentRoute = () => {
   const { urlPath } = useLoaderData<typeof loader>()
   const lang = useLang()
+  const t = useT()
   const navigate = useNavigate()
   useProseEnhance(".prose-bsi")
 
@@ -51,10 +53,31 @@ const PageContentRoute = () => {
   const html = lang === "en" && page.html.en
     ? page.html.en
     : page.html.ja
+  const iso = lang === "en"
+    ? page.lastUpdated?.en ?? page.lastUpdated?.ja
+    : page.lastUpdated?.ja ?? page.lastUpdated?.en
+
+  const meta = (
+    <div className="flex items-center gap-3">
+      {iso !== undefined && (
+        <span className="text-fs-body-sm font-mono text-ink-soft whitespace-nowrap">
+          {t("docs.lastUpdatedPrefix")} {formatDate(iso)}
+        </span>
+      )}
+      <EditOnGitHubLink sourcePath={page.sourcePath} />
+    </div>
+  )
 
   return (
     <article>
-      <PageTitle title={fm.title} subtitle={fm.description} maxWidth={880} padTop="trimmed" padBottom="sm" />
+      <PageTitle
+        title={fm.title}
+        subtitle={fm.description}
+        meta={meta}
+        maxWidth={880}
+        padTop="trimmed"
+        padBottom="sm"
+      />
       <Section padY="sm">
         <div
           className="prose prose-bsi"
