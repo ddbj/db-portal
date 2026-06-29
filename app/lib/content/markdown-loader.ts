@@ -1,6 +1,7 @@
 import type { PageContent } from "~/schemas/content/page-content"
 import { PageFrontmatter } from "~/schemas/content/page-content"
 
+import { getLastUpdated } from "./get-last-updated"
 import { extractHeadings } from "./heading-extractor"
 import { markdownToHtml } from "./markdown-pipeline"
 import type { ValidationFailure, ValidationResult } from "./types"
@@ -119,6 +120,7 @@ const renderEntries = (entries: BuildEntry[]): PageContent[] =>
       ja: extractHeadings(entry.ja.body),
       en: entry.en ? extractHeadings(entry.en.body) : undefined,
     },
+    lastUpdated: getLastUpdated(entry.urlPath),
   }))
 
 const { entries, errors: buildErrors } = buildEntries()

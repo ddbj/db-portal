@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react"
 
 import { cn } from "./cn"
 
-type PageTitlePad = "sm" | "md"
+type PageTitlePad = "trimmed" | "none" | "sm" | "md"
 
 type PageTitleProps = {
   title: ReactNode
@@ -13,12 +13,19 @@ type PageTitleProps = {
   padBottom?: PageTitlePad
 }
 
+// breadcrumb 直下の page (h1 上に「ホーム › ...」 行がある) は padTop="trimmed"
+// を指定すると負マージンで詰めて、breadcrumb 無し page の既定 (pt-9 = 36px) と
+// h1 の縦位置が揃う。
 const padTopClass: Record<PageTitlePad, string> = {
+  trimmed: "-mt-2",
+  none: "pt-0",
   sm: "pt-6",
   md: "pt-9",
 }
 
 const padBottomClass: Record<PageTitlePad, string> = {
+  trimmed: "pb-0",
+  none: "pb-0",
   sm: "pb-3",
   md: "pb-6",
 }

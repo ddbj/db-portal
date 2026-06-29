@@ -8,7 +8,7 @@ describe("Submission", () => {
     expect(parsed.preconditions).toEqual({ q2: null })
     expect(parsed.accessSection).toEqual({
       restrictedPreference: false,
-      hasIdentifier: true,
+      hasIdentifier: false,
       ethicsCompliance: true,
       publiclyAvailable: false,
       microbialAnalysis: false,

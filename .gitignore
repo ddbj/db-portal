@@ -35,5 +35,8 @@ tests/e2e/.auth/
 cache/
 repos/
 
+# Generated content metadata (gen:last-updated script output)
+app/lib/content/gen/
+
 # OS / editor noise
 .DS_Store

@@ -1,16 +1,16 @@
 ---
 title: JGA (Japanese Genotype-phenotype Archive)
-description: DDBJ Center が運用する、ヒト個人レベルの遺伝学的・表現型データのための制限公開アーカイブ。DBCLS で承認された利用制限ポリシー付きの匿名化データのみを受け付け、利用申請も DBCLS が審査します。
+description: DDBJ Center が運用する、ヒト個人レベルの遺伝学的・表現型データのための制限公開アーカイブ。NBDC ヒトデータベースで承認された利用制限ポリシー付きの匿名化データのみを受け付け、利用にはヒトデータ審査委員会の審査が必要です。
 ---
 
 ## JGA とは
 
-Japanese Genotype-phenotype Archive (JGA) は、ヒト個人レベルの遺伝学的データと表現型データを保管・共有するための制限公開アーカイブです。DDBJ Center (Bioinformation and DDBJ Center) が運用し、データ登録・利用の審査は DBCLS (ライフサイエンス統合データベースセンタ) が [NBDC ヒトデータベース](/databases/humandbs) で行います。研究参加者の同意の範囲を超えて公開できないデータを、利用制限ポリシー付きで保管し、承認された利用者にのみ提供します。
+Japanese Genotype-phenotype Archive (JGA) は、ヒト個人レベルの遺伝学的データと表現型データを保管・共有するための制限公開アーカイブです。DDBJ Center (Bioinformation and DDBJ Center) が運用し、登録のための提供申請と利用のための利用申請はいずれも [NBDC ヒトデータベース](/databases/humandbs) で受け付け、ヒトデータ審査委員会が審査します。研究参加者の同意の範囲を超えて公開できないデータを、利用制限ポリシー付きで保管し、承認された利用者にのみ提供します。
 
 EBI EGA や NCBI dbGaP と同種の制限公開アーカイブにあたりますが、3 つのアーカイブ間でデータの相互交換は行われません。Study / Dataset / Policy の概要メタデータは DDBJ Search 上で誰でも閲覧できる一方、シークエンスファイル等の実データは利用申請が承認された利用者のみがダウンロードできます。
 
 > [!NOTE]
-> [登録ナビ](/submit) で「ヒト個人レベルの制限公開データ」を選ぶと、NBDC ヒトデータベースでのポリシー申請から JGA への登録までの経路が案内されます。
+> [登録ナビ](/submit) で「ヒト個人レベルの制限公開データ」を選ぶと、NBDC ヒトデータベースへのデータ提供申請から JGA への登録までの経路が案内されます。
 
 ## 受け付けるデータ
 

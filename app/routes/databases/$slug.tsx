@@ -53,7 +53,7 @@ const DatabaseSlugRoute = () => {
 
   return (
     <article className="pb-section-lg">
-      <PageTitle title={fm.title} subtitle={fm.description} maxWidth={880} padTop="sm" padBottom="sm" />
+      <PageTitle title={fm.title} subtitle={fm.description} maxWidth={880} padTop="trimmed" padBottom="sm" />
       <Section padY="sm">
         <div
           className="prose prose-bsi"

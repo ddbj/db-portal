@@ -39,9 +39,12 @@ export const TextInput = ({
   width,
   grow = false,
   type = "text",
+  style,
   ...rest
 }: TextInputProps) => {
-  const wrapperStyle: CSSProperties | undefined = width === undefined ? undefined : { width }
+  const mergedStyle: CSSProperties | undefined = width === undefined
+    ? style
+    : { ...style, width }
   const isWarn = state === "warn"
 
   return (
@@ -51,7 +54,7 @@ export const TextInput = ({
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedby}
       aria-invalid={isWarn || undefined}
-      style={wrapperStyle}
+      style={mergedStyle}
       className={cn(
         "px-3 rounded-button font-sans",
         grow && "min-w-0 flex-1",

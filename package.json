@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
-    "build": "npm run validate:content && NODE_ENV=production react-router build",
-    "start": "npm run validate:content && NODE_ENV=production tsx server/index.ts",
+    "prepare": "npm run gen:last-updated",
+    "dev": "npm run gen:last-updated && npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
+    "build": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production react-router build",
+    "start": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production tsx server/index.ts",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -15,7 +16,7 @@
     "test:pbt": "vitest run tests/pbt",
     "test:e2e": "playwright test --config=tests/e2e/playwright.config.ts",
     "validate:content": "tsx scripts/validate-content.ts",
-    "check:last-updated": "tsx scripts/check-last-updated.ts",
+    "gen:last-updated": "tsx scripts/gen-last-updated.ts",
     "gen:api-types": "dotenv -- openapi-typescript $DB_PORTAL_OPENAPI_URL -o app/lib/api/openapi-types.ts",
     "news:repos:sync": "bash scripts/news-repos-sync.sh"
   },

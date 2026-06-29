@@ -181,7 +181,19 @@ page-contents/
 | `title` | string | yes | ページタイトル（`<title>` タグ、ナビ生成用） |
 | `description` | string | yes | 1 行説明（SEO・検索結果表示用） |
 
-外部リンク、関連ページ、更新日等は frontmatter に入れない。外部リンクは本文に Markdown リンクで書き、更新日は git log から自動取得する想定。
+外部リンク、関連ページ、更新日等は frontmatter に入れない。外部リンクは本文に Markdown リンクで書き、更新日は git log から自動取得する（後述「lastUpdated の自動取得」）。
+
+#### lastUpdated の自動取得
+
+各 .md ファイルの最終更新日時は build 時に `git log -1 --format=%cI -- <file>` で取得し、`{ urlPath: ISO8601 }` の JSON を生成して `markdown-loader.ts` から合成する。`PageContent.lastUpdated?: string` として `getPageByPath()` 等の戻り値に乗る。
+
+- 生成スクリプト: `scripts/gen-last-updated.ts` (`page-contents/` を walk して各 .md に `git log -1 --format=%cI` を実行)
+- 出力: `app/lib/content/gen/last-updated.json` (gitignore 対象、build 成果物)
+- 起動: `package.json` の `dev` / `build` の前段に `npm run gen:last-updated` を挟む
+- CI: `.github/workflows/ci.yml` の `actions/checkout` に `fetch-depth: 0` を設定する (shallow clone では古いコミット履歴を引けない)
+- fallback: git 失敗時は `lastUpdated` を `undefined` とする。UI 側は「更新日不明」として扱う
+
+著者は frontmatter に日付を書かない (drift の温床になる)。git commit が日付の SSOT。
 
 #### Markdown 処理パイプライン
 
@@ -212,23 +224,86 @@ remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype
 
 `app/styles/tailwind.css` の `.prose-bsi` が Markdown HTML のスタイルを定義。`@tailwindcss/typography` の `prose` をベースに、BSI デザイントークンで上書き。`max-width` は `content-narrow` (880px) で中央揃え。
 
-#### TOC 抽出
+#### TOC 抽出と h2 アンカー URL
 
-`app/lib/content/heading-extractor.ts` が Markdown AST から h2/h3 見出しを抽出し、`github-slugger` で `rehype-slug` と同一の ID を生成する。抽出結果は `PageContent.toc` に格納され、各ページの折りたたみ式目次として表示される。
+`app/lib/content/heading-extractor.ts` が Markdown AST から h2/h3 見出しを抽出し、`github-slugger` で `rehype-slug` と同一の ID を生成する。抽出結果は `PageContent.toc` に格納される。
+
+**h2 単位の addressable URL**: 各 h2 見出しは `/<page>#<anchor>` の個別 URL を持ち、ナレッジベースの検索結果から直接ジャンプできる。anchor の slug 規約は `rehype-slug` + `github-slugger` (GitHub 風) で、本文 HTML の `<h2 id>` と TOC の `id` が一致することを `heading-extractor.ts` が保証する。
+
+**sidebar への h2 統合**: h2 はナレッジベース sidebar の `#` トグルで展開表示される (後述「Sidebar (ナレッジベース統一)」)。h3 以下は本文ページ側に頼り、sidebar には載せない。各ページごとの折りたたみ式詳細目次 (旧 `ContentTocSidebar`) は撤去し、sidebar の tree に統合する。
 
 #### コンテンツツリー
 
 `app/lib/content/content-tree.ts` が `listAllPages()` からセクション別にグループ化したナビゲーションツリーを構築する。`_dev/` セクションは除外。ツリーは起動時に 1 度だけ計算されキャッシュされる。
 
+**ノード種別** (= sidebar tree と sitemap 目次の共通モデル):
+
+| 種別 | URL | 子ノード | 例 |
+|---|---|---|---|
+| `category` | 持たない (UI 上は描画されない) | dir / doc を束ねる | `databases` / `guides` / `policies` |
+| `dir` | 持つ (`index.md` がページ実体、`.md` は URL から畳む) | doc を持てる | `/databases/bioproject` |
+| `doc` | 持つ | 持たない | `/guides/getting-started` |
+
+**設計原則**: 著者にカテゴリ付けを要求しない (frontmatter にタグを持たせない)。**フォルダ構造が唯一の分類軸**。`category` ノードは sidebar / 目次 UI で見出し行を描画せず、子を直接 flat に並べてグループ間は余白で区切る (情報密度を上げるため)。
+
 #### 全文検索
 
 `app/lib/content/search-index.ts` が MiniSearch でクライアントサイド全文検索インデックスを構築する。ja / en 別にインデックスを持ち、title (boost 3) > description (boost 2) > body (boost 1) でランク付け。prefix 検索と fuzzy 検索に対応。
 
-#### ルーティング
+**index の粒度**: ページ単位 doc と h2 セクション単位 doc を同一 index に混在させる (`kind: "page" | "section"` で識別)。
 
-`/contents` がコンテンツのハブページ (検索 + セクション一覧)。pathless layout route (`app/routes/contents/layout.tsx`) が左サイドバーナビを提供し、`/contents` と `databases/:slug` を子ルートとして収容する。URL はフラットのまま (`/contents/` にネストしない)。`_dev/*` は layout の外に残る。
+- page doc: `id = urlPath`、`title = frontmatter.title`、`body` = ページ全文の plain text
+- section doc: `id = urlPath#anchor`、`title = h2 テキスト`、`pageTitle = 親 page の title`、`body` = h2 境界 (`^## ` 正規表現) で split した section 本文の plain text
 
-パンくず: Home → コンテンツ(`/contents`) → ページタイトル。
+検索結果は `kind` で 2 通りに render される。section hit は親ページタイトル + 見出しピル + section スニペットを 1 行にまとめ、`/page#anchor` に直接ジャンプする。1 ページあたり section hit は最良 score の 1 件に集約する。
+
+**スニペット生成**: `buildSnippet(body, query)` がクエリ語の最初のヒット位置から前後 ~75 字を切り出し、ハイライトは UI 側の `<Mark>` primitive (`app/ui/mark.tsx`) で施す (dangerouslySetInnerHTML 不使用)。
+
+#### ナレッジベース hub `/docs`
+
+`/docs` がコンテンツのハブページ (タイトル: 「ナレッジベース」 / "Knowledge Base")。**全文検索 + 全ページツリー俯瞰 + 最近更新 + サイトマップ目次** を 1 ページに束ねる。pathless layout route (`app/routes/docs/layout.tsx`) が左サイドバーナビを提供し、`/docs` と `databases/:slug` を子ルートとして収容する。URL はフラットのまま (`/docs/` にネストしない)。`_dev/*` は layout の外に残る。
+
+i18n namespace は `docs.*` (旧 `contents.*` から rename)、ja / en 同一キーセットの不変量は `i18n.md` 参照。
+
+**メイン領域の構成 (縦)**:
+
+1. PageTitle (`docs.title` = ナレッジベース、`docs.lead` = サイト全体の俯瞰文)
+2. SearchBox (scope なし、placeholder = 「サイト内のドキュメントを全文検索（見出しも対象）」)
+3. (mode = "search" の時のみ) 検索結果ブロック: 結果ヘッダ `「{query}」 の検索結果 {N} 件` + 「× 検索を閉じる」、結果リスト、補足文 (タイトル / 本文 / h2 を横断検索する旨)
+4. 「最近更新したページ」 ブロック (top 5、`lastUpdated` 降順、常設)
+5. 「目次 (サイトマップ)」 ブロック (`columns` レイアウト: 4 カラム grid、カテゴリごとに縦積み、常設)
+
+**state 機械**: `mode = "map" | "search"` (`?q=` の有無で導出)。SearchBox 入力 → URL `?q=xxx` 更新 → search mode に切替。`× 検索を閉じる` で `?q=` を削除 → map mode に戻る。`?q=` で状態を URL に持つので **reload / shareable / browser back** が効く。検索結果ブロックが出ても「最近更新」「目次」 は消えない (hub としての一貫性)。
+
+#### Sidebar (ナレッジベース統一)
+
+全 content ページ (= `/docs` と `databases/:slug`) で共通の左サイドバーを使う。操作モデルは Confluence / Notion 型 (キャレットは展開専用、名前リンクは navigate + 自動展開):
+
+| 要素 | 操作 | 結果 |
+|---|---|---|
+| キャレット `▸/▾` (dir 行先頭) | click | 展開 / 折りたたみのみ |
+| ノード名リンク | click | そのページを開く + 自動展開 |
+| `# {h2Count}` トグル (h2 を持つ dir / doc) | click | そのページの h2 一覧を行の下に inline 展開 |
+| 見出し行 | click | `/path#anchor` に遷移 (同ページならスクロール) |
+
+**設計の固定点**:
+
+- `category` 行は **描画しない**。子をトップレベルに並べ、グループ間は余白だけで区切る
+- フォルダ / ドキュメントのアイコンは使わない。種別はキャレットの有無で識別する
+- ネスト表現は左の縦ガイドライン (`border-l border-border-soft`) で行う
+- アクティブページ / アクティブ見出しは `border-l-2 border-brand bg-brand-soft text-brand-deep` でハイライト
+- 上部にツリー内絞り込み入力 (placeholder「ツリー内を絞り込み」、200ms debounce)。マッチしないノードは隠す + マッチした doc の親 dir は自動展開して残す
+- 上部の見出し「全ドキュメント」 + 右端に総ページ数 (`{count} ページ`)
+
+旧 `ContentTocSidebar` (active page の h2/h3 詳細目次を別ブロックで描画) は撤去。h2 は `#` トグル経由で tree に統合済み、h3 以下は本文ページに頼る。
+
+#### ルーティング詳細
+
+- `app/routes.ts`: `route("docs", "routes/docs/index.tsx")` を pathless layout (`routes/docs/layout.tsx`) の子として登録
+- 子ルートとして `databases/:slug` も同じ layout に収容 (URL はフラットのまま `/databases/:slug`)
+- パンくず: `Home → ナレッジベース (/docs) → ページタイトル`。`breadcrumb.docs` i18n キー + `breadcrumbResolver: "docs-root"` でラベル解決
+- `server/api/sitemap.ts` の `STATIC_PATHS` に `/docs` を含める (ハブ route 自体)。markdown content page (`/databases/bioproject` 等) は `listContentPaths()` が `page-contents/` から自動列挙する
+- 末尾スラッシュは付けない (dir / doc 両方とも `/path` 形式)。`extractUrlPath` (`markdown-loader.ts`) の挙動と一致
 
 #### バリデーション
 

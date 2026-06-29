@@ -77,7 +77,7 @@ LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、
 - `npm test -- --run` (unit + PBT)
 - `npm audit --audit-level=high --omit=dev` (production 依存の高深刻度脆弱性で fail)
 
-deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行しない。e2e は staging deploy 後に staging ホスト上の e2e 専用コンテナ (`Dockerfile` の `e2e` stage) で deploy 済み公開 URL を叩いて手動実行する (`tests/e2e/notes.md` §1)、openapi 差分検知はリリース直前に手動で叩く、`lastUpdated` の整合チェックは `npm run check:last-updated` をリリース前に手動で叩く。
+deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行しない。e2e は staging deploy 後に staging ホスト上の e2e 専用コンテナ (`Dockerfile` の `e2e` stage) で deploy 済み公開 URL を叩いて手動実行する (`tests/e2e/notes.md` §1)、openapi 差分検知はリリース直前に手動で叩く。Markdown ページの `lastUpdated` は `scripts/gen-last-updated.ts` が build 時に git log から自動生成するので、author 側に整合チェックは無い。
 
 ### openapi.json 差分検知 (手動 / リリース直前)
 

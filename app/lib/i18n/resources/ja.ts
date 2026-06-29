@@ -28,20 +28,35 @@ export type Resources = {
   nav: {
     search: string
     submit: string
+    docs: string
     about: string
   }
   breadcrumb: {
     home: string
-    contents: string
+    docs: string
     databases: string
   }
-  contents: {
-    pageTitle: string
-    pageDescription: string
-    sidebarHeading: string
-    tocHeading: string
-    searchPlaceholder: string
-    searchNoResults: string
+  docs: {
+    title: string
+    sidebar: {
+      heading: string
+      totalPages: string
+      filterPlaceholder: string
+      headingToggleLabel: string
+      lastUpdatedUnknown: string
+    }
+    sections: {
+      recentlyUpdated: string
+      sitemap: string
+    }
+    search: {
+      placeholder: string
+      submitLabel: string
+      clear: string
+      resultsHeading: string
+      closeSearch: string
+      noResults: string
+    }
   }
   top: {
     hero: {
@@ -281,11 +296,7 @@ export type Resources = {
       "open": string
       "restricted": string
       "restrictedPreference": { label: string; sub: string }
-      "hasIdentifier": {
-        ariaLabel: string
-        yes: { label: string; sub: string }
-        no: { label: string; sub: string }
-      }
+      "hasIdentifier": { label: string; sub: string }
       "ethicsCompliance": { label: string; sub: string }
       "publiclyAvailable": { label: string; sub: string }
       "microbialAnalysis": { label: string; sub: string }
@@ -714,20 +725,35 @@ export const ja: Resources = {
   nav: {
     search: "検索",
     submit: "登録",
+    docs: "ナレッジベース",
     about: "About us",
   },
   breadcrumb: {
     home: "ホーム",
-    contents: "コンテンツ",
+    docs: "ナレッジベース",
     databases: "データベース",
   },
-  contents: {
-    pageTitle: "コンテンツ",
-    pageDescription: "データベースやポリシーに関するドキュメントを一覧・検索できます。",
-    sidebarHeading: "コンテンツ",
-    tocHeading: "目次",
-    searchPlaceholder: "コンテンツを検索",
-    searchNoResults: "該当するコンテンツはありません",
+  docs: {
+    title: "ナレッジベース",
+    sidebar: {
+      heading: "全ドキュメント",
+      totalPages: "{{count}} ページ",
+      filterPlaceholder: "ツリー内を絞り込み",
+      headingToggleLabel: "{{title}} の見出し一覧",
+      lastUpdatedUnknown: "更新日不明",
+    },
+    sections: {
+      recentlyUpdated: "最近更新したページ",
+      sitemap: "SiteMap",
+    },
+    search: {
+      placeholder: "サイト内のドキュメントを全文検索",
+      submitLabel: "検索",
+      clear: "検索をクリア",
+      resultsHeading: "「{{query}}」 の検索結果 {{count}} 件",
+      closeSearch: "検索を閉じる",
+      noResults: "該当するドキュメントはありません",
+    },
   },
   top: {
     hero: {
@@ -963,15 +989,8 @@ export const ja: Resources = {
       "restricted": "制限公開",
       "restrictedPreference": { label: "制限公開を希望する", sub: "審査により承認を受けた研究者間での共有を希望" },
       "hasIdentifier": {
-        ariaLabel: "個人識別符号の有無",
-        yes: {
-          label: "個人識別符号を含む",
-          sub: "全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等",
-        },
-        no: {
-          label: "個人識別符号を含まない",
-          sub: "ゲノムレベル個人データを含まないデータ",
-        },
+        label: "個人識別符号を含む",
+        sub: "全ゲノム配列・全エキソーム配列・全ゲノム SNP データ等",
       },
       "ethicsCompliance": { label: "法令・倫理指針に沿った研究", sub: "法令や研究倫理指針に沿って実施された研究" },
       "publiclyAvailable": { label: "一般入手可能な試料", sub: "市販・公開リソースなど、広く入手可能な試料を対象とした解析" },
@@ -1012,7 +1031,7 @@ export const ja: Resources = {
         allOpen: "このデータはすべて非制限公開です",
         allOpenSub: "申請は不要です。そのまま登録できます。",
         allRestricted: "このデータはすべて制限公開です",
-        allRestrictedSub: "登録前に Policy 申請が必要です。",
+        allRestrictedSub: "登録前に NBDC ヒトデータベースへの提供申請が必要です。",
         empty: "ファイルを追加すると、データ種別ごとの公開区分が表示されます",
         emptySub: "",
       },
@@ -1025,7 +1044,7 @@ export const ja: Resources = {
       "nsss": { title: "NSSS", description: "塩基配列の Web 登録システム" },
       "gea": { title: "GEA", description: "遺伝子発現データの登録先" },
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
-      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (DBCLS 運営)" },
+      "humandbs": { title: "NBDC ヒトデータベース", description: "制限公開ヒトデータの提供申請・承認窓口 (DBCLS 運営)" },
       "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先 (DDBJ 外)" },
       "eva": { title: "EVA", description: "非ヒト variant の登録先 (EBI EVA)" },
     },
@@ -1116,7 +1135,7 @@ export const ja: Resources = {
       dataset: {
         intro: "JGA は、Policy 単位の Dataset でデータを束ねます。",
       },
-      policyApplication: "制限公開データの登録には、NBDC ヒトデータベースの申請窓口で Policy 申請が必要です。",
+      policyApplication: "制限公開データの登録には、NBDC ヒトデータベースで提供申請を行い、ヒトデータ審査委員会の承認を受ける必要があります。",
       nbdcPolicy: "NBDC 標準ポリシーを利用できます。独自ポリシーは DBCLS 登録で JGAP を発行します。",
     },
     metabobank: {

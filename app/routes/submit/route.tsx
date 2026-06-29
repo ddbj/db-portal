@@ -258,7 +258,6 @@ const AccessSectionPanel = ({
 }) => {
   const t = useT()
   const disabled = q2 === null || !isHuman
-  const radioDisabled = disabled || section.restrictedPreference
   const basisDisabled = disabled || section.restrictedPreference || section.hasIdentifier
 
   return (
@@ -280,25 +279,12 @@ const AccessSectionPanel = ({
           disabled={disabled}
           onChange={() => onChange({ restrictedPreference: !section.restrictedPreference })}
         />
-        <RadioCardGroup
-          ariaLabel={t("submit.access.hasIdentifier.ariaLabel")}
-          name="access-has-identifier"
-          value={disabled ? null : section.hasIdentifier ? "yes" : "no"}
-          options={[
-            {
-              value: "yes",
-              label: t("submit.access.hasIdentifier.yes.label"),
-              sub: t("submit.access.hasIdentifier.yes.sub"),
-              disabled: radioDisabled,
-            },
-            {
-              value: "no",
-              label: t("submit.access.hasIdentifier.no.label"),
-              sub: t("submit.access.hasIdentifier.no.sub"),
-              disabled: radioDisabled,
-            },
-          ]}
-          onChange={(v) => onChange({ hasIdentifier: v === "yes" })}
+        <Toggle
+          label={t("submit.access.hasIdentifier.label")}
+          sub={t("submit.access.hasIdentifier.sub")}
+          checked={!disabled && section.hasIdentifier}
+          disabled={disabled}
+          onChange={() => onChange({ hasIdentifier: !section.hasIdentifier })}
         />
         <p className="text-fs-micro font-semibold text-ink-mid mt-1 mb-0">
           {t("submit.access.basisHeading")}

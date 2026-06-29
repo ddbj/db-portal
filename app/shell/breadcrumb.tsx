@@ -16,9 +16,9 @@ type BreadcrumbProps = {
 export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   const lang = useLang()
   const t = useT()
-  const contentsRootResolver: BreadcrumbResolver = () => ({
-    label: t("breadcrumb.contents"),
-    href: "/contents",
+  const docsRootResolver: BreadcrumbResolver = () => ({
+    label: t("breadcrumb.docs"),
+    href: "/docs",
   })
   const databaseResolver: BreadcrumbResolver = ({ params, pathname }) => {
     const slug = params.slug
@@ -32,7 +32,7 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
     return { label: fm.title, href: pathname }
   }
   const mergedResolvers = {
-    "contents-root": contentsRootResolver,
+    "docs-root": docsRootResolver,
     "database-content": databaseResolver,
     ...(resolvers ?? {}),
   }
@@ -49,7 +49,7 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
   return (
     <nav
       aria-label={t("a11y.breadcrumbNav")}
-      className="max-w-content-max mx-auto px-page-gutter py-3"
+      className="max-w-content-max mx-auto px-page-gutter py-2"
     >
       <ol className="flex items-center gap-1.5 list-none p-0 m-0 text-fs-body-sm flex-wrap">
         {items.map((item, i) => {

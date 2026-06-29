@@ -9,6 +9,13 @@ export const PageFrontmatter = z.object({
 
 export type PageFrontmatter = z.infer<typeof PageFrontmatter>
 
+export const PageLastUpdated = z.object({
+  ja: z.string().optional(),
+  en: z.string().optional(),
+})
+
+export type PageLastUpdated = z.infer<typeof PageLastUpdated>
+
 export const PageContent = z.object({
   slug: z.string(),
   urlPath: z.string(),
@@ -24,6 +31,7 @@ export const PageContent = z.object({
     ja: z.array(TocHeading),
     en: z.array(TocHeading).optional(),
   }),
+  lastUpdated: PageLastUpdated.optional(),
 })
 
 export type PageContent = z.infer<typeof PageContent>

@@ -250,7 +250,6 @@ docker compose exec app npm run news:repos:sync
 ```bash
 docker compose exec app npm run validate:content
 docker compose exec app npm run build
-docker compose exec app npm run check:last-updated
 docker compose exec app npm run gen:api-types  # 差分があれば commit
 ```
 

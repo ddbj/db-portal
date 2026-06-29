@@ -1,16 +1,16 @@
 ---
 title: JGA (Japanese Genotype-phenotype Archive)
-description: Controlled-access archive at DDBJ Center for individual-level human genetic and phenotypic data, accepting only de-identified data under DBCLS-approved policy.
+description: Controlled-access archive at DDBJ Center for individual-level human genetic and phenotypic data, accepting only de-identified data under a policy approved through the NBDC Human Database; data use requires review by the Data Access Committee.
 ---
 
 ## About JGA
 
-The Japanese Genotype-phenotype Archive (JGA) is a controlled-access archive for individual-level human genetic and phenotypic data. It is hosted by the Bioinformation and DDBJ Center, while the review of data submission and data use is performed by DBCLS (Database Center for Life Science) through the [NBDC Human Database](/databases/humandbs). JGA holds and shares human data that cannot be made openly public beyond the scope of participant consent, under explicit data use policies.
+The Japanese Genotype-phenotype Archive (JGA) is a controlled-access archive for individual-level human genetic and phenotypic data. It is hosted by the Bioinformation and DDBJ Center, while both data submission and data use applications are received through the [NBDC Human Database](/databases/humandbs) and reviewed by its Data Access Committee. JGA holds and shares human data that cannot be made openly public beyond the scope of participant consent, under explicit data use policies.
 
 JGA is the same kind of controlled-access archive as EBI EGA and NCBI dbGaP, but no data is exchanged among the three archives. Summary metadata for Study, Dataset, and Policy objects is openly browsable on DDBJ Search, but sequence files and other primary data can only be downloaded by approved data users.
 
 > [!NOTE]
-> In the [Submit Navigator](/submit), selecting "individual-level controlled-access human data" guides you through the policy application at the NBDC Human Database and the subsequent JGA submission.
+> In the [Submit Navigator](/submit), selecting "individual-level controlled-access human data" guides you through the data submission application at the NBDC Human Database and the subsequent JGA submission.
 
 ## Data accepted
 

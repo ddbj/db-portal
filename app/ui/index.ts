@@ -20,17 +20,22 @@ export {
   ChevronDownIcon,
   CloseIcon,
   ExternalIcon,
+  FileTextIcon,
+  FolderIcon,
   GlobeIcon,
+  HashIcon,
   HelpIcon,
   InfoIcon,
   LockClosedIcon,
   LockOpenIcon,
+  MenuIcon,
   SearchIcon,
   UserIcon,
 } from "./icons"
 export { InfoHint } from "./info-hint"
 export { Label } from "./label"
 export { LinkCard } from "./link-card"
+export { Mark } from "./mark"
 export { Modal, ModalBody, ModalFooter, ModalHeader } from "./modal"
 export { ModalPreview, PreviewCard } from "./modal-preview"
 export { Page } from "./page"

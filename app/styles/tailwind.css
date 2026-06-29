@@ -44,6 +44,9 @@
   --color-border-soft:    #DAD6E0;  /* default border / divider / Header bottom border */
   --color-border-strong:  #1A1726;  /* SearchBox 外周 border (strong contrast) */
 
+  /* Search highlight (<mark> 地色、ドキュメント検索結果のクエリ語強調) */
+  --color-highlight-bg: #FFF1B8;
+
   /* Status palette (warn は色相 47° goldenrod、DDBJ source 35° と識別可能) */
   --color-warn-bg:     #FCF7E3;
   --color-warn-fg:     #705800;
@@ -165,6 +168,14 @@ body {
   font-family: var(--font-sans);
   color: var(--color-ink);
   background: var(--color-surface);
+}
+
+/* Search highlight: <mark> within app surfaces (docs search snippet 等). */
+mark {
+  background: var(--color-highlight-bg);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
 /* === Prose (Markdown content pages) ======================================= */

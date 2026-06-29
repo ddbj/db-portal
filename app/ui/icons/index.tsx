@@ -113,3 +113,38 @@ export const ArrowLeftIcon = ({ size = 14, title, ...rest }: IconProps) => (
     <polyline points="11 5 4 12 11 19" />
   </svg>
 )
+
+export const MenuIcon = ({ size = 16, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+  </svg>
+)
+
+// docs hub のアイコン群。共通 UI アイコン (Chevron / Search 等) と同じ
+// viewBox 24x24 + stroke 1.75 outline + currentColor に揃える。size 16-18 でも
+// 線質が安定する。handoff の「folder ノッチ / doc 折り返し / ハッチ 4 本」 意図は維持。
+export const FolderIcon = ({ size = 16, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <path d="M3 7 a2 2 0 0 1 2 -2 H9 l2 2 H19 a2 2 0 0 1 2 2 V18 a2 2 0 0 1 -2 2 H5 a2 2 0 0 1 -2 -2 Z" />
+  </svg>
+)
+
+export const FileTextIcon = ({ size = 16, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <path d="M14 3 H6 a2 2 0 0 0 -2 2 V19 a2 2 0 0 0 2 2 H18 a2 2 0 0 0 2 -2 V9 L14 3 Z" />
+    <polyline points="14 3 14 9 20 9" />
+    <line x1="9" y1="13" x2="15" y2="13" />
+    <line x1="9" y1="17" x2="15" y2="17" />
+  </svg>
+)
+
+export const HashIcon = ({ size = 13, title, ...rest }: IconProps) => (
+  <svg {...baseProps(size, title)} {...rest}>
+    <line x1="4" y1="9" x2="20" y2="9" />
+    <line x1="4" y1="15" x2="20" y2="15" />
+    <line x1="10" y1="3" x2="8" y2="21" />
+    <line x1="16" y1="3" x2="14" y2="21" />
+  </svg>
+)

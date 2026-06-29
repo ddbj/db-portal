@@ -30,20 +30,35 @@ export const en: Resources = {
   nav: {
     search: "Search",
     submit: "Submit",
+    docs: "Knowledge Base",
     about: "About us",
   },
   breadcrumb: {
     home: "Home",
-    contents: "Contents",
+    docs: "Knowledge Base",
     databases: "Databases",
   },
-  contents: {
-    pageTitle: "Contents",
-    pageDescription: "Browse and search documentation about databases and policies.",
-    sidebarHeading: "Contents",
-    tocHeading: "Table of Contents",
-    searchPlaceholder: "Search contents",
-    searchNoResults: "No matching contents found",
+  docs: {
+    title: "Knowledge Base",
+    sidebar: {
+      heading: "All documents",
+      totalPages: "{{count}} pages",
+      filterPlaceholder: "Filter tree",
+      headingToggleLabel: "Headings of {{title}}",
+      lastUpdatedUnknown: "Updated date unknown",
+    },
+    sections: {
+      recentlyUpdated: "Recently updated",
+      sitemap: "SiteMap",
+    },
+    search: {
+      placeholder: "Search across the site",
+      submitLabel: "Search",
+      clear: "Clear search",
+      resultsHeading: "{{count}} results for \"{{query}}\"",
+      closeSearch: "Close search",
+      noResults: "No matching documents",
+    },
   },
   top: {
     hero: {
@@ -279,15 +294,8 @@ export const en: Resources = {
       "restricted": "Restricted",
       "restrictedPreference": { label: "Prefer restricted access", sub: "Sharing among researchers approved through a review process" },
       "hasIdentifier": {
-        ariaLabel: "Personal identifier presence",
-        yes: {
-          label: "Contains a personal identifier",
-          sub: "Whole genome sequence / whole exome sequence / whole-genome SNP data, etc.",
-        },
-        no: {
-          label: "Does not contain a personal identifier",
-          sub: "Data without genome-level individual data",
-        },
+        label: "Contains a personal identifier",
+        sub: "Whole genome sequence / whole exome sequence / whole-genome SNP data, etc.",
       },
       "ethicsCompliance": { label: "Research under laws and ethics guidelines", sub: "Research conducted under laws or research ethics guidelines" },
       "publiclyAvailable": { label: "Publicly available specimens", sub: "Analysis of commercially or publicly available specimens" },
@@ -318,7 +326,7 @@ export const en: Resources = {
       },
       group: {
         companion: { title: "Project & sample info", sub: "Required for all submissions" },
-        restricted: { title: "Restricted-access data", sub: "Policy application required first" },
+        restricted: { title: "Restricted-access data", sub: "Submission application required first" },
         open: { title: "Open-access data", sub: "No application needed" },
         destination: { title: "Submission destinations", sub: "Per data type" },
       },
@@ -328,7 +336,7 @@ export const en: Resources = {
         allOpen: "All data is open access",
         allOpenSub: "No application is needed. You can submit directly.",
         allRestricted: "All data is restricted access",
-        allRestrictedSub: "A policy application is required before submission.",
+        allRestrictedSub: "A submission application to the NBDC Human Database is required first.",
         empty: "Add files to see the access level for each data type",
         emptySub: "",
       },
@@ -341,7 +349,7 @@ export const en: Resources = {
       "nsss": { title: "NSSS", description: "Web-based nucleotide sequence submission system." },
       "gea": { title: "GEA", description: "Deposits gene expression and spatial data." },
       "metabobank": { title: "MetaboBank", description: "Deposits mass spectrometry, NMR, and metabolite data." },
-      "humandbs": { title: "NBDC Human Database", description: "Apply for and obtain the data-use policy for controlled-access human data (operated by DBCLS)." },
+      "humandbs": { title: "NBDC Human Database", description: "Submission application and review window for controlled-access human data (operated by DBCLS)." },
       "jpost": { title: "jPOST", description: "Submit proteomics data here instead (outside DDBJ)." },
       "eva": { title: "EVA", description: "Submit non-human variants to the EBI EVA." },
     },
@@ -432,7 +440,7 @@ export const en: Resources = {
       dataset: {
         intro: "JGA groups data into datasets defined per policy.",
       },
-      policyApplication: "Submitting restricted-access data requires applying for a policy through the NBDC Human Database application portal.",
+      policyApplication: "Submitting restricted-access data requires a submission application to the NBDC Human Database and approval by its Data Access Committee.",
       nbdcPolicy: "You can use the standard NBDC policy, or register your own policy with DBCLS to issue a JGAP.",
     },
     metabobank: {

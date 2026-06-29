@@ -408,7 +408,7 @@ Service は単一の enum で、各値が **role** を持つ。利用者向け�
 | `biosample` | companion | サンプルの束ね。実サンプル数・生物種は Intra-DB Tag |
 | `eva` | external | 非ヒト variant の登録先 (EBI European Variation Archive)。短いバリアントも構造バリアント (旧 DGVa 相当) も EVA が受ける。dbSNP / dbVar は非ヒトの受付を終了 |
 | `jpost` | external | プロテオーム (非 MS 含む) の登録先 (jPOSTrepo、ProteomeXchange メンバー、DDBJ 外)。`proteome` 種別の一択先 |
-| `humandbs` | external | 制限公開ヒトデータの利用制限ポリシー申請・承認窓口 (NBDC ヒトデータベース / HumanDBs、DBCLS 運営)。提供申請とポリシー (NBDC 標準 / 独自 JGAP) は同一プラットフォームで完結するため 1 service に統合する。JGA の前提ゲート |
+| `humandbs` | external | 制限公開ヒトデータの提供申請・承認窓口 (NBDC ヒトデータベース / HumanDBs、DBCLS 運営)。提供申請の審査はヒトデータ審査委員会が行い、ポリシー (NBDC 標準 / 独自 JGAP) は同一プラットフォームで完結するため 1 service に統合する。JGA の前提ゲート |
 
 `candidateRepos` (カスケードと KindRoute が参照する登録エンドポイント集合) は **登録エンドポイント (role = destination ∪ `{jpost, eva}`) の部分集合** である。role は `service.ts` が SSOT で、PBT で全 service がいずれかの role に属することを固定する。
 

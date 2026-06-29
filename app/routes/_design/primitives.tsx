@@ -18,6 +18,7 @@ import {
   IconButton,
   Label,
   LinkCard,
+  Mark,
   Modal,
   ModalBody,
   ModalFooter,
@@ -41,7 +42,10 @@ import {
   ChevronDownIcon,
   CloseIcon,
   ExternalIcon,
+  FileTextIcon,
+  FolderIcon,
   GlobeIcon,
+  HashIcon,
   InfoIcon,
   SearchIcon,
   UserIcon,
@@ -599,6 +603,32 @@ const TextLinkGallery = () => (
   </Block>
 )
 
+const MarkGallery = () => (
+  <Block title="Mark (search highlight)">
+    <Row label="single term">
+      <p className="text-fs-body text-ink m-0">
+        <Mark
+          text="BioProject はプロジェクトの情報を束ねるカタログです。"
+          terms={["プロジェクト"]}
+        />
+      </p>
+    </Row>
+    <Row label="multiple terms">
+      <p className="text-fs-body text-ink m-0">
+        <Mark
+          text="DDBJ Sequence Read Archive の登録手順とアクセッション番号"
+          terms={["DDBJ", "登録"]}
+        />
+      </p>
+    </Row>
+    <Row label="empty terms (passthrough)">
+      <p className="text-fs-body text-ink m-0">
+        <Mark text="No highlight should appear here." terms={[]} />
+      </p>
+    </Row>
+  </Block>
+)
+
 const IconGallery = () => (
   <Block title="Icons">
     <Row label="機能アイコン">
@@ -610,6 +640,11 @@ const IconGallery = () => (
       <ExternalIcon size={12} title="外部リンク" />
       <InfoIcon size={16} title="情報" />
     </Row>
+    <Row label="ドキュメント (docs hub)">
+      <FolderIcon size={16} title="ディレクトリ" className="text-brand" />
+      <FileTextIcon size={16} title="ドキュメント" className="text-brand" />
+      <HashIcon size={16} title="見出しアンカー" className="text-brand-deep" />
+    </Row>
     <Row label="size=24 (拡大表示)">
       <ChevronDownIcon size={24} />
       <CloseIcon size={24} />
@@ -618,6 +653,9 @@ const IconGallery = () => (
       <UserIcon size={24} />
       <ExternalIcon size={24} />
       <InfoIcon size={24} />
+      <FolderIcon size={24} className="text-brand" />
+      <FileTextIcon size={24} className="text-brand" />
+      <HashIcon size={24} className="text-brand-deep" />
     </Row>
   </Block>
 )
@@ -638,6 +676,7 @@ const DesignPrimitives = () => (
     <SearchBoxGallery />
     <CardGallery />
     <TextLinkGallery />
+    <MarkGallery />
     <IconGallery />
   </div>
 )
