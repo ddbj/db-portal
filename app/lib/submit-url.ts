@@ -21,6 +21,18 @@ export const ACCESS_FLAGS = [
   "microbialAnalysis",
 ] as const satisfies readonly (keyof AccessSection)[]
 
+const ACCESS_FLAG_URL_NAME = {
+  restrictedPreference: "restricted-preference",
+  hasIdentifier: "has-identifier",
+  ethicsCompliance: "ethics-compliance",
+  publiclyAvailable: "publicly-available",
+  microbialAnalysis: "microbial-analysis",
+} as const satisfies Record<(typeof ACCESS_FLAGS)[number], string>
+
+const URL_NAME_TO_ACCESS_FLAG = Object.fromEntries(
+  Object.entries(ACCESS_FLAG_URL_NAME).map(([flag, urlName]) => [urlName, flag]),
+) as Record<string, (typeof ACCESS_FLAGS)[number]>
+
 export type UrlEntry = {
   fileTypeKind: FileTypeKind
   dataForm: DataForm | null
@@ -135,7 +147,7 @@ const stringifyGroup = (g: UrlGroup): string => {
 }
 
 export const readSubmitParams = (params: URLSearchParams): SubmitUrlState => {
-  const rawOrg = params.get("organismDomain")
+  const rawOrg = params.get("organism-domain")
   const orgParsed = rawOrg !== null ? OrganismDomainEnum.safeParse(rawOrg) : null
   const organismDomain = orgParsed && orgParsed.success ? orgParsed.data : null
 
@@ -149,9 +161,10 @@ export const readSubmitParams = (params: URLSearchParams): SubmitUrlState => {
       publiclyAvailable: false,
       microbialAnalysis: false,
     }
-    for (const flag of accessRaw.split(",")) {
-      if ((ACCESS_FLAGS as readonly string[]).includes(flag)) {
-        section[flag as (typeof ACCESS_FLAGS)[number]] = true
+    for (const urlName of accessRaw.split(",")) {
+      const flag = URL_NAME_TO_ACCESS_FLAG[urlName]
+      if (flag !== undefined) {
+        section[flag] = true
       }
     }
     accessSection = section
@@ -183,11 +196,11 @@ export const readSubmitParams = (params: URLSearchParams): SubmitUrlState => {
 
 export const writeSubmitParams = (state: SubmitUrlState): URLSearchParams => {
   const params = new URLSearchParams()
-  if (state.organismDomain !== null) params.set("organismDomain", state.organismDomain)
+  if (state.organismDomain !== null) params.set("organism-domain", state.organismDomain)
   if (state.accessSection !== null && !accessSectionEquals(state.accessSection, DEFAULT_URL_ACCESS_SECTION)) {
     const section = state.accessSection
     const onFlags = ACCESS_FLAGS.filter((flag) => section[flag])
-    params.set("access", onFlags.join(","))
+    params.set("access", onFlags.map((flag) => ACCESS_FLAG_URL_NAME[flag]).join(","))
   }
   for (const e of state.entries) params.append("entry", stringifyEntry(e))
   for (const g of state.groups) params.append("group", stringifyGroup(g))

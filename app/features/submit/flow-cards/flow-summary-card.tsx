@@ -1,5 +1,3 @@
-import type { ReactNode } from "react"
-
 import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
@@ -11,6 +9,14 @@ import { StepBadge } from "../components/step-badge"
 import { getSubmitMeta } from "../external-links"
 import type { Validation } from "../state/types"
 import { type NhaHintLabels, NhaTimelineItem } from "./nha-hint-panel"
+
+const NHA_ORIENTATION_HUMANDBS_STEP: FlowStep = {
+  id: "orientation-humandbs",
+  service: "humandbs",
+  origin: "tier2",
+  scope: { entryIds: [], groupIds: [] },
+  notes: [],
+}
 
 type AccessSummary = ReadonlyMap<Access, FileTypeKind[]>
 type GroupLabel = { title: string; sub: string }
@@ -36,9 +42,11 @@ type FlowSummaryCardProps = {
     restricted: GroupLabel
     open: GroupLabel
     destination: GroupLabel
+    nhaOrientation: GroupLabel
   }
   accountLabels: AccountStepLabels
   nhaHintLabels: NhaHintLabels
+  showNhaOrientation: boolean
   serviceTitle: (service: Service) => string
   serviceDescription: (service: Service) => string
   servicePrereqLabel: (service: Service) => string
@@ -58,6 +66,7 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
   const {
     steps, entries, isHuman, isAuthenticated, accessByKind, accessHeading,
     accessLabel, accessOverview, groupLabels, accountLabels, nhaHintLabels,
+    showNhaOrientation,
     serviceTitle, serviceDescription, servicePrereqLabel, fileTypeKindLabel,
     resolveNote, noteKindLabel, externalCtaLabel,
     prereqHeading, detailLinkLabel,
@@ -129,6 +138,13 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
       {showAccountStep && (
         <AccountStep labels={accountLabels} />
       )}
+      {showNhaOrientation && (
+        <NhaOrientationBlock
+          label={groupLabels.nhaOrientation}
+          nhaHintLabels={nhaHintLabels}
+          stepProps={stepProps}
+        />
+      )}
       {steps.length > 0 && groups.map((g, i) => (
         <StepGroup
           key={g.groupKey}
@@ -136,15 +152,6 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
           label={g.label}
           steps={g.steps}
           accessBadge={g.accessBadge}
-          extraItem={g.groupKey === "open" && isHuman
-            ? (
-              <NhaTimelineItem
-                labels={nhaHintLabels}
-                isFirst={g.steps.length === 0}
-                externalCtaLabel={stepProps.externalCtaLabel}
-              />
-            )
-            : undefined}
           {...stepProps}
         />
       ))}
@@ -270,13 +277,12 @@ type StepItemProps = {
 }
 
 const StepGroup = ({
-  groupIndex, label, steps, accessBadge, extraItem, ...ip
+  groupIndex, label, steps, accessBadge, ...ip
 }: {
   groupIndex: number
   label: GroupLabel
   steps: readonly FlowStep[]
   accessBadge: { access: Access; label: string } | undefined
-  extraItem?: ReactNode
 } & StepItemProps) => (
   <div>
     <div className="flex items-center gap-2 mb-1">
@@ -293,11 +299,40 @@ const StepGroup = ({
           key={step.id}
           step={step}
           isFirst={i === 0}
-          isLast={i === steps.length - 1 && extraItem === undefined}
+          isLast={i === steps.length - 1}
           {...ip}
         />
       ))}
-      {extraItem}
+    </ol>
+  </div>
+)
+
+const NhaOrientationBlock = ({
+  label, nhaHintLabels, stepProps,
+}: {
+  label: GroupLabel
+  nhaHintLabels: NhaHintLabels
+  stepProps: StepItemProps
+}) => (
+  <div>
+    <div className="flex items-center gap-2 mb-1">
+      <StepBadge index={1} pending={false} />
+      <span className="text-fs-body font-bold text-ink leading-snug">{label.title}</span>
+      <span className="text-fs-micro text-ink-soft leading-snug">{label.sub}</span>
+    </div>
+    <ol className="flex flex-col m-0 list-none p-0 ml-3">
+      <TimelineStepItem
+        step={NHA_ORIENTATION_HUMANDBS_STEP}
+        isFirst
+        isLast={false}
+        {...stepProps}
+      />
+      <NhaTimelineItem
+        labels={nhaHintLabels}
+        isFirst={false}
+        detailLinkLabel={stepProps.detailLinkLabel}
+        externalCtaLabel={stepProps.externalCtaLabel}
+      />
     </ol>
   </div>
 )

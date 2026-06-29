@@ -11,8 +11,8 @@ export default {
   submit: {
     service: "jga",
     externalUrl: {
-      ja: "https://www.ddbj.nig.ac.jp/jga/submission.html",
-      en: "https://www.ddbj.nig.ac.jp/jga/submission-e.html",
+      ja: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
+      en: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
     },
     source: "DDBJ",
     accessionPlaceholders: ["JGAS######", "JGAD######"],

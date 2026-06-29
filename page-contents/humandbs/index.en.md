@@ -1,16 +1,30 @@
 ---
 title: NBDC ヒトデータベース
-description: The NBDC Human Database handles policy review and Data Submission/Use applications for controlled-access human data, routing approved data to JGA or DRA.
+description: The NBDC Human Database is a unified intake for human data Data Submission/Use applications and policy review, routing approved data to one of four archives (DRA / GEA / JGA / NHA) by data type and access class.
 ---
 
 ## What is the NBDC Human Database
 
-The NBDC Human Database (NBDC ヒトデータベース) is operated by the Database Division for Life Science (DBCLS), BioData Science Initiative (BSI), National Institute of Genetics (NIG), Research Organization of Information and Systems (ROIS). It promotes sharing and reuse of human-derived data, accepting diverse human data including genome sequences, SNP arrays, epigenomic data, brain images, and clinical information, and routing them to the appropriate distribution archive (JGA / DRA) according to each access class.
+The NBDC Human Database (NBDC ヒトデータベース) is operated by the Database Division for Life Science (DBCLS), BioData Science Initiative (BSI), National Institute of Genetics (NIG), Research Organization of Information and Systems (ROIS). It promotes sharing and reuse of human-derived data, accepting diverse human data including genome sequences, SNP arrays, epigenomic data, brain images, clinical information, summary statistics, and pathology images, and routing them to one of four archives ([DRA](/dra) / [GEA](/gea) / [JGA](/jga) / NHA) according to data type and access class.
 
-It acts as the **front gate for registering controlled-access human data in [JGA](/jga)**: policy review and application intake happen at NBDC Human Database, and approved data is then released through JGA.
+It acts as the **front gate for registering controlled-access human data in [JGA](/jga)**: policy review and application intake happen at NBDC Human Database, and approved data is then released through each archive.
 
 > [!NOTE]
 > To decide between unrestricted and controlled access, or to identify which application you need, use the [Submit Navigator](/submit) to narrow down the destination archive by access class and data type.
+
+## Archive composition
+
+The NBDC Human Database is backed by **four archives** distinguished by data type and access class. Submitters route their data through one of them according to what they have and how they intend to release it.
+
+| Archive | Acronym | Primary data type | Access class | Operator / hosting |
+|---|---|---|---|---|
+| [DDBJ Sequence Read Archive](/dra) | DRA | Raw NGS reads (FASTQ / BAM) and analyses | Unrestricted | DDBJ Center |
+| [Genomic Expression Archive](/gea) | GEA | Gene expression data (matrices, microarrays, spatial Tx) | Unrestricted | DDBJ Center |
+| [Japanese Genotype-phenotype Archive](/jga) | JGA | Individual-level human genomic and phenotypic data | Controlled-access | DDBJ Center |
+| NBDC Human Data Archive | NHA | Data types the other three archives do not handle (images, summary statistics, etc.) | Both unrestricted and controlled-access | Unrestricted NHA: NBDC (DBCLS) servers / Controlled-access NHA: DDBJ servers |
+
+> [!NOTE]
+> NHA is the **complementary archive inside the NBDC Human Database** for data types that do not fit into DRA / GEA / JGA (e.g. pathology images, GWAS / allele frequency summary statistics). The NBDC Human Database serves as the single application intake across all four archives.
 
 ## Data accepted
 
@@ -22,14 +36,18 @@ NBDC Human Database accepts any human-derived data. Typical examples:
 - Brain imaging (MRI, PET)
 - Clinical information, questionnaires, and psychological assessments from disease cohorts
 - Variant data, gene expression arrays, biochemical values, audio data
+- Pathology images and summary statistics such as GWAS / meta-analysis results
 
-Data is accepted under the following access classes, which determine the distribution archive.
+Submissions are routed to one of the four archives by access class and data type.
 
-| Access class | Distributed via | Use |
-|---|---|---|
-| Unrestricted | [DRA](/dra) | Reference sequences and other data usable without restriction |
-| Restricted Type I | [JGA](/jga) | Data requiring a use application under the NBDC standard policy (JGAP000001) |
-| Restricted Type II | [JGA](/jga) | Data requiring a use application under a stricter custom policy (a dedicated JGAP) |
+| Access class | Data type | Distribution archive | Use / notes |
+|---|---|---|---|
+| Unrestricted | Raw NGS reads (FASTQ / BAM) | [DRA](/dra) | Reference sequences and other NGS data usable without restriction |
+| Unrestricted | Gene expression data (matrices, microarrays, spatial Tx) | [GEA](/gea) | NGS-derived sets register raw to DRA first, then processed to GEA |
+| Unrestricted | Images / summary statistics / other data types | NHA (NBDC) | Pathology images; GWAS / meta-analysis statistics; allele / genotype frequencies; mean FPKM; enriched region peaks; eQTL / sQTL; mean methylation rate; PRS; mobile element polymorphism frequencies; SV frequencies, etc. |
+| Restricted Type I | Individual-level human genomic / phenotypic data | [JGA](/jga) | Requires a use application under the NBDC standard policy (`JGAP000001`) |
+| Restricted Type II | Individual-level human genomic / phenotypic data | [JGA](/jga) | Requires a use application under a stricter custom policy (a dedicated `JGAP######`) |
+| Controlled-access | Images / summary statistics / other data types | NHA (DDBJ) | Controlled-access counterpart for data types JGA does not host; stored on DDBJ servers and provided after Data Access Committee review |
 
 > [!WARNING]
 > JGA does not accept submissions on its own. **Approval at NBDC Human Database is a prerequisite for JGA registration.** To register controlled-access data in JGA, you must first proceed through the NBDC Human Database Data Submission application.
@@ -40,7 +58,7 @@ Identifiers used across NBDC Human Database and JGA:
 
 | Prefix | Width | Issuer | Meaning |
 |---|---|---|---|
-| `HUM####.vN` | 4 digits + version | NBDC | Research project registered in NBDC Human Database |
+| `HUM####.vN` | 4 digits + version | NBDC | Research project registered in NBDC Human Database; issued at the project level regardless of which archive (DRA / GEA / JGA / NHA) stores the data |
 | `JGAS######` | 6 digits | JGA (DDBJ) | Study. Describes a research project; recommended for paper citation |
 | `JGAD######` | 6 digits | JGA (DDBJ) | Dataset. A set of files bundled under one policy |
 | `JGAP######` | 6 digits | DBCLS | Policy. Issued only when a custom policy is used |
@@ -64,9 +82,9 @@ Data submission to NBDC Human Database typically proceeds through these seven st
 3. **Obtain DDBJ accounts** — The principal investigator, applicants, and data upload contacts each need a DDBJ account.
 4. **Submit through the application system** — Send the Data Submission application via the online portal.
 5. **Receive review results** — Reviewed by the Data Access Committee (DAC); usually around two weeks once all documents are in.
-6. **Upload data** — The destination is decided by the access class:
-    - Unrestricted → upload to [DRA](/dra)
-    - Restricted → upload to [JGA](/jga)
+6. **Upload data** — The destination is decided by the access class and data type:
+    - Unrestricted: NGS raw reads to [DRA](/dra), gene expression data to [GEA](/gea), images / summary statistics / other data types to NHA
+    - Controlled-access: individual-level human genomic / phenotypic data to [JGA](/jga); other data types to NHA
 7. **Update applications** — Use the `J-DS` number to amend or add data after approval.
 
 ## Policy (NBDC standard / custom JGAP)
@@ -108,7 +126,19 @@ NBDC Human Database and [JGA](/jga) form a clear division of labor: **NBDC is wh
 - **At NBDC Human Database**: Receives Data Submission applications, has the Data Access Committee review policy adequacy and documents, and approves submissions. Issues the project-level identifier `HUM####.vN`.
 - **At JGA**: Stores and distributes the approved data as Study (`JGAS######`) and Dataset (`JGAD######`). Each Dataset is bound to one `JGAP######` (standard or custom).
 
-NGS data classified as unrestricted is routed to [DRA](/dra) instead of JGA, as part of this same routing decision.
+NGS raw reads classified as unrestricted go to [DRA](/dra) instead of JGA, unrestricted gene expression data goes to [GEA](/gea), and data types that do not fall into raw reads, sequences, or expression matrices (images, summary statistics, etc.) go to NHA. NBDC Human Database serves as the single application intake across all four archives; the destination is fixed during the Data Submission review.
+
+## NHA
+
+NHA (NBDC Human Data Archive) is the **complementary archive** of the NBDC Human Database that accepts human data types not handled by [DRA](/dra) / [GEA](/gea) / [JGA](/jga). It shares the same application intake (NBDC Human Database) with the other three archives while serving as an independent destination for the data itself.
+
+- **What NHA holds**: pathology images, GWAS / meta-analysis statistics, allele / genotype frequencies, mean FPKM, enriched region peaks, eQTL / sQTL, mean methylation rate, PRS, mobile element polymorphism frequencies, SV frequencies, and similar data types. NGS raw reads, assembled sequences, expression matrices, and individual-level human genomic / phenotypic data go to DRA / GEA / JGA respectively and are out of scope for NHA.
+- **Access classes and hosting**: Both unrestricted and controlled-access. Unrestricted NHA data is distributed from NBDC (DBCLS) servers; controlled-access NHA data is distributed from DDBJ servers and is provided to users only after Data Access Committee review, like other controlled-access data.
+- **Single intake**: NHA submissions enter through the same NBDC Human Database Data Submission application as the other three archives. The project is registered at the `HUM####.vN` level, and the archive (NHA in this case) is decided by data type and access class.
+- **Use with JGA**: Individual-level human genomic and phenotypic data (raw genotypes, sequences, etc., with higher re-identification risk) go to JGA; other data types (images, summary statistics, etc.) go to NHA. When a single research project covers both, items are split between JGA and NHA per data type.
+
+> [!NOTE]
+> The NBDC Human Database is the **place of policy review and intake**; each of the four archives (DRA / GEA / JGA / NHA) is the **place where the data itself lives**. The four archives sit behind a single application door.
 
 ## Preparation
 

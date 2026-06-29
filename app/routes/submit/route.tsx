@@ -106,7 +106,10 @@ const SubmitRoute = () => {
     restricted: { title: t("submit.flow.group.restricted.title"), sub: t("submit.flow.group.restricted.sub") },
     open: { title: t("submit.flow.group.open.title"), sub: t("submit.flow.group.open.sub") },
     destination: { title: t("submit.flow.group.destination.title"), sub: t("submit.flow.group.destination.sub") },
+    nhaOrientation: { title: t("submit.flow.group.nhaOrientation.title"), sub: t("submit.flow.group.nhaOrientation.sub") },
   }
+
+  const showNhaOrientation = isHuman && fileEntries.length === 0 && accessByKind.has("open")
 
   const validationHeading = t("submit.validations.heading", { count: validations.length })
 
@@ -254,6 +257,7 @@ const SubmitRoute = () => {
                   statisticsItems: t("submit.flow.nha.statisticsItems"),
                   pathologyLabel: t("submit.flow.nha.pathologyLabel"),
                 }}
+                showNhaOrientation={showNhaOrientation}
                 serviceTitle={serviceTitle}
                 serviceDescription={serviceDescription}
                 servicePrereqLabel={servicePrereqLabel}

@@ -48,6 +48,15 @@ setActiveRateLimiter(
   }),
 )
 
+// `req.path` excludes the query string, so Vite-internal requests like
+// `index.md?import&raw` fall through to the Vite dev middleware below.
+const PAGE_ASSET_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|webp|avif|pdf)$/i
+const pageAssetStatic = express.static("./page-contents", { maxAge: "1h", fallthrough: false })
+app.use("/page-contents", (req, res, next) => {
+  if (!PAGE_ASSET_EXTENSIONS.test(req.path)) return next()
+  pageAssetStatic(req, res, next)
+})
+
 app.get("/api/me", handleMe)
 app.get("/api/news", handleNews)
 app.get("/api/services", handleServices)

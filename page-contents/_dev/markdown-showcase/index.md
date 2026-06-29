@@ -74,11 +74,25 @@ URLs in angle brackets: <https://www.example.com>
 
 ## Images
 
+外部 URL を直接参照:
+
 ![BSI logo](https://bsi.rois.ac.jp/images/logo_color.svg)
 
 HTML で幅指定もできる:
 
 <img src="https://bsi.rois.ac.jp/images/logo_color.svg" alt="BSI logo small" width="200" />
+
+`.md` の隣に画像を置いて相対パスで参照:
+
+![Sample local image](./sample.svg)
+
+HTML タグでも同じ相対パスで参照できる:
+
+<img src="./sample.svg" alt="Sample local image (HTML)" width="240" />
+
+PDF などの asset も同じ仕組みで参照できる:
+
+[Sample PDF](./sample.pdf)
 
 ## Code
 

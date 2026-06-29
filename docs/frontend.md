@@ -199,9 +199,27 @@ page-contents/
 
 `app/lib/content/markdown-pipeline.ts` が unified パイプラインを構成:
 
-remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype → rehype-slug → rehype-autolink-headings → rehype-external-links → rehype-highlight → rehype-stringify
+remark-parse → remark-gfm → remark-github-blockquote-alert → remark-rehype → rehype-raw → rehype-resolve-asset-paths → rehype-slug → rehype-autolink-headings → rehype-external-links → rehype-highlight → rehype-stringify
 
-対応する GFM 拡張: テーブル、取り消し線、タスクリスト、脚注、GitHub blockquote alerts (`> [!NOTE]` 等)。コードブロックはシンタックスハイライト付き (highlight.js)。見出しに自動で `id` とアンカーリンクを生成。外部リンクに `target="_blank" rel="noopener noreferrer"` を自動付与。
+対応する GFM 拡張: テーブル、取り消し線、タスクリスト、脚注、GitHub blockquote alerts (`> [!NOTE]` 等)。コードブロックはシンタックスハイライト付き (highlight.js)。見出しに自動で `id` とアンカーリンクを生成。外部リンクに `target="_blank" rel="noopener noreferrer"` を自動付与。rehype-raw により本文中の生 HTML (`<img>` 等) も hast の Element として扱われる。
+
+#### 画像 / asset の同梱配置
+
+著者は **`.md` の隣 (同 dir / サブ dir) に画像 / PDF を置いて、相対パスで参照** できる。`import.meta.glob` で `page-contents/` 配下の対象 asset のキーセットを取り込み (存在チェック用)、`rehype-resolve-asset-paths` が `<img src>` / `<a href>` の相対パスを **「md の所在 dir 基点の絶対 path」** (`/page-contents/<full path>`) に書き換える。配信は `server/index.ts` の `/page-contents/<asset>` middleware が `page-contents/` から static serve する (拡張子 whitelist 外への request は 404 を返して `.md` 本文や非対応ファイルを露出させない)。dev / prod とも同じ middleware を通る。
+
+対応拡張子 (whitelist): `png` `jpg` `jpeg` `gif` `svg` `webp` `avif` `pdf`
+
+| 入力 src/href | 解決する? | 動作 |
+|---|---|---|
+| `./foo.png`, `subdir/foo.png` (相対 + 対象拡張子) | yes | md dir 基点で絶対 path 化 → `/page-contents/<full path>` |
+| `https://...`, `http://...` (外部 URL) | no | 触らない |
+| `/foo.png` (root-relative、`public/` 想定) | no | 触らない |
+| `#section`, `mailto:`, `tel:` | no | 触らない |
+| `./other-page` (拡張子なし、ページ間リンク) | no | 触らない |
+
+ページ間リンクは従来通り絶対パス (`/databases/dra` 等) で書く。
+
+未解決の相対参照 (`./not-exist.png` 等) は **build 時エラー** で fail-fast する (`markdown-loader.ts` が `markdown-pipeline.ts` の `onUnresolved` コールバックで集約)。
 
 #### クライアントサイド拡張 (`useProseEnhance`)
 

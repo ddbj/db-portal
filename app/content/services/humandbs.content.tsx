@@ -12,7 +12,7 @@ export default {
     service: "humandbs",
     externalUrl: {
       ja: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
-      en: null,
+      en: "https://humandbs.ddbj.nig.ac.jp/nbdc/application/",
     },
     source: "DBCLS",
     accessionPlaceholders: [],

@@ -322,6 +322,7 @@ export type Resources = {
         restricted: { title: string; sub: string }
         open: { title: string; sub: string }
         destination: { title: string; sub: string }
+        nhaOrientation: { title: string; sub: string }
       }
       accessOverview: {
         mixed: string
@@ -1017,6 +1018,7 @@ export const ja: Resources = {
         restricted: { title: "制限公開のデータ", sub: "データ登録の前にデータ提供申請が必要" },
         open: { title: "非制限公開のデータ", sub: "申請は不要" },
         destination: { title: "登録先", sub: "データ種別ごと" },
+        nhaOrientation: { title: "種別グリッド外のデータ", sub: "NHA への直接登録" },
       },
       accessOverview: {
         mixed: "このデータは制限公開と非制限公開の両方を含みます",
@@ -1029,8 +1031,8 @@ export const ja: Resources = {
         emptySub: "",
       },
       nha: {
-        title: "NBDC ヒトデータベース (NHA)",
-        description: "以下のデータを持っていれば、NHA に直接登録できます。",
+        title: "NBDC ヒトデータアーカイブ (NHA)",
+        description: "DRA / GEA / JGA で扱えないデータ型 (画像・統計情報など) は、NBDC ヒトデータベースの NHA に直接登録できます。",
         statisticsLabel: "統計情報:",
         statisticsItems: "GWAS / メタ解析統計量、allele / genotype 頻度情報、平均 FPKM 値、エンリッチ領域ピーク情報、eQTL / sQTL 情報、平均メチル化率、PRS、mobile element 多型頻度、SV 頻度情報",
         pathologyLabel: "病理画像",
@@ -1050,7 +1052,7 @@ export const ja: Resources = {
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
       "humandbs": {
         title: "NBDC ヒトデータベース",
-        description: "制限公開ヒトデータの提供申請・承認窓口",
+        description: "NBDC ヒトデータベースの提供申請・承認窓口",
         prereqLabel: "NBDC ヒトデータベースへの提供申請",
       },
       "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先" },

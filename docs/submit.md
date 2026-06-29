@@ -200,18 +200,20 @@ per-file の個別反転は `identifiability` ChipAxis で表現する。chip �
 
 restricted な**全種別**が JGA に振られる。sequence-read → JGA Data、それ以外 → JGA Analysis (`_jga/submission.md`)。non-human reads の restricted は DRA に embargo を付ける (JGA 対象外)。いずれも Tier1 catalog の first-match で評価する。
 
-### NHA 直接登録の案内 (hint パネル)
+### NHA 経路の案内 (off-list データ用の humandbs step + NHA hint)
 
-NBDC ヒトデータベース (`humandbs`) には、JGA / DRA / GEA / MetaboBank / jPOST 等の DDBJ 内 archive では受けない**非制限公開ヒトデータ**を直接受ける NHA (Non-restricted Human Archive) の経路がある。対象は以下:
+NBDC ヒトデータベース (`humandbs`) は、4 アーカイブ (DRA / GEA / JGA / NHA) を束ねる単一の申請入口で、そのうち **NHA (NBDC Human Data Archive)** は DRA / GEA / JGA で扱えないデータ型 (画像・統計情報など) を受ける補完アーカイブにあたる。submit ナビが扱う `FileTypeKind` の値域に該当しないデータ型は NHA に直接登録される経路があり、利用者がそれらの off-list データだけを持っているケースを「種別グリッドから 1 つも選ばない (= 意図的に未選択)」 という UI 状態で表現する。NHA の対象データ例:
 
 - 統計情報: GWAS / メタ解析統計量、allele / genotype 頻度情報、平均 FPKM 値、エンリッチ領域ピーク情報、eQTL / sQTL 情報、平均メチル化率、PRS、mobile element 多型頻度、SV 頻度情報
 - 病理画像
+- その他、DRA / GEA / JGA の登録対象に当てはまらないヒトデータ型
 
-これらは現状の `FileTypeKind` の値域に含めない (種別追加は別検討)。代わりに、OrganismDomain=human が選択されたタイミングで登録フロー pane の冒頭に **hint パネル**を 1 つ表示し、「これらを持っていれば NHA に直接登録できる」 とリンク付きで案内する。
+これら off-list データ用の **`humandbs` への申請 step + NHA hint** の 2 つを並べた orientation を、表示条件を満たすときだけ右 pane に出す。種別を 1 つでも選んだ瞬間に orientation は消え、通常の `deriveFlowSteps` 結果に置き換わる (on-list 種別を扱う submission では NHA 案内を出さない)。
 
-- **emit しない**: Tier1 catalog / Tier2 recipe いずれの emit 経路にも含めない。`humandbs` は引き続き JGA の前提 gate としてのみ flow step に登場する (`## Service と role / 外向き契約`)
-- **表示条件**: `OrganismDomain === "human"` かつ、登録フローに非制限公開のデータ (open group) が含まれるとき
-- **位置**: 非制限公開のデータグループの最後のステップの直下に置き、「open のデータがあるなら、これらは NHA に直接登録できる」 という文脈で読めるようにする
+- **emit しない**: Tier1 catalog / Tier2 recipe いずれの emit 経路にも含めない。NHA を独立 service として持たず、`humandbs` 1 service (JGA の前提 gate および NHA 案内の窓口) で表現する (`## Service と role / 外向き契約`)。NHA orientation の humandbs step / NHA hint は UI-only の補助表示で、`deriveFlowSteps` の結果には現れない
+- **表示条件**: `OrganismDomain === "human"` かつ `fileEntries.length === 0` (種別グリッドから 1 つも選んでいない意図的な未選択状態) かつ `accessByKind.has("open")` (② 公開区分から予測される access に open が含まれる) の 3 条件 AND。on-list 種別 (FileTypeKind 値域) を持つ submission は対象外。制限公開のみの場合は通常の JGA ルートが優位なため orientation を出さない (NHA の制限公開分は JGA フロー側に吸収される)
+- **位置**: 右 pane の AccessOverview / AccountStep の直下、通常の step group より前 (種別未選択時は通常 step が出ないため、ここに案内が単独で並ぶ)
+- **参照**: NHA / NBDC ヒトデータベース / 4 アーカイブ構成の概念定義は `page-contents/humandbs/` を SSOT とする (本書は submit ナビ側の表示条件と emit 方針だけを扱う)
 
 ---
 
@@ -348,6 +350,40 @@ deriveFlowSteps(Submission) ──▶ FlowStep[]   下段カード (Submission �
 
 - 利用者は手元の種別を on にし (同一種別は高々 1 個)、種別ごとに flow-changing 詳細を答える。access は ② 公開区分 (`hasIdentifier` radio + 補助トグル + per-file 反転 chip) から種別ごとに導出される
 - `FlowStep.scope` は groupIds か entryIds の少なくとも一方が非空 (`scope-nonempty` 不変量)
+
+---
+
+## URL state
+
+submit の wizard 状態は URL search params に同期される。`/submit?...` をブックマーク・共有することで、開いた時点の wizard 状態を復元できる。serialize / deserialize は `app/lib/submit-url.ts` が SSOT。
+
+### URL key
+
+| key | 形式 | 内容 |
+|---|---|---|
+| `organism-domain` | 単一値 | `OrganismDomain` enum (`human` / `eukaryote` 等) |
+| `access` | カンマ区切り | ON の access flag を kebab-case で列挙 |
+| `entry` | 反復 | 1 entry を `kind:dataForm:groupIdx:chips` で表現 (値の構造は `submit-url.ts`) |
+| `group` | 反復 | 1 group を `groupType:members:linked` で表現 (値の構造は `submit-url.ts`) |
+
+### access flag の URL 表現
+
+TypeScript 上は `AccessSection` schema の camelCase field 名で扱うが、URL 上は kebab-case で表現する。mapping は `submit-url.ts` の `ACCESS_FLAG_URL_NAME` が SSOT:
+
+| TS field (`AccessSection`) | URL value |
+|---|---|
+| `restrictedPreference` | `restricted-preference` |
+| `hasIdentifier` | `has-identifier` |
+| `ethicsCompliance` | `ethics-compliance` |
+| `publiclyAvailable` | `publicly-available` |
+| `microbialAnalysis` | `microbial-analysis` |
+
+### 規約
+
+- URL 上の identifier は **すべて kebab-case** で書く (param name・access flag 値・enum 値)。schema (TypeScript) 側は camelCase のまま、入出力境界 (`submit-url.ts`) でだけ mapping する
+- DEFAULT な accessSection (= `ethicsCompliance` のみ true) は URL 表現から省略され、再読み込み時に `null` として復元される (`null` と DEFAULT が外向き等価)
+- 不明な key / 値 (旧 camelCase 含む) は無視される。互換 fallback は持たず完全切替
+- round-trip: 任意 `SubmitUrlState` について `readSubmitParams(writeSubmitParams(s))` は s と (上記 `null` / DEFAULT 正規化を除いて) 等価 (PBT 担保、`tests/pbt/lib/submit-url.pbt.test.ts`)
 
 ---
 

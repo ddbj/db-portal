@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120">
+  <rect width="320" height="120" fill="#e0ecf7"/>
+  <rect x="6" y="6" width="308" height="108" fill="none" stroke="#5b8def" stroke-width="2"/>
+  <text x="160" y="58" font-family="sans-serif" font-size="20" fill="#1f3b6b" text-anchor="middle">Sample image</text>
+  <text x="160" y="86" font-family="sans-serif" font-size="14" fill="#1f3b6b" text-anchor="middle">page-contents/_dev/markdown-showcase/sample.svg</text>
+</svg>

@@ -1,8 +1,9 @@
-import { cn } from "~/ui"
+import { cn, TextLink } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 
-const NHA_URL = "https://humandbs.dbcls.jp/"
+const NHA_DETAIL_HREF = "/humandbs#nha"
+const NHA_EXTERNAL_URL = "https://humandbs.ddbj.nig.ac.jp/nbdc/application/"
 
 export type NhaHintLabels = {
   title: string
@@ -15,10 +16,11 @@ export type NhaHintLabels = {
 type NhaTimelineItemProps = {
   labels: NhaHintLabels
   isFirst: boolean
+  detailLinkLabel: string
   externalCtaLabel: string
 }
 
-export const NhaTimelineItem = ({ labels, isFirst, externalCtaLabel }: NhaTimelineItemProps) => (
+export const NhaTimelineItem = ({ labels, isFirst, detailLinkLabel, externalCtaLabel }: NhaTimelineItemProps) => (
   <li data-testid="nha-hint-item" className="flex gap-2.5">
     <div className="flex flex-col items-center w-2 shrink-0">
       <div className={cn("w-0.5 h-6 shrink-0", !isFirst && "bg-border-soft")} />
@@ -44,7 +46,8 @@ export const NhaTimelineItem = ({ labels, isFirst, externalCtaLabel }: NhaTimeli
           </li>
         </ul>
         <div className="flex items-center gap-3 flex-wrap justify-end">
-          <ExternalLinkButton url={NHA_URL} label={externalCtaLabel} />
+          <TextLink to={NHA_DETAIL_HREF} arrow>{detailLinkLabel}</TextLink>
+          <ExternalLinkButton url={NHA_EXTERNAL_URL} label={externalCtaLabel} />
         </div>
       </div>
     </div>

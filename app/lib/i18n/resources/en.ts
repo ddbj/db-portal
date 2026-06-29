@@ -322,6 +322,7 @@ export const en: Resources = {
         restricted: { title: "Restricted-access data", sub: "A submission application is required before data submission" },
         open: { title: "Open-access data", sub: "No application needed" },
         destination: { title: "Submission destinations", sub: "Per data type" },
+        nhaOrientation: { title: "Outside the data type list", sub: "NHA direct submission" },
       },
       accessOverview: {
         mixed: "This data includes both restricted and open access",
@@ -334,8 +335,8 @@ export const en: Resources = {
         emptySub: "",
       },
       nha: {
-        title: "NBDC Human Database (NHA)",
-        description: "If you have any of the data types below, you can submit them directly to NHA.",
+        title: "NBDC Human Data Archive (NHA)",
+        description: "Data types that do not fit into DRA / GEA / JGA (e.g. images, summary statistics) can be submitted directly to NHA inside the NBDC Human Database.",
         statisticsLabel: "Summary statistics:",
         statisticsItems: "GWAS / meta-analysis statistics, allele / genotype frequencies, mean FPKM, enriched region peaks, eQTL / sQTL, mean methylation rate, PRS, mobile element polymorphism frequencies, SV frequencies",
         pathologyLabel: "Pathology images",
@@ -355,7 +356,7 @@ export const en: Resources = {
       "metabobank": { title: "MetaboBank", description: "Deposits mass spectrometry, NMR, and metabolite data." },
       "humandbs": {
         title: "NBDC Human Database",
-        description: "Submission application and review window for controlled-access human data.",
+        description: "Application and approval gateway for the NBDC Human Database.",
         prereqLabel: "Submit an application to the NBDC Human Database",
       },
       "jpost": { title: "jPOST", description: "Submit proteomics data here." },

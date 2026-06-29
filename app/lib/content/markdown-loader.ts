@@ -31,6 +31,10 @@ const allMdModules: RawModule = import.meta.glob(
   { eager: true, query: "?raw", import: "default" },
 )
 
+const assetPaths: ReadonlySet<string> = new Set(
+  Object.keys(import.meta.glob("/page-contents/**/*.{png,jpg,jpeg,gif,svg,webp,avif,pdf}")),
+)
+
 const isEnglishFile = (filepath: string): boolean => filepath.endsWith(".en.md")
 
 const jaModules: RawModule = Object.fromEntries(
@@ -122,8 +126,28 @@ const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } 
 
 const stripLeadingSlash = (filepath: string): string => filepath.replace(/^\//, "")
 
-const renderEntries = (entries: BuildEntry[]): PageContent[] =>
-  entries.map((entry) => ({
+const extractSourceDir = (filepath: string): string => {
+  const lastSlash = filepath.lastIndexOf("/")
+
+  return filepath.slice(0, lastSlash)
+}
+
+type AssetFailure = { filepath: string; refPath: string }
+
+const renderEntries = (entries: BuildEntry[]): {
+  pages: PageContent[]
+  assetFailures: AssetFailure[]
+} => {
+  const assetFailures: AssetFailure[] = []
+  const renderHtml = (body: string, filepath: string): string =>
+    markdownToHtml(body, {
+      sourceDir: extractSourceDir(filepath),
+      assetPaths,
+      onUnresolved: (refPath) => {
+        assetFailures.push({ filepath: stripLeadingSlash(filepath), refPath })
+      },
+    })
+  const pages = entries.map((entry) => ({
     slug: entry.slug,
     urlPath: entry.urlPath,
     sourcePath: {
@@ -135,8 +159,10 @@ const renderEntries = (entries: BuildEntry[]): PageContent[] =>
       en: entry.en?.frontmatter,
     },
     html: {
-      ja: markdownToHtml(entry.ja.body),
-      en: entry.en ? markdownToHtml(entry.en.body) : undefined,
+      ja: renderHtml(entry.ja.body, entry.jaFilepath),
+      en: entry.en && entry.enFilepath
+        ? renderHtml(entry.en.body, entry.enFilepath)
+        : undefined,
     },
     toc: {
       ja: extractHeadings(entry.ja.body),
@@ -144,6 +170,9 @@ const renderEntries = (entries: BuildEntry[]): PageContent[] =>
     },
     lastUpdated: getLastUpdated(entry.urlPath),
   }))
+
+  return { pages, assetFailures }
+}
 
 const { entries, errors: buildErrors } = buildEntries()
 if (buildErrors.length > 0) {
@@ -157,7 +186,13 @@ if (buildErrors.length > 0) {
   )
 }
 
-const pages = renderEntries(entries)
+const { pages, assetFailures } = renderEntries(entries)
+if (assetFailures.length > 0) {
+  const messages = assetFailures.map((f) => `${f.filepath}\n  unresolved asset reference: ${f.refPath}`)
+  throw new Error(
+    `Page content asset resolution failed:\n\n${messages.join("\n\n")}`,
+  )
+}
 
 const pageByPath = new Map<string, PageContent>()
 
