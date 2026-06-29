@@ -6,7 +6,7 @@ import {
   type Access,
   FileTypeKind,
   isSubmissionEndpoint,
-  Q2,
+  OrganismDomain,
   type Submission,
 } from "../../../../app/schemas/submit"
 
@@ -23,19 +23,19 @@ describe("submit cascade", () => {
     expect(allowedRepos("eukaryote").length).toBeGreaterThan(0)
   })
 
-  test("cascadeNoDeadEnd_anyQ2_hasEnabledKind", () => {
-    for (const q2 of Q2.options) {
-      expect(enabledKinds(q2).length).toBeGreaterThan(0)
+  test("cascadeNoDeadEnd_anyOrganismDomain_hasEnabledKind", () => {
+    for (const organismDomain of OrganismDomain.options) {
+      expect(enabledKinds(organismDomain).length).toBeGreaterThan(0)
     }
   })
 
   test("cascadeNoDeadEnd_enabledKindEntry_yieldsEndpointStep", () => {
-    for (const q2 of Q2.options) {
+    for (const organismDomain of OrganismDomain.options) {
       const access: Access = "open"
       for (const kind of FileTypeKind.options) {
-        if (!isKindEnabled(q2, kind)) continue
+        if (!isKindEnabled(organismDomain, kind)) continue
         const submission: Submission = {
-          preconditions: { q2 },
+          preconditions: { organismDomain },
           accessSection: {
             restrictedPreference: false,
             hasIdentifier: false,

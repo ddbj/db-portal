@@ -67,8 +67,8 @@ const applyRowEditPatch = (
   if (patch.dataForm !== undefined) entryPatch.dataForm = patch.dataForm
   if (patch.chipTags !== undefined) {
     entryPatch.chipTags = patch.chipTags
-    const { q2 } = submission.preconditions
-    entryPatch.access = deriveAccess(q2, submission.accessSection, entry.fileTypeKind, patch.chipTags)
+    const { organismDomain } = submission.preconditions
+    entryPatch.access = deriveAccess(organismDomain, submission.accessSection, entry.fileTypeKind, patch.chipTags)
   }
 
   const fileGroups = patch.groupType !== undefined
@@ -99,21 +99,21 @@ const applyExclusiveToggles = (
 
 const setAccessSection = (state: UIState, patch: Partial<AccessSection>): UIState => {
   const accessSection = applyExclusiveToggles(state.submission.accessSection, patch)
-  const { q2 } = state.submission.preconditions
+  const { organismDomain } = state.submission.preconditions
   const fileEntries = state.submission.fileEntries.map((e) => ({
     ...e,
-    access: deriveAccess(q2, accessSection, e.fileTypeKind, e.chipTags),
+    access: deriveAccess(organismDomain, accessSection, e.fileTypeKind, e.chipTags),
   }))
 
   return { submission: { ...state.submission, accessSection, fileEntries } }
 }
 
-const setQ2 = (state: UIState, q2: Submission["preconditions"]["q2"]): UIState => {
-  const preconditions = { ...state.submission.preconditions, q2 }
+const setOrganismDomain = (state: UIState, organismDomain: Submission["preconditions"]["organismDomain"]): UIState => {
+  const preconditions = { ...state.submission.preconditions, organismDomain }
   const accessSection = DEFAULT_ACCESS_SECTION
   const fileEntries = state.submission.fileEntries.map((e) => ({
     ...e,
-    access: deriveAccess(q2, accessSection, e.fileTypeKind, e.chipTags),
+    access: deriveAccess(organismDomain, accessSection, e.fileTypeKind, e.chipTags),
   }))
 
   return { submission: { ...state.submission, preconditions, accessSection, fileEntries } }
@@ -125,8 +125,8 @@ const addRow = (
   entryId: string,
   groupId: string,
 ): UIState => {
-  const { q2 } = state.submission.preconditions
-  const access = deriveAccess(q2, state.submission.accessSection, fileTypeKind)
+  const { organismDomain } = state.submission.preconditions
+  const access = deriveAccess(organismDomain, state.submission.accessSection, fileTypeKind)
 
   const group = newGroupFor(fileTypeKind, groupId)
   const entry = newEntryFor(fileTypeKind, entryId, groupId, access)
@@ -159,8 +159,8 @@ const removeRow = (state: UIState, entryId: string): UIState => {
 
 export const submitReducer = (state: UIState, action: Action): UIState => {
   switch (action.type) {
-    case "SET_Q2":
-      return setQ2(state, action.q2)
+    case "SET_ORGANISM_DOMAIN":
+      return setOrganismDomain(state, action.organismDomain)
 
     case "SET_ACCESS_SECTION":
       return setAccessSection(state, action.accessSection)
@@ -192,7 +192,7 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
 
 export const initialState: UIState = {
   submission: {
-    preconditions: { q2: null },
+    preconditions: { organismDomain: null },
     accessSection: DEFAULT_ACCESS_SECTION,
     fileEntries: [],
     fileGroups: [],

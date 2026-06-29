@@ -1,11 +1,14 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useLoaderData, useSearchParams } from "react-router"
 
 import {
   countConfiguredRows,
   DataDetailPanel,
   FileTypeGrid,
   FlowSummaryCard,
+  hydrateFromUrl,
   isKindEnabled,
+  projectStateToUrl,
   RadioCardGroup,
   rowIsConfigured,
   selectSteps,
@@ -16,11 +19,15 @@ import {
 import { useAuth } from "~/lib/auth"
 import { pageTitleMeta } from "~/lib/content"
 import { useT } from "~/lib/i18n"
-import type { Access, FileTypeKind, Q2, Service } from "~/schemas/submit"
-import { Q2 as Q2Enum } from "~/schemas/submit"
+import { writeSubmitParams } from "~/lib/submit-url"
+import { type Access, type FileTypeKind, OrganismDomain, type Service } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
 import { PageTitle, Section, SectionHeading, Toggle } from "~/ui"
 import { cn } from "~/ui/cn"
+
+import { loader } from "./loader"
+
+export { loader }
 
 export const handle = {
   lang: undefined,
@@ -33,21 +40,34 @@ export const meta = pageTitleMeta
 const SubmitRoute = () => {
   const t = useT()
   const auth = useAuth()
-  const { state, actions } = useSubmitState()
-  const { q2 } = state.submission.preconditions
+  const data = useLoaderData<typeof loader>()
+  const [initialState] = useState(() => hydrateFromUrl(data.urlState))
+  const { state, actions } = useSubmitState(initialState)
+  const [, setSearchParams] = useSearchParams()
+  const lastSyncedRef = useRef<string>(
+    writeSubmitParams(projectStateToUrl(initialState)).toString(),
+  )
+  useEffect(() => {
+    const next = writeSubmitParams(projectStateToUrl(state)).toString()
+    if (next === lastSyncedRef.current) return
+    lastSyncedRef.current = next
+    setSearchParams(new URLSearchParams(next), { replace: true, preventScrollReset: true })
+  }, [state, setSearchParams])
+
+  const { organismDomain } = state.submission.preconditions
   const { accessSection } = state.submission
-  const isHuman = q2 === "human"
+  const isHuman = organismDomain === "human"
 
   const { fileEntries } = state.submission
   const accessByKind = useMemo(() => {
-    if (q2 === null) return new Map<Access, FileTypeKind[]>()
+    if (organismDomain === null) return new Map<Access, FileTypeKind[]>()
     const map = new Map<Access, FileTypeKind[]>()
     for (const e of fileEntries) {
       const list = map.get(e.access) ?? []
       if (!list.includes(e.fileTypeKind)) list.push(e.fileTypeKind)
       map.set(e.access, list)
     }
-    if (fileEntries.length === 0 && q2 === "human") {
+    if (fileEntries.length === 0 && organismDomain === "human") {
       const { restrictedPreference, hasIdentifier, ethicsCompliance, publiclyAvailable, microbialAnalysis } = accessSection
       if (restrictedPreference) {
         map.set("restricted", [])
@@ -63,7 +83,7 @@ const SubmitRoute = () => {
       }
     }
     return map
-  }, [q2, fileEntries, accessSection])
+  }, [organismDomain, fileEntries, accessSection])
   const steps = selectSteps(state)
   const validations = selectValidations(state)
   const { configured, total } = countConfiguredRows(state)
@@ -109,13 +129,13 @@ const SubmitRoute = () => {
     return value === subKey ? undefined : value
   }
 
-  const q2Options = Q2Enum.options.map((v) => ({
+  const organismDomainOptions = OrganismDomain.options.map((v) => ({
     value: v,
-    label: t(`submit.preconditions.q2.${v}.label`),
-    sub: t(`submit.preconditions.q2.${v}.sub`),
+    label: t(`submit.preconditions.organismDomain.${v}.label`),
+    sub: t(`submit.preconditions.organismDomain.${v}.sub`),
   }))
-  const gridDisabledReason = q2 === null
-    ? t("submit.preconditions.q2Required")
+  const gridDisabledReason = organismDomain === null
+    ? t("submit.preconditions.organismDomainRequired")
     : t("submit.preconditions.kindDisabledReason")
 
   const selectedKinds = new Set(state.submission.fileEntries.map((e) => e.fileTypeKind))
@@ -138,18 +158,18 @@ const SubmitRoute = () => {
           <div className="flex flex-col gap-8 min-w-0 lg:col-span-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <SectionHeading>{t("submit.preconditions.q2Heading")}</SectionHeading>
+                <SectionHeading>{t("submit.preconditions.organismDomainHeading")}</SectionHeading>
                 <RadioCardGroup
-                  ariaLabel={t("submit.preconditions.q2Heading")}
-                  name="precondition-q2"
-                  value={q2}
-                  options={q2Options}
-                  onChange={(v) => actions.setQ2(v as Q2)}
+                  ariaLabel={t("submit.preconditions.organismDomainHeading")}
+                  name="precondition-organismDomain"
+                  value={organismDomain}
+                  options={organismDomainOptions}
+                  onChange={(v) => actions.setOrganismDomain(v as OrganismDomain)}
                 />
               </div>
               <div>
                 <AccessSectionPanel
-                  q2={q2}
+                  organismDomain={organismDomain}
                   section={accessSection}
                   isHuman={isHuman}
                   onChange={actions.setAccessSection}
@@ -163,7 +183,7 @@ const SubmitRoute = () => {
                 onToggle={onToggleKind}
                 getLabel={fileTypeKindLabel}
                 isSelected={(k) => selectedKinds.has(k)}
-                isEnabled={(k) => isKindEnabled(q2, k)}
+                isEnabled={(k) => isKindEnabled(organismDomain, k)}
                 disabledReason={gridDisabledReason}
                 conflictReason={t("submit.preconditions.kindConflictReason")}
               />
@@ -180,7 +200,7 @@ const SubmitRoute = () => {
                     countLabel={`${configured} / ${total}`}
                   />
                   <DataDetailPanel
-                    q2={state.submission.preconditions.q2}
+                    organismDomain={state.submission.preconditions.organismDomain}
                     hasIdentifier={accessSection.hasIdentifier}
                     entries={state.submission.fileEntries}
                     groups={state.submission.fileGroups}
@@ -246,24 +266,24 @@ const SubmitRoute = () => {
 const ACCESS_BASIS_KEYS = ["ethicsCompliance", "publiclyAvailable", "microbialAnalysis"] as const
 
 const AccessSectionPanel = ({
-  q2,
+  organismDomain,
   section,
   isHuman,
   onChange,
 }: {
-  q2: Q2 | null
+  organismDomain: OrganismDomain | null
   section: AccessSection
   isHuman: boolean
   onChange: (patch: Partial<AccessSection>) => void
 }) => {
   const t = useT()
-  const disabled = q2 === null || !isHuman
+  const disabled = organismDomain === null || !isHuman
   const basisDisabled = disabled || section.restrictedPreference || section.hasIdentifier
 
   return (
     <div>
       <SectionHeading
-        hint={disabled && q2 !== null ? (
+        hint={disabled && organismDomain !== null ? (
           <span className="rounded-full bg-brand/10 px-2.5 py-1 text-fs-micro font-semibold leading-none text-brand">
             {t("submit.access.nonHumanReason")}
           </span>

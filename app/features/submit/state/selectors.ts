@@ -11,7 +11,7 @@ export const selectSteps = (state: UIState): FlowStep[] =>
   deriveFlowSteps(state.submission)
 
 export const selectValidations = (state: UIState): Validation[] => {
-  const { q2 } = state.submission.preconditions
+  const { organismDomain } = state.submission.preconditions
   const validations: Validation[] = []
   const groupIds = new Set(state.submission.fileGroups.map((g) => g.id))
 
@@ -23,7 +23,7 @@ export const selectValidations = (state: UIState): Validation[] => {
   }
 
   for (const entry of state.submission.fileEntries) {
-    if (!isKindEnabled(q2, entry.fileTypeKind)) {
+    if (!isKindEnabled(organismDomain, entry.fileTypeKind)) {
       validations.push({ kind: "precondition-conflict", entryId: entry.id })
       continue
     }
@@ -43,22 +43,22 @@ export const rowIsConfigured = (state: UIState, entryId: string): boolean => {
   if (!entry) return false
   const group = state.submission.fileGroups.find((g) => g.id === entry.groupId)
   const groupType = group?.groupType ?? TYPICAL_GROUP_TYPE_FOR_KIND[entry.fileTypeKind]
-  const { q2 } = state.submission.preconditions
+  const { organismDomain } = state.submission.preconditions
   const { hasIdentifier } = state.submission.accessSection
 
   const draft = { groupType, dataForm: entry.dataForm, chipTags: entry.chipTags }
 
-  return getRowFormDef(entry.fileTypeKind, q2, hasIdentifier).groups.every(
+  return getRowFormDef(entry.fileTypeKind, organismDomain, hasIdentifier).groups.every(
     (g) => g.kind !== "radio" || g.options.some((opt) => optionMatches(opt, draft)),
   )
 }
 
 export const countConfiguredRows = (state: UIState): { configured: number; total: number } => {
-  const { q2 } = state.submission.preconditions
+  const { organismDomain } = state.submission.preconditions
   const total = state.submission.fileEntries.length
   let configured = 0
   for (const e of state.submission.fileEntries) {
-    if (!hasRowDetail(e.fileTypeKind, q2) || rowIsConfigured(state, e.id)) configured++
+    if (!hasRowDetail(e.fileTypeKind, organismDomain) || rowIsConfigured(state, e.id)) configured++
   }
 
   return { configured, total }

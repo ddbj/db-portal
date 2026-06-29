@@ -2,11 +2,11 @@ import { z } from "zod"
 
 import { FileEntry } from "./file-entry"
 import { FileGroup } from "./file-group"
-import { Q2 } from "./vocabulary"
+import { OrganismDomain } from "./vocabulary"
 
 // 前段カスケードの選択。未選択は null
 const Preconditions = z.object({
-  q2: Q2.nullable().default(null),
+  organismDomain: OrganismDomain.nullable().default(null),
 })
 type Preconditions = z.infer<typeof Preconditions>
 
@@ -21,7 +21,7 @@ const AccessSection = z.object({
 export type AccessSection = z.infer<typeof AccessSection>
 
 export const Submission = z.object({
-  preconditions: Preconditions.default({ q2: null }),
+  preconditions: Preconditions.default({ organismDomain: null }),
   accessSection: AccessSection.default({}),
   fileEntries: z.array(FileEntry).default([]),
   fileGroups: z.array(FileGroup).default([]),

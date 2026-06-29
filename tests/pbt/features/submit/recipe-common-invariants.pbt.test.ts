@@ -11,7 +11,7 @@ const RUNS = { numRuns: 2000 }
 
 // 前段カスケードで enable された (= 経路導出に乗る) entry か
 const isActive = (submission: Submission, e: FileEntry): boolean =>
-  isKindEnabled(submission.preconditions.q2, e.fileTypeKind)
+  isKindEnabled(submission.preconditions.organismDomain, e.fileTypeKind)
 
 const entryIdsWhere = (steps: readonly FlowStep[], pred: (s: FlowStep) => boolean): Set<string> => {
   const ids = new Set<string>()

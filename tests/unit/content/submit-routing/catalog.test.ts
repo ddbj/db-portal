@@ -46,8 +46,8 @@ describe("submit routing catalog", () => {
     expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial", "sequence-dra", "expression-dra", "haplotype"])
   })
 
-  test("catalog_q2Repos_areSubmissionEndpoints", () => {
-    for (const o of SUBMIT_ROUTING.q2Options) {
+  test("catalog_organismDomainRepos_areSubmissionEndpoints", () => {
+    for (const o of SUBMIT_ROUTING.organismDomainOptions) {
       for (const r of o.repos) expect(ENDPOINT.has(r)).toBe(true)
     }
   })

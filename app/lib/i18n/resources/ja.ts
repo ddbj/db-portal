@@ -187,9 +187,9 @@ export type Resources = {
     }
     preconditions: {
       q1Heading: string
-      q2Heading: string
-      q2Required: string
-      q2DisabledReason: string
+      organismDomainHeading: string
+      organismDomainRequired: string
+      organismDomainDisabledReason: string
       kindDisabledReason: string
       kindConflictReason: string
       q1: {
@@ -197,7 +197,7 @@ export type Resources = {
         "restricted": { label: string; sub: string }
         "third-party": { label: string; sub: string }
       }
-      q2: {
+      organismDomain: {
         "human": { label: string; sub: string }
         "eukaryote": { label: string; sub: string }
         "prokaryote": { label: string; sub: string }
@@ -872,9 +872,9 @@ export const ja: Resources = {
     },
     preconditions: {
       q1Heading: "登録種別",
-      q2Heading: "生物ドメイン",
-      q2Required: "生物ドメインを選択してください",
-      q2DisabledReason: "選択した登録種別では、この生物ドメインは登録先を持ちません",
+      organismDomainHeading: "生物ドメイン",
+      organismDomainRequired: "生物ドメインを選択してください",
+      organismDomainDisabledReason: "選択した登録種別では、この生物ドメインは登録先を持ちません",
       kindDisabledReason: "選択した登録種別と生物ドメインの組み合わせでは、登録先がありません",
       kindConflictReason: "現在の登録前提では登録先がありません。クリックで選択を解除できます",
       q1: {
@@ -882,7 +882,7 @@ export const ja: Resources = {
         "restricted": { label: "制限公開データを含む登録", sub: "アクセス制御を伴うデータを含む" },
         "third-party": { label: "第三者による解析結果の登録", sub: "他者が登録したデータに対する解析結果" },
       },
-      q2: {
+      organismDomain: {
         "human": { label: "ヒト", sub: "ヒト個体・ヒト由来試料" },
         "eukaryote": { label: "ヒト以外の真核生物", sub: "動植物・菌類など" },
         "prokaryote": { label: "原核生物", sub: "細菌・古細菌" },

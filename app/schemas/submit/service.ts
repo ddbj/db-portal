@@ -40,7 +40,7 @@ export const serviceRole = (service: Service): ServiceRole => SERVICE_ROLE[servi
 const byRole = (role: ServiceRole): readonly Service[] =>
   Service.options.filter((s) => SERVICE_ROLE[s] === role)
 
-// role=destination の service 部分集合 (カスケードの q1/q2 repos が参照する DDBJ 内登録先集合)
+// role=destination の service 部分集合 (カスケードの q1/organismDomain repos が参照する DDBJ 内登録先集合)
 export const DESTINATION_SERVICES: readonly Service[] = byRole("destination")
 export const COMPANION_SERVICES: readonly Service[] = byRole("companion")
 export const EXTERNAL_SERVICES: readonly Service[] = byRole("external")

@@ -1,6 +1,6 @@
 import { useCallback, useReducer, useRef } from "react"
 
-import type { FileEntry, FileTypeKind, Q2 } from "~/schemas/submit"
+import type { FileEntry, FileTypeKind, OrganismDomain } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
 
 import { initialState, submitReducer } from "./reducer"
@@ -20,7 +20,7 @@ const buildIdGenerator = () => {
 }
 
 type SubmitDispatch = {
-  setQ2: (q2: Q2 | null) => void
+  setOrganismDomain: (organismDomain: OrganismDomain | null) => void
   setAccessSection: (patch: Partial<AccessSection>) => void
   addRow: (fileTypeKind: FileTypeKind) => void
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
@@ -38,8 +38,8 @@ export const useSubmitState = (
   }
   const newId = newIdRef.current
 
-  const setQ2 = useCallback((q2: Q2 | null) => {
-    dispatch({ type: "SET_Q2", q2 })
+  const setOrganismDomain = useCallback((organismDomain: OrganismDomain | null) => {
+    dispatch({ type: "SET_ORGANISM_DOMAIN", organismDomain })
   }, [])
 
   const setAccessSection = useCallback((accessSection: Partial<AccessSection>) => {
@@ -69,7 +69,7 @@ export const useSubmitState = (
   }, [])
 
   const actions: SubmitDispatch = {
-    setQ2,
+    setOrganismDomain,
     setAccessSection,
     addRow,
     editRowCell,

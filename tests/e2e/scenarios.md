@@ -227,14 +227,14 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 
 ## Submit Domain
 
-登録ナビは前段 2 問 (Q1 登録種別 / Q2 生物ドメイン) のカスケードでファイル種別ボタンを enable し、追加した行から登録フロー (FlowOverview + FlowStepCards) を導出する。Q1 は初期値 `public`、Q2 は初期値 `null`。`allowedRepos = Q1.repos ∩ Q2.repos` が空 (Q2 未選択時) の間は全ファイル種別ボタンが disabled。行詳細は live-commit (保存ボタン無し)、行削除は確認ダイアログ無しで即時。
+登録ナビは前段 2 問 (Q1 登録種別 / OrganismDomain 生物ドメイン) のカスケードでファイル種別ボタンを enable し、追加した行から登録フロー (FlowOverview + FlowStepCards) を導出する。Q1 は初期値 `public`、OrganismDomain は初期値 `null`。`allowedRepos = Q1.repos ∩ OrganismDomain.repos` が空 (OrganismDomain 未選択時) の間は全ファイル種別ボタンが disabled。行詳細は live-commit (保存ボタン無し)、行削除は確認ダイアログ無しで即時。
 
 主要 selector:
 
 | 要素 | selector |
 |---|---|
 | Q1 radiogroup | `role="radiogroup"` aria-label `登録種別` |
-| Q2 radiogroup | `role="radiogroup"` aria-label `生物ドメイン` |
+| OrganismDomain radiogroup | `role="radiogroup"` aria-label `生物ドメイン` |
 | ファイル種別ボタン | `role="button"` aria-label `{label} ({EXT})` (例 `配列リード (FASTQ)`) |
 | テーブル行 | `[data-testid="file-row"][data-entry-id]` |
 | 公開区分 select | `role="combobox"` aria-label `公開区分` (行内) |
@@ -245,7 +245,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 | 外部誘導 CTA | カード内 `role="button"` name `登録サイトを開く` |
 | 確認事項バナー | `submit.validations.heading` 見出しの領域 |
 
-### S-SUBMIT-01: /submit 初期表示 (Q2 未選択で全ボタン disabled)
+### S-SUBMIT-01: /submit 初期表示 (OrganismDomain 未選択で全ボタン disabled)
 
 - **ペルソナ**: P-ANON
 - **前提**: portal staging が起動済
@@ -254,18 +254,18 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - ヘッダー nav `登録` が active (`aria-current="page"`)
   - PageTitle `登録ナビゲーション` が `<h1>` として描画される
-  - Q1 radiogroup (`登録種別`) で `公開データの登録` が選択済 (初期値 `public`)、Q2 radiogroup (`生物ドメイン`) はいずれも未選択
+  - Q1 radiogroup (`登録種別`) で `公開データの登録` が選択済 (初期値 `public`)、OrganismDomain radiogroup (`生物ドメイン`) はいずれも未選択
   - ファイル種別ボタンが 11 個描画され (`配列リード (FASTQ)` `FASTA 塩基配列 (FASTA)` `配列アノテーション (GFF)` `バリアント (VCF)` `発現マトリクス (TSV)` `マイクロアレイ発現 (CEL)` `空間トランスクリプトーム (TSV)` `空間画像 (TIFF)` `質量分析 (mzML)` `NMR (nmrML)` `代謝物アサインメント (TSV)`)、**全て disabled** (`disabled` 属性あり)
   - 空テーブルに `上のボタンからファイル種別を追加してください` が表示される
   - 登録フロー section に `ファイルを追加すると、ここに登録フローが表示されます` が表示される (`[data-testid="flow-step"]` は 0 件、`[data-testid="flow-overview"]` は描画されない)
   - 確認事項バナー (`確認事項が N 件あります`) は描画されない
 
-### S-SUBMIT-02: Q2 選択後の配列リードで BioProject/BioSample/DRA が組まれる
+### S-SUBMIT-02: OrganismDomain 選択後の配列リードで BioProject/BioSample/DRA が組まれる
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示 (Q1=`公開データの登録`)
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. enable された `配列リード (FASTQ)` ボタンをクリック
 - **期待**:
   - `[data-testid="file-row"]` が 1 件追加され、ファイル名セルに自動採番 `read-001.fastq` (read-only、`font-mono`)、公開区分セルに `公開` (Q1=public の default) が表示される
@@ -274,12 +274,12 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `dra` カードに DDBJ source tag と `登録サイトを開く` ボタンがあり、クリックで `target=_blank` の新規ウィンドウ (`window.open`) が開く (新規 page イベントを観測)
   - `[data-testid="flow-overview"]` に 3 ステーションが描画される
 
-### S-SUBMIT-03: 同一 Q1/Q2 下の混在行で複数 destination が並ぶ
+### S-SUBMIT-03: 同一 Q1/OrganismDomain 下の混在行で複数 destination が並ぶ
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. `配列リード (FASTQ)` を 2 回、`バリアント (VCF)` を 1 回、`発現マトリクス (TSV)` を 1 回クリック (計 4 行)
 - **期待**:
   - `[data-testid="file-row"]` が 4 件、ファイル名は `read-001.fastq` / `read-002.fastq` / `var-001.vcf` / `mtx-001.tsv`
@@ -288,26 +288,26 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 入力状況 (TagProgress) は全行を母数 (`total`) にカウントし、詳細質問を持たない種別 (配列リード・バリアント・発現マトリクス) は設定するものが無いため自動的に configured 扱いになる (`{configured} / {total}` 表示)。この構成では `total=4` / `configured=4` で `4 / 4` と表示される
   - `データ詳細` section (`submit.detail.heading` SectionHeading + TagProgress + DataDetailPanel) は `total > 0` のため表示される。ただし詳細質問を持つ行が無いので DataDetailPanel は `[data-testid="detail-item"]` を 1 件も描画せず、`追加の詳細設定が必要なファイルはありません` (`submit.detail.empty`) の info callout のみを表示する
 
-### S-SUBMIT-04: open / restricted の分岐 (Q1/Q2 と行 access)
+### S-SUBMIT-04: open / restricted の分岐 (Q1/OrganismDomain と行 access)
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト` を選択 (Q1 は `公開データの登録` のまま)
+  1. OrganismDomain radiogroup で `ヒト` を選択 (Q1 は `公開データの登録` のまま)
   2. `配列リード (FASTQ)` を 2 回クリック (2 行追加、access default は `公開`)
   3. 1 件目の行の公開区分 combobox (`公開区分`) を `制限公開` に変更、2 件目は `公開` のまま
 - **期待**:
-  - 1 件目 (制限公開 ∧ Q2=ヒト) は JGA scope に入り `data-service="jga"` カードが、2 件目 (公開) は `data-service="dra"` カードが両方描画される
+  - 1 件目 (制限公開 ∧ OrganismDomain=ヒト) は JGA scope に入り `data-service="jga"` カードが、2 件目 (公開) は `data-service="dra"` カードが両方描画される
   - 制限公開ヒトの Policy 申請・承認は `data-service="humandbs"` カードの note (`submit.jga.policyApplication` / `submit.jga.nbdcPolicy` 由来、独自ポリシーは DBCLS 登録で JGAP を発行する旨) に表示される (jga-submission recipe が JGA ルーティング時に humandbs ステップを生成し、Policy 文言はそこへ集約する。jga カード自体は `submit.jga.dataset.intro` のみ)
   - 同一 entry が JGA と DRA の両方の scope に出ないこと (1 件目は jga カードの対象ファイルにのみ、2 件目は dra カードの対象ファイルにのみ現れる)
-- **備考**: Q1=`公開データの登録` でも行 access を `制限公開` にできるが、JGA 分岐の起点は `access=restricted ∧ Q2=human`。S-SUBMIT-09 は同じ JGA 経路を Q1=`制限公開データを含む登録` 起点で前提ゲートまで含めて検証する。
+- **備考**: Q1=`公開データの登録` でも行 access を `制限公開` にできるが、JGA 分岐の起点は `access=restricted ∧ OrganismDomain=human`。S-SUBMIT-09 は同じ JGA 経路を Q1=`制限公開データを含む登録` 起点で前提ゲートまで含めて検証する。
 
 ### S-SUBMIT-05: live-commit 詳細パネルで配列ペアを設定する
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. `FASTA 塩基配列 (FASTA)` を 1 回、`配列アノテーション (GFF)` を 1 回クリック (`seq-001.fasta` / `ann-001.gff` の 2 行)
   3. データ詳細 section の `配列アノテーション` の `[data-testid="detail-item"]` 内で、`配列ペア` ラジオを選択 (live-commit、保存ボタンは無い)
   4. 出現した `ペアにする配列` Select で `seq-001.fasta` を選択
@@ -320,7 +320,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-06: 行削除でフローカードが減る (確認ダイアログ無し)
 
 - **ペルソナ**: P-ANON
-- **前提**: Q2=`ヒト以外の真核生物` で `配列リード (FASTQ)` 1 件 + `発現マトリクス (TSV)` 1 件を追加済
+- **前提**: OrganismDomain=`ヒト以外の真核生物` で `配列リード (FASTQ)` 1 件 + `発現マトリクス (TSV)` 1 件を追加済
 - **手順**:
   1. テーブル最後の行 (`mtx-001.tsv`) の `行を削除` ボタンをクリック
 - **期待**:
@@ -332,22 +332,22 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-07: カスケードの enable/disable 遷移
 
 - **ペルソナ**: P-ANON
-- **前提**: `/submit` 初期表示 (Q1=`公開データの登録`、Q2 未選択)
+- **前提**: `/submit` 初期表示 (Q1=`公開データの登録`、OrganismDomain 未選択)
 - **手順**:
-  1. Q2 未選択の状態で `配列リード (FASTQ)` ボタンの `disabled` を確認し、disabled tip (`title`) が `登録種別を選択してください` であることを確認
-  2. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain 未選択の状態で `配列リード (FASTQ)` ボタンの `disabled` を確認し、disabled tip (`title`) が `登録種別を選択してください` であることを確認
+  2. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   3. Q1 radiogroup を `制限公開データを含む登録` に変更
 - **期待**:
   - 手順 1 時点で 11 ボタンすべて disabled
-  - 手順 2 後、`配列リード (FASTQ)` `バリアント (VCF)` `発現マトリクス (TSV)` 等が enabled になる (Q1=public ∩ Q2=eukaryote の allowedRepos に candidateRepos が交わる種別)
-  - 手順 3 後 (Q1=restricted、repos={jga})、Q2 radiogroup の `ヒト以外の真核生物` `原核生物` `ファージ・ウイルス` `環境サンプル` が disabled になり (tip = `選択した登録種別では、この生物ドメインは登録先を持ちません`)、JGA を持つ `ヒト` のみ enable のまま残る。Q2=`ヒト以外の真核生物` は無効化されたため自動的に未選択へ戻り、全ファイル種別ボタンが再び disabled になる (tip = `登録種別を選択してください`)
+  - 手順 2 後、`配列リード (FASTQ)` `バリアント (VCF)` `発現マトリクス (TSV)` 等が enabled になる (Q1=public ∩ OrganismDomain=eukaryote の allowedRepos に candidateRepos が交わる種別)
+  - 手順 3 後 (Q1=restricted、repos={jga})、OrganismDomain radiogroup の `ヒト以外の真核生物` `原核生物` `ファージ・ウイルス` `環境サンプル` が disabled になり (tip = `選択した登録種別では、この生物ドメインは登録先を持ちません`)、JGA を持つ `ヒト` のみ enable のまま残る。OrganismDomain=`ヒト以外の真核生物` は無効化されたため自動的に未選択へ戻り、全ファイル種別ボタンが再び disabled になる (tip = `登録種別を選択してください`)
 
 ### S-SUBMIT-08: 質量分析の proteomics → jPOST / metabolomics → MetaboBank の外部分岐
 
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. `質量分析 (mzML)` を 1 回クリック (`ms-001.mzML`)
   3. データ詳細 section の `質量分析` 詳細項目で `プロテオミクス` を選択 (live-commit)
   4. 同詳細項目で `メタボロミクス` に切り替える
@@ -362,7 +362,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **前提**: `/submit` 初期表示
 - **手順**:
   1. Q1 radiogroup で `制限公開データを含む登録` を選択
-  2. Q2 radiogroup で `ヒト` を選択 (他の Q2 は disabled、`ヒト` のみ選択可)
+  2. OrganismDomain radiogroup で `ヒト` を選択 (他の OrganismDomain は disabled、`ヒト` のみ選択可)
   3. enable された `配列リード (FASTQ)` をクリック (`read-001.fastq`、access default は Q1=restricted により `制限公開`)
 - **期待**:
   - 追加行の公開区分セルが `制限公開` (Q1=restricted の default 注入)
@@ -372,7 +372,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-10: 複数行追加後の即時削除でカードが連動する
 
 - **ペルソナ**: P-ANON
-- **前提**: Q2=`ヒト以外の真核生物` で `配列リード (FASTQ)` を 2 件追加済 (`read-001.fastq` / `read-002.fastq`)
+- **前提**: OrganismDomain=`ヒト以外の真核生物` で `配列リード (FASTQ)` を 2 件追加済 (`read-001.fastq` / `read-002.fastq`)
 - **手順**:
   1. 2 件目の行 (`read-002.fastq`) の `行を削除` ボタンをクリック
 - **期待**:
@@ -383,7 +383,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-11: 配列ペアの相方変更と解消のライフサイクル
 
 - **ペルソナ**: P-ANON
-- **前提**: Q2=`ヒト以外の真核生物`、`FASTA 塩基配列 (FASTA)` 2 件 (`seq-001.fasta` / `seq-002.fasta`) と `配列アノテーション (GFF)` 1 件を追加済
+- **前提**: OrganismDomain=`ヒト以外の真核生物`、`FASTA 塩基配列 (FASTA)` 2 件 (`seq-001.fasta` / `seq-002.fasta`) と `配列アノテーション (GFF)` 1 件を追加済
 - **手順**:
   1. `配列アノテーション` 詳細項目で `配列ペア` を選択
   2. `ペアにする配列` Select で `seq-001.fasta` を選択
@@ -400,11 +400,11 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト` を選択 (Q1 は `公開データの登録`)
+  1. OrganismDomain radiogroup で `ヒト` を選択 (Q1 は `公開データの登録`)
   2. `発現マトリクス (TSV)` をクリック (`mtx-001.tsv`、destination は `gea`)
   3. Q1 radiogroup を `制限公開データを含む登録` に変更
 - **期待**:
-  - Q1=restricted (repos={jga}) では Q2=`ヒト` は引き続き enable のまま (human が jga を含むため自動クリアされない)
+  - Q1=restricted (repos={jga}) では OrganismDomain=`ヒト` は引き続き enable のまま (human が jga を含むため自動クリアされない)
   - 既存の発現マトリクス行は削除されずテーブルに残る (`[data-testid="file-row"]` 1 件)
   - `allowedRepos = {jga}` に対し発現マトリクスの candidateRepos=`[gea]` が交わらないため、`発現マトリクス (TSV)` ボタンが disabled になる (tip = `選択した登録種別と生物ドメインの組み合わせでは、登録先がありません`)
   - 確認事項バナー (`確認事項が N 件あります`) に `登録前提と矛盾する種別の行があります` (precondition-conflict) が表示される
@@ -412,7 +412,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### S-SUBMIT-13: FlowOverview のステーションクリックで該当カードへスクロール
 
 - **ペルソナ**: P-ANON
-- **前提**: Q2=`ヒト以外の真核生物` で `配列リード (FASTQ)` を 1 件追加済 (`bioproject` / `biosample` / `dra` の 3 ステーション)
+- **前提**: OrganismDomain=`ヒト以外の真核生物` で `配列リード (FASTQ)` を 1 件追加済 (`bioproject` / `biosample` / `dra` の 3 ステーション)
 - **手順**:
   1. `[data-testid="flow-overview"]` 内の `dra` ステーション (`role="button"` aria-label `登録ステップに移動: DRA`) をクリック
 - **期待**:
@@ -424,7 +424,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. `空間トランスクリプトーム (TSV)` をクリック (`spt-001.tsv`、platform 未選択)
 - **期待**:
   - テーブル行のファイル名脇に `未設定` の warning Tag が表示される (platform を選ぶまで)
@@ -437,7 +437,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択 (`配列リード (FASTQ)` ボタンが enabled になる)
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択 (`配列リード (FASTQ)` ボタンが enabled になる)
   2. `配列リード (FASTQ)` ボタンを 100 回連続クリック
 - **期待**:
   - `[data-testid="file-row"]` が 100 件描画される (`toHaveCount(100)`、virtualization 無しの素の DOM、横スクロール許容)
@@ -450,7 +450,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **ペルソナ**: P-ANON
 - **前提**: `/submit` 初期表示
 - **手順**:
-  1. Q2 radiogroup で `ヒト以外の真核生物` を選択
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
   2. `空間トランスクリプトーム (TSV)` を 1 件追加 (platform 未選択)
   3. データ詳細パネルで `Visium` を選択 (live-commit) して充足させる
 - **期待**:
@@ -461,7 +461,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 ### E-SUBMIT-05: 削除後の連番ギャップで自動採番が衝突しない
 
 - **ペルソナ**: P-ANON
-- **前提**: Q2=`ヒト以外の真核生物`
+- **前提**: OrganismDomain=`ヒト以外の真核生物`
 - **手順**:
   1. `配列リード (FASTQ)` を 3 回クリック (`read-001.fastq` / `read-002.fastq` / `read-003.fastq`)
   2. `read-002.fastq` の行の `行を削除` をクリック

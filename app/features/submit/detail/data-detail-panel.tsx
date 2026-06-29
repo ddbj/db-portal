@@ -1,4 +1,4 @@
-import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType, Q2 } from "~/schemas/submit"
+import type { DataForm, FileEntry, FileEntryChip, FileGroup, FileTypeKind, GroupType, OrganismDomain } from "~/schemas/submit"
 import { AlertIcon, Callout, CheckIcon, FmtCheck, FmtRadio, FormGroup, Tag, Toggle } from "~/ui"
 
 import { applyRadio, initDraft, optionMatches, toggleCheck } from "./form-apply"
@@ -20,7 +20,7 @@ type DataDetailPanelLabels = {
 }
 
 type DataDetailPanelProps = {
-  q2: Q2 | null
+  organismDomain: OrganismDomain | null
   hasIdentifier: boolean
   entries: readonly FileEntry[]
   groups: readonly FileGroup[]
@@ -65,7 +65,7 @@ const isGroupDisabled = (g: FormGroupDef, draft: Draft): boolean => {
 }
 
 export const DataDetailPanel = ({
-  q2,
+  organismDomain,
   hasIdentifier,
   entries,
   groups,
@@ -76,7 +76,7 @@ export const DataDetailPanel = ({
   const groupOf = (entry: FileEntry): FileGroup | undefined =>
     groups.find((g) => g.id === entry.groupId)
 
-  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind, q2))
+  const detailEntries = entries.filter((e) => hasRowDetail(e.fileTypeKind, organismDomain))
 
   if (detailEntries.length === 0) {
     return <Callout tone="info">{labels.empty}</Callout>
@@ -85,7 +85,7 @@ export const DataDetailPanel = ({
   return (
     <ol className="flex flex-col gap-3 m-0 list-none p-0">
       {detailEntries.map((entry) => {
-        const def = getRowFormDef(entry.fileTypeKind, q2, hasIdentifier)
+        const def = getRowFormDef(entry.fileTypeKind, organismDomain, hasIdentifier)
         const group = groupOf(entry)
         const draft = initDraft(entry, group)
         const configured = isConfigured(entry.id)

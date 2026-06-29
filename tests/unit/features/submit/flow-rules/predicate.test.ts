@@ -32,7 +32,7 @@ const mkGroup = (over: Partial<FileGroup> = {}): FileGroup => ({
 const mkCtx = (over: Partial<PredicateContext> = {}): PredicateContext => ({
   entry: mkEntry(),
   group: mkGroup(),
-  q2: "human",
+  organismDomain: "human",
   ...over,
 })
 
@@ -107,24 +107,24 @@ describe("evalWhen atoms", () => {
     expect(evalWhen({ groupTypeIn: ["single", "pair-end"] }, ctx)).toBe(false)
   })
 
-  test("evalWhen_q2Match_true", () => {
-    const ctx = mkCtx({ q2: "metagenome" })
-    expect(evalWhen({ q2: "metagenome" }, ctx)).toBe(true)
+  test("evalWhen_organismDomainMatch_true", () => {
+    const ctx = mkCtx({ organismDomain: "metagenome" })
+    expect(evalWhen({ organismDomain: "metagenome" }, ctx)).toBe(true)
   })
 
-  test("evalWhen_q2Mismatch_false", () => {
-    const ctx = mkCtx({ q2: "human" })
-    expect(evalWhen({ q2: "metagenome" }, ctx)).toBe(false)
+  test("evalWhen_organismDomainMismatch_false", () => {
+    const ctx = mkCtx({ organismDomain: "human" })
+    expect(evalWhen({ organismDomain: "metagenome" }, ctx)).toBe(false)
   })
 
-  test("evalWhen_q2InIncludesQ2_true", () => {
-    const ctx = mkCtx({ q2: "human" })
-    expect(evalWhen({ q2In: ["human", "metagenome"] }, ctx)).toBe(true)
+  test("evalWhen_organismDomainInIncludesOrganismDomain_true", () => {
+    const ctx = mkCtx({ organismDomain: "human" })
+    expect(evalWhen({ organismDomainIn: ["human", "metagenome"] }, ctx)).toBe(true)
   })
 
-  test("evalWhen_q2InExcludesQ2_false", () => {
-    const ctx = mkCtx({ q2: "eukaryote" })
-    expect(evalWhen({ q2In: ["human", "metagenome"] }, ctx)).toBe(false)
+  test("evalWhen_organismDomainInExcludesOrganismDomain_false", () => {
+    const ctx = mkCtx({ organismDomain: "eukaryote" })
+    expect(evalWhen({ organismDomainIn: ["human", "metagenome"] }, ctx)).toBe(false)
   })
 })
 
@@ -181,15 +181,15 @@ describe("evalWhen anyChip", () => {
 })
 
 describe("evalWhen null preconditions", () => {
-  test("evalWhen_q2WhenNull_false", () => {
-    const ctx = mkCtx({ q2: null })
-    expect(evalWhen({ q2: "human" }, ctx)).toBe(false)
+  test("evalWhen_organismDomainWhenNull_false", () => {
+    const ctx = mkCtx({ organismDomain: null })
+    expect(evalWhen({ organismDomain: "human" }, ctx)).toBe(false)
   })
 
-  test("evalWhen_q2InWhenNull_false", () => {
-    const ctx = mkCtx({ q2: null })
+  test("evalWhen_organismDomainInWhenNull_false", () => {
+    const ctx = mkCtx({ organismDomain: null })
     expect(
-      evalWhen({ q2In: ["human", "eukaryote", "prokaryote", "virus", "metagenome"] }, ctx),
+      evalWhen({ organismDomainIn: ["human", "eukaryote", "prokaryote", "virus", "metagenome"] }, ctx),
     ).toBe(false)
   })
 })
@@ -200,15 +200,15 @@ describe("evalWhen combinators", () => {
   })
 
   test("evalWhen_andAllTrue_true", () => {
-    const ctx = mkCtx({ entry: mkEntry({ access: "restricted" }), q2: "human" })
-    expect(evalWhen({ and: [{ access: "restricted" }, { q2In: ["human", "metagenome"] }] }, ctx)).toBe(
+    const ctx = mkCtx({ entry: mkEntry({ access: "restricted" }), organismDomain: "human" })
+    expect(evalWhen({ and: [{ access: "restricted" }, { organismDomainIn: ["human", "metagenome"] }] }, ctx)).toBe(
       true,
     )
   })
 
   test("evalWhen_andOneFalse_false", () => {
-    const ctx = mkCtx({ entry: mkEntry({ access: "open" }), q2: "human" })
-    expect(evalWhen({ and: [{ access: "restricted" }, { q2In: ["human", "metagenome"] }] }, ctx)).toBe(
+    const ctx = mkCtx({ entry: mkEntry({ access: "open" }), organismDomain: "human" })
+    expect(evalWhen({ and: [{ access: "restricted" }, { organismDomainIn: ["human", "metagenome"] }] }, ctx)).toBe(
       false,
     )
   })
@@ -256,14 +256,14 @@ describe("evalWhen combinators", () => {
       not: {
         and: [
           { or: [{ anyChip: { axis: "tpa", value: "true" } }, { access: "restricted" }] },
-          { q2In: ["human", "metagenome"] },
+          { organismDomainIn: ["human", "metagenome"] },
         ],
       },
     }
-    const inner = mkCtx({ entry: mkEntry({ access: "restricted" }), q2: "human" })
+    const inner = mkCtx({ entry: mkEntry({ access: "restricted" }), organismDomain: "human" })
     expect(evalWhen(when, inner)).toBe(false)
 
-    const outer = mkCtx({ entry: mkEntry({ access: "open" }), q2: "human" })
+    const outer = mkCtx({ entry: mkEntry({ access: "open" }), organismDomain: "human" })
     expect(evalWhen(when, outer)).toBe(true)
   })
 })
@@ -275,10 +275,10 @@ describe("evalWhen unknown shape", () => {
 })
 
 describe("evalWhen does not read across context", () => {
-  test("evalWhen_accessPredicate_ignoresQ2AndGroup", () => {
+  test("evalWhen_accessPredicate_ignoresOrganismDomainAndGroup", () => {
     const when: When = { access: "restricted" }
-    const a = mkCtx({ q2: null, group: undefined, entry: mkEntry({ access: "restricted" }) })
-    const b = mkCtx({ q2: "virus", entry: mkEntry({ access: "restricted" }) })
+    const a = mkCtx({ organismDomain: null, group: undefined, entry: mkEntry({ access: "restricted" }) })
+    const b = mkCtx({ organismDomain: "virus", entry: mkEntry({ access: "restricted" }) })
     expect(evalWhen(when, a)).toBe(true)
     expect(evalWhen(when, b)).toBe(true)
   })

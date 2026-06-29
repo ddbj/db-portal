@@ -8,15 +8,15 @@ import {
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
-  Q2,
+  OrganismDomain,
 } from "../../../../../app/schemas/submit"
 
 const ALL_KINDS = FileTypeKind.options
-const ALL_Q2S: (Q2 | null)[] = [null, ...Q2.options]
+const ALL_OrganismDomainS: (OrganismDomain | null)[] = [null, ...OrganismDomain.options]
 
-const allEffects = (q2: Q2 | null, hasIdentifier = true) =>
+const allEffects = (organismDomain: OrganismDomain | null, hasIdentifier = true) =>
   ALL_KINDS.flatMap((kind) =>
-    getRowFormDef(kind, q2, hasIdentifier).groups.flatMap((group) =>
+    getRowFormDef(kind, organismDomain, hasIdentifier).groups.flatMap((group) =>
       group.options.map((option) => ({
         kind,
         groupId: group.id,
@@ -47,13 +47,13 @@ const IDENTIFIABLE_KINDS = new Set<FileTypeKind>([
 ])
 
 describe("getRowFormDef_groupStructure", () => {
-  test("nonHumanQ2_onlyBaseFlowChangingKindsHaveGroups", () => {
+  test("nonHumanOrganismDomain_onlyBaseFlowChangingKindsHaveGroups", () => {
     for (const kind of ALL_KINDS) {
       expect(getRowFormDef(kind, null, true).groups.length > 0).toBe(BASE_DETAIL_KINDS.has(kind))
     }
   })
 
-  test("humanQ2_identifiableKindsAlsoHaveGroups", () => {
+  test("humanOrganismDomain_identifiableKindsAlsoHaveGroups", () => {
     for (const kind of ALL_KINDS) {
       const hasGroups = getRowFormDef(kind, "human", true).groups.length > 0
       const expected = BASE_DETAIL_KINDS.has(kind) || IDENTIFIABLE_KINDS.has(kind)
@@ -61,7 +61,7 @@ describe("getRowFormDef_groupStructure", () => {
     }
   })
 
-  test("humanQ2_identifiableKinds_haveIdentifiabilityGroup", () => {
+  test("humanOrganismDomain_identifiableKinds_haveIdentifiabilityGroup", () => {
     for (const kind of IDENTIFIABLE_KINDS) {
       const def = getRowFormDef(kind, "human", true)
       const idGroup = def.groups.find((g) => g.id === "identifiability")
@@ -71,7 +71,7 @@ describe("getRowFormDef_groupStructure", () => {
     }
   })
 
-  test("nonHumanQ2_identifiableKinds_doNotHaveIdentifiabilityGroup", () => {
+  test("nonHumanOrganismDomain_identifiableKinds_doNotHaveIdentifiabilityGroup", () => {
     for (const kind of IDENTIFIABLE_KINDS) {
       const def = getRowFormDef(kind, null, true)
       const idGroup = def.groups.find((g) => g.id === "identifiability")
@@ -90,21 +90,21 @@ describe("getRowFormDef_groupStructure", () => {
     }
   })
 
-  test("hasRowDetail_matchesPresenceOfGroups_forAllQ2", () => {
-    for (const q2 of ALL_Q2S) {
+  test("hasRowDetail_matchesPresenceOfGroups_forAllOrganismDomain", () => {
+    for (const organismDomain of ALL_OrganismDomainS) {
       for (const kind of ALL_KINDS) {
-        expect(hasRowDetail(kind, q2)).toBe(getRowFormDef(kind, q2, true).groups.length > 0)
+        expect(hasRowDetail(kind, organismDomain)).toBe(getRowFormDef(kind, organismDomain, true).groups.length > 0)
       }
     }
   })
 
   test("everyGroup_hasNonEmptyOptions", () => {
     const empty: string[] = []
-    for (const q2 of ALL_Q2S) {
+    for (const organismDomain of ALL_OrganismDomainS) {
       for (const kind of ALL_KINDS) {
-        for (const group of getRowFormDef(kind, q2, true).groups) {
+        for (const group of getRowFormDef(kind, organismDomain, true).groups) {
           if (group.options.length === 0) {
-            empty.push(`${kind}/${group.id}(q2=${q2})`)
+            empty.push(`${kind}/${group.id}(organismDomain=${organismDomain})`)
           }
         }
       }

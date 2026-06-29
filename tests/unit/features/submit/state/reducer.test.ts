@@ -17,13 +17,13 @@ const addRow = (
 ): UIState =>
   submitReducer(state, { type: "ADD_ROW", fileTypeKind, entryId, groupId })
 
-const withQ2 = (q2: "human" | "eukaryote" | "prokaryote" | "virus" | "metagenome"): UIState =>
-  submitReducer(initialState, { type: "SET_Q2", q2 })
+const withOrganismDomain = (organismDomain: "human" | "eukaryote" | "prokaryote" | "virus" | "metagenome"): UIState =>
+  submitReducer(initialState, { type: "SET_ORGANISM_DOMAIN", organismDomain })
 
 describe("submitReducer preconditions", () => {
-  test("submitReducer_setQ2_updatesPreconditionQ2", () => {
-    const next = submitReducer(initialState, { type: "SET_Q2", q2: "human" })
-    expect(next.submission.preconditions.q2).toBe("human")
+  test("submitReducer_setOrganismDomain_updatesPreconditionOrganismDomain", () => {
+    const next = submitReducer(initialState, { type: "SET_ORGANISM_DOMAIN", organismDomain: "human" })
+    expect(next.submission.preconditions.organismDomain).toBe("human")
   })
 
   test("submitReducer_setAccessSection_updatesAccessSection", () => {
@@ -45,7 +45,7 @@ describe("submitReducer preconditions", () => {
   })
 
   test("submitReducer_setAccessSection_recomputesEntryAccess", () => {
-    let state = withQ2("human")
+    let state = withOrganismDomain("human")
     state = addRow(state, "sequence-read", "e1", "g1")
     expect(state.submission.fileEntries[0]!.access).toBe("restricted")
     const next = submitReducer(state, {
@@ -56,7 +56,7 @@ describe("submitReducer preconditions", () => {
   })
 
   test("submitReducer_setAccessSection_ethicsCompliance_splitsAccessByIdentifiability", () => {
-    let state = withQ2("human")
+    let state = withOrganismDomain("human")
     state = submitReducer(state, {
       type: "SET_ACCESS_SECTION",
       accessSection: { hasIdentifier: false },
@@ -70,7 +70,7 @@ describe("submitReducer preconditions", () => {
   })
 
   test("submitReducer_setAccessSection_restrictedPreference_allRestricted", () => {
-    let state = withQ2("human")
+    let state = withOrganismDomain("human")
     state = addRow(state, "sequence-read", "e1", "g1")
     state = addRow(state, "expression-matrix", "e2", "g2")
     const next = submitReducer(state, {
@@ -80,14 +80,14 @@ describe("submitReducer preconditions", () => {
     expect(next.submission.fileEntries.every((e) => e.access === "restricted")).toBe(true)
   })
 
-  test("submitReducer_setQ2_resetsAccessSectionToDefault", () => {
-    let state = submitReducer(initialState, { type: "SET_Q2", q2: "human" })
+  test("submitReducer_setOrganismDomain_resetsAccessSectionToDefault", () => {
+    let state = submitReducer(initialState, { type: "SET_ORGANISM_DOMAIN", organismDomain: "human" })
     state = submitReducer(state, {
       type: "SET_ACCESS_SECTION",
       accessSection: { restrictedPreference: true },
     })
     expect(state.submission.accessSection.restrictedPreference).toBe(true)
-    const next = submitReducer(state, { type: "SET_Q2", q2: "eukaryote" })
+    const next = submitReducer(state, { type: "SET_ORGANISM_DOMAIN", organismDomain: "eukaryote" })
     expect(next.submission.accessSection).toEqual({
       restrictedPreference: false,
       hasIdentifier: false,
@@ -121,17 +121,17 @@ describe("submitReducer ADD_ROW", () => {
   })
 
   test("submitReducer_addRowHumanDefaultAccess_identifiableKindGetsRestricted", () => {
-    const next = addRow(withQ2("human"), "sequence-read", "e1", "g1")
+    const next = addRow(withOrganismDomain("human"), "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("restricted")
   })
 
   test("submitReducer_addRowHumanDefaultAccess_nonIdentifiableKindGetsOpen", () => {
-    const next = addRow(withQ2("human"), "expression-matrix", "e1", "g1")
+    const next = addRow(withOrganismDomain("human"), "expression-matrix", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 
   test("submitReducer_addRowNonHuman_injectsOpenAccess", () => {
-    const next = addRow(withQ2("prokaryote"), "sequence-read", "e1", "g1")
+    const next = addRow(withOrganismDomain("prokaryote"), "sequence-read", "e1", "g1")
     expect(next.submission.fileEntries[0]!.access).toBe("open")
   })
 })

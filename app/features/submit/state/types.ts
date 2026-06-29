@@ -4,7 +4,7 @@ import type {
   FileEntryChip,
   FileTypeKind,
   GroupType,
-  Q2,
+  OrganismDomain,
   Submission,
 } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
@@ -30,7 +30,7 @@ export type Validation = {
 }
 
 export type Action =
-  | { type: "SET_Q2"; q2: Q2 | null }
+  | { type: "SET_ORGANISM_DOMAIN"; organismDomain: OrganismDomain | null }
   | { type: "SET_ACCESS_SECTION"; accessSection: Partial<AccessSection> }
   | { type: "ADD_ROW"; fileTypeKind: FileTypeKind; entryId: string; groupId: string }
   | { type: "EDIT_ROW_CELL"; entryId: string; patch: Partial<FileEntry> }

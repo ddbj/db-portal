@@ -3,14 +3,14 @@ import { useState } from "react"
 import { deriveFlowSteps, enabledKinds, isKindEnabled, RadioCardGroup } from "~/features/submit"
 import { deriveAccess } from "~/features/submit/access"
 import { useT } from "~/lib/i18n"
-import type { Access, ChipAxis, FileEntry, FlowStep, FlowStepOrigin, GroupType, Q2, Submission } from "~/schemas/submit"
+import type { Access, ChipAxis, FileEntry, FlowStep, FlowStepOrigin, GroupType, OrganismDomain, Submission } from "~/schemas/submit"
 import {
   Access as AccessEnum,
   ALLOWED_CHIP_VALUES,
   ChipAxis as ChipAxisEnum,
   FileTypeKind as FileTypeKindEnum,
   GroupType as GroupTypeEnum,
-  Q2 as Q2Enum,
+  OrganismDomain as OrganismDomainEnum,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "~/schemas/submit"
@@ -38,7 +38,7 @@ const DEFAULT_ACCESS_SECTION: AccessSection = {
 }
 
 const emptySubmission = (): Submission => ({
-  preconditions: { q2: null },
+  preconditions: { organismDomain: null },
   accessSection: { ...DEFAULT_ACCESS_SECTION },
   fileEntries: [],
   fileGroups: [],
@@ -49,9 +49,9 @@ const SubmitFlowExplorer = () => {
   const t = useT()
   const [mode, setMode] = useState<"builder" | "matrix">("builder")
   const [submission, setSubmission] = useState<Submission>(emptySubmission)
-  const { q2 } = submission.preconditions
+  const { organismDomain } = submission.preconditions
 
-  const setQ2 = (value: Q2) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, q2: value } }))
+  const setOrganismDomain = (value: OrganismDomain) => setSubmission((s) => ({ ...s, preconditions: { ...s.preconditions, organismDomain: value } }))
 
   const addEntry = (kind: FileEntry["fileTypeKind"]) => {
     const id = crypto.randomUUID()
@@ -63,7 +63,7 @@ const SubmitFlowExplorer = () => {
         {
           id,
           fileTypeKind: kind,
-          access: deriveAccess(s.preconditions.q2, s.accessSection, kind),
+          access: deriveAccess(s.preconditions.organismDomain, s.accessSection, kind),
           dataForm: TYPICAL_DATA_FORM_FOR_KIND[kind],
           groupId,
           chipTags: [],
@@ -115,7 +115,7 @@ const SubmitFlowExplorer = () => {
       <PageTitle
         eyebrow="Design preview"
         title="Submit flow explorer"
-        subtitle="任意の入力から導出される FlowStep を全件プレビューし、由来 (Tier1 / Tier2 / recipe) を確認する。マトリクスモードで Q2 x 種別の到達可能性を一覧する。"
+        subtitle="任意の入力から導出される FlowStep を全件プレビューし、由来 (Tier1 / Tier2 / recipe) を確認する。マトリクスモードで OrganismDomain x 種別の到達可能性を一覧する。"
       />
       <Callout tone="info">この画面は production build では生成されない開発専用ツール。</Callout>
 
@@ -132,13 +132,13 @@ const SubmitFlowExplorer = () => {
         <div className="grid grid-cols-2 gap-6">
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">Q2</p>
+              <p className="text-fs-body-sm font-semibold text-ink mt-0 mb-2">OrganismDomain</p>
               <RadioCardGroup
-                ariaLabel="Q2"
-                name="explorer-q2"
-                value={q2}
-                options={Q2Enum.options.map((v) => ({ value: v, label: v }))}
-                onChange={(v: string) => setQ2(v as Q2)}
+                ariaLabel="OrganismDomain"
+                name="explorer-organismDomain"
+                value={organismDomain}
+                options={OrganismDomainEnum.options.map((v) => ({ value: v, label: v }))}
+                onChange={(v: string) => setOrganismDomain(v as OrganismDomain)}
               />
             </div>
             <div>
@@ -149,7 +149,7 @@ const SubmitFlowExplorer = () => {
                     key={kind}
                     kind="secondary"
                     size="sm"
-                    disabled={!isKindEnabled(q2, kind)}
+                    disabled={!isKindEnabled(organismDomain, kind)}
                     onClick={() => addEntry(kind)}
                   >
                     {kind}
@@ -232,17 +232,17 @@ const SubmitFlowExplorer = () => {
           <table className="border-collapse text-fs-micro">
             <thead>
               <tr>
-                <th className="border border-border-soft px-2 py-1 text-left">Q2</th>
+                <th className="border border-border-soft px-2 py-1 text-left">OrganismDomain</th>
                 <th className="border border-border-soft px-2 py-1 text-left">Enabled kinds</th>
               </tr>
             </thead>
             <tbody>
-              {Q2Enum.options.map((qq2) => {
-                const kinds = enabledKinds(qq2)
+              {OrganismDomainEnum.options.map((domain) => {
+                const kinds = enabledKinds(domain)
 
                 return (
-                  <tr key={qq2}>
-                    <th className="border border-border-soft px-2 py-1 text-left">{qq2}</th>
+                  <tr key={domain}>
+                    <th className="border border-border-soft px-2 py-1 text-left">{domain}</th>
                     <td className="border border-border-soft px-2 py-1 align-top bg-surface">
                       <ul className="list-none m-0 p-0 flex flex-col gap-0.5">
                         {kinds.map((k) => <li key={k} className="font-mono">{k}</li>)}

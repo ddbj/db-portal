@@ -18,7 +18,7 @@ const warningKeys = (step: FlowStep): string[] =>
 describe("deriveFlowSteps", () => {
   test("deriveFlowSteps_publicHumanSequenceRead_emitsDraWithDefaultCompanions", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -53,7 +53,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedHumanSequenceRead_routesToJgaWithExternalsAndNoDefaultCompanion", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -88,7 +88,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_sequenceWithTpaChip_routesToDdbjWithTpaWarning", () => {
     const submission: Submission = {
-      preconditions: { q2: "eukaryote" },
+      preconditions: { organismDomain: "eukaryote" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -118,7 +118,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_nonHumanVariant_routesToEvaNotTogovar", () => {
     const submission: Submission = {
-      preconditions: { q2: "eukaryote" },
+      preconditions: { organismDomain: "eukaryote" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -148,7 +148,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_publicHumanVariant_routesToEva", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -175,7 +175,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedHumanVariant_routesToJga", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -201,7 +201,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_publicMetagenomeVariant_routesToEva", () => {
     const submission: Submission = {
-      preconditions: { q2: "metagenome" },
+      preconditions: { organismDomain: "metagenome" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -225,7 +225,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_restrictedMetagenomeVariant_routesToEvaNotJga", () => {
     const submission: Submission = {
-      preconditions: { q2: "metagenome" },
+      preconditions: { organismDomain: "metagenome" },
       accessSection: { restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -249,7 +249,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_magChip_routesAssemblyToDdbjTradViaTier1WithDefaultCompanion", () => {
     const submission: Submission = {
-      preconditions: { q2: "metagenome" },
+      preconditions: { organismDomain: "metagenome" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -291,7 +291,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_visiumSpatialTranscriptomics_emitsDraAndGeaTwoStep", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -319,7 +319,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_sequenceReadAndVisiumSpatial_unionsIntoSingleDraStep", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -356,7 +356,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_xeniumSpatialTranscriptomics_emitsGeaOnly", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -381,7 +381,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_merfishSpatial_emitsGeaWithGeneralistWarningNoDra", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -405,7 +405,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_ngsExpressionMatrix_emitsDraAndGeaTwoStep", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -432,7 +432,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_nonNgsExpressionMatrix_emitsGeaOnly", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -456,7 +456,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_ngsExpressionAndSequenceRead_unionsIntoSingleDraStep", () => {
     const submission: Submission = {
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
       fileEntries: [
         {
@@ -489,9 +489,9 @@ describe("deriveFlowSteps", () => {
     expect(dra.scope.entryIds).toEqual(["e1", "e2"])
   })
 
-  test("deriveFlowSteps_disabledKindByQ2_isExcludedFromFlow", () => {
+  test("deriveFlowSteps_disabledKindByOrganismDomain_isExcludedFromFlow", () => {
     const submission: Submission = {
-      preconditions: { q2: null },
+      preconditions: { organismDomain: null },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [
         {
@@ -512,7 +512,7 @@ describe("deriveFlowSteps", () => {
 
   test("deriveFlowSteps_emptySubmission_returnsNoSteps", () => {
     const submission: Submission = {
-      preconditions: { q2: null },
+      preconditions: { organismDomain: null },
       accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
       fileEntries: [],
       fileGroups: [],

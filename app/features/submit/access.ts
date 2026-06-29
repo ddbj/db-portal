@@ -1,15 +1,15 @@
-import type { Access, FileTypeKind, Q2 } from "~/schemas/submit"
+import type { Access, FileTypeKind, OrganismDomain } from "~/schemas/submit"
 import { IDENTIFIABLE_KINDS } from "~/schemas/submit"
 import type { FileEntryChip } from "~/schemas/submit/file-entry"
 import type { AccessSection } from "~/schemas/submit/submission"
 
 export const deriveAccess = (
-  q2: Q2 | null,
+  organismDomain: OrganismDomain | null,
   section: AccessSection,
   fileTypeKind: FileTypeKind,
   chips: readonly FileEntryChip[] = [],
 ): Access => {
-  if (q2 !== "human") return "open"
+  if (organismDomain !== "human") return "open"
   if (section.restrictedPreference) return "restricted"
 
   const chip = chips.find((c) => c.axis === "identifiability")

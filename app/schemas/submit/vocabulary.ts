@@ -13,8 +13,8 @@ export const FileTypeKind = z.enum([
 ])
 export type FileTypeKind = z.infer<typeof FileTypeKind>
 
-// Q2 生物ドメイン。前段の単一選択で、submission 全体の唯一の生物軸
-export const Q2 = z.enum([
+// OrganismDomain (生物ドメイン)。前段の単一選択で、submission 全体の唯一の生物軸
+export const OrganismDomain = z.enum([
   "human",
   "eukaryote",
   "prokaryote",
@@ -22,7 +22,7 @@ export const Q2 = z.enum([
   "metagenome",
   "other",
 ])
-export type Q2 = z.infer<typeof Q2>
+export type OrganismDomain = z.infer<typeof OrganismDomain>
 
 export const GroupType = z.enum([
   "single",

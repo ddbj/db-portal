@@ -1,9 +1,9 @@
-import type { FileEntry, FileGroup, Q2, When } from "~/schemas/submit"
+import type { FileEntry, FileGroup, OrganismDomain, When } from "~/schemas/submit"
 
 export type PredicateContext = {
   entry: FileEntry
   group: FileGroup | undefined
-  q2: Q2 | null
+  organismDomain: OrganismDomain | null
 }
 
 // 単一 FileEntry / 所属 group / 前段で when を評価する純関数
@@ -27,8 +27,8 @@ export const evalWhen = (when: When, ctx: PredicateContext): boolean => {
       (c) => c.axis === axis && (value === undefined || c.value === value),
     )
   }
-  if ("q2" in when) return ctx.q2 === when.q2
-  if ("q2In" in when) return ctx.q2 !== null && when.q2In.includes(ctx.q2)
+  if ("organismDomain" in when) return ctx.organismDomain === when.organismDomain
+  if ("organismDomainIn" in when) return ctx.organismDomain !== null && when.organismDomainIn.includes(ctx.organismDomain)
 
   return false
 }

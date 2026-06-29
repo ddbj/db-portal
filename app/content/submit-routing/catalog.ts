@@ -1,13 +1,13 @@
 import { type SubmitKindRoute, SubmitRoutingCatalog } from "~/schemas/content/submit-routing-content"
-import type { FileTypeKind, Q2, Service } from "~/schemas/submit"
+import type { FileTypeKind, OrganismDomain, Service } from "~/schemas/submit"
 
 // Tier1 ルーティング・カタログ (データ駆動)。DDBJ が編集し、起動時 Zod 検証で typo が落ちる。
 // rules は first-match。emit.service は登録エンドポイント (destination ∪ {jpost, eva})。
-// JGA 分岐は access=restricted ∧ q2=human (ヒト個人の全種別。メタゲノム/環境は対象外)。
+// JGA 分岐は access=restricted ∧ organismDomain=human (ヒト個人の全種別。メタゲノム/環境は対象外)。
 const catalogData = {
-  // カスケード: allowedRepos = Q2.repos。rules を実行せず repos を読むだけで判定する。
+  // カスケード: allowedRepos = OrganismDomain.repos。rules を実行せず repos を読むだけで判定する。
   // repos は DDBJ 内登録先 (role=destination) のみ。塩基配列の Web 登録窓口 nsss を含む。
-  q2Options: [
+  organismDomainOptions: [
     { id: "human", repos: ["dra", "jga", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
     { id: "eukaryote", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
     { id: "prokaryote", repos: ["dra", "ddbj", "nsss", "gea", "metabobank", "jpost", "eva"] },
@@ -21,7 +21,7 @@ const catalogData = {
       candidateRepos: ["dra", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -53,7 +53,7 @@ const catalogData = {
       candidateRepos: ["ddbj", "nsss", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -143,7 +143,7 @@ const catalogData = {
       candidateRepos: ["eva", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -170,7 +170,7 @@ const catalogData = {
       candidateRepos: ["gea", "dra", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -199,7 +199,7 @@ const catalogData = {
       candidateRepos: ["gea", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -221,7 +221,7 @@ const catalogData = {
       candidateRepos: ["gea", "dra", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -260,7 +260,7 @@ const catalogData = {
       candidateRepos: ["metabobank", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -284,7 +284,7 @@ const catalogData = {
       candidateRepos: ["jpost", "jga"],
       rules: [
         {
-          when: { and: [{ access: "restricted" }, { q2: "human" }] },
+          when: { and: [{ access: "restricted" }, { organismDomain: "human" }] },
           emit: {
             service: "jga",
             scope: "entry",
@@ -319,7 +319,7 @@ export const SUBMIT_ROUTING = parsed.data
 const routeByKind = new Map<FileTypeKind, SubmitKindRoute>(
   SUBMIT_ROUTING.kindRoutes.map((r) => [r.id, r]),
 )
-const q2ReposById = new Map<Q2, readonly Service[]>(SUBMIT_ROUTING.q2Options.map((o) => [o.id, o.repos]))
+const organismDomainReposById = new Map<OrganismDomain, readonly Service[]>(SUBMIT_ROUTING.organismDomainOptions.map((o) => [o.id, o.repos]))
 
 export const listKindRoutes = (): readonly SubmitKindRoute[] => SUBMIT_ROUTING.kindRoutes
 
@@ -330,7 +330,7 @@ export const getKindRoute = (kind: FileTypeKind): SubmitKindRoute => {
   return route
 }
 
-export const getQ2Repos = (q2: Q2): readonly Service[] => q2ReposById.get(q2) ?? []
+export const getOrganismDomainRepos = (organismDomain: OrganismDomain): readonly Service[] => organismDomainReposById.get(organismDomain) ?? []
 
 export const allCatalogMessageKeys = (): readonly string[] => {
   const keys = new Set<string>()

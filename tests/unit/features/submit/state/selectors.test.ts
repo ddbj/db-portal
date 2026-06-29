@@ -12,7 +12,7 @@ import type { UIState } from "../../../../../app/features/submit/state/types"
 import {
   FileTypeKind,
   isDestinationService,
-  Q2,
+  OrganismDomain,
   type Submission,
 } from "../../../../../app/schemas/submit"
 
@@ -21,8 +21,8 @@ const stateOf = (submission: Submission): UIState => ({ submission })
 const addRow = (state: UIState, fileTypeKind: FileTypeKind, entryId: string, groupId: string): UIState =>
   submitReducer(state, { type: "ADD_ROW", fileTypeKind, entryId, groupId })
 
-const withQ2 = (q2: Q2): UIState =>
-  submitReducer(initialState, { type: "SET_Q2", q2 })
+const withOrganismDomain = (organismDomain: OrganismDomain): UIState =>
+  submitReducer(initialState, { type: "SET_ORGANISM_DOMAIN", organismDomain })
 
 const kindsOf = (state: UIState, kind: string): boolean =>
   selectValidations(state).some((v) => v.kind === kind)
@@ -36,24 +36,24 @@ const defaultAccessSection = {
 }
 
 describe("selectValidations", () => {
-  test("selectValidations_kindEnabledByQ2_noPreconditionConflict", () => {
+  test("selectValidations_kindEnabledByOrganismDomain_noPreconditionConflict", () => {
     expect(isKindEnabled("human", "sequence-read")).toBe(true)
-    const state = addRow(withQ2("human"), "sequence-read", "e1", "g1")
+    const state = addRow(withOrganismDomain("human"), "sequence-read", "e1", "g1")
 
     expect(kindsOf(state, "precondition-conflict")).toBe(false)
   })
 
-  test("selectValidations_q2Null_reportsPreconditionConflict", () => {
+  test("selectValidations_organismDomainNull_reportsPreconditionConflict", () => {
     const state = addRow(initialState, "sequence-read", "e1", "g1")
 
-    expect(state.submission.preconditions.q2).toBeNull()
+    expect(state.submission.preconditions.organismDomain).toBeNull()
     expect(isKindEnabled(null, "sequence-read")).toBe(false)
     expect(selectValidations(state)).toContainEqual({ kind: "precondition-conflict", entryId: "e1" })
   })
 
   test("selectValidations_entryGroupIdNotInGroups_reportsDanglingGroupId", () => {
     const state = stateOf({
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: defaultAccessSection,
       fileEntries: [
         {
@@ -79,7 +79,7 @@ describe("selectValidations", () => {
   })
 
   test("selectValidations_normalEnabledRow_isEmpty", () => {
-    const seeded = addRow(withQ2("human"), "sequence-read", "e1", "g1")
+    const seeded = addRow(withOrganismDomain("human"), "sequence-read", "e1", "g1")
 
     expect(selectValidations(seeded)).toEqual([])
   })
@@ -89,11 +89,11 @@ describe("selectValidations", () => {
   })
 
   test("selectValidations_anyEnabledEntryAcrossCatalog_neverReportsNoDestinationService", () => {
-    for (const q2 of Q2.options) {
+    for (const organismDomain of OrganismDomain.options) {
       for (const kind of FileTypeKind.options) {
-        if (!isKindEnabled(q2, kind)) continue
+        if (!isKindEnabled(organismDomain, kind)) continue
         const state = stateOf({
-          preconditions: { q2 },
+          preconditions: { organismDomain },
           accessSection: defaultAccessSection,
           fileEntries: [
             {
@@ -116,7 +116,7 @@ describe("selectValidations", () => {
 
   test("selectValidations_recipeOwnedEntry_stillCoveredByDestinationStep", () => {
     const submission: Submission = {
-      preconditions: { q2: "prokaryote" },
+      preconditions: { organismDomain: "prokaryote" },
       accessSection: defaultAccessSection,
       fileEntries: [
         {

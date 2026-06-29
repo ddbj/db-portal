@@ -61,8 +61,8 @@ const companionSteps = (entries: readonly FileEntry[]): FlowStep[] => {
 
 // 薄インタプリタ (Tier1) と Tier2 構造エンジン / named recipe を合成して FlowStep[] を返す (副作用なし)
 export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
-  const { q2 } = submission.preconditions
-  const activeEntries = submission.fileEntries.filter((e) => isKindEnabled(q2, e.fileTypeKind))
+  const { organismDomain } = submission.preconditions
+  const activeEntries = submission.fileEntries.filter((e) => isKindEnabled(organismDomain, e.fileTypeKind))
   if (activeEntries.length === 0) return []
 
   const routings = routeEntries(submission, activeEntries)

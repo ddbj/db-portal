@@ -3,7 +3,7 @@ import type {
   DataForm,
   FileTypeKind,
   GroupType,
-  Q2,
+  OrganismDomain,
 } from "~/schemas/submit"
 
 export type FormOptionEffect = {
@@ -256,12 +256,12 @@ const countVisualSections = (groups: readonly FormGroupDef[]): number => {
 
 export const getRowFormDef = (
   kind: FileTypeKind,
-  q2: Q2 | null,
+  organismDomain: OrganismDomain | null,
   hasIdentifier: boolean,
 ): RowFormDef => {
   const base = BASE_ROW_FORM_DEFS[kind]
   const entry = IDENTIFIABILITY_KEYS[kind]
-  if (q2 === "human" && entry !== undefined) {
+  if (organismDomain === "human" && entry !== undefined) {
     const num = `${countVisualSections(base.groups) + 1}.`
     const copy = hasIdentifier ? entry.exclude : entry.include
     const value = hasIdentifier ? "non-identifiable" : "identifiable"
@@ -285,5 +285,5 @@ export const getRowFormDef = (
 // flow-changing 軸を持つ種別だけが file 詳細質問を持つ。持たない種別はデータ詳細セルを出さない。
 // identifiability section の有無は groups.length に影響しない (Yes/No いずれでも 1 section) ため
 // 判定はどちらの hasIdentifier 値でも同じ結果になる
-export const hasRowDetail = (kind: FileTypeKind, q2: Q2 | null): boolean =>
-  getRowFormDef(kind, q2, true).groups.length > 0
+export const hasRowDetail = (kind: FileTypeKind, organismDomain: OrganismDomain | null): boolean =>
+  getRowFormDef(kind, organismDomain, true).groups.length > 0

@@ -4,14 +4,14 @@ import {
   FileTypeKind,
   FlowNoteKind,
   MAX_WHEN_DEPTH,
-  Q2,
+  OrganismDomain,
   Service,
   SUBMISSION_ENDPOINTS,
   When,
   whenDepth,
 } from "~/schemas/submit"
 
-// q2 カスケード repos / emit.service / candidateRepos は登録エンドポイント
+// organismDomain カスケード repos / emit.service / candidateRepos は登録エンドポイント
 // (destination ∪ {jpost, eva}) を許す
 const ENDPOINT_SET: ReadonlySet<Service> = new Set(SUBMISSION_ENDPOINTS)
 
@@ -61,7 +61,7 @@ const allWhensOf = (rule: z.infer<typeof Rule>): When[] => [
 
 export const SubmitRoutingCatalog = z
   .object({
-    q2Options: z.array(QOption(Q2)),
+    organismDomainOptions: z.array(QOption(OrganismDomain)),
     kindRoutes: z.array(KindRoute),
   })
   .strict()
@@ -69,17 +69,17 @@ export const SubmitRoutingCatalog = z
     const fail = (message: string, path: (string | number)[]) =>
       ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
 
-    // q2 カスケード repos / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
+    // organismDomain カスケード repos / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
     const checkEndpointRepos = (repos: Service[], path: (string | number)[]) => {
       for (const r of repos) {
         if (!ENDPOINT_SET.has(r)) fail(`repos "${r}" is not a submission endpoint`, path)
       }
     }
-    const q2Ids = cat.q2Options.map((o) => o.id)
-    if (new Set(q2Ids).size !== Q2.options.length || !Q2.options.every((q) => q2Ids.includes(q))) {
-      fail("q2Options must cover every Q2 exactly once", ["q2Options"])
+    const organismDomainIds = cat.organismDomainOptions.map((o) => o.id)
+    if (new Set(organismDomainIds).size !== OrganismDomain.options.length || !OrganismDomain.options.every((q) => organismDomainIds.includes(q))) {
+      fail("organismDomainOptions must cover every OrganismDomain exactly once", ["organismDomainOptions"])
     }
-    cat.q2Options.forEach((o, i) => checkEndpointRepos(o.repos, ["q2Options", i, "repos"]))
+    cat.organismDomainOptions.forEach((o, i) => checkEndpointRepos(o.repos, ["organismDomainOptions", i, "repos"]))
 
     // kindRoutes は全 FileTypeKind をちょうど 1 つずつ持つ
     const kindIds = cat.kindRoutes.map((k) => k.id)

@@ -5,10 +5,10 @@ import { expect, test } from "./helpers"
 // FmtRadio は label と sub を 1 つの <label> に入れるため、accessible name は
 // label + sub の連結になる。識別は部分一致 (regex) で行う。
 // "ヒト" は "ヒト以外の真核生物" の前方一致になるため sub 文言で曖昧さを排除する。
-const Q2_HUMAN = /ヒト個人由来のデータ/
-const Q2_EUKARYOTE = /ヒト以外の真核生物/
+const OrganismDomain_HUMAN = /ヒト個人由来のデータ/
+const OrganismDomain_EUKARYOTE = /ヒト以外の真核生物/
 
-const selectQ2 = async (page: Page, name: RegExp): Promise<void> => {
+const selectOrganismDomain = async (page: Page, name: RegExp): Promise<void> => {
   await page.getByRole("radiogroup", { name: "生物ドメイン" }).getByRole("radio", { name }).check()
 }
 
@@ -36,7 +36,7 @@ const toggleAccessSwitch = async (page: Page, name: RegExp): Promise<void> => {
 }
 
 test.describe("Submit Domain", () => {
-  test("S-SUBMIT-01: 初期表示 (Q2 未選択で種別トグル disabled)", async ({ page }) => {
+  test("S-SUBMIT-01: 初期表示 (OrganismDomain 未選択で種別トグル disabled)", async ({ page }) => {
     await page.goto("/submit")
 
     await expect(page.getByRole("link", { name: "登録" })).toHaveAttribute("aria-current", "page")
@@ -45,8 +45,8 @@ test.describe("Submit Domain", () => {
     ).toBeVisible()
     await expect(page.getByRole("heading", { name: "登録データ種別" })).toBeVisible()
 
-    const q2group = page.getByRole("radiogroup", { name: "生物ドメイン" })
-    for (const radio of await q2group.getByRole("radio").all()) {
+    const organismDomaingroup = page.getByRole("radiogroup", { name: "生物ドメイン" })
+    for (const radio of await organismDomaingroup.getByRole("radio").all()) {
       await expect(radio).not.toBeChecked()
     }
 
@@ -63,7 +63,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-02: 配列リードのトグルで BioProject/BioSample/DRA が組まれる", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "配列リード")
 
     await expect(kindButton(page, "配列リード")).toHaveAttribute("aria-pressed", "true")
@@ -77,7 +77,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-03: 複数種別で複数 destination が並ぶ", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "配列リード")
     await toggleKind(page, "バリアント")
     await toggleKind(page, "発現マトリクス")
@@ -91,7 +91,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-04: 制限公開ヒトで JGA/DRA を分岐", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_HUMAN)
+    await selectOrganismDomain(page, OrganismDomain_HUMAN)
     await toggleAccessSwitch(page, /制限公開を希望する/)
     await toggleKind(page, "配列リード")
 
@@ -101,7 +101,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-05: 塩基配列の detail で MAG 選択", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "塩基配列")
 
     const item = detailItemWith(page, /MAG/)
@@ -116,7 +116,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-06: 種別トグル off でフローカードが減る", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "配列リード")
     await toggleKind(page, "発現マトリクス")
     await expect(flowStep(page, "gea")).toHaveCount(1)
@@ -134,7 +134,7 @@ test.describe("Submit Domain", () => {
     await expect(reads).toBeDisabled()
     await expect(reads).toHaveAttribute("title", "生物ドメインを選択してください")
 
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await expect(reads).toBeEnabled()
     await expect(kindButton(page, "バリアント")).toBeEnabled()
     await expect(kindButton(page, "発現マトリクス")).toBeEnabled()
@@ -143,7 +143,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-08: プロテオーム→jPOST / メタボロミクス→MetaboBank", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "プロテオーム")
 
     await expect(flowStep(page, "jpost")).toHaveCount(1)
@@ -160,7 +160,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-09: 制限公開ヒトで JGA + humandbs 前提ゲート、随伴抑制", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_HUMAN)
+    await selectOrganismDomain(page, OrganismDomain_HUMAN)
     await toggleAccessSwitch(page, /制限公開を希望する/)
     await toggleKind(page, "配列リード")
 
@@ -178,7 +178,7 @@ test.describe("Submit Domain", () => {
 
   test("S-SUBMIT-12: 種別トグル解除でフローと確認事項が解消する", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "発現マトリクス")
     await expect(flowStep(page, "gea")).toHaveCount(1)
 
@@ -197,7 +197,7 @@ test.describe("Submit Domain", () => {
 
   test("E-SUBMIT-01: 未設定の詳細種別が notify で示される", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "空間トランスクリプトーム")
 
     const item = detailItemWith(page, /Visium/)
@@ -207,7 +207,7 @@ test.describe("Submit Domain", () => {
 
   test("E-SUBMIT-04: spatial Visium で DRA + GEA の 2 段", async ({ page }) => {
     await page.goto("/submit")
-    await selectQ2(page, Q2_EUKARYOTE)
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "空間トランスクリプトーム")
 
     const item = detailItemWith(page, /Visium/)

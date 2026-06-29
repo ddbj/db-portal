@@ -5,7 +5,7 @@ import { Submission } from "../../../../app/schemas/submit"
 describe("Submission", () => {
   test("Submission_emptyObject_yieldsDefaults", () => {
     const parsed = Submission.parse({})
-    expect(parsed.preconditions).toEqual({ q2: null })
+    expect(parsed.preconditions).toEqual({ organismDomain: null })
     expect(parsed.accessSection).toEqual({
       restrictedPreference: false,
       hasIdentifier: false,
@@ -20,7 +20,7 @@ describe("Submission", () => {
 
   test("Submission_withPreconditionsEntriesAndGroups_parses", () => {
     const parsed = Submission.parse({
-      preconditions: { q2: "human" },
+      preconditions: { organismDomain: "human" },
       accessSection: { restrictedPreference: true },
       fileEntries: [{
         id: "e1",
@@ -38,7 +38,7 @@ describe("Submission", () => {
       }],
       notes: "memo",
     })
-    expect(parsed.preconditions.q2).toBe("human")
+    expect(parsed.preconditions.organismDomain).toBe("human")
     expect(parsed.accessSection.restrictedPreference).toBe(true)
     expect(parsed.fileEntries).toHaveLength(1)
     expect(parsed.fileGroups[0]!.memberFileIds).toEqual(["e1"])
@@ -53,9 +53,9 @@ describe("Submission", () => {
     ).toThrow()
   })
 
-  test("Submission_unknownQ2_throws", () => {
+  test("Submission_unknownOrganismDomain_throws", () => {
     expect(() =>
-      Submission.parse({ preconditions: { q2: "animal" } }),
+      Submission.parse({ preconditions: { organismDomain: "animal" } }),
     ).toThrow()
   })
 })

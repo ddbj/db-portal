@@ -8,7 +8,7 @@ import {
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
-  Q2,
+  OrganismDomain,
   TYPICAL_DATA_FORM_FOR_KIND,
   TYPICAL_GROUP_TYPE_FOR_KIND,
 } from "../../../../app/schemas/submit"
@@ -18,7 +18,7 @@ describe("vocabulary enum option invariants", () => {
   // bug); exact counts are change-detectors that fire on benign vocab growth.
   test.each<[string, readonly string[]]>([
     ["FileTypeKind", FileTypeKind.options],
-    ["Q2", Q2.options],
+    ["OrganismDomain", OrganismDomain.options],
     ["GroupType", GroupType.options],
     ["DataForm", DataForm.options],
     ["ChipAxis", ChipAxis.options],
@@ -45,12 +45,12 @@ describe("vocabulary enum parsing", () => {
     expect(() => FileTypeKind.parse("")).toThrow()
   })
 
-  test.each(Q2.options)("Q2_parse_%s_returnsSameValue", (q2) => {
-    expect(Q2.parse(q2)).toBe(q2)
+  test.each(OrganismDomain.options)("OrganismDomain_parse_%s_returnsSameValue", (organismDomain) => {
+    expect(OrganismDomain.parse(organismDomain)).toBe(organismDomain)
   })
 
-  test("Q2_parse_unknown_throws", () => {
-    expect(() => Q2.parse("animal")).toThrow()
+  test("OrganismDomain_parse_unknown_throws", () => {
+    expect(() => OrganismDomain.parse("animal")).toThrow()
   })
 
   test.each(GroupType.options)("GroupType_parse_%s_returnsSameValue", (gt) => {

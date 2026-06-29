@@ -40,7 +40,7 @@ const singleSequence = (
 
 describe("MSS/NSSS split", () => {
   test("deriveFlowSteps_defaultSequence_routesToDdbj", () => {
-    const steps = deriveFlowSteps(singleSequence({ q2: "eukaryote" }))
+    const steps = deriveFlowSteps(singleSequence({ organismDomain: "eukaryote" }))
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
 
@@ -53,7 +53,7 @@ describe("MSS/NSSS split", () => {
 
   test("deriveFlowSteps_smallScaleChip_routesToNsss", () => {
     const steps = deriveFlowSteps(
-      singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
+      singleSequence({ organismDomain: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
     )
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "nsss"])
@@ -67,7 +67,7 @@ describe("MSS/NSSS split", () => {
 
   test("deriveFlowSteps_sequenceWithTpaChip_routesToDdbjNotNsss", () => {
     const steps = deriveFlowSteps(
-      singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "tpa", value: "true" }] }),
+      singleSequence({ organismDomain: "eukaryote" }, { chipTags: [{ axis: "tpa", value: "true" }] }),
     )
 
     expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
@@ -83,7 +83,7 @@ describe("MSS/NSSS split", () => {
 
   test("deriveFlowSteps_magCompletedGenomeChain_routesToDdbjNotNsss", () => {
     const submission: Submission = {
-      preconditions: { q2: "metagenome" },
+      preconditions: { organismDomain: "metagenome" },
       accessSection: defaultAccessSection,
       fileEntries: [
         {
@@ -119,11 +119,11 @@ describe("MSS/NSSS split", () => {
 
   test("deriveFlowSteps_nsssVsDdbjBoundary_doesNotCollapseOntoOneService", () => {
     const ddbjDest = destinationOf(
-      deriveFlowSteps(singleSequence({ q2: "eukaryote" })),
+      deriveFlowSteps(singleSequence({ organismDomain: "eukaryote" })),
     )
     const nsssDest = destinationOf(
       deriveFlowSteps(
-        singleSequence({ q2: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
+        singleSequence({ organismDomain: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
       ),
     )
 

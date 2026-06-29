@@ -9,17 +9,17 @@ import {
   type FileGroup,
   FileTypeKind,
   GroupType,
-  Q2,
+  OrganismDomain,
   type Submission,
 } from "../../../app/schemas/submit"
 import type { AccessSection } from "../../../app/schemas/submit/submission"
 
 export const arbFileTypeKind = fc.constantFrom(...FileTypeKind.options)
-export const arbQ2 = fc.constantFrom(...Q2.options)
+export const arbOrganismDomain = fc.constantFrom(...OrganismDomain.options)
 const arbGroupType = fc.constantFrom(...GroupType.options)
 export const arbAccess = fc.constantFrom(...Access.options)
 const arbDataForm = fc.constantFrom(...DataForm.options)
-const arbQ2OrNull = fc.option(arbQ2, { nil: null })
+const arbOrganismDomainOrNull = fc.option(arbOrganismDomain, { nil: null })
 
 export const arbAccessSection: fc.Arbitrary<AccessSection> = fc.oneof(
   fc.constant({ restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false }),
@@ -47,14 +47,14 @@ type EntryShape = {
 }
 
 type SubmissionShape = {
-  q2: typeof Q2._type | null
+  organismDomain: typeof OrganismDomain._type | null
   accessSection: AccessSection
   groupTypes: (typeof GroupType._type)[]
   entries: EntryShape[]
 }
 
 const arbSubmissionShape: fc.Arbitrary<SubmissionShape> = fc.record({
-  q2: arbQ2OrNull,
+  organismDomain: arbOrganismDomainOrNull,
   accessSection: arbAccessSection,
   groupTypes: fc.array(arbGroupType, { minLength: 0, maxLength: 5 }),
   entries: fc.array(
@@ -74,7 +74,7 @@ const entryIdOf = (i: number): string => `e${i}`
 const ORPHAN_GROUP_ID = "g-orphan"
 
 export const arbSubmission: fc.Arbitrary<Submission> = arbSubmissionShape.map(
-  ({ q2, accessSection, groupTypes: gts, entries }): Submission => {
+  ({ organismDomain, accessSection, groupTypes: gts, entries }): Submission => {
     const fileGroups: FileGroup[] = gts.map((gt, i) => ({
       id: groupIdOf(i),
       groupType: gt,
@@ -107,6 +107,6 @@ export const arbSubmission: fc.Arbitrary<Submission> = arbSubmissionShape.map(
       g.memberFileIds = byGroup.get(g.id) ?? []
     }
 
-    return { preconditions: { q2 }, accessSection, fileEntries, fileGroups, notes: "" }
+    return { preconditions: { organismDomain }, accessSection, fileEntries, fileGroups, notes: "" }
   },
 )

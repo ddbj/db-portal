@@ -184,9 +184,9 @@ export const en: Resources = {
     },
     preconditions: {
       q1Heading: "What kind of submission is this?",
-      q2Heading: "Which biological domain?",
-      q2Required: "Choose a biological domain to continue.",
-      q2DisabledReason: "Not available for the selected submission type.",
+      organismDomainHeading: "Which biological domain?",
+      organismDomainRequired: "Choose a biological domain to continue.",
+      organismDomainDisabledReason: "Not available for the selected submission type.",
       kindDisabledReason: "Not available for the selected submission type and biological domain.",
       kindConflictReason: "No destination under the current submission basics. Click to deselect.",
       q1: {
@@ -194,7 +194,7 @@ export const en: Resources = {
         "restricted": { label: "Includes restricted-access data", sub: "Controlled-access data such as human individuals" },
         "third-party": { label: "Analysis results for third-party data", sub: "Data derived from records submitted by others" },
       },
-      q2: {
+      organismDomain: {
         "human": { label: "Human", sub: "Human individuals and human-derived samples" },
         "eukaryote": { label: "Eukaryote (non-human)", sub: "Non-human eukaryotic organisms" },
         "prokaryote": { label: "Prokaryote", sub: "Bacteria and archaea" },

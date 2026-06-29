@@ -13,7 +13,7 @@ import {
   SERVICE_DEPENDENCY_ORDER,
   type Submission,
 } from "../../../app/schemas/submit"
-import { arbAccessSection, arbFileTypeKind, arbQ2, arbSubmission } from "../arbitraries/submission"
+import { arbAccessSection, arbFileTypeKind, arbOrganismDomain, arbSubmission } from "../arbitraries/submission"
 
 const RUNS = { numRuns: 1000 }
 
@@ -29,7 +29,7 @@ const entryIdsOfService = (steps: readonly FlowStep[], pred: (s: FlowStep) => bo
 
 // 前段カスケードで enable された (= 経路導出に乗る) entry か
 const isActive = (submission: Submission, e: FileEntry): boolean =>
-  isKindEnabled(submission.preconditions.q2, e.fileTypeKind)
+  isKindEnabled(submission.preconditions.organismDomain, e.fileTypeKind)
 
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_anySubmission_isDeterministic",
@@ -81,12 +81,12 @@ test.prop([arbSubmission], RUNS)(
     const steps = deriveFlowSteps(submission)
     const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
     const draIds = entryIdsOfService(steps, (s) => s.service === "dra")
-    const q2 = submission.preconditions.q2
+    const organismDomain = submission.preconditions.organismDomain
     for (const e of submission.fileEntries) {
       if (e.fileTypeKind !== "sequence-read") continue
       if (!isActive(submission, e)) continue
       // JGA はヒト個人のみ。restricted でも非ヒト (metagenome 含む) は DRA(embargo) に行く
-      const toJga = e.access === "restricted" && q2 === "human"
+      const toJga = e.access === "restricted" && organismDomain === "human"
       if (toJga) {
         expect(jgaIds.has(e.id)).toBe(true)
         expect(draIds.has(e.id)).toBe(false)
@@ -207,11 +207,11 @@ test.prop([arbSubmission], RUNS)(
   },
 )
 
-test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+test.prop([arbOrganismDomain, arbAccessSection, arbFileTypeKind], RUNS)(
   "deriveAccess_consistency_matchesPriorityChain",
-  (q2, accessSection, kind) => {
-    const access = deriveAccess(q2, accessSection, kind)
-    if (q2 !== "human") {
+  (organismDomain, accessSection, kind) => {
+    const access = deriveAccess(organismDomain, accessSection, kind)
+    if (organismDomain !== "human") {
       expect(access).toBe("open")
     } else if (accessSection.restrictedPreference) {
       expect(access).toBe("restricted")
@@ -227,12 +227,12 @@ test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
   },
 )
 
-test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+test.prop([arbOrganismDomain, arbAccessSection, arbFileTypeKind], RUNS)(
   "deriveAccess_chipNonIdentifiable_flipsToOpen_whenIdentifierAssumed",
-  (q2, accessSection, kind) => {
+  (organismDomain, accessSection, kind) => {
     const chips = [{ axis: "identifiability" as const, value: "non-identifiable" }]
-    const access = deriveAccess(q2, accessSection, kind, chips)
-    if (q2 !== "human") {
+    const access = deriveAccess(organismDomain, accessSection, kind, chips)
+    if (organismDomain !== "human") {
       expect(access).toBe("open")
     } else if (accessSection.restrictedPreference) {
       expect(access).toBe("restricted")
@@ -248,12 +248,12 @@ test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
   },
 )
 
-test.prop([arbQ2, arbAccessSection, arbFileTypeKind], RUNS)(
+test.prop([arbOrganismDomain, arbAccessSection, arbFileTypeKind], RUNS)(
   "deriveAccess_chipIdentifiable_flipsToRestricted_whenIdentifierDenied",
-  (q2, accessSection, kind) => {
+  (organismDomain, accessSection, kind) => {
     const chips = [{ axis: "identifiability" as const, value: "identifiable" }]
-    const access = deriveAccess(q2, accessSection, kind, chips)
-    if (q2 !== "human") {
+    const access = deriveAccess(organismDomain, accessSection, kind, chips)
+    if (organismDomain !== "human") {
       expect(access).toBe("open")
     } else if (accessSection.restrictedPreference) {
       expect(access).toBe("restricted")
