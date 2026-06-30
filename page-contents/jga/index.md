@@ -1,6 +1,6 @@
 ---
 title: JGA
-ヒト由来試料を用いた研究で産出された解析データを一定の条件の下で共有するための制限公開データアーカイブです。シークエンスデータ等の生データを提供・利用する際には、ヒトデータ審査委員会による審査承認を受ける必要がありますtest
+ヒト由来試料を用いた研究で産出された解析データを一定の条件の下で共有するための制限公開データアーカイブです。シークエンスデータ等の生データを提供・利用する際には、ヒトデータ審査委員会による審査承認を受ける必要があります
 ---
 
 ## JGA とは
@@ -9,14 +9,14 @@ title: JGA
 
 JGAは、European Bioinformatics Institute（EBI）が運用するEuropean Genome-phenome Archive（EGA）や、National Center for Biotechnology Information（NCBI）が運用するdatabase of Genotypes and Phenotypes（dbGaP）と同様の制限公開データを管理・共有するためのアーカイブです。各国・地域の法令等に基づいたデータ提供・利用審査を行う必要があるため、JGA、EGA、dbGaPの三極間でデータそのものを相互に交換する仕組みは設けていません([公式 FAQ](https://www.ddbj.nig.ac.jp/faq/en/jga-dbgap-ega-e.html))。併せて、いずれのアーカイブでも査読者用のアクセストークンを発行することはできません。
 
-メタデータのうち、Study、Dataset、Policyに関するメタデータは、DDBJ Searchを通じて誰でも閲覧できます。一方で、シークエンスファイル等の実データや、その他の詳細なメタデータについては、データ利用申請が承認された利用者のみがダウンロードできます。
+メタデータのうち、Study、Dataset、Policyは、DDBJ Searchを通じて誰でも閲覧できます。一方で、シークエンスファイル等の生データや、その他のメタデータについては、データ利用申請が承認された利用者のみがダウンロードできます。
 
 > [!NOTE]
-> [登録ナビ](/submit) で「ヒト」＋「」「個人レベルの制限公開データ」を選ぶと、NBDC ヒトデータベースへのデータ提供申請から JGA への登録までの経路が案内されます。
+> [登録ナビゲーション](/submit) で「ヒト」＋「制限公開を希望する」/「個人識別符号を含む」/「法令・倫理指針に沿った研究」を選ぶと、NBDC ヒトデータベースへのデータ提供申請から JGA への登録までの経路が案内されます。
 
 ## 受け付けるデータ
 
-ヒト個人由来の匿名化されたデータのみを受け付けます。研究参加者を再特定し得る情報を含むデータは登録できません。
+ヒト個人由来のデータの場合は匿名化を実施済みデータのみを受け付け、研究参加者を再特定し得る情報を含むデータは受け付けません。
 
 | データ種別 | 主なフォーマット | 紐付け先オブジェクト | 補足 |
 |-----------|------------------|--------------------|------|
@@ -24,7 +24,7 @@ JGAは、European Bioinformatics Institute（EBI）が運用するEuropean Genom
 | アラインメント済みリード | BAM | Data | unaligned reads を含む BAM 推奨。再圧縮しない |
 | 454 リード | SFF | Data | uncompressed のまま submit |
 | バリアント | VCF | Analysis | sequence variations は VCF 推奨 |
-| マイクロアレイ | genotyping / SNP / 発現アレイ | Analysis | GEA 準拠の形式を推奨 |
+| アレイ | genotyping / SNP / 発現 intensity data | Analysis | GEA 準拠の形式を推奨 |
 | メタボローム | MetaboBank submission format 準拠 | Analysis | |
 | プロテオーム | SDRF-Proteomics 準拠 | Analysis | |
 
