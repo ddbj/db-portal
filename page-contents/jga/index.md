@@ -96,7 +96,7 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 
 ## アクセッション番号
 
-提供申請が承認された段階で、作業用の Submission ID (例 `JSUB000353`) が払い出され、JGA サーバ上に登録用ディレクトリが作成されます。最終的なアクセッション番号は、キュレータによる Excel → XML 変換と xsd バリデーション完了後に発行されます。
+データ提供申請承認後、Submission ID (例 `JSUB000353`) が払い出され、JGA サーバ上に登録用ディレクトリが作成されます。アクセッション番号は、キュレータによるメタデータの XML 変換と xsd バリデーション完了後、データがアーカイブに格納された時点で発行されます。
 
 | Prefix | オブジェクト | 桁数 | 例 |
 |--------|------------|----|-----|
@@ -109,21 +109,9 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 | `JGAD` | Dataset | 6 | `JGAD000001` |
 | `JGAP` | Policy | 6 | `JGAP000001` |
 
-`JGAP` (Policy) は NBDC ポリシー以外のポリシーが必要な場合に DBCLS でポリシーを登録した時点で発行され、Dataset から参照します。NBDC ポリシーだけが適用される登録では Policy を新規作成する必要はありません。
-
 > [!TIP]
-> 論文での citation には Study accession (`JGAS######`) を使うことが推奨されています。Study に紐付く Dataset / Policy 全体への入口になります。
+> 論文への引用には Study ID (`JGAS######`) を使うことを推奨しています。
 
-
-## NBDC ヒトデータベースとの関係
-
-JGA は [NBDC ヒトデータベース](/humandbs) と二段階で連動しています。
-
-- **登録前**: 研究で適用する利用制限ポリシーを NBDC ヒトデータベース側で申請し、DBCLS の審査・承認を受けてから JGA への登録に進みます。ポリシー未承認のデータは JGA では受け付けません。
-- **公開時**: JGA データが公開されるのは、対応する NBDC ヒトデータベースの研究公開ページ (hum###### 番号) が公開されたタイミングです。submitter 単独のスケジュールで公開を制御することはできず、公開時期は NBDC ヒトデータベース側の研究公開状況に従います。
-
-> [!IMPORTANT]
-> JGA / NCBI dbGaP / EBI EGA は、同種のヒト制限公開アーカイブですが、3 者間でデータの相互交換は行われません ([公式 FAQ](https://www.ddbj.nig.ac.jp/faq/en/jga-dbgap-ega-e.html))。
 
 ## 関連リソース
 
@@ -135,5 +123,5 @@ JGA は [NBDC ヒトデータベース](/humandbs) と二段階で連動して�
 - [submission-excel2xml (Excel → XML 変換ツール)](https://github.com/ddbj/submission-excel2xml)
 - [JGA XML schema (xsd)](https://github.com/ddbj/pub/tree/master/docs/jga)
 - [DDBJ Search での JGA Dataset 検索例](https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000948)
-- [NBDC ヒトデータベース](/humandbs) (登録前のポリシー承認と公開時の連動)
-- [DRA](/dra) (公開ヒトデータ / 非ヒトデータ向け sibling service)
+- [NBDC ヒトデータベース](/humandbs) (データ提供・利用申請の審査、登録データの概要・データセットページの公開)
+
