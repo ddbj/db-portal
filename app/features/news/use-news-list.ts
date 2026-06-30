@@ -1,23 +1,11 @@
-import { useQuery } from "@tanstack/react-query"
-import { useMemo } from "react"
-
-import { fetchNews, NEWS_QUERY_KEY, type NewsItem, type NewsList } from "~/lib/api"
+import { fetchNews, NEWS_QUERY_KEY, type NewsItem } from "~/lib/api"
+import { bump, type EntityListConfig, useEntityList } from "~/lib/entity-list/use-entity-list"
 import type { Lang } from "~/lib/i18n/use-lang"
 
 import { type NewsFacetState } from "./facet-url-state"
 
 const PAGE_SIZE = 20
-
-const sortItems = (items: NewsList, sort: NewsFacetState["sort"]): NewsList => {
-  const sorted = [...items]
-  sorted.sort((a, b) =>
-    sort === "newest"
-      ? b.publishedAt.localeCompare(a.publishedAt)
-      : a.publishedAt.localeCompare(b.publishedAt),
-  )
-
-  return sorted
-}
+export const NEWS_PAGE_SIZE = PAGE_SIZE
 
 const itemYear = (item: NewsItem): number => Number(item.publishedAt.slice(0, 4))
 
@@ -39,7 +27,7 @@ const matchesYear = (item: NewsItem, facet: NewsFacetState): boolean =>
 const matchesService = (item: NewsItem, facet: NewsFacetState): boolean =>
   facet.service.length === 0 || facet.service.some((s) => item.db.includes(s))
 
-const applyFilter = (items: NewsList, lang: Lang, facet: NewsFacetState): NewsList =>
+const applyFilter = (items: NewsItem[], lang: Lang, facet: NewsFacetState): NewsItem[] =>
   items.filter((item) =>
     hasTitle(item, lang)
     && matchesSource(item, facet)
@@ -48,12 +36,23 @@ const applyFilter = (items: NewsList, lang: Lang, facet: NewsFacetState): NewsLi
     && matchesService(item, facet),
   )
 
+const sortItems = (items: NewsItem[], _lang: Lang, facet: NewsFacetState): NewsItem[] => {
+  const sorted = [...items]
+  sorted.sort((a, b) =>
+    facet.sort === "newest"
+      ? b.publishedAt.localeCompare(a.publishedAt)
+      : a.publishedAt.localeCompare(b.publishedAt),
+  )
+
+  return sorted
+}
+
 export type NewsFacetOptions = {
   years: readonly number[]
   services: readonly string[]
 }
 
-const collectOptions = (items: NewsList, lang: Lang): NewsFacetOptions => {
+const collectOptions = (items: NewsItem[], lang: Lang): NewsFacetOptions => {
   const years = new Set<number>()
   const services = new Set<string>()
   for (const item of items) {
@@ -76,12 +75,8 @@ export type NewsFacetCounts = {
   service: Readonly<Record<string, number>>
 }
 
-const bump = (record: Record<string, number>, key: string | number): void => {
-  record[key] = (record[key] ?? 0) + 1
-}
-
 export const collectNewsFacetCounts = (
-  items: NewsList,
+  items: NewsItem[],
   lang: Lang,
   facet: NewsFacetState,
 ): NewsFacetCounts => {
@@ -109,46 +104,17 @@ export const collectNewsFacetCounts = (
   return { source, category, year, service }
 }
 
-const paginate = (items: NewsList, page: number): { items: NewsItem[]; totalPages: number } => {
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * PAGE_SIZE
-
-  return { items: items.slice(start, start + PAGE_SIZE), totalPages }
+const CONFIG: EntityListConfig<NewsItem, NewsFacetState, NewsFacetOptions, NewsFacetCounts> = {
+  queryKey: NEWS_QUERY_KEY,
+  queryFn: () => fetchNews(),
+  staleTime: 5 * 60_000,
+  pageSize: PAGE_SIZE,
+  filter: applyFilter,
+  sort: sortItems,
+  collectOptions,
+  collectCounts: collectNewsFacetCounts,
+  getPage: (facet) => facet.page,
 }
 
-type UseNewsListResult = {
-  loading: boolean
-  error: boolean
-  total: number
-  visibleItems: NewsItem[]
-  totalPages: number
-  options: NewsFacetOptions
-  counts: NewsFacetCounts
-}
-
-export const NEWS_PAGE_SIZE = PAGE_SIZE
-
-export const useNewsList = (lang: Lang, facet: NewsFacetState): UseNewsListResult => {
-  const query = useQuery({
-    queryKey: NEWS_QUERY_KEY,
-    queryFn: () => fetchNews(),
-    staleTime: 5 * 60_000,
-  })
-  const all = useMemo<NewsList>(() => query.data ?? [], [query.data])
-  const filtered = useMemo(() => applyFilter(all, lang, facet), [all, lang, facet])
-  const sorted = useMemo(() => sortItems(filtered, facet.sort), [filtered, facet.sort])
-  const page = useMemo(() => paginate(sorted, facet.page), [sorted, facet.page])
-  const options = useMemo(() => collectOptions(all, lang), [all, lang])
-  const counts = useMemo(() => collectNewsFacetCounts(all, lang, facet), [all, lang, facet])
-
-  return {
-    loading: query.isLoading,
-    error: query.isError,
-    total: sorted.length,
-    visibleItems: page.items,
-    totalPages: page.totalPages,
-    options,
-    counts,
-  }
-}
+export const useNewsList = (lang: Lang, facet: NewsFacetState) =>
+  useEntityList(lang, facet, CONFIG)
