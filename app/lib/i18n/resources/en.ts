@@ -39,7 +39,7 @@ export const en: Resources = {
   },
   docs: {
     title: "Knowledge Base",
-    lastUpdatedPrefix: "Updated",
+    lastUpdatedPrefix: "Last updated",
     edit: "Edit",
     editAriaLabel: "Edit this page on GitHub",
     sidebar: {

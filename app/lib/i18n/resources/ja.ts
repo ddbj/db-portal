@@ -736,8 +736,8 @@ export const ja: Resources = {
   },
   docs: {
     title: "ナレッジベース",
-    lastUpdatedPrefix: "Updated",
-    edit: "Edit",
+    lastUpdatedPrefix: "最終更新",
+    edit: "編集",
     editAriaLabel: "GitHub でこのページを編集",
     sidebar: {
       heading: "全ドキュメント",

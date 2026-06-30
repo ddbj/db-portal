@@ -15,11 +15,9 @@ test.describe("Content (Databases) Domain", () => {
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText("BioProject")
     await expect(breadcrumb.getByText("データベース", { exact: true })).toHaveCount(0)
 
-    // 「最終更新」 が表示され ISO datetime を持つ time 要素が 1 つ以上ある (gen/last-updated.json 駆動)。
-    await expect(page.getByText("最終更新")).toBeVisible()
-    const timeEl = page.locator("article time[datetime]").first()
-    await expect(timeEl).toBeVisible()
-    await expect(timeEl).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}/)
+    // 「最終更新 YYYY/MM/DD」 が PageTitle meta に表示される (gen-last-updated.ts が
+     // git log から作る gen/last-updated.json 駆動)。
+    await expect(page.getByText(/最終更新\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
   })
 
   test("S-CONTENT-02: ?lang=en で /bioproject の en 表示", async ({ page }) => {
@@ -44,7 +42,7 @@ test.describe("Content (Databases) Domain", () => {
     const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" })
     await expect(breadcrumb.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/docs")
 
-    await expect(page.getByText("Last updated")).toBeVisible()
+    await expect(page.getByText(/Last updated\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
 
     await expect(page.getByTestId("translation-unavailable")).toHaveCount(0)
 
@@ -61,8 +59,7 @@ test.describe("Content (Databases) Domain", () => {
     await expect(page.getByRole("heading", { level: 2, name: "BioSample とは" })).toBeVisible()
     await expect(page.getByText(/SAMD/).first()).toBeVisible()
 
-    const timeEl = page.locator("article time[datetime]").first()
-    await expect(timeEl).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}/)
+    await expect(page.getByText(/最終更新\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
   })
 
   test("S-CONTENT-04: 実 route 構成どおりの breadcrumb chain", async ({ page }) => {
@@ -101,17 +98,12 @@ test.describe("Content (Databases) Domain", () => {
     await expect(ncbi).toHaveAttribute("rel", /noopener/)
     await expect(ncbi).toHaveAttribute("rel", /noreferrer/)
 
-    const jaTime = page.locator("article time[datetime]").first()
-    const jaIso = await jaTime.getAttribute("datetime")
-    expect(jaIso).toMatch(/^\d{4}-\d{2}-\d{2}/)
-    await expect(jaTime).toHaveText(/\d{4}年\d{1,2}月\d{1,2}日/)
+    // formatDate は JST 固定で `YYYY/MM/DD` を返す (lang 非依存、 hydration 安定化のため)。
+    await expect(page.getByText(/最終更新\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
 
     await page.goto("/bioproject?lang=en")
     await expect(page).toHaveURL(/\/bioproject$/)
-    const enTime = page.locator("article time[datetime]").first()
-    const enIso = await enTime.getAttribute("datetime")
-    expect(enIso).toMatch(/^\d{4}-\d{2}-\d{2}/)
-    await expect(enTime).toHaveText(/[A-Z][a-z]+ \d{1,2}, \d{4}/)
+    await expect(page.getByText(/Last updated\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
   })
 
   test("E-CONTENT-01: 未知 slug で 404", async ({ page }) => {
