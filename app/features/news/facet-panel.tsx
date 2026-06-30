@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 
 import { NewsCategory, NewsSource } from "~/lib/api"
 import { categoryLabelKey, useT } from "~/lib/i18n"
+import { sourceDisplayLabel, sourceSwatch } from "~/lib/source-display"
 import type { AppliedFilter } from "~/ui"
 import { AppliedFilters, FacetGroup, FacetRow, SidebarHeading } from "~/ui"
 
@@ -22,12 +23,6 @@ type FacetPanelProps = {
   counts: NewsFacetCounts
   onChange: (next: NewsFacetState) => void
 }
-
-const sourceDisplayLabel = (source: NewsSource): string =>
-  source === "ddbj" ? "DDBJ" : "DBCLS"
-
-const sourceSwatch = (source: NewsSource): string =>
-  source === "ddbj" ? "var(--color-src-ddbj)" : "var(--color-src-dbcls)"
 
 const YEAR_INITIAL_COUNT = 5
 

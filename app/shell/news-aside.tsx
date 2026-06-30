@@ -55,7 +55,7 @@ export const NewsAside = () => {
                 <span className="font-mono text-fs-label text-ink-soft">
                   {formatDate(n.publishedAt)}
                 </span>
-                <Tag kind="source" name={n.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
+                <Tag kind="source" source={n.source} size="sm" />
                 <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
               </div>
               {(() => {

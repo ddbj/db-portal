@@ -1,6 +1,6 @@
 import type { DbSearchResponse } from "~/lib/api"
-import { type Lang, useT } from "~/lib/i18n"
-import { AlertIcon, SearchIcon, Select, type SelectOption } from "~/ui"
+import { type Lang, usePaginationLabels, useT } from "~/lib/i18n"
+import { AlertIcon, ResultsPagination, SearchIcon, Select, type SelectOption } from "~/ui"
 
 import {
   type DbSlug,
@@ -16,7 +16,6 @@ import {
   DEFAULT_PER_PAGE,
   DEFAULT_SORT,
 } from "../url/url-params"
-import { ResultsPagination } from "./pagination"
 import { ResultRow } from "./result-row"
 
 type PerDbResultsProps = {
@@ -55,6 +54,7 @@ export const PerDbResults = ({
   onSortChange,
 }: PerDbResultsProps) => {
   const t = useT()
+  const paginationLabels = usePaginationLabels()
   // Cap pages at the deep paging limit so pagination never offers a page the
   // search API would reject with a 400 (docs/search.md § Pagination).
   const totalPages = reachablePageCount(response.total, perPage)
@@ -128,6 +128,7 @@ export const PerDbResults = ({
             page={page}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            {...paginationLabels}
           />
         </div>
       </div>
@@ -156,6 +157,7 @@ export const PerDbResults = ({
             page={page}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            {...paginationLabels}
           />
         </div>
       )}

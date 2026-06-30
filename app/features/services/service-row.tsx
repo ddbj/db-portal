@@ -34,7 +34,7 @@ export const ServiceRow = ({ item, lang }: ServiceRowProps) => {
         )}
       </div>
       <div className="flex items-start gap-1.5 flex-wrap shrink-0 max-w-right-pane justify-end pt-0.5">
-        <Tag kind="source" name={item.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
+        <Tag kind="source" source={item.source} size="sm" />
         {item.categories.map((category) => (
           <Tag key={category} kind="tag" size="sm">
             {t(serviceCategoryLabelKey(category))}

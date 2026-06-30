@@ -1,8 +1,7 @@
 import { type ServiceItem, ServiceList } from "~/schemas/api-bff/service"
 
 import type { Lang } from "../i18n/use-lang"
-import { buildRequestInit, consumeJsonBody, joinUrl } from "./client"
-import { toAPIError } from "./errors"
+import { fetchBffJson } from "./client"
 
 export {
   ServiceCategory,
@@ -66,17 +65,5 @@ type FetchServicesOptions = {
   query?: FetchServicesQuery
 }
 
-export const fetchServices = async (
-  options: FetchServicesOptions = {},
-): Promise<ServiceList> => {
-  const init = buildRequestInit({
-    method: "GET",
-    baseUrl: options.baseUrl,
-    signal: options.signal,
-    headers: options.headers,
-  })
-  const response = await fetch(joinUrl(options.baseUrl, buildServicesPath(options.query)), init)
-  if (!response.ok) throw await toAPIError(response)
-
-  return ServiceList.parse(await consumeJsonBody(response))
-}
+export const fetchServices = ({ query, ...rest }: FetchServicesOptions = {}): Promise<ServiceList> =>
+  fetchBffJson(buildServicesPath(query), rest, ServiceList)

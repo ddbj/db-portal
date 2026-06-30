@@ -1,3 +1,5 @@
+import type { z } from "zod"
+
 import { toAPIError } from "./errors"
 import type { paths } from "./openapi-types"
 
@@ -121,4 +123,21 @@ export const apiPost = async <P extends keyof paths & string>(
   if (!response.ok) throw await toAPIError(response)
 
   return consumeJsonBody<ResponseBody<PostOp<P>>>(response)
+}
+
+export const fetchBffJson = async <S extends z.ZodTypeAny>(
+  path: string,
+  options: ApiRequestOptions,
+  schema: S,
+): Promise<z.output<S>> => {
+  const init = buildRequestInit({
+    method: "GET",
+    baseUrl: options.baseUrl,
+    signal: options.signal,
+    headers: options.headers,
+  })
+  const response = await fetch(joinUrl(options.baseUrl, path), init)
+  if (!response.ok) throw await toAPIError(response)
+
+  return schema.parse(await consumeJsonBody(response))
 }

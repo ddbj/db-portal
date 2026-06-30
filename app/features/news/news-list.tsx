@@ -1,7 +1,7 @@
 import type { NewsItem } from "~/lib/api"
-import { useT } from "~/lib/i18n"
+import { usePaginationLabels, useT } from "~/lib/i18n"
 import type { Lang } from "~/lib/i18n/use-lang"
-import { AlertIcon, Pagination, SearchIcon, Select } from "~/ui"
+import { AlertIcon, ResultsPagination, SearchIcon, Select } from "~/ui"
 
 import {
   type NewsFacetState,
@@ -33,6 +33,7 @@ export const NewsList = ({
   totalPages,
 }: NewsListProps) => {
   const t = useT()
+  const paginationLabels = usePaginationLabels()
   const rangeStart = total === 0 ? 0 : (facet.page - 1) * NEWS_PAGE_SIZE + 1
   const rangeEnd = Math.min(facet.page * NEWS_PAGE_SIZE, total)
 
@@ -61,17 +62,12 @@ export const NewsList = ({
               ]}
             />
           </label>
-          {totalPages > 1 && (
-            <Pagination
-              page={facet.page}
-              totalPages={totalPages}
-              onPageChange={(page) => onChange(setPage(facet, page))}
-              ariaLabel={t("a11y.paginationNav")}
-              prevLabel={t("a11y.paginationPrev")}
-              nextLabel={t("a11y.paginationNext")}
-              jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
-            />
-          )}
+          <ResultsPagination
+            page={facet.page}
+            totalPages={totalPages}
+            onPageChange={(page) => onChange(setPage(facet, page))}
+            {...paginationLabels}
+          />
         </div>
       </header>
       {loading && (
@@ -100,14 +96,11 @@ export const NewsList = ({
       )}
       {totalPages > 1 && (
         <footer className="flex justify-end border-t border-border-soft py-4">
-          <Pagination
+          <ResultsPagination
             page={facet.page}
             totalPages={totalPages}
             onPageChange={(page) => onChange(setPage(facet, page))}
-            ariaLabel={t("a11y.paginationNav")}
-            prevLabel={t("a11y.paginationPrev")}
-            nextLabel={t("a11y.paginationNext")}
-            jumpToLastLabel={(n) => t("a11y.paginationJumpToLast", { n })}
+            {...paginationLabels}
           />
         </footer>
       )}

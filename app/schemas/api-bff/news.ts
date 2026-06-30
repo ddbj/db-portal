@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { BsiSource, cacheWrapper, langOptionalUrl, langString } from "./_shared"
+
 export const NewsCategory = z.enum([
   "announcement",
   "data-release",
@@ -10,18 +12,8 @@ export const NewsCategory = z.enum([
 ])
 export type NewsCategory = z.infer<typeof NewsCategory>
 
-export const NewsSource = z.enum(["ddbj", "dbcls"])
+export const NewsSource = BsiSource
 export type NewsSource = z.infer<typeof NewsSource>
-
-const langString = z.object({
-  ja: z.string(),
-  en: z.string(),
-})
-
-const langOptionalUrl = z.object({
-  ja: z.string().url().optional(),
-  en: z.string().url().optional(),
-})
 
 const langRawTags = z.object({
   ja: z.array(z.string()).default([]),
@@ -45,15 +37,7 @@ export type NewsItem = z.infer<typeof NewsItem>
 export const NewsList = z.array(NewsItem)
 export type NewsList = z.infer<typeof NewsList>
 
-// Bump when the cache shape changes; the server rebuilds caches whose stored
-// schemaVersion no longer matches. Single source for both the schema literal and
-// the writer (server/news/cache.ts).
 export const NEWS_CACHE_SCHEMA_VERSION = 4
 
-export const NewsCache = z.object({
-  schemaVersion: z.literal(NEWS_CACHE_SCHEMA_VERSION),
-  lastSyncSha: z.record(NewsSource, z.string().nullable()),
-  lastFetchedAt: z.string().datetime({ offset: true }),
-  items: NewsList,
-})
+export const NewsCache = cacheWrapper(NewsList, NEWS_CACHE_SCHEMA_VERSION)
 export type NewsCache = z.infer<typeof NewsCache>
