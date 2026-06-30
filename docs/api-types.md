@@ -1,141 +1,139 @@
 # API Types
 
-ddbj-search-api との型連携を 1 元化し、BSI 側で AST / DSL の二重実装を持たないための運用ルール。`architecture.md` のデータフロー全体像も合わせて参照する。
+ddbj-search-api (検索 backend) との型連携。 openapi-typescript による型自動生成、 fetch wrapper、 エラー正規化、 差分検知の運用を扱う。
 
-## 方針
+## Overview
 
-- `app/lib/api/openapi-types.ts` は **ddbj-search-api の `openapi.json` から `openapi-typescript` で自動生成** する
-- 生成物は git commit する (CI で diff check を回すため)
-- BSI 側に手書きの DSL/AST 型を持たない。検索式の構造表現は API レスポンス型 (`ParseNode` alias) に乗せる
-- AST → DSL のシリアライズ、および AST を直接渡す検索実行はサーバへ委譲する (`POST /db-portal/serialize` と AST 入力版の `POST /db-portal/cross-search` / `POST /db-portal/search`)。BSI 側に thin serializer を持たない
+BSI は検索 backend の OpenAPI 仕様を SSOT として受け取り、 そこから派生した型 1 本で UI 層まで型を通す。 検索 AST / DSL の grammar は backend 側に閉じ込め、 BSI は AST を組み立てて HTTP で渡すだけに徹する。
 
-これにより grammar の二重保守 (BSI 側と API 側) を完全に排除する。
+```mermaid
+flowchart TD
+  Backend["ddbj-search-api<br/>(openapi.json)"]
+  Generated["app/lib/api/openapi-types.ts<br/>(git 管理、 生成物)"]
+  Aliases["app/lib/api/search-types.ts<br/>(UI 向け alias)"]
+  Wrapper["app/lib/api/{client,search,...}.ts<br/>(fetch wrapper)"]
+  App["app/features/* / app/routes/*"]
 
-## 生成スクリプト
+  Backend -- "openapi-typescript" --> Generated
+  Generated --> Aliases
+  Generated --> Wrapper
+  Aliases --> App
+  Wrapper --> App
+```
 
-`package.json` の `scripts.gen:api-types` が `dotenv-cli` で `.env` を読み、`openapi-typescript $DB_PORTAL_OPENAPI_URL -o app/lib/api/openapi-types.ts` を実行する。`$DB_PORTAL_OPENAPI_URL` は `env.{dev,staging,production}` で切り替える。
+生成物は `lib` zone に属し、 import 方向は [architecture.md](architecture.md) の zone 規約に従う。 BSI 側には手書きの AST / DSL 型・自前 serializer を置かない。
 
-### 生成物の場所
+## openapi-typescript
 
-| パス | 内容 |
-|---|---|
-| `app/lib/api/openapi-types.ts` | `openapi-typescript` 生成。約 12,000 行。git commit 対象 |
-| `app/lib/api/client.ts` | `apiGet` / `apiPost` の operation 型補完付き fetch wrapper |
-| `app/lib/api/errors.ts` | `APIError` クラスと RFC 7807 Problem Details 正規化 |
-| `app/lib/api/search.ts` | `crossSearch` / `dbSearch` (GET, query 入力) / `crossSearchByAst` / `dbSearchByAst` (POST, AST 入力) / `parseQuery` / `serializeAst` の wrapper |
-| `app/lib/api/news.ts` | BFF `/api/news` の wrapper。Zod schema (`NewsItem` / `NewsList` / `NewsSource` / `NewsCategory` / `NewsCache`) は `app/schemas/api-bff/news.ts` に置き、ここで re-export |
-| `app/lib/api/services.ts` | BFF `/api/services` の wrapper。Zod schema (`ServiceItem` / `ServiceList` / `ServiceSource` / `ServiceCategory` / `ServiceCache`) は `app/schemas/api-bff/service.ts` に置き、ここで re-export |
-| `app/lib/api/llm.ts` | BFF `/api/llm/health` の wrapper + `isLlmAvailable`。`LlmHealth` Zod schema は `app/schemas/api-bff/llm.ts` に置き、ここで re-export |
-| `app/lib/api/search-types.ts` | `ParseNode` alias (`-Input` / `-Output` ハイフン名を隠す) |
-| `app/lib/api/index.ts` | 上記の re-export |
+検索 backend の OpenAPI 仕様を取り込んで `app/lib/api/openapi-types.ts` を上書きする pipeline。 生成は手元で行い、 生成物を git commit する。 CI で自動生成しない (理由は `## 差分検知` を参照)。
 
-`app/lib/api/` 配下は `lib` zone に属するため、`features` / `shell` / `routes` から import 可能だが、`schemas` / `ui` / `content` からは import できない (`architecture.md`)。
+- 生成元 URL は `DB_PORTAL_OPENAPI_URL` env で切り替える
+- `docker compose exec app npm run gen:api-types` で `openapi-typescript` が走る
+- 出力先は `app/lib/api/openapi-types.ts` 固定
+- 生成物は人間が直接編集しない (差分があればまず仕様変更を疑う)
 
-### 実行タイミング
+生成型 (`paths` / `components`) は wrapper と alias 層からのみ参照する。 `app/features/*` や `app/routes/*` から直接 `openapi-types.ts` を import しない。
 
-| 状況 | 実行者 | 何が起きるか |
-|---|---|---|
-| Developer が手元で API 仕様変更を反映 | `npm run gen:api-types` を手動実行 | `openapi-types.ts` が更新され、`tsc` で型エラーが顕在化 |
-| Production リリース直前 | production env で `npm run gen:api-types` を再実行し diff 確認 | staging と production の API spec 差を検知 |
+## 型 alias
 
-開発者の手元では基本 dev / staging env で生成する。production リリース直前にだけ production env でも生成して diff がないことを確認する (`deployment.md`)。
+検索 AST は backend 側の Pydantic v2 で recursive discriminator union として定義されている。 `openapi-typescript` はこれを Request 系 / Response 系の 2 系統 (`-Input` / `-Output` suffix) に分けて出力するため、 UI 層に直接見せると import が煩雑になる。 `app/lib/api/search-types.ts` がこの差を吸収する。
 
-## ParseNode alias の役割
+- UI 層は Response 系を SSOT とする 1 つの alias だけを import する
+- Request 系への変換は serialize 呼び出し境界 1 箇所に閉じ込める
+- ハイフン入りの生成型名 (`...-Output`) は UI 層に露出させない
+- `op` discriminator で leaf / BoolOp を narrow できる形を維持する
 
-ddbj-search-api の検索 AST は Pydantic v2 の recursive Annotated discriminator union で表現されており、`openapi-typescript` の生成型は **Input 用と Output 用の 2 種類** に分かれる:
+backend 側で alias 名や suffix 規約が変わっても、 影響は `search-types.ts` 1 ファイルに閉じる。
 
-- `DbPortalParseBoolOp-Input`: Request body 用 (`POST /db-portal/serialize`)
-- `DbPortalParseBoolOp-Output`: Response body 用 (`GET /db-portal/parse`)
+## fetch wrapper
 
-UI 層がこのハイフン名を意識しなくて済むよう、`app/lib/api/search-types.ts` で次の 2 つの alias を提供する:
+`app/lib/api/client.ts` は `paths` 型から operation 単位の query / requestBody / response を推論する、 型付きの fetch wrapper。 呼び出し側は path 文字列ではなく、 `app/lib/api/search.ts` 等の thin wrapper 関数を経由する。
 
-- `ParseNode` — UI 層から見える AST (Response 系を SSOT とする)。`DbPortalParseBoolOp-Output` と各 Leaf を union 化
-- `ParseNodeInput` — `POST /db-portal/serialize` に渡す Request 用
+- base URL は呼び出し側から渡す (wrapper は env を直接参照しない)
+- 同一 operation の query / body / response の整合は型で保証する
+- 通常コードに path string を直書きしない (補完と型推論を破る)
+- 検索系の path は GET (DSL `q`) と POST (AST body) の双方が同じ形の hits / facet を返す
+- POST レスポンスは入力 AST のシリアライズ済み DSL を含み、 `?q=` 同期に使える
 
-UI コードでは `ParseNode` だけを import する。serialize 呼び出し層で `ParseNodeInput` に変換する境界を 1 箇所に絞る。
+検索 backend との 1 往復で「結果 + facet + DSL echo」 が揃うので、 client 側で serialize / parse の追加 round trip を踏まない。
 
-`ParseNode` は discriminator (`op` フィールド) を持つので、`switch (n.op)` で各 leaf / BoolOp に narrow される (`free_text` / `eq` / `contains` / `wildcard` / `between` / `AND` / `OR` / `NOT` の 8 分岐)。Pydantic v2 の `Field(alias="from")` を持つ field も `n.from` でアクセスできる (TypeScript 側に reserved word の制約はない)。
+```mermaid
+sequenceDiagram
+  participant UI as UI (feature)
+  participant W as search.ts wrapper
+  participant C as client.ts
+  participant API as ddbj-search-api
 
-alias を経由することで次が成立する:
+  UI->>W: dbSearchByAst(ast, options)
+  W->>C: apiPost("/db-portal/search", body, options)
+  C->>API: POST /db-portal/search<br/>{ ast }
+  API-->>C: 200 { hits, facets, dsl }
+  C-->>W: typed response
+  W-->>UI: hits + facets + dsl (for ?q= sync)
+```
 
-- ハイフン入りの型名 (`DbPortalParseBoolOp-Output`) を UI 層に露出させない
-- Input/Output の切り替えを 1 箇所で管理する
-- API 側で alias 名が変わった場合 (`-Input` / `-Output` の suffix が消えたなど)、影響範囲が `search-types.ts` だけになる
+## エラー正規化
 
-## 環境変数による URL 切替
+HTTP エラーは `app/lib/api/errors.ts` の `APIError` クラスに揃える。 呼び出し側はこの 1 クラスだけを見れば、 HTTP status / RFC 7807 problem+json / 単なる text レスポンスの差を意識せずに済む。
 
-| 変数 | 用途 |
-|---|---|
-| `DB_PORTAL_OPENAPI_URL` | `openapi-typescript` の生成元 (`openapi.json` の URL) |
-| `DB_PORTAL_SEARCH_API_URL` | runtime の検索 API base URL |
+- RFC 7807 `application/problem+json` を最優先で解釈する
+- problem+json のフィールドが欠けたら HTTP status / statusText から埋める
+- JSON でない body は status text を message に流す
+- 呼び出し側は `instanceof` ではなく `isAPIError` type guard で識別する
 
-dev / staging は同じ openapi 配置 (staging API) を共有する。Production リリース直前にだけ production URL で `gen:api-types` を回し、staging との型差分を確認する。env の全体方針は `development.md` を参照。
+```mermaid
+flowchart TD
+  R["fetch Response<br/>(non-OK)"]
+  CT{"content-type<br/>problem+json か?"}
+  PJ["JSON parse + ProblemDetails.safeParse"]
+  Fallback["status / statusText で埋める"]
+  E["APIError<br/>{ status, type, title, detail, instance }"]
 
-## operation 型補完の運用
+  R --> CT
+  CT -- "yes / json" --> PJ
+  CT -- "no" --> Fallback
+  PJ --> E
+  Fallback --> E
+```
 
-現状の operation は GET (query parameter) と POST (query parameter + JSON requestBody) で構成され、`openapi-fetch` のような外部 wrapper への依存を持たず、`paths` 型を直接読む薄い fetch wrapper だけで型補完を成立させる。
+TanStack Query の retry 規約も `APIError` を前提に組む。 query は 5xx だけ最大 2 回、 mutation は retry しない (mutation は手動再試行 UI を別途用意する)。
 
-### fetch wrapper
+## 差分検知
 
-`app/lib/api/client.ts` の `apiGet` / `apiPost` は `paths` 型から operation の query / requestBody / response を推論する型付き fetch wrapper。base URL は呼び出し側が `options.baseUrl` で渡す (env 値は loader 経由で root から伝搬する形にし、client.ts が直接 env を参照しない)。
-
-`/db-portal/parse` は GET のみ。`/db-portal/serialize` は POST のみ。`/db-portal/cross-search` と `/db-portal/search` は GET と POST の両方を持つ: GET は query parameter (`q` / `topHits` / `db` / `page` / `perPage` / `cursor` / `sort` / `keywordOperator` / `facets` 等、operation ごとに有効な subset) を `options.query` で渡し、POST は AST を JSON body で受けて hits・q-aware facet・シリアライズ済み `dsl` を 1 リクエストで返す。
-
-呼び出し側は通常 `app/lib/api/search.ts` の thin wrapper を経由する (`crossSearch` / `dbSearch` / `crossSearchByAst` / `dbSearchByAst` / `parseQuery` / `serializeAst`)。`apiGet` / `apiPost` を直接呼んでも型補完は効くが、path string の typo を防ぐため通常は wrapper を経由する。
-
-### query 文字列の組み立て
-
-`encodeQuery(query?)` が `Record<string, unknown>` を `?key=value&key=value` 形に変換する (`undefined` / `null` を skip、配列は repeated key)。`apiGet` / `apiPost` の内部で使い、直接呼ぶ機会は少ないが、URL を組み立てて external link を作る場合などに利用可能。
-
-### errors と APIError
-
-`app/lib/api/errors.ts` が HTTP エラーレスポンスを `APIError` クラスに正規化する。`apiGet` / `apiPost` の内部で `response.ok` が false なら `toAPIError(response)` を throw する。
-
-| プロパティ | 内容 |
-|---|---|
-| `status` | HTTP status code |
-| `type` | RFC 7807 type URI (`Content-Type: application/problem+json` の `type`、 default `"about:blank"`) |
-| `title` | 短いエラータイトル (Problem の `title` または `response.statusText`) |
-| `detail` | Problem の `detail` (任意) |
-| `instance` | Problem の `instance` (任意) |
-
-`isAPIError(value)` の type guard で `instanceof APIError` を扱う。TanStack Query の `queries.retry` は `shouldRetry` を使って `APIError` の status が 5xx のときだけ最大 2 回 retry。`mutations.retry` は `0` (debounced serialize は 1 度で fail し、SyncStatusChip の再試行 button から手動 retry する想定)。
-
-## 差分検知の運用
-
-API 仕様変更を取りこぼさないため、開発者は次の手順を踏む:
+API 仕様変更を「気付かないまま型不整合で壊れる」 のを避けるため、 生成は手元で行い、 生成物の git diff を必ず人間が見る。 この運用が成立する前提で CI 自動生成を入れない。
 
 ```bash
 docker compose exec app npm run gen:api-types
 git diff app/lib/api/openapi-types.ts
 ```
 
-差分があれば、関連 type を消費しているコード (`app/lib/api/` / `app/features/search/` 等) を更新してから commit する。production リリース直前には `deployment.md` の手順で production URL での差分も確認する。
+差分が出たら、 生成型を消費している wrapper / alias / feature を同一 commit で更新する。 production リリース直前の差分確認手順は [deployment.md](deployment.md) を参照。
 
-## 静的検証のスコープ
+dev / staging は staging API を共有して回す。 production リリース直前のみ production API URL で生成し直し、 staging との差分を最終確認する。
 
-`openapi-types.ts` が生成されたら次のチェックが動く:
+## 外向き契約
 
-| チェック | 何を保証するか |
+ddbj-search-api の consume 面と env の対応をここにまとめる。 個別 endpoint の I/O 形は backend 側の OpenAPI 仕様 (= `openapi-types.ts` の SSOT) で確認する。
+
+### 利用 endpoint
+
+`app/lib/api/search.ts` から呼ぶ ddbj-search-api endpoint は以下。 各 endpoint の query / body / response 形は `paths["..."]` から型で引く。
+
+| Path | Method | 用途 |
+|---|---|---|
+| `/db-portal/cross-search` | GET / POST | cross-DB 検索 (DSL / AST 両対応) |
+| `/db-portal/search` | GET / POST | per-DB 検索 (DSL / AST 両対応) |
+| `/db-portal/parse` | GET | DSL → AST |
+| `/db-portal/serialize` | POST | AST → DSL |
+
+GET と POST が同形の hits / facets を返すこと、 POST が `dsl` echo を含むことは [search.md](search.md) の往復契約に従う。
+
+### 環境変数
+
+| 変数 | 意味 |
 |---|---|
-| `tsc --noEmit --strict` | 生成型と BSI コードの整合 |
-| `npm run lint` | `lib` zone 制約 (他 zone を import していないか) |
-| Unit test (`tests/unit/lib/api/`) | API client wrapper の挙動 (`encode-query` / `APIError` 等) |
-| PBT (`tests/pbt/features/search/`) | AST round-trip / URL serialize 不変量 (`ast-roundtrip` / `url-symmetry` / `merge-laws` / `advanced-reducer`) |
+| `DB_PORTAL_OPENAPI_URL` | `openapi-typescript` の生成元 (build / dev 限定) |
+| `DB_PORTAL_SEARCH_API_URL` | runtime の検索 API base URL |
+| `VITE_DB_PORTAL_SEARCH_API_URL` | client zone から見える runtime base URL |
 
-round-trip の PBT は msw で `/db-portal/serialize` と `/db-portal/parse` をモックして AST 生成器を回す。実 API での round-trip 検証は E2E (`tests/e2e/`) に分離する。
-
-## ddbj-search-api 側の前提
-
-BSI は次の前提のもとで動く。これらは ddbj-search-api リポジトリ側の責任。
-
-- `openapi.json` が `--strict` な `openapi-typescript` 生成を通る (recursive union / alias / multi-content-type を扱えること)
-- `POST /db-portal/serialize` が AST (Input) を受け、DSL 文字列を返す
-- `GET /db-portal/parse?q=...` が DSL を受け、AST (Output) を返す
-- `GET /db-portal/cross-search?q=...&topHits=...` が cross-DB のヒット数と top hits を返す
-- `GET /db-portal/search?q=...&db=...&page=...&perPage=...&cursor=...&sort=...` が DB 指定の hits + pagination を返す
-- `POST /db-portal/cross-search` / `POST /db-portal/search` が AST (Input) を body で受け、GET と同じ payload に加えて入力 AST のシリアライズ済み `dsl` を返す (`?q=` 同期用)
-- 同じ検索 path で GET (DSL `q`) と POST (AST body) の双方が同一形の hits / facet を返す
-- discriminator (`op`) が必ず Leaf / BoolOp の判別に使える
-
-API 側の追加・変更は schema レベルで PR が起き、BSI 側は `npm run gen:api-types` で型を更新する。開発者が手動で diff を確認してから commit する。
+env の SSOT 規約と build-time / runtime の取り扱いは [architecture.md](architecture.md) を参照。

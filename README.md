@@ -41,31 +41,31 @@ docker compose exec app npm run check:last-updated
 
 ## ドキュメント
 
-**まず読む**
+**前提**
 
 - [architecture.md](docs/architecture.md) — 全体構造 / zones / URL とルーティング / SSR / BFF / 非機能要件 (CSP / sitemap / 404)
 - [development.md](docs/development.md) — dev 環境セットアップ / env 切替 / よく使うコマンド
 
-**機能基盤**
+**横断レイヤ**
 
-- [frontend.md](docs/frontend.md) — UI primitives / Content system
-- [i18n.md](docs/i18n.md) — lang cookie 戦略 / リソース運用 / 翻訳なし fallback
-- [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / `gen:api-types` 運用
-- [tests/README.md](tests/README.md) — unit / PBT / e2e / mock のルール
+- [frontend.md](docs/frontend.md) — UI primitives / 設計トークン / a11y
+- [content.md](docs/content.md) — Markdown ページ / Service collection / Sidebar / breadcrumb
+- [i18n.md](docs/i18n.md) — lang cookie / 翻訳なし fallback / hreflang
+- [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / 型生成運用
 
 **機能**
 
-- [search.md](docs/search.md) — 検索 UI / Advanced builder / Sidebar facet / AI アシスタント
-- [search-fields.md](docs/search-fields.md) — 検索フィールド一覧
-- [submit.md](docs/submit.md) — 登録ナビゲーション / controlled vocab / FlowStep
-- [news.md](docs/news.md) — ddbj/www mirror + cache + NotificationBar 振り分け
-- [services.md](docs/services.md) — services 一覧 mirror (news clone 再利用) + cache + /services / top 掲載
-- [auth.md](docs/auth.md) — BFF + HttpOnly cookie / OIDC PKCE / session store / Keycloak 設定
-- [llm.md](docs/llm.md) — vLLM BFF / SSE / health 判定 / rate limit
+- [search.md](docs/search.md) — 検索の 2 モード / facet / Advanced builder / AI assistant
+- [submit.md](docs/submit.md) — 登録ナビ / FlowStep / access 導出規約
+- [news.md](docs/news.md) — ddbj/www mirror / NotificationBar 振り分け
+- [services.md](docs/services.md) — services 一覧 mirror / featuredTop 掲載
+- [auth.md](docs/auth.md) — BFF + HttpOnly cookie / OIDC PKCE / Keycloak
+- [llm.md](docs/llm.md) — vLLM BFF / SSE / PII redaction
 
-**運用**
+**運用 + 品質**
 
 - [deployment.md](docs/deployment.md) — 環境構成 / 起動アーキ / log event / 監視 / トラブルシュート軸 / secret rotation
+- [tests/README.md](tests/README.md) — unit / PBT / e2e / mock のルール
 
 ## License
 
