@@ -65,8 +65,17 @@ export const hydrateFromUrl = (urlState: SubmitUrlState): UIState => {
       linkedGroupIds,
     }
   })
+  const survivingExplicitGroups = explicitGroups.filter((g) => g.memberFileIds.length > 0)
+  // Survived ID 集合に対して linkedGroupIds を再フィルタする。 そうしないと
+  // member 不在で drop された group の ID が、 生き残った group の linkedGroupIds
+  // に残って dangling 参照になる。
+  const survivingIdSet = new Set(survivingExplicitGroups.map((g) => g.id))
+  const sanitizedExplicitGroups: FileGroup[] = survivingExplicitGroups.map((g) => ({
+    ...g,
+    linkedGroupIds: g.linkedGroupIds.filter((id) => survivingIdSet.has(id)),
+  }))
   const fileGroups: FileGroup[] = [
-    ...explicitGroups.filter((g) => g.memberFileIds.length > 0),
+    ...sanitizedExplicitGroups,
     ...standaloneGroups,
   ]
 

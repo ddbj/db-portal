@@ -92,9 +92,13 @@ const makeRoot = (innerCombinator: AdvancedInnerCombinator, children: AdvancedNo
 
 const flattenRootGroup = (node: AdvancedNode | null): AdvancedGroup => {
   if (!node) return makeRoot("AND", [])
-  if (node.kind === "group") return makeRoot(node.innerCombinator, node.children)
+  // Root の combinator は AND 固定 (reducer もそれを前提とする) なので、
+  // top-level node が NOT(group) / NOT(leaf) の場合は AND root の唯一の子として包む
+  // ことで負号を保存する。 そうでない group はそのまま lift して innerCombinator を継ぐ。
+  if (node.kind === "group" && node.combinator !== "NOT") {
+    return makeRoot(node.innerCombinator, node.children)
+  }
 
-  // Preserve a sole condition's negation; a single NOT(leaf) must round-trip.
   return makeRoot("AND", [node])
 }
 

@@ -48,6 +48,17 @@ pid_ddbj=$!
 sync_one dbcls-website "$dbcls_url" "$dbcls_branch" "$dbcls_dir" &
 pid_dbcls=$!
 
+# `set -e` + sequential `wait` だと先に終わった子が非ゼロ終了した瞬間に script
+# が abort し、 もう片方の git child は孤児として走り続けて .git/index.lock を
+# 残す可能性がある。 両方の終了を必ず待ち、 終了 code を集約してから exit する。
+set +e
 wait "$pid_ddbj"
+rc_ddbj=$?
 wait "$pid_dbcls"
+rc_dbcls=$?
+set -e
+if [ "$rc_ddbj" -ne 0 ] || [ "$rc_dbcls" -ne 0 ]; then
+  echo "news repos sync failed (ddbj=$rc_ddbj, dbcls=$rc_dbcls)" >&2
+  exit 1
+fi
 echo "news repos synced"

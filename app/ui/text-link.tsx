@@ -12,7 +12,9 @@ type TextLinkBase = {
 
 type TextLinkProps =
   | (TextLinkBase & { to: To; external?: false; href?: never })
-  | (TextLinkBase & { href: string; external: true; to?: never })
+  // external 時は sr-only な「外部リンク」 ラベルが言語を持つので caller から
+  // 翻訳済み文字列を受ける (ui primitive は i18n 非依存)。
+  | (TextLinkBase & { href: string; external: true; externalSrLabel: string; to?: never })
 
 const weightClass = {
   normal: "font-normal",
@@ -37,7 +39,7 @@ export const TextLink = (props: TextLinkProps) => {
       >
         {children}
         <ExternalIcon size={12} aria-hidden />
-        <span className="sr-only">(external link)</span>
+        <span className="sr-only">{props.externalSrLabel}</span>
       </a>
     )
   }

@@ -67,7 +67,7 @@ export const DateFacet = ({
   // set, so the resulting window is visible immediately; collapse follows "all".
   const [open, setOpen] = useState(active !== "all")
   useEffect(() => {
-    if (active !== "all") setOpen(true)
+    setOpen(active !== "all")
   }, [active])
 
   return (

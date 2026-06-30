@@ -22,10 +22,16 @@ type ItemRowProps = {
 }
 
 const ItemRow = ({ item, lang }: ItemRowProps) => {
+  const t = useT()
   if (item.kind === "external") {
     return (
       <li>
-        <TextLink href={item.url} external weight="semibold">
+        <TextLink
+          href={item.url}
+          external
+          externalSrLabel={t("a11y.externalLink")}
+          weight="semibold"
+        >
           {labelOf(item.label, lang)}
         </TextLink>
       </li>

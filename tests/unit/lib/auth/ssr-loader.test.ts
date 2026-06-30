@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment node
+ */
 import { http, HttpResponse } from "msw"
 import { describe, expect, test } from "vitest"
 

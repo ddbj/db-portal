@@ -214,7 +214,9 @@ const SearchResultsRoute = () => {
     }
     setKeywordBusy(true)
     try {
-      const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
+      // Validator scope must match the URL/loader path: per-DB results admit Tier-3
+      // fields, cross mode rejects them. docs/search.md § AST と入出力経路.
+      const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl, db: data.db })
       setKeywordParseError(false)
       pushNextRef.current = true
       setPage(DEFAULT_PAGE)

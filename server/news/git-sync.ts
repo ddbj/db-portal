@@ -47,14 +47,17 @@ export const cloneRepo = (
   localDir: string,
   runGit: RunGit = defaultRunGit,
 ): Promise<RunGitResult> =>
-  runGit(["clone", "--depth", "1", "--branch", branch, repoUrl, localDir])
+  // `--` 区切りを置いて positional 引数 (repoUrl / localDir) を確実に「option では
+  // ない」として git に解釈させる。 env (DB_PORTAL_NEWS_*) 経由で `-` 始まりの値
+  // が混入しても `--upload-pack=...` 等の option として解釈されない。
+  runGit(["clone", "--depth", "1", "--branch", branch, "--", repoUrl, localDir])
 
 export const pullRepo = async (
   branch: string,
   localDir: string,
   runGit: RunGit = defaultRunGit,
 ): Promise<RunGitResult> => {
-  const fetched = await runGit(["fetch", "--depth", "1", "origin", branch], localDir)
+  const fetched = await runGit(["fetch", "--depth", "1", "origin", "--", branch], localDir)
   if (!fetched.ok) return fetched
 
   return runGit(["reset", "--hard", `origin/${branch}`], localDir)

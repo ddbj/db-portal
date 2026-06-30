@@ -8,6 +8,8 @@ import { useProseEnhance } from "~/lib/content/use-prose-enhance"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { PageTitle, Section } from "~/ui"
 
+import { decideAnchorIntercept } from "./anchor-intercept"
+
 export const handle = {
   titleResolver: "page-content",
   breadcrumbResolver: "page-content",
@@ -34,14 +36,10 @@ const PageContentRoute = () => {
   useProseEnhance(".prose-bsi")
 
   const handleClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    const target = e.target
-    if (!(target instanceof HTMLAnchorElement)) return
-    const href = target.getAttribute("href")
-    if (!href) return
-    if (href.startsWith("/") && !href.startsWith("//")) {
-      e.preventDefault()
-      void navigate(href)
-    }
+    const decision = decideAnchorIntercept(e.target, e)
+    if (decision.kind !== "intercept") return
+    e.preventDefault()
+    void navigate(decision.href)
   }, [navigate])
 
   const page = getPageByPath(urlPath)

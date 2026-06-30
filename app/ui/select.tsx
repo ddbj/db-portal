@@ -111,17 +111,20 @@ export const Select = ({
 
   const handleKey = (e: KeyboardEvent<HTMLButtonElement>): void => {
     if (disabled) return
+    const optionCount = normalizedOptions.length
     if (e.key === "ArrowDown") {
       e.preventDefault()
       if (open) {
-        setActiveIndex((i) => (i + 1) % normalizedOptions.length)
+        // optionCount===0 で modulo すると NaN になり aria-activedescendant が
+        // `<id>-NaN` を露出する (Combobox と同様に length>0 ガードで防ぐ)。
+        if (optionCount > 0) setActiveIndex((i) => (i + 1) % optionCount)
       } else {
         openWithActive()
       }
     } else if (e.key === "ArrowUp") {
       e.preventDefault()
       if (open) {
-        setActiveIndex((i) => (i - 1 + normalizedOptions.length) % normalizedOptions.length)
+        if (optionCount > 0) setActiveIndex((i) => (i - 1 + optionCount) % optionCount)
       } else {
         openWithActive()
       }

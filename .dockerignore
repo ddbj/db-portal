@@ -14,6 +14,10 @@
 !public/
 !server/
 !tests/
+# Playwright auth.setup.ts writes live Keycloak session cookies here; whitelisting
+# tests/ above would otherwise bake them into the runtime image (Dockerfile L69
+# `COPY . .`). Exclude AFTER `!tests/` so the last match wins.
+tests/e2e/.auth/
 !docs/
 !scripts/
 !page-contents/

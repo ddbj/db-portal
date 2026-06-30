@@ -2,7 +2,6 @@ import { createRequestHandler } from "@react-router/express"
 import express from "express"
 
 import { handleLlmHealth } from "./api/llm/health"
-import { handleMe } from "./api/me"
 import { handleNews } from "./api/news"
 import { handleRobots } from "./api/robots"
 import { handleServices } from "./api/services"
@@ -38,7 +37,12 @@ const app = express()
 app.disable("x-powered-by")
 app.set("trust proxy", parseTrustProxy(env.DB_PORTAL_TRUST_PROXY))
 app.use(securityHeaders({ env: env.DB_PORTAL_ENV, searchApiUrl: env.DB_PORTAL_SEARCH_API_URL }))
-app.use(express.json({ limit: "1mb" }))
+
+// LLM prompt body は短い自然文なので 32KB で十分。 global で 1MB を許すと、
+// route handler 内の LLM rate-limit に到達する前に毎リクエストが parse コストを
+// 生んで amplification 経路になる (`docs/llm.md` の rate-limit 不変量)。 narrow
+// に POST /api/llm/* だけに mount する。
+const llmJsonParser = express.json({ limit: "32kb" })
 
 const llmClient = createLlmClient(env)
 setActiveRateLimiter(
@@ -57,11 +61,10 @@ app.use("/page-contents", (req, res, next) => {
   pageAssetStatic(req, res, next)
 })
 
-app.get("/api/me", handleMe)
 app.get("/api/news", handleNews)
 app.get("/api/services", handleServices)
 app.get("/api/llm/health", handleLlmHealth)
-app.post("/api/llm/search-assistant", makeHandleSearchAssistant(env, logger, { client: llmClient }))
+app.post("/api/llm/search-assistant", llmJsonParser, makeHandleSearchAssistant(env, logger, { client: llmClient }))
 app.get("/sitemap.xml", handleSitemap(env))
 app.get("/robots.txt", handleRobots(env))
 mountAuthRoutes(app, env, logger)

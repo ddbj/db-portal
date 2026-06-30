@@ -174,6 +174,7 @@ export const en: Resources = {
     paginationPrev: "Previous page",
     paginationNext: "Next page",
     paginationJumpToLast: "Jump to page {{n}}",
+    externalLink: "external link",
   },
   submit: {
     pageTitle: "Submission navigator",

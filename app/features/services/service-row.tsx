@@ -18,7 +18,7 @@ export const ServiceRow = ({ item, lang }: ServiceRowProps) => {
       <div className="flex-1 min-w-0">
         {url !== undefined
           ? (
-            <TextLink href={url} external weight="bold">
+            <TextLink href={url} external externalSrLabel={t("a11y.externalLink")} weight="bold">
               <span className="text-ink text-fs-body leading-snug">{name}</span>
             </TextLink>
           )

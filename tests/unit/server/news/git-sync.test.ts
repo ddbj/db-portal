@@ -65,9 +65,21 @@ describe("cloneRepo", () => {
       "1",
       "--branch",
       "main",
+      "--",
       "https://example.com/repo.git",
       "./out",
     ])
+  })
+
+  test("cloneRepo_attackerControlledUrlStartingWithDash_doesNotBecomeGitOption", async () => {
+    // `--` 区切りが無いと `--upload-pack=touch /tmp/pwn` のような env 値が git に
+    // option として解釈される (任意コマンド実行)。 fix の意図を pin する。
+    const { fn, calls } = fakeRunGit([{ ok: true, stdout: "" }])
+    await cloneRepo("--upload-pack=evil", "main", "./out", fn)
+    const dashIdx = calls[0]?.args.indexOf("--")
+    expect(dashIdx, "`--` separator must precede positional args").toBeGreaterThanOrEqual(0)
+    const repoIdx = calls[0]?.args.indexOf("--upload-pack=evil")
+    expect(repoIdx, "url must appear after `--`").toBeGreaterThan(dashIdx!)
   })
 
   test("cloneRepo_runGitFails_propagatesFailure", async () => {
@@ -86,7 +98,7 @@ describe("pullRepo", () => {
     const result = await pullRepo("main", "/repo", fn)
     expect(result.ok).toBe(true)
     expect(calls).toHaveLength(2)
-    expect(calls[0]?.args).toEqual(["fetch", "--depth", "1", "origin", "main"])
+    expect(calls[0]?.args).toEqual(["fetch", "--depth", "1", "origin", "--", "main"])
     expect(calls[0]?.cwd).toBe("/repo")
     expect(calls[1]?.args).toEqual(["reset", "--hard", "origin/main"])
   })

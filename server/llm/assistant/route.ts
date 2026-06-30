@@ -85,7 +85,7 @@ export const makeHandleSearchAssistant = (
       const currentDsl = mode === "append" && current !== undefined
         ? await serializeAstToDsl(current, { env })
         : undefined
-      const messages = buildAssistantMessages({ userInput: input, currentDsl, db })
+      const messages = buildAssistantMessages({ userInput: safeInput, currentDsl, db })
       const upstreamResp = await callVllmStreamRaw(
         client,
         { messages, temperature: 0, stream: true, maxTokens: MAX_OUTPUT_TOKENS },

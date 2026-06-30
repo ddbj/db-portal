@@ -64,6 +64,11 @@ export const SearchInputPanel = ({
   const [mode, setMode] = useState<"keyword" | "ai">("keyword")
   const [aiInput, setAiInput] = useState("")
   const [aiMode, setAiMode] = useState<AiMode>("new")
+  // The mode the in-flight / latest proposal was generated with. The dropdown
+  // (aiMode) stays interactive after generation, so live state must not be read
+  // when applying — the proposal's structure is only sound under the mode that
+  // produced it (mirrors navigable-search-input.tsx's pendingModeRef).
+  const [pendingProposalMode, setPendingProposalMode] = useState<AiMode>("new")
   const proposalHeadingId = useId()
   const isAi = mode === "ai"
   const keywordInvalid = invalid && !isAi
@@ -128,10 +133,15 @@ export const SearchInputPanel = ({
 
   // The keyword box submit runs the cross search (same as the builder's button),
   // not just a keyword commit — the box's "検索" otherwise looked inert.
+  const startGeneration = (value: string) => {
+    setPendingProposalMode(effectiveAiMode)
+    void stream.start(value, startOptions())
+  }
+
   const handleSubmit = (value: string) => {
     if (submitDisabled) return
     if (isAi) {
-      if (value.trim().length > 0) void stream.start(value, startOptions())
+      if (value.trim().length > 0) startGeneration(value)
     } else if (onSubmitSearch) {
       onSubmitSearch(value)
     } else {
@@ -290,13 +300,13 @@ export const SearchInputPanel = ({
               kind="secondary"
               size="md"
               disabled={aiInput.trim().length === 0 || generating}
-              onClick={() => void stream.start(aiInput, startOptions())}
+              onClick={() => startGeneration(aiInput)}
             >
               {t("search.assistant.regenerate")}
             </Button>
-            <Button kind="primary" size="md" onClick={() => applyProposal(effectiveAiMode)}>
+            <Button kind="primary" size="md" onClick={() => applyProposal(pendingProposalMode)}>
               <StableLabel reserve={[t("search.assistant.applyReplace"), t("search.assistant.apply")]}>
-                {effectiveAiMode === "new"
+                {pendingProposalMode === "new"
                   ? t("search.assistant.applyReplace")
                   : t("search.assistant.apply")}
               </StableLabel>

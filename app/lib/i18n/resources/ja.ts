@@ -177,6 +177,7 @@ export type Resources = {
     paginationPrev: string
     paginationNext: string
     paginationJumpToLast: string
+    externalLink: string
   }
   submit: {
     pageTitle: string
@@ -870,6 +871,7 @@ export const ja: Resources = {
     paginationPrev: "前のページ",
     paginationNext: "次のページ",
     paginationJumpToLast: "{{n}} ページ目へ",
+    externalLink: "外部リンク",
   },
   submit: {
     pageTitle: "登録ナビゲーション",

@@ -2,6 +2,7 @@ import crypto from "node:crypto"
 
 import type { Request, Response, Router } from "express"
 
+import { handleMe } from "../api/me"
 import type { ServerEnv } from "../lib/env"
 import type { Logger } from "../lib/log"
 import { clearSidCookie, getSidFromHeader, setSidCookie } from "./cookie"
@@ -38,6 +39,11 @@ const sendError = (res: Response, status: number, code: string): void => {
 export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger): void => {
   const config = oidcConfig(env)
   const cookieOpts = { secure: isSecureRuntime(env) }
+
+  // /api/me は handler が session-store に直接触る auth surface の一部なので、
+  // docs/auth.md の SSOT 主張に従ってここに登録する (server/api/me.ts は handler
+  // の実装を持つだけ)。
+  router.get("/api/me", handleMe)
 
   router.get("/api/auth/login", (req: Request, res: Response): void => {
     const returnTo = normalizeReturnTo(

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { buildRequestInit, joinUrl, type ParseNode } from "~/lib/api"
 import { type DbSlug, isDbSlug } from "~/lib/search-scope"
@@ -101,6 +101,16 @@ export const useAssistantStream = (
     setProposal(null)
     setProposalDb(null)
     setState("idle")
+  }, [])
+
+  // SPA navigation away from the panel must cancel the in-flight SSE so the
+  // upstream vLLM generation and 15s heartbeat (server/llm/sse.ts) are released
+  // immediately rather than pinned until natural completion.
+  useEffect(() => {
+    return () => {
+      controllerRef.current?.abort()
+      controllerRef.current = null
+    }
   }, [])
 
   const start = useCallback(async (input: string, options?: AssistantStartOptions) => {

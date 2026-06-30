@@ -183,7 +183,9 @@ export const extractUserInfo = (idToken: string, validation: IdTokenValidation):
   }
   const nowSeconds = Math.floor((validation.now?.() ?? Date.now()) / 1000)
   const clockSkew = validation.clockSkewSeconds ?? 60
-  if (parsed.exp <= nowSeconds) {
+  // clockSkew は両側に対称適用する。 BFF host 時計が Keycloak より進んでいる
+  // 場合に短寿命 id_token が発行直後に「expired」 と誤判定されるのを防ぐ。
+  if (parsed.exp + clockSkew <= nowSeconds) {
     throw new IdTokenValidationError("token expired")
   }
   if (parsed.iat > nowSeconds + clockSkew) {

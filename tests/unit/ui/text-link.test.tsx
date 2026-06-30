@@ -35,7 +35,7 @@ describe("TextLink", () => {
 
   test("TextLink_external_setsTargetAndRelAndSrLabelAndIcon", () => {
     renderTextLink(
-      <TextLink href="https://example.com" external>
+      <TextLink href="https://example.com" external externalSrLabel="external link">
         ext
       </TextLink>,
     )

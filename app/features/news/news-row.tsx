@@ -21,7 +21,7 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
       <div className="flex-1 min-w-0">
         {externalUrl !== undefined
           ? (
-            <TextLink href={externalUrl} external weight="bold">
+            <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")} weight="bold">
               <span className="text-ink text-fs-body leading-snug">{title}</span>
             </TextLink>
           )

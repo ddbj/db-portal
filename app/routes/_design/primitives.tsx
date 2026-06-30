@@ -590,7 +590,7 @@ const TextLinkGallery = () => (
       <TextLink to="/news">ニュース一覧へ</TextLink>
     </Row>
     <Row label="external">
-      <TextLink href="https://www.ddbj.nig.ac.jp" external>
+      <TextLink href="https://www.ddbj.nig.ac.jp" external externalSrLabel="external link">
         DDBJ 本体サイト
       </TextLink>
     </Row>

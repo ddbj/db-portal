@@ -94,7 +94,7 @@ export const NotificationBar = () => {
               {title}
             </span>
             {externalUrl !== undefined && (
-              <TextLink href={externalUrl} external>
+              <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")}>
                 {t("common.detail")}
               </TextLink>
             )}

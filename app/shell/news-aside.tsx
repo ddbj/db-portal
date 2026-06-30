@@ -63,7 +63,7 @@ export const NewsAside = () => {
 
                 return externalUrl !== undefined
                   ? (
-                    <TextLink href={externalUrl} external weight="bold">
+                    <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")} weight="bold">
                       <span className="text-ink text-fs-body leading-snug">
                         {newsItemTitle(n, lang)}
                       </span>

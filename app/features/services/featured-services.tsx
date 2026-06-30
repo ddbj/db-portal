@@ -18,6 +18,7 @@ type FeaturedServicesProps = {
 }
 
 const FeaturedRow = ({ item, lang }: { item: ServiceItem; lang: Lang }) => {
+  const t = useT()
   const name = serviceName(item, lang)
   const description = serviceDescription(item, lang)
   const url = serviceUrl(item, lang)
@@ -27,7 +28,7 @@ const FeaturedRow = ({ item, lang }: { item: ServiceItem; lang: Lang }) => {
       <span className="shrink-0">
         {url !== undefined
           ? (
-            <TextLink href={url} external weight="bold">
+            <TextLink href={url} external externalSrLabel={t("a11y.externalLink")} weight="bold">
               <span className="text-ink text-fs-body leading-snug">{name}</span>
             </TextLink>
           )
