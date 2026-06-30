@@ -171,9 +171,9 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 
 ## セキュリティ
 
-全 HTTP response に security header を付与する (`server/lib/security.ts`)。 CSP は nonce ベースで `'unsafe-inline'` を一切持たず、 directive 値の SSOT は `buildCspHeader`。
+全 HTTP response に security header を付与する (`server/lib/security.ts`)。 CSP の directive 値の SSOT は `buildCspHeader`。
 
-- `Content-Security-Policy` — `script-src` は `'self'` + per-request nonce のみ。 `frame-ancestors` は `'none'`。 `connect-src` には `ddbj-search-api` origin を実行時に動的付与する。 dev 環境では付与しない
+- `Content-Security-Policy` — `script-src` は `'self'` + per-request nonce のみで `'unsafe-inline'` を持たない。 `style-src` は Tailwind v4 の inline style 出力のため `'unsafe-inline'` を含める。 `frame-ancestors` は `'none'`、 `connect-src` には `ddbj-search-api` origin を実行時に動的付与する。 dev 環境では CSP ヘッダ自体を送出しない
 - `Strict-Transport-Security` — production のみ
 - `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy` — 全 response に付与
 

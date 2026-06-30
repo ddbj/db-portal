@@ -55,7 +55,7 @@ stateDiagram-v2
 
 - `unset` のとき `/api/llm/search-assistant` は 503 `{ error: "llm_unset" }` を返し、 UI は AI 補助機能を hide する
 - `unreachable` のとき UI は表示し、 送信時の SSE error 経路へ委ねる
-- 周期 (5 分) / 初期遅延 (5 秒) / probe timeout 上限 (10 秒) は `server/llm/health.ts` + `server/llm/client.ts` のハードコード定数
+- 周期 / 初期遅延 / probe timeout 上限は `server/llm/health.ts` + `server/llm/client.ts` のハードコード定数。 値は env から外し、 deploy 環境で動かさない
 - client (`app/features/search/assistant/llm-availability.ts` の `useLlmAvailability`) は TanStack Query で周期 polling し、 `ok` → `ready=true`、 `unset` → 機能 hide、 `unreachable` → 表示 + 送信時委譲を行う
 - dev では `DB_PORTAL_LLM_BASE_URL` を空にすると `unset`、 dummy URL にすると `unreachable` を再現できる
 
@@ -76,8 +76,8 @@ multi-instance 化や共有 store 採用のときは sliding window への切替
 user input は素のまま prompt に組み立てて vLLM へ送る。 redact が走るのは server log に出す直前のみで、 モデルに渡る入力は変えない。
 
 - 共通 log redaction (`server/lib/log.ts` の `redact`) は **key 名一致** (case-insensitive、 snake_case 表記揺れ含む) と **値パターン backstop** (`Bearer` ヘッダ形 / JWT 形) の 2 層
-- LLM 用は `server/llm/redaction.ts` の `redactUserInput(input)` を user input log 直前に適用する。 カテゴリは email / 電話番号 / クレジットカード番号 / API key 風 token の 4 種で、 置換 token はカテゴリ別の `[REDACTED_*]`
-- パターンの SSOT は `server/llm/redaction.ts`。 新パターン追加は PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で「生 PII が出力に残らない」「安全な文字列は変化しない」 の 2 不変量を足す
+- LLM 用は `server/llm/redaction.ts` の `redactUserInput(input)` を user input log 直前に適用する。 置換 token はカテゴリ別の `[REDACTED_*]` 形式
+- 対象カテゴリと regex pattern の SSOT は `server/llm/redaction.ts`。 新パターン追加は PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で「生 PII が出力に残らない」「安全な文字列は変化しない」 の 2 不変量を足す
 
 ## DSL 検証
 

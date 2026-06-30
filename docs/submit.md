@@ -52,7 +52,7 @@ flow-changing 軸だけを ChipAxis に持つ規約により、 答えても経�
 公開区分は `AccessSection` (1 トグル + 1 radio + 3 トグル) から **種別ごとに** 純粋関数で導出する。 優先度と if/else 順序は `app/features/submit/access.ts` の `deriveAccess` が SSOT、 種別ごと既定値は `vocabulary.ts` の `IDENTIFIABLE_KINDS` が SSOT。
 
 - ヒト時のみ active。 非ヒト OrganismDomain は常に全種別 `open` を返す
-- 「個人識別符号」 (個人情報保護法施行規則上の該否) を上部 `hasIdentifier` radio で submission 全体に対して 1 回答える。 default は安全側 (`Yes` = 含む)
+- 「個人識別符号」 (個人情報保護法施行規則上の該否) を上部 `hasIdentifier` radio で submission 全体に対して 1 回答える。 default は `No` (含まない想定)、 個人識別符号を含む submission のみユーザーが明示的に `Yes` に切り替える
 - per-file の個別反転は `identifiability` ChipAxis で表現する。 chip は上部 radio に対する反転スイッチで、 `Yes` 時は当該種別だけ open、 `No` 時は当該種別だけ restricted に逆転する
 - 「制限公開を希望する」 と `hasIdentifier = Yes` は下のサブ条件 (倫理指針 / 一般入手 / 微生物) を強制 disable する強い意思表示として扱う
 - 「倫理指針に沿ったヒト研究」 と「一般入手可能な試料の解析」「微生物自体の分析 (ヒト配列除去済み)」 は意味的に排他で、 同時 ON を UI で機械的に禁ずる
@@ -79,20 +79,22 @@ submit wizard の状態は URL search params に同期し、 リンク共有・�
 
 ### DDBJ サービス一覧
 
-| slug | role | 何を登録するか | accession 例 |
-|---|---|---|---|
-| `bioproject` | companion | 研究プロジェクトのメタデータ | `PRJDB######` |
-| `umbrella-bioproject` | companion | ハプロタイプ等の複数 BioProject を束ねる Umbrella | `PRJDB######` |
-| `biosample` | companion | 生物試料のメタデータ | `SAMD######` |
-| `dra` | destination | DDBJ Sequence Read Archive (一次シーケンスリード) | `DRR######` / `DRX######` |
-| `jga` | destination | 個人識別可能なヒトデータ (制限公開専用) | `JGAS######` / `JGAD######` |
-| `ddbj` | destination | MSS (WGS / GNM / MAG / TSA / TLS / TPA / アノテーション) | `AP######` / `BAAA01000000` |
-| `nsss` | destination | Web 登録系 (少数・短い・非完成の配列) | `LC######` |
-| `gea` | destination | Genomic Expression Archive (発現データ) | `E-GEAD-######` |
-| `metabobank` | destination | メタボロームデータ | `MTBKS####` |
-| `humandbs` | external (gate) | NBDC ヒトデータベース (JGA への Policy 申請窓口) | (発番なし) |
-| `jpost` | external | プロテオーム質量分析 | `JPST######` |
-| `eva` | external | 非ヒト variant (EBI 運用) | `PRJEB######` |
+role 割当は `app/schemas/submit/service.ts` の `SERVICE_ROLE` が SSOT。 ここでは各サービスの登録対象と accession 例だけを示す。
+
+| slug | 何を登録するか | accession 例 |
+|---|---|---|
+| `bioproject` | 研究プロジェクトのメタデータ。 全 destination の前提として 1 件添付する | `PRJDB######` |
+| `umbrella-bioproject` | ハプロタイプ等の複数 BioProject を束ねる Umbrella | `PRJDB######` |
+| `biosample` | 生物試料のメタデータ。 全 destination の前提として 1 件添付する | `SAMD######` |
+| `dra` | DDBJ Sequence Read Archive (一次シーケンスリード) | `DRR######` / `DRX######` |
+| `jga` | 個人識別可能なヒトデータ (制限公開専用) | `JGAS######` / `JGAD######` |
+| `ddbj` | MSS (WGS / GNM / MAG / TSA / TLS / TPA / アノテーション) | `AP######` / `BAAA01000000` |
+| `nsss` | Web 登録系 (少数・短い・非完成の配列) | `LC######` |
+| `gea` | Genomic Expression Archive (発現データ) | `E-GEAD-######` |
+| `metabobank` | メタボロームデータ | `MTBKS####` |
+| `humandbs` | NBDC ヒトデータベース (JGA への Policy 申請窓口、 external gate) | (発番なし) |
+| `jpost` | プロテオーム質量分析 (DDBJ 外部の登録窓口) | `JPST######` |
+| `eva` | 非ヒト variant (EBI 運用、 DDBJ 外部の登録窓口) | `PRJEB######` |
 
 `KindRoute.candidateRepos` (種別ごとに宣言する登録エンドポイント上位集合) は **登録エンドポイント (role = destination ∪ 登録エンドポイントとして扱う external)** の部分集合に閉じる。 範囲外を emit するカタログは起動時 Zod + parity test で落ちる。
 

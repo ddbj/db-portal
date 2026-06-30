@@ -30,7 +30,7 @@ primitive は `className?` を **受けない**。 variant は `kind` / `tone` /
 各 primitive で次の state を実装 + テストする。 操作可能な primitive が抜けなく定義通り反応することを保証する。
 
 - default
-- hover (clickable な場合。 ホバーで色変化はしない)
+- hover (clickable な場合。 surface 階調 1 段の背景色変化 / interactive アイコンの tone shift は許容。 brand 色への大きな塗り変えは focus ring に任せて避ける)
 - focus (`:focus-visible` の yellow ring に頼る)
 - disabled (`aria-disabled` + `disabled` HTML 属性を lockstep)
 - checked / selected (該当 primitive)
@@ -64,7 +64,7 @@ Chrome の検索 input は提案レビュー型 (`/search`) と生成→遷移�
 - `FormGroup` は `<fieldset>` + `<legend>` で実装し、 radio / checkbox 群が単一の質問として announce される
 - 1 input を子に持つ場合も `<fieldset>` で囲んで構わない
 - `IconButton` は AA の target size を満たす default を持つ
-- state は `idle` / `warn` / `disabled` の 3 値で、 `state="warn"` 指定時に `aria-invalid=true` と `aria-describedby` を自動付与する
+- 入力 primitive は `state` prop に `"default" | "warn"` を取り、 `disabled` は別 boolean prop で表現する。 `state="warn"` 指定時に `aria-invalid=true` と `aria-describedby` を自動付与する
 
 ## Modal
 
@@ -131,6 +131,6 @@ ESLint (`eslint.config.ts`) が物理強制を担う:
 
 `/_design` route が全 primitive の variant × state を並べる。 primitive の挙動が変更されたとき、 ここを開けば全 state が描画され回帰確認ができる。
 
-- dev および `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を有効化した env でのみ生成する
+- production 以外の env (`NODE_ENV !== "production"`)、 または `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を立てた env で生成する
 - production build では `app/routes.ts` で除外する
 - primitive を新規追加・変更したら `/_design` で全 state が描画されることを確認する

@@ -105,7 +105,7 @@ flowchart LR
 
 ### ノード種別
 
-`app/lib/content/content-tree.ts` が `listAllPages()` からセクション別にグループ化したツリーを起動時に 1 度構築してキャッシュする。 `_dev/` セクションは除外する。
+`app/lib/content/content-tree.ts` が `listAllPages()` からセクション別にグループ化したツリーを初回 `getNavTree()` 呼び出し時に 1 度構築し、 以降同一プロセス内ではキャッシュ済の結果を返す。 `_dev/` セクションは除外する。
 
 | 種別 | URL を持つ | 子ノード |
 |---|---|---|

@@ -49,14 +49,14 @@ logout は `/api/auth/logout` から `end_session_endpoint` に `id_token_hint` 
 
 ## Cookie
 
-session は `sid` という名前の HttpOnly cookie としてブラウザに渡す。 値は session id の不透明な乱数だけで、 token そのものや user info は一切載せない。 真の expiry は server 側の session TTL が持ち、 cookie は session cookie (`Max-Age` 無し) のままブラウザを閉じれば消える運用とする。
+session は `sid` という名前の cookie としてブラウザに渡す。 値は session id の不透明な乱数だけで、 token そのものや user info は一切載せない。 真の expiry は server 側の session TTL が持ち、 cookie は session cookie (`Max-Age` 無し) のままブラウザを閉じれば消える運用とする。 属性値の SSOT は `server/auth/cookie.ts`。
 
-- `HttpOnly` 必須 — ブラウザ側 JS から読めない
-- `Secure` を staging / production で必ず付ける (dev http では false 可)
-- `SameSite=Lax` で cross-site POST から保護する
-- `Path=/` 固定。 sub-path に絞らない
+満たすべき security 要件:
 
-属性値の SSOT は `server/auth/cookie.ts`。
+- JS から cookie 値を読めない (XSS で token を露出させない)
+- cross-site POST から起動する CSRF 経路を遮断する (mutation API は持たないが、 防御は二重に持つ)
+- staging / production では平文 HTTP に流れない (dev は http のため例外)
+- sub-path 限定にせず portal 全体の navigation で同 session を共有する
 
 ## Session
 
@@ -65,7 +65,7 @@ session entry は `idToken` (logout の `id_token_hint` 用) と userInfo (`sub`
 - session 全体を log に出さない。 debug log は `sub` / `name` まで
 - credential 系 key の redaction は `server/lib/log.ts` の `redact` が担い、 規約は [llm.md](llm.md) § PII redaction に集約
 - in-memory 単一プロセス前提。 多プロセス化する場合は store を共有 store (Redis 等) に差し替える
-- TTL / cleanup 間隔の数値は `server/auth/session-store.ts` を SSOT とし、 env で上書き可
+- TTL / cleanup 間隔の数値は `server/auth/session-store.ts` を SSOT とする。 TTL のみ `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で上書き可、 cleanup 間隔は hardcode
 
 ## id_token 検証
 

@@ -21,7 +21,7 @@ flowchart LR
 
 commit する env は `env.dev` / `env.staging` / `env.production` の 3 つだけ。 開発者はそのいずれかを `.env` にコピーして編集する。 `.env` / `.env.*` 自体は ignore で git 管理外。
 
-- env の値域・default・型は [architecture.md](architecture.md) の `## Build-time と runtime の境界` を参照
+- env の値域・default・型は `server/lib/env.ts` の Zod schema が SSOT。 build-time と runtime の境界規約は [architecture.md](architecture.md) を参照
 - 開発者は staging credential までしか触らない。 production 実値は `.env.production.local` から merge する ([deployment.md](deployment.md))
 - secret らしき値が `VITE_DB_PORTAL_` prefix に紛れていないかを必ず確認する (ブラウザ bundle に焼かれる)
 - `.env` の差し替えには `docker compose down -v && up -d --build` が必要。 `restart` では新 env が反映されない

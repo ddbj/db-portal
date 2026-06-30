@@ -41,7 +41,8 @@ clone / pull は News に委譲し、 services 側は HEAD 変化を契機に当
 - `categories` は dedupe 済みの `ServiceCategory[]`、 空なら `["other"]` を返す
 - 写像前の原語彙は `rawCategories` に保持し、 デバッグ可能にする
 - domain 軸 (Genome / Gene / Gene expression / Disease 等) は機能軸の `ServiceCategory` に寄与させない
-- 値域 / source 別 mapping / domain 軸判定は `app/schemas/api-bff/service.ts` と `server/services/normalize.ts` が SSOT
+- `ServiceCategory` enum と response Zod schema は `app/schemas/api-bff/service.ts` が SSOT
+- source 別 mapping (`DDBJ_TAG_MAP` / `DBCLS_CATEGORY_MAP` / `DBCLS_CATEGORY_OVERRIDES`) と domain 軸判定は `server/services/normalize.ts` が SSOT
 
 ## 表示名 override
 

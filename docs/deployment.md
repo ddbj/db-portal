@@ -59,16 +59,17 @@ reverse proxy 1 段の背後で動くため、 `X-Forwarded-*` を信頼する t
 
 ## 起動シーケンス
 
-container 起動から listen までの順序は固定。 env 検証が最初に走り、 失敗すると process exit する。
+container 起動から listen までの順序は固定。 env 検証が最初に走り、 失敗すると process exit する。 mirror と health monitor は listen 前に起動し、 cache hot の状態で外部 request を受ける。
 
 ```mermaid
 sequenceDiagram
   participant tini as tini (PID1)
   participant node as tsx (server/index.ts)
   participant env as parseServerEnv
-  participant ex as Express
+  participant svc as Services mirror
   participant news as News mirror
   participant llm as LLM health monitor
+  participant ex as Express
 
   tini->>node: spawn
   node->>env: Zod validate
@@ -77,14 +78,15 @@ sequenceDiagram
     node-->>tini: exit 1
   else OK
     env-->>node: ok
+    node->>svc: init (disk cache を await load)
+    node->>news: start (poll loop + onSourceSynced)
+    node->>llm: start (初回 check までは unset)
     node->>ex: listen
     ex-->>node: server_listening
-    node->>news: start (disk cache を即時 load)
-    node->>llm: start (初回 check までは unset)
   end
 ```
 
-News mirror は disk cache を即時 load するため、 cache が残っていれば `/api/news` は起動直後から item を返す。 LLM health は初回 check が完了するまで `unset` を返す。
+Services mirror は init で disk cache を await load し、 News mirror の sha 変化通知を受けて該当 source を rebuild する。 News mirror は disk cache を即時 load するため、 cache が残っていれば `/api/news` は起動直後から item を返す。 LLM health は初回 check が完了するまで `unset` を返す。
 
 ## リリース
 

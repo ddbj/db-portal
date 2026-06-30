@@ -133,7 +133,7 @@ GET と POST が同形の hits / facets を返すこと、 POST が `dsl` echo �
 | 変数 | 意味 |
 |---|---|
 | `DB_PORTAL_OPENAPI_URL` | `openapi-typescript` の生成元 (build / dev 限定) |
-| `DB_PORTAL_SEARCH_API_URL` | runtime の検索 API base URL |
-| `VITE_DB_PORTAL_SEARCH_API_URL` | client zone から見える runtime base URL |
+| `DB_PORTAL_SEARCH_API_URL` | server 側 (SSR / BFF) から呼ぶ検索 API base URL |
+| `VITE_DB_PORTAL_SEARCH_API_URL` | client bundle に焼き込む検索 API base URL (build 時に Vite が静的置換、 runtime には変更不可) |
 
 env の SSOT 規約と build-time / runtime の取り扱いは [architecture.md](architecture.md) を参照。

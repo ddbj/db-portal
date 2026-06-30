@@ -74,7 +74,7 @@ front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合�
 
 top page には NotificationBar (上部 stack) と NewsAside (右ペイン compact list) の 2 つの news 表示がある。 同じ cache を引きながら、 振り分けの軸が異なる。
 
-- **NotificationBar** — `featured=true` の item を新しい順に stack する。 個別 close 可能。 featured の判定は ddbj source の `_data/global.yml` の `top_news` slug whitelist が SSOT で、 dbcls source は常に `featured=false`
+- **NotificationBar** — `featured=true` の item を新しい順に stack する。 個別 close 可能。 featured の判定は ddbj source の `_data/global.yml` の `top_news.ja` / `top_news.en` (2 言語別の path 列) が SSOT。 ja の path が内部 slug と一致するか、 en の path から `-e` suffix を剥がしたものが内部 slug と一致したとき featured。 dbcls source は常に `featured=false`
 - **NewsAside** — 最新 N 件の compact list。 `featured` の有無を問わない
 - featured 軸は `NewsCategory` (tag/category 体系) と直交する。 featured なら category を問わず NotificationBar に出し、 featured でなければ category を問わず出さない
 
@@ -82,7 +82,7 @@ featured の SSOT 抽出は `server/news/featured.ts`、 NotificationBar / NewsA
 
 ## /news 一覧と facet 集計
 
-`/news` route は SSR loader を持たず、 URL から facet state を組み立てて client が `/api/news` を 1 回 fetch する。 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。
+`/news` route は SSR loader を持たず、 URL から facet state を組み立てて client が `/api/news` を 1 回 fetch する。 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。 page / sort も同じ URL state に乗せる。
 
 facet sidebar は 4 グループ (種別 / ソース / 年 / サービス) で構成する。 件数の集計規約は以下に従う。
 
@@ -99,7 +99,7 @@ URL state の parse / serialize は `app/features/news/facet-url-state.ts` が S
 
 ### `GET /api/news`
 
-cache を filter して返す。 全 query を AND で適用する。 lang を指定したときは「当該言語で title を持つ item」 だけを返し、 summary の有無は判定に使わない。 response には `Cache-Control: public, max-age=60` を付ける。
+cache を filter して返す。 全 query を AND で適用する。 lang を指定したときは「当該言語で title を持つ item」 だけを返し、 summary の有無は判定に使わない。 response には `Cache-Control: public` を付ける (`max-age` の値は `server/api/news.ts` が SSOT)。
 
 query 仕様 / response schema / lang fallback の規約は `server/api/news.ts` と `app/schemas/api-bff/news.ts` が SSOT。
 
