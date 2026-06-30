@@ -23,3 +23,7 @@ tests/e2e/.auth/
 !page-contents/
 !README.md
 !LICENSE
+# scripts/gen-last-updated.ts は `git log --follow` で page-contents の最終更新
+# を集める。 build context に .git が無いと全 entry が undefined になり、
+# /<slug> ページの「最終更新」 / Last updated が SSR HTML から消える。
+!.git/
