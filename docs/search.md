@@ -46,11 +46,11 @@ flowchart LR
 
 **AST** は client が組む木表現で、 検索エンジンに渡せる構造を持つ。 **DSL** は ddbj-search-api が文字列 grammar として規定する serialize 形で、 URL `?q=` に乗る形。 両者の往復は ddbj-search-api `/db-portal/{parse,serialize}` 経由でしか行わない。 BSI 側に thin serializer を持たず、 grammar SSOT は外側。
 
-**AI 提案は 4 経路目ではなく、 既存 3 経路への差分注入器**として扱う。 詳細は後章。
+**AI 提案は 4 経路目ではなく、 既存 3 経路への差分注入器**として扱う。 詳細は § AI 提案。
 
 ## 3 つの入力経路
 
-3 経路は意図の表現粒度が違う。 自由文で投げる **Simple query**、 候補列挙で絞る **Sidebar facet**、 ネストした論理式を組む **Advanced builder**。 3 経路はそれぞれ独立に AST 片を出し、 AND merge で 1 つの AST に合流する。
+3 経路は意図の表現粒度が違う。 自由文で投げる **Simple query**、 候補列挙で絞る **Sidebar facet**、 ネストした論理式を組む **Advanced builder**。
 
 ### Simple query
 
@@ -93,15 +93,15 @@ cross-DB に Tier 3 行を出すと `field-not-available-in-cross-db` で 400 �
 
 #### date 行のプリセット
 
-date 行は 「すべて / 1年 / 5年 / 10年」 のプリセットボタン + FROM/TO date input を併せ持つ。 内部状態は `active` (プリセット種別 or `custom`) + FROM/TO で表す。
+date 行はプリセットボタン + FROM/TO date input を併せ持ち、 内部状態は `active` (プリセット種別 or `custom`) + FROM/TO で表す。 プリセット集合 (`all` + 年単位の差分) と URL round-trip 用の値は `app/features/search/sidebar/date-preset.ts` が SSOT。
 
 - プリセットは FROM/TO を空で持ち、 emit / 表示時に **現在日から都度算出** する (絶対日付を state に焼き込まない)
 - FROM/TO 手編集で `custom` に遷移し、 プリセット選択表示は外れる
-- URL は絶対 between しか持たないため、 復元時にプリセット 1y / 5y / 10y と照合してプリセット選択を round-trip 越しに保つ
+- URL は絶対 between しか持たないため、 復元時に preset 由来の年差分と照合してプリセット選択を round-trip 越しに保つ
 
-#### subtype plane の落とし穴
+#### subtype plane の不変量
 
-同一 DB index 内に 「互いに doc を共有しない部分集合」 がある — SRA は experiment / study / sample / run / analysis、 JGA は dataset / study / sample 等に分かれ、 1 doc は 1 plane に属する。 異なる plane の Tier 3 field を AND すると DSL parse は通っても hit 0 になる。 UI 側で plane 間の排他制御は持たないため、 行の補足や Step note の文言で plane の存在を示す。
+同一 DB index 内に 「互いに doc を共有しない部分集合」 がある — SRA は experiment / study / sample / run / analysis、 JGA は dataset / study / sample 等に分かれ、 1 doc は 1 plane に属する。 異なる plane の Tier 3 field を AND すると DSL parse は通っても hit 0 になる。 UI 側で plane 間の排他制御は持たず、 行の補足文言で plane の存在を示す。
 
 ### Advanced builder
 
@@ -116,7 +116,7 @@ date 行は 「すべて / 1年 / 5年 / 10年」 のプリセットボタン + 
 
 #### AST ↔ AdvancedState の round-trip
 
-URL 復元時にユーザーが組んだ構造を壊さない、 が動機。 AST と AdvancedState の往来 (`toAdvanced` / `fromAdvanced`) は **canonicalize** 込みで PBT 固定する。 canonicalize は (a) 空 condition / 空 range 除去、 (b) AND/OR の子 1 件は親に flatten、 (c) 同 combinator の入れ子は flatten。
+AST と AdvancedState の往来 (`toAdvanced` / `fromAdvanced`) は **canonicalize** 込みで PBT 固定する。 canonicalize の規則自体は `app/features/search/advanced/canonicalize.ts` が SSOT。
 
 - `toAdvanced(fromAdvanced(s))` は `canonicalize(s)` に等しい
 - `fromAdvanced(toAdvanced(ast))` も `canonicalize(ast)` に等しい
@@ -243,7 +243,7 @@ sequenceDiagram
 
 ## 公開状態と検索可視性
 
-レコードの公開状態 (**INSDC status**: `public` / `private` / `suppressed` / `withdrawn`) で検索可視性が変わる。 判定 SSOT は ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`)。 BSI は DSL を送るだけで、 解禁判定や status フィルタを持たない。
+レコードの公開状態 (**INSDC status**) で検索可視性が変わる。 status の enum 値域と判定 SSOT は ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`)。 BSI は DSL を送るだけで、 解禁判定や status フィルタを持たない。
 
 - 通常検索 (キーワード / facet) は `public` のみがヒットする
 - **accession 完全一致** (top-level が単一 accession の free_text / identifier、 または直下に持つ AND) のとき backend が `suppressed` を解禁する。 OR / NOT 配下・ワイルドカードは解禁しない

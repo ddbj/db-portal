@@ -4,7 +4,7 @@ services は News mirror が clone した local repo を read-only で借りて�
 
 ## services の役割
 
-services は **独自の git clone もポーリングも持たず**、 News mirror が維持する local clone を read-only で借りる。 source ごとに正規化して in-memory + disk の両 cache に流し込み、 `/api/services` 1 endpoint で **top page セクション** (`featuredTop === true` のみ) と **`/services` 一覧** (全件 + facet) の両方を返す。 BFF と外部 API / secret 遮蔽の一般則は [architecture.md](architecture.md) を参照。
+services は **独自の git clone もポーリングも持たず**、 News mirror が維持する local clone を read-only で借りる ([news.md](news.md) 側から subscribe される)。 source ごとに正規化して in-memory + disk の両 cache に流し込み、 `/api/services` 1 endpoint で **top page セクション** (`featuredTop === true` のみ) と **`/services` 一覧** (全件 + facet) の両方を返す。 BFF と外部 API / secret 遮蔽の一般則は [architecture.md](architecture.md) を参照。
 
 ```mermaid
 flowchart LR
@@ -19,10 +19,9 @@ source ごとの実ファイル / 抽出条件は `server/services/sources.ts`�
 
 ## 入力 source と cache
 
-clone / pull は News に委譲し、 services 側は HEAD 変化を契機に当該 source 分だけ再構築する。 2 source (DDBJ `services.yml` / DBCLS `services.json`) の責務は重ねず、 重複 entry は filter で落として disjoint に保つ。
+clone / pull は News に委譲し、 services 側は HEAD 変化通知を受けたとき当該 source 分だけ再構築する。 2 source (DDBJ `services.yml` / DBCLS `services.json`) の責務は重ねず、 重複 entry は filter で落として disjoint に保つ。
 
-- services 専用の git 操作 (`git clone` / `git pull`) を持たない
-- 独自のポーリング間隔を持たない。 News mirror の sha 変化通知を起点にする
+- 独自のポーリング間隔を持たない。 News mirror が出す sha 変化通知を起点にする
 - `ddbj-www/services.yml` から DBCLS 提供 entry を除外し、 source 間の disjoint 性を保つ
 
 ### cache
@@ -45,7 +44,7 @@ upstream の英名は冗長 / 和名混在の item が混じるため、 BSI 側
 
 ### ID 採番
 
-`id` は機械的に `${source}-${nameSlug(英名)}` で生成し、 `^[a-z0-9-]+$` を満たす。 安定性は PBT で固定し、 upstream の表記揺れを吸収する。
+`id` は upstream 英名から機械的に生成する slug で、 source prefix を伴う。 生成式と URL-safe 制約は `server/services/normalize.ts` が SSOT、 上流の表記揺れに対する安定性は PBT で固定する。
 
 ### category 写像
 
@@ -61,7 +60,7 @@ upstream の英名は冗長 / 和名混在の item が混じるため、 BSI 側
 
 `description` は upstream で末尾句点の有無が混在する。 cache / API の生データは upstream 忠実なまま保持し、 表示時に言語別の句点 (ja `。` / en `.`) を補って統一する。 補完は表示用 helper (`app/lib/api/services.ts`) でのみ行い、 storage 層には漏らさない。
 
-## /api/services の 2 用途
+## /api/services
 
 `/api/services` は **1 endpoint で 2 用途を兼ねる**。 SSR loader は持たず、 client が TanStack Query で 1 回 fetch し、 top page と /services で同じ query key を共有する。 使い分けは client 側で `featuredTop` フラグの絞り込みや facet 選択で行い、 別 endpoint を増やさない。
 
@@ -78,22 +77,21 @@ top page の services セクションは `featuredTop === true` の item だけ�
 - 一覧の並びは name のアルファベット順 (Toolbar で昇順 / 降順切替)
 - 日付軸を持たないため year facet / date sort は出さない
 
-### `GET /api/services`
+### HTTP 契約
 
 | query | 動作 |
 |---|---|
 | `source` | comma separated。 いずれかに一致する item |
 | `category` | comma separated `ServiceCategory`。 `categories` がいずれかを含む (OR) |
-| `featured` | `true` で `featuredTop === true` のみ |
+| `featured` | truthy (`true` または `1`) で `featuredTop === true` のみ |
 
 - 全 query は AND で適用する
-- response header に `Cache-Control: public, max-age=60` を付ける
+- response に `Cache-Control` を付ける (値は `server/api/services.ts` が SSOT)
 - response 形は `app/schemas/api-bff/service.ts` の Zod schema が SSOT
 
-### 環境変数
+## 環境変数
 
-| 変数 | 意味 |
-|---|---|
-| `DB_PORTAL_SERVICES_CACHE_DIR` | disk cache のディレクトリ |
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc に関わる env:
 
-repo clone 先 / branch / ポーリング間隔は News (`DB_PORTAL_NEWS_*`) を再利用する。
+- `DB_PORTAL_SERVICES_CACHE_DIR` — disk cache のディレクトリ
+- repo clone 先 / branch / ポーリング間隔は News mirror に委ねるため `DB_PORTAL_NEWS_*` を再利用する ([news.md](news.md))

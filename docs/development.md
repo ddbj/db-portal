@@ -72,7 +72,6 @@ docker compose exec app npm run test:pbt
 docker compose exec app npm test -- --watch
 
 docker compose exec app npm run build
-docker compose exec app npm run dev
 
 docker compose exec app npm run gen:api-types
 docker compose exec app npm run validate:content
@@ -111,16 +110,15 @@ docker compose exec app npm audit --audit-level=high --omit=dev
 
 ## 環境変数
 
-開発でよく触る変数。 build-time と runtime の境界規約は [architecture.md](architecture.md) が SSOT、 環境ごとの実値は `.claude/docs/credentials.md` / `.claude/docs/deployment.md` を参照する。
+env の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、 環境別の値は `env.dev` / `env.staging` / `env.production` が SSOT。 build-time と runtime の境界規約は [architecture.md](architecture.md) を参照。 開発でよく触る prefix:
 
-| 変数 | 意味 |
-|---|---|
-| `DB_PORTAL_PREFIX` | container / image / volume / network 名に展開される namespace |
-| `DB_PORTAL_PORTAL_ORIGIN` | アプリの自己 origin。 Keycloak の Valid Redirect URIs と一致させる |
-| `DB_PORTAL_OPENAPI_URL` | ddbj-search-api の OpenAPI document 取得先 (`gen:api-types` 用) |
-| `DB_PORTAL_AUTH_*` | Keycloak client 設定 ([auth.md](auth.md)) |
-| `DB_PORTAL_LLM_*` | LLM BFF 接続設定 ([llm.md](llm.md)) |
-| `VITE_DB_PORTAL_*` | ブラウザ bundle に焼かれる public 値。 secret を入れない |
+- `DB_PORTAL_PREFIX` — container / image / volume / network 名 namespace
+- `DB_PORTAL_PORTAL_ORIGIN` — アプリの自己 origin。 Keycloak の Valid Redirect URIs と一致させる
+- `DB_PORTAL_OPENAPI_URL` — ddbj-search-api の OpenAPI document 取得先 (`gen:api-types` 用)
+- `DB_PORTAL_KEYCLOAK_*` — Keycloak realm / client 設定 ([auth.md](auth.md))
+- `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` — BSI session の sliding TTL ([auth.md](auth.md))
+- `DB_PORTAL_LLM_*` — LLM BFF 接続設定 ([llm.md](llm.md))
+- `VITE_DB_PORTAL_*` — ブラウザ bundle に焼かれる public 値 (secret を入れない)
 
 container 内で実効値を確認する:
 

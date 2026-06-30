@@ -23,14 +23,7 @@ cache は in-memory の `items` 配列と disk JSON ファイルの 2 段構成�
 
 ## cache wrapper の外向き shape
 
-各 entity の cache root schema は次のキーを持つ:
-
-- `schemaVersion` — entity 固有の number literal
-- `lastSyncSha` — source 別の HEAD SHA (`Record<source, string | null>`)
-- `lastFetchedAt` — ISO8601 datetime
-- `items` — entity 固有の item 配列
-
-具体的な Zod 定義は各 entity の `app/schemas/api-bff/{entity}.ts` が SSOT。
+各 entity の cache root は `schemaVersion` (entity 固有) / `lastSyncSha` (source 別 HEAD) / `lastFetchedAt` / `items` を持つ。 wrapper の Zod 定義 (`cacheWrapper`) と outer shape の SSOT は `app/schemas/api-bff/_shared.ts`。 各 entity ファイルは item schema を差し込んで再生成する。
 
 ## facet 軸の vocabulary
 
@@ -45,7 +38,7 @@ facet sidebar の 1 グループは「軸」 1 つに対応する。 軸は次�
 
 ### source 軸
 
-各 entity の `source` 軸は **DDBJ / DBCLS** の 2 値を取る。 facet sidebar の色点表示と AppliedFilters chip は両 entity で同一規約。 enum 値の SSOT は各 entity の `app/schemas/api-bff/{entity}.ts`。
+`source` 軸の enum 値の SSOT は `app/schemas/api-bff/_shared.ts` の `BsiSource` (各 entity ファイルは同値を再 export)。 facet sidebar の色点表示と AppliedFilters chip は両 entity で同一規約。
 
 ## URL state と件数
 

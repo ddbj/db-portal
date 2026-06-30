@@ -4,14 +4,14 @@ ddbj-search-api (検索 backend) との型連携。 BSI は backend の OpenAPI 
 
 ## consume する endpoint
 
-BSI は ddbj-search-api を consume するだけで、 検索 AST / DSL の **grammar 自体は backend 側に閉じ込める** ([search.md](search.md) 参照)。 BSI 側で叩く endpoint は次の 4 つに閉じる。
+BSI は ddbj-search-api を consume するだけで、 検索 AST / DSL の **grammar 自体は backend 側に閉じ込める** ([search.md](search.md) 参照)。 BSI 側で叩く endpoint は次の 4 つに閉じる。 method・request / response 形は `app/lib/api/openapi-types.ts` (生成物) が SSOT。
 
-| Path | Method | 用途 |
-|---|---|---|
-| `/db-portal/cross-search` | GET / POST | cross-DB 検索 (DSL `q` / AST body 両対応) |
-| `/db-portal/search` | GET / POST | per-DB 検索 (DSL `q` / AST body 両対応) |
-| `/db-portal/parse` | GET | DSL → AST |
-| `/db-portal/serialize` | POST | AST → DSL |
+| Path | 用途 |
+|---|---|
+| `/db-portal/cross-search` | cross-DB 検索 (DSL `q` または AST body) |
+| `/db-portal/search` | per-DB 検索 (DSL `q` または AST body) |
+| `/db-portal/parse` | DSL → AST |
+| `/db-portal/serialize` | AST → DSL |
 
 backend 型を BSI 側で扱う流れは次のとおり。
 
@@ -71,7 +71,7 @@ backend 側で alias 名や suffix 規約が変わっても、 影響は `search
 - 同一 operation の query / body / response の整合は型で保証する
 - 通常コードに path string を直書きしない (補完と型推論を破る)
 
-backend 側の検索 endpoint は GET (DSL `q`) と POST (AST body) の双方が同じ形の hits / facets を返し、 POST レスポンスは入力 AST のシリアライズ済み DSL を含む (`?q=` 同期に使える)。 この 1 往復で 「結果 + facet + DSL echo」 が揃うため、 client 側で serialize / parse の追加 round trip を踏まない (往復契約の全体は [search.md](search.md) を参照)。
+検索 endpoint の POST 1 往復で 「結果 + facet + DSL echo」 が揃う設計のため、 client 側で serialize / parse の追加 round trip を踏まない。 往復契約 (GET / POST 等価性と `?q=` 同期の意味) の SSOT は [search.md](search.md) § API との往復。
 
 ```mermaid
 sequenceDiagram
@@ -103,7 +103,7 @@ flowchart TD
   CT{"content-type<br/>problem+json か?"}
   PJ["JSON parse + ProblemDetails.safeParse"]
   Fallback["status / statusText で埋める"]
-  E["APIError<br/>{ status, type, title, detail, instance }"]
+  E["APIError"]
 
   R --> CT
   CT -- "yes / json" --> PJ
@@ -112,14 +112,14 @@ flowchart TD
   Fallback --> E
 ```
 
-TanStack Query の retry 規約もこの `APIError` を前提に組む — query は 5xx だけ最大 2 回、 mutation は retry しない (mutation は手動再試行 UI を別途用意する)。
+TanStack Query の retry 規約もこの `APIError` を前提に組む — query は 5xx だけ retry し、 mutation は retry しない (mutation は手動再試行 UI を別途用意する)。 retry 上限と判定条件の SSOT は `app/lib/query/client.ts`。
 
 ## 環境変数
 
-| 変数 | 意味 |
-|---|---|
-| `DB_PORTAL_OPENAPI_URL` | `openapi-typescript` の生成元 (build / dev 限定) |
-| `DB_PORTAL_SEARCH_API_URL` | server 側 (SSR / BFF) から呼ぶ検索 API base URL |
-| `VITE_DB_PORTAL_SEARCH_API_URL` | client bundle に焼き込む検索 API base URL (build 時に Vite が静的置換、 runtime には変更不可) |
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc に関わる env:
+
+- `DB_PORTAL_OPENAPI_URL` — `openapi-typescript` の生成元 (build / dev 限定)
+- `DB_PORTAL_SEARCH_API_URL` — server 側 (SSR / BFF) から呼ぶ検索 API base URL
+- `VITE_DB_PORTAL_SEARCH_API_URL` — client bundle に焼き込む検索 API base URL (build 時に Vite が静的置換、 runtime には変更不可)
 
 env の SSOT 規約と build-time / runtime の取り扱いは [architecture.md](architecture.md) を参照。

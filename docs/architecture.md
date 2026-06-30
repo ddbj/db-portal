@@ -127,7 +127,7 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 `app/routes.ts` が URL 全構造の SSOT。 URL から言語識別子を排除し、 BFF endpoint と client route の優先順序は `server/index.ts` の mount 順で決まる。
 
 - URL は lang 中立とする。 言語は cookie で決まる ([i18n.md](i18n.md))
-- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の **catch-all** (`/*`) が引き受け、 path は `app/content/` collection 内の path に一致させる
+- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の **catch-all** (`/*`) が引き受け、 path は `page-contents/` 内の path に一致させる
 - `/auth/*` の client route は BFF (`server/auth/routes.ts`) が 302 で抜けるため通常到達しないが、 Keycloak 側 redirect_uri 設定の fallback として保持する
 - `/api/set-lang` は唯一の action 持ち resource route。 lang cookie 更新後 303 redirect で Referer に戻す
 - BFF endpoint (`/api/me` / `/api/news` / `/api/services` / `/api/llm/*` / `/api/auth/*`) は `server/index.ts` で個別 mount し、 RR catch-all より優先する
@@ -137,9 +137,15 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 
 各 route component module の `export const handle` で **静的 metadata** を宣言する。 loader 実行を起こさず `useMatches` から走査でき、 SSR / CSR で同値が取れる。 breadcrumb / document title / i18n 充足度などの cross-cutting metadata を route module から取り出す機構。
 
-- breadcrumb / document title は static segment と dynamic resolver の 2 系統。 resolver dict は `app/shell/` 内で組み立てる
-- en リソースに対応キーが無い page は `handle.i18n.en` を `partial` または `missing` に立てる。 立てない page は en complete と看做す ([i18n.md](i18n.md) § handle.i18n.en)
-- handle key 一覧の SSOT は各 route file の `export const handle`
+宣言可能な key と pipeline の詳細 doc:
+
+| handle key | 役割 | 詳細 |
+|---|---|---|
+| `breadcrumbI18nKey` / `breadcrumbResolver` | breadcrumb segment (static / dynamic) | [content.md](content.md) § Breadcrumb |
+| `titleSegments` / `titleResolver` | document title segment (static / dynamic) | [i18n.md](i18n.md) § ページタイトル |
+| `i18n.en` | en 翻訳の充足度宣言 | [i18n.md](i18n.md) § handle.i18n.en |
+
+resolver dict は `app/shell/` 内で組み立てる。 handle key 集合の最終 SSOT は各 route file の `export const handle`。
 
 ### エラー境界
 
@@ -160,7 +166,6 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 - Vite + React Router framework mode による route 単位 code splitting
 - Tailwind v4 の CSS optimization
 - Noto Sans JP Variable の self-host + `font-display: swap`
-- 画像 lazy loading (`<img loading="lazy">`)
 - TanStack Query の `staleTime` チューニング
 
 計測は Playwright e2e で `performance.getEntriesByType("navigation")` を取り、 staging で複数試行の平均を取る。
@@ -169,7 +174,7 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 
 全 HTTP response に security header を付与する (`server/lib/security.ts`)。 CSP の directive 値の SSOT は `buildCspHeader`。
 
-- `Content-Security-Policy` — `script-src` は `'self'` + per-request nonce のみで `'unsafe-inline'` を持たない。 `style-src` は Tailwind v4 の inline style 出力のため `'unsafe-inline'` を含める。 `frame-ancestors` は `'none'`、 `connect-src` には `ddbj-search-api` origin を実行時に動的付与する。 dev 環境では CSP ヘッダ自体を送出しない
+- `Content-Security-Policy` — script は per-request nonce 経由で許可し inline script を排除する。 style は Tailwind v4 の inline 出力を許容する。 `connect-src` には ddbj-search-api origin を runtime で付与する。 dev 環境では送出しない
 - `Strict-Transport-Security` — production のみ
 - `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy` — 全 response に付与
 
@@ -180,13 +185,12 @@ CSP nonce の流通経路:
 
 ## アクセシビリティ
 
-WCAG AA 相当を **token 段階で担保** し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 自動検査は primitive 単位の `vitest-axe` で行う ([frontend.md](frontend.md) § アクセシビリティ)。
+WCAG AA 相当を **token 段階で担保** し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 機能検査は primitive 単位の unit test で role / aria 属性を assert する ([frontend.md](frontend.md) § アクセシビリティ)。
 
 - 色コントラストは `@theme` token の段階で AA を満たす
 - focus ring は `*:focus-visible` に global 適用し、 primitive 単位で上書きしない
 - 全画面 keyboard 操作可。 modal は focus trap を持つ
 - `<html lang>` を動的出力する ([i18n.md](i18n.md))
-- e2e への axe 統合は採用しない (primitive 単位 unit test で十分とする)
 
 ## sitemap.xml と robots.txt
 

@@ -28,7 +28,7 @@ flowchart TD
 | staging | NIG infra host | image 焼き込みの built SSR、 main 追従 |
 | production | NIG infra host | image 焼き込みの built SSR、 tag 指定 |
 
-具体的な host / path / env 差分は git 管理外 (`.claude/docs/deployment.md` / `.claude/docs/llm-node.md`)。
+具体的な SSH ホスト / deploy パス / 環境別 (dev / staging / production) の env 実値は本リポジトリには含めず、 host 側に置く。
 
 ## Compose と overlay
 
@@ -125,7 +125,7 @@ endpoint の response 形・status コードは `server/index.ts` を参照。
 | `msg` | string | snake_case event name |
 | ...payload | 任意 | event 固有のフィールド (redact 済み) |
 
-イベント名は snake_case。 全 event の列挙は `git grep 'logger\.\(info\|warn\|error\|debug\)' server/` で取得する。 `accessToken` / `refreshToken` / `idToken` / `cookie` / `authorization` 系フィールドは `[REDACTED]` に置換して出す ([auth.md](auth.md))。 session entry を丸ごと log に出すコード経路は作らない。
+イベント名は snake_case。 全 event の列挙は `git grep 'logger\.\(info\|warn\|error\|debug\)' server/` で取得する。 credential 系の field 名 (Authorization / Set-Cookie / token 系 / API key / password / secret 等) は `[REDACTED]` に置換する ([auth.md](auth.md))。 redact 対象 key の最終 SSOT は `server/lib/log.ts` の `REDACT_KEYS`。 session entry を丸ごと log に出すコード経路は作らない。
 
 ## CI
 
@@ -179,13 +179,9 @@ News mirror は HTTPS git protocol で動くため、 GitHub PAT 等の secret �
 
 ## 環境変数
 
-deploy 時に追加で意識する env (機能別 env は各 docs 参照)。
+env 全体の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、 環境別の値は `env.dev` / `env.staging` / `env.production` が SSOT。 機能別の env 説明は各 docs を参照する。 deploy 時に追加で意識する env:
 
-| 変数 | 意味 |
-|---|---|
-| `DB_PORTAL_PREFIX` | container / image / volume / network 名 prefix。 同一 host 並走のため env 毎に別値 |
-| `DB_PORTAL_PORTAL_ORIGIN` | 自分自身の外向き origin。 Keycloak の `Valid Redirect URIs` と一致させる |
-| `DB_PORTAL_TRUST_PROXY` | `X-Forwarded-*` を信頼する Express `trust proxy` 設定。 hop 数 (`1`) のほか `loopback` / `true` / IP リスト等の preset も受け付ける |
-| `DB_PORTAL_LLM_API_KEY` | vLLM への認証 key (rotation 対象) |
-
-全 env の列挙と意味は [architecture.md](architecture.md) の build-time / runtime 境界の章を参照。
+- `DB_PORTAL_PREFIX` — container / image / volume / network 名 prefix。 同一 host 並走のため env 毎に別値
+- `DB_PORTAL_PORTAL_ORIGIN` — 自分自身の外向き origin。 Keycloak の `Valid Redirect URIs` と一致させる
+- `DB_PORTAL_TRUST_PROXY` — `X-Forwarded-*` を信頼する Express `trust proxy` 設定。 reverse proxy 段数に合わせる
+- `DB_PORTAL_LLM_API_KEY` — vLLM への認証 key (rotation 対象)

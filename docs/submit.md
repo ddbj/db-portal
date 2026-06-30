@@ -2,9 +2,14 @@
 
 submit features は **navigator** として、 ユーザーがデータの性質を答えた結果から 「どの service に何を出すか」 を導出する。 入力の 4 軸、 ヒト時の公開区分、 出力の FlowStep カードと service / role / Step 依存、 経路導出の Tier1 カタログ × Tier2 エンジンを扱う。
 
+本書での 「service」 は submit の destination / companion / external 役割を持つ enum (`app/schemas/submit/service.ts`) を指す。 同名語で扱う別概念があるので注意:
+
+- 内部 Service tile / 詳細ページ → `app/content/services/*.content.tsx` ([content.md](content.md) § TS collection)
+- 外部 DDBJ / DBCLS サービス mirror → `server/services/*` ([services.md](services.md))
+
 ## navigator の役割
 
-submit features は navigator として、 ユーザーが手元データの性質を **4 軸** (次章で詳説) に答えた結果から、 「どの service に何を出すか」 を導出する。 各 service の細目 (BioSample 生物種・package、 DRA Library Strategy 等の **Intra-DB Tag**) には踏み込まない — それは登録ウィザード側で埋める。 navigator は **全体俯瞰** と **詳細ページへの導線** に徹する。
+ユーザーが手元データの性質を **4 軸** (次章で詳説) に答えた結果から、 「どの service に何を出すか」 を導出する。 各 service の細目 (BioSample 生物種・package、 DRA Library Strategy 等の **Intra-DB Tag**) には踏み込まない — それは登録ウィザード側で埋める。 navigator は **全体俯瞰** と **詳細ページへの導線** に徹する。
 
 UI は **前段フィルタ + 中段選択 + 下段サマリー** の 3 段。 下段は中段の純粋関数で、 ユーザーは下段を直接編集しない。 サマリーは **FlowStep** カードの並びで、 各カードは `{ service, role, scope }` を持つ — どの service に対して、 どの役割 (§ destination / companion / external の 3 役割) で、 submission のどの部分集合 (groupIds / entryIds) を扱うか、 を一枚で示す。
 
@@ -42,14 +47,15 @@ flow-changing 軸だけを 4 軸に持つ規約により、 答えても経路�
 
 公開区分は `AccessSection` から **種別ごとに** 純粋関数で導出する。 ヒト時のみ active で、 非ヒト OrganismDomain は常に全種別 `open` を返す。 優先度と if/else 順序は `app/features/submit/access.ts` の `deriveAccess` が SSOT、 種別ごと既定値は `vocabulary.ts` の `IDENTIFIABLE_KINDS` が SSOT。
 
-UI 構成 (上部トグル 1 + 上部 radio 1 + サブトグル 3 + 種別ごと ChipAxis):
+UI 構成 (上部トグル 2 + サブトグル 3 + 種別ごと ChipAxis):
 
-| 位置 | control | TS 識別子 | 役割 |
-|---|---|---|---|
-| 上部 | トグル | `restrictedPreference` | 「制限公開を希望する」 — 主観的希望、 全 restricted トリガ |
-| 上部 | radio | `hasIdentifier` | 「個人識別符号を含む」 (Yes/No) — 法令上の該否、 全 restricted トリガ。 default は `No` |
-| サブ | トグル × 3 | (排他 3 つ) | 「倫理指針に沿ったヒト研究」 「一般入手可能な試料の解析」 「微生物自体の分析 (ヒト配列除去済み)」 |
-| 種別ごと | ChipAxis | `identifiability` | per-file の反転 — `Yes` 時は当該種別だけ open、 `No` 時は当該種別だけ restricted |
+| 位置 | control | 役割 |
+|---|---|---|
+| 上部 | トグル × 2 | 「制限公開を希望する」 (主観的希望) と 「個人識別符号を含む」 (法令上の該否)。 いずれも全 restricted トリガ |
+| サブ | トグル × 3 | 「倫理指針に沿ったヒト研究」 「一般入手可能な試料の解析」 「微生物自体の分析 (ヒト配列除去済み)」 |
+| 種別ごと | ChipAxis | per-file の反転 (`identifiability`) — `Yes` 時は当該種別だけ open、 `No` 時は当該種別だけ restricted |
+
+各 control の TS 識別子と既定値は `app/schemas/submit/submission.ts` (`AccessSection`) を参照。
 
 導出規約:
 
@@ -72,22 +78,24 @@ UI 構成 (上部トグル 1 + 上部 radio 1 + サブトグル 3 + 種別ごと
 
 ### DDBJ サービス一覧
 
-| slug | role | 何を登録するか | accession 例 |
-|---|---|---|---|
-| `bioproject` | companion | 研究プロジェクトのメタデータ。 全 destination の前提として 1 件添付 | `PRJDB######` |
-| `umbrella-bioproject` | companion | ハプロタイプ等の複数 BioProject を束ねる Umbrella | `PRJDB######` |
-| `biosample` | companion | 生物試料のメタデータ。 全 destination の前提として 1 件添付 | `SAMD######` |
-| `dra` | destination | DDBJ Sequence Read Archive (一次シーケンスリード) | `DRR######` / `DRX######` |
-| `jga` | destination | 個人識別可能なヒトデータ (制限公開専用) | `JGAS######` / `JGAD######` |
-| `ddbj` | destination | MSS (WGS / GNM / MAG / TSA / TLS / TPA / アノテーション) | `AP######` / `BAAA01000000` |
-| `nsss` | destination | Web 登録系 (少数・短い・非完成の配列) | `LC######` |
-| `gea` | destination | Genomic Expression Archive (発現データ) | `E-GEAD-######` |
-| `metabobank` | destination | メタボロームデータ | `MTBKS####` |
-| `humandbs` | external | NBDC ヒトデータベース (JGA への Policy 申請窓口、 external gate) | (発番なし) |
-| `jpost` | external | プロテオーム質量分析 (DDBJ 外部の登録窓口) | `JPST######` |
-| `eva` | external | 非ヒト variant (EBI 運用、 DDBJ 外部の登録窓口) | `PRJEB######` |
+`Service` enum の全要素と role 割当・accession 形式の最終 SSOT は `app/schemas/submit/service.ts`。 本表は role と概要だけを保持する。
 
-サマリーカードのバッジ色は role と notes の warning / error 有無から `serviceBadgeColor` 純関数で決め、 色値は `app/styles/tailwind.css` の `@theme` トークンが SSOT。 「詳細を見る」 link は内部詳細ページ (`/databases/<slug>`) を持つ service にだけ出す (判定は `service.ts` の `internalDetailHref` / `hasInternalDetailPage` が SSOT)。
+| slug | role | 何を登録するか |
+|---|---|---|
+| `bioproject` | companion | 研究プロジェクトのメタデータ。 全 destination の前提として 1 件添付 |
+| `umbrella-bioproject` | companion | ハプロタイプ等の複数 BioProject を束ねる Umbrella |
+| `biosample` | companion | 生物試料のメタデータ。 全 destination の前提として 1 件添付 |
+| `dra` | destination | DDBJ Sequence Read Archive (一次シーケンスリード) |
+| `jga` | destination | 個人識別可能なヒトデータ (制限公開専用) |
+| `ddbj` | destination | MSS (WGS / GNM / MAG / TSA / TLS / TPA / アノテーション) |
+| `nsss` | destination | Web 登録系 (少数・短い・非完成の配列) |
+| `gea` | destination | Genomic Expression Archive (発現データ) |
+| `metabobank` | destination | メタボロームデータ |
+| `humandbs` | external | NBDC ヒトデータベース (JGA への Policy 申請窓口、 external gate) |
+| `jpost` | external | プロテオーム質量分析 (DDBJ 外部の登録窓口) |
+| `eva` | external | 非ヒト variant (EBI 運用、 DDBJ 外部の登録窓口) |
+
+サマリーカードのバッジ色は role と notes の warning / error 有無から `serviceBadgeColor` 純関数で決め、 色値は `app/styles/tailwind.css` の `@theme` トークンが SSOT。 「詳細を見る」 link は内部詳細ページ (`/<slug>` の catch-all route) を持つ service にだけ出す (判定は `service.ts` の `internalDetailHref` / `hasInternalDetailPage` が SSOT)。
 
 ### Step 依存とカード順序
 

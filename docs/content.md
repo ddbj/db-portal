@@ -117,17 +117,16 @@ flowchart LR
 
 ### ノード種別
 
-content tree は `app/lib/content/content-tree.ts` の `getNavTree()` から取る。 初回呼び出し時に `listAllPages()` をセクション別にグループ化して 1 度構築し、 以降同一プロセス内ではキャッシュ済の結果を返す。 `_dev/` セクションは除外する。
+content tree は `app/lib/content/content-tree.ts` の `getNavTree()` から取る。 初回呼び出し時に `listAllPages()` の URL segment を辿って 1 度構築し、 以降同一プロセス内では cache 済の結果を返す。 `_dev/` セクションは除外する。
 
-| 種別 | URL を持つ | 子ノード |
-|---|---|---|
-| `category` | 持たない (UI 非描画) | dir / doc を束ねる |
-| `dir` | 持つ (`index.md` がページ実体) | doc を持てる |
-| `doc` | 持つ | 持たない |
+各 node は URL を持つかどうか (`hasPage`) でリンクの活性が分かれる:
+
+- 末端 doc と `index.md` を持つ dir は URL を持つ (click で navigate)
+- intermediate dir (`index.md` を持たない) は URL を持たず、 children を束ねる label だけになる
 
 ### 設計判断
 
-- `category` 行は **描画しない**。 子をトップレベルに並べ、 グループ間は余白だけで区切る (情報密度優先)
+- intermediate dir (URL を持たない node) は label のみ表示し、 click で navigate しない。 子はその下に並べ、 グループ間は余白だけで区切る (情報密度優先)
 - フォルダ / ドキュメント種別のアイコンを使わない。 種別はキャレットの有無で識別する
 - ネスト表現は左の縦ガイドライン (`border-l border-border-soft`) で行う
 - アクティブページ / アクティブ見出しは brand 系トークン (`border-l-2 border-brand` 等) でハイライト
@@ -151,13 +150,6 @@ flowchart LR
   Shell --> Render[nav 描画]
 ```
 
-handle の 2 系統:
-
-| handle | ラベル解決 | 用途 |
-|---|---|---|
-| `breadcrumbI18nKey: "breadcrumb.databases"` | `t(key)` | 中間 segment (static) |
-| `breadcrumbResolver: "database-content"` | resolver dict から関数を引いて `{ label, href }` | 末尾 segment (dynamic) |
-
 不変量:
 
 - `useMatches` を順に走査し、 handle に `breadcrumbI18nKey` か `breadcrumbResolver` を持つ match だけを処理する
@@ -168,9 +160,11 @@ handle の 2 系統:
 
 resolver は features / lib のヘルパに依存しない。 shell 側で `app/lib/content/loader` の database / service lookup を直接読んで組み立てる。
 
-## Sitemap
+## /docs 目次 (sitemap.json)
 
-`/docs` 上の 「目次 (サイトマップ)」 ブロックは **`page-contents/sitemap.json` を SSOT** とする手書き構造。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。
+crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml と robots.txt) とは別物。 ここでは `/docs` のハブに描画する手書きの 「目次」 だけを扱う。
+
+`/docs` 上の 「目次」 ブロックは **`page-contents/sitemap.json` を SSOT** とする手書き構造。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。
 
 - セクションは `sections[]` の順序どおりに描画する (sort なし)
 - 各 item は `kind: "internal" | "external"` の discriminated union
@@ -203,7 +197,7 @@ resolver は features / lib のヘルパに依存しない。 shell 側で `app/
 
 ## lastUpdated
 
-各 `.md` の最終更新日時は **build 時に `git log -1 --format=%cI -- <file>` で取得** し、 `{ urlPath: ISO8601 }` の JSON を生成して `markdown-loader.ts` から合成する。 `PageContent.lastUpdated?: string` として page lookup の戻り値に乗る。 著者は frontmatter に日付を書かない — git commit が日付の SSOT。
+各 `.md` の最終更新日時は **build 時に `git log -1 --format=%cI` で取得** し、 `index.md` (ja) と `index.en.md` (en) それぞれを別行で記録する。 `markdown-loader.ts` が合成し、 `PageContent.lastUpdated?: { ja?, en? }` として page lookup の戻り値に乗る。 著者は frontmatter に日付を書かない — git commit が日付の SSOT。
 
 - 生成スクリプト: `scripts/gen-last-updated.ts`
 - 出力: `app/lib/content/gen/last-updated.json` (gitignore 対象、 build 成果物)

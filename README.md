@@ -11,8 +11,6 @@ BioData Science Initiative (BSI) のデータ登録とデータ検索を、ひ�
 - DDBJ Account 連携 — Keycloak によるログイン (BFF + HttpOnly cookie)
 - 日本語 / 英語の i18n — 言語切替に対応
 
-各ページのコンテンツは `*.content.tsx` collection (TSX fragment + Zod 検証) として管理する。
-
 ## クイックスタート (dev)
 
 開発はすべて Docker Compose 内で実行する。ホストに Node を入れる必要はない。
@@ -34,7 +32,7 @@ docker compose exec app npm run lint
 docker compose exec app npm test
 docker compose exec app npm run build
 docker compose exec app npm run validate:content
-docker compose exec app npm run check:last-updated
+docker compose exec app npm run gen:last-updated
 ```
 
 詳細は `docs/development.md`。
@@ -43,7 +41,7 @@ docker compose exec app npm run check:last-updated
 
 **前提**
 
-- [architecture.md](docs/architecture.md) — 全体構造 / zones / URL とルーティング / SSR / BFF / 非機能要件 (CSP / sitemap / 404)
+- [architecture.md](docs/architecture.md) — 全体構造 / zone 分割 / SSR-CSR 境界 / routing / 性能 / セキュリティ / sitemap.xml
 - [development.md](docs/development.md) — dev 環境セットアップ / env 切替 / よく使うコマンド
 
 **横断レイヤ**
@@ -52,6 +50,7 @@ docker compose exec app npm run check:last-updated
 - [content.md](docs/content.md) — Markdown ページ / Service collection / Sidebar / breadcrumb
 - [i18n.md](docs/i18n.md) — lang cookie / 翻訳なし fallback / hreflang
 - [api-types.md](docs/api-types.md) — ddbj-search-api 連携 / 型生成運用
+- [entity-list.md](docs/entity-list.md) — news / services mirror の共通 cache / facet / URL state / source 軸
 
 **機能**
 

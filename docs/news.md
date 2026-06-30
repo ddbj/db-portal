@@ -75,14 +75,12 @@ front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合�
 
 ### NotificationBar
 
-`featured=true` の item を新しい順に stack する。 個別 close 可能。
+`featured=true` の item を **全 page 共通 layout の上部**に新しい順に stack する (`app/shell/notification-bar.tsx`)。 個別 close 可能。 services 側の `featuredTop` (top page の services セクション限定) とは別軸。
 
-- featured の SSOT は ddbj source の `_data/global.yml` の `top_news.ja` / `top_news.en` (2 言語別の path 列)
-- 判定: ja path が内部 slug と一致、 または en path から `-e` suffix を剥がしたものが内部 slug と一致したとき featured
+- featured の入力は ddbj source の `_data/global.yml` の `top_news.{ja,en}` (2 言語別の path 列)
 - dbcls source は常に `featured=false`
 - featured 軸は `NewsCategory` (tag/category 体系) と直交する。 featured なら category を問わず NotificationBar に出し、 featured でなければ category を問わず出さない
-
-featured の SSOT 抽出は `server/news/featured.ts`。
+- 判定 (path と内部 slug の照合) の SSOT は `server/news/featured.ts` の `isFeaturedSlug`
 
 ### NewsAside
 
@@ -106,16 +104,10 @@ query 仕様 / response schema / lang fallback の規約は `server/api/news.ts`
 
 ### 環境変数
 
-`DB_PORTAL_NEWS_*` で統一する。
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc は `DB_PORTAL_NEWS_*` で統一する:
 
-| 変数 | 意味 |
-|---|---|
-| `DB_PORTAL_NEWS_DDBJ_REPO_URL` | ddbj source の clone 元 URL |
-| `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` | ddbj source の branch |
-| `DB_PORTAL_NEWS_DBCLS_REPO_URL` | dbcls source の clone 元 URL |
-| `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH` | dbcls source の branch |
-| `DB_PORTAL_NEWS_REPOS_DIR` | local clone の配置先 |
-| `DB_PORTAL_NEWS_CACHE_DIR` | 永続 cache (`news.json`) の配置先 |
-| `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` | source 別 poller の周期 (秒) |
+- `DB_PORTAL_NEWS_{DDBJ,DBCLS}_REPO_URL` / `_MIRROR_{DDBJ,DBCLS}_BRANCH` — 各 source の clone 元 URL と branch
+- `DB_PORTAL_NEWS_REPOS_DIR` / `_CACHE_DIR` — local clone と永続 cache の配置先
+- `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` — source 別 poller の周期
 
-`git pull` は GitHub の HTTPS git protocol で動くため、 認証なしで運用する。 services は `DB_PORTAL_NEWS_*` の clone を read-only で再利用するため、 services 用の clone / poller を別に持たない ([services.md](services.md))。
+`git pull` は GitHub の HTTPS git protocol で動くため、 認証なしで運用する。 services が同じ clone を借りる規約は [services.md](services.md) を参照。

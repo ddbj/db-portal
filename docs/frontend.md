@@ -4,20 +4,14 @@
 
 ## zone 分割
 
-`app/` 配下は責務で **3 つの zone** に分かれ、 import 方向と native タグ使用が ESLint (`eslint.config.ts`) で物理強制される。 上位 zone は下位 zone に依存できるが、 逆は禁じる。 zone 全体の依存方向は [architecture.md](architecture.md) の Zone 分割章を参照。
+zone 全体の境界と依存方向は [architecture.md](architecture.md) § Zone 分割 が SSOT。 本書では `app/ui/` (primitive zone) と `app/{features,routes,content}/` (上位 zone) に課す **追加制約** だけを扱う。
 
-| zone | 主な内容 | 制約 |
-|---|---|---|
-| `app/ui/` | primitive (Button, Input, Modal, ...) と util (`cn` helper, icon 集約) | 他の zone を import しない。 純粋に primitive と util だけで閉じる |
-| `app/shell/` | アプリ全体の chrome 層 (`Header` 等の wrapper) | `app/ui/` だけに依存する |
-| `app/{features,routes,content}/` | route / feature / content 層 | primitive 経由でしか native タグ (`button` / `a` / `input` / `select` / `textarea`) を使えない |
+ESLint (`eslint.config.ts`) で物理強制する規約:
 
-ESLint で物理強制する規約:
-
-- `app/ui/` 内部は primitive 同士・util だけで閉じる
-- `app/{features,routes,content}/` で生 `button` / `a` / `input` / `select` / `textarea` を禁止し、 primitive 経由を強制する
-- `app/{ui,shell}/` は上記禁止から除外
-- `app/{features,routes,content}/` で生 hex literal と arbitrary Tailwind value (`bg-[#...]` / `text-[14px]` / `p-[3px]`) を禁止する
+- `app/ui/` 内部は primitive と util だけで閉じる (他 zone を import しない)
+- `app/{features,routes,content}/` は操作可能 native タグ (`<button>` / `<a>` / `<input>` / `<select>` / `<textarea>`) を直接書けず、 primitive 経由で使う
+- `app/{features,routes,content}/` は生 hex literal と arbitrary Tailwind value (`bg-[#...]` / `text-[14px]` / `p-[3px]`) を禁ずる
+- `app/{ui,shell}/` は arbitrary value 禁止から除外
 
 ## 設計トークン
 
@@ -62,7 +56,7 @@ primitive は責務でカテゴリ分けする (役割が重複する primitive 
 | Forms | native `<button>` / `<input>` の thin wrapper、 native `<select>` 代替の `Select` / `Combobox` | § Forms |
 | Tags & Chips | Tag は非インタラクティブ label、 Chip はインタラクティブ pill | — |
 | Facets | sidebar facet UI | — |
-| Callout | inline notice、 `role="status" \| "alert"` を consumer が制御 | — |
+| Callout | inline notice (role を consumer が制御) | — |
 | Modal | dialog 一族 (`Modal` root + Header / Body / Footer + Preview) | § Modal |
 | Pagination / LinkCard | ページ送り / カード型 link | — |
 | TextLink | 内部 link (RR `<Link>`) と外部 link を 1 primitive に統一 | — |
@@ -117,12 +111,12 @@ main column と sidebar は heading の **左バーの有無** で視覚的に�
 
 primitive 個別の aria 契約 (Forms の `aria-invalid` / Modal の `aria-modal` など) は § 個別 primitive の規約 で扱う。 ここでは **横断の土台規範** に絞る。
 
-- 操作可能要素は native `<button>` / `<a>` / `<input>` / `<select>` で実装する。 div / span に `role` を後付けしない
+- 操作可能要素は § zone 分割 で列挙した native タグで実装する。 div / span に `role` を後付けしない
 - focus 表現は global `:focus-visible` の yellow ring に統一する。 primitive 個別の focus class は書かない
 - icon-only button は `ariaLabel` 必須 (型レベルで強制)
 - `aria-disabled` を `disabled` HTML 属性と lockstep
 - table は `<caption className="sr-only">` + `<th scope="col" / scope="row">`
-- `app/ui/*` と `app/shell/*` は `vitest-axe` で axe violation 0 件を保証 (CI で gate)
+- 自動検査は primitive 単位 unit test で role / aria 属性を assert する (axe 等の専用ライブラリは使わない)
 
 色だけで意味を伝えない。 status の意味は text label で担保し、 tone (色) は補強として用いる。 error / warning / 完了など状態を強調する面では icon・shape を併用して salience を上げる。
 
