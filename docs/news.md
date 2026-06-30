@@ -46,12 +46,7 @@ sequenceDiagram
 
 ## cache
 
-cache は in-memory の `items` 配列と disk の JSON ファイルの **二段構成** で、 両者を atomic に同期する。 起動時に disk cache を即 load して応答可能にしてから、 initial sync を背後で開始する。 同じ二段 + atomic 規約を [services](services.md) の cache も継承する。
-
-- disk file 不在 / parse 失敗 / `schemaVersion` 不一致のいずれも空 cache から start する。 cold start を待たせない
-- `schemaVersion` は cache 形が breaking change したときに bump する。 旧 cache を後方互換でロードしない
-- atomic 差し替えの単位は source。 source A の再構築中に source B の items を喪失してはならない
-- 永続層は `<DB_PORTAL_NEWS_CACHE_DIR>/news.json` に temp file + rename で書き、 中途半端な JSON を read してしまう状態を作らない
+cache は entity list 機構の 2 段 cache 規約 ([entity-list.md § 2 段 cache](entity-list.md)) に従う。 永続層の path は `<DB_PORTAL_NEWS_CACHE_DIR>/news.json`、 atomic 差し替えの単位は ddbj / dbcls の 2 source。
 
 `NewsCache` / `NewsItem` の schema と `schemaVersion` の値は `app/schemas/api-bff/news.ts`、 永続化と atomic 差し替えは `server/news/cache.ts` が SSOT。
 
@@ -97,14 +92,9 @@ featured の SSOT 抽出は `server/news/featured.ts`。
 
 `/news` route は SSR loader を持たず、 **URL から facet state を組み立てて** client が `/api/news` を 1 回 fetch し、 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。 page / sort も同じ URL state に乗る。
 
-facet sidebar は 4 グループ — **種別** (NewsCategory) / **ソース** (ddbj / dbcls) / **年** (publishedAt) / **サービス** (db フィールド) — で構成する。 件数の集計規約:
+facet sidebar は 4 グループ — **種別** (NewsCategory, enum) / **ソース** (ddbj / dbcls, enum) / **年** (publishedAt, number) / **サービス** (db フィールド, string) — で構成する。 件数の集計、 グループ間の AND / OR、 URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う。
 
-- 同 facet グループ内の複数選択は OR、 異なる facet グループ間は AND で結ぶ
-- グループ G の option v の件数は、 **G を除く全 facet を適用した結果集合のうち v を持つ件数** とする (self-exclusion)
-- G 内での選択は G 自身の件数に影響しない。 他グループの絞り込みは G の件数に連動する
-- pagination と facet を同時に変えた場合、 URL は 1 回で更新する (履歴を分割しない)
-
-URL state の parse / serialize は `app/features/news/facet-url-state.ts` が SSOT。 複数値は `,` separated、 順序は alphabet sort で安定化する。
+URL state の parse / serialize は `app/features/news/facet-url-state.ts` が SSOT。
 
 ## /api/news と環境変数
 

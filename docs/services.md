@@ -27,7 +27,7 @@ clone / pull は News に委譲し、 services 側は HEAD 変化を契機に当
 
 ### cache
 
-二段 cache (in-memory + disk) / disk cache 即 load / `schemaVersion` 不一致時の空 cache fallback / source 単位 atomic 差し替え といった汎用 mirror cache 規約は [news.md](news.md) を SSOT として継承する。 services 固有の差分は 3 点に絞る。
+2 段 cache (in-memory + disk) / disk cache 即 load / `schemaVersion` 不一致時の空 cache fallback / source 単位 atomic 差し替え といった汎用 mirror cache 規約は [entity-list.md § 2 段 cache](entity-list.md) に従う。 services 固有の差分は 3 点に絞る。
 
 - 再構築の起点は独自 poller ではなく **News mirror の sha 変化通知**。 受領 sha と `lastSyncSha[source]` が一致するときは no-op
 - atomic 差し替えの単位は source (DDBJ / DBCLS) の 2 系統。 片方の再構築中に他方の items は触らない
@@ -71,14 +71,12 @@ top page の services セクションは `featuredTop === true` の item だけ�
 
 ### /services 一覧と Facet
 
-`/services` 画面の facet sidebar は `category` (`categories`) と `source` の 2 グループで構成する。 値域は cache から実出現分のみ拾い、 サイト全体の enum を全部出して 0 件を並べることはしない。
+`/services` 画面の facet sidebar は `category` (`categories`, enum) と `source` (ddbj / dbcls, enum) の 2 グループで構成する。 値域は cache から実出現分のみ拾い、 サイト全体の enum を全部出して 0 件を並べることはしない。
 
-- 複数選択は OR、 異なる facet 同士は AND
-- facet count は self-exclusion 集計 ([news.md](news.md) と同規約)
-- source 色点は News と同じ規約 ([news.md](news.md))
+- グループ間 AND / グループ内 OR / facet count の self-exclusion / URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う
+- source 色点と AppliedFilters chip の表示は [entity-list.md § source 軸](entity-list.md) に従う
 - 一覧の並びは name のアルファベット順 (Toolbar で昇順 / 降順切替)
 - 日付軸を持たないため year facet / date sort は出さない
-- URL params との同期は `,` separated、 順序は alphabet sort で安定化する
 
 ### `GET /api/services`
 
