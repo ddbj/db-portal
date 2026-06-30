@@ -124,4 +124,5 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 - [JGA XML schema (xsd)](https://github.com/ddbj/pub/tree/master/docs/jga)
 - [DDBJ Search での JGA Dataset 検索例](https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000948)
 - [NBDC ヒトデータベース](/humandbs) (データ提供・利用申請の審査、登録データの概要・データセットページの公開)
+- 
 
