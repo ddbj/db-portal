@@ -5,7 +5,7 @@ import { expect, test } from "./helpers"
 // FmtRadio は label と sub を 1 つの <label> に入れるため、accessible name は
 // label + sub の連結になる。識別は部分一致 (regex) で行う。
 // "ヒト" は "ヒト以外の真核生物" の前方一致になるため sub 文言で曖昧さを排除する。
-const OrganismDomain_HUMAN = /ヒト個人由来のデータ/
+const OrganismDomain_HUMAN = /ヒト個体・ヒト由来試料/
 const OrganismDomain_EUKARYOTE = /ヒト以外の真核生物/
 
 const selectOrganismDomain = async (page: Page, name: RegExp): Promise<void> => {

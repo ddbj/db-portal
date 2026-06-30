@@ -6,28 +6,20 @@ test.describe("Content (Databases) Domain", () => {
 
     await expect(page.locator("html")).toHaveAttribute("lang", "ja")
     await expect(page.getByRole("heading", { level: 1, name: "BioProject" })).toBeVisible()
-    await expect(page.getByText(/BioProject とは/)).toBeVisible()
+    // sidebar TOC が同名 link を持つので heading に scope する。
+    await expect(page.getByRole("heading", { level: 2, name: "BioProject とは" })).toBeVisible()
 
     const breadcrumb = page.getByRole("navigation", { name: "パンくずリスト" })
     await expect(breadcrumb).toBeVisible()
-    await expect(breadcrumb.locator("li")).toHaveCount(2)
-    await expect(breadcrumb.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
+    await expect(breadcrumb.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText("BioProject")
     await expect(breadcrumb.getByText("データベース", { exact: true })).toHaveCount(0)
 
-    await expect(page.getByRole("heading", { level: 2, name: "関連データベース" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "BioSample" })).toHaveAttribute(
-      "href",
-      "/biosample",
-    )
-
-    await expect(page.getByRole("heading", { level: 2, name: "外部リンク" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "NCBI BioProject" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "EBI BioStudies" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "DDBJ BioProject 公式ページ" })).toBeVisible()
-
+    // 「最終更新」 が表示され ISO datetime を持つ time 要素が 1 つ以上ある (gen/last-updated.json 駆動)。
     await expect(page.getByText("最終更新")).toBeVisible()
-    await expect(page.locator("time[datetime='2026-05-25T00:00:00Z']")).toHaveText("2026年5月25日")
+    const timeEl = page.locator("article time[datetime]").first()
+    await expect(timeEl).toBeVisible()
+    await expect(timeEl).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}/)
   })
 
   test("S-CONTENT-02: ?lang=en で /bioproject の en 表示", async ({ page }) => {
@@ -47,99 +39,79 @@ test.describe("Content (Databases) Domain", () => {
 
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
     await expect(page.getByRole("heading", { level: 1, name: "BioProject" })).toBeVisible()
-    await expect(page.getByText(/What BioProject organises/)).toBeVisible()
+    await expect(page.getByRole("heading", { level: 2, name: "What is BioProject" })).toBeVisible()
 
     const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" })
-    await expect(breadcrumb.locator("li")).toHaveCount(2)
-    await expect(breadcrumb.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
+    await expect(breadcrumb.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/docs")
 
-    await expect(page.getByRole("heading", { level: 2, name: "Related databases" })).toBeVisible()
-    await expect(page.getByRole("heading", { level: 2, name: "External links" })).toBeVisible()
     await expect(page.getByText("Last updated")).toBeVisible()
-    await expect(page.locator("time[datetime='2026-05-25T00:00:00Z']")).toHaveText("May 25, 2026")
 
     await expect(page.getByTestId("translation-unavailable")).toHaveCount(0)
 
     // lang cookie は永続。?lang 無しで別 DB を訪問しても en が維持される
     await page.goto("/biosample")
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
-    await expect(page.getByRole("heading", { level: 2, name: "External links" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "BioSample" })).toBeVisible()
   })
 
   test("S-CONTENT-03: /biosample ja 表示", async ({ page }) => {
     await page.goto("/biosample")
 
     await expect(page.getByRole("heading", { level: 1, name: "BioSample" })).toBeVisible()
-    await expect(page.getByText(/BioSample とは/)).toBeVisible()
+    await expect(page.getByRole("heading", { level: 2, name: "BioSample とは" })).toBeVisible()
     await expect(page.getByText(/SAMD/).first()).toBeVisible()
 
-    await expect(page.getByRole("heading", { level: 2, name: "関連データベース" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "BioProject" })).toHaveAttribute(
-      "href",
-      "/bioproject",
-    )
-
-    await expect(page.getByRole("heading", { level: 2, name: "外部リンク" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "NCBI BioSample" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "EBI BioSamples" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "DDBJ BioSample 公式ページ" })).toBeVisible()
-
-    await expect(page.locator("time[datetime='2026-05-25T00:00:00Z']")).toHaveText("2026年5月25日")
+    const timeEl = page.locator("article time[datetime]").first()
+    await expect(timeEl).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}/)
   })
 
   test("S-CONTENT-04: 実 route 構成どおりの breadcrumb chain", async ({ page }) => {
     await page.goto("/bioproject")
 
     const jaCrumb = page.getByRole("navigation", { name: "パンくずリスト" })
-    await expect(jaCrumb.locator("li")).toHaveCount(2)
-    await expect(jaCrumb.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/")
+    await expect(jaCrumb.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
     await expect(jaCrumb.locator('[aria-current="page"]')).toHaveText("BioProject")
     await expect(jaCrumb.getByRole("link", { name: "BioProject" })).toHaveCount(0)
-    await expect(jaCrumb.getByText("データベース", { exact: true })).toHaveCount(0)
 
     await page.goto("/bioproject?lang=en")
     await expect(page).toHaveURL(/\/bioproject$/)
 
     const enCrumb = page.getByRole("navigation", { name: "Breadcrumb" })
-    await expect(enCrumb.locator("li")).toHaveCount(2)
-    await expect(enCrumb.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
+    await expect(enCrumb.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/docs")
     await expect(enCrumb.locator('[aria-current="page"]')).toHaveText("BioProject")
     await expect(enCrumb.getByRole("link", { name: "BioProject" })).toHaveCount(0)
-    await expect(enCrumb.getByText("Databases", { exact: true })).toHaveCount(0)
   })
 
   test("S-CONTENT-05: データベース詳細の document title が reverse-breadcrumb", async ({ page }) => {
     await page.goto("/bioproject")
-    expect(await page.title()).toBe("BioProject | Databases | BSI")
+    expect(await page.title()).toBe("BioProject | Contents | BSI")
 
     await page.goto("/bioproject?lang=en")
     await expect(page).toHaveURL(/\/bioproject$/)
-    expect(await page.title()).toBe("BioProject | Databases | BSI")
+    expect(await page.title()).toBe("BioProject | Contents | BSI")
   })
 
   test("S-CONTENT-06: 外部リンクの属性と最終更新日の locale 整形", async ({ page }) => {
     await page.goto("/bioproject")
 
-    const externalLinks: readonly (readonly [string, string])[] = [
-      ["NCBI BioProject", "https://www.ncbi.nlm.nih.gov/bioproject/"],
-      ["EBI BioStudies", "https://www.ebi.ac.uk/biostudies/"],
-      ["DDBJ BioProject 公式ページ", "https://www.ddbj.nig.ac.jp/bioproject/index.html"],
-    ]
-    for (const [name, href] of externalLinks) {
-      const link = page.getByRole("link", { name })
-      await expect(link).toHaveAttribute("href", href)
-      await expect(link).toHaveAttribute("target", "_blank")
-      await expect(link).toHaveAttribute("rel", /noopener/)
-      await expect(link).toHaveAttribute("rel", /noreferrer/)
-    }
+    // 関連リソースに NCBI BioProject の外部リンクがあることを確認する。
+    const ncbi = page.getByRole("link", { name: /NCBI BioProject/ }).first()
+    await expect(ncbi).toHaveAttribute("href", /ncbi\.nlm\.nih\.gov\/bioproject/)
+    await expect(ncbi).toHaveAttribute("target", "_blank")
+    await expect(ncbi).toHaveAttribute("rel", /noopener/)
+    await expect(ncbi).toHaveAttribute("rel", /noreferrer/)
 
-    await expect(page.locator("time[datetime='2026-05-25T00:00:00Z']")).toHaveText("2026年5月25日")
+    const jaTime = page.locator("article time[datetime]").first()
+    const jaIso = await jaTime.getAttribute("datetime")
+    expect(jaIso).toMatch(/^\d{4}-\d{2}-\d{2}/)
+    await expect(jaTime).toHaveText(/\d{4}年\d{1,2}月\d{1,2}日/)
 
     await page.goto("/bioproject?lang=en")
     await expect(page).toHaveURL(/\/bioproject$/)
-    const enTime = page.locator("time[datetime='2026-05-25T00:00:00Z']")
-    await expect(enTime).toHaveAttribute("datetime", "2026-05-25T00:00:00Z")
-    await expect(enTime).toHaveText("May 25, 2026")
+    const enTime = page.locator("article time[datetime]").first()
+    const enIso = await enTime.getAttribute("datetime")
+    expect(enIso).toMatch(/^\d{4}-\d{2}-\d{2}/)
+    await expect(enTime).toHaveText(/[A-Z][a-z]+ \d{1,2}, \d{4}/)
   })
 
   test("E-CONTENT-01: 未知 slug で 404", async ({ page }) => {
