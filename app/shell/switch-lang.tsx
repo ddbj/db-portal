@@ -27,8 +27,8 @@ export const SwitchLang = () => {
       action="/api/set-lang"
       className="inline-flex"
     >
-      <input type="hidden" name="lang" value={target} />
-      <input type="hidden" name="redirectTo" value={pathname + search} />
+      <input type="hidden" name="lang" value={target} suppressHydrationWarning />
+      <input type="hidden" name="redirectTo" value={pathname + search} suppressHydrationWarning />
       <button
         type="submit"
         aria-label={t("a11y.languageSwitcher")}
