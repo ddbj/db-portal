@@ -9,7 +9,7 @@ title: JGA
 
 JGAは、European Bioinformatics Institute（EBI）が運用するEuropean Genome-phenome Archive（EGA）や、National Center for Biotechnology Information（NCBI）が運用するdatabase of Genotypes and Phenotypes（dbGaP）と同様の制限公開データを管理・共有するためのアーカイブです。各国・地域の法令等に基づいたデータ提供・利用審査を行う必要があるため、JGA、EGA、dbGaPの三極間でデータそのものを相互に交換する仕組みは設けていません([公式 FAQ](https://www.ddbj.nig.ac.jp/faq/en/jga-dbgap-ega-e.html))。併せて、いずれのアーカイブでも査読者用のアクセストークンを発行することはできません。
 
-メタデータのうち、Study、Dataset、Policyは、DDBJ Searchを通じて誰でも閲覧できます。一方で、シークエンスファイル等の生データや、その他のメタデータについては、データ利用申請が承認された利用者のみがアクセスできます。
+メタデータのうち、Study、Dataset、Policyは、DDBJ Searchを通じて誰でも閲覧できます。一方で、シークエンスファイル等の生リードデータや、その他のメタデータについては、データ利用申請が承認された利用者のみがアクセスできます。
 
 > [!NOTE]
 > [登録ナビゲーション](/submit) で「ヒト」＋「制限公開を希望する」/「個人識別符号を含む」/「法令・倫理指針に沿った研究」を選ぶと、NBDC ヒトデータベースへのデータ提供申請から JGA への登録までの経路が案内されます。
@@ -43,6 +43,7 @@ JGAは、European Bioinformatics Institute（EBI）が運用するEuropean Genom
   - 提供を予定しているデータを産出した際の研究に関する情報
     - 研究計画書（倫理審査申請書）
     - インフォームドコンセントの際の説明文書および同意文書のフォーム（書式）
+      - 同意内容に沿ってポリシーの検討
     - 所属機関等の倫理審査委員会の審査・承認を受けた上で、所属機関の長が研究実施について許可したことが分かる書面（承認通知書など）の写し
 - NBDC ヒトデータベース申請システムにログインするための準備
   - DDBJ アカウントを作成し、SSH 公開鍵を登録する
@@ -82,16 +83,16 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 
 | オブジェクト | 役割 |
 |------------|------|
-| Submission | 登録トランザクションの単位。公開タイミングもこの単位 |
-| Study | 研究全体のメタデータ。論文での citation はこの単位を使う |
+| Submission | 登録トランザクションの単位。この単位で公開される |
+| Study | 研究全体の概要。論文への引用はこの単位を使う |
 | Sample | 匿名化された個別サンプルの記述 (通常 1 サンプル = 1 個人) |
-| Experiment | NGS / アレイ実験のライブラリ調製・プラットフォーム情報 |
-| Data | NGS の生リード等のプライマリデータファイル |
-| Analysis | VCF / マイクロアレイ / 派生データなどの解析結果ファイル |
+| Experiment | 実験手法（NGS / アレイ実験のライブラリ調製・プラットフォーム）などを記述 |
+| Data | NGS の生リードデータ等のプライマリデータファイル |
+| Analysis | VCF / 派生データ / 統計情報などの解析データファイル |
 | Dataset | 利用申請の対象となる配布単位。1 つの Policy に紐付く |
-| Policy | データ利用ポリシー (DAA: Data Access Agreement) の記述 |
+| Policy | データの利用条件を定めたPolicyの記述 |
 
-アクセス制御は **Dataset × Policy** の組で行われ、利用者は Policy 単位で DBCLS に利用申請します。1 つの Dataset は 1 つの Policy に紐付きます。Study 内で Control と Case など適用ポリシーが異なるデータを扱う場合は、Dataset をポリシーごとに分割します。
+データ利用申請者は Dataset にて利用したいデータを指定します。Study 内で適用されるPolicy が異なる場合は、Policy ごとにDataset を分割する必要があります。
 
 ## アクセッション番号
 
