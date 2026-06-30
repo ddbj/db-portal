@@ -10,7 +10,7 @@ const DesignIndex = () => (
       subtitle="開発時のみ生成される視覚チェック画面。tokens と primitives の最終形態を 1 ページで確認するために置いている。"
     />
     <Callout tone="info">
-      この画面は production build では生成されない。`DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` を設定した staging でのみ別途有効化できる。
+      この画面は開発環境 (`NODE_ENV !== "production"`) でのみ生成される。 production build には含まれない。
     </Callout>
     <ul className="mt-section-md list-none p-0 grid grid-cols-2 gap-4 text-fs-body">
       <li className="border border-border-soft rounded-card p-4 bg-surface">

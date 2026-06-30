@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 
-import { fetchNews, type NewsItem, type NewsList } from "~/lib/api"
+import { fetchNews, NEWS_QUERY_KEY, type NewsItem, type NewsList } from "~/lib/api"
 import type { Lang } from "~/lib/i18n/use-lang"
 
 import { type NewsFacetState } from "./facet-url-state"
@@ -131,7 +131,7 @@ export const NEWS_PAGE_SIZE = PAGE_SIZE
 
 export const useNewsList = (lang: Lang, facet: NewsFacetState): UseNewsListResult => {
   const query = useQuery({
-    queryKey: ["news"],
+    queryKey: NEWS_QUERY_KEY,
     queryFn: () => fetchNews(),
     staleTime: 5 * 60_000,
   })

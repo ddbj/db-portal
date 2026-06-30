@@ -7,6 +7,7 @@ import {
   type ServiceItem,
   type ServiceList,
   serviceName,
+  SERVICES_QUERY_KEY,
   serviceUrl,
 } from "~/lib/api"
 import { type Lang, useLang, useT } from "~/lib/i18n"
@@ -46,7 +47,7 @@ export const FeaturedServices = ({ lang: explicitLang }: FeaturedServicesProps =
   const lang = explicitLang ?? hookLang
   const t = useT()
   const query = useQuery({
-    queryKey: ["services"],
+    queryKey: SERVICES_QUERY_KEY,
     queryFn: () => fetchServices(),
     staleTime: 5 * 60_000,
   })

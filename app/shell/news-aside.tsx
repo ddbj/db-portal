@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useId } from "react"
 
-import { fetchNews, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api/news"
+import { fetchNews, NEWS_QUERY_KEY, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { categoryLabelKey, formatDate, useLang, useT } from "~/lib/i18n"
 import { SectionHeading, Tag, TextLink } from "~/ui"
 
@@ -13,7 +13,7 @@ export const NewsAside = () => {
   const headingId = useId()
 
   const query = useQuery({
-    queryKey: ["news"],
+    queryKey: NEWS_QUERY_KEY,
     queryFn: () => fetchNews(),
     staleTime: 5 * 60_000,
   })

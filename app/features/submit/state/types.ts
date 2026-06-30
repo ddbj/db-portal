@@ -19,7 +19,7 @@ export type UIState = {
   submission: Submission
 }
 
-export type ValidationKind =
+type ValidationKind =
   | "precondition-conflict"
   | "no-destination-service"
   | "dangling-group-id"

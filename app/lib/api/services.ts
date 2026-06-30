@@ -11,6 +11,8 @@ export {
   ServiceSource,
 } from "~/schemas/api-bff/service"
 
+export const SERVICES_QUERY_KEY = ["services"] as const
+
 export const serviceName = (item: ServiceItem, lang: Lang): string =>
   item.name[lang] || item.name.ja || item.name.en
 

@@ -1,4 +1,5 @@
 import { ServiceCategory, ServiceSource } from "~/lib/api"
+import { splitCsvList } from "~/lib/csv-list"
 
 export type ServicesFacetState = {
   source: readonly ServiceSource[]
@@ -15,15 +16,6 @@ const isServiceCategory = (value: string): value is ServiceCategory =>
 const isServiceSource = (value: string): value is ServiceSource =>
   (ServiceSource.options as readonly string[]).includes(value)
 
-const splitList = (value: string | null | undefined): string[] => {
-  if (!value) return []
-
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-}
-
 export const parseServicesFacetState = (search: string): ServicesFacetState => {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
   const sortRaw = params.get("sort")
@@ -33,8 +25,8 @@ export const parseServicesFacetState = (search: string): ServicesFacetState => {
   const page = Math.max(1, Number(params.get("page") ?? "1") || 1)
 
   return {
-    source: splitList(params.get("source")).filter(isServiceSource),
-    category: splitList(params.get("category")).filter(isServiceCategory),
+    source: splitCsvList(params.get("source")).filter(isServiceSource),
+    category: splitCsvList(params.get("category")).filter(isServiceCategory),
     page,
     sort,
   }

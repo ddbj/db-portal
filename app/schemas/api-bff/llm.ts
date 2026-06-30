@@ -21,9 +21,7 @@ export const ASSISTANT_DB_SLUGS = [
   "taxonomy",
 ] as const
 
-export const ADVANCED_OPS = ["eq", "contains", "wildcard", "between"] as const
-
-export type AdvancedOp = typeof ADVANCED_OPS[number]
+export type AdvancedOp = "eq" | "contains" | "wildcard" | "between"
 
 // The search assistant emits a DSL string that the BFF validates into a
 // ParseNode AST (the `event: done` payload); see docs/llm.md. There is no flat

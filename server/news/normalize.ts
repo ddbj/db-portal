@@ -61,7 +61,7 @@ export const categoryFromDdbjTitle = (
   return "announcement"
 }
 
-export type FrontMatter = {
+type FrontMatter = {
   title?: string
   date?: string
   category?: string
@@ -216,7 +216,7 @@ const isPublishedFalse = (value: string | undefined): boolean => {
   return value.trim().toLowerCase() === "false"
 }
 
-export type SourceUrlBuilder = (lang: "ja" | "en", slug: string) => string
+type SourceUrlBuilder = (lang: "ja" | "en", slug: string) => string
 
 export type SourceNormalizeConfig = {
   source: NewsSource

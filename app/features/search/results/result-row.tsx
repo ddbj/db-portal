@@ -1,6 +1,6 @@
 import { Link } from "react-router"
 
-import { type Lang, useT } from "~/lib/i18n"
+import { formatDateLocalized, type Lang, useT } from "~/lib/i18n"
 import { ExternalIcon, Tag } from "~/ui"
 
 import type { DbSlug } from "../types"
@@ -30,18 +30,6 @@ export type ResultRowProps = {
   dbChip?: boolean
 }
 
-const formatDate = (value: string, lang: Lang): string => {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  const locale = lang === "ja" ? "ja-JP" : "en-CA"
-
-  // Pin JST (BSI's locale) so SSR (often UTC) and the browser (any
-  // timezone) format the same day and do not trip a hydration mismatch.
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo",
-  }).format(parsed)
-}
-
 const SubmitterIcon = () => (
   <svg
     className="h-3 w-3 shrink-0 text-ink-softer"
@@ -60,7 +48,7 @@ const SubmitterIcon = () => (
 export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => {
   const t = useT()
   const rawDate = rowDate(hit)
-  const date = rawDate ? formatDate(rawDate, lang) : null
+  const date = rawDate ? formatDateLocalized(rawDate, lang) : null
   const { text: title } = rowTitle(hit)
   const href = entryHref(hit)
   const subtype = subtypeBadge(hit)

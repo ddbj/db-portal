@@ -18,7 +18,7 @@ const DEV_SAMPLE_PROPOSAL: ParseNode = {
   ],
 }
 
-export type AiRequestMode = "new" | "append"
+type AiRequestMode = "new" | "append"
 
 export type AssistantStartOptions = {
   mode?: AiRequestMode | undefined

@@ -82,7 +82,7 @@ export type CacheStore = {
   initFromDisk: () => Promise<void>
 }
 
-export type ServiceFilter = {
+type ServiceFilter = {
   source?: readonly ServiceSource[]
   category?: readonly ServiceCategory[]
   featured?: boolean

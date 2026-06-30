@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
 import type { ServerEnv } from "../../../../server/lib/env"
 import { createServicesMirror, getActiveServicesCache } from "../../../../server/services/mirror"
-import { dbclsJson, ddbjYaml, silentLogger } from "./_fixtures"
+import { silentLogger } from "../../_helpers/silent-logger"
+import { dbclsJson, ddbjYaml } from "./_fixtures"
 
 let cacheDir: string
 let repoDir: string

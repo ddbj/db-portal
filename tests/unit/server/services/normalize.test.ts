@@ -7,7 +7,8 @@ import {
   normalizeDbclsServices,
   normalizeDdbjServices,
 } from "../../../../server/services/normalize"
-import { dbclsJson, ddbjYaml, silentLogger } from "./_fixtures"
+import { silentLogger } from "../../_helpers/silent-logger"
+import { dbclsJson, ddbjYaml } from "./_fixtures"
 
 const ddbj = () => normalizeDdbjServices(ddbjYaml, silentLogger)
 const dbcls = () => normalizeDbclsServices(dbclsJson, silentLogger)

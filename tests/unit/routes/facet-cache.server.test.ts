@@ -8,7 +8,6 @@ import {
 
 afterEach(() => {
   clearMatchAllFacetCache()
-  delete process.env.DB_PORTAL_FACET_CACHE_TTL_MS
   vi.useRealTimers()
 })
 
@@ -79,7 +78,6 @@ describe("match_all facet cache", () => {
 
   test("expiredEntry_refetchesAfterTtl", async () => {
     vi.useFakeTimers()
-    process.env.DB_PORTAL_FACET_CACHE_TTL_MS = "1000"
     let calls = 0
     const fetcher = async (): Promise<DbPortalFacets> => {
       calls += 1
@@ -87,7 +85,8 @@ describe("match_all facet cache", () => {
       return { package: [{ value: "x", count: calls }] }
     }
     await getCachedMatchAllFacets("cross", fetcher)
-    vi.advanceTimersByTime(1500)
+    // TTL は 1h ハードコード。 確実に expire させるため十分超過させる。
+    vi.advanceTimersByTime(60 * 60 * 1000 + 1000)
     await getCachedMatchAllFacets("cross", fetcher)
     expect(calls).toBe(2)
   })

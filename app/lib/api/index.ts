@@ -8,6 +8,7 @@ export {
 } from "./llm"
 export {
   fetchNews,
+  NEWS_QUERY_KEY,
   NewsCategory,
   NewsItem,
   newsItemSummary,
@@ -40,6 +41,7 @@ export {
   ServiceItem,
   ServiceList,
   serviceName,
+  SERVICES_QUERY_KEY,
   ServiceSource,
   serviceUrl,
 } from "./services"

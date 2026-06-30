@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router"
 
-import { fetchNews, newsItemTitle, newsItemUrl } from "~/lib/api/news"
+import { fetchNews, NEWS_QUERY_KEY, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
 
@@ -45,7 +45,7 @@ export const NotificationBar = () => {
   }, [])
 
   const query = useQuery({
-    queryKey: ["news"],
+    queryKey: NEWS_QUERY_KEY,
     queryFn: () => fetchNews(),
     staleTime: 5 * 60_000,
   })

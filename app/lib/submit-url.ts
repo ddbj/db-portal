@@ -13,7 +13,7 @@ import {
 } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
 
-export const ACCESS_FLAGS = [
+const ACCESS_FLAGS = [
   "restrictedPreference",
   "hasIdentifier",
   "ethicsCompliance",

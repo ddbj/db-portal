@@ -1,31 +1,31 @@
 # Authentication
 
-DDBJ Account (Keycloak) との OIDC 連携。 BFF + HttpOnly cookie パターンでブラウザ側 JS を token から完全に分離する。
+DDBJ Account (Keycloak) との OIDC 連携。 BFF + HttpOnly cookie パターンでブラウザ側 JS を token から完全に分離し、 OIDC protocol の生表現は全部 BFF (`server/auth/`) に閉じる。
 
-## Overview
+## BFF + HttpOnly cookie パターン
 
-ブラウザは不透明な session id (`sid`) を持つ HttpOnly cookie だけを受け取り、 BFF (Express) は受け取った id_token のみ in-memory session store に保持し、 access token / refresh token は受け取った直後に破棄する。 Keycloak とのやりとり (authorize / token / end_session) は BFF を経由し、 React Router の loader / component は OIDC の生 protocol を知らない。 BFF が secret を遮蔽するという全体パターンは [architecture.md](architecture.md) を SSOT とし、 ここでは Keycloak 依存と session store だけを示す。
+ブラウザは不透明な **session id** (`sid`) を持つ HttpOnly cookie だけを受け取り、 BFF (Express) は受け取った `id_token` のみ in-memory session store に保持する。 access token / refresh token は受け取った直後に破棄する。 Keycloak とのやりとり (authorize / token / end_session) は BFF を経由し、 React Router の loader / component は OIDC の生 protocol を知らない。 BFF が secret を遮蔽するという全体パターンは [architecture.md](architecture.md) を SSOT とする。
 
 ```mermaid
 flowchart LR
-  BFF -- "sid -> session entry" --> Store[(in-memory session store)]
+  BFF -- "sid → session entry" --> Store[(in-memory session store)]
   BFF -- "OIDC: authorize / token / end_session" --> Keycloak
 ```
 
-BSI は read-only で mutation API を持たないため、 CSRF 防御は cookie の `SameSite=Lax` と OIDC `state` の二段だけで成立する。 token をブラウザに出さないので XSS が起きても token は漏れず、 cookie 単独でも `HttpOnly` のため JS から読めない。
+security の主張は 2 本:
 
-## BFF と client の境界
+- **CSRF 防御**: BSI は read-only で mutation API を持たないため、 cookie の `SameSite=Lax` と OIDC `state` の二段だけで成立する
+- **XSS 耐性**: token をブラウザに出さないので XSS が起きても token は漏れず、 cookie 単独でも `HttpOnly` のため JS から読めない
 
-OIDC の code 交換・id_token 検証・cookie 発行・logout は BFF (`server/auth/`) に閉じ、 React Router 側は cookie を持って `/api/me` を叩くだけにする。 これは Keycloak 側 `Valid Redirect URIs` を React Router の routing 変更から独立させ、 SPA bundler の bug や JS 無効環境でも認証 flow が破綻しないためのレイヤ分離である。
-
-- OIDC endpoint と URL は `server/auth/routes.ts` を SSOT とする
-- `app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は BFF を素通りした直叩きや 5xx 時の fallback page。 loader を持たず、 ホームへの link を表示するだけ
-- client side helper (login URL の組み立て・`returnTo` validation) は `app/lib/auth/login-url.ts` に集約する
-- React Router loader から認証状態を見たいときは `loadAuth(request)` 経由で BFF `/api/me` に `Cookie:` ヘッダを転送する。 `app` から `server` を直接 import しない
+外向きに開く endpoint と env の一覧は § 外向き契約 を参照。
 
 ## OIDC PKCE フロー
 
-Authorization Code + PKCE (S256) を BFF が完結させる。 login で生成した `state` / `code_verifier` / `nonce` / `returnTo` は pending store に積み、 callback で `state` を **1 回限り take** する。 二度取りや存在しない state は 400 で打ち切り session を作らない。
+Authorization Code + PKCE (S256) を BFF が完結させる。 login → callback → session 発行までを 1 sequence で行い、 logout は別 endpoint pair で行う。
+
+### login と callback
+
+login で生成した `state` / `code_verifier` / `nonce` / `returnTo` は pending store に積み、 callback で `state` を **1 回限り take** する。 二度取りや存在しない state は 400 で打ち切り session を作らない。
 
 ```mermaid
 sequenceDiagram
@@ -45,55 +45,71 @@ sequenceDiagram
   S-->>B: Set-Cookie sid; 302 returnTo
 ```
 
-logout は `/api/auth/logout` から `end_session_endpoint` に `id_token_hint` 付きで 302 して Keycloak の confirm 画面を skip し、 `/api/auth/logout-callback` で session 削除と cookie clear を行う。 詳細な endpoint・status code・error 識別子は `server/auth/routes.ts` を参照。
+### id_token claim 検証
 
-## Cookie
+id_token は BFF と Keycloak の TLS 直接通信 (token endpoint) で受け取るため、 OIDC Core-6 のとおり JWT signature 検証は TLS server validation で代替する。 payload claim の検証は **BFF が必ず行い**、 fail なら callback を 400 で打ち切り session を作らない。
 
-session は `sid` という名前の cookie としてブラウザに渡す。 値は session id の不透明な乱数だけで、 token そのものや user info は一切載せない。 真の expiry は server 側の session TTL が持ち、 cookie は session cookie (`Max-Age` 無し) のままブラウザを閉じれば消える運用とする。 属性値の SSOT は `server/auth/cookie.ts`。
+- 検証対象 claim (`iss` / `aud` / `exp` / `iat` / `nonce` 等) と検証ロジックは `server/auth/oidc.ts` が SSOT
+- `email` は OIDC 上 optional な claim。 未提供のまま session に持ち、 placeholder で埋めない
+- `nonce` は login 時に生成した値と完全一致を要求し、 token replay を遮断する
 
-満たすべき security 要件:
+### logout
 
-- JS から cookie 値を読めない (XSS で token を露出させない)
-- cross-site POST から起動する CSRF 経路を遮断する (mutation API は持たないが、 防御は二重に持つ)
-- staging / production では平文 HTTP に流れない (dev は http のため例外)
-- sub-path 限定にせず portal 全体の navigation で同 session を共有する
+`/api/auth/logout` から `end_session_endpoint` に `id_token_hint` 付きで 302 して Keycloak の confirm 画面を skip し、 `/api/auth/logout-callback` で session 削除と cookie clear を行う。 詳細な endpoint・status code・error 識別子は `server/auth/routes.ts` を参照。
 
-## Session
+## session entry と cookie
+
+server 側の **session entry** が認証状態の本体で、 ブラウザに渡る **cookie** はその entry を指す opaque pointer に過ぎない。
+
+### session entry
 
 session entry は `idToken` (logout の `id_token_hint` 用) と userInfo (`sub` / `name` / `email`) と `expiresAt` だけを持つ。 access token / refresh token は BSI 側の用途がないため保持しない。 TTL は sliding (アクセスのたびに延長) で、 期限切れ entry は定期 cleanup で破棄する。
 
 - session 全体を log に出さない。 debug log は `sub` / `name` まで
 - credential 系 key の redaction は `server/lib/log.ts` の `redact` が担い、 規約は [llm.md](llm.md) § PII redaction に集約
 - in-memory 単一プロセス前提。 多プロセス化する場合は store を共有 store (Redis 等) に差し替える
-- TTL / cleanup 間隔の数値は `server/auth/session-store.ts` を SSOT とする。 TTL のみ `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で上書き可、 cleanup 間隔は hardcode
+- TTL / cleanup 間隔の数値は `server/auth/session-store.ts` が SSOT。 TTL のみ `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` で上書き可、 cleanup 間隔は hardcode
 
-## id_token 検証
+### cookie
 
-id_token は BFF と Keycloak の TLS 直接通信 (token endpoint) で受け取るため、 OIDC Core-6 のとおり JWT signature 検証は TLS server validation で代替する。 payload claim の検証は BFF が必ず行い、 fail なら callback を 400 で打ち切り session を作らない。
+session entry を指す cookie は `sid` という名前で発行する。 値は session id の不透明な乱数だけで、 token そのものや user info は一切載せない。 真の expiry は server 側の session TTL が持ち、 cookie は session cookie (`Max-Age` 無し) のままブラウザを閉じれば消える運用とする。 属性値の SSOT は `server/auth/cookie.ts`。
 
-- 検証対象 claim (`iss` / `aud` / `exp` / `iat` / `nonce` 等) と検証ロジックは `server/auth/oidc.ts` が SSOT
-- `email` は OIDC 上 optional な claim。 未提供のまま session に持ち、 placeholder で埋めない
-- `nonce` は login 時に生成した値と完全一致を要求し、 token replay を遮断する
+満たすべき security 要件:
 
-## URL state
+- JS から cookie 値を読めない (XSS で token を露出させない) — `HttpOnly`
+- cross-site POST から起動する CSRF 経路を遮断する (mutation API は持たないが、 防御は二重に持つ) — `SameSite=Lax`
+- staging / production では平文 HTTP に流れない (dev は http のため例外) — `Secure`
+- sub-path 限定にせず portal 全体の navigation で同 session を共有する — `Path=/`
 
-login flow を貫通する一時 state は OIDC `state` と `returnTo` の 2 種類で、 どちらも server 側で独立に検証する。 client helper を経由しない直叩き (`/api/auth/login?return_to=//evil` を手書きで踏ませる等) を server 側で必ず遮断するため、 client / server の二重防御を維持する。
+## state と returnTo の二重防御
+
+login flow を貫通する一時 state は OIDC **`state`** と **`returnTo`** の 2 種類で、 どちらも **client / server で独立に検証** する。 client helper を経由しない直叩き (`/api/auth/login?return_to=//evil` を手書きで踏ませる等) を server 側で必ず遮断するため、 二重防御を維持する。
 
 - OIDC `state` は authorization request と callback を結ぶ CSRF token。 login で乱数生成 → pending store へ → callback で take の流れで、 攻撃者が用意した callback を被害者に踏ませても拒否する
 - `state` の take 失敗 (存在しない / 期限切れ / 二度取り) は callback を 400 で打ち切る
 - `returnTo` は同一 origin の絶対パス (`/` 始まり、 `//` や `/\` を含まない) のみ受理する。 違反は `/` に正規化する
 - 検証は client helper (`app/lib/auth/login-url.ts`) と server handler (`server/auth/return-to.ts`) で **独立に** 適用する
-- BFF 宛先 origin は `request.url` ではなく env `DB_PORTAL_PORTAL_ORIGIN` から取り、 `Host:` ヘッダ改竄による `/api/me` 転送先逸脱を防ぐ
-- client IP に依存する機能 ([llm.md](llm.md) rate limit 等) のため、 reverse proxy 越し deploy では Express の `trust proxy` を上流段数に合わせる
 
-## `/api/me` と useAuth
+## ブラウザ側の認証状態
 
-ブラウザ側の認証状態は `GET /api/me` という 1 本の endpoint に集約する。 cookie の `sid` から session を引き、 有効なら 200 + `{ user: UserInfo }`、 cookie なし / session 期限切れなら 401 + `{ error: "unauthorized" }` を返す。 ブラウザ側は id_token を decode せず、 user 情報は常に server 経由で受け取る。
+OIDC の code 交換・id_token 検証・cookie 発行・logout は BFF (`server/auth/`) に閉じ、 React Router 側は cookie を持って `/api/me` を 1 本叩くだけにする。 これは Keycloak 側 `Valid Redirect URIs` を React Router の routing 変更から独立させ、 SPA bundler の bug や JS 無効環境でも認証 flow が破綻しないためのレイヤ分離。
 
-- response は `Cache-Control: no-store`。 client 側 cache は TanStack Query の `staleTime` で制御する
-- `useAuth` は `/api/me` の状態を `loading` / `unauthenticated` / `authenticated` の 3 値に正規化する
+### `/api/me`
+
+`GET /api/me` は cookie の `sid` から session を引き、 有効なら 200 + `{ user: UserInfo }`、 cookie なし / session 期限切れなら 401 + `{ error: "unauthorized" }` を返す。 ブラウザ側は id_token を decode せず、 user 情報は常に server 経由で受け取る。 response shape は `app/lib/auth/types.ts` の `MeResponse` schema (Zod) が SSOT で、 server 側 (`server/auth/routes.ts`) は TS type のみで同 shape を返し、 ブラウザ側で `MeResponse.parse` により再検証する (BFF 出力も信頼境界外として扱う)。
+
+response は `Cache-Control: no-store`。 client 側 cache は TanStack Query の `staleTime` で制御する。
+
+### useAuth と loader 統合
+
+- `useAuth` は `/api/me` の状態を `loading` / `unauthenticated` / `authenticated` の 3 値に正規化する (client component 用 hook)
 - `<RequireAuth>` は `unauthenticated` 時に `buildLoginUrl(location.pathname + location.search)` へ navigate する
+- React Router loader から認証状態を見たいときは `loadAuth(request)` 経由で BFF `/api/me` に `Cookie:` ヘッダを転送する。 `app` から `server` を直接 import しない
 - 言語選択は cookie で維持されるため、 `/api/auth/login` / `/api/auth/logout` は言語非依存 path に置く ([i18n.md](i18n.md))
+
+### 補助 routes
+
+`app/routes/auth/{callback,silent-callback,logout-callback}.tsx` は BFF を素通りした直叩きや 5xx 時の **fallback page**。 loader を持たず、 ホームへの link を表示するだけ。 OIDC endpoint と URL は `server/auth/routes.ts` を SSOT とし、 client side helper (login URL の組み立て・`returnTo` validation) は `app/lib/auth/login-url.ts` に集約する。
 
 ## Keycloak realm と client
 
@@ -115,11 +131,11 @@ BSI 側から見た Keycloak の前提を固定する。 dev / staging は同じ
 
 BSI は `id_token` のみ保持する (`id_token_hint` 用途) ため、 Access Token / Refresh Token Lifespan は BSI 動作に影響せず realm 全体ポリシーに従う。 BSI session の実効 TTL は env `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` が独立に管理し、 Keycloak の `Client Session Idle` と揃える。
 
-## 外向き契約
-
-BFF が公開する HTTP endpoint と、 認証で利用する環境変数を集約する。 endpoint の path・status code・redirect 先・error 識別子の SSOT は `server/auth/routes.ts`。
+## endpoint と環境変数
 
 ### HTTP endpoint
+
+BFF が公開する HTTP endpoint。 path・status code・redirect 先・error 識別子の SSOT は `server/auth/routes.ts`。
 
 | Endpoint | 用途 | 主な response |
 |---|---|---|
@@ -129,17 +145,15 @@ BFF が公開する HTTP endpoint と、 認証で利用する環境変数を集
 | `GET /api/auth/logout-callback` | session 削除 + cookie clear、 home へ 302 | 302 to `/` |
 | `GET /api/me` | session を引き user 情報を返す | 200 `{ user }` / 401 |
 
-`/api/me` の response shape は `app/lib/auth/types.ts` の `MeResponse` schema (Zod) を SSOT とする。 server 側 (`server/auth/routes.ts`) は zod schema を持たず TS type のみで同 shape を返し、 ブラウザ側で `MeResponse.parse` により再検証する。
-
 ### 環境変数
 
 | 変数 | 意味 |
 |---|---|
 | `DB_PORTAL_KEYCLOAK_REALM_URL` | Keycloak realm URL。 `id_token.iss` 検証にも使う |
 | `DB_PORTAL_KEYCLOAK_CLIENT_ID` | client ID。 `id_token.aud` 検証にも使う |
-| `DB_PORTAL_PORTAL_ORIGIN` | BSI 自身の origin。 redirect_uri と `/api/me` 転送先の SSOT |
+| `DB_PORTAL_PORTAL_ORIGIN` | BSI 自身の origin。 redirect_uri と `/api/me` 転送先の SSOT。 BFF 宛先 origin は `request.url` ではなく必ずこの env から取る (`Host:` ヘッダ改竄による転送先逸脱を防ぐ) |
 | `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` | session sliding TTL |
-| `DB_PORTAL_TRUST_PROXY` | Express `trust proxy` 設定 (reverse proxy 段数) |
+| `DB_PORTAL_TRUST_PROXY` | Express `trust proxy` 設定。 client IP に依存する機能 ([llm.md](llm.md) rate limit 等) のため、 reverse proxy 越し deploy では上流段数に合わせる |
 | `DB_PORTAL_E2E_USER_PASSWORD` | e2e 用テストユーザーの password (staging のみ) |
 
 env 切替の方針は [development.md](development.md)、 環境ごとの実値は `.claude/docs/credentials.md` / `.claude/docs/deployment.md` を参照する。

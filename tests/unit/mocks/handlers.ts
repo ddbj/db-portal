@@ -8,7 +8,6 @@ import type {
   DbSearchResponse,
   ParseResponse,
 } from "~/lib/api"
-import type { UserInfo } from "~/lib/auth/types"
 import type { LlmHealth } from "~/schemas/api-bff/llm"
 import type { NewsList } from "~/schemas/api-bff/news"
 import type { ServiceList } from "~/schemas/api-bff/service"
@@ -19,7 +18,7 @@ export const minimalParseResponse = (q: string): ParseResponse => ({
   ast: { op: "eq", field: "organism_id", value: q },
 })
 
-export const minimalCrossSearchResponse = (
+const minimalCrossSearchResponse = (
   facets: DbPortalFacets | null = null,
 ): CrossSearchResponse => ({
   databases: [{ db: "bioproject", count: 10, error: null }],
@@ -113,9 +112,6 @@ export const dbSearchByAstHandler = (
 const unsetHealth: LlmHealth = { status: "unset" }
 const emptyNews: NewsList = []
 const emptyServices: ServiceList = []
-
-export const meAuthenticated = (user: UserInfo): RequestHandler =>
-  http.get("*/api/me", () => HttpResponse.json({ user }))
 
 export const meAnonymous = (): RequestHandler =>
   http.get("*/api/me", () => new HttpResponse(null, { status: 401 }))

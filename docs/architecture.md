@@ -1,10 +1,10 @@
 # Architecture
 
-BSI アプリの全体構造。 zone 分割と SSR/CSR の境界、 BFF と client の責務分離、 build-time と runtime の境界、 非機能要件を扱う。
+BSI (BioData Science Initiative) アプリ全体の構造。 ブラウザ → BFF → 外部 API の 3 段、 zone 分割と import 方向の物理強制、 SSR/CSR の経路 1 本化、 build-time と runtime の境界、 routing、 性能・セキュリティ・アクセシビリティを扱う。
 
-## Overview
+## 全体構造
 
-ブラウザ → BFF → 外部 API の 3 段構造を取る。 BFF (`server/`) が Keycloak / vLLM / DDBJ www / GitHub などの secret を要する外部接続を遮蔽し、 client (`app/`) は同一 origin の `/api/*` だけを見れば済む。 一方で public な `ddbj-search-api` はブラウザから直接呼び、 BFF を経由しない。
+**ブラウザ → BFF → 外部 API** の 3 段構造を取る。 BFF (`server/`、 Backend For Frontend) が Keycloak / vLLM / DDBJ www / GitHub などの secret を要する外部接続を遮蔽し、 client (`app/`) は同一 origin の `/api/*` だけを見れば済む。 一方で public な `ddbj-search-api` はブラウザから直接呼び、 BFF を経由しない。
 
 ```mermaid
 flowchart LR
@@ -16,11 +16,43 @@ flowchart LR
   BFF -- "token" --> GitHub
 ```
 
-SSR はブラウザと同等の経路を Node 上で先回り render する位置付け。 loader のデータ取得経路を SSR / CSR で 1 本化し、 hydration 後も同じ fetch が走る。
+BFF が secret を握る規約:
+
+- secret (Keycloak credential / LLM API key / GitHub token) を要する外部接続は BFF 経由でのみ行う
+- secret を含む環境変数をブラウザ bundle に乗せない
+- public な `ddbj-search-api` は client から直接呼ぶ
+- 各 BFF endpoint の req / res 形は機能別 docs を SSOT とする
+
+BFF endpoint の一覧:
+
+| Endpoint | 機能 | SSOT |
+|---|---|---|
+| `/api/me` | 現在の session 情報 | [auth.md](auth.md) |
+| `/api/auth/*` | OIDC ログイン / コールバック / ログアウト | [auth.md](auth.md) |
+| `/api/news` | news mirror の集約レスポンス | [news.md](news.md) |
+| `/api/services` | services mirror の集約レスポンス | [services.md](services.md) |
+| `/api/llm/*` | LLM 検索アシスタントの SSE | [llm.md](llm.md) |
+| `/api/set-lang` | 言語 cookie 更新 (303 redirect) | [i18n.md](i18n.md) |
+| `/sitemap.xml` / `/robots.txt` | 検索エンジン向け外向きリソース | 本書 § sitemap.xml と robots.txt |
+
+`app/lib/api/*` から呼ぶ ddbj-search-api の型生成・差分検知は [api-types.md](api-types.md) を参照する。
 
 ## Zone 分割
 
-`app/` を機能単位の zone に分け、 zone 間の import 方向を ESLint の `import/no-restricted-paths` で物理強制する。 許可マトリクスの SSOT は `eslint.config.ts` の同 rule で、 ここに書く依存関係はその縮約。
+`app/` を機能単位の **zone** に分け、 zone 間の import 方向を ESLint の `import/no-restricted-paths` で物理強制する。 許可マトリクスの SSOT は `eslint.config.ts` の同 rule で、 ここに書く依存関係はその縮約。
+
+各 zone の役割:
+
+- `schemas` — Zod による型 + runtime validation。 他 zone に依存しない
+- `lib` — 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client)。 依存は `schemas` のみ
+- `ui` — Tailwind primitive。 `@theme` token のみ参照
+- `content` — Markdown ページ collection
+- `shell` — Header / Footer / NavBar / Breadcrumb 等の画面横断 chrome
+- `features` — 画面ごとの状態管理・reducer・modal
+- `routes` — RR v7 framework mode の route component (薄い配線層)
+- `server` — BFF (Node 専用、 `app/` の外)
+
+許可される依存方向:
 
 ```mermaid
 graph TD
@@ -41,31 +73,18 @@ graph TD
   server -. "app/schemas only" .-> schemas
 ```
 
-点線は例外的に許可された依存 (server → app/schemas のみ)。 実線は通常の許可された依存方向を示す。
-
-各 zone の役割:
-
-- `schemas` — Zod による型 + runtime validation。 他 zone に依存しない
-- `lib` — 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client)。 依存は `schemas` のみ
-- `ui` — Tailwind primitive。 `@theme` token のみ参照
-- `content` — Markdown ページ collection
-- `shell` — Header / Footer / NavBar / Breadcrumb 等の画面横断 chrome
-- `features` — 画面ごとの状態管理・reducer・modal
-- `routes` — RR v7 framework mode の route component (薄い配線層)
-- `server` — BFF (Node 専用)
-
-zone を跨ぐ規約:
+点線は例外的に許可された依存 (`server` → `app/schemas` のみ)。 zone を跨ぐ追加規約:
 
 - `features` 同士の直接 import を禁ずる。 共通化は `lib` / `schemas` / `ui` / `shell` のいずれかに降ろす
 - `app` から `server` への直接 import を禁ずる。 共用境界は `app/schemas` のみ
 - `routes` は全 zone を import できるが、 ロジックを持たず薄い配線に留める
-- 生 hex literal と arbitrary Tailwind value (`bg-[#...]` / `p-[3px]` 等) は `features` / `routes` / `content` で禁ずる。 色・spacing は `app/styles/tailwind.css` の `@theme` token を utility class 経由で参照する
+- 生 hex literal と arbitrary Tailwind value (`bg-[#...]` / `p-[3px]` 等) は `features` / `routes` / `content` で禁ずる。 色・spacing は `app/styles/tailwind.css` の `@theme` token を utility class 経由で参照する ([frontend.md](frontend.md))
 
 ## SSR-CSR 境界
 
-React Router v7 framework mode (`ssr: true`) で SSR + hydration する。 同じ `app/` モジュールが Node とブラウザの両方で実行される前提のため、 DOM / `window` / `localStorage` に触れる処理は `useEffect` か client guard に閉じ込める。
+React Router v7 framework mode (`ssr: true`) で **SSR + hydration** する。 同じ `app/` モジュールが Node とブラウザの両方で実行される前提のため、 DOM / `window` / `localStorage` に触れる処理は `useEffect` か client guard に閉じ込める。
 
-どのフェーズでも import 可能な範囲は `app/` のみで共通。 ランタイムの違いは外部 I/O 経路にだけ現れる。
+どのフェーズでも import 可能な範囲は `app/` のみで共通。 ランタイムの違いは **外部 I/O 経路** にだけ現れる。
 
 | 実行フェーズ | ランタイム | 外部 I/O 経路 |
 |---|---|---|
@@ -80,34 +99,9 @@ React Router v7 framework mode (`ssr: true`) で SSR + hydration する。 同�
 - 同一プロセス上でも `app/` から BFF を呼ぶときは `fetch(new URL("/api/...", request.url))` を経由し、 zone 境界を物理的に守る
 - `app/schemas` は `app` と `server` の双方から import 可。 BFF の整形と client の表示で同一 schema を共有する
 
-## BFF
+## Build-time と runtime
 
-`server/` が secret を保持し、 外部 API を遮蔽する。 client (`app/`) は同一 origin の `/api/*` を経由して BFF に届き、 外部 origin に直接到達するのは public な `ddbj-search-api` だけ。 全体像は冒頭 § Overview の図を参照する。
-
-規約:
-
-- secret (Keycloak credential / LLM API key / GitHub token) を要する外部接続は BFF 経由でのみ行う
-- secret を含む環境変数をブラウザ bundle に乗せない
-- public な `ddbj-search-api` は client から直接呼ぶ
-- 各 BFF endpoint の req / res 形は機能別 docs を SSOT とする
-
-BFF endpoint の一覧:
-
-| Endpoint | 機能 | SSOT |
-|---|---|---|
-| `/api/me` | 現在の session 情報 | [auth.md](auth.md) |
-| `/api/auth/*` | OIDC ログイン / コールバック / ログアウト | [auth.md](auth.md) |
-| `/api/news` | news mirror の集約レスポンス | [news.md](news.md) |
-| `/api/services` | services mirror の集約レスポンス | [services.md](services.md) |
-| `/api/llm/*` | LLM 検索アシスタントの SSE | [llm.md](llm.md) |
-| `/api/set-lang` | 言語 cookie 更新 (303 redirect) | [i18n.md](i18n.md) |
-| `/sitemap.xml` / `/robots.txt` | 検索エンジン向け外向きリソース | 本文書 § sitemap.xml と robots.txt |
-
-`app/lib/api/*` から呼ぶ ddbj-search-api の型生成・差分検知は [api-types.md](api-types.md) を参照する。
-
-## Build-time と runtime の境界
-
-build artifact に確定するものと、 起動時 / リクエスト時に決まる状態を分ける。 secret は build artifact に決して入れず、 すべて runtime で env から読む。
+build artifact に確定するものと、 起動時 / リクエスト時に決まる状態を分ける。 **secret は build artifact に決して入れず、 すべて runtime で env から読む**。
 
 build 時に確定:
 
@@ -118,7 +112,7 @@ build 時に確定:
 
 runtime に確定:
 
-- 環境変数 — 起動時に Zod schema で validate し、 違反すれば server を起動しない (`server/lib/env.ts`)
+- 環境変数 — 起動時に Zod schema (`server/lib/env.ts`) で validate し、 違反すれば server を起動しない。 各機能 docs は変数名と意味の表だけを持ち、 default 値や型宣言を二重に書かない
 - BFF session store — in-memory。 プロセス再起動で揮発 ([auth.md](auth.md))
 - News / Services mirror cache — disk persist。 起動時に再 load する
 - LLM health 状態 — server memory に保持する
@@ -128,26 +122,28 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 - server-only env は `DB_PORTAL_*`、 client-visible env は `VITE_DB_PORTAL_*`
 - `DB_PORTAL_*` から `VITE_DB_PORTAL_*` への派生は `compose.yml` で行い、 secret 変数を派生先に含めない
 
-環境変数の SSOT は `server/lib/env.ts` の Zod schema。 変数名 / default 値 / 型 / 必須性 / bool・数値の解釈ルールはこの schema が単独で決め、 起動時に validate して違反すれば server を起動しない。 各機能 docs (`auth.md` / `llm.md` / `news.md` / `services.md` / `api-types.md` / `i18n.md` / `development.md` / `deployment.md`) は変数名と意味の表だけを持ち、 default 値や型宣言を二重に書かない。
-
 ## Routing
 
 `app/routes.ts` が URL 全構造の SSOT。 URL から言語識別子を排除し、 BFF endpoint と client route の優先順序は `server/index.ts` の mount 順で決まる。
 
 - URL は lang 中立とする。 言語は cookie で決まる ([i18n.md](i18n.md))
-- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の catch-all (`/*`) が引き受け、 path は `app/content/` collection 内の path に一致させる
+- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の **catch-all** (`/*`) が引き受け、 path は `app/content/` collection 内の path に一致させる
 - `/auth/*` の client route は BFF (`server/auth/routes.ts`) が 302 で抜けるため通常到達しないが、 Keycloak 側 redirect_uri 設定の fallback として保持する
 - `/api/set-lang` は唯一の action 持ち resource route。 lang cookie 更新後 303 redirect で Referer に戻す
 - BFF endpoint (`/api/me` / `/api/news` / `/api/services` / `/api/llm/*` / `/api/auth/*`) は `server/index.ts` で個別 mount し、 RR catch-all より優先する
-- design preview (`/_design/*`) は `NODE_ENV !== "production"` または `DB_PORTAL_ENABLE_DESIGN_PREVIEW=true` のときだけ含める
+- design preview (`/_design/*`) は `NODE_ENV !== "production"` のときだけ含める ([frontend.md](frontend.md))
 
 ### Route handle
 
-各 route component module の `export const handle` で静的 metadata を宣言する。 loader 実行を起こさず `useMatches` から走査でき、 SSR / CSR で同値が取れる。
+各 route component module の `export const handle` で **静的 metadata** を宣言する。 loader 実行を起こさず `useMatches` から走査でき、 SSR / CSR で同値が取れる。 breadcrumb / document title / i18n 充足度などの cross-cutting metadata を route module から取り出す機構。
 
 - breadcrumb / document title は static segment と dynamic resolver の 2 系統。 resolver dict は `app/shell/` 内で組み立てる
-- en リソースに対応キーが無い page は `handle.i18n.en` を `"partial"` または `"missing"` に立てる。 立てない page は en complete と看做す
+- en リソースに対応キーが無い page は `handle.i18n.en` を `partial` または `missing` に立てる。 立てない page は en complete と看做す ([i18n.md](i18n.md) § handle.i18n.en)
 - handle key 一覧の SSOT は各 route file の `export const handle`
+
+### エラー境界
+
+該当 route が存在しない、 または loader が `throw new Response("Not Found", { status: 404 })` を投げたケースは `app/root.tsx` の `ErrorBoundary` が 404 専用 UI に落とす。 5xx も同 `ErrorBoundary` が generic 表示に落とし、 stack trace は env を問わず UI に出さない。
 
 ## 性能
 
@@ -184,9 +180,9 @@ CSP nonce の流通経路:
 
 ## アクセシビリティ
 
-WCAG AA 相当を token 段階で担保し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 自動検査は primitive 単位の `vitest-axe` で行う。
+WCAG AA 相当を **token 段階で担保** し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 自動検査は primitive 単位の `vitest-axe` で行う ([frontend.md](frontend.md) § アクセシビリティ)。
 
-- 色コントラストは `@theme` token の段階で AA を満たす (`/_design` 視覚カタログで確認可)
+- 色コントラストは `@theme` token の段階で AA を満たす
 - focus ring は `*:focus-visible` に global 適用し、 primitive 単位で上書きしない
 - 全画面 keyboard 操作可。 modal は focus trap を持つ
 - `<html lang>` を動的出力する ([i18n.md](i18n.md))
@@ -198,7 +194,3 @@ WCAG AA 相当を token 段階で担保し、 primitive ごとに上書きしな
 
 - `GET /sitemap.xml` (`server/api/sitemap.ts`) — content collection + 静的 route について `?lang=ja` / `?lang=en` 2 URL を出力し、 hreflang を相互宣言する ([i18n.md](i18n.md))
 - `GET /robots.txt` (`server/api/robots.ts`) — production は全許可 + Sitemap、 dev / staging は全 disallow
-
-## エラー境界
-
-該当 route が存在しない、 または loader が `throw new Response("Not Found", { status: 404 })` を投げたケースは `app/root.tsx` の `ErrorBoundary` が 404 専用 UI に落とす。 5xx も同 `ErrorBoundary` が generic 表示に落とし、 stack trace は env を問わず UI に出さない。

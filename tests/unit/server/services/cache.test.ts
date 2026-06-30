@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest"
 import type { ServiceItem, ServiceList } from "~/schemas/api-bff/service"
 
 import { createCacheStore, loadCacheFromDisk } from "../../../../server/services/cache"
-import { silentLogger } from "./_fixtures"
+import { silentLogger } from "../../_helpers/silent-logger"
 
 const item = (over: Partial<ServiceItem> & Pick<ServiceItem, "id" | "source" | "name">): ServiceItem => ({
   description: { ja: "", en: "" },

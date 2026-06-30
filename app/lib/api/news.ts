@@ -11,6 +11,8 @@ export {
   NewsSource,
 } from "~/schemas/api-bff/news"
 
+export const NEWS_QUERY_KEY = ["news"] as const
+
 export const newsItemTitle = (item: NewsItem, lang: Lang): string =>
   item.title[lang] || item.title.ja
 

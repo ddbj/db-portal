@@ -11,7 +11,7 @@ import { handleServices } from "../../../../server/api/services"
 import type { CacheStore } from "../../../../server/services/cache"
 import { createCacheStore } from "../../../../server/services/cache"
 import { getActiveServicesCache } from "../../../../server/services/mirror"
-import { silentLogger } from "../services/_fixtures"
+import { silentLogger } from "../../_helpers/silent-logger"
 
 // getActiveServicesCache は FS で同期されるシングルトンを返す外部境界。
 // ここだけ mock し、フィルタリングは実 CacheStore (createCacheStore) を駆動する。

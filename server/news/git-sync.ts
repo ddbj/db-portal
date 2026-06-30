@@ -7,8 +7,8 @@ const execFileAsync = promisify(execFile)
 
 const DEFAULT_TIMEOUT_MS = 60_000
 
-export type RunGitOk = { ok: true; stdout: string }
-export type RunGitFail = { ok: false; stderr: string }
+type RunGitOk = { ok: true; stdout: string }
+type RunGitFail = { ok: false; stderr: string }
 export type RunGitResult = RunGitOk | RunGitFail
 
 export type RunGit = (args: readonly string[], cwd?: string) => Promise<RunGitResult>

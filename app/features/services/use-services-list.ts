@@ -8,6 +8,7 @@ import {
   type ServiceItem,
   type ServiceList,
   serviceName,
+  SERVICES_QUERY_KEY,
   type ServiceSource,
   ServiceSource as ServiceSourceSchema,
 } from "~/lib/api"
@@ -106,7 +107,7 @@ export const SERVICES_PAGE_SIZE = PAGE_SIZE
 
 export const useServicesList = (lang: Lang, facet: ServicesFacetState): UseServicesListResult => {
   const query = useQuery({
-    queryKey: ["services"],
+    queryKey: SERVICES_QUERY_KEY,
     queryFn: () => fetchServices(),
     staleTime: 5 * 60_000,
   })
