@@ -135,7 +135,7 @@ export const DocsSearchResults = ({ query, onClear }: Props) => {
                   )}
                   <p className="mt-1 mb-0 text-fs-body-sm text-ink-mid line-clamp-1 leading-relaxed max-w-content-narrow">
                     <span className="inline-flex items-center mr-1.5 px-1 rounded-tag border border-border-soft font-mono text-fs-micro font-bold text-ink-soft align-middle">
-                      本文
+                      {t("docs.search.bodyLabel")}
                     </span>
                     <span className="align-middle">
                       <Mark text={g.primarySnippet} terms={terms} />

@@ -1,7 +1,7 @@
 import { type ParseNode, parseQuery } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import { identityAst } from "../ast/identity"
-import type { DbSlug } from "../types"
 
 type ParseDslOptions = {
   baseUrl?: string

@@ -83,6 +83,9 @@ export const SearchBox = ({
   const style: CSSProperties = { maxWidth }
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const listboxId = useId()
+  const scopeLabelBaseId = useId()
+  const scopeLabelStaticId = `${scopeLabelBaseId}-static`
+  const scopeLabelValueId = `${scopeLabelBaseId}-value`
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
@@ -136,19 +139,23 @@ export const SearchBox = ({
       >
         {interactiveScope
           ? (
+            // aria-label 単独では visible な scope 値 (例「全 DB」「AI で聞く」) が
+            // SR に届かない。 static ラベルと現在値を labelledby で concat し、
+            // 「検索対象データベース: 全データベース」 のように読ませる。
             <button
               type="button"
               onClick={() => setScopeOpen((o) => !o)}
               aria-haspopup="listbox"
               aria-expanded={scopeOpen}
               aria-controls={listboxId}
-              aria-label={scopeAriaLabel}
+              aria-labelledby={`${scopeLabelStaticId} ${scopeLabelValueId}`}
               className={cn(
                 "flex items-center gap-2 px-3 text-ink font-bold border-r border-border-soft cursor-pointer min-w-[140px] hover:bg-surface-subtle",
                 cls.scope,
               )}
             >
-              <span className="flex-1 text-left">{scopeValue}</span>
+              <span id={scopeLabelStaticId} className="sr-only">{scopeAriaLabel}</span>
+              <span id={scopeLabelValueId} className="flex-1 text-left">{scopeValue}</span>
               <ChevronDownIcon size={14} className="text-ink-mid shrink-0" />
             </button>
           )

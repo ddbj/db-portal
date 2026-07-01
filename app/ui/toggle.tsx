@@ -24,9 +24,10 @@ export const Toggle = ({ label, sub, checked, disabled, onChange }: ToggleProps)
       focus:ring-2 ring-brand-light と同じトークン)。 input を span の子に置く
       ことで、 ラベル text が switch role の accessible name に正しく結びつく。
     */}
+    {/* role=switch は input に付ける (span と input 両方に持たせると
+        NVDA / VoiceOver で「switch」「checkbox」の二重 announce が起きる)。
+        span は視覚レイアウトのみ、 accessibility tree では skip される。 */}
     <span
-      role="switch"
-      aria-checked={checked}
       className={cn(
         "relative inline-flex shrink-0 h-5 w-9 rounded-full transition-colors",
         disabled && "opacity-25",
@@ -42,6 +43,7 @@ export const Toggle = ({ label, sub, checked, disabled, onChange }: ToggleProps)
       />
       <input
         type="checkbox"
+        role="switch"
         checked={checked}
         disabled={disabled}
         onChange={onChange}

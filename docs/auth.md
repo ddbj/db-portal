@@ -146,6 +146,6 @@ env の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、
 - `DB_PORTAL_PORTAL_ORIGIN` — BSI 自身の origin。 redirect_uri と `/api/me` 転送先の SSOT。 BFF 宛先 origin は `request.url` ではなく必ずこの env から取る (`Host:` ヘッダ改竄による転送先逸脱を防ぐ)
 - `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` — session sliding TTL
 - `DB_PORTAL_TRUST_PROXY` — Express `trust proxy` 設定。 client IP に依存する機能 ([llm.md](llm.md) rate limit 等) のため、 reverse proxy 越し deploy では上流段数に合わせる
-- `DB_PORTAL_E2E_USER_PASSWORD` — e2e 用テストユーザーの password (staging のみ)
+- `DB_PORTAL_E2E_USER_PASSWORD` — e2e 実行者の shell に注入する secret (staging のみ)。 server env schema には含めない (BFF は参照せず、 `tests/e2e/fixtures/users.ts` だけが読む)
 
 env 切替の方針は [development.md](development.md)、 環境ごとの実値の所在は [deployment.md](deployment.md) を参照する。

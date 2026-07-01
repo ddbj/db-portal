@@ -134,7 +134,12 @@ const shutdown = (signal: NodeJS.Signals) => {
   healthMonitor.stop()
   server.closeIdleConnections()
   server.close(finish)
-  setTimeout(finish, SHUTDOWN_GRACE_MS).unref()
+  // grace 経過時点で残っている long-lived connection (SSE stream 等) を強制
+  // close し、 SIGKILL 待ちを防ぐ。 closeAllConnections は Node 18.2+ で利用可能。
+  setTimeout(() => {
+    server.closeAllConnections?.()
+    finish()
+  }, SHUTDOWN_GRACE_MS).unref()
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"))
 process.on("SIGINT", () => shutdown("SIGINT"))

@@ -1,7 +1,5 @@
 import type { DbSearchResponse } from "~/lib/api"
 import { type Lang, usePaginationLabels, useT } from "~/lib/i18n"
-import { AlertIcon, ResultsPagination, SearchIcon, Select, type SelectOption } from "~/ui"
-
 import {
   type DbSlug,
   PER_PAGE_VALUES,
@@ -10,7 +8,9 @@ import {
   SEARCH_HARD_LIMIT,
   SORT_KEYS,
   type SortKey,
-} from "../types"
+} from "~/lib/search-scope"
+import { AlertIcon, ResultsPagination, SearchIcon, Select, type SelectOption } from "~/ui"
+
 import {
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,

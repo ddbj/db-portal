@@ -1,5 +1,5 @@
-import { fc, test } from "@fast-check/vitest"
-import { describe, expect } from "vitest"
+/* eslint-disable vitest/expect-expect -- assertions live inside `expectNonEmptyLeaf` helper */
+import { describe, expect, test } from "vitest"
 
 import { en, flattenKeys, ja } from "~/lib/i18n"
 
@@ -47,15 +47,17 @@ describe("i18n resource parity", () => {
   const nonEmptyJaKeys = jaKeys.filter((k) => !intentionalEmpty.has(k))
   const nonEmptyEnKeys = enKeys.filter((k) => !intentionalEmpty.has(k))
 
-  test.prop([fc.constantFrom(...nonEmptyJaKeys)], { numRuns: 100 })(
-    "i18n_anyJaKey_resolvesToNonEmptyString",
+  // 有限 domain (数百 keys) を fc.constantFrom で random sample すると
+  // 未翻訳 key が運悪く選ばれず素通りする。 test.each で全列挙する。
+  test.each(nonEmptyJaKeys.map((k) => [k]))(
+    "i18n_jaKey_%s_resolvesToNonEmptyString",
     (key) => {
       expectNonEmptyLeaf(lookupValue(ja, key))
     },
   )
 
-  test.prop([fc.constantFrom(...nonEmptyEnKeys)], { numRuns: 100 })(
-    "i18n_anyEnKey_resolvesToNonEmptyString",
+  test.each(nonEmptyEnKeys.map((k) => [k]))(
+    "i18n_enKey_%s_resolvesToNonEmptyString",
     (key) => {
       expectNonEmptyLeaf(lookupValue(en, key))
     },
@@ -84,8 +86,8 @@ describe("i18n resource parity", () => {
     expect(jaJapaneseLeaves.length).toBeGreaterThan(0)
   })
 
-  test.prop([fc.constantFrom(...jaJapaneseLeaves)], { numRuns: 200 })(
-    "i18n_anyTranslatableKey_jaAndEnLiteralsDiffer",
+  test.each(jaJapaneseLeaves.map((k) => [k]))(
+    "i18n_translatableKey_%s_jaAndEnLiteralsDiffer",
     (key) => {
       const jaValue = lookupValue(ja, key)
       const enValue = lookupValue(en, key)

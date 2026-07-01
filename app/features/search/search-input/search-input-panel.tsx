@@ -272,7 +272,9 @@ export const SearchInputPanel = ({
       />
 
       {isAi && stream.state === "streaming" && (
-        <div className="flex items-center gap-2 text-fs-label text-ink-mid">
+        // role=status + aria-live=polite で SR に「生成中」の状態を届ける。
+        // 視覚は既存レイアウトのまま (WCAG 4.1.3)。
+        <div role="status" aria-live="polite" className="flex items-center gap-2 text-fs-label text-ink-mid">
           <span>{t("search.assistant.generating")}</span>
           <Button kind="secondary" size="sm" onClick={stream.stop}>
             {t("search.a11y.assistantStop")}

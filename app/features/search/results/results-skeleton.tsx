@@ -1,7 +1,7 @@
 import { useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { cn, Heading } from "~/ui"
 
-import type { DbSlug } from "../types"
 import { CARD_ORDER } from "./cross-results"
 
 const Bar = ({ className }: { className?: string }) => (

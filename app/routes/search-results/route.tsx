@@ -324,6 +324,9 @@ const SearchResultsRoute = () => {
 
   return (
     <>
+      {/* SR-only の page heading。 視覚レイアウト (SearchBox 直上に大文字 title を
+          置かない) を維持しつつ、 heading navigation で page level context を与える。 */}
+      <h1 className="sr-only">{t("search.a11y.resultsRegion")}</h1>
       <Section padTop="mid" padBottom="none">
         <NavigableSearchInput
           keyword={keyword}

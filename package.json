@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "npm run gen:last-updated && npm run gen:breadcrumb-titles && npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
     "build": "npm run gen:last-updated && npm run gen:breadcrumb-titles && npm run validate:content && NODE_ENV=production react-router build",

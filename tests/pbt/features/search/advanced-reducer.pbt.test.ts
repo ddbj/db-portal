@@ -15,15 +15,38 @@ const collectIds = (node: AdvancedNode, into: Set<AdvancedNodeId>): void => {
   }
 }
 
+type Op =
+  | { kind: "addCondition" }
+  | { kind: "addGroup" }
+  | { kind: "removeFirst" }
+  | { kind: "clear" }
+
+const arbOp: fc.Arbitrary<Op> = fc.oneof(
+  fc.constant({ kind: "addCondition" as const }),
+  fc.constant({ kind: "addGroup" as const }),
+  fc.constant({ kind: "removeFirst" as const }),
+  fc.constant({ kind: "clear" as const }),
+)
+
 describe("advanced reducer invariants", () => {
-  test.prop([fc.array(fc.constantFrom("addCondition", "addGroup"), { minLength: 1, maxLength: 8 })], {
-    numRuns: 40,
-  })(
+  // 4 op を混ぜて 20 手まで走らせる。 add-only の 2 op / 40 run では ID 衝突が
+  // 露見する条件 (remove / clear の後に add) に触れなかったため、 domain を
+  // 広げつつ numRuns も上げる。
+  test.prop([fc.array(arbOp, { minLength: 1, maxLength: 20 })], { numRuns: 200 })(
     "advancedReducer_ids_areAllUnique",
     (ops) => {
       let state = createInitialState()
       for (const op of ops) {
-        state = advancedReducer(state, { type: op, parentId: state.root.id })
+        if (op.kind === "addCondition") {
+          state = advancedReducer(state, { type: "addCondition", parentId: state.root.id })
+        } else if (op.kind === "addGroup") {
+          state = advancedReducer(state, { type: "addGroup", parentId: state.root.id })
+        } else if (op.kind === "removeFirst") {
+          const firstChild = state.root.children[0]
+          if (firstChild) state = advancedReducer(state, { type: "removeNode", id: firstChild.id })
+        } else {
+          state = advancedReducer(state, { type: "clear" })
+        }
       }
       const seen = new Set<AdvancedNodeId>()
       collectIds(state.root, seen)

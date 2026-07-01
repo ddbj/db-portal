@@ -205,9 +205,9 @@ export const createNewsMirror = (
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
   const tickAll = async (): Promise<void> => {
-    for (const poll of pollers) {
-      await poll()
-    }
+    // poller はそれぞれ独立した remote repo (DDBJ / DBCLS) を fetch するので順序
+    // 依存はない。 Promise.all で並列化して interval 内の総所要時間を圧縮する。
+    await Promise.all(pollers.map((poll) => poll()))
   }
 
   const mirror: NewsMirror = {

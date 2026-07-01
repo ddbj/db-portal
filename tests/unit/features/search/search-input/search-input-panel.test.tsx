@@ -81,7 +81,7 @@ describe("SearchInputPanel AI mode", () => {
     expect(toggle).toHaveAttribute("aria-pressed", "false")
     // The keyword box and its database scope picker are present in keyword mode.
     expect(screen.getByRole("textbox", { name: "検索キーワード" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "検索対象データベース" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /検索対象データベース/ })).toBeInTheDocument()
 
     fireEvent.click(toggle)
 
@@ -90,8 +90,8 @@ describe("SearchInputPanel AI mode", () => {
     expect(toggle).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("textbox", { name: "AI クエリビルダーへの入力" })).toBeInTheDocument()
     expect(screen.queryByRole("textbox", { name: "検索キーワード" })).toBeNull()
-    expect(screen.queryByRole("button", { name: "検索対象データベース" })).toBeNull()
-    expect(screen.getByRole("button", { name: "生成モード" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /検索対象データベース/ })).toBeNull()
+    expect(screen.getByRole("button", { name: /生成モード/ })).toBeInTheDocument()
   })
 
   test("toggle_pressedAgain_returnsToKeywordInput", async () => {
@@ -114,7 +114,7 @@ describe("SearchInputPanel AI mode", () => {
     fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
     // The mode is chosen before generating via the repurposed scope dropdown;
     // an empty builder defaults to "新規生成" and "既存に追加" is listed but disabled.
-    const modeTrigger = screen.getByRole("button", { name: "生成モード" })
+    const modeTrigger = screen.getByRole("button", { name: /生成モード/ })
     expect(modeTrigger).toHaveTextContent("新規生成")
     fireEvent.click(modeTrigger)
     const appendOption = screen.getByRole("option", { name: "既存に追加" })
@@ -126,7 +126,7 @@ describe("SearchInputPanel AI mode", () => {
     server.use(llmHealth({ status: "ok", model: "qwen" }))
     renderPanel(stateWithCondition())
     fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
-    const modeTrigger = screen.getByRole("button", { name: "生成モード" })
+    const modeTrigger = screen.getByRole("button", { name: /生成モード/ })
     expect(modeTrigger).toHaveTextContent("既存に追加")
     fireEvent.click(modeTrigger)
     expect(screen.getByRole("option", { name: "新規生成" })).not.toBeDisabled()

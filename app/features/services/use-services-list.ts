@@ -25,7 +25,7 @@ const matchesCategory = (item: ServiceItem, facet: ServicesFacetState): boolean 
 const applyFilter = (items: ServiceItem[], _lang: Lang, facet: ServicesFacetState): ServiceItem[] =>
   items.filter((item) => matchesSource(item, facet) && matchesCategory(item, facet))
 
-const sortItems = (items: ServiceItem[], lang: Lang, facet: ServicesFacetState): ServiceItem[] => {
+export const sortItems = (items: ServiceItem[], lang: Lang, facet: ServicesFacetState): ServiceItem[] => {
   const sorted = [...items]
   sorted.sort((a, b) => {
     const byName = serviceName(a, lang).localeCompare(serviceName(b, lang), "en", {

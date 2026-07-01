@@ -7,13 +7,13 @@ LABEL org.opencontainers.image.title="db-portal" \
       org.opencontainers.image.source="https://github.com/ddbj/db-portal" \
       org.opencontainers.image.licenses="Apache-2.0"
 
+# vim-tiny / less は runtime に不要 (debug は `docker exec` + apt で入れる)。
+# curl は compose healthcheck、 git は build stage の gen-last-updated が使う。
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       curl \
       git \
-      jq \
-      less \
-      vim-tiny && \
+      jq && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

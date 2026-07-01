@@ -16,6 +16,19 @@ services:
       - ./cache:/app/cache:rw
     ports:
       - "${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
+    # crash 復帰。 dev override では "no" に上書きする。
+    restart: unless-stopped
+    # OOM で host 全体が swap するのを止める上界。 SSR + build peak を吸収でき
+    # つつ暴走時に host を巻き込まない値。
+    mem_limit: 4g
+    # /robots.txt は auth も i18n も不要な軽量エンドポイント。 200 が返れば
+    # request pipeline は生きている。 dev 用 compose では disable する。
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${DB_PORTAL_APP_INTERNAL_PORT}/robots.txt || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       - TZ=${TZ:-Asia/Tokyo}
       - NODE_ENV=${NODE_ENV:-development}

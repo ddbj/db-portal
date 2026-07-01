@@ -74,16 +74,10 @@ export {
   splitForSidebar,
 } from "./sidebar"
 export { SyncStatusChip } from "./sync-status"
+// scope 系 (DB list / per-page / sort) は `~/lib/search-scope` が canonical。
+// features/search の barrel からも同 file を直接 re-export し、 features/search
+// 内部の types.ts を経由する二重 identity を避ける。
 export {
-  DB_SLUGS,
-  type DbSlug,
-  maxReachablePage,
-  PER_PAGE_VALUES,
-  type PerPageValue,
-  reachablePageCount,
-  SEARCH_HARD_LIMIT,
-  SORT_KEYS,
-  type SortKey,
   sortKeyToApiSort,
 } from "./types"
 export {
@@ -98,3 +92,14 @@ export {
   serializeAstToDsl,
   writeSearchParams,
 } from "./url"
+export {
+  DB_SLUGS,
+  type DbSlug,
+  maxReachablePage,
+  PER_PAGE_VALUES,
+  type PerPageValue,
+  reachablePageCount,
+  SEARCH_HARD_LIMIT,
+  SORT_KEYS,
+  type SortKey,
+} from "~/lib/search-scope"

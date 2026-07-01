@@ -1,4 +1,5 @@
 import type { FacetName } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import {
   FIELD_REGISTRY,
@@ -9,7 +10,6 @@ import {
   SCOPE_FIELDS,
   scopeOf,
 } from "../field-registry"
-import type { DbSlug } from "../types"
 
 // Sidebar filter rows per scope, derived from the shared field registry
 // (`../field-registry.ts`). The registry decides which fields exist and their DSL

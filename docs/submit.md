@@ -78,22 +78,13 @@ UI 構成 (上部トグル 2 + サブトグル 3 + 種別ごと ChipAxis):
 
 ### DDBJ サービス一覧
 
-`Service` enum の全要素と role 割当・accession 形式の最終 SSOT は `app/schemas/submit/service.ts`。 本表は role と概要だけを保持する。
+`Service` enum の全要素と role 割当・accession 形式・具体的な slug 一覧の SSOT は `app/schemas/submit/service.ts`。 本 doc では 3 つの role が担う概念だけを保持し、 slug 一覧を持たない (追加時に docs と code が drift する原因)。
 
-| slug | role | 何を登録するか |
-|---|---|---|
-| `bioproject` | companion | 研究プロジェクトのメタデータ。 全 destination の前提として 1 件添付 |
-| `umbrella-bioproject` | companion | ハプロタイプ等の複数 BioProject を束ねる Umbrella |
-| `biosample` | companion | 生物試料のメタデータ。 全 destination の前提として 1 件添付 |
-| `dra` | destination | DDBJ Sequence Read Archive (一次シーケンスリード) |
-| `jga` | destination | 個人識別可能なヒトデータ (制限公開専用) |
-| `ddbj` | destination | MSS (WGS / GNM / MAG / TSA / TLS / TPA / アノテーション) |
-| `nsss` | destination | Web 登録系 (少数・短い・非完成の配列) |
-| `gea` | destination | Genomic Expression Archive (発現データ) |
-| `metabobank` | destination | メタボロームデータ |
-| `humandbs` | external | NBDC ヒトデータベース (JGA への Policy 申請窓口、 external gate) |
-| `jpost` | external | プロテオーム質量分析 (DDBJ 外部の登録窓口) |
-| `eva` | external | 非ヒト variant (EBI 運用、 DDBJ 外部の登録窓口) |
+| role | 担うもの |
+|---|---|
+| companion | 全 destination の前提として 1 件添付する共通メタデータ (BioProject / BioSample 等) |
+| destination | データを最終的に受け入れる DDBJ の登録 service (DRA / JGA / DDBJ / GEA / MetaboBank / NSSS 等) |
+| external | DDBJ 外部の登録窓口・Policy ゲート (NBDC humandbs / jPOST / EVA 等) |
 
 サマリーカードのバッジ色は role と notes の warning / error 有無から `serviceBadgeColor` 純関数で決め、 色値は `app/styles/tailwind.css` の `@theme` トークンが SSOT。 「詳細を見る」 link は内部詳細ページ (`/<slug>` の catch-all route) を持つ service にだけ出す (判定は `service.ts` の `internalDetailHref` / `hasInternalDetailPage` が SSOT)。
 

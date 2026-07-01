@@ -1,7 +1,7 @@
 import type { CrossSearchResponse, ParseNode } from "~/lib/api"
+import { type DbSlug, isDbSlug } from "~/lib/search-scope"
 
 import { isIdentityAst, splitFreeText } from "../ast"
-import { type DbSlug, isDbSlug } from "../types"
 import { cardOrderIndex } from "./cross-results"
 import type { DbHit } from "./result-fields"
 

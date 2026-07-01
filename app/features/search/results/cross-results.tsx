@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
-import { useT } from "~/lib/i18n"
+import { formatDateLocalized, useLang, useT } from "~/lib/i18n"
+import { type DbSlug, isDbSlug } from "~/lib/search-scope"
 import { Button, ExternalIcon, Heading, Label, Tag, TextLink } from "~/ui"
 
 import { FIELD_REGISTRY } from "../field-registry"
-import { type DbSlug, isDbSlug } from "../types"
 import { buildResultsHref } from "../url/url-params"
 import { entryHref, isSuppressed, resolveDate } from "./result-fields"
 
@@ -41,16 +41,9 @@ const formatCount = (count: number | null): string => {
   return count.toLocaleString("en-US")
 }
 
-const formatHitDate = (value: string | null | undefined): string => {
-  if (!value) return ""
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-
-  return parsed.toISOString().slice(0, 10)
-}
-
 const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
   const t = useT()
+  const lang = useLang()
   const navigate = useNavigate()
   if (!isDbSlug(entry.db)) return null
   const db: DbSlug = entry.db
@@ -143,7 +136,7 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                       </Link>
                       {resolveDate(hit) && (
                         <div className="font-mono text-fs-body-sm text-ink-soft">
-                          {formatHitDate(resolveDate(hit))}
+                          {formatDateLocalized(resolveDate(hit) ?? "", lang)}
                         </div>
                       )}
                       {isSuppressed(hit) && (

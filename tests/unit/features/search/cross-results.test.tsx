@@ -49,7 +49,8 @@ describe("CrossResults top-hit links", () => {
       datePublished: null,
       dateModified: "2099-02-01",
     }])])
-    expect(screen.getByText("2099-02-01")).toBeInTheDocument()
+    // formatDateLocalized で JST + lang 反映後は ja 表記の `YYYY/MM/DD`
+    expect(screen.getByText("2099/02/01")).toBeInTheDocument()
   })
 })
 

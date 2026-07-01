@@ -3,8 +3,8 @@ import { createElement } from "react"
 import { describe, expect, test, vi } from "vitest"
 
 import { PerDbResults } from "~/features/search/results/per-db-results"
-import type { PerPageValue, SortKey } from "~/features/search/types"
 import type { DbSearchResponse } from "~/lib/api"
+import type { PerPageValue, SortKey } from "~/lib/search-scope"
 
 import { renderWithStub } from "../../../_helpers/render"
 

@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef } from "react"
+import { useCallback, useMemo, useReducer, useRef } from "react"
 
 import type { FileEntry, FileTypeKind, OrganismDomain } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
@@ -73,15 +73,21 @@ export const useSubmitState = (
     dispatch({ type: "REPLACE_STATE", state: next })
   }, [])
 
-  const actions: SubmitDispatch = {
-    setOrganismDomain,
-    setAccessSection,
-    addRow,
-    editRowCell,
-    commitRowEdit,
-    removeRow,
-    replaceState,
-  }
+  // dispatch は useCallback で稳定しているので useMemo の deps に含める。
+  // 毎 render で actions object を新規生成すると caller の useMemo/useEffect が
+  // 過剰に再走する (M31 の子 hook / route の restore effect などが影響を受ける)。
+  const actions = useMemo<SubmitDispatch>(
+    () => ({
+      setOrganismDomain,
+      setAccessSection,
+      addRow,
+      editRowCell,
+      commitRowEdit,
+      removeRow,
+      replaceState,
+    }),
+    [setOrganismDomain, setAccessSection, addRow, editRowCell, commitRowEdit, removeRow, replaceState],
+  )
 
   return { state, actions }
 }

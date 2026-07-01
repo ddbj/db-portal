@@ -1,5 +1,5 @@
 import { fc, test } from "@fast-check/vitest"
-import { expect } from "vitest"
+import { expect, test as vitestTest } from "vitest"
 
 import { isKindEnabled } from "../../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../../app/features/submit/flow-rules"
@@ -29,12 +29,17 @@ const recipeSteps = (steps: readonly FlowStep[]): FlowStep[] =>
 const isSpatialKind = (k: string): boolean =>
   k === "spatial-transcriptomics"
 
+// 定数 check は input 非依存なので PBT の run ごとに再評価する意味がない。
+// 通常 test に分離すると RUNS × 2000 の無駄な assertion が消え、 失敗時に
+// 「PBT counter-example」 と誤 report されない。
+vitestTest("RECIPE_ALLOWLIST_isImmutable", () => {
+  expect(new Set(RECIPE_ALLOWLIST).size).toBe(RECIPE_ALLOWLIST.length)
+  expect(RECIPE_ALLOWLIST.length).toBeGreaterThan(0)
+})
+
 test.prop([arbSubmission], RUNS)(
-  "RECIPE_ALLOWLIST_isImmutableAndAllRecipeStepIdsTraceToAllowlist",
+  "recipeStepIds_alwaysTraceToAllowedPrefixes",
   (submission) => {
-    // allowlist は重複なし・空でない不変集合 (jga / spatial の 2 named recipe)
-    expect(new Set(RECIPE_ALLOWLIST).size).toBe(RECIPE_ALLOWLIST.length)
-    expect(RECIPE_ALLOWLIST.length).toBeGreaterThan(0)
     const allowedPrefixes = ["recipe-jga", "recipe-spatial", "recipe-expression", "recipe-sequence", "recipe-umbrella"]
     for (const s of recipeSteps(deriveFlowSteps(submission))) {
       expect(allowedPrefixes.some((p) => s.id.startsWith(p))).toBe(true)

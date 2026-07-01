@@ -58,6 +58,7 @@ export type Resources = {
       resultsHeading: string
       closeSearch: string
       noResults: string
+      bodyLabel: string
     }
   }
   top: {
@@ -757,6 +758,7 @@ export const ja: Resources = {
       resultsHeading: "「{{query}}」 の検索結果 {{count}} 件",
       closeSearch: "検索を閉じる",
       noResults: "該当するドキュメントはありません",
+      bodyLabel: "本文",
     },
   },
   top: {

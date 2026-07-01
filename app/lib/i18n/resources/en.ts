@@ -60,6 +60,7 @@ export const en: Resources = {
       resultsHeading: "{{count}} results for \"{{query}}\"",
       closeSearch: "Close search",
       noResults: "No matching documents",
+      bodyLabel: "Body",
     },
   },
   top: {

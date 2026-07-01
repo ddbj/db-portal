@@ -1,6 +1,5 @@
 import type { DbSearchResponse } from "~/lib/api"
-
-import type { DbSlug } from "../types"
+import type { DbSlug } from "~/lib/search-scope"
 
 export type DbHit = DbSearchResponse["hits"][number]
 

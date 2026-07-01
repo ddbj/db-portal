@@ -43,13 +43,13 @@ describe("SearchBox", () => {
 
   test("SearchBox_sizeMdStaticScope_appliesScopePy15AndFsBodySm", () => {
     render(<SearchBox />)
-    const scope = screen.getByLabelText("検索対象データベース")
+    const scope = screen.getByLabelText(/検索対象データベース/)
     expect(scope).toHaveClass("py-1.5", "text-fs-body-sm")
   })
 
   test("SearchBox_sizeLgStaticScope_appliesScopePy3AndFsBodySm", () => {
     render(<SearchBox size="lg" />)
-    const scope = screen.getByLabelText("検索対象データベース")
+    const scope = screen.getByLabelText(/検索対象データベース/)
     expect(scope).toHaveClass("py-3", "text-fs-body-sm")
   })
 
@@ -111,19 +111,19 @@ describe("SearchBox", () => {
 
   test("SearchBox_showScopeFalse_doesNotRenderScope", () => {
     render(<SearchBox showScope={false} />)
-    expect(screen.queryByLabelText("検索対象データベース")).toBeNull()
+    expect(screen.queryByLabelText(/検索対象データベース/)).toBeNull()
   })
 
   test("SearchBox_showScopeTrueNoOptions_rendersStaticScopeDiv", () => {
     render(<SearchBox />)
-    const scope = screen.getByLabelText("検索対象データベース")
+    const scope = screen.getByLabelText(/検索対象データベース/)
     expect(scope.tagName).toBe("DIV")
     expect(scope).not.toHaveAttribute("aria-haspopup")
   })
 
   test("SearchBox_interactiveScope_rendersButtonWithAriaHaspopup", () => {
     render(<SearchBox scopeOptions={["A", "B"]} />)
-    const scope = screen.getByRole("button", { name: "検索対象データベース" })
+    const scope = screen.getByRole("button", { name: /検索対象データベース/ })
     expect(scope.tagName).toBe("BUTTON")
     expect(scope).toHaveAttribute("aria-haspopup", "listbox")
     expect(scope).toHaveAttribute("aria-expanded", "false")
@@ -136,16 +136,16 @@ describe("SearchBox", () => {
 
   test("SearchBox_interactiveScopeClick_opensListbox", () => {
     render(<SearchBox scopeOptions={["A", "B"]} />)
-    fireEvent.click(screen.getByRole("button", { name: "検索対象データベース" }))
-    const listbox = screen.getByRole("listbox", { name: "検索対象データベース" })
+    fireEvent.click(screen.getByRole("button", { name: /検索対象データベース/ }))
+    const listbox = screen.getByRole("listbox", { name: /検索対象データベース/ })
     expect(listbox).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "検索対象データベース" }))
+    expect(screen.getByRole("button", { name: /検索対象データベース/ }))
       .toHaveAttribute("aria-expanded", "true")
   })
 
   test("SearchBox_listboxOptions_renderWithRoleOption", () => {
     render(<SearchBox scope="A" scopeOptions={["A", "B"]} />)
-    fireEvent.click(screen.getByRole("button", { name: "検索対象データベース" }))
+    fireEvent.click(screen.getByRole("button", { name: /検索対象データベース/ }))
     const optA = screen.getByRole("option", { name: "A" })
     const optB = screen.getByRole("option", { name: "B" })
     expect(optA).toHaveAttribute("aria-selected", "true")
@@ -157,7 +157,7 @@ describe("SearchBox", () => {
     render(
       <SearchBox scope="A" scopeOptions={["A", "B"]} onScopeChange={onScopeChange} />,
     )
-    fireEvent.click(screen.getByRole("button", { name: "検索対象データベース" }))
+    fireEvent.click(screen.getByRole("button", { name: /検索対象データベース/ }))
     fireEvent.click(screen.getByRole("option", { name: "B" }))
     expect(onScopeChange).toHaveBeenCalledWith("B")
     expect(screen.queryByRole("listbox")).toBeNull()
@@ -165,7 +165,7 @@ describe("SearchBox", () => {
 
   test("SearchBox_escKey_closesListbox", () => {
     render(<SearchBox scopeOptions={["A", "B"]} />)
-    fireEvent.click(screen.getByRole("button", { name: "検索対象データベース" }))
+    fireEvent.click(screen.getByRole("button", { name: /検索対象データベース/ }))
     expect(screen.getByRole("listbox")).toBeInTheDocument()
     act(() => {
       fireEvent.keyDown(document, { key: "Escape" })
@@ -180,7 +180,7 @@ describe("SearchBox", () => {
         <button data-testid="outside">outside</button>
       </div>,
     )
-    fireEvent.click(screen.getByRole("button", { name: "検索対象データベース" }))
+    fireEvent.click(screen.getByRole("button", { name: /検索対象データベース/ }))
     expect(screen.getByRole("listbox")).toBeInTheDocument()
     act(() => {
       fireEvent.mouseDown(screen.getByTestId("outside"))
@@ -247,7 +247,7 @@ describe("SearchBox", () => {
 
   test("SearchBox_interactiveScopeReClick_closesListbox", () => {
     render(<SearchBox scopeOptions={["A", "B"]} />)
-    const scope = screen.getByRole("button", { name: "検索対象データベース" })
+    const scope = screen.getByRole("button", { name: /検索対象データベース/ })
     fireEvent.click(scope)
     expect(screen.getByRole("listbox")).toBeInTheDocument()
     fireEvent.click(scope)
@@ -265,7 +265,7 @@ describe("SearchBox", () => {
       )
     }
     render(<Harness />)
-    const scope = screen.getByLabelText("検索対象データベース")
+    const scope = screen.getByLabelText(/検索対象データベース/)
     expect(scope).toHaveTextContent("A")
     fireEvent.click(screen.getByRole("button", { name: "swap" }))
     expect(scope).toHaveTextContent("B")
@@ -320,7 +320,7 @@ describe("SearchBox", () => {
 
   test("SearchBox_listboxAriaControls_matchesListboxId", () => {
     render(<SearchBox scopeOptions={["A", "B"]} />)
-    const scopeBtn = screen.getByRole("button", { name: "検索対象データベース" })
+    const scopeBtn = screen.getByRole("button", { name: /検索対象データベース/ })
     const listboxId = scopeBtn.getAttribute("aria-controls")
     expect(listboxId).not.toBeNull()
     fireEvent.click(scopeBtn)

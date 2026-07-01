@@ -1,9 +1,9 @@
 import { Link } from "react-router"
 
 import { formatDateLocalized, type Lang, useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { ExternalIcon, Tag } from "~/ui"
 
-import type { DbSlug } from "../types"
 import {
   ancestryRow,
   CLASSIFICATION_LABEL,

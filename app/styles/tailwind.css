@@ -136,10 +136,28 @@
   outline: none;
 }
 
+/* focus indicator は double-ring: 内側 2px の brand-deep で WCAG 2.2 (1.4.11)
+ * の 3:1 コントラストを担保しつつ、 外側 2px の brand-yellow で BSI らしさを
+ * 残す (単色 yellow #FFCC33 は白背景で 1.51:1 で AA 未達)。 */
 *:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-brand-deep);
+  outline-offset: 1px;
   border-radius: 3px;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
+/* prefers-reduced-motion (前庭障害 / モーション感受性への配慮): 全 animation /
+ * transition を 0.01ms に縮退させ、 skeleton pulse や tab 遷移の visual
+ * disturbance を除去する (WCAG 2.3.3)。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* テキスト入力系は global の黄色 outline ではなく、角丸を保ったまま枠線を
