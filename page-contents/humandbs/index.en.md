@@ -1,5 +1,5 @@
 ---
-title: NBDC ヒトデータベース
+title: NBDC Human Database
 description: The NBDC Human Database is a unified intake for human data Data Submission/Use applications and policy review, routing approved data to one of four archives (DRA / GEA / JGA / NHA) by data type and access class.
 ---
 

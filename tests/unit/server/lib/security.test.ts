@@ -21,8 +21,11 @@ const makeRes = (): RecordedRes => {
   }
 }
 
-const runMiddleware = (env: "dev" | "staging" | "production"): RecordedRes => {
-  const middleware = securityHeaders({ env })
+const runMiddleware = (
+  env: "dev" | "staging" | "production",
+  options: { keycloakRealmUrl?: string; searchApiUrl?: string } = {},
+): RecordedRes => {
+  const middleware = securityHeaders({ env, ...options })
   const res = makeRes()
   const next = vi.fn()
   middleware({} as Request, res as unknown as Response, next)
@@ -92,5 +95,20 @@ describe("securityHeaders", () => {
     const part = csp.split(";").find((p) => p.trim().startsWith(directive))
     expect(part).toBeDefined()
     expect(part).toContain(expectedToken)
+  })
+
+  test("securityHeaders_csp_formAction_allowsKeycloakOrigin", () => {
+    // logout POST は /api/auth/logout (同一 origin) から Keycloak logout endpoint
+    // へ 302 する。CSP form-action は redirect chain 全 target に適用されるため、
+    // Keycloak origin を許可しないと browser がブロックする。
+    const res = runMiddleware("production", {
+      keycloakRealmUrl: "https://idp.example.com/realms/master",
+    })
+    const csp = res.headers["Content-Security-Policy"] ?? ""
+    const part = csp.split(";").find((p) => p.trim().startsWith("form-action"))
+    expect(part).toBeDefined()
+    expect(part).toContain("'self'")
+    expect(part).toContain("https://idp.example.com")
+    expect(part).not.toContain("/realms/master")
   })
 })

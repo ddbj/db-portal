@@ -5,6 +5,7 @@ import type { RequestHandler } from "express"
 type SecurityHeadersOptions = {
   env: "dev" | "staging" | "production"
   searchApiUrl?: string
+  keycloakRealmUrl?: string
 }
 
 const originOf = (url: string): string => {
@@ -20,7 +21,11 @@ const originOf = (url: string): string => {
 // は攻撃面が明確に閉じられるので現段階でも 'none' に狭める。 dev でも同じ CSP
 // を emit することで開発時の accidental exposure を減らし、 CSP に噛む変更
 // (nonce 抜けなど) が prod deploy 前に見える。
-const buildCspHeader = (nonce: string, searchApiOrigin?: string): string =>
+const buildCspHeader = (
+  nonce: string,
+  searchApiOrigin?: string,
+  keycloakOrigin?: string,
+): string =>
   [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
@@ -34,10 +39,16 @@ const buildCspHeader = (nonce: string, searchApiOrigin?: string): string =>
     "worker-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    // form-action は redirect chain 全 target に適用されるため、logout POST →
+    // /api/auth/logout → Keycloak logout endpoint への 302 を許可する。
+    keycloakOrigin ? `form-action 'self' ${keycloakOrigin}` : "form-action 'self'",
   ].join("; ")
 
-export const securityHeaders = ({ env, searchApiUrl }: SecurityHeadersOptions): RequestHandler =>
+export const securityHeaders = ({
+  env,
+  searchApiUrl,
+  keycloakRealmUrl,
+}: SecurityHeadersOptions): RequestHandler =>
   (_req, res, next) => {
     const nonce = crypto.randomUUID()
     res.locals.cspNonce = nonce
@@ -47,7 +58,11 @@ export const securityHeaders = ({ env, searchApiUrl }: SecurityHeadersOptions): 
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
 
     const searchApiOrigin = searchApiUrl ? originOf(searchApiUrl) : undefined
-    res.setHeader("Content-Security-Policy", buildCspHeader(nonce, searchApiOrigin))
+    const keycloakOrigin = keycloakRealmUrl ? originOf(keycloakRealmUrl) : undefined
+    res.setHeader(
+      "Content-Security-Policy",
+      buildCspHeader(nonce, searchApiOrigin, keycloakOrigin),
+    )
 
     if (env === "production") {
       res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains")

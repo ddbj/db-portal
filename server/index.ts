@@ -36,7 +36,13 @@ const parseTrustProxy = (value: string): boolean | number | string => {
 const app = express()
 app.disable("x-powered-by")
 app.set("trust proxy", parseTrustProxy(env.DB_PORTAL_TRUST_PROXY))
-app.use(securityHeaders({ env: env.DB_PORTAL_ENV, searchApiUrl: env.DB_PORTAL_SEARCH_API_URL }))
+app.use(
+  securityHeaders({
+    env: env.DB_PORTAL_ENV,
+    searchApiUrl: env.DB_PORTAL_SEARCH_API_URL,
+    keycloakRealmUrl: env.DB_PORTAL_KEYCLOAK_REALM_URL,
+  }),
+)
 
 // LLM prompt body は短い自然文なので 32KB で十分。 global で 1MB を許すと、
 // route handler 内の LLM rate-limit に到達する前に毎リクエストが parse コストを
