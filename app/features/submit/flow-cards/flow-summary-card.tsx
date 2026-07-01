@@ -187,7 +187,7 @@ const AccessBadge = ({ access, label, className, variant = "filled" }: {
   return (
     <span className={cn(
       "inline-flex items-center gap-1 text-fs-label font-bold shrink-0",
-      variant === "outline" ? "rounded-sm border px-1.5 py-px" : "rounded-full px-2 py-0.5",
+      variant === "outline" ? "rounded-badge border px-1.5 py-px" : "rounded-full px-2 py-0.5",
       access === "restricted" ? "border-warn-border text-warn-fg" : "border-ok-border text-ok-fg",
       variant === "filled" && (access === "restricted" ? "bg-warn-bg" : "bg-ok-bg"),
       className,

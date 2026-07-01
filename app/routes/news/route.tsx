@@ -44,7 +44,7 @@ const NewsRoute = () => {
     <>
       <PageTitle title={t("news.pageTitle")} />
       <Section padTop="none" padBottom="lg">
-        <div className="grid gap-8 sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
+        <div className="grid gap-section-mid sm:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
           <FacetPanel
             facet={facet}
             options={result.options}

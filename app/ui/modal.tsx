@@ -112,7 +112,7 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-14 bg-ink/45"
+      className="fixed inset-0 z-modal flex items-start justify-center pt-14 bg-ink/45"
       onPointerDown={overlayPointerDown}
       onClick={overlayClick}
     >

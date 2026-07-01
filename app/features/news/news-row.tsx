@@ -1,6 +1,6 @@
 import { type NewsItem, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api"
 import { categoryLabelKey, formatDate, type Lang, useT } from "~/lib/i18n"
-import { Tag, TextLink } from "~/ui"
+import { NewsDate, Tag, TextLink } from "~/ui"
 
 type NewsRowProps = {
   item: NewsItem
@@ -15,9 +15,7 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
 
   return (
     <li className="flex items-start gap-4 py-4 px-2 border-b border-border-soft last:border-b-0">
-      <span className="font-mono text-fs-meta text-ink-soft shrink-0 w-20 tracking-mono pt-0.5">
-        {formatDate(item.publishedAt)}
-      </span>
+      <NewsDate className="shrink-0 w-date-col pt-0.5">{formatDate(item.publishedAt)}</NewsDate>
       <div className="flex-1 min-w-0">
         {externalUrl !== undefined
           ? (

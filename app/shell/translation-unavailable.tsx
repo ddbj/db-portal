@@ -1,7 +1,7 @@
 import { useFetcher, useMatches } from "react-router"
 
 import { useLang, useT } from "~/lib/i18n"
-import { InfoIcon } from "~/ui"
+import { Button, InfoIcon } from "~/ui"
 
 type I18nState = "complete" | "missing" | "partial"
 
@@ -29,32 +29,27 @@ export const TranslationUnavailable = () => {
   if (!missing) return null
 
   return (
-    <div
+    <section
       role="status"
       aria-live="polite"
       data-testid="translation-unavailable"
-      className="bg-surface-subtle border-y border-border-soft"
+      className="px-2 py-2"
     >
-      <div className="max-w-content-max mx-auto px-page-gutter py-3 flex items-start gap-3 text-fs-body-sm">
+      <article className="bg-surface-subtle border border-border-soft rounded-button max-w-content-max mx-auto w-full px-4 py-2 flex items-center gap-3 text-fs-body-sm">
         <InfoIcon size={16} />
-        <div className="flex-1 min-w-0">
-          <div className="text-ink font-semibold">
-            {t("translationUnavailable.title")}
-          </div>
-          <p className="text-ink-mid text-fs-body-sm mt-0.5 leading-relaxed m-0">
-            {t("translationUnavailable.description")}
-          </p>
-        </div>
+        <span className="text-ink font-semibold whitespace-nowrap">
+          {t("translationUnavailable.title")}
+        </span>
+        <span className="text-ink-mid flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+          {t("translationUnavailable.description")}
+        </span>
         <fetcher.Form method="post" action="/api/set-lang" className="inline-flex">
           <input type="hidden" name="lang" value="ja" />
-          <button
-            type="submit"
-            className="text-link underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer text-fs-body-sm"
-          >
+          <Button kind="link" type="submit">
             {t("translationUnavailable.switchToJa")}
-          </button>
+          </Button>
         </fetcher.Form>
-      </div>
-    </div>
+      </article>
+    </section>
   )
 }

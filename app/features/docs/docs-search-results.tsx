@@ -4,7 +4,7 @@ import { findNavPath, getNavTree } from "~/lib/content/content-tree"
 import { getPageByPath } from "~/lib/content/markdown-loader"
 import { searchContent, type SearchResult } from "~/lib/content/search-index"
 import { formatDate, useLang, useT } from "~/lib/i18n"
-import { Button, Mark } from "~/ui"
+import { Button, Mark, MonoCode, NewsDate } from "~/ui"
 import { FileTextIcon, FolderIcon, HashIcon } from "~/ui/icons"
 
 type Lang = "ja" | "en"
@@ -113,13 +113,13 @@ export const DocsSearchResults = ({ query, onClear }: Props) => {
                         <Mark text={g.pageTitle} terms={terms} />
                       </span>
                     </Link>
-                    <span className="ml-auto text-fs-body-sm font-mono text-ink-soft whitespace-nowrap shrink-0">
+                    <MonoCode className="ml-auto text-fs-body-sm text-ink-soft whitespace-nowrap shrink-0">
                       {g.pageUrlPath}
-                    </span>
+                    </MonoCode>
                     {iso !== undefined && (
-                      <span className="text-fs-body-sm font-mono text-ink-soft whitespace-nowrap shrink-0 text-right min-w-20">
+                      <NewsDate className="text-fs-body-sm text-ink-soft whitespace-nowrap shrink-0 text-right min-w-date-col">
                         {formatDate(iso)}
-                      </span>
+                      </NewsDate>
                     )}
                   </div>
                   {g.bestSection !== undefined && g.bestSection.anchor !== undefined && (

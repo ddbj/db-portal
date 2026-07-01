@@ -25,7 +25,7 @@ const DesignIndex = () => (
       <li className="border border-border-soft rounded-card p-4 bg-surface">
         <h2 className="text-fs-h2 font-bold text-ink m-0 mb-2">Primitives</h2>
         <p className="text-ink-mid m-0 mb-3 text-fs-body-sm leading-relaxed">
-          22 primitive を variant × size × state すべてのケースで並べる。利用側はこの画面と差分を出さないこと。
+          全 primitive を variant × size × state で並べる。利用側はこの画面と差分を出さないこと。
         </p>
         <Link to="/_design/primitives" className="text-brand font-semibold no-underline hover:underline">
           /_design/primitives →

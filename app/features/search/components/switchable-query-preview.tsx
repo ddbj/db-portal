@@ -82,7 +82,7 @@ export const SwitchableQueryPreview = (
         ? <ProposalConditions node={ast} />
         : (
           <code
-            className="min-w-0 font-mono text-fs-body text-ink whitespace-pre-wrap break-all"
+            className="min-w-0 font-mono tracking-mono text-fs-body text-ink whitespace-pre-wrap break-all"
             aria-label={t("search.a11y.queryPreview")}
           >
             {dsl || ""}

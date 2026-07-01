@@ -301,7 +301,7 @@ const AccessSectionPanel = ({
     <div>
       <SectionHeading
         hint={disabled && organismDomain !== null ? (
-          <span className="rounded-full bg-brand/10 px-2.5 py-1 text-fs-micro font-semibold leading-none text-brand">
+          <span className="rounded-pill bg-brand-softer px-2.5 py-1 text-fs-micro font-semibold leading-none text-brand-deep">
             {t("submit.access.nonHumanReason")}
           </span>
         ) : undefined}

@@ -216,7 +216,7 @@ export const SearchBox = ({
           id={listboxId}
           role="listbox"
           aria-label={scopeAriaLabel}
-          className="absolute z-20 top-full left-0 mt-1 min-w-[220px] bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-72 overflow-auto"
+          className="absolute z-popover top-full left-0 mt-1 min-w-[220px] bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-popover overflow-auto"
         >
           {scopeOptions.map((opt) => {
             const selected = opt === scopeValue

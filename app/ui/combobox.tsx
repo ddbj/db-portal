@@ -204,7 +204,7 @@ export const Combobox = ({
           left: menuPosition.left,
           minWidth: menuPosition.width,
         }}
-        className="z-50 bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-72 overflow-auto"
+        className="z-popover bg-surface border border-border-soft rounded-card shadow-card-hover py-1 max-h-popover overflow-auto"
       >
         {visibleOptions.length === 0
           ? (

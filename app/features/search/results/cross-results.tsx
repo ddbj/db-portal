@@ -100,7 +100,7 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                   {t("search.results.cross.notApplicable")}
                 </span>
                 {unavailableLabels.length > 0 && (
-                  <span className="text-fs-meta text-ink-softer">
+                  <span className="text-fs-meta text-ink-soft">
                     {t("search.results.cross.notApplicableReason", { fields: unavailableLabels.join(" / ") })}
                   </span>
                 )}
@@ -129,14 +129,14 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                 {hits.map((hit) => (
                   <li
                     key={hit.identifier}
-                    className="grid grid-cols-[115px_1fr] gap-x-3"
+                    className="grid grid-cols-[var(--spacing-id-col)_1fr] gap-x-3"
                   >
                     <div className="min-w-0">
                       <Link
                         to={entryHref(hit)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-0.5 font-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
+                        className="inline-flex items-center gap-0.5 font-mono tracking-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
                       >
                         {hit.identifier}
                         <ExternalIcon size={10} aria-hidden className="shrink-0 text-ink-soft" />

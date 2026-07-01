@@ -28,7 +28,7 @@ export const QueryPreview = ({ dsl, onClear, onEdit }: QueryPreviewProps) => {
     <div className="rounded-card border border-border-soft bg-surface-subtle px-3 py-2.5 flex items-center gap-3">
       <Label>{t("search.preview.label")}</Label>
       <code
-        className="min-w-0 flex-1 font-mono text-fs-body text-ink whitespace-pre-wrap break-all"
+        className="min-w-0 flex-1 font-mono tracking-mono text-fs-body text-ink whitespace-pre-wrap break-all"
         aria-label={t("search.a11y.queryPreview")}
       >
         {dsl || ""}

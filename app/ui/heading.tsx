@@ -3,7 +3,7 @@ import { createElement } from "react"
 
 import { cn } from "./cn"
 
-type HeadingScale = "h2" | "h3"
+type HeadingScale = "h1" | "h2" | "h3"
 
 type HeadingProps = {
   children: ReactNode
@@ -19,12 +19,14 @@ type HeadingProps = {
   className?: string
 }
 
-// Single source of the heading recipe: weight, ink color, and tight leading are
-// fixed here so every section and card title shares one rhythm. Result and news
+// Single source of the heading recipe: ink color and tight leading are fixed
+// here so every page, section, and card title shares one rhythm. Weight is
+// per-scale (h1 = extrabold for page titles, h2 / h3 = bold). Result and news
 // item titles are a separate, looser recipe (leading-snug) and do not use this.
 const scaleClass: Record<HeadingScale, string> = {
-  h2: "text-fs-h2",
-  h3: "text-fs-h3 tracking-h3",
+  h1: "text-fs-h1 tracking-h1 font-extrabold",
+  h2: "text-fs-h2 font-bold",
+  h3: "text-fs-h3 tracking-h3 font-bold",
 }
 
 export const Heading = ({ children, as = "h2", size, bar = false, id, className }: HeadingProps) =>
@@ -33,7 +35,7 @@ export const Heading = ({ children, as = "h2", size, bar = false, id, className 
     {
       id,
       className: cn(
-        "font-bold text-ink m-0 leading-tight",
+        "text-ink m-0 leading-tight",
         scaleClass[size ?? as],
         bar && "pl-2.5 border-l-[3px] border-brand",
         className,

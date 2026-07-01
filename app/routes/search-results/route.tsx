@@ -374,7 +374,7 @@ const SearchResultsRoute = () => {
             )
             : (
               <Section padTop="sm" padBottom="lg">
-                <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                <div className="grid gap-section-mid sm:grid-cols-[var(--spacing-sidebar)_1fr]">
                   {facetPanel}
                   <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                     {result.kind === "cross"

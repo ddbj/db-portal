@@ -133,7 +133,7 @@ const HeadingRow = ({ urlPath, heading, activeAnchor, filterTerms }: HeadingRowP
             "flex-1 min-w-0 py-0.5 px-1.5 text-fs-body-sm leading-tight no-underline truncate rounded-button",
             isActive
               ? "font-semibold text-brand-deep"
-              : "text-ink-mid hover:text-ink hover:bg-surface-hover",
+              : "text-ink-mid hover:text-ink hover:bg-surface-subtle",
           )}
         >
           <Mark text={heading.text} terms={filterTerms} />
@@ -232,7 +232,7 @@ const NavTreeItem = ({
                 "flex-1 min-w-0 py-1 px-1.5 text-fs-body-sm no-underline truncate leading-tight",
                 isActive
                   ? "font-bold text-brand-deep"
-                  : "text-ink-mid hover:text-ink hover:bg-surface-hover rounded-button",
+                  : "text-ink-mid hover:text-ink hover:bg-surface-subtle rounded-button",
               )}
             >
               <Mark text={label} terms={filterTerms} />
@@ -450,7 +450,7 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
         <SearchIcon
           aria-hidden
           size={14}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none z-10"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none z-sticky"
         />
         <TextInput
           ariaLabel={t("docs.sidebar.filterPlaceholder")}

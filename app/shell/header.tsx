@@ -76,6 +76,7 @@ export const Header = ({ active }: HeaderProps) => {
                 >
                   {t(`nav.${item.id}`)}
                   <ExternalIcon size={12} className="text-ink-soft" />
+                  <span className="sr-only">{t("a11y.externalLink")}</span>
                 </a>
               )
             }

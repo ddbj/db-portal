@@ -3,7 +3,7 @@ import { useId } from "react"
 
 import { fetchNews, NEWS_QUERY_KEY, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { categoryLabelKey, formatDate, useLang, useT } from "~/lib/i18n"
-import { SectionHeading, Tag, TextLink } from "~/ui"
+import { NewsDate, SectionHeading, Tag, TextLink } from "~/ui"
 
 const NEWS_LIMIT = 5
 
@@ -52,9 +52,7 @@ export const NewsAside = () => {
               className={isLast ? "py-3" : "py-3 border-b border-border-soft"}
             >
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <span className="font-mono text-fs-label text-ink-soft">
-                  {formatDate(n.publishedAt)}
-                </span>
+                <NewsDate>{formatDate(n.publishedAt)}</NewsDate>
                 <Tag kind="source" source={n.source} size="sm" />
                 <Tag kind="tag" size="sm">{t(categoryLabelKey(n.category))}</Tag>
               </div>
@@ -63,8 +61,8 @@ export const NewsAside = () => {
 
                 return externalUrl !== undefined
                   ? (
-                    <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")} weight="bold">
-                      <span className="text-ink text-fs-body leading-snug">
+                    <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")} weight="bold" tone="ink">
+                      <span className="text-fs-body leading-snug">
                         {newsItemTitle(n, lang)}
                       </span>
                     </TextLink>

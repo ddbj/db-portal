@@ -67,7 +67,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-fs-label">
         {dbChip && <Tag kind="brand" size="sm">{t(`search.scope.${db}`)}</Tag>}
         <span className="font-mono font-semibold tracking-mono leading-none text-brand-deep">{hit.identifier}</span>
-        {date && <span className="font-mono leading-none text-ink-soft">{date}</span>}
+        {date && <span className="font-mono tracking-mono leading-none text-ink-soft">{date}</span>}
         {(subtype || suppressed || controlled) && (
           <span className="ml-0.5 inline-flex items-center gap-1.5">
             {subtype && <Tag kind="tag" size="sm" mono>{subtype}</Tag>}
@@ -120,7 +120,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
                   className="inline-flex items-center rounded-tag bg-surface-subtle px-2 py-px text-fs-micro leading-snug text-ink-soft"
                 >
                   {chip.labelKey && (
-                    <span className="mr-1 text-ink-softer">{t(chip.labelKey)}:</span>
+                    <span className="mr-1 text-ink-soft">{t(chip.labelKey)}:</span>
                   )}
                   {chip.value}
                 </span>
@@ -135,7 +135,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
               ))}
           {classification.length > 0 && (
             <span className="text-ink-soft">
-              <span className="mr-1 text-ink-softer">{t(CLASSIFICATION_LABEL)}:</span>
+              <span className="mr-1 text-ink-soft">{t(CLASSIFICATION_LABEL)}:</span>
               {classification.slice(0, 6).join(" › ")}
               {classification.length > 6 ? " …" : ""}
             </span>

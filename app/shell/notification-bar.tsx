@@ -4,7 +4,7 @@ import { useLocation } from "react-router"
 
 import { fetchNews, NEWS_QUERY_KEY, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
-import { CloseIcon, IconButton, Tag, TextLink } from "~/ui"
+import { CloseIcon, IconButton, NewsDate, Tag, TextLink } from "~/ui"
 
 const isTopPath = (pathname: string): boolean => pathname === "/"
 
@@ -87,9 +87,7 @@ export const NotificationBar = () => {
             <Tag kind="status" tone="critical" size="sm">
               {t("notificationBar.important")}
             </Tag>
-            <span className="font-mono text-ink-soft text-fs-label">
-              {formatDate(item.publishedAt)}
-            </span>
+            <NewsDate>{formatDate(item.publishedAt)}</NewsDate>
             <span className="text-ink font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
               {title}
             </span>

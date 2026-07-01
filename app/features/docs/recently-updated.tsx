@@ -4,7 +4,7 @@ import { findNavPath, getNavTree } from "~/lib/content/content-tree"
 import { listAllPages } from "~/lib/content/markdown-loader"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import type { PageContent } from "~/schemas/content/page-content"
-import { SectionHeading } from "~/ui"
+import { MonoCode, NewsDate, SectionHeading } from "~/ui"
 import { FileTextIcon, FolderIcon } from "~/ui/icons"
 
 const RECENT_COUNT = 5
@@ -62,18 +62,18 @@ export const RecentlyUpdated = () => {
           >
             <Link
               to={page.urlPath}
-              className="flex items-center gap-2.5 py-2 no-underline hover:bg-surface-hover"
+              className="flex items-center gap-2.5 py-2 no-underline hover:bg-surface-subtle"
             >
               <RowIcon urlPath={page.urlPath} />
               <span className="text-fs-body font-semibold text-ink flex-1 min-w-0 truncate">
                 {pickTitle(page, lang)}
               </span>
-              <span className="text-fs-body-sm font-mono text-ink-soft whitespace-nowrap shrink-0">
+              <MonoCode className="text-fs-body-sm text-ink-soft whitespace-nowrap shrink-0">
                 {page.urlPath}
-              </span>
-              <span className="text-fs-body-sm font-mono text-ink-soft whitespace-nowrap shrink-0 text-right min-w-20">
+              </MonoCode>
+              <NewsDate className="text-fs-body-sm text-ink-soft whitespace-nowrap shrink-0 text-right min-w-date-col">
                 {formatDate(iso)}
-              </span>
+              </NewsDate>
             </Link>
           </li>
         ))}

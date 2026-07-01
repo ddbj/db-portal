@@ -35,7 +35,6 @@ const DocsIndex = () => {
     <article>
       <PageTitle
         title={t("docs.title")}
-        padTop="trimmed"
         padBottom="sm"
       />
 

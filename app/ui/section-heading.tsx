@@ -30,7 +30,7 @@ export const SectionHeading = ({
           {children}
         </Heading>
         {count !== undefined && (
-          <span className="text-fs-label text-ink-soft">
+          <span className="text-fs-label text-ink-soft font-mono tabular-nums tracking-mono">
             {count}{countSuffix === undefined || countSuffix === "" ? "" : ` ${countSuffix}`}
           </span>
         )}

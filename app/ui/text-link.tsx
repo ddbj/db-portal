@@ -8,6 +8,7 @@ type TextLinkBase = {
   children: ReactNode
   weight?: "normal" | "semibold" | "bold"
   arrow?: boolean
+  tone?: "brand" | "ink"
 }
 
 type TextLinkProps =
@@ -22,10 +23,16 @@ const weightClass = {
   bold: "font-bold",
 } as const
 
+const toneClass = {
+  brand: "text-brand no-underline hover:underline underline-offset-2",
+  ink: "text-ink no-underline hover:text-brand hover:underline underline-offset-2",
+} as const
+
 export const TextLink = (props: TextLinkProps) => {
-  const { children, weight = "semibold" } = props
+  const { children, weight = "semibold", tone = "brand" } = props
   const className = cn(
-    "text-brand no-underline hover:underline inline-flex items-center gap-1",
+    "inline-flex items-center gap-1",
+    toneClass[tone],
     weightClass[weight],
   )
 

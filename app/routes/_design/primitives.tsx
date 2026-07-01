@@ -16,6 +16,7 @@ import {
   FormGroup,
   Heading,
   IconButton,
+  InfoHint,
   Label,
   LinkCard,
   Mark,
@@ -27,26 +28,38 @@ import {
   PageTitle,
   Pagination,
   PreviewCard,
+  ResultsPagination,
   SearchBox,
   Section,
   SectionHeading,
+  Segmented,
   Select,
   SidebarGroupLabel,
   SidebarHeading,
+  StableLabel,
   Tag,
   TextArea,
   TextInput,
   TextLink,
+  Toggle,
 } from "~/ui"
 import {
+  AlertIcon,
+  ArrowLeftIcon,
+  CheckIcon,
   ChevronDownIcon,
   CloseIcon,
   ExternalIcon,
   FileTextIcon,
   FolderIcon,
+  GitHubIcon,
   GlobeIcon,
   HashIcon,
+  HelpIcon,
   InfoIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  MenuIcon,
   SearchIcon,
   UserIcon,
 } from "~/ui"
@@ -272,6 +285,120 @@ const ComboboxRow = () => {
         width={232}
       />
     </Row>
+  )
+}
+
+const ToggleGallery = () => {
+  const [on, setOn] = useState(true)
+  const [off, setOff] = useState(false)
+  return (
+    <Block title="Toggle">
+      <Row label="checked (on)">
+        <Toggle label="通知を受け取る" checked={on} onChange={() => setOn((v) => !v)} />
+      </Row>
+      <Row label="unchecked (off)">
+        <Toggle
+          label="下書きを自動保存"
+          sub="10 秒ごとに sync"
+          checked={off}
+          onChange={() => setOff((v) => !v)}
+        />
+      </Row>
+      <Row label="disabled">
+        <Toggle label="編集をロック中" checked disabled onChange={() => undefined} />
+      </Row>
+    </Block>
+  )
+}
+
+const SegmentedGallery = () => {
+  const [value, setValue] = useState("dsl")
+  return (
+    <Block title="Segmented">
+      <Row label="3 options (selected=dsl)">
+        <Segmented
+          ariaLabel="表示形式"
+          options={[
+            { value: "dsl", label: "DSL" },
+            { value: "graph", label: "Graph" },
+            { value: "json", label: "JSON" },
+          ]}
+          value={value}
+          onChange={setValue}
+        />
+      </Row>
+    </Block>
+  )
+}
+
+const StableLabelGallery = () => (
+  <Block title="StableLabel">
+    <Row label="Copy / Copied (Copy)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["Copy", "Copied"]}>Copy</StableLabel>
+      </span>
+    </Row>
+    <Row label="Copy / Copied (Copied)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["Copy", "Copied"]}>Copied</StableLabel>
+      </span>
+    </Row>
+    <Row label="検索 / 検索中... (検索)">
+      <span className="inline-flex items-center rounded-button bg-brand px-3 py-1 text-fs-body-sm text-white">
+        <StableLabel reserve={["検索", "検索中..."]}>検索</StableLabel>
+      </span>
+    </Row>
+    <Row label="検索 / 検索中... (検索中...)">
+      <span className="inline-flex items-center rounded-button bg-brand px-3 py-1 text-fs-body-sm text-white">
+        <StableLabel reserve={["検索", "検索中..."]}>検索中...</StableLabel>
+      </span>
+    </Row>
+    <Row label="適用 / 置き換えて適用 (置き換えて適用)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["適用", "置き換えて適用"]}>置き換えて適用</StableLabel>
+      </span>
+    </Row>
+  </Block>
+)
+
+const InfoHintGallery = () => (
+  <Block title="InfoHint">
+    <Row label="default (hover / focus / click で開く)">
+      <span className="inline-flex items-center gap-1.5 text-fs-body text-ink">
+        フィールド名
+        <InfoHint label="生物種の scientific name を入力する。 NCBI Taxonomy に登録済みの値のみ有効。" />
+      </span>
+    </Row>
+  </Block>
+)
+
+const ResultsPaginationGallery = () => {
+  const [page, setPage] = useState(1)
+  return (
+    <Block title="ResultsPagination">
+      <Row label="page=1 / 10 (前ボタン disabled)">
+        <ResultsPagination
+          page={page}
+          totalPages={10}
+          onPageChange={setPage}
+          ariaLabel="検索結果ページネーション"
+          prevLabel="前へ"
+          nextLabel="次へ"
+          jumpToLastLabel={(n) => `最後のページ (${n}) へ`}
+        />
+      </Row>
+      <Row label="page=5 / 10 (中間、ellipsis + 末尾ジャンプ)">
+        <ResultsPagination
+          page={5}
+          totalPages={10}
+          onPageChange={() => undefined}
+          ariaLabel="検索結果ページネーション"
+          prevLabel="前へ"
+          nextLabel="次へ"
+          jumpToLastLabel={(n) => `最後のページ (${n}) へ`}
+        />
+      </Row>
+    </Block>
   )
 }
 
@@ -640,6 +767,18 @@ const IconGallery = () => (
       <ExternalIcon size={12} title="外部リンク" />
       <InfoIcon size={16} title="情報" />
     </Row>
+    <Row label="ナビゲーション">
+      <ArrowLeftIcon size={16} title="戻る" />
+      <MenuIcon size={16} title="メニュー" />
+      <GitHubIcon size={16} title="GitHub" />
+    </Row>
+    <Row label="状態">
+      <AlertIcon size={16} title="警告" />
+      <CheckIcon size={16} title="完了" />
+      <HelpIcon size={16} title="ヘルプ" />
+      <LockClosedIcon size={16} title="ロック中" />
+      <LockOpenIcon size={16} title="ロック解除" />
+    </Row>
     <Row label="ドキュメント (docs hub)">
       <FolderIcon size={16} title="ディレクトリ" className="text-brand" />
       <FileTextIcon size={16} title="ドキュメント" className="text-brand" />
@@ -669,14 +808,19 @@ const DesignPrimitives = () => (
     <ExamplesGallery />
     <HeadingGallery />
     <FormsGallery />
+    <ToggleGallery />
+    <SegmentedGallery />
     <FacetGallery />
     <CalloutGallery />
     <ModalDemo />
     <PaginationGallery />
+    <ResultsPaginationGallery />
     <SearchBoxGallery />
     <CardGallery />
     <TextLinkGallery />
     <MarkGallery />
+    <StableLabelGallery />
+    <InfoHintGallery />
     <IconGallery />
   </div>
 )

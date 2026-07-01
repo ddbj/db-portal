@@ -1,6 +1,7 @@
 import type { FileEntry, FileTypeKind } from "~/schemas/submit"
 
 import { FileTypeIcon } from "./file-type-icon"
+import { MicroHeading } from "./micro-heading"
 
 type FilesBlockProps = {
   entries: readonly FileEntry[]
@@ -15,7 +16,7 @@ export const FilesBlock = ({ entries, heading, fileTypeKindLabel }: FilesBlockPr
 
   return (
     <section className="flex flex-col gap-2">
-      <p className="text-fs-label font-bold text-ink-mid m-0">{heading}</p>
+      <MicroHeading as="p">{heading}</MicroHeading>
       <ul className="flex flex-wrap gap-2 m-0 list-none p-0">
         {kinds.map((kind) => (
           <li

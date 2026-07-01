@@ -17,8 +17,8 @@ export const ServiceCard = ({ service, lang }: ServiceCardProps) => {
   const title = service.title[lang]
   const description = service.description[lang]
   const inner = (
-    <div className="flex items-center gap-4 px-5 py-4.5">
-      <div className="w-14 h-14 rounded-card bg-surface-subtle border border-border-soft flex items-center justify-center text-brand shrink-0">
+    <div className="flex items-center gap-4 px-5 py-4">
+      <div className="w-12 h-12 rounded-card bg-surface-subtle border border-border-soft flex items-center justify-center text-brand shrink-0">
         <ServiceIcon id={service.id} size={30} />
       </div>
       <div className="flex-1 min-w-0">
