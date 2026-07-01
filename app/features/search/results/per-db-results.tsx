@@ -91,7 +91,10 @@ export const PerDbResults = ({
             })}
         </p>
         {response.hardLimitReached && (
-          <span className="inline-flex items-center gap-1 rounded-pill border border-warn-border bg-warn-bg px-2.5 py-0.5 text-fs-label font-semibold text-warn-fg">
+          <span
+            role="status"
+            className="inline-flex items-center gap-1 rounded-pill border border-warn-border bg-warn-bg px-2.5 py-0.5 text-fs-label font-semibold text-warn-fg"
+          >
             <AlertIcon size={13} aria-hidden />
             {t("search.results.perDb.hardLimit", {
               limit: SEARCH_HARD_LIMIT.toLocaleString("en-US"),

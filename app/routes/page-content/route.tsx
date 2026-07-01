@@ -10,22 +10,29 @@ import { PageTitle, Section } from "~/ui"
 
 import { decideAnchorIntercept } from "./anchor-intercept"
 
+// i18n handle は削除。 page 単位で翻訳の有無が違うので loader が
+// translationState を返し、 TranslationUnavailable が loader data 側を見る。
 export const handle = {
   titleResolver: "page-content",
   breadcrumbResolver: "page-content",
-  i18n: { en: "complete" },
 } as const
 
 export const meta = pageTitleMeta
 
-export const loader = ({ params }: LoaderFunctionArgs): { urlPath: string } => {
+export const loader = (
+  { params }: LoaderFunctionArgs,
+): { urlPath: string; translationState: "complete" | "missing" } => {
   const splat = params["*"] ?? ""
   const urlPath = `/${splat}`
-  if (getPageByPath(urlPath) === undefined) {
+  const page = getPageByPath(urlPath)
+  if (page === undefined) {
     throw new Response("Not Found", { status: 404 })
   }
+  const translationState: "complete" | "missing" = page.frontmatter.en !== undefined
+    ? "complete"
+    : "missing"
 
-  return { urlPath }
+  return { urlPath, translationState }
 }
 
 const PageContentRoute = () => {

@@ -46,7 +46,7 @@ describe("search-results loader: query restore", () => {
         return HttpResponse.json(minimalParseResponse("x"))
       }),
     )
-    const data = await buildLoader("?q=")
+    const data = await buildLoader("")
     expect(parseCalled).toBe(false)
     expect(data.parseError).toBe(false)
     expect(data.ast).toBeNull()
@@ -102,7 +102,7 @@ describe("search-results loader: facet placeholder", () => {
     const facets = { organism: [{ value: "9606", count: 500, label: "Homo sapiens" }] }
     await getCachedMatchAllFacets("cross", () => Promise.resolve(facets))
     server.use(crossSearchHandler())
-    const data = await buildLoader("?q=")
+    const data = await buildLoader("")
     expect(data.facets).toEqual(facets)
   })
 })

@@ -28,7 +28,7 @@ describe("FormGroup", () => {
 
   test("FormGroup_optionalTrue_rendersOptionalTag", () => {
     render(
-      <FormGroup num="3." label="任意項目" optional>
+      <FormGroup num="3." label="任意項目" optional optionalLabel="任意">
         <input aria-label="x" />
       </FormGroup>,
     )

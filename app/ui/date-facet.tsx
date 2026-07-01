@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { cn } from "./cn"
 import { FacetGroup } from "./facet-group"
@@ -14,54 +14,49 @@ type PresetKey = Exclude<DateRangeKey, "custom">
 
 type PresetLabels = Record<PresetKey, string>
 
+// label / preset labels / clear / specify / from / to は全て required (primitive
+// は i18n 非依存)。 caller が t() 済み string を渡す。
 type DateFacetProps = {
-  label?: string
+  label: string
   active?: DateRangeKey
   appliedCount?: number
   onClear?: () => void
-  clearLabel?: string
+  clearLabel: string
   onRangeChange?: (key: DateRangeKey) => void
   from?: string
   to?: string
   onFromChange?: (value: string) => void
   onToChange?: (value: string) => void
-  presetLabels?: PresetLabels
-  specifyLabel?: string
-  fromLabel?: string
-  toLabel?: string
-  fromAriaLabel?: string
-  toAriaLabel?: string
+  presetLabels: PresetLabels
+  specifyLabel: string
+  fromLabel: string
+  toLabel: string
+  fromAriaLabel: string
+  toAriaLabel: string
 }
 
 const PRESET_ORDER: readonly PresetKey[] = ["all", "1y", "5y", "10y"]
-
-const DEFAULT_PRESET_LABELS: PresetLabels = {
-  all: "すべて",
-  "1y": "1年",
-  "5y": "5年",
-  "10y": "10年",
-}
 
 const dateInputClass =
   "mt-1 w-full px-2.5 py-1.5 text-fs-body-sm border border-border-soft rounded-button text-ink-mid font-mono box-border"
 
 export const DateFacet = ({
-  label = "公開日",
+  label,
   active = "all",
   appliedCount = 0,
   onClear,
-  clearLabel = "解除",
+  clearLabel,
   onRangeChange,
   from,
   to,
   onFromChange,
   onToChange,
-  presetLabels = DEFAULT_PRESET_LABELS,
-  specifyLabel = "日付を指定",
-  fromLabel = "FROM",
-  toLabel = "TO",
-  fromAriaLabel = "開始日",
-  toAriaLabel = "終了日",
+  presetLabels,
+  specifyLabel,
+  fromLabel,
+  toLabel,
+  fromAriaLabel,
+  toAriaLabel,
 }: DateFacetProps) => {
   // Reveal the FROM/TO detail whenever a preset is picked or a custom range is
   // set, so the resulting window is visible immediately; collapse follows "all".
@@ -69,6 +64,37 @@ export const DateFacet = ({
   useEffect(() => {
     setOpen(active !== "all")
   }, [active])
+
+  // 排他選択の preset を radiogroup + roving tabindex で表現。 activation follows
+  // focus で矢印キー移動が同時に選択も変える。 "custom" は preset には含めず、
+  // active が custom のときは radiogroup 内で選択された radio が無い状態になる。
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const focusAndSelect = (index: number) => {
+    const key = PRESET_ORDER[index]
+    if (key === undefined) return
+    refs.current[index]?.focus()
+    onRangeChange?.(key)
+  }
+  const handleKeyDown = (index: number) => (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const last = PRESET_ORDER.length - 1
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault()
+      focusAndSelect(index === 0 ? last : index - 1)
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault()
+      focusAndSelect(index === last ? 0 : index + 1)
+    } else if (e.key === "Home") {
+      e.preventDefault()
+      focusAndSelect(0)
+    } else if (e.key === "End") {
+      e.preventDefault()
+      focusAndSelect(last)
+    }
+  }
+  // active が "custom" (プリセットに一致しない範囲) のときは先頭に tabindex=0 を
+  // 与え、 Tab で radiogroup に入れるようにする。
+  const activePresetIndex = PRESET_ORDER.indexOf(active as PresetKey)
+  const focusableIndex = activePresetIndex === -1 ? 0 : activePresetIndex
 
   return (
     <FacetGroup
@@ -78,15 +104,19 @@ export const DateFacet = ({
       {...(onClear === undefined ? {} : { onClear })}
     >
       <li className="list-none p-0 m-0 block">
-        <div className="flex gap-1">
-          {PRESET_ORDER.map((key) => {
+        <div role="radiogroup" aria-label={label} className="flex gap-1">
+          {PRESET_ORDER.map((key, index) => {
             const on = key === active
             return (
               <button
                 key={key}
+                ref={(el) => { refs.current[index] = el }}
                 type="button"
+                role="radio"
+                aria-checked={on}
+                tabIndex={index === focusableIndex ? 0 : -1}
                 onClick={() => onRangeChange?.(key)}
-                aria-pressed={on}
+                onKeyDown={handleKeyDown(index)}
                 className={cn(
                   "flex-1 py-1 text-fs-label font-semibold rounded-button cursor-pointer font-sans border",
                   on

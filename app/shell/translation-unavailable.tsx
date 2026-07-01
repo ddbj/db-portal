@@ -7,15 +7,31 @@ type I18nState = "complete" | "missing" | "partial"
 
 type I18nHandle = { i18n: { en?: I18nState } }
 
+type LoaderTranslationState = { translationState?: I18nState }
+
 const isI18nHandle = (h: unknown): h is I18nHandle =>
   !!h && typeof h === "object" && "i18n" in h && typeof (h as I18nHandle).i18n === "object"
 
-const isMissing = (handle: unknown): boolean => {
-  if (!isI18nHandle(handle)) return false
-  const state = handle.i18n.en
-  if (state === undefined) return false
+const stateFromLoaderData = (data: unknown): I18nState | undefined => {
+  if (data === null || typeof data !== "object") return undefined
+  if (!("translationState" in data)) return undefined
+  const state = (data as LoaderTranslationState).translationState
 
-  return state !== "complete"
+  return state === "complete" || state === "missing" || state === "partial" ? state : undefined
+}
+
+// route の handle または loader data のいずれかが「complete でない」 と主張すれば missing。
+// 静的な route 全体の状態は handle、 request-time で決まる page-content のような
+// 動的 route は loader data 経由で translationState を渡す。
+const isMissing = (match: { handle: unknown; data: unknown }): boolean => {
+  if (isI18nHandle(match.handle)) {
+    const state = match.handle.i18n.en
+    if (state !== undefined && state !== "complete") return true
+  }
+  const loaderState = stateFromLoaderData(match.data)
+  if (loaderState !== undefined && loaderState !== "complete") return true
+
+  return false
 }
 
 export const TranslationUnavailable = () => {
@@ -25,7 +41,7 @@ export const TranslationUnavailable = () => {
   const fetcher = useFetcher()
 
   if (lang !== "en") return null
-  const missing = matches.some((m) => isMissing(m.handle))
+  const missing = matches.some((m) => isMissing(m))
   if (!missing) return null
 
   return (

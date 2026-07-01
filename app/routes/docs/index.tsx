@@ -48,6 +48,7 @@ const DocsIndex = () => {
           placeholder={t("docs.search.placeholder")}
           ariaLabel={t("docs.search.placeholder")}
           submitLabel={t("docs.search.submitLabel")}
+          scopeAriaLabel=""
           onChange={updateQuery}
           onSubmit={(query) => updateQuery(query)}
           trailing={q !== ""

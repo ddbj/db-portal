@@ -256,7 +256,7 @@ const FormsGallery = () => (
       <FmtRadio name="lib" label="single-end" sub="補足説明 (unchecked + sub)" />
       <FmtRadio name="lib" label="10x Genomics (unchecked + sub なし)" />
     </FormGroup>
-    <FormGroup num="2." label="オプション" optional hint="複数選択可">
+    <FormGroup num="2." label="オプション" optional optionalLabel="任意" hint="複数選択可">
       <FmtCheck label="hybrid assembly (checked + sub なし)" defaultChecked />
       <FmtCheck label="raw signal" sub="生波形を残す (unchecked + sub)" />
     </FormGroup>
@@ -418,7 +418,7 @@ const CardGallery = () => (
       </LinkCard>
     </Row>
     <Row label="external">
-      <LinkCard external href="https://www.ddbj.nig.ac.jp">
+      <LinkCard external href="https://www.ddbj.nig.ac.jp" externalSrLabel="新しいタブで開く">
         <div className="flex items-center gap-3 px-5 py-4">
           <div className="w-12 h-12 rounded-card bg-surface-subtle border border-border-soft inline-flex items-center justify-center text-brand">
             <GlobeIcon size={22} />
@@ -463,10 +463,10 @@ const FacetGallery = () => (
         <FacetRow label="WGS" mono compact sub="全ゲノム" count={42} />
         <FacetRow label="RNA-Seq" mono compact sub="トランスクリプトーム" count={31} />
       </FacetGroup>
-      <DateFacet appliedCount={0} />
-      <DateFacet active="1y" appliedCount={1} onClear={() => undefined} />
-      <DateFacet active="5y" appliedCount={1} onClear={() => undefined} />
-      <DateFacet active="10y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} appliedCount={0} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="1y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="5y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="10y" appliedCount={1} onClear={() => undefined} />
       <AppliedFilters applied={[]} />
     </Block>
   </div>
@@ -634,10 +634,29 @@ const PaginationGallery = () => {
   )
 }
 
+const SEARCH_BOX_DEFAULTS = {
+  placeholder: "キーワード、accession、学名で検索",
+  ariaLabel: "検索キーワード",
+  submitLabel: "検索",
+  scopeAriaLabel: "検索対象データベース",
+} as const
+
+const DATE_FACET_DEFAULTS = {
+  label: "公開日",
+  clearLabel: "解除",
+  presetLabels: { all: "すべて", "1y": "1年", "5y": "5年", "10y": "10年" },
+  specifyLabel: "日付を指定",
+  fromLabel: "FROM",
+  toLabel: "TO",
+  fromAriaLabel: "開始日",
+  toAriaLabel: "終了日",
+} as const
+
 const SearchBoxGallery = () => (
   <Block title="SearchBox">
     <Row label="lg + showScope=false (TOP hero)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showSearchIcon
         showScope={false}
@@ -647,6 +666,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="lg + showScope (lg + scope)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showScope
         scopeOptions={["全データベース", "BioProject", "BioSample"]}
@@ -656,6 +676,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + showScope (form 統一 30px)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope
         scopeOptions={["全データベース", "BioProject", "BioSample"]}
@@ -664,6 +685,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + showScope=false">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope={false}
         onSubmit={() => undefined}
@@ -671,6 +693,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + invalid (構文エラー時の枠)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope={false}
         invalid
@@ -679,6 +702,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="tone=ai + trailing + scope 流用 (生成モード、既存に追加 を disable)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showSearchIcon={false}
         maxWidth={680}

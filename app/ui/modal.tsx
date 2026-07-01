@@ -28,7 +28,17 @@ const FOCUSABLE_SELECTOR = [
 
 const focusableWithin = (root: HTMLElement): HTMLElement[] =>
   Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-    .filter((el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true")
+    .filter((el) => {
+      if (el.hasAttribute("disabled")) return false
+      if (el.getAttribute("aria-hidden") === "true") return false
+      // display:none / visibility:hidden は Tab で移れない = focusable でない。
+      // querySelector の CSS selector では捕まえられないので computed style で
+      // 弾く。
+      const style = window.getComputedStyle(el)
+      if (style.display === "none" || style.visibility === "hidden") return false
+
+      return true
+    })
 
 export const Modal = ({
   open,
@@ -56,6 +66,9 @@ export const Modal = ({
 
     const handleKey = (e: KeyboardEvent): void => {
       if (closeOnEscape && e.key === "Escape") {
+        // portalled Combobox / Select 側で Esc を preventDefault 済みなら Modal
+        // ごと閉じない (Combobox は自身の popup だけ閉じる)。
+        if (e.defaultPrevented) return
         e.preventDefault()
         onClose()
         return

@@ -41,11 +41,11 @@ describe("LinkCard", () => {
 
   test("LinkCard_external_setsTargetAndRel", () => {
     render(
-      <LinkCard external href="https://example.com">
+      <LinkCard external href="https://example.com" externalSrLabel="opens in new tab">
         ext-card
       </LinkCard>,
     )
-    const link = screen.getByRole("link", { name: "ext-card" })
+    const link = screen.getByRole("link", { name: /ext-card/ })
     expect(link).toHaveAttribute("href", "https://example.com")
     expect(link).toHaveAttribute("target", "_blank")
     expect(link).toHaveAttribute("rel", "noopener noreferrer")
@@ -53,11 +53,21 @@ describe("LinkCard", () => {
 
   test("LinkCard_external_appliesBaseClass", () => {
     render(
-      <LinkCard external href="https://example.com">
+      <LinkCard external href="https://example.com" externalSrLabel="opens in new tab">
         ext-card
       </LinkCard>,
     )
-    expect(screen.getByRole("link", { name: "ext-card" })).toHaveClass(...baseClasses)
+    expect(screen.getByRole("link", { name: /ext-card/ })).toHaveClass(...baseClasses)
+  })
+
+  test("LinkCard_external_appendsSrOnlyLabel", () => {
+    render(
+      <LinkCard external href="https://example.com" externalSrLabel="opens in new tab">
+        ext-card
+      </LinkCard>,
+    )
+    // sr-only span が accessible name の末尾に付く。
+    expect(screen.getByRole("link", { name: "ext-card opens in new tab" })).toBeInTheDocument()
   })
 
   test("LinkCard_children_areRendered", () => {

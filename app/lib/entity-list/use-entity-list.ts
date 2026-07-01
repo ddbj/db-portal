@@ -54,15 +54,16 @@ export const useEntityList = <TItem, TFacet, TOptions, TCounts>(
     queryFn: config.queryFn,
     ...(config.staleTime !== undefined && { staleTime: config.staleTime }),
   })
+  const { filter, sort, getPage, collectOptions, collectCounts } = config
   const all = useMemo<TItem[]>(() => query.data ?? [], [query.data])
-  const filtered = useMemo(() => config.filter(all, lang, facet), [all, lang, facet, config])
-  const sorted = useMemo(() => config.sort(filtered, lang, facet), [filtered, lang, facet, config])
+  const filtered = useMemo(() => filter(all, lang, facet), [all, lang, facet, filter])
+  const sorted = useMemo(() => sort(filtered, lang, facet), [filtered, lang, facet, sort])
   const page = useMemo(
-    () => paginate(sorted, config.getPage(facet), pageSize),
-    [sorted, facet, pageSize, config],
+    () => paginate(sorted, getPage(facet), pageSize),
+    [sorted, facet, pageSize, getPage],
   )
-  const options = useMemo(() => config.collectOptions(all, lang), [all, lang, config])
-  const counts = useMemo(() => config.collectCounts(all, lang, facet), [all, lang, facet, config])
+  const options = useMemo(() => collectOptions(all, lang), [all, lang, collectOptions])
+  const counts = useMemo(() => collectCounts(all, lang, facet), [all, lang, facet, collectCounts])
 
   return {
     loading: query.isLoading,

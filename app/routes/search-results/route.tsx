@@ -135,7 +135,7 @@ const SearchResultsRoute = () => {
     mergedAst,
     { page, perPage, sort },
     data.facets,
-    !data.parseError,
+    !data.parseError && !data.systemError,
     searchApiBaseUrl,
   )
 
@@ -147,7 +147,7 @@ const SearchResultsRoute = () => {
   const lastSyncedRef = useRef({ q: data.q, db: data.db })
   const pushNextRef = useRef(false)
   useEffect(() => {
-    if (data.parseError) return
+    if (data.parseError || data.systemError) return
     // 外部 URL 変化 (Back / 共有リンク / SPA nav) の直後は state が data に追い
     // つく前なのでここでは write しない。 restore effect が lastSyncedRef を
     // data に合わせた次の render で通過する。 この gate が無いと Back で古い
@@ -167,7 +167,7 @@ const SearchResultsRoute = () => {
       buildResultsHref({ q: dsl, db: data.db, page, perPage, sort }),
       push ? { preventScrollReset: true } : { replace: true, preventScrollReset: true },
     )
-  }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, navigate])
+  }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, data.systemError, navigate])
 
   // Restore client state from a genuine navigation (cold load / back-forward / scope
   // change / clear elsewhere). Skip our own URL echo so a rapid in-flight edit is not
@@ -356,11 +356,13 @@ const SearchResultsRoute = () => {
           />
         </div>
       </Section>
-      {data.parseError
+      {data.parseError || data.systemError
         ? (
           <Section padTop="sm" padBottom="lg">
             <Callout tone="warn" role="status" action={retryAction}>
-              {t("search.errors.parseFailure")}
+              {data.parseError
+                ? t("search.errors.parseFailure")
+                : t("search.errors.systemFailure")}
             </Callout>
           </Section>
         )

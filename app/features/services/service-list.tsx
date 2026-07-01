@@ -47,7 +47,11 @@ export const ServiceList = ({
         >
           {total === 0
             ? t("services.toolbar.count", { count: 0 })
-            : `${rangeStart}–${rangeEnd} / ${total.toLocaleString("en-US")} ${t("common.countSuffix")}`}
+            : t("services.toolbar.range", {
+              start: rangeStart.toLocaleString("en-US"),
+              end: rangeEnd.toLocaleString("en-US"),
+              count: total,
+            })}
         </p>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-fs-meta text-ink-soft">

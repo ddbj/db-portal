@@ -5,10 +5,15 @@ import { cn } from "./cn"
 import { ChevronDownIcon, SearchIcon } from "./icons"
 import { StableLabel } from "./stable-label"
 
+// label 系 props (placeholder / ariaLabel / submitLabel / scopeAriaLabel) は
+// required。 primitive は i18n 非依存で、 caller (feature 側) が t() 済み string
+// を渡す。 default を持たせると caller が渡し忘れた瞬間に EN UI へ日本語 leak
+// してしまうため型で強制する。 scope は「初期選択された scope 名」で label
+// ではなく caller 管理の値なので、 未指定時は "" (未選択) で扱う。
 type SearchBoxProps = {
   value?: string | undefined
   defaultValue?: string
-  placeholder?: string
+  placeholder: string
   scope?: string
   scopeOptions?: readonly string[]
   disabledScopeOptions?: readonly string[]
@@ -21,13 +26,13 @@ type SearchBoxProps = {
   tone?: "default" | "ai"
   invalid?: boolean
   trailing?: ReactNode
-  ariaLabel?: string
-  submitLabel?: string
+  ariaLabel: string
+  submitLabel: string
   // Every label the submit button can show; the widest reserves its width so a
   // label swap (検索 ↔ 検索中…) leaves the button width unchanged.
   submitReserve?: readonly string[]
   submitDisabled?: boolean
-  scopeAriaLabel?: string
+  scopeAriaLabel: string
   onSubmit?: (query: string, scope?: string) => void
 }
 
@@ -49,8 +54,8 @@ const sizeClass = {
 export const SearchBox = ({
   value,
   defaultValue = "",
-  placeholder = "キーワード、accession、学名で検索",
-  scope = "全データベース",
+  placeholder,
+  scope = "",
   scopeOptions,
   disabledScopeOptions,
   onScopeChange,
@@ -62,11 +67,11 @@ export const SearchBox = ({
   tone = "default",
   invalid = false,
   trailing,
-  ariaLabel = "検索キーワード",
-  submitLabel = "検索",
+  ariaLabel,
+  submitLabel,
   submitReserve,
   submitDisabled = false,
-  scopeAriaLabel = "検索対象データベース",
+  scopeAriaLabel,
   onSubmit,
 }: SearchBoxProps) => {
   const [query, setQuery] = useState(value ?? defaultValue)

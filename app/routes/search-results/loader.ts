@@ -1,4 +1,5 @@
-import type { LoaderFunctionArgs } from "react-router"
+import type { LoaderFunctionArgs, ShouldRevalidateFunction } from "react-router"
+import { redirect } from "react-router"
 
 import {
   type DbSlug,
@@ -15,6 +16,8 @@ import {
   type ParseNode,
   parseQuery,
 } from "~/lib/api"
+import { isAPIError } from "~/lib/api/errors"
+import { buildResultsHref } from "~/lib/search-url"
 
 import { peekMatchAllFacets } from "./facet-cache.server"
 
@@ -29,7 +32,12 @@ export type LoaderData = {
   perPage: PerPageValue
   sort: SortKey
   ast: ParseNode | null
+  // parseError: search API が 400 を返した = query が構文エラー。 route は
+  // parseFailure Callout を出す (retry では直らないので edit-in-builder を促す)。
   parseError: boolean
+  // systemError: 400 以外の失敗 (5xx / network / timeout)。 上流の一時的な障害
+  // なので retry Callout を出す。
+  systemError: boolean
   // Instant placeholder buckets: the scope's cached match_all aggregation (warm →
   // value, cold → null while a background fill warms the cache). The sidebar shows
   // these until the q-aware aggregation rides in on the search response.
@@ -56,6 +64,15 @@ const matchAllPlaceholder = (
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {
   const url = new URL(request.url)
   const params = readSearchParams(url.searchParams)
+  // Canonical URL とズレていれば 302 で正規化する。
+  // 対象: 手入力の `?page=999999` (deep-paging 上限で clamp)、 default 値の
+  // 明示 (`?page=1`, `?perPage=20`, `?sort=relevance`)、 invalid 値の rollback。
+  // shared link が canonical form に揃うので facet cache key もブレない。
+  const canonicalSearch = buildResultsHref(params).split("?")[1] ?? ""
+  const rawSearch = url.searchParams.toString()
+  if (rawSearch !== canonicalSearch) {
+    throw redirect(`${url.pathname}${canonicalSearch ? `?${canonicalSearch}` : ""}${url.hash}`)
+  }
   const envBaseUrl = process.env.DB_PORTAL_SEARCH_API_URL
   const options = envBaseUrl ? { baseUrl: envBaseUrl } : {}
   // An empty q means "no filter": parse is skipped and the search runs as match_all
@@ -71,12 +88,48 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderDat
         options,
       )
       ast = parsed.ast
-    } catch {
-      // Malformed q: the route reads parseError and paints a callout instead of
-      // running the search.
-      return { ...params, ast: null, parseError: true, facets: null }
+    } catch (e) {
+      // 400 だけを parseError として区別する。 5xx / network / timeout は
+      // 「query は正しいが上流が落ちてる」 状況なので systemError にして retry
+      // Callout を出す (parseFailure Callout は edit-in-builder を促すので違う)。
+      if (isAPIError(e) && e.status === 400) {
+        return {
+          ...params,
+          ast: null,
+          parseError: true,
+          systemError: false,
+          facets: null,
+        }
+      }
+
+      return {
+        ...params,
+        ast: null,
+        parseError: false,
+        systemError: true,
+        facets: null,
+      }
     }
   }
 
-  return { ...params, ast, parseError: false, facets: matchAllPlaceholder(params.db, options) }
+  return {
+    ...params,
+    ast,
+    parseError: false,
+    systemError: false,
+    facets: matchAllPlaceholder(params.db, options),
+  }
+}
+
+// URL の search 部分が変わらない navigation (state 復元 / hash / pathname のみ変化)
+// では parseQuery を再実行しない。 facet click は search を書き換えるので通常通り
+// revalidate される。
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}) => {
+  if (currentUrl.search === nextUrl.search) return false
+
+  return defaultShouldRevalidate
 }

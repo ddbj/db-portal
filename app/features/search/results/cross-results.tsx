@@ -1,9 +1,9 @@
-import { Link, useNavigate } from "react-router"
+import { useNavigate } from "react-router"
 
 import type { CrossSearchResponse } from "~/lib/api"
 import { formatDateLocalized, useLang, useT } from "~/lib/i18n"
 import { type DbSlug, isDbSlug } from "~/lib/search-scope"
-import { Button, ExternalIcon, Heading, Label, Tag, TextLink } from "~/ui"
+import { Button, ExternalIcon, ExternalLink, Heading, Label, Tag, TextLink } from "~/ui"
 
 import { FIELD_REGISTRY } from "../field-registry"
 import { buildResultsHref } from "../url/url-params"
@@ -125,15 +125,14 @@ const DbResultCard = ({ entry, q }: { entry: DbEntry; q: string }) => {
                     className="grid grid-cols-[var(--spacing-id-col)_1fr] gap-x-3"
                   >
                     <div className="min-w-0">
-                      <Link
-                        to={entryHref(hit)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <ExternalLink
+                        href={entryHref(hit)}
+                        srLabel={t("a11y.externalLink")}
                         className="inline-flex items-center gap-0.5 font-mono tracking-mono text-fs-body-sm text-brand-deep leading-tight no-underline hover:underline"
                       >
                         {hit.identifier}
                         <ExternalIcon size={10} aria-hidden className="shrink-0 text-ink-soft" />
-                      </Link>
+                      </ExternalLink>
                       {resolveDate(hit) && (
                         <div className="font-mono text-fs-body-sm text-ink-soft">
                           {formatDateLocalized(resolveDate(hit) ?? "", lang)}

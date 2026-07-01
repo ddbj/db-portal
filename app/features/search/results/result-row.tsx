@@ -1,8 +1,6 @@
-import { Link } from "react-router"
-
 import { formatDateLocalized, type Lang, useT } from "~/lib/i18n"
 import type { DbSlug } from "~/lib/search-scope"
-import { ExternalIcon, Tag } from "~/ui"
+import { ExternalIcon, ExternalLink, Tag } from "~/ui"
 
 import {
   ancestryRow,
@@ -81,10 +79,9 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
         )}
       </div>
 
-      <Link
-        to={href}
-        target="_blank"
-        rel="noopener noreferrer"
+      <ExternalLink
+        href={href}
+        srLabel={t("a11y.externalLink")}
         className="inline-block text-fs-h2 font-bold leading-snug text-ink no-underline underline-offset-2 hover:underline"
       >
         {title}
@@ -93,7 +90,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
         )}
         <ExternalIcon size={13} aria-hidden className="ml-1 inline align-middle text-ink-soft" />
         <span className="sr-only"> ({t("common.detail")})</span>
-      </Link>
+      </ExternalLink>
 
       {excerpt && (
         <p className="m-0 line-clamp-2 text-fs-body-sm leading-snug text-ink-mid">{excerpt}</p>

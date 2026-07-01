@@ -249,7 +249,9 @@ export const Select = ({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
-        aria-activedescendant={open ? `${optionIdBase}-${activeIndex}` : undefined}
+        aria-activedescendant={open && normalizedOptions.length > 0
+          ? `${optionIdBase}-${activeIndex}`
+          : undefined}
         disabled={disabled}
         onClick={handleToggle}
         onKeyDown={handleKey}

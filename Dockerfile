@@ -66,7 +66,13 @@ FROM base AS runtime
 # tsx (the runtime command) and friends resolve without the npm wrapper, which
 # keeps node as PID 1's direct child so SIGTERM reaches it (npm does not forward).
 ENV PATH="/app/node_modules/.bin:${PATH}"
-COPY . .
+# app/ は SSR bundle に固まっているが、 server/ の news / services / llm 群が
+# app/schemas を相対 import しているため source も持ち込む (tsx が resolve する)。
+# page-contents/ は express.static が画像 asset を serve するのに必要。
 COPY --from=build /app/build ./build
-RUN chmod -R a+rX build
+COPY --from=build /app/server ./server
+COPY --from=build /app/app ./app
+COPY --from=build /app/page-contents ./page-contents
+COPY --from=build /app/tsconfig.json ./tsconfig.json
+RUN chmod -R a+rX build server app page-contents
 CMD ["tsx", "server/index.ts"]
