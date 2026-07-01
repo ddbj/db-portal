@@ -16,7 +16,7 @@ test.describe("Content (Databases) Domain", () => {
     await expect(breadcrumb.getByText("データベース", { exact: true })).toHaveCount(0)
 
     // 「最終更新 YYYY/MM/DD」 が PageTitle meta に表示される (gen-last-updated.ts が
-     // git log から作る gen/last-updated.json 駆動)。
+    // git log から作る gen/last-updated.json 駆動)。
     await expect(page.getByText(/最終更新\s+\d{4}\/\d{2}\/\d{2}/)).toBeVisible()
   })
 

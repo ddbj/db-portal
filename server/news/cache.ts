@@ -45,8 +45,10 @@ const matchesFilter = (item: NewsItem, filter: NewsFilter | undefined): boolean 
   return true
 }
 
+// publishedAt には `+09:00` 付きと `.000Z` の混在があるので string 比較は不可
+// (ASCII order で `+` < `.` になり、UTC ソースの方が新しくても JST ソースが上に来る)。
 const sortItemsByDateDesc = (items: NewsItem[]): NewsItem[] =>
-  [...items].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+  [...items].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
 
 const FACTORY_CONFIG = {
   cacheFile: "news.json",

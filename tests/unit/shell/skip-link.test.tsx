@@ -34,7 +34,7 @@ describe("SkipLink", () => {
     expect(link).toHaveClass("sr-only")
     expect(link).toHaveClass("focus:not-sr-only")
     expect(link).toHaveClass("focus:absolute")
-    expect(link).toHaveClass("focus:z-50")
+    expect(link).toHaveClass("focus:z-modal")
   })
 
   test("SkipLink_focusedStyle_appliesSurfaceAndBorder", () => {

@@ -6,7 +6,7 @@ import {
   type BreadcrumbResolver,
   useBreadcrumb,
 } from "~/lib/content/breadcrumb"
-import { getPageByPath } from "~/lib/content/markdown-loader"
+import { getBreadcrumbTitle } from "~/lib/content/breadcrumb-titles"
 import { useLang, useT } from "~/lib/i18n"
 
 type BreadcrumbProps = {
@@ -33,10 +33,7 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
     const items: BreadcrumbItem[] = []
     for (let i = 0; i < segments.length; i++) {
       const subPath = `/${segments.slice(0, i + 1).join("/")}`
-      const page = getPageByPath(subPath)
-      const fm = page
-        ? (lang === "en" && page.frontmatter.en ? page.frontmatter.en : page.frontmatter.ja)
-        : undefined
+      const title = getBreadcrumbTitle(subPath, lang)
       // pathname は percent-encoded のまま渡るので fallback は decode しないと
       // multibyte / space 含む segment が `%E3%83%87...` のまま見える。 decode が
       // 失敗するケース (URIError) は raw segment を保つ。
@@ -47,7 +44,7 @@ export const Breadcrumb = ({ resolvers }: BreadcrumbProps = {}) => {
       } catch {
         // URIError on malformed escape: 元の値を使う
       }
-      const label = fm?.title ?? decodedSegment
+      const label = title ?? decodedSegment
       items.push({ label, href: subPath })
     }
 

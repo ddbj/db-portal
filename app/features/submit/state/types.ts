@@ -34,5 +34,6 @@ export type Action =
   | { type: "SET_ACCESS_SECTION"; accessSection: Partial<AccessSection> }
   | { type: "ADD_ROW"; fileTypeKind: FileTypeKind; entryId: string; groupId: string }
   | { type: "EDIT_ROW_CELL"; entryId: string; patch: Partial<FileEntry> }
-  | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch; releasedGroupId: string }
+  | { type: "COMMIT_ROW_EDIT"; entryId: string; patch: RowEditPatch }
   | { type: "REMOVE_ROW"; entryId: string }
+  | { type: "REPLACE_STATE"; state: UIState }

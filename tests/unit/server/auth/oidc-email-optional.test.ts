@@ -77,6 +77,7 @@ describe("extractUserInfo email optionality", () => {
     const result = SessionEntry.safeParse({
       tokens: { idToken },
       userInfo: info,
+      createdAt: 1_500,
       expiresAt: 1_700,
     })
 

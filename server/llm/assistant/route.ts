@@ -81,10 +81,15 @@ export const makeHandleSearchAssistant = (
     let accumulated = ""
     try {
       // append mode seeds the prompt with the current builder query (serialized
-      // by ddbj-search-api); a serialize failure degrades to fresh generation.
-      const currentDsl = mode === "append" && current !== undefined
-        ? await serializeAstToDsl(current, { env })
+      // by ddbj-search-api); a serialize failure degrades to fresh generation。
+      // 過去 turn の string leaf に埋まっていた PII が currentDsl 経由で prompt
+      // に流れないよう、 redaction は seed 段階でも通す (safeInput と対称)。
+      // signal を伝播することで client disconnect / LLM timeout 後の orphaned
+      // socket を防ぐ。
+      const rawCurrentDsl = mode === "append" && current !== undefined
+        ? await serializeAstToDsl(current, { env, signal: abortController.signal })
         : undefined
+      const currentDsl = rawCurrentDsl !== undefined ? redactUserInput(rawCurrentDsl) : undefined
       const messages = buildAssistantMessages({ userInput: safeInput, currentDsl, db })
       const upstreamResp = await callVllmStreamRaw(
         client,
@@ -100,11 +105,18 @@ export const makeHandleSearchAssistant = (
       // Accumulate the model output server-side only; never forward raw deltas to
       // the client (the output contract is a validated DSL/AST, so a prompt
       // injection cannot turn this endpoint into an open LLM proxy). docs/llm.md.
+      // cap 到達で abort し、 upstream vLLM の generation も止める (cap を超えても
+      // MAX_OUTPUT_TOKENS まで生成し続けると GPU cost が浪費される)。
       const result = await readVllmStream(
         upstreamResp.body,
         abortController.signal,
         (delta) => {
-          if (accumulated.length < MAX_ACCUMULATED_CHARS) accumulated += delta
+          if (accumulated.length >= MAX_ACCUMULATED_CHARS) {
+            abortController.abort()
+
+            return
+          }
+          accumulated += delta
         },
       )
       if (!result.ok) {

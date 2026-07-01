@@ -55,5 +55,13 @@ export const createPendingLoginStore = (clock: Clock = Date.now) => {
 type PendingLoginStore = ReturnType<typeof createPendingLoginStore>
 
 export const pendingLogins: PendingLoginStore = createPendingLoginStore()
+
+// tsx watch (dev) の HMR で module が再評価されると setInterval が重複登録され、
+// 古い timer は unref 済みでも生き続けて cleanup が二重実行される。 globalThis
+// に timer handle を控えて再登録前に clearInterval する。
+const TIMER_KEY = "__db_portal_pending_logins_cleanup_timer__"
+const timerHost = globalThis as unknown as Record<string, NodeJS.Timeout | undefined>
+if (timerHost[TIMER_KEY]) clearInterval(timerHost[TIMER_KEY])
 const cleanupTimer = setInterval(() => pendingLogins.cleanup(), PENDING_CLEANUP_INTERVAL_MS)
 cleanupTimer.unref?.()
+timerHost[TIMER_KEY] = cleanupTimer

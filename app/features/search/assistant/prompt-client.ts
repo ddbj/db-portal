@@ -32,11 +32,22 @@ export type AssistantStartOptions = {
 
 type AssistantState = "idle" | "streaming" | "done" | "error"
 
+export type AssistantErrorInfo = {
+  // server が emit する SSE error event の `data.code` (`rate_limited` / `no_dsl` /
+  // `upstream-disconnect` / `upstream-status` など)。 UI で分岐したい caller が
+  // 参照する。
+  code: string
+  message: string
+}
+
 type AssistantStreamResult = {
   state: AssistantState
   proposal: ParseNode | null
   // The DB the proposal resolved to (locked or derived); null = cross-database.
   proposalDb: DbSlug | null
+  // state === "error" のとき、 server が送った code/message を保持する。 それ
+  // 以外は null。 caller は表示・retry 判定に使う。
+  errorInfo: AssistantErrorInfo | null
   start: (input: string, options?: AssistantStartOptions) => Promise<void>
   stop: () => void
   reset: () => void
@@ -85,6 +96,7 @@ export const useAssistantStream = (
   const [state, setState] = useState<AssistantState>("idle")
   const [proposal, setProposal] = useState<ParseNode | null>(null)
   const [proposalDb, setProposalDb] = useState<DbSlug | null>(null)
+  const [errorInfo, setErrorInfo] = useState<AssistantErrorInfo | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
@@ -100,6 +112,7 @@ export const useAssistantStream = (
     controllerRef.current = null
     setProposal(null)
     setProposalDb(null)
+    setErrorInfo(null)
     setState("idle")
   }, [])
 
@@ -121,6 +134,7 @@ export const useAssistantStream = (
     setState("streaming")
     setProposal(null)
     setProposalDb(null)
+    setErrorInfo(null)
     if (DEV_STUB) {
       await new Promise((resolve) => setTimeout(resolve, 600))
       if (controller.signal.aborted) return
@@ -152,7 +166,22 @@ export const useAssistantStream = (
       }
       const handleEvent = (item: { event: string; data: string }): void => {
         if (item.event === "error") {
-          setState("error")
+          // SSE error event の data は `{ code, message }` JSON。 rate_limited /
+          // no_dsl / upstream-disconnect の分岐を UI に届けるため保持する。
+          let code = "unknown"
+          let message = ""
+          try {
+            const parsed = JSON.parse(item.data) as { code?: unknown; message?: unknown }
+            if (typeof parsed.code === "string") code = parsed.code
+            if (typeof parsed.message === "string") message = parsed.message
+          } catch {
+            // fallback: 元の生 data を message として保持
+            message = item.data
+          }
+          if (controllerRef.current === controller) {
+            setErrorInfo({ code, message })
+            setState("error")
+          }
 
           return
         }
@@ -196,14 +225,19 @@ export const useAssistantStream = (
       for (const item of parseSseEvents(buffer)) handleEvent(item)
       setState((current) => (current === "streaming" ? "done" : current))
     } catch (error) {
+      // 別 start が既に走っている場合、 この abort/error の後片付けで新 request の
+      // state を潰してはいけない。 呼び出し当時 controller と現 ref が一致する
+      // ときだけ state を書き換える (H19 の連続 submit race を封じる)。
+      if (controllerRef.current !== controller) return
       if ((error as { name?: string }).name === "AbortError") {
         setState("idle")
 
         return
       }
+      setErrorInfo({ code: "client_error", message: error instanceof Error ? error.message : String(error) })
       setState("error")
     }
   }, [baseUrl, state])
 
-  return { state, proposal, proposalDb, start, stop, reset }
+  return { state, proposal, proposalDb, errorInfo, start, stop, reset }
 }

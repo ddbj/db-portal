@@ -26,6 +26,7 @@ type SubmitDispatch = {
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
   removeRow: (entryId: string) => void
+  replaceState: (state: UIState) => void
 }
 
 export const useSubmitState = (
@@ -61,11 +62,15 @@ export const useSubmitState = (
   )
 
   const commitRowEdit = useCallback((entryId: string, patch: RowEditPatch) => {
-    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch, releasedGroupId: newId() })
-  }, [newId])
+    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })
+  }, [])
 
   const removeRow = useCallback((entryId: string) => {
     dispatch({ type: "REMOVE_ROW", entryId })
+  }, [])
+
+  const replaceState = useCallback((next: UIState) => {
+    dispatch({ type: "REPLACE_STATE", state: next })
   }, [])
 
   const actions: SubmitDispatch = {
@@ -75,6 +80,7 @@ export const useSubmitState = (
     editRowCell,
     commitRowEdit,
     removeRow,
+    replaceState,
   }
 
   return { state, actions }

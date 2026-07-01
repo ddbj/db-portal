@@ -5,10 +5,10 @@ import { describe, expect } from "vitest"
 import {
   createSessionStore,
   SESSION_TTL_MS,
-  type SessionEntry,
+  type SessionInput,
 } from "../../../../server/auth/session-store"
 
-const arbEntry: fc.Arbitrary<SessionEntry> = fc.record({
+const arbEntry: fc.Arbitrary<SessionInput> = fc.record({
   tokens: fc.record({
     idToken: fc.string({ minLength: 1, maxLength: 16 }),
   }),
@@ -17,7 +17,6 @@ const arbEntry: fc.Arbitrary<SessionEntry> = fc.record({
     name: fc.string({ minLength: 1, maxLength: 10 }),
     email: fc.constant("user@example.com"),
   }),
-  expiresAt: fc.constant(0),
 })
 
 describe("sessionStore PBT", () => {

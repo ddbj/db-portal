@@ -25,14 +25,18 @@ export const LoginButton = () => {
   }
 
   if (auth.status === "authenticated") {
+    // logout は SameSite=Lax + POST で CSRF logout を封じるため form 経由で叩く。
+    // GET link は使わない (top-level GET は SameSite=Lax でも cookie が送られる)。
     return (
-      <a href={buildLogoutUrl(pathname)} className={ANCHOR_BUTTON_CLASS}>
-        <UserIcon size={14} className="text-ink-mid" />
-        <span className="max-w-[10rem] overflow-hidden text-ellipsis whitespace-nowrap">
-          {auth.user.name}
-        </span>
-        <span className="text-ink-soft font-normal">· {t("auth.logout")}</span>
-      </a>
+      <form method="POST" action={buildLogoutUrl(pathname)} className="inline-flex m-0">
+        <button type="submit" className={ANCHOR_BUTTON_CLASS}>
+          <UserIcon size={14} className="text-ink-mid" />
+          <span className="max-w-[10rem] overflow-hidden text-ellipsis whitespace-nowrap">
+            {auth.user.name}
+          </span>
+          <span className="text-ink-soft font-normal">· {t("auth.logout")}</span>
+        </button>
+      </form>
     )
   }
 

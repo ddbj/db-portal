@@ -15,6 +15,11 @@ const originOf = (url: string): string => {
   }
 }
 
+// style-src の 'unsafe-inline' は既存の React inline style (style={{...}}) に
+// 依存するため、 nonce/hash 化までは残す。 一方 object-src / frame-src / child-src
+// は攻撃面が明確に閉じられるので現段階でも 'none' に狭める。 dev でも同じ CSP
+// を emit することで開発時の accidental exposure を減らし、 CSP に噛む変更
+// (nonce 抜けなど) が prod deploy 前に見える。
 const buildCspHeader = (nonce: string, searchApiOrigin?: string): string =>
   [
     "default-src 'self'",
@@ -23,6 +28,10 @@ const buildCspHeader = (nonce: string, searchApiOrigin?: string): string =>
     "img-src 'self' data:",
     "font-src 'self' data:",
     searchApiOrigin ? `connect-src 'self' ${searchApiOrigin}` : "connect-src 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "child-src 'none'",
+    "worker-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -37,10 +46,8 @@ export const securityHeaders = ({ env, searchApiUrl }: SecurityHeadersOptions): 
     res.setHeader("X-Content-Type-Options", "nosniff")
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
 
-    if (env !== "dev") {
-      const searchApiOrigin = searchApiUrl ? originOf(searchApiUrl) : undefined
-      res.setHeader("Content-Security-Policy", buildCspHeader(nonce, searchApiOrigin))
-    }
+    const searchApiOrigin = searchApiUrl ? originOf(searchApiUrl) : undefined
+    res.setHeader("Content-Security-Policy", buildCspHeader(nonce, searchApiOrigin))
 
     if (env === "production") {
       res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains")

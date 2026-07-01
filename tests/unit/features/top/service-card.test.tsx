@@ -115,7 +115,7 @@ describe("ServiceCard", () => {
   test("ServiceCard_iconWrapper_appliesBrandTokenClasses", () => {
     renderCard(internalService)
     const link = screen.getByRole("link", { name: /横断検索/ })
-    const iconWrap = link.querySelector(".w-14")
+    const iconWrap = link.querySelector(".w-12")
     expect(iconWrap).not.toBeNull()
     expect(iconWrap).toHaveClass(
       "rounded-card",

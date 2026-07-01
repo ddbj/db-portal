@@ -34,12 +34,22 @@ export const openSseStream = (res: Response): SseStream => {
   let heartbeat: ReturnType<typeof setInterval> | null = null
   let closed = false
 
+  const stopHeartbeat = (): void => {
+    if (heartbeat) {
+      clearInterval(heartbeat)
+      heartbeat = null
+    }
+  }
+
   const writeRaw = (chunk: string): void => {
     if (closed) return
     try {
       res.write(chunk)
     } catch {
+      // client disconnect / socket error 時。 以後 write を no-op にしつつ、
+      // heartbeat interval も止めて dead connection への周期送信を打ち切る。
       closed = true
+      stopHeartbeat()
     }
   }
 
@@ -49,13 +59,6 @@ export const openSseStream = (res: Response): SseStream => {
       writeRaw(": heartbeat\n\n")
     }, HEARTBEAT_INTERVAL_MS)
     heartbeat.unref?.()
-  }
-
-  const stopHeartbeat = (): void => {
-    if (heartbeat) {
-      clearInterval(heartbeat)
-      heartbeat = null
-    }
   }
 
   const writeEvent = (event: string, data: string): void => {

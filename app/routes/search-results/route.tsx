@@ -148,6 +148,11 @@ const SearchResultsRoute = () => {
   const pushNextRef = useRef(false)
   useEffect(() => {
     if (data.parseError) return
+    // 外部 URL 変化 (Back / 共有リンク / SPA nav) の直後は state が data に追い
+    // つく前なのでここでは write しない。 restore effect が lastSyncedRef を
+    // data に合わせた次の render で通過する。 この gate が無いと Back で古い
+    // state 由来の URL に navigate(replace) してしまい、 直前の履歴を上書きする。
+    if (data.q !== lastSyncedRef.current.q || data.db !== lastSyncedRef.current.db) return
     const dsl = results.dsl
     if (dsl === null) return
     if (dsl === data.q && page === data.page && perPage === data.perPage && sort === data.sort) {

@@ -84,5 +84,5 @@ export const useProseEnhance = (selector: string): void => {
     void renderMermaid(el, () => cancelled)
 
     return () => { cancelled = true }
-  })
+  }, [selector])
 }

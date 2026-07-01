@@ -97,6 +97,6 @@ describe("EditOnGitHubLink", () => {
     const children = Array.from(link?.children ?? [])
     expect(children[0]?.tagName).toBe("svg")
     expect(children[1]?.tagName).toBe("SPAN")
-    expect(children[1]?.textContent).toBe("Edit")
+    expect(children[1]?.textContent).toBe("編集")
   })
 })

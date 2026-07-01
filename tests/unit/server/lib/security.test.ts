@@ -32,13 +32,17 @@ const runMiddleware = (env: "dev" | "staging" | "production"): RecordedRes => {
 }
 
 describe("securityHeaders", () => {
-  test("securityHeaders_dev_setsBasicHeadersButOmitsCspAndHsts", () => {
+  test("securityHeaders_dev_emitsCspWithNonceButOmitsHsts", () => {
+    // dev でも staging/production と同じ CSP を emit する。 nonce 抜けなど CSP を
+    // 壊す変更を deploy 前に開発時点で気付けるようにするため。
     const res = runMiddleware("dev")
 
     expect(res.headers["X-Frame-Options"]).toBe("DENY")
     expect(res.headers["X-Content-Type-Options"]).toBe("nosniff")
     expect(res.headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin")
-    expect(res.headers["Content-Security-Policy"]).toBeUndefined()
+    const csp = res.headers["Content-Security-Policy"]
+    expect(csp).toContain(`'nonce-${res.locals.cspNonce as string}'`)
+    expect(csp).toContain("default-src 'self'")
     expect(res.headers["Strict-Transport-Security"]).toBeUndefined()
     expect(typeof res.locals.cspNonce).toBe("string")
     expect((res.locals.cspNonce as string).length).toBeGreaterThan(0)

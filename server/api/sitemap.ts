@@ -134,9 +134,18 @@ ${body}
 `
 }
 
+// page-contents/ は build 時に固まる想定なので、 起動後に一度だけ walk して
+// 以後は memo する。 変更が要る場合は process を restart する規約。
+let cachedContentPaths: readonly string[] | null = null
+
 export const handleSitemap = (env: ServerEnv): RequestHandler =>
   async (_req, res) => {
-    const contentPaths = await listContentPaths()
-    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, contentPaths)
-    res.type("application/xml").send(renderSitemapXml(entries))
+    if (cachedContentPaths === null) {
+      cachedContentPaths = await listContentPaths()
+    }
+    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, cachedContentPaths)
+    res
+      .type("application/xml")
+      .set("Cache-Control", "public, max-age=3600, s-maxage=86400")
+      .send(renderSitemapXml(entries))
   }

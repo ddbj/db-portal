@@ -43,16 +43,25 @@ const SubmitRoute = () => {
   const data = useLoaderData<typeof loader>()
   const [initialState] = useState(() => hydrateFromUrl(data.urlState))
   const { state, actions } = useSubmitState(initialState)
+  const { replaceState } = actions
   const [, setSearchParams] = useSearchParams()
-  const lastSyncedRef = useRef<string>(
-    writeSubmitParams(projectStateToUrl(initialState)).toString(),
-  )
+  const lastSyncedRef = useRef<string>(writeSubmitParams(data.urlState).toString())
+
   useEffect(() => {
     const next = writeSubmitParams(projectStateToUrl(state)).toString()
     if (next === lastSyncedRef.current) return
     lastSyncedRef.current = next
     setSearchParams(new URLSearchParams(next), { replace: true, preventScrollReset: true })
   }, [state, setSearchParams])
+
+  // 外部 URL 変化 (SPA nav / Back / 共有リンク) を state に反映。 直上の write と
+  // 同じ signature で fence しているので、 自作 write は素通りする。
+  useEffect(() => {
+    const external = writeSubmitParams(data.urlState).toString()
+    if (external === lastSyncedRef.current) return
+    lastSyncedRef.current = external
+    replaceState(hydrateFromUrl(data.urlState))
+  }, [data.urlState, replaceState])
 
   const { organismDomain } = state.submission.preconditions
   const { accessSection } = state.submission
