@@ -5,7 +5,7 @@ import {
 } from "~/schemas/content/sitemap"
 
 import sitemapJson from "../../../page-contents/sitemap.json"
-import { getPageByPath, listAllPages } from "./markdown-loader"
+import { getPageByPath } from "./markdown-loader"
 
 const SITEMAP_FILEPATH = "page-contents/sitemap.json"
 
@@ -33,10 +33,7 @@ const fail = (message: string): SitemapValidationFailure => ({
   message,
 })
 
-const checkConsistency = (
-  doc: TSitemapDoc,
-  knownPaths: ReadonlySet<string>,
-): SitemapValidationFailure[] => {
+const checkConsistency = (doc: TSitemapDoc): SitemapValidationFailure[] => {
   const errors: SitemapValidationFailure[] = []
   const sectionIds = new Set<string>()
   const internalPaths = new Set<string>()
@@ -56,29 +53,13 @@ const checkConsistency = (
       } else {
         internalPaths.add(item.path)
       }
-      if (!knownPaths.has(item.path)) {
-        errors.push(fail(
-          `"${item.path}" is referenced in sitemap.json but no matching page exists in page-contents/`,
-        ))
-      }
-    }
-  }
-
-  for (const path of knownPaths) {
-    if (!internalPaths.has(path)) {
-      errors.push(fail(
-        `"${path}" exists in page-contents/ but is not referenced in sitemap.json`,
-      ))
     }
   }
 
   return errors
 }
 
-export const validateSitemapDoc = (
-  raw: unknown,
-  knownPaths: ReadonlySet<string>,
-): SitemapValidationResult => {
+export const validateSitemapDoc = (raw: unknown): SitemapValidationResult => {
   const parsed = SitemapDoc.safeParse(raw)
   if (!parsed.success) {
     const errors = parsed.error.issues.map((issue) =>
@@ -87,32 +68,33 @@ export const validateSitemapDoc = (
 
     return { ok: false, errors }
   }
-  const consistency = checkConsistency(parsed.data, knownPaths)
+  const consistency = checkConsistency(parsed.data)
   if (consistency.length > 0) return { ok: false, errors: consistency }
 
   return { ok: true, doc: parsed.data }
 }
 
-const collectKnownPaths = (): Set<string> => {
-  const set = new Set<string>()
-  for (const page of listAllPages()) {
-    if (page.urlPath.startsWith("/_dev")) continue
-    set.add(page.urlPath)
-  }
-
-  return set
-}
-
 export const validateSitemap = (): SitemapValidationResult =>
-  validateSitemapDoc(sitemapJson, collectKnownPaths())
+  validateSitemapDoc(sitemapJson)
 
 const renderItem = (item: SitemapItem): RenderedSitemapItem => {
   if (item.kind === "external") {
     return { kind: "external", url: item.url, label: { ...item.label } }
   }
+  if (item.label !== undefined) {
+    const { ja, en } = item.label
+
+    return {
+      kind: "internal",
+      path: item.path,
+      label: en !== undefined ? { ja, en } : { ja },
+    }
+  }
   const page = getPageByPath(item.path)
   if (page === undefined) {
-    throw new Error(`internal sitemap path "${item.path}" missing after validation`)
+    throw new Error(
+      `sitemap internal path "${item.path}" has no label and no matching page — add label to sitemap.json or create page-contents${item.path}/index.md`,
+    )
   }
   const ja = page.frontmatter.ja.title
   const en = page.frontmatter.en?.title
@@ -124,7 +106,7 @@ const renderItem = (item: SitemapItem): RenderedSitemapItem => {
   }
 }
 
-const buildRendered = (doc: TSitemapDoc): RenderedSitemapSection[] =>
+export const renderSitemap = (doc: TSitemapDoc): RenderedSitemapSection[] =>
   doc.sections.map((section) => ({
     id: section.id,
     heading: { ...section.heading },
@@ -139,6 +121,6 @@ if (!initial.ok) {
   )
 }
 
-const cached: readonly RenderedSitemapSection[] = buildRendered(initial.doc)
+const cached: readonly RenderedSitemapSection[] = renderSitemap(initial.doc)
 
 export const getSitemap = (): readonly RenderedSitemapSection[] => cached

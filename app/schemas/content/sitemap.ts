@@ -3,6 +3,10 @@ import { z } from "zod"
 const SitemapInternalItem = z.object({
   kind: z.literal("internal"),
   path: z.string().regex(/^\//, "must start with /"),
+  label: z.object({
+    ja: z.string().min(1),
+    en: z.string().min(1).optional(),
+  }).optional(),
 })
 
 const SitemapExternalItem = z.object({

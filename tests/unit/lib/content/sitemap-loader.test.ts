@@ -2,20 +2,10 @@ import { describe, expect, test } from "vitest"
 
 import {
   getSitemap,
-  listAllPages,
+  renderSitemap,
   validateSitemap,
   validateSitemapDoc,
 } from "~/lib/content"
-
-const knownFromCorpus = (): Set<string> => {
-  const set = new Set<string>()
-  for (const page of listAllPages()) {
-    if (page.urlPath.startsWith("/_dev")) continue
-    set.add(page.urlPath)
-  }
-
-  return set
-}
 
 const minimalDoc = (paths: string[]): unknown => ({
   sections: [
@@ -29,8 +19,7 @@ const minimalDoc = (paths: string[]): unknown => ({
 
 describe("validateSitemapDoc - schema", () => {
   test("validateSitemapDoc_validInput_returnsOk", () => {
-    const knownPaths = new Set(["/foo", "/bar"])
-    const result = validateSitemapDoc(minimalDoc(["/foo", "/bar"]), knownPaths)
+    const result = validateSitemapDoc(minimalDoc(["/foo", "/bar"]))
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.doc.sections).toHaveLength(1)
@@ -43,7 +32,7 @@ describe("validateSitemapDoc - schema", () => {
         { id: "primary", heading: { ja: "あ", en: "A" }, items: [] },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set())
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
   })
 
@@ -57,7 +46,7 @@ describe("validateSitemapDoc - schema", () => {
         },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set(["/foo"]))
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
   })
 
@@ -77,7 +66,7 @@ describe("validateSitemapDoc - schema", () => {
         },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set())
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
   })
 
@@ -91,33 +80,67 @@ describe("validateSitemapDoc - schema", () => {
         },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set())
+    const result = validateSitemapDoc(doc)
+    expect(result.ok).toBe(false)
+  })
+
+  test("validateSitemapDoc_internalWithLabelJaOnly_returnsOk", () => {
+    const doc = {
+      sections: [
+        {
+          id: "primary",
+          heading: { ja: "あ", en: "A" },
+          items: [
+            { kind: "internal", path: "/x", label: { ja: "手書き" } },
+          ],
+        },
+      ],
+    }
+    const result = validateSitemapDoc(doc)
+    expect(result.ok).toBe(true)
+  })
+
+  test("validateSitemapDoc_internalWithLabelJaAndEn_returnsOk", () => {
+    const doc = {
+      sections: [
+        {
+          id: "primary",
+          heading: { ja: "あ", en: "A" },
+          items: [
+            {
+              kind: "internal",
+              path: "/x",
+              label: { ja: "手書き", en: "Manual" },
+            },
+          ],
+        },
+      ],
+    }
+    const result = validateSitemapDoc(doc)
+    expect(result.ok).toBe(true)
+  })
+
+  test("validateSitemapDoc_internalLabelMissingJa_fails", () => {
+    const doc = {
+      sections: [
+        {
+          id: "primary",
+          heading: { ja: "あ", en: "A" },
+          items: [
+            { kind: "internal", path: "/x", label: { en: "Manual" } },
+          ],
+        },
+      ],
+    }
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
   })
 })
 
-describe("validateSitemapDoc - orphan detection", () => {
-  test("validateSitemapDoc_orphanInJson_reportsMissingPage", () => {
-    const knownPaths = new Set(["/foo"])
-    const result = validateSitemapDoc(
-      minimalDoc(["/foo", "/does-not-exist"]),
-      knownPaths,
-    )
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    const messages = result.errors.map((e) => e.message).join("\n")
-    expect(messages).toContain("/does-not-exist")
-    expect(messages).toContain("no matching page")
-  })
-
-  test("validateSitemapDoc_orphanInCorpus_reportsMissingRef", () => {
-    const knownPaths = new Set(["/foo", "/bar"])
-    const result = validateSitemapDoc(minimalDoc(["/foo"]), knownPaths)
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    const messages = result.errors.map((e) => e.message).join("\n")
-    expect(messages).toContain("/bar")
-    expect(messages).toContain("not referenced in sitemap.json")
+describe("validateSitemapDoc - no page-corpus coupling", () => {
+  test("validateSitemapDoc_pathNotInCorpus_returnsOk", () => {
+    const result = validateSitemapDoc(minimalDoc(["/does-not-exist"]))
+    expect(result.ok).toBe(true)
   })
 })
 
@@ -137,7 +160,7 @@ describe("validateSitemapDoc - duplicate detection", () => {
         },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set(["/foo"]))
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
     if (result.ok) return
     const messages = result.errors.map((e) => e.message).join("\n")
@@ -160,7 +183,7 @@ describe("validateSitemapDoc - duplicate detection", () => {
         },
       ],
     }
-    const result = validateSitemapDoc(doc, new Set(["/foo", "/bar"]))
+    const result = validateSitemapDoc(doc)
     expect(result.ok).toBe(false)
     if (result.ok) return
     const messages = result.errors.map((e) => e.message).join("\n")
@@ -171,11 +194,7 @@ describe("validateSitemapDoc - duplicate detection", () => {
 
 describe("validateSitemapDoc - order preserved", () => {
   test("validateSitemapDoc_itemOrder_returnsAuthoredOrder", () => {
-    const knownPaths = new Set(["/dra", "/bioproject"])
-    const result = validateSitemapDoc(
-      minimalDoc(["/dra", "/bioproject"]),
-      knownPaths,
-    )
+    const result = validateSitemapDoc(minimalDoc(["/dra", "/bioproject"]))
     expect(result.ok).toBe(true)
     if (!result.ok) return
     const items = result.doc.sections[0]?.items ?? []
@@ -184,26 +203,85 @@ describe("validateSitemapDoc - order preserved", () => {
   })
 })
 
-describe("validateSitemap (real JSON + real corpus)", () => {
+describe("validateSitemap (real JSON)", () => {
   test("validateSitemap_realInput_returnsOk", () => {
     const result = validateSitemap()
     expect(result.ok).toBe(true)
   })
+})
 
-  test("validateSitemap_referencesAllPages", () => {
-    const corpus = knownFromCorpus()
-    const result = validateSitemap()
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    const referenced = new Set<string>()
-    for (const section of result.doc.sections) {
-      for (const item of section.items) {
-        if (item.kind === "internal") referenced.add(item.path)
-      }
-    }
-    for (const path of corpus) {
-      expect(referenced).toContain(path)
-    }
+describe("renderSitemap - internal item label resolution", () => {
+  const withInternal = (item: {
+    path: string
+    label?: { ja: string; en?: string }
+  }) => {
+    const parsed = validateSitemapDoc({
+      sections: [
+        {
+          id: "primary",
+          heading: { ja: "あ", en: "A" },
+          items: [{ kind: "internal", ...item }],
+        },
+      ],
+    })
+    if (!parsed.ok) throw new Error("fixture failed to parse")
+
+    return renderSitemap(parsed.doc)
+  }
+
+  test("renderSitemap_internalWithoutLabel_usesFrontmatterTitle", () => {
+    const sections = withInternal({ path: "/bioproject" })
+    const item = sections[0]?.items[0]
+    expect(item).toMatchObject({
+      kind: "internal",
+      path: "/bioproject",
+      label: { ja: "BioProject", en: "BioProject" },
+    })
+  })
+
+  test("renderSitemap_internalWithLabel_overridesFrontmatter", () => {
+    const sections = withInternal({
+      path: "/bioproject",
+      label: { ja: "上書きラベル", en: "Overridden" },
+    })
+    const item = sections[0]?.items[0]
+    expect(item).toMatchObject({
+      kind: "internal",
+      path: "/bioproject",
+      label: { ja: "上書きラベル", en: "Overridden" },
+    })
+  })
+
+  test("renderSitemap_internalWithLabelNoMatchingPage_rendersLabel", () => {
+    const sections = withInternal({
+      path: "/does-not-exist",
+      label: { ja: "手書き", en: "Manual" },
+    })
+    const item = sections[0]?.items[0]
+    expect(item).toMatchObject({
+      kind: "internal",
+      path: "/does-not-exist",
+      label: { ja: "手書き", en: "Manual" },
+    })
+  })
+
+  test("renderSitemap_internalWithLabelJaOnly_omitsEn", () => {
+    const sections = withInternal({
+      path: "/does-not-exist",
+      label: { ja: "手書きのみ" },
+    })
+    const item = sections[0]?.items[0]
+    expect(item).toEqual({
+      kind: "internal",
+      path: "/does-not-exist",
+      label: { ja: "手書きのみ" },
+    })
+  })
+
+  test("renderSitemap_internalNoLabelNoMatchingPage_throws", () => {
+    expect(() => withInternal({ path: "/does-not-exist" })).toThrow(
+      /has no label and no matching page/,
+    )
   })
 })
 

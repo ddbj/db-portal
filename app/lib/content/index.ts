@@ -34,6 +34,7 @@ export {
   getSitemap,
   type RenderedSitemapItem,
   type RenderedSitemapSection,
+  renderSitemap,
   type SitemapValidationFailure,
   type SitemapValidationResult,
   validateSitemap,

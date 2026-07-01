@@ -38,6 +38,9 @@ export type AssistantErrorInfo = {
   // 参照する。
   code: string
   message: string
+  // rate_limited (HTTP 429) のときだけ set される quota 復帰までの秒数。 UI が
+  // 「再試行までの目安」表示に使う。 他の error では undefined。
+  retryAfterSec?: number
 }
 
 type AssistantStreamResult = {
@@ -160,6 +163,27 @@ export const useAssistantStream = (
       })
       const response = await fetch(joinUrl(baseUrl, ASSISTANT_PATH), init)
       if (!response.ok || !response.body) {
+        // 429 は Retry-After / body の retryAfterSec を errorInfo に載せて UI が
+        // 「あと N 秒で再試行できる」を表示できるようにする。 他 status は汎用
+        // error として扱う (詳細分岐は不要)。
+        if (response.status === 429) {
+          const headerSec = Number.parseInt(response.headers.get("Retry-After") ?? "", 10)
+          let bodySec: number | undefined
+          try {
+            const body = await response.json() as { retryAfterSec?: unknown }
+            if (typeof body.retryAfterSec === "number" && Number.isFinite(body.retryAfterSec)) {
+              bodySec = body.retryAfterSec
+            }
+          } catch {
+            // body が JSON でなくても header で拾えれば OK
+          }
+          const retryAfterSec = bodySec ?? (Number.isFinite(headerSec) ? headerSec : undefined)
+          setErrorInfo({
+            code: "rate_limited",
+            message: "",
+            ...(retryAfterSec !== undefined ? { retryAfterSec } : {}),
+          })
+        }
         setState("error")
 
         return

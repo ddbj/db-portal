@@ -164,25 +164,24 @@ resolver は features / lib のヘルパに依存しない。 shell 側で `app/
 
 crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml と robots.txt) とは別物。 ここでは `/docs` のハブに描画する手書きの 「目次」 だけを扱う。
 
-`/docs` 上の 「目次」 ブロックは **`page-contents/sitemap.json` を SSOT** とする手書き構造。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。
+`/docs` 上の 「目次」 ブロックは **`page-contents/sitemap.json` を SSOT** とする手書き構造で、 サイドバー / 全文検索 / `/sitemap.xml` とは切り離された **独立ファイル**。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。 「ページ追加 = `sitemap.json` 更新」 は強制しない — 目次に載せたいページだけ書けばよく、 サイドバー / 検索は `page-contents/` の実ファイルから自動派生で拾う。
 
 - セクションは `sections[]` の順序どおりに描画する (sort なし)
 - 各 item は `kind: "internal" | "external"` の discriminated union
-  - `internal` は `path` だけ持ち、 ラベルは `page-contents/` の frontmatter `title` から合流する
+  - `internal` は `path` を必須で持ち、 `page-contents/` に対応ページが無いパス (`/submit` 等の feature page) も書ける
+    - `label` を optional で持ち、 書けば手書き優先、 書かなければ `page-contents/` の frontmatter `title` にフォールバックする
+    - `label` 無し + 対応ページ無し → module-load 時に throw
   - `external` は `url` と `label.{ja,en}` を JSON 側で持ち、 外部リンクアイコン付きで描画する
 - 各 section は `id` を持ち React key として固定する
 - スキーマと loader は `app/schemas/content/sitemap.ts` / `app/lib/content/sitemap-loader.ts` が SSOT
 
-### 双方向 orphan 検査
+### 不変量 (module-load 時に検証)
 
-`sitemap.json` は module-load 時に次を検証して throw する:
+`sitemap.json` は JSON 内の整合性のみを検証する。 `page-contents/` との突き合わせは行わない。
 
-- JSON 内の `internal.path` が `page-contents/` の page と一致しない → エラー
-- `page-contents/` の page (`_dev` 除く) が JSON のどこにも参照されていない → エラー
+- schema (Zod) に沿わない → エラー
 - 同一 `internal.path` が複数 section に出現 → エラー
 - `section.id` の重複 → エラー
-
-これで 「ページ追加 = `sitemap.json` 更新」 が強制される。 sidebar / 検索は自動派生で網羅されるが、 サイトマップは恣意的に並べる以上、 追加忘れを CI で止める。
 
 ## 全文検索
 

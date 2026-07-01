@@ -29,8 +29,11 @@ const RequestBody = z.object({
   db: z.enum(ASSISTANT_DB_SLUGS).optional(),
 })
 
-const clientIp = (req: Request): string =>
-  req.ip ?? req.socket.remoteAddress ?? "0.0.0.0"
+// proxy misconfig で req.ip / socket.remoteAddress の両方が undefined になると
+// 全 IP-less traffic が同一バケットを食い合い silent 429 を起こす。 fail-loud に
+// して監視で気づけるようにする ("0.0.0.0" fallback は意図的に廃止)。
+const clientIp = (req: Request): string | null =>
+  req.ip ?? req.socket.remoteAddress ?? null
 
 export const makeHandleSearchAssistant = (
   env: ServerEnv,
@@ -54,10 +57,24 @@ export const makeHandleSearchAssistant = (
     const sid = getSidFromHeader(req.headers.cookie)
     const limiter = getActiveRateLimiter()
     if (limiter) {
-      const decision = limiter.check(clientIp(req), sid)
+      const ip = clientIp(req)
+      if (ip === null) {
+        logger.error("llm_assistant_client_ip_missing", {})
+        res.status(500).json({ error: "client_ip_missing" })
+
+        return
+      }
+      const decision = limiter.check(ip, sid)
       if (!decision.ok) {
         res.setHeader("Retry-After", decision.retryAfterSec.toString())
-        res.status(429).json({ error: "rate_limited", axis: decision.axis })
+        // Body 側にも retryAfterSec を含めることで client が Retry-After header を
+        // 読めない環境 (fetch response.headers を素通しできない middleware 経由等)
+        // でも quota 復帰時刻を UI に反映できる。
+        res.status(429).json({
+          error: "rate_limited",
+          axis: decision.axis,
+          retryAfterSec: decision.retryAfterSec,
+        })
 
         return
       }

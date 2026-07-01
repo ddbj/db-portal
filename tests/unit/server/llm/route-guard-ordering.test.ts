@@ -231,7 +231,11 @@ describe("makeHandleSearchAssistant guard: rate limited", () => {
     await handle(makeReq({ body: { input: "find cancer datasets" } }), res as unknown as Response)
 
     expect(res.statusCode).toBe(429)
-    expect(res.body).toEqual({ error: "rate_limited", axis: "ip" })
+    expect(res.body).toEqual({
+      error: "rate_limited",
+      axis: "ip",
+      retryAfterSec: expect.any(Number),
+    })
   })
 
   test("handleSearchAssistant_limiterBlocks_setsRetryAfterHeader", async () => {
@@ -282,7 +286,11 @@ describe("makeHandleSearchAssistant guard: rate limited", () => {
     )
 
     expect(res.statusCode).toBe(429)
-    expect(res.body).toEqual({ error: "rate_limited", axis: "session" })
+    expect(res.body).toEqual({
+      error: "rate_limited",
+      axis: "session",
+      retryAfterSec: expect.any(Number),
+    })
   })
 })
 
