@@ -9,7 +9,7 @@ const ANCHOR_BUTTON_CLASS =
 
 export const LoginButton = () => {
   const auth = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const t = useT()
 
   if (auth.status === "loading") {
@@ -41,7 +41,7 @@ export const LoginButton = () => {
   }
 
   return (
-    <a href={buildLoginUrl(pathname)} className={ANCHOR_BUTTON_CLASS}>
+    <a href={buildLoginUrl(pathname + search)} className={ANCHOR_BUTTON_CLASS}>
       <UserIcon size={14} className="text-ink-mid" />
       {t("auth.login")}
     </a>

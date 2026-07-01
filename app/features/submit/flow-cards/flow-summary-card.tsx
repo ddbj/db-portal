@@ -443,7 +443,7 @@ const openExternal = (url: string) => {
 
 const navigateToLogin = () => {
   if (typeof window === "undefined") return
-  window.location.href = buildLoginUrl("/submit")
+  window.location.href = buildLoginUrl(window.location.pathname + window.location.search)
 }
 
 const AccountStep = ({ labels }: { labels: AccountStepLabels }) => (

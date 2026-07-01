@@ -133,6 +133,11 @@ export const SearchBox = ({
         onSubmit={handleSubmit}
         className={cn(
           "rounded-card flex items-stretch overflow-hidden shadow-card w-full border",
+          // wrapping form 全体で focus を示すため、内側 input が focus-visible
+          // になったら form の border を brand に上書きし、外周に brand-tint の
+          // 2px リングを添える (overflow-hidden で内側 input の box-shadow は
+          // 切れるので、 form 側で表現する)。
+          "has-[input:focus-visible]:border-brand has-[input:focus-visible]:shadow-[0_0_0_2px_var(--color-brand-tint),0_1px_2px_rgba(26,23,38,0.04)]",
           // An invalid state always wins over the AI tone so a generation /
           // syntax failure reads as a validation failure regardless of mode.
           invalid
@@ -199,6 +204,10 @@ export const SearchBox = ({
             aria-invalid={invalid || undefined}
             className={cn(
               "flex-1 min-w-0 border-0 bg-transparent text-ink font-sans caret-ink leading-tight",
+              // focus indicator は wrapping form 側で描くので、内側 input の
+              // global :focus-visible ring は打ち消す (overflow-hidden で切れて
+              // 中央に矩形の切れ端が残るのを避ける)。
+              "focus-visible:shadow-none",
               cls.input,
             )}
           />

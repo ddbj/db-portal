@@ -53,13 +53,13 @@ export const PageTitle = ({
           </div>
         )}
         <div className="flex items-center justify-between gap-x-6 gap-y-2 flex-wrap">
-          <Heading as="h1" size="h1">
+          <Heading as="h1" size="h1" leading="none">
             {title}
           </Heading>
           {meta !== undefined && <div>{meta}</div>}
         </div>
         {subtitle !== undefined && (
-          <p className="text-fs-body text-ink-mid leading-relaxed mt-2.5 max-w-content-narrow">
+          <p className="text-fs-body text-ink-mid leading-relaxed mt-3 max-w-content-narrow">
             {subtitle}
           </p>
         )}

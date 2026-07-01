@@ -26,7 +26,7 @@ export const SectionHeading = ({
   <div className="flex flex-col gap-1.5 mb-3">
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-2.5 min-w-0">
-        <Heading as={as} size="h2" bar id={id}>
+        <Heading as={as} size="h2" bar leading="none" id={id}>
           {children}
         </Heading>
         {count !== undefined && (
