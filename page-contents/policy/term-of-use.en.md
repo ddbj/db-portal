@@ -3,8 +3,6 @@ title: BSI Terms of Use
 description: Provisional Terms of Use for the websites and related services operated by BSI.
 ---
 
-# BSI Terms of Use
-
 Operated by: Inter-University Research Institute Corporation, Research Organization of Information and Systems (ROIS)
 National Institute of Genetics (NIG), BioData Science Initiative (BSI)
 

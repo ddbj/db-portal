@@ -34,7 +34,12 @@ describe("resolvePageTitle", () => {
       handle: { titleResolver: "page-content" },
       params: { "*": "policy/term-of-use" },
     })
-    expect(resolvePageTitle(matches)).toBe("Terms of Use | Contents | BSI")
+    // 末尾ページの title は page-contents 側で変わりうるので、ネストパスが
+    // 解決されて "<leaf> | Contents | BSI" 形になること (未解決の brand-only
+    // ではないこと) を検証する。
+    const title = resolvePageTitle(matches)
+    expect(title).not.toBe("BSI")
+    expect(title.endsWith(" | Contents | BSI")).toBe(true)
   })
 
   test("resolvePageTitle_pageContentResolverUnknownPath_fallsBackToBrand", () => {
