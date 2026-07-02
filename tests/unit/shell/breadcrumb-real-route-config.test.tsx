@@ -80,14 +80,17 @@ describe("Breadcrumb real route config", () => {
     const crumbs = within(nav).getAllByRole("listitem")
     expect(crumbs).toHaveLength(3)
 
+    // crumb ラベルは page-contents の frontmatter title 由来で変わりうるため、
+    // 祖先が全段出て href が /docs → /policy と連なり、末尾だけが現在ページに
+    // なるネスト構造で検証する。
     expect(within(nav).getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/docs")
-    expect(within(nav).getByRole("link", { name: "BSI ウェブサイトポリシー" })).toHaveAttribute(
-      "href",
-      "/policy",
-    )
 
-    const current = within(nav).getByText("利用規約")
-    expect(current).toHaveAttribute("aria-current", "page")
+    const links = within(nav).getAllByRole("link")
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/docs", "/policy"])
+
+    const current = nav.querySelector('[aria-current="page"]')
+    expect(current?.tagName).toBe("SPAN")
+    expect(crumbs[crumbs.length - 1]).toContainElement(current as HTMLElement)
   })
 
   test("Breadcrumb_pageContent_separatorBetweenCrumbs", () => {
