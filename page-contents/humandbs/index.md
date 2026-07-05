@@ -73,7 +73,7 @@ NBDC ヒトデータベース (NBDC Human Database) は、ヒトに関する様�
 
 
 ## データ提供の流れ
-具体的な操作については、[こちら](/jga/submission-procedure.md)のページをご参照ください。
+具体的な操作については、[こちら](/jga/submission-procedure)のページをご参照ください。
 
 ```mermaid
 flowchart TD
