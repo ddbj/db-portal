@@ -80,9 +80,37 @@ export const useProseEnhance = (selector: string): void => {
     // render が DOM を書き換えるのを止め、 unique runId と合わせて global singleton
     // の id 衝突も避ける。
     let cancelled = false
-    addCopyButtons(el)
-    void renderMermaid(el, () => cancelled)
+    // マウント直後に dangerouslySetInnerHTML が再適用され、 挿入済みの mermaid SVG /
+    // copy button が消えることがある。 再適用後の DOM にも同じ強化を当て直すため、
+    // 完了を待って直列に再実行する (両関数は既強化ノードを skip するため冪等)。
+    let running = false
+    let pending = false
+    const enhance = (): void => {
+      if (running) {
+        pending = true
 
-    return () => { cancelled = true }
+        return
+      }
+      running = true
+      addCopyButtons(el)
+      void renderMermaid(el, () => cancelled).finally(() => {
+        running = false
+        if (pending && !cancelled) {
+          pending = false
+          enhance()
+        }
+      })
+    }
+
+    enhance()
+    const observer = new MutationObserver(() => {
+      if (!cancelled) enhance()
+    })
+    observer.observe(el, { childList: true, subtree: true })
+
+    return () => {
+      cancelled = true
+      observer.disconnect()
+    }
   }, [selector])
 }
