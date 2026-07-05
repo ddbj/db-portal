@@ -1,6 +1,6 @@
 ---
 title: JGA
-ヒト由来試料を用いた研究で産出された解析データを一定の条件の下で共有するための制限公開データアーカイブ。データ提供・利用する際には、ヒトデータ審査委員会による審査承認が必要
+description: ヒト由来試料を用いた研究で産出された解析データを一定の条件の下で共有するための制限公開データアーカイブ。データ提供・利用する際には、ヒトデータ審査委員会による審査承認が必要
 ---
 
 ## JGA とは
@@ -133,5 +133,4 @@ flowchart TD
 - [JGA XML schema (xsd)](https://github.com/ddbj/pub/tree/master/docs/jga)
 - [DDBJ Search での JGA Dataset 検索例](https://ddbj.nig.ac.jp/search/entry/jga-dataset/JGAD000948)
 - [NBDC ヒトデータベース](/humandbs) (データ提供・利用申請の審査、登録データの概要・データセットページの公開)
-- 
 
