@@ -171,7 +171,7 @@ flowchart TD
 
 
 ## データ利用の流れ
-具体的な操作については、こちら**ここにリンクを貼る**のページをご参照ください。
+具体的な操作については、[こちら](/jga/datause-procedure)のページをご参照ください。
 
 ```mermaid
 flowchart TD
