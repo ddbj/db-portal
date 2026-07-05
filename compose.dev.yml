@@ -8,6 +8,17 @@ services:
     volumes:
       - .:/app:rw
       - app-node_modules:/app/node_modules:rw
+    # dev container は `sleep infinity` で待ち受けるだけなので healthcheck の
+    # 対象がなく、 base の HEALTHCHECK を継承すると status が常時 unhealthy
+    # になる。 dev override では明示 disable。
+    healthcheck:
+      disable: true
+    # dev は開発者が明示的に再起動する。 unless-stopped だと `docker compose down`
+    # 後の再起動時に不要 restart が起きるので "no" に上書き。
+    restart: "no"
+    # dev は build peak を含めても 4g で足りるが、 host によっては足りない場合
+    # がある。 override 側で明示的に上書きしたい人のために mem_limit を無効化する。
+    mem_limit: 0
 
 volumes:
   app-node_modules:

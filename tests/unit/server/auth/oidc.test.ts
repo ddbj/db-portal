@@ -81,10 +81,20 @@ describe("extractUserInfo", () => {
     expect(() => extractUserInfo(idToken, validation(2_000))).toThrow(/expired/)
   })
 
-  test("extractUserInfo_expEqualsNow_throwsValidationError", () => {
-    // predicate is `parsed.exp <= nowSeconds`; equal is treated as expired
-    const idToken = buildIdToken(validPayload({ exp: 1_500 }))
-    expect(() => extractUserInfo(idToken, validation(1_500))).toThrow(/expired/)
+  test("extractUserInfo_expWithinClockSkew_accepts", () => {
+    // clockSkew は両側に対称適用される。 exp が now と等しい・少し過去でも、
+    // skew 内なら BFF host 時計のドリフトとみなして accept する。
+    const idToken = buildIdToken(validPayload({ exp: 1_470 }))
+    const info = extractUserInfo(idToken, { ...validation(1_500), clockSkewSeconds: 60 })
+    expect(info.sub).toBe("user-1")
+  })
+
+  test("extractUserInfo_expAtClockSkewBoundary_throwsValidationError", () => {
+    // predicate is `parsed.exp + clockSkew <= nowSeconds`; equal is expired.
+    const idToken = buildIdToken(validPayload({ exp: 1_440 }))
+    expect(() =>
+      extractUserInfo(idToken, { ...validation(1_500), clockSkewSeconds: 60 }),
+    ).toThrow(/expired/)
   })
 
   test("extractUserInfo_expOneSecondAfterNow_accepts", () => {

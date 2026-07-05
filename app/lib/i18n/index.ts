@@ -21,8 +21,9 @@ export const createI18nInstance = (lng: Lang): I18nInstance => {
 
 export { categoryLabelKey } from "./category-label"
 export { flattenKeys } from "./flatten-keys"
-export { formatDate } from "./format-date"
+export { formatDate, formatDateLocalized } from "./format-date"
 export { LangProvider } from "./lang-context"
+export { usePaginationLabels } from "./pagination-labels"
 export { en } from "./resources/en"
 export { ja } from "./resources/ja"
 export {

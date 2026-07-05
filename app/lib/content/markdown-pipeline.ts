@@ -12,9 +12,9 @@ import remarkRehype from "remark-rehype"
 import { type Plugin, unified } from "unified"
 import { visit } from "unist-util-visit"
 
-export const ASSET_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "pdf"] as const
+const ASSET_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "pdf"] as const
 
-export type ResolveOptions = {
+type ResolveOptions = {
   sourceDir: string
   assetPaths: ReadonlySet<string>
   onUnresolved: (refPath: string) => void

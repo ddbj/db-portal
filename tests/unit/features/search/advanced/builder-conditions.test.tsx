@@ -37,17 +37,17 @@ const renderBuilder = (initial: AdvancedState) => {
 describe("AdvancedBuilder conditions", () => {
   test("andOrToggle_switchesInnerCombinator", () => {
     renderBuilder(twoConditions())
-    const and = screen.getByRole("button", { name: "AND" })
-    const or = screen.getByRole("button", { name: "OR" })
-    // Two conditions default to AND; the segmented toggle (not a pulldown) drives
+    const and = screen.getByRole("radio", { name: "AND" })
+    const or = screen.getByRole("radio", { name: "OR" })
+    // Two conditions default to AND; the segmented toggle (radiogroup) drives
     // the whole group's combinator.
-    expect(and).toHaveAttribute("aria-pressed", "true")
-    expect(or).toHaveAttribute("aria-pressed", "false")
+    expect(and).toHaveAttribute("aria-checked", "true")
+    expect(or).toHaveAttribute("aria-checked", "false")
 
     fireEvent.click(or)
 
-    expect(screen.getByRole("button", { name: "OR" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "AND" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("radio", { name: "OR" })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("radio", { name: "AND" })).toHaveAttribute("aria-checked", "false")
   })
 
   test("noConnectorWordsBetweenRows", () => {

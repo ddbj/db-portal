@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react"
 
 import { cn } from "./cn"
+import { Heading } from "./heading"
 
 type PageTitlePad = "trimmed" | "none" | "sm" | "md"
 
@@ -15,10 +16,11 @@ type PageTitleProps = {
 }
 
 // breadcrumb 直下の page (h1 上に「ホーム › ...」 行がある) は padTop="trimmed"
-// を指定すると負マージンで詰めて、breadcrumb 無し page の既定 (pt-9 = 36px) と
-// h1 の縦位置が揃う。
+// を指定すると breadcrumb と h1 の間に追加の余白を積まず、breadcrumb 高 (py-2 +
+// 内容 ≈ pt-9 相当) だけで breadcrumb 無し page の既定 (pt-9 = 36px) と h1 の縦
+// 位置が揃う。
 const padTopClass: Record<PageTitlePad, string> = {
-  trimmed: "-mt-2",
+  trimmed: "pt-0",
   none: "pt-0",
   sm: "pt-6",
   md: "pt-9",
@@ -51,13 +53,13 @@ export const PageTitle = ({
           </div>
         )}
         <div className="flex items-center justify-between gap-x-6 gap-y-2 flex-wrap">
-          <h1 className="text-fs-h1 font-extrabold text-ink m-0 leading-tight tracking-h1">
+          <Heading as="h1" size="h1" leading="none">
             {title}
-          </h1>
+          </Heading>
           {meta !== undefined && <div>{meta}</div>}
         </div>
         {subtitle !== undefined && (
-          <p className="text-fs-body text-ink-mid leading-relaxed mt-2.5 max-w-content-narrow">
+          <p className="text-fs-body text-ink-mid leading-relaxed mt-3 max-w-content-narrow">
             {subtitle}
           </p>
         )}

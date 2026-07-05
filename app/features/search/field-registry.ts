@@ -6,7 +6,7 @@ import type { DbSlug } from "~/lib/search-scope"
 // One field = one entry here, so the two surfaces can never drift on which field
 // exists, its DSL type, whether it is facetable, or its label. The ddbj-search-api
 // DSL allowlist (search/dsl/allowlist.py) stays the validation SSOT; this only
-// decides what the UI offers and how it renders. See docs/search-fields.md.
+// decides what the UI offers and how it renders. See docs/search.md.
 
 // DSL field type. Drives the operator set and how each surface renders the field.
 export type FieldType = "identifier" | "text" | "enum" | "date" | "number"
@@ -24,6 +24,18 @@ export type FieldDef = {
 }
 
 // Keyed by DSL field name (snake_case), the name emitted into the AST.
+/**
+ * 検索フィールドの SSOT。 ES field → DSL field 写像と、 各 field の type / facet 化可否 / label を 1 箇所で定義する。
+ *
+ * 不変量:
+ * - キーは DSL field name (snake_case)。 AST に emit される名前そのもの。
+ * - `type` (`FieldType`) が DSL の演算子集合を決める (identifier=eq/wildcard、 enum=eq、 text=contains/wildcard、 date/number=between/eq)。
+ * - 横断 (`cross`) 可否は `SCOPE_FIELDS.cross` に載るかで決まる。 Tier3 (per-DB 専用) field を cross に載せると API が `field-not-available-in-cross-db` (400) を返す。
+ * - 単一 DB scope で当 DB に実在しない field を `q` に載せると `field-not-available-for-db` (422) を返す。 BSI builder / filter は SCOPE_FIELDS で絞るため通常踏まない。
+ * - `facetName` がある field のみ Sidebar facet (checkboxes) / Advanced builder combobox 候補が API facet 集計で埋まる。 facet bucket は常に keyword field 集計なので exact、 enum 再注入は `eq` で一致するが text 再注入は `contains` (analyzed match_phrase) で広がる。
+ * - controlled-vocab を enum / text どちらにするかは ddbj-search-api `es/query.py` の `_TERM_FILTER_FIELDS` / `_TEXT_MATCH_FIELDS` 区分に合わせる (REST が SSOT)。
+ * - DSL allowlist の検証 SSOT は ddbj-search-api `search/dsl/allowlist.py`。 本 registry は UI affordance を決めるだけで、 値域の検証はしない。
+ */
 export const FIELD_REGISTRY = {
   // === Tier 1 / 2 (cross + ES 6 DB) ===
   organism_id: { type: "identifier", facetName: "organism", organism: true, labelKey: "organism" },
@@ -110,6 +122,15 @@ export type Scope = "cross" | DbSlug
 // dates last — and taxonomy lays its rank fields out as a Linnaean hierarchy
 // (domain → … → species); degenerate ES fields are omitted there
 // (docs/search.md § scope 別の filter 構成).
+/**
+ * 各 scope (`cross` / 各 DB) に出す field 集合と表示順の SSOT。 Sidebar filter / Advanced builder の双方がこの membership と順序を参照する。
+ *
+ * 不変量:
+ * - `cross` は Tier1/2 のみ。 各 DB scope は Tier1/2 + その DB の Tier3 field を持つ。
+ * - SRA / JGA の Tier3 field は subtype plane に分かれた独立 doc に入り、 同一 doc が複数 plane の field を同時に持つことはない。 異なる plane の field を AND するとヒット 0 になる (DSL parse は通っても 0)。 plane 跨ぎ抑止は AI クエリビルダー (`server/llm/assistant/prompt.ts`) の変換規約と、 supplyer 側 (本 registry) が plane 整合な field しか per-DB に供給しないことで担保する。
+ * - Solr scope (`ddbj` / `taxonomy`) は ES mapping 外。 degenerate な field (常に同一値 / 集計不可) は scope から除外する。
+ * - 表示順は意味のグルーピング (subject → record identity → per-DB → access/provenance → dates) を優先し、 render kind では並べない。 順序を変えると UI 表示順が同期して変わる。
+ */
 const ES_HEAD = [
   // subject: the organism taxID facet and the scientific-name text are one concept
   "organism_id",
@@ -246,6 +267,13 @@ export const scopeOf = (db: DbSlug | null): Scope => db ?? "cross"
 // the facet there). Both Solr scopes suppress organism_id: taxonomy because every
 // TXSearch doc is its own organism (`facets=organism` is rejected), ddbj because ARSA has
 // no taxID index (the API matches organism_id by resolving the taxID to a scientific name).
+/**
+ * facet 集計が degenerate な scope × field の SSOT。 field 自体は filter 可能だが facet checkboxes を出さず、 text / identifier 入力に降格する。
+ *
+ * 不変量:
+ * - ここに載った組み合わせでは API が `facets=<field>` を拒否するため、 facet 集計を要求してはならない。
+ * - Sidebar / Advanced builder はこの suppression を `isFacetSuppressed` で問い合わせ、 入力 affordance を切り替える。
+ */
 const FACET_SUPPRESSED: Partial<Record<Scope, readonly FieldKey[]>> = {
   ddbj: ["organism_id"],
   taxonomy: ["organism_id"],

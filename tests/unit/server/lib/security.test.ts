@@ -21,8 +21,11 @@ const makeRes = (): RecordedRes => {
   }
 }
 
-const runMiddleware = (env: "dev" | "staging" | "production"): RecordedRes => {
-  const middleware = securityHeaders({ env })
+const runMiddleware = (
+  env: "dev" | "staging" | "production",
+  options: { keycloakRealmUrl?: string; searchApiUrl?: string } = {},
+): RecordedRes => {
+  const middleware = securityHeaders({ env, ...options })
   const res = makeRes()
   const next = vi.fn()
   middleware({} as Request, res as unknown as Response, next)
@@ -32,13 +35,17 @@ const runMiddleware = (env: "dev" | "staging" | "production"): RecordedRes => {
 }
 
 describe("securityHeaders", () => {
-  test("securityHeaders_dev_setsBasicHeadersButOmitsCspAndHsts", () => {
+  test("securityHeaders_dev_emitsCspWithNonceButOmitsHsts", () => {
+    // dev でも staging/production と同じ CSP を emit する。 nonce 抜けなど CSP を
+    // 壊す変更を deploy 前に開発時点で気付けるようにするため。
     const res = runMiddleware("dev")
 
     expect(res.headers["X-Frame-Options"]).toBe("DENY")
     expect(res.headers["X-Content-Type-Options"]).toBe("nosniff")
     expect(res.headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin")
-    expect(res.headers["Content-Security-Policy"]).toBeUndefined()
+    const csp = res.headers["Content-Security-Policy"]
+    expect(csp).toContain(`'nonce-${res.locals.cspNonce as string}'`)
+    expect(csp).toContain("default-src 'self'")
     expect(res.headers["Strict-Transport-Security"]).toBeUndefined()
     expect(typeof res.locals.cspNonce).toBe("string")
     expect((res.locals.cspNonce as string).length).toBeGreaterThan(0)
@@ -88,5 +95,20 @@ describe("securityHeaders", () => {
     const part = csp.split(";").find((p) => p.trim().startsWith(directive))
     expect(part).toBeDefined()
     expect(part).toContain(expectedToken)
+  })
+
+  test("securityHeaders_csp_formAction_allowsKeycloakOrigin", () => {
+    // logout POST は /api/auth/logout (同一 origin) から Keycloak logout endpoint
+    // へ 302 する。CSP form-action は redirect chain 全 target に適用されるため、
+    // Keycloak origin を許可しないと browser がブロックする。
+    const res = runMiddleware("production", {
+      keycloakRealmUrl: "https://idp.example.com/realms/master",
+    })
+    const csp = res.headers["Content-Security-Policy"] ?? ""
+    const part = csp.split(";").find((p) => p.trim().startsWith("form-action"))
+    expect(part).toBeDefined()
+    expect(part).toContain("'self'")
+    expect(part).toContain("https://idp.example.com")
+    expect(part).not.toContain("/realms/master")
   })
 })

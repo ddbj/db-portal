@@ -7,13 +7,7 @@ import { describe, expect, test } from "vitest"
 import type { NewsList } from "~/schemas/api-bff/news"
 
 import { createCacheStore, loadCacheFromDisk } from "../../../../server/news/cache"
-
-const silentLogger = {
-  debug: () => undefined,
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-}
+import { silentLogger } from "../../_helpers/silent-logger"
 
 const makeItems = (): NewsList => [
   {

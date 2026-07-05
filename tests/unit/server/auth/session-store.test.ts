@@ -14,7 +14,6 @@ const baseEntry = {
     name: "Taro",
     email: "taro@example.com",
   },
-  expiresAt: 0,
 }
 
 describe("sessionStore", () => {

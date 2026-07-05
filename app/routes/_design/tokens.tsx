@@ -125,11 +125,9 @@ const TRACKING: readonly TrackingItem[] = [
 type LeadingItem = { name: string; cls: string; value: string; use: string }
 
 const LEADING: readonly LeadingItem[] = [
-  { name: "leading-tight", cls: "leading-tight", value: "1.2", use: "h1 / h2 / sidebar heading" },
+  { name: "leading-tight", cls: "leading-tight", value: "1.2", use: "h1 / h2 / h3 / sidebar heading" },
   { name: "leading-snug", cls: "leading-snug", value: "1.4", use: "Tag / news title / search result card title" },
-  { name: "leading-normal", cls: "leading-normal", value: "1.5", use: "tile (service / file-type card)" },
   { name: "leading-relaxed", cls: "leading-relaxed", value: "1.6", use: "body prose / Modal description / Callout / content 段落" },
-  { name: "leading-loose", cls: "leading-loose", value: "1.7", use: "dense paragraph (cross results description)" },
 ]
 
 const LEADING_SAMPLE = "BSI は DNA データバンクや生命科学データベースを横断し、塩基配列データの登録 / 検索 / 公開を支える。登録支援と統合検索の入口をひとつにまとめて提供する。"
@@ -152,6 +150,7 @@ const LAYOUT_SPACINGS: readonly LayoutSpacingItem[] = [
   { name: "content-narrow", px: "880px", use: "hero / reading 幅 (form 中央寄せ、subtitle 等)" },
   { name: "sidebar", px: "256px", use: "search results / news の sidebar 固定幅" },
   { name: "right-pane", px: "280px", use: "search per-DB result の right pane / news row 右端 tag 領域" },
+  { name: "heading-row", px: "49px", use: "sidebar heading と main heading row 共通の最小高さ" },
 ]
 
 type RadiusItem = { name: string; cls: string; px: string }

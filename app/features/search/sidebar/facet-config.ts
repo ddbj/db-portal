@@ -1,4 +1,5 @@
 import type { FacetName } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import {
   FIELD_REGISTRY,
@@ -9,7 +10,6 @@ import {
   SCOPE_FIELDS,
   scopeOf,
 } from "../field-registry"
-import type { DbSlug } from "../types"
 
 // Sidebar filter rows per scope, derived from the shared field registry
 // (`../field-registry.ts`). The registry decides which fields exist and their DSL
@@ -17,11 +17,11 @@ import type { DbSlug } from "../types"
 // (render kind + AST operator) for docs/search.md § Sidebar facet. The API decides
 // the facet candidate values; this only decides presentation and AST mapping.
 
-export type FilterRowKind = "facet" | "text" | "dateRange" | "numberRange"
+type FilterRowKind = "facet" | "text" | "dateRange" | "numberRange"
 
 // AST leaf operator the row emits. enum/identifier → eq, text → contains,
 // date/number → between (mirrors ddbj-search-api allowlist operator matrix).
-export type FilterOp = "eq" | "contains" | "between"
+type FilterOp = "eq" | "contains" | "between"
 
 export type FilterRow = {
   // Stable key within a scope; also the i18n label key under search.fields.

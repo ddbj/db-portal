@@ -7,10 +7,11 @@ import {
   type ParseNode,
   type ParseNodeInput,
 } from "~/lib/api"
+import type { DbSlug, PerPageValue, SortKey } from "~/lib/search-scope"
 
 import { isIdentityAst } from "../ast"
 import { facetAggParam } from "../sidebar/facet-config"
-import { type DbSlug, type PerPageValue, type SortKey, sortKeyToApiSort } from "../types"
+import { sortKeyToApiSort } from "../types"
 import { findExactMatch, type ResolvedExactMatch } from "./exact-match"
 
 // Hits resolve through this union so the route has one render path: a cross / per-DB

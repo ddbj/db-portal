@@ -99,7 +99,7 @@ export const TYPICAL_GROUP_TYPE_FOR_KIND: Readonly<Record<FileTypeKind, GroupTyp
   "proteome": "single",
 }
 
-export type FileEntryChipLiteral = { axis: ChipAxis; value: string }
+type FileEntryChipLiteral = { axis: ChipAxis; value: string }
 
 export const DEFAULT_CHIPS_FOR_KIND: Readonly<Partial<Record<FileTypeKind, readonly FileEntryChipLiteral[]>>> = {
   "sequence": [

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Outlet } from "react-router"
+import { Outlet, useLocation } from "react-router"
 
 import { ContentSidebar } from "~/features/docs"
 import { useT } from "~/lib/i18n"
@@ -13,11 +13,16 @@ export const handle = {
 const DocsLayout = () => {
   const t = useT()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // breadcrumb 非表示 page (/docs root) は PageTitle の pt-9 (36px) + h1(fs-h1)/
+  // h2(fs-h2) の baseline offset (~8px) を合わせて mt-11 で下げ、sidebar heading
+  // と main h1 の上端を揃える。breadcrumb 描画 page は breadcrumb 高 (~40px) で
+  // 相殺されるので現状の mt-2 を維持。
+  const isDocsRoot = useLocation().pathname === "/docs"
 
   return (
     <div className="max-w-content-max mx-auto px-page-gutter">
-      <div className="grid gap-4 lg:gap-6 lg:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
-        <aside className="hidden lg:block sticky top-4 mt-2">
+      <div className="grid gap-section-mid lg:grid-cols-[var(--spacing-sidebar)_1fr] items-start">
+        <aside className={`hidden lg:block sticky top-4 ${isDocsRoot ? "mt-11" : "mt-2"}`}>
           <ContentSidebar />
         </aside>
 

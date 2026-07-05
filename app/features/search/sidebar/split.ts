@@ -1,8 +1,8 @@
 import type { ParseNode } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
-import type { DbSlug } from "../types"
 import { matchDatePreset } from "./date-preset"
 import { type FilterRow, rowByDslField } from "./facet-config"
 import { createInitialSearchFacetState, type SearchFacetState } from "./facet-state"

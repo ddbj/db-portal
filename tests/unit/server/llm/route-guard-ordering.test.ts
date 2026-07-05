@@ -2,17 +2,10 @@ import type { Request, Response } from "express"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
 import type { ServerEnv } from "../../../../server/lib/env"
-import type { Logger } from "../../../../server/lib/log"
 import { makeHandleSearchAssistant } from "../../../../server/llm/assistant/route"
 import type { LlmClient } from "../../../../server/llm/client"
 import { createRateLimiter, setActiveRateLimiter } from "../../../../server/llm/rate-limit"
-
-const silentLogger: Logger = {
-  debug: () => undefined,
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-}
+import { silentLogger } from "../../_helpers/silent-logger"
 
 // makeHandleSearchAssistant only reads createLlmClient through the override hook,
 // so env can stay a minimal stand-in for the unrelated downstream config.
@@ -238,7 +231,11 @@ describe("makeHandleSearchAssistant guard: rate limited", () => {
     await handle(makeReq({ body: { input: "find cancer datasets" } }), res as unknown as Response)
 
     expect(res.statusCode).toBe(429)
-    expect(res.body).toEqual({ error: "rate_limited", axis: "ip" })
+    expect(res.body).toEqual({
+      error: "rate_limited",
+      axis: "ip",
+      retryAfterSec: expect.any(Number),
+    })
   })
 
   test("handleSearchAssistant_limiterBlocks_setsRetryAfterHeader", async () => {
@@ -289,7 +286,11 @@ describe("makeHandleSearchAssistant guard: rate limited", () => {
     )
 
     expect(res.statusCode).toBe(429)
-    expect(res.body).toEqual({ error: "rate_limited", axis: "session" })
+    expect(res.body).toEqual({
+      error: "rate_limited",
+      axis: "session",
+      retryAfterSec: expect.any(Number),
+    })
   })
 })
 

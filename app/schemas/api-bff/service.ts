@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { BsiSource, cacheWrapper, langOptionalUrl, langString } from "./_shared"
+
 export const ServiceCategory = z.enum([
   "repository",
   "search",
@@ -10,18 +12,8 @@ export const ServiceCategory = z.enum([
 ])
 export type ServiceCategory = z.infer<typeof ServiceCategory>
 
-export const ServiceSource = z.enum(["ddbj", "dbcls"])
+export const ServiceSource = BsiSource
 export type ServiceSource = z.infer<typeof ServiceSource>
-
-const langString = z.object({
-  ja: z.string(),
-  en: z.string(),
-})
-
-const langOptionalUrl = z.object({
-  ja: z.string().url().optional(),
-  en: z.string().url().optional(),
-})
 
 export const ServiceItem = z.object({
   id: z.string().min(1),
@@ -39,15 +31,7 @@ export type ServiceItem = z.infer<typeof ServiceItem>
 export const ServiceList = z.array(ServiceItem)
 export type ServiceList = z.infer<typeof ServiceList>
 
-// Bump when the cache shape changes; the server rebuilds caches whose stored
-// schemaVersion no longer matches. Single source for both the schema literal and
-// the writer (server/services/cache.ts).
 export const SERVICE_CACHE_SCHEMA_VERSION = 3
 
-export const ServiceCache = z.object({
-  schemaVersion: z.literal(SERVICE_CACHE_SCHEMA_VERSION),
-  lastSyncSha: z.record(ServiceSource, z.string().nullable()),
-  lastFetchedAt: z.string().datetime({ offset: true }),
-  items: ServiceList,
-})
+export const ServiceCache = cacheWrapper(ServiceList, SERVICE_CACHE_SCHEMA_VERSION)
 export type ServiceCache = z.infer<typeof ServiceCache>

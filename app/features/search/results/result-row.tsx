@@ -1,9 +1,7 @@
-import { Link } from "react-router"
+import { formatDateLocalized, type Lang, useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
+import { ExternalIcon, ExternalLink, Tag } from "~/ui"
 
-import { type Lang, useT } from "~/lib/i18n"
-import { ExternalIcon, Tag } from "~/ui"
-
-import type { DbSlug } from "../types"
 import {
   ancestryRow,
   CLASSIFICATION_LABEL,
@@ -30,18 +28,6 @@ export type ResultRowProps = {
   dbChip?: boolean
 }
 
-const formatDate = (value: string, lang: Lang): string => {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  const locale = lang === "ja" ? "ja-JP" : "en-CA"
-
-  // Pin JST (BSI's locale) so SSR (often UTC) and the browser (any
-  // timezone) format the same day and do not trip a hydration mismatch.
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Tokyo",
-  }).format(parsed)
-}
-
 const SubmitterIcon = () => (
   <svg
     className="h-3 w-3 shrink-0 text-ink-softer"
@@ -60,7 +46,7 @@ const SubmitterIcon = () => (
 export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => {
   const t = useT()
   const rawDate = rowDate(hit)
-  const date = rawDate ? formatDate(rawDate, lang) : null
+  const date = rawDate ? formatDateLocalized(rawDate, lang) : null
   const { text: title } = rowTitle(hit)
   const href = entryHref(hit)
   const subtype = subtypeBadge(hit)
@@ -79,7 +65,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-fs-label">
         {dbChip && <Tag kind="brand" size="sm">{t(`search.scope.${db}`)}</Tag>}
         <span className="font-mono font-semibold tracking-mono leading-none text-brand-deep">{hit.identifier}</span>
-        {date && <span className="font-mono leading-none text-ink-soft">{date}</span>}
+        {date && <span className="font-mono tracking-mono leading-none text-ink-soft">{date}</span>}
         {(subtype || suppressed || controlled) && (
           <span className="ml-0.5 inline-flex items-center gap-1.5">
             {subtype && <Tag kind="tag" size="sm" mono>{subtype}</Tag>}
@@ -93,10 +79,9 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
         )}
       </div>
 
-      <Link
-        to={href}
-        target="_blank"
-        rel="noopener noreferrer"
+      <ExternalLink
+        href={href}
+        srLabel={t("a11y.externalLink")}
         className="inline-block text-fs-h2 font-bold leading-snug text-ink no-underline underline-offset-2 hover:underline"
       >
         {title}
@@ -105,7 +90,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
         )}
         <ExternalIcon size={13} aria-hidden className="ml-1 inline align-middle text-ink-soft" />
         <span className="sr-only"> ({t("common.detail")})</span>
-      </Link>
+      </ExternalLink>
 
       {excerpt && (
         <p className="m-0 line-clamp-2 text-fs-body-sm leading-snug text-ink-mid">{excerpt}</p>
@@ -132,7 +117,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
                   className="inline-flex items-center rounded-tag bg-surface-subtle px-2 py-px text-fs-micro leading-snug text-ink-soft"
                 >
                   {chip.labelKey && (
-                    <span className="mr-1 text-ink-softer">{t(chip.labelKey)}:</span>
+                    <span className="mr-1 text-ink-soft">{t(chip.labelKey)}:</span>
                   )}
                   {chip.value}
                 </span>
@@ -147,7 +132,7 @@ export const ResultRow = ({ db, hit, lang, dbChip = false }: ResultRowProps) => 
               ))}
           {classification.length > 0 && (
             <span className="text-ink-soft">
-              <span className="mr-1 text-ink-softer">{t(CLASSIFICATION_LABEL)}:</span>
+              <span className="mr-1 text-ink-soft">{t(CLASSIFICATION_LABEL)}:</span>
               {classification.slice(0, 6).join(" › ")}
               {classification.length > 6 ? " …" : ""}
             </span>

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { ParseNode } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import { astEquals, isIdentityAst, mergeAstAnd } from "../ast"
-import type { DbSlug, SyncStatus } from "../types"
+import type { SyncStatus } from "../types"
 import { parseDslToAst } from "../url/from-url"
 import { serializeAstToDsl } from "../url/to-url"
 import { DEBOUNCE_MS, useDebouncedValue } from "./use-debounced-value"

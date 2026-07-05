@@ -7,7 +7,6 @@ export const en: Resources = {
     error: "Error",
     close: "Close",
     detail: "Details",
-    countSuffix: "items",
     facet: {
       applied: "Applied",
       clearAll: "Clear all",
@@ -39,12 +38,13 @@ export const en: Resources = {
   },
   docs: {
     title: "Knowledge Base",
-    lastUpdatedPrefix: "Updated",
+    lastUpdatedPrefix: "Last updated",
     edit: "Edit",
     editAriaLabel: "Edit this page on GitHub",
     sidebar: {
       heading: "All documents",
       totalPages: "{{count}} pages",
+      totalPages_one: "{{count}} page",
       filterPlaceholder: "Filter tree",
       headingToggleLabel: "Headings of {{title}}",
       lastUpdatedUnknown: "Updated date unknown",
@@ -58,8 +58,10 @@ export const en: Resources = {
       submitLabel: "Search",
       clear: "Clear search",
       resultsHeading: "{{count}} results for \"{{query}}\"",
+      resultsHeading_one: "{{count}} result for \"{{query}}\"",
       closeSearch: "Close search",
       noResults: "No matching documents",
+      bodyLabel: "Body",
     },
   },
   top: {
@@ -93,6 +95,9 @@ export const en: Resources = {
     pageDescription: "Stay up to date with announcements, release notes, and maintenance schedules from DDBJ and DBCLS.",
     toolbar: {
       count: "{{count}} items",
+      count_one: "{{count}} item",
+      range: "{{start}}–{{end}} of {{count}} items",
+      range_one: "{{start}}–{{end}} of {{count}} item",
       sort: "Sort",
       sortNewest: "Newest first",
       sortOldest: "Oldest first",
@@ -124,6 +129,9 @@ export const en: Resources = {
     pageDescription: "Browse databases and tools provided by DDBJ and DBCLS.",
     toolbar: {
       count: "{{count}} items",
+      count_one: "{{count}} item",
+      range: "{{start}}–{{end}} of {{count}} items",
+      range_one: "{{start}}–{{end}} of {{count}} item",
       sort: "Sort",
       sortAsc: "A → Z",
       sortDesc: "Z → A",
@@ -174,6 +182,7 @@ export const en: Resources = {
     paginationPrev: "Previous page",
     paginationNext: "Next page",
     paginationJumpToLast: "Jump to page {{n}}",
+    externalLink: "external link",
   },
   submit: {
     pageTitle: "Submission navigator",
@@ -762,6 +771,7 @@ export const en: Resources = {
     },
     errors: {
       parseFailure: "Could not parse the query in the URL",
+      systemFailure: "The search service is temporarily unavailable. Please try again in a few moments.",
       crossSearchFailure: "Cross-database search failed",
       dbSearchFailure: "Search failed",
       querySyntax: "Could not parse the query. Check the syntax.",

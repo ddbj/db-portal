@@ -2,10 +2,10 @@ import { type Dispatch, useEffect, useRef, useState } from "react"
 
 import type { DbPortalFacets } from "~/lib/api"
 import { useT } from "~/lib/i18n"
+import type { DbSlug } from "~/lib/search-scope"
 import { type AppliedFilter, AppliedFilters, DateFacet, FacetGroup, FacetRow, SidebarGroupLabel, SidebarHeading, TextInput } from "~/ui"
 
 import { DEBOUNCE_MS, useDebouncedSync } from "../debounce"
-import type { DbSlug } from "../types"
 import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
 import { EMPTY_DATE_RANGE, type SearchFacetAction, type SearchFacetState } from "./facet-state"

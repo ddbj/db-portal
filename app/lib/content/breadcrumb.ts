@@ -10,7 +10,7 @@ export type BreadcrumbItem = {
 type StaticHandle = { breadcrumbI18nKey: string }
 type DynamicHandle = { breadcrumbResolver: string }
 
-export type BreadcrumbResolverInput = {
+type BreadcrumbResolverInput = {
   data: unknown
   pathname: string
   params: Readonly<Record<string, string | undefined>>

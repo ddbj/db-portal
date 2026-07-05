@@ -92,8 +92,8 @@ describe("NavigableSearchInput AI mode", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
 
-    expect(screen.getByRole("button", { name: "検索対象データベース" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "生成モード" })).toBeNull()
+    expect(screen.getByRole("button", { name: /検索対象データベース/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /生成モード/ })).toBeNull()
     // The submit label stays "検索" (not "生成") in AI mode.
     expect(screen.getByRole("button", { name: "検索" })).toBeInTheDocument()
   })
@@ -105,7 +105,7 @@ describe("NavigableSearchInput AI mode", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "AI クエリビルダー" }))
 
-    const modeTrigger = screen.getByRole("button", { name: "生成モード" })
+    const modeTrigger = screen.getByRole("button", { name: /生成モード/ })
     expect(modeTrigger).toHaveTextContent("既存に追加")
   })
 

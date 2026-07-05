@@ -1,5 +1,5 @@
-import type { ServiceSource } from "~/lib/api"
 import { serviceCategoryLabelKey, useT } from "~/lib/i18n"
+import { sourceDisplayLabel, sourceSwatch } from "~/lib/source-display"
 import type { AppliedFilter } from "~/ui"
 import { AppliedFilters, FacetGroup, FacetRow, SidebarHeading } from "~/ui"
 
@@ -18,12 +18,6 @@ type FacetPanelProps = {
   counts: ServicesFacetCounts
   onChange: (next: ServicesFacetState) => void
 }
-
-const sourceDisplayLabel = (source: ServiceSource): string =>
-  source === "ddbj" ? "DDBJ" : "DBCLS"
-
-const sourceSwatch = (source: ServiceSource): string =>
-  source === "ddbj" ? "var(--color-src-ddbj)" : "var(--color-src-dbcls)"
 
 export const FacetPanel = ({ facet, options, counts, onChange }: FacetPanelProps) => {
   const t = useT()

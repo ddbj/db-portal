@@ -1,15 +1,7 @@
-import {
-  DB_SLUGS,
-  type DbSlug,
-  isDbSlug,
-  maxReachablePage,
-  PER_PAGE_VALUES,
-  type PerPageValue,
-  reachablePageCount,
-  SEARCH_HARD_LIMIT,
-  SORT_KEYS,
-  type SortKey,
-} from "~/lib/search-scope"
+// search-scope の symbol は canonical な source (`~/lib/search-scope`) から直接
+// import する。 features/search 経由での re-export は同じ symbol に import path
+// を 2 系統作ってしまい、 canonical が曖昧になるため廃止した。
+import type { SortKey } from "~/lib/search-scope"
 import { type AdvancedOp } from "~/schemas/api-bff/llm"
 
 import {
@@ -21,19 +13,6 @@ import {
   isDateField,
   isNumberField,
 } from "./advanced/field-catalog"
-
-export {
-  DB_SLUGS,
-  type DbSlug,
-  isDbSlug,
-  maxReachablePage,
-  PER_PAGE_VALUES,
-  type PerPageValue,
-  reachablePageCount,
-  SEARCH_HARD_LIMIT,
-  SORT_KEYS,
-  type SortKey,
-}
 
 export {
   type AdvancedField,

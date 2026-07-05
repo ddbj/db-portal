@@ -44,16 +44,21 @@ const main = async (): Promise<void> => {
   })
   let hasFailure = false
   try {
-    const mod = (await vite.ssrLoadModule(
-      fileURLToPath(new URL("../app/lib/content/loader.ts", import.meta.url)),
-    )) as LoaderModule
+    try {
+      const mod = (await vite.ssrLoadModule(
+        fileURLToPath(new URL("../app/lib/content/loader.ts", import.meta.url)),
+      )) as LoaderModule
 
-    const serviceResult = mod.validateAllServices()
-    if (!serviceResult.ok) {
-      hasFailure = true
-      for (const e of serviceResult.errors ?? []) {
-        console.error("Service content validation failed", e.filepath, e.error)
+      const serviceResult = mod.validateAllServices()
+      if (!serviceResult.ok) {
+        hasFailure = true
+        for (const e of serviceResult.errors ?? []) {
+          console.error("Service content validation failed", e.filepath, e.error)
+        }
       }
+    } catch (e) {
+      hasFailure = true
+      console.error("Service content validation failed", e)
     }
 
     try {

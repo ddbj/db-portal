@@ -9,13 +9,7 @@ import {
   isFeaturedSlug,
   loadFeaturedWhitelist,
 } from "../../../../server/news/featured"
-
-const silentLogger = {
-  debug: () => undefined,
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-}
+import { silentLogger } from "../../_helpers/silent-logger"
 
 const withTempYaml = async <T>(
   body: string,

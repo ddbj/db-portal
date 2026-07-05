@@ -3,10 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "npm@10.9.2",
   "scripts": {
-    "dev": "npm run gen:last-updated && npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
-    "build": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production react-router build",
-    "start": "npm run gen:last-updated && npm run validate:content && NODE_ENV=production tsx server/index.ts",
+    "dev": "npm run gen:last-updated && npm run gen:breadcrumb-titles && npm run validate:content && tsx watch --include 'app/**/*' --include 'server/**/*' server/index.ts",
+    "build": "npm run gen:last-updated && npm run gen:breadcrumb-titles && npm run validate:content && NODE_ENV=production react-router build",
+    "start": "npm run gen:last-updated && npm run gen:breadcrumb-titles && npm run validate:content && NODE_ENV=production tsx server/index.ts",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -16,6 +20,7 @@
     "test:e2e": "playwright test --config=tests/e2e/playwright.config.ts",
     "validate:content": "tsx scripts/validate-content.ts",
     "gen:last-updated": "tsx scripts/gen-last-updated.ts",
+    "gen:breadcrumb-titles": "tsx scripts/gen-breadcrumb-titles.ts",
     "gen:api-types": "dotenv -- openapi-typescript $DB_PORTAL_OPENAPI_URL -o app/lib/api/openapi-types.ts",
     "news:repos:sync": "bash scripts/news-repos-sync.sh"
   },
@@ -27,9 +32,11 @@
     "@tanstack/react-query": "^5.99.2",
     "cookie": "^1.0.2",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
     "github-slugger": "^2.0.0",
     "i18next": "^26.0.6",
     "isbot": "^5",
+    "jose": "^6.2.3",
     "js-yaml": "^4.1.1",
     "mermaid": "^11.15.0",
     "minisearch": "^7.1.2",

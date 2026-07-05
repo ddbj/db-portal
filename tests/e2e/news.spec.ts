@@ -6,7 +6,7 @@ import { expect, test } from "./helpers"
 // listitem role, so a page-wide getByRole("listitem") is not NewsRow-only.
 // Scope to NewsRow via its date-cell span (app/features/news/news-row.tsx).
 const newsRows = (page: Page): Locator =>
-  page.locator("li").filter({ has: page.locator("span.font-mono.w-20") })
+  page.locator("li").filter({ has: page.locator("span.font-mono.w-date-col") })
 
 const readCountTotal = async (count: Locator): Promise<number> => {
   const text = (await count.innerText()).trim()
@@ -264,7 +264,7 @@ test.describe("News Domain", () => {
       const cells = page.locator("ul > li span.font-mono").first()
       await expect(cells).toBeVisible()
 
-      return (await page.locator("ul > li span.font-mono.w-20").allInnerTexts())
+      return (await page.locator("ul > li span.font-mono.w-date-col").allInnerTexts())
         .map((d) => d.trim())
         .filter((d) => d.length > 0)
     }

@@ -5,7 +5,6 @@ export type Resources = {
     error: string
     close: string
     detail: string
-    countSuffix: string
     facet: {
       applied: string
       clearAll: string
@@ -43,6 +42,7 @@ export type Resources = {
     sidebar: {
       heading: string
       totalPages: string
+      totalPages_one?: string
       filterPlaceholder: string
       headingToggleLabel: string
       lastUpdatedUnknown: string
@@ -56,8 +56,10 @@ export type Resources = {
       submitLabel: string
       clear: string
       resultsHeading: string
+      resultsHeading_one?: string
       closeSearch: string
       noResults: string
+      bodyLabel: string
     }
   }
   top: {
@@ -96,6 +98,9 @@ export type Resources = {
     pageDescription: string
     toolbar: {
       count: string
+      count_one?: string
+      range: string
+      range_one?: string
       sort: string
       sortNewest: string
       sortOldest: string
@@ -127,6 +132,9 @@ export type Resources = {
     pageDescription: string
     toolbar: {
       count: string
+      count_one?: string
+      range: string
+      range_one?: string
       sort: string
       sortAsc: string
       sortDesc: string
@@ -177,6 +185,7 @@ export type Resources = {
     paginationPrev: string
     paginationNext: string
     paginationJumpToLast: string
+    externalLink: string
   }
   submit: {
     pageTitle: string
@@ -674,6 +683,7 @@ export type Resources = {
     }
     errors: {
       parseFailure: string
+      systemFailure: string
       crossSearchFailure: string
       dbSearchFailure: string
       querySyntax: string
@@ -703,7 +713,6 @@ export const ja: Resources = {
     error: "エラー",
     close: "閉じる",
     detail: "詳細",
-    countSuffix: "件",
     facet: {
       applied: "適用中",
       clearAll: "すべて解除",
@@ -735,12 +744,13 @@ export const ja: Resources = {
   },
   docs: {
     title: "ナレッジベース",
-    lastUpdatedPrefix: "Updated",
-    edit: "Edit",
+    lastUpdatedPrefix: "最終更新",
+    edit: "編集",
     editAriaLabel: "GitHub でこのページを編集",
     sidebar: {
       heading: "全ドキュメント",
       totalPages: "{{count}} ページ",
+      totalPages_one: "{{count}} ページ",
       filterPlaceholder: "ツリー内を絞り込み",
       headingToggleLabel: "{{title}} の見出し一覧",
       lastUpdatedUnknown: "更新日不明",
@@ -754,8 +764,10 @@ export const ja: Resources = {
       submitLabel: "検索",
       clear: "検索をクリア",
       resultsHeading: "「{{query}}」 の検索結果 {{count}} 件",
+      resultsHeading_one: "「{{query}}」 の検索結果 {{count}} 件",
       closeSearch: "検索を閉じる",
       noResults: "該当するドキュメントはありません",
+      bodyLabel: "本文",
     },
   },
   top: {
@@ -789,6 +801,9 @@ export const ja: Resources = {
     pageDescription: "DDBJ・DBCLS のお知らせ、リリースノート、メンテナンス情報をまとめて確認できます。",
     toolbar: {
       count: "全 {{count}} 件",
+      count_one: "全 {{count}} 件",
+      range: "{{start}}–{{end}} / {{count}} 件",
+      range_one: "{{start}}–{{end}} / {{count}} 件",
       sort: "並び順",
       sortNewest: "新しい順",
       sortOldest: "古い順",
@@ -820,6 +835,9 @@ export const ja: Resources = {
     pageDescription: "DDBJ・DBCLS が提供するデータベースやツールを一覧から探せます。",
     toolbar: {
       count: "全 {{count}} 件",
+      count_one: "全 {{count}} 件",
+      range: "{{start}}–{{end}} / {{count}} 件",
+      range_one: "{{start}}–{{end}} / {{count}} 件",
       sort: "並び順",
       sortAsc: "A → Z",
       sortDesc: "Z → A",
@@ -870,6 +888,7 @@ export const ja: Resources = {
     paginationPrev: "前のページ",
     paginationNext: "次のページ",
     paginationJumpToLast: "{{n}} ページ目へ",
+    externalLink: "外部リンク",
   },
   submit: {
     pageTitle: "登録ナビゲーション",
@@ -1458,6 +1477,7 @@ export const ja: Resources = {
     },
     errors: {
       parseFailure: "URL のクエリを解析できませんでした",
+      systemFailure: "検索サービスに一時的な障害が発生しています。 時間をおいて再試行してください。",
       crossSearchFailure: "横断検索に失敗しました",
       dbSearchFailure: "検索に失敗しました",
       querySyntax: "クエリを解析できませんでした。構文を確認してください。",

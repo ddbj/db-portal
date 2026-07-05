@@ -11,6 +11,9 @@ import { isFieldNotAvailableForDb, pruneUnavailableFields } from "./field-availa
 export type SearchApiDeps = {
   env: ServerEnv
   fetchImpl?: typeof fetch
+  // client disconnect / LLM timeout 時に serialize fetch も一緒に中断するための
+  // signal。 route 側の AbortController.signal を渡す。 test は未指定で良い。
+  signal?: AbortSignal
 }
 
 type ParseAstOutcome =
@@ -33,12 +36,12 @@ type ParseCall =
 const callParse = async (
   dsl: string,
   db: string | null,
-  { env, fetchImpl = fetch }: SearchApiDeps,
+  { env, fetchImpl = fetch, signal }: SearchApiDeps,
 ): Promise<ParseCall> => {
   const query = db ? `q=${encodeURIComponent(dsl)}&db=${encodeURIComponent(db)}` : `q=${encodeURIComponent(dsl)}`
   const url = `${baseUrl(env)}/db-portal/parse?${query}`
   try {
-    const response = await fetchImpl(url)
+    const response = await fetchImpl(url, signal ? { signal } : {})
     if (response.ok) {
       const body = (await response.json()) as { ast?: unknown }
 
@@ -125,11 +128,15 @@ export const parseDslToAst = async (
   return { ok: false, code: "invalid_dsl", message }
 }
 
+// prompt injection の攻撃面を絞る上限。 通常の serialized DSL は 1 行 1 KiB 以内。
+// これを超えるものは serialize API 側の異常か攻撃なので append の seed には使わない。
+const MAX_SERIALIZED_DSL_LENGTH = 2048
+
 // Serialize the current builder AST to a DSL string for the append prompt.
 // Best-effort: a failure just means append falls back to fresh generation.
 export const serializeAstToDsl = async (
   ast: unknown,
-  { env, fetchImpl = fetch }: SearchApiDeps,
+  { env, fetchImpl = fetch, signal }: SearchApiDeps,
 ): Promise<string | undefined> => {
   const url = `${baseUrl(env)}/db-portal/serialize`
   try {
@@ -137,11 +144,19 @@ export const serializeAstToDsl = async (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ast }),
+      ...(signal ? { signal } : {}),
     })
     if (!response.ok) return undefined
     const body = (await response.json()) as { dsl?: unknown }
+    if (typeof body.dsl !== "string") return undefined
+    const dsl = body.dsl
+    if (dsl.trim().length === 0) return undefined
+    // 改行 / 長すぎる string は prompt injection の運び手になる。 serialize API
+    // が異常応答 or 攻撃者制御の場合を fail-safe に skip する。
+    if (dsl.length > MAX_SERIALIZED_DSL_LENGTH) return undefined
+    if (/[\r\n]/.test(dsl)) return undefined
 
-    return typeof body.dsl === "string" && body.dsl.trim().length > 0 ? body.dsl : undefined
+    return dsl
   } catch {
     return undefined
   }

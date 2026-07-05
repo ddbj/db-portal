@@ -1,4 +1,5 @@
 import { NewsCategory, NewsSource } from "~/lib/api"
+import { splitCsvList } from "~/lib/csv-list"
 
 export type NewsFacetState = {
   source: readonly NewsSource[]
@@ -17,15 +18,6 @@ const isNewsCategory = (value: string): value is NewsCategory =>
 const isNewsSource = (value: string): value is NewsSource =>
   (NewsSource.options as readonly string[]).includes(value)
 
-const splitList = (value: string | null | undefined): string[] => {
-  if (!value) return []
-
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-}
-
 export const parseNewsFacetState = (search: string): NewsFacetState => {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
   const sortRaw = params.get("sort")
@@ -35,12 +27,12 @@ export const parseNewsFacetState = (search: string): NewsFacetState => {
   const page = Math.max(1, Number(params.get("page") ?? "1") || 1)
 
   return {
-    source: splitList(params.get("source")).filter(isNewsSource),
-    category: splitList(params.get("category")).filter(isNewsCategory),
-    year: splitList(params.get("year"))
+    source: splitCsvList(params.get("source")).filter(isNewsSource),
+    category: splitCsvList(params.get("category")).filter(isNewsCategory),
+    year: splitCsvList(params.get("year"))
       .map((entry) => Number(entry))
       .filter((entry) => Number.isInteger(entry) && entry > 1900),
-    service: splitList(params.get("service")).map((entry) => entry.toLowerCase()),
+    service: splitCsvList(params.get("service")).map((entry) => entry.toLowerCase()),
     page,
     sort,
   }

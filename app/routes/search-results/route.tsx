@@ -135,7 +135,7 @@ const SearchResultsRoute = () => {
     mergedAst,
     { page, perPage, sort },
     data.facets,
-    !data.parseError,
+    !data.parseError && !data.systemError,
     searchApiBaseUrl,
   )
 
@@ -147,7 +147,12 @@ const SearchResultsRoute = () => {
   const lastSyncedRef = useRef({ q: data.q, db: data.db })
   const pushNextRef = useRef(false)
   useEffect(() => {
-    if (data.parseError) return
+    if (data.parseError || data.systemError) return
+    // 外部 URL 変化 (Back / 共有リンク / SPA nav) の直後は state が data に追い
+    // つく前なのでここでは write しない。 restore effect が lastSyncedRef を
+    // data に合わせた次の render で通過する。 この gate が無いと Back で古い
+    // state 由来の URL に navigate(replace) してしまい、 直前の履歴を上書きする。
+    if (data.q !== lastSyncedRef.current.q || data.db !== lastSyncedRef.current.db) return
     const dsl = results.dsl
     if (dsl === null) return
     if (dsl === data.q && page === data.page && perPage === data.perPage && sort === data.sort) {
@@ -162,7 +167,7 @@ const SearchResultsRoute = () => {
       buildResultsHref({ q: dsl, db: data.db, page, perPage, sort }),
       push ? { preventScrollReset: true } : { replace: true, preventScrollReset: true },
     )
-  }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, navigate])
+  }, [results.dsl, page, perPage, sort, data.q, data.page, data.perPage, data.sort, data.db, data.parseError, data.systemError, navigate])
 
   // Restore client state from a genuine navigation (cold load / back-forward / scope
   // change / clear elsewhere). Skip our own URL echo so a rapid in-flight edit is not
@@ -214,7 +219,9 @@ const SearchResultsRoute = () => {
     }
     setKeywordBusy(true)
     try {
-      const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl })
+      // Validator scope must match the URL/loader path: per-DB results admit Tier-3
+      // fields, cross mode rejects them. docs/search.md § AST と入出力経路.
+      const parsed = await parseDslToAst(trimmed, { baseUrl: searchApiBaseUrl, db: data.db })
       setKeywordParseError(false)
       pushNextRef.current = true
       setPage(DEFAULT_PAGE)
@@ -317,6 +324,9 @@ const SearchResultsRoute = () => {
 
   return (
     <>
+      {/* SR-only の page heading。 視覚レイアウト (SearchBox 直上に大文字 title を
+          置かない) を維持しつつ、 heading navigation で page level context を与える。 */}
+      <h1 className="sr-only">{t("search.a11y.resultsRegion")}</h1>
       <Section padTop="mid" padBottom="none">
         <NavigableSearchInput
           keyword={keyword}
@@ -346,11 +356,13 @@ const SearchResultsRoute = () => {
           />
         </div>
       </Section>
-      {data.parseError
+      {data.parseError || data.systemError
         ? (
           <Section padTop="sm" padBottom="lg">
             <Callout tone="warn" role="status" action={retryAction}>
-              {t("search.errors.parseFailure")}
+              {data.parseError
+                ? t("search.errors.parseFailure")
+                : t("search.errors.systemFailure")}
             </Callout>
           </Section>
         )
@@ -372,7 +384,7 @@ const SearchResultsRoute = () => {
             )
             : (
               <Section padTop="sm" padBottom="lg">
-                <div className="grid gap-6 sm:grid-cols-[var(--spacing-sidebar)_1fr]">
+                <div className="grid gap-section-mid sm:grid-cols-[var(--spacing-sidebar)_1fr]">
                   {facetPanel}
                   <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
                     {result.kind === "cross"

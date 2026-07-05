@@ -25,7 +25,7 @@ describe("LoginButton", () => {
     })
   })
 
-  test("LoginButton_authenticated_showsUserNameAndLogoutLink", async () => {
+  test("LoginButton_authenticated_showsUserNameAndLogoutForm", async () => {
     server.use(
       http.get("*/api/me", () =>
         HttpResponse.json({
@@ -34,8 +34,12 @@ describe("LoginButton", () => {
     )
     renderLoginButton("/news")
     await waitFor(() => {
-      const link = screen.getByRole("link", { name: /Test User/ })
-      expect(link).toHaveAttribute("href", "/api/auth/logout?return_to=%2Fnews")
+      // logout は SameSite=Lax + POST form で叩く (GET link は CSRF 経路になるため
+      // 廃止した)。 test は form の action と button の accessible name を検証する。
+      const btn = screen.getByRole("button", { name: /Test User/ })
+      const form = btn.closest("form")
+      expect(form).not.toBeNull()
+      expect(form).toHaveAttribute("action", "/api/auth/logout?return_to=%2Fnews")
     })
   })
 

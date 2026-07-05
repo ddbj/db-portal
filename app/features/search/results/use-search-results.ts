@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 
 import type { DbPortalFacets, ParseNode } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
-import type { DbSlug } from "../types"
 import { fetchSearchResults, type SearchParams, type SearchResult } from "./fetch-results"
 
 export type SearchResultsQuery = {

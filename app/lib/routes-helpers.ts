@@ -5,9 +5,7 @@ import {
   type RouteConfigEntry,
 } from "@react-router/dev/routes"
 
-const isDesignPreviewEnabled =
-  process.env.NODE_ENV !== "production"
-  || process.env.DB_PORTAL_ENABLE_DESIGN_PREVIEW === "true"
+const isDesignPreviewEnabled = process.env.NODE_ENV !== "production"
 
 export const designRoutes = (): RouteConfigEntry[] =>
   isDesignPreviewEnabled

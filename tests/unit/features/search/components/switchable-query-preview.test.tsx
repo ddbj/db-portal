@@ -38,7 +38,7 @@ describe("SwitchableQueryPreview", () => {
 
   test("toggles to the read-only builder graph", () => {
     render({ dsl: "human AND date_published:[2022-01-01 TO 2024-12-31]", ast })
-    fireEvent.click(screen.getByRole("button", { name: "グラフ" }))
+    fireEvent.click(screen.getByRole("radio", { name: "グラフ" }))
     // The graph renders field labels / values rather than the raw DSL string.
     expect(screen.queryByLabelText("クエリプレビュー")).toBeNull()
     expect(screen.getByText("human")).toBeInTheDocument()
@@ -46,8 +46,8 @@ describe("SwitchableQueryPreview", () => {
 
   test("toggling back returns to the DSL view", () => {
     render({ dsl: "human", ast })
-    fireEvent.click(screen.getByRole("button", { name: "グラフ" }))
-    fireEvent.click(screen.getByRole("button", { name: "DSL" }))
+    fireEvent.click(screen.getByRole("radio", { name: "グラフ" }))
+    fireEvent.click(screen.getByRole("radio", { name: "DSL" }))
     expect(screen.getByLabelText("クエリプレビュー")).toHaveTextContent("human")
   })
 

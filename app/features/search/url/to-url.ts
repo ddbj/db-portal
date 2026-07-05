@@ -1,7 +1,7 @@
 import { type ParseNode, type ParseNodeInput, serializeAst } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import { isIdentityAst } from "../ast/identity"
-import type { DbSlug } from "../types"
 
 type SerializeAstOptions = {
   baseUrl?: string

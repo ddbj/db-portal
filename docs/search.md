@@ -1,377 +1,250 @@
 # Search
 
-検索機能の SSOT。`/search` (検索ビルダ) と `/search/results` (結果) の責務、3 経路 UI (Simple query / Advanced builder / Sidebar facet) を ParseNode (AST) に正規化する規則、`/db-portal/serialize` への debounce 呼び出し、AI クエリビルダーの方針を定義する。
+検索 UI の設計。 ユーザー入力の中心は AST で、 3 経路から流入し、 URL と ddbj-search-api に流出する。 cross-DB と per-DB の 2 モード、 AI 提案による差分注入、 INSDC status による公開状態の見え方も扱う。
 
-AST grammar と DSL 文法は ddbj-search-api 側 docs (`/db-portal/{parse,serialize}` 仕様) を SSOT とする。本書は BSI 側 UI 状態と API 呼び出し境界のみを扱う。
+## 検索面の 2 モード
 
-## 概念
+検索 UI は **集計を見る** か **一覧を見る** かで 2 モードに分かれる。 全 DB 横断のヒット件数と上位 hit を見るのが **cross-DB**、 1 DB に絞ってレコード一覧と詳細 facet を引くのが **per-DB**。 ビルダー `/search` で条件を組み、 結果ページ `/search/results` の URL に `db` パラメタを載せるか省くかで切り替える。
 
-### 2 つの検索モード
+```mermaid
+flowchart LR
+  Builder["/search<br/>キーワード + Advanced + AI"]
+  Cross["/search/results<br/>(db 省略)"]
+  Per["/search/results?db=...<br/>(per-DB)"]
+  Builder -- "検索 push" --> Cross
+  Builder -- "検索 push" --> Per
+  Cross -- "カード『結果一覧』" --> Per
+  Per -- "scope = 全データベース" --> Cross
+```
 
-| モード | URL | 用途 |
-|---|---|---|
-| cross-DB | `/search/results?q=<DSL>` | 8 DB (`ddbj` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy`) を横断、ヒット数カード + 上位 hit list |
-| per-DB | `/search/results?q=<DSL>&db=<id>` | 1 DB に絞り、record card list + pagination + 詳細 facet |
+DDBJ の DB は内部的に **ES backend** と **Solr backend** の 2 系統に分かれる。 cross-DB はその差を吸収して見せ、 per-DB は元の backend に直で問い合わせる。 2 系統の差は後の Sidebar facet の出し分けと、 共通 field の Tier 区分に効く。
 
-cross-DB は `/db-portal/cross-search`、per-DB は `/db-portal/search` を呼ぶ。`/search/results` は手元の AST を **POST** body で投げ (interactive 経路、§ AST ↔ DSL の往来)、結果と一緒に正規化済み `dsl` を受け取る。GET (`?q=<DSL>`) は cold load / 共有 URL 復元用に検索 API 側に残る。
+ビルダーは `/search` に集約する規約で、 `/search/results` の右ペインは Sidebar facet だけ。 Advanced builder は results に出さない。 DB 軸の値域 / per-page 値 / sort key は `app/lib/search-scope.ts` が SSOT。
 
-### キーワードの結合規則
+## AST と入出力経路
 
-検索語の結合は入力の区切り文字で決まる。BSI は `keywordOperator` を送らず API default (`OR`) に従う。`keywordOperator` はカンマ区切りトークンの結合演算子であり、カンマは「いずれかに一致 (列挙)」 を意味する OR が自然なため、default のままで正しい。
+検索条件の中心は **AST** (Abstract Syntax Tree) で、 BSI client がメモリ上に持つ正規形。 3 経路 (Simple query / Sidebar facet / Advanced builder) はそれぞれ AST 片を組み、 AND merge (`mergeAstAnd`) で 1 つの AST に合流する。 そこから 2 経路 — URL `?q=` と ddbj-search-api の検索 endpoint — に流出する。 `/search/results` の対話中は client が持つ AST が source of truth で、 URL は射影として背景同期される。
 
-- スペース区切り (`cancer mouse`) → AND (全語を含む)。`keywordOperator` とは無関係 (ddbj-search-api の DSL 文法が値内空白を AND 連結する)
-- カンマ区切り (`cancer,mouse`) → OR (いずれかに一致)。`keywordOperator` の default
+```mermaid
+flowchart LR
+  Simple["Simple query<br/>(キーワードボックス)"]
+  Sidebar["Sidebar facet"]
+  Advanced["Advanced builder"]
+  AI["AI 提案"]
+  AST(("AST"))
+  URL["URL ?q=<br/>(DSL 文字列)"]
+  API["ddbj-search-api<br/>(検索 endpoint)"]
+
+  Simple --> AST
+  Sidebar --> AST
+  Advanced --> AST
+  AI -. "差分注入" .-> Simple
+  AI -. "差分注入" .-> Advanced
+  AST -- "serialize-sync<br/>(背景同期)" --> URL
+  AST -- "AST 駆動 (results)" --> API
+```
+
+**AST** は client が組む木表現で、 検索エンジンに渡せる構造を持つ。 **DSL** は ddbj-search-api が文字列 grammar として規定する serialize 形で、 URL `?q=` に乗る形。 両者の往復は ddbj-search-api `/db-portal/{parse,serialize}` 経由でしか行わない。 BSI 側に thin serializer を持たず、 grammar SSOT は外側。
+
+**AI 提案は 4 経路目ではなく、 既存 3 経路への差分注入器**として扱う。 詳細は § AI 提案。
+
+## 3 つの入力経路
+
+3 経路は意図の表現粒度が違う。 自由文で投げる **Simple query**、 候補列挙で絞る **Sidebar facet**、 ネストした論理式を組む **Advanced builder**。
+
+### Simple query
+
+検索語の結合は **入力の区切り文字** で決まる。 BSI は `keywordOperator` を送らず API default (`OR`) に従い、 区切り文字で AND / OR / phrase を表現する。
+
+- スペース区切り (`cancer mouse`) → AND (DSL 文法が値内空白を AND 連結する)
+- カンマ区切り (`cancer,mouse`) → OR (`keywordOperator` の default)
 - クオート (`"Homo sapiens"`) → phrase 一致 (順序保持)
-- 末尾の語 (bare word) は前方一致でも拾う (`Huma` → `Human`、`Homo sap` → `Homo sapiens`)。クオートした phrase には掛からない (ddbj-search-api `compile_free_text` が末尾トークンを `phrase_prefix` に展開する)
-- DSL 内の明示的 `AND` / `OR` / `NOT` は `keywordOperator` と無関係
+- 末尾の bare word は前方一致でも拾う (`Huma` → `Human`)。 クオートには掛からない (API `compile_free_text` が末尾トークンを phrase_prefix に展開する)
 
-キーワードボックスは **自由文** (スペース / カンマ / クオート) として案内する。ddbj-search-api の文法は `field:value` (allowlist 制の Tier 1/2/3 フィールド) も解釈するが、BSI の UI ではこれを宣伝しない。フィールドを限定した検索は Advanced builder の役割で、キーワードボックスは「おもな項目の全文検索」 に徹する。不明フィールド (`organism:` 等) や解釈できない構文を入れると `/db-portal/parse` が 400 を返すので、その入力はキーワードボックスを invalid 表示にして知らせる ([§ parse の失敗](#parse-の失敗))。
+キーワードボックスは **自由文として案内する**。 ddbj-search-api 文法は `field:value` (allowlist 制) も解釈するが、 BSI は宣伝しない。 不明 field や解釈できない構文は parse が 400 を返すので invalid 表示で知らせる。
 
-キーワード (free_text) が照合する **default field は 5 つ** (`identifier` / `title` / `name` / `description` / `organism.name`、ddbj-search-api `compile_free_text` の `_FREE_TEXT_DEFAULT_FIELDS`)。「すべての項目」 ではないので UI もそのように表示する (キーワード行に「おもな項目を全文検索」 + ⓘ で 5 field を明示)。BSI は `keywordFields` 相当の絞り込みパラメタを送らない。
+free_text が照合する default field 集合は ddbj-search-api `compile_free_text` の `_FREE_TEXT_DEFAULT_FIELDS` が SSOT。 「すべての項目」 ではないため UI も 「おもな項目を全文検索」 + ⓘ で field 名を明示する。 BSI は `keywordFields` 相当の絞り込みを送らない。
 
-cross-DB から per-DB への遷移はカードの「結果一覧」link、per-DB から cross-DB に戻るのは scope selector で `<全データベース>` を選ぶ動作。
+### Sidebar facet
 
-### 3 経路 UI と AST 正規化
+`/search/results` の右ペインで、 現在の mode 内で **編集可能な唯一の絞り込み面**。 候補値と count を ddbj-search-api の facet 集計から取り、 ユーザーは値域確定 filter として AND 結合で重ねる。 行構成 (どの mode で何の行を出し、 どの DSL field を emit するか) は `app/features/search/field-registry.ts` が SSOT で、 Advanced builder と共通の registry を引く。
 
-ユーザは検索条件を次の 3 経路で組み立てる。各経路は内部状態を持ち、ParseNode (AST) に正規化される。
+OR / NOT を持てる条件は Sidebar には載せず Advanced 側に倒す。 `identifier` (= **accession**: 各 DB の主キー、 BioProject `PRJDB...` / BioSample `SAMD...` / SRA `DRA/DRP/DRR...` / GEA `E-GEAD-...` 等) 行は Sidebar / Advanced builder のどちらにも出さない — eq exact では絞り込みにならず、 keyword box の free_text と § 公開状態と検索可視性 の accession 完全一致検出が担う。
 
-| 経路 | 内部状態 | AST 変換 |
+#### Tier 1 / 2 / 3 と Solr backend
+
+field は登場頻度で 3 段に分かれる。
+
+- **Tier 1**: 全 DB が共通で持つ field (organism / 識別子 / 日付 等)。 cross と全 per-DB で使える
+- **Tier 2**: ES backend の複数 DB が共通で持つ field (`accessibility` / `description` 等)。 cross + 該当 per-DB で使え、 Tier 1 と合わせて 「cross で使える全 field」 を構成する
+- **Tier 3**: 1 DB だけが持つ field (BioProject の `project_type`、 SRA の `library_strategy`、 JGA の `dataset_type` 等)。 cross では使えず、 該当 per-DB でだけ提供される
+
+cross-DB に Tier 3 行を出すと `field-not-available-in-cross-db` で 400 になるため隠す。 Solr backend は facet を集計しないため、 ddbj / taxonomy 等の submitter / organism facet 行も出さない (出しても 0 件で degenerate になる)。
+
+行順は意味順 (subject → 識別 / 内容 → 分類 → access / provenance → 数値 → 日付)。 facet を render kind だけを理由に上部へ持ち上げない。
+
+#### facet / text / range の 3 制御
+
+各行は値域に応じて 3 種類の制御で出し分ける。 distinct 件数が少なく列挙できる field は **facet** (候補チェックリスト + count 表示)、 多すぎて列挙できない自由文 field は **text** (部分一致入力)、 数値・日付の連続値は **range** (FROM-TO)。 種別判定は distinct 件数の実測で行い、 静的閾値は doc に焼かない。
+
+#### 候補と count の自己排他集計
+
+候補値と count の母集団は **self-exclusion** が原則 — 各 facet `F` の bucket は、 `q` のうち `F` 自身のフィルタだけ除外した集合から算出する。 hits 本体は `q` 全フィルタ適用のまま。 accession 完全一致で suppressed が解禁される場合の母集団は hits と同一 `status_mode`。 `organism` の bucket は taxID で集計、 表示は学名ラベル、 再注入は `organism_id:<taxID>`。 集計の外向き契約 (`facets` / `facetsSize` / `facetSelfExclude` パラメタ、 response 形、 facet 名 → DSL field の再注入規約) は ddbj-search-api `docs/db-portal-api-spec.md § facet 集計` が SSOT。
+
+#### date 行のプリセット
+
+date 行はプリセットボタン + FROM/TO date input を併せ持ち、 内部状態は `active` (プリセット種別 or `custom`) + FROM/TO で表す。 プリセット集合 (`all` + 年単位の差分) と URL round-trip 用の値は `app/features/search/sidebar/date-preset.ts` が SSOT。
+
+- プリセットは FROM/TO を空で持ち、 emit / 表示時に **現在日から都度算出** する (絶対日付を state に焼き込まない)
+- FROM/TO 手編集で `custom` に遷移し、 プリセット選択表示は外れる
+- URL は絶対 between しか持たないため、 復元時に preset 由来の年差分と照合してプリセット選択を round-trip 越しに保つ
+
+#### subtype plane の不変量
+
+同一 DB index 内に 「互いに doc を共有しない部分集合」 がある — SRA は experiment / study / sample / run / analysis、 JGA は dataset / study / sample 等に分かれ、 1 doc は 1 plane に属する。 異なる plane の Tier 3 field を AND すると DSL parse は通っても hit 0 になる。 UI 側で plane 間の排他制御は持たず、 行の補足文言で plane の存在を示す。
+
+### Advanced builder
+
+`/search` のビルダーで、 ネストした group / condition の tree を組む UI。 field 候補は mode 依存で `field-registry.ts` から導き、 op affordance は field type から `app/features/search/advanced/field-catalog.ts` が導出する (Sidebar と共通)。
+
+- group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ (Airtable / Notion 流。 AND / OR の混在はネストで表現する)
+- UI は group / root ごとに AND / OR セグメントトグルを 1 つ出す。 行間に連結語 (「かつ」 / 「または」) は出さない
+- 否定 (NOT) は **演算子 (述語) に統合** する (`を含む` / `を含まない` のペアでドロップダウンに並べ、 negated は AST 上 condition を NOT で包む)。 独立した 「除外」 トグルは持たない
+- **先頭行を含む全 condition が独立に否定可能**。 先頭固定は行わない
+- `FreeText` は Advanced builder に載せない (Simple query が扱う)
+- 表現できない構造 (OR/NOT 内の free_text 等) は `toAdvanced` で drop し、 保持 state 側に倒す
+
+#### AST ↔ AdvancedState の round-trip
+
+AST と AdvancedState の往来 (`toAdvanced` / `fromAdvanced`) は **canonicalize** 込みで PBT 固定する。 canonicalize の規則自体は `app/features/search/advanced/canonicalize.ts` が SSOT。
+
+- `toAdvanced(fromAdvanced(s))` は `canonicalize(s)` に等しい
+- `fromAdvanced(toAdvanced(ast))` も `canonicalize(ast)` に等しい
+
+#### state 遷移の不変量
+
+state 遷移 (追加 / 削除 / 内部結合切替 / 否定切替 / field・op・value・range 更新 / URL 復元時の root 置換 / 全消去) は `app/features/search/advanced/reducer.ts` が SSOT。 PBT で固定する不変量は次の 2 つ。
+
+- 同じ id を 2 つ持つ node が同時に木に存在しない
+- root 以外の任意 node を削除した結果が valid AdvancedState である
+
+## AI 提案
+
+自然言語入力から提案 (新規生成 / 既存への融合) を出す UX。 **4 経路目ではなく、 既存 3 経路に差分を注入する役割**。 提案はフルスペック DSL を表す **ParseNode** (= AST の型名) で、 適用時に Simple query (free_text) と Advanced builder (構造化) に分解して反映する。 server 側 SSE 実装と prompt 設計は [llm.md](llm.md) を参照。
+
+### LLM の可用性
+
+`/api/llm/health` を `useQuery` で取得し、 `status` ごとに `ready` を導く (`app/features/search/assistant/llm-availability.ts`)。 配置面は top / cross-DB results / per-DB results / `/search` のキーワードボックス。
+
+- `unset` のときだけ UI を **物理的に出さない**
+- `unreachable` のときは UI を出して、 送信時に SSE error 経路で fail を伝える
+- `ready` のときのみ submit が enable になる
+
+### 配置面ごとの反映先
+
+呼び出し面によって、 提案カードを介すか直接 navigate するかが分かれる。
+
+| 経路 | 反映先 | 生成モード |
 |---|---|---|
-| Simple query | SearchBox の文字列 | URL 経由で `GET /db-portal/parse` を呼んで AST 化 |
-| Advanced builder | reducer 管理の condition/group tree | 純粋関数で AST に変換 |
-| Sidebar facet | reducer 管理の facet state | 純粋関数で AST に変換 |
+| `/search` ビルダー | 提案カードを read-only で見せ、 適用で AST を split (free_text → keyword、 構造化 → builder) | new / append |
+| cross-DB / per-DB results | 提案カードを出さず、 done AST を serialize して `/search/results` へ navigate | new / append |
+| top | 同上 | new 固定 |
 
-3 経路の AST は AND 結合関数で 1 つの ParseNode に畳む。これを `/db-portal/serialize` に投げて DSL を得る。
+### db 引数の auto と locked
 
-`/search` (cross-search ビルダー) では Simple query (キーワード) と AI クエリビルダーを 1 つの統合入力 (`SearchInputPanel`) に畳む。キーワードは Advanced builder の先頭に **keyword 行** として双方向同期して表示する (上部ボックス submit / keyword 行の編集のどちらからでも sync する)。キーワードの parse → merge → serialize は `useCrossSearchSync` が単一 debounce で行い、live preview / URL に反映する。上部ボックス submit はキービルダーへの集約のみで、cross-search の実行 (results への遷移) は「この条件で検索」 button が担う。
+生成 db は呼び出し面で決まる。 SSE `done` の `{ ast, db }` で運び、 client はそれに従って遷移する。
 
-### BSI 側に thin serializer を持たない
+- top / cross-search ビルダー / cross-DB results — **auto** (db を送らず、 生成 DSL の Tier-3 field から BSI server 側で db を導出)
+- per-DB results — **locked** (現 `db` を送り、 生成はその DB 内で完結する)。 モデルが DB 外 Tier-3 を出した場合は parse が `invalid_dsl` を返し、 別 DB へ勝手に遷移しない
 
-AST → DSL の文字列化は ddbj-search-api 側 `/db-portal/serialize` に委譲する。BSI 側に grammar の薄い TS 実装を持たない。理由:
+### 生成モードの new と append
 
-- grammar の二重保守を排除する
-- precedence / quote / wildcard / range の規則を 1 箇所に集約する
-- API 側のテスト (pytest + hypothesis) が grammar 検証の SSOT
+cross-search ビルダーは **新規生成 (new) と既存に追加 (append)** を **生成前** に選ぶ (prompt がモードで変わるため)。 default はビルダーの件数 (keyword 行 0/1 + 構造化条件数) で決まる — 1 件以上で append、 0 件で new。
 
-BSI 側に残るのは UI 状態固有の変換 (Advanced ↔ AST、Sidebar ↔ AST、AND merge) のみ。
+- **append**: 現在のビルダー DSL を `current` として送る。 モデルが既存条件を保持したまま融合した完全な DSL を返す
+- **new**: `current` を送らず、 提案だけの新規クエリにする。 keyword も初期化する
+- append の AST は既存条件を内包するため、 client 側の graft は不要
 
-### AI クエリビルダーの位置付け
+## URL state
 
-AI クエリビルダーは「自然言語入力 → Advanced builder への提案 (新規生成 / 既存への融合)」 という UX を担う。提案はフルスペック DSL (`AND` / `OR` / `NOT` / グルーピング) を表す ParseNode AST。`/api/llm/health` で LLM availability を判定し、`unset` のときだけ UI を物理的に出さない。`unreachable` のときは UI を出して、送信時に SSE `event: error` 経路で失敗を通知する (`llm.md`)。
+URL は検索状態の共有・復元形で、 AST との間を **serialize-sync (背景同期)** と **parse (cold load 時の復元)** の両方向で動く。 任意の URL から client state を復元でき、 共有・ブックマーク・リロード・戻る/進むが破綻なく成立する。 `/search/results` の対話中は client が持つ AST が source of truth で、 URL はその射影として追従する。
 
-server 側 SSE 実装と prompt 設計は `llm.md` で扱う。本書では client 側 UI 配線のみ。
+URL に載る param は `q` (DSL 文字列、 URI encoded) / `db` (省略で cross、 値ありで per-DB) / `page` / `perPage` / `sort`。 値域・default は `app/lib/search-url.ts` / `search-scope.ts` を参照。 `q` 不在は match_all で、 cross / per-DB とも `q` を省いて検索 API を呼ぶ。
 
-### データ可視性 (status)
+URL 書き換えのモードは編集が遷移を伴うかで決まる。
 
-レコードの INSDC status (`public` / `private` / `suppressed` / `withdrawn`) で検索可視性が変わる。判定ロジックは ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`) が SSOT で、BSI は DSL を送るだけ。BSI はその結果を表示する責務だけを負う。
+- facet / Advanced / paging 変更は `replace` (履歴を汚さない)
+- 検索ボタン / Enter / クリアは `push` (戻る/進むで状態移動)
+- per-DB → cross の mode 変更は別 route 遷移 (`?db=` を delete)
 
-| status | 通常の検索 (キーワード / facet) | accession 完全一致 (id 直打ち) | BSI の表示 |
-|---|---|---|---|
-| `public` | ヒット | ヒット | 通常表示 |
-| `suppressed` | 除外 | **ヒット** | Suppressed バッジ |
-| `private` / `withdrawn` | 除外 (API が 404 で秘匿) | 除外 | 結果に現れない |
+### URL からの復元
 
-「accession 完全一致」 は DSL の top-level が単一 accession の `free_text` / `identifier:` か、それらを直下に持つ AND のときに backend が `suppressed` を解禁する条件 (`OR` / `NOT` 配下・ワイルドカードは解禁しない)。BSI は検索 box / Advanced builder / Sidebar の入力をそのまま DSL 化して送るだけで、解禁・status フィルタ用の accession 判定は持たない。検索結果に出る status は実質 `public` と `suppressed` のみなので、BSI が表示で区別するのは `suppressed` だけ。cross-DB 結果ではこの完全一致を **表示用にのみ** BSI 側で検出し、該当エントリを目立つ形で示す。解禁判定の SSOT は引き続き backend で、BSI の検出はそれを肩代わりしない。
+`/search/results` loader は `?q=` を `GET /db-portal/parse` で AST 化し、 route component が AST を **3 つの面 (キーワードボックス / Sidebar facet / 保持 Advanced state)** に分解して state を再構築する。 入力時に 3 経路が AST に流入する流れの逆方向。
 
-## URL 設計
+```mermaid
+flowchart TD
+  AST["AST (parse 結果)"]
+  AST --> Free["top-level free_text<br/>→ キーワードボックス (Simple query)"]
+  AST --> Facet["Sidebar 表現可能 leaf<br/>→ Sidebar facet"]
+  AST --> Adv["残り (OR / NOT 内包等)<br/>→ 保持 Advanced state"]
+```
 
-### URL = 共有可能な検索状態
-
-URL クエリパラメタは **検索状態の共有・復元形**。任意の URL から client state を復元でき、共有・ブックマーク・リロード・戻る/進むが成立する。`/search/results` の **対話中** は client が持つ AST がライブな源泉で、URL `?q=` はその射影として背景同期される。`q` は常に検索 API が解する DSL 文字列。
-
-| パラメタ | 値域 | 必須 | 意味 |
-|---|---|---|---|
-| `q` | DSL 文字列 (URI encoded) | × | 空のとき match_all (全件)。cross / per-DB とも `q` を省いて検索 API を呼ぶ |
-| `db` | `ddbj` / `sra` / `bioproject` / `biosample` / `jga` / `gea` / `metabobank` / `taxonomy` | × | 不在で cross-DB、値ありで per-DB |
-| `page` | 1+ の整数 | × | 不在は 1 |
-| `perPage` | `20` / `50` / `100` | × | 不在は 20 |
-| `sort` | `relevance` / `date_desc` / `date_asc` | × | 不在は `relevance` (API default) |
-
-### URL 更新規則
-
-- **`/search/results`**: facet / Advanced / paging の変更は client state を即更新し、AST 駆動の検索が解決した時点で返ってきた `dsl` を `?q=` に `replace` 射影する (検索ボタン / Enter / クリアは `push`)。URL は結果を gate せず、解決後に追従する射影
-- **`/search`** (ビルダー): Advanced 編集 → debounce 300 ms → `/db-portal/serialize` → `?q=` を `replace`、検索ボタン / Enter → `push`
-- per-DB → cross-DB scope change → 別 route へ遷移し `?db=` を delete
-
-### URL → state の復元
-
-`/search` (ビルダー) も `?q=<DSL>` (+ `db`) で開くと loader が `GET /db-portal/parse` で AST 化し、`splitFreeText` で free_text を keyword 行に、残りを `toAdvanced` で Advanced builder に復元する (facet サイドバーは無いので構造化条件はすべてビルダー側)。db は scope に復元する。結果ページの `クエリビルダーで編集` がこの経路を使う。
-
-`/search/results` route の loader が `?q=` を読み、`GET /db-portal/parse` で AST 化する。route component は AST を **3 つの面** に分解して state を再構築する: top-level の `free_text` (`splitFreeText`) → **キーワードボックス**、Sidebar facet で表現できる leaf (`splitForSidebar`) → **facet サイドバー**、残り → **保持する Advanced state** (`toAdvanced`)。Advanced state は results では UI を描かず、preview グラフでの可視化と再 serialize のために保持する。
-
-`q` が空のときは parse を行わず `ast=null` のまま 3 面とも初期状態にし、検索は `q` を省いた match_all (全件) になる (§ URL 設計)。facet サイドバーは出るので、ユーザは全件からの絞り込みを開始でき、facet を操作した時点で `q` が生成されて通常の絞り込み結果に遷移する。
-
-表現できない構造 (たとえば `OR` を Sidebar facet 側に持たせる、など) は **保持 state 側に倒す**。Sidebar は単純な AND of equality / range のみを表す。
-
-free_text node の扱いは経路で **非対称**:
-
-- `/search` (cross-search ビルダー) では、上部キーワードボックスと双方向同期する **keyword 行** として Advanced builder に表示し、parse → merge した内容を live preview / URL に反映する。keyword の文字列自体は AST 化せず行に生表示し、AST は別経路 (`useCrossSearchSync`) で算出する (複合 DSL でも行表示が壊れない)。
-- `/search/results` は `splitFreeText` で top-level free_text を取り出し **キーワードボックスに値だけ** (例 `human`) を出す。生 `?q=` 文字列は box に出さない。取り出した free_text は committed な keyword AST として live sync に畳み込むので、facet を編集しても free text は落ちない。OR/NOT に内包された free_text は保持 state 側に残る (Advanced builder が表現できないため `toAdvanced` で drop されるのは従来どおり)。
+`/search` ビルダーも `?q=` で開くと同じ parse → split を行う。 Sidebar / Advanced builder で表現できない構造は **保持 state 側に倒す**。 `q` が空のときは parse を行わず ast=null のまま 3 面とも初期状態にする。
 
 ### parse の失敗
 
-`/search` (検索ビルダ) でキーワードの parse が失敗したら (live sync / submit のどちらでも) results へ遷移させず、その場で直せるようにする:
+ユーザーが直せる失敗 (キーワード構文エラー) と、 system 側の失敗 (serialize / 同期失敗) を区別して扱う。 retry policy は `app/lib/query/client.ts` (query は再試行、 debounced serialize の mutation は再試行なし)。
 
-- キーワードボックス自体を **invalid 表示** にし、box 下の構文ヒント (スペース=AND / カンマ=OR / `"…"`=フレーズ) を warn 色に切り替える (入力位置でのインライン検証)
-- **クエリプレビューと同じ位置** を使い、エラーが無いときはクエリプレビュー、エラーが有るときは warn の `<Callout>` (構文エラー文言 + 右端に「再試行」)、という **排他** 表示にする
-- 警告が出ている間は「この条件で検索」 button を disable にする (壊れたクエリでの実行・遷移を防ぐ)
+- `/search` のキーワード parse 失敗 — ボックスを invalid 表示、 プレビュー位置に warn の `<Callout>` (排他)、 「この条件で検索」 button を disable。 results へ遷移させず、 その場で直せる
+- `/search/results` の URL `?q=` parse 失敗 — loader が `parseError` を返し、 route component が warn `<Callout>` (「再試行」 = `navigate(0)`)。 throw / ErrorBoundary 経路は通らない
+- system 側の serialize / 同期失敗 — 警告も disable も伴わず、 sync chip だけが示す。 表示中の検索結果は古いまま使える
 
-system 側の serialize / 同期失敗 (ユーザーが直せない) は **この警告として出さない**。それらは sync chip のみが示し、表示中の検索結果は古いまま使える。生クエリを `?q=` に載せて results に飛ばすと再 parse で必ず失敗しユーザーが抜け出せないため、parse エラーは `/search` 内で完結させる。
+### sync chip
 
-`/search/results` のキーワードボックスでも、submit 時の keyword parse が失敗したらボックスを invalid 表示にし、box 直下に構文エラー文言を出す。遷移はせずその場で直せる。results / top の box は構文ヒント (スペース=AND 等) や AI クエリビルダーの補助文を出さない (それらは `/search` ビルダーのみ)。
+`/search` のみ `SyncStatus` chip を出す (state 種別は `app/features/search/sync-status.tsx`)。 chip は **状態を示すタグのみ** で操作を持たず、 再試行はクエリプレビュー上の warn `<Callout>` に集約する。 `/search/results` は serialize-sync を持たない (AST から直接検索する) ため chip を出さない。
 
-`/search/results` で URL の `?q=` を直接開いて `/db-portal/parse` が 400 を返した場合は、loader が parse 失敗を同期フラグ (`parseError`) として返し (parse は loader 内で await するので即座に確定する)、route component が warn の `<Callout>` (右端に「再試行」 = `navigate(0)` で再 loader) を描画する。throw / ErrorBoundary 経路は通らない。検索本体 (cross / per-DB) の失敗は AST 駆動の query 側で `<Callout>` に落とす (右端の「再試行」= refetch、§ cross-DB 結果の error)。
+## API との往復
 
-API 接続失敗 (5xx / timeout) は TanStack Query retry policy で query 系は 2 回まで再試行される (`app/lib/query/client.ts`)。`/search` ビルダーの debounced serialize は `useMutation` なので retry なし (`mutations.retry: 0`)、失敗時に sync status chip が失敗を表示する。`/search/results` の検索は query なので上記 retry が効き、最終失敗時のみ結果側 `<Callout>` に落ちる。
+AST / DSL の grammar SSOT は ddbj-search-api 側 (`/db-portal/{parse,serialize}` 仕様)。 BSI は AST を 3 経路で組み立て、 merge して送るだけ。 `/search` ビルダーは AST → DSL を serialize sync で背景同期し、 `/search/results` は AST 駆動で検索する。 URL `?q=` は GET cold load 用に残す。
 
-## Advanced builder
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant B as /search ビルダー
+  participant R as /search/results
+  participant API as ddbj-search-api
 
-### 状態モデル
+  U->>B: 編集
+  B->>API: POST /db-portal/serialize (debounce)
+  API-->>B: DSL
+  B->>B: ?q= replace (背景同期)
+  U->>B: 検索 push
+  B->>R: navigate(?q=...)
+  R->>API: GET /db-portal/parse (URL → AST)
+  API-->>R: AST
+  R->>API: POST 検索 endpoint (AST 駆動)
+  API-->>R: 結果 + 正規化済み dsl
+```
 
-ネストした group / condition の tree を持つ。
+- `serialize` / `parse` / AST 駆動の検索は現在の **`db` mode を渡して呼ぶ** (per-DB は当該 DB、 cross は省略)。 Tier 3 field を含む AST を mode 無しで送ると `field-not-available-in-cross-db` で 400 になるため
+- `/search` の serialize sync は 1 本の debounce で `parse → merge → serialize` し、 単調増加トークンで古い応答を捨てる (request はキャンセルしない)
+- 失敗時は URL を書き換えない。 表示中の結果は古い URL のまま使える
 
-- **Condition**: 1 つの検索条件。親 group 内での結合子 (`AND` / `OR` / `NOT`) + field + op + value (op が範囲なら from / to)
-- **Group**: 子を束ねる入れ物。親 group 内での結合子 + 子集合の内部結合 (`AND` / `OR`) + 子の配列
-- **Root**: 最上位 group。combinator は無視、子の数 0 から可
+### mergeAstAnd の不変量
 
-group / root の結合は **`innerCombinator` を 1 つだけ** 選ぶ形に正規化する (Airtable / Notion 流の「1 group = 1 結合子」)。UI は group / root ごとに **`AND` / `OR` セグメントトグル** を 1 つ出す (root は子が 2 件以上のとき)。`AND` / `OR` の混在はネストした group で表現する。行間に連結語 (`かつ` / `または` 等) は **出さない** (縦幅肥大を避ける)。子は左のブランチガイド (縦線) で束ねて見せる。
+3 経路の AST を AND で結合する純粋関数 `mergeAstAnd` と空 AST `identityAst` は `app/features/search/ast/` が SSOT。 結合則・単位元・平坦化を PBT で固定する。
 
-各 condition の否定 (`NOT`) は **演算子 (述語) に統合** する。op の肯定形と否定形をペアで述語ドロップダウンに並べ (`を含む` / `を含まない`、`と一致` / `と一致しない` 等)、選択は (op, negated) に展開される。negated は AST 上 condition を `NOT` で包む。独立した「除外」トグルは持たない。**先頭行を含む全 condition が独立に否定可能** で、`ensureFirstCombinatorAnd` のような先頭固定はしない。group 自体の否定は group ヘッダの `NOT` トグルで表す。`combinator` の `AND` / `OR` 値は AST 上 `innerCombinator` に吸収されるため、condition / group の `combinator` が実際に担うのは **否定か否か** だけ (`NOT` か `AND`)。`/search` で keyword 行があるときは先頭の構造化条件が keyword と AND 結合し、削除も可能。SQL 由来の `WHERE` 表示は使わない。
-
-field の取り得る値は **scope 依存** で、上部検索ボックスの DB scope セレクタが供給する。全 DB (cross) では cross-DB でも安全な Tier 1/2 のみ。単一 DB を選ぶと、その DB の Tier 3 field が候補に加わる。Solr backed の ddbj / taxonomy では ARSA / TXSearch 固有 field を出し、degenerate な共通 field は出さない (Sidebar と同じ scope 構成)。具体の field 一覧は `search-fields.md` の field 軸を参照。scope を切り替えても既存 condition の field は dropdown に残し (非破壊)、scope 外の field は live sync が `field-not-available-in-cross-db` 等で invalid を知らせる。op の取り得る値は field の型ごとに制限される (date / number は範囲のみ、enum は完全一致のみ等。詳細は `search-fields.md` の DSL field type 規約)。どの scope にどの field が出るかは `field-registry.ts` (Sidebar と共通の SSOT)、builder の op affordance は `field-catalog.ts` の `FIELD_OPS` から導出する。
-
-### reducer の責務
-
-Advanced builder の state 遷移 (追加 / 削除 / 内部結合の AND・OR 切替 / 否定の AND・NOT 切替 / field・op・value・range 更新 / URL 復元時の root 置換 / 全消去) は `advanced/reducer.ts` が SSOT。action 名と効果の対応はコードを参照する。`combinator` が取り得る意味のある値は `AND` (否定なし) / `NOT` (否定) のみで、先頭 child を固定する処理は持たない (`### 状態モデル`)。
-
-### 不変量 (PBT)
-
-- 同じ id を 2 つ持つ node が同時に木に存在しない
-- `clear` を 2 回呼ぶ結果は 1 回と同じ
-- `removeNode` で root 以外の任意 node を消すと、残った木が valid AdvancedState になる
-- 否定 (`combinator = NOT`) は op と独立に condition ごとに付き、先頭 condition にも付けられる (先頭固定はしない)
-- 値域 (深さ) は UI 上 4 段を設計目安とするが reducer 側で制約しない
-
-### AST 変換 (Advanced ↔ AST)
-
-`fromAdvanced` (Advanced state → AST) と `toAdvanced` (AST → Advanced state) は `advanced/from-advanced.ts` / `advanced/to-advanced.ts` が SSOT。変換が満たす性質は下記 round-trip 不変量で固定する。規約として述べる要点:
-
-- 空入力 (`value === ""`、range の from / to いずれか空) は無視し、子なし root は `identityAst` (空 AST) を返す
-- `FreeText` は Advanced builder に載せない (Simple query / keyword 行が扱う)
-- Advanced builder が表現できない構造 (OR/NOT に内包された free_text 等) は `toAdvanced` で drop し、保持 state 側に倒す (`### URL → state の復元`)
-
-### round-trip 不変量 (PBT)
-
-`toAdvanced(fromAdvanced(s))` は `canonicalize(s)` (空 condition / 空 range を除去した形) に等しい。逆方向 `fromAdvanced(toAdvanced(ast))` も `canonicalize(ast)` に等しい。
-
-`canonicalize` は (a) 空 condition / 空 range を除去、(b) AND/OR の子 1 件は親に flatten、(c) 同 combinator の入れ子は flatten、の 3 操作。
-
-## Sidebar facet
-
-結果ページ (`/search/results`) で **ユーザが直接フィルタを操作できる唯一の UI**。編集可能な Advanced builder は `/search` 側にしか無く、結果ページの右ペインは read-only のクエリプレビュー + AI クエリビルダーなので、scope 固有の絞り込みは Sidebar が担う。
-
-### filter の 3 制御種別
-
-Sidebar の各行はフィールドの値域に応じて 3 種類の制御で出し分ける。値域 (distinct 値数) は staging ES / Solr の実データを基準にする (固定の代表値羅列はしない。drift するため)。
-
-| 制御 | 対象 | UI | AST へのマップ |
-|---|---|---|---|
-| **facet** | 低〜中カーディナリティの controlled-vocab | checkbox 複数 / radio + 件数 | `eq` (複数選択は `OR` 展開) |
-| **text** | 高カーディナリティの自由文 / identifier | text input | `contains` (text) / `eq` (identifier) |
-| **range** | 数値 / 日付 | FROM/TO (date はプリセット併設) | `between` |
-
-種別の判定基準: distinct がおおむね 50 以下の controlled-vocab は facet、数百以上の自由文 (例: `host` は 13 万種超) は text、数値域は range。判定は各 field の distinct 件数の実測に従う。
-
-### scope 別の filter 構成
-
-scope (cross / 各 DB) ごとに出す行 (どの field を facet / text / range のどれで描き、どの DSL field を emit するか) は `field-registry.ts` の `SCOPE_FIELDS` が SSOT (Advanced builder と共通の scope 構成; `facet-config.ts` がこれを Sidebar 行に解決し、render kind / op / facetName / label は registry から導く)。field 軸 (各 field がどの scope で出るか) の対応は `search-fields.md` 参照。facet は ddbj-search-api の scope 別 facet 集合 (`db-portal-api-spec.md § scope 別 facet 集合`)、text / range は DSL allowlist (Tier 1/2/3) に対応する。Solr backed の ddbj / taxonomy では ARSA / TXSearch で degenerate する行を出さない (ddbj: submitter、taxonomy: submitter / date_published)。ddbj / taxonomy の `organism_id` は facet が degenerate (API が organism facet を受け付けない) なため、facet を per-scope で抑制し text / identifier 入力として出す (`field-registry.ts` の `FACET_SUPPRESSED`)。
-
-行構成を貫く不変量:
-
-- **Sidebar は AND of rows**: 各行は AND 結合のみ。OR / NOT を持てない ([§ AST 変換](#ast-変換-sidebar--ast))
-- **cross は Tier 1/2 のみ**: cross sidebar には横断可の共通 field しか出さない (Tier 3 は `field-not-available-in-cross-db` で 400)
-- **Solr scope は degenerate 行を出さない**: ddbj / taxonomy は ARSA / TXSearch で degenerate する行 (上記) を構成から除く
-- **行順は意味順 (render kind 非依存)**: 各 scope の行は subject (organism) → 識別 / 内容 → 分類 / DB 固有属性 → access / provenance → 数値 → 日付 の意味順で並べ、facet (checkbox) を render kind だけを理由に上部へ持ち上げない。taxonomy は階級を Linnaean 階層順 (domain → kingdom → … → species) に置く
-
-注意:
-
-- **`studyType` の意味**: jga / metabobank の facet `studyType` は DSL `study_type` field (jga-study / metabobank の controlled-vocab) を指す。SRA の `libraryStrategy` (DSL `library_strategy`) とは **別 field** なので、`libraryStrategy` は sra scope、`studyType` (= `study_type`) は jga / metabobank scope でのみ出す (混同しない)。
-- **cross で `type` を出さない理由**: `type` は DSL 上 Tier 3 (`type:<subtype>` は単一 DB 指定必須) で、cross の `q` に載せると `field-not-available-in-cross-db` で 400 になるため、cross の sidebar filter には出さない (subtype 絞り込みは DB scope セレクタで DB を選んでから行う)。API は cross で `facets=type` 集計自体は受け付けるが、BSI は filter として再注入できないため要求しない。
-- **`type` (subtype) facet は per-DB のみ**: sra (`sra-*` subtype) / jga (`jga-*` subtype) の scope で `type` facet を出し、bucket は subtype 名。`db=sra` / `db=jga` + `facets=type` が subtype 別件数を返す (ddbj-search-api 対応済み)。単一 subtype の bioproject / biosample / gea / metabobank では出さない (API も `facet-not-applicable` で 400)。
-- **subtype scope (SRA)**: `libraryStrategy` / `librarySource` / `librarySelection` / `platform` / `libraryLayout` / `instrumentModel` / `libraryName` / `libraryConstructionProtocol` は sra-experiment、`analysisType` は sra-analysis、`geoLocName` / `collectionDate` は sra-sample が持つ。`db=sra` は subtype 横断なので、対応しない subtype の doc では空 bucket になる (自然に脱落)。
-- **`submitter` は facet でなく text**: `organization.name` は高 cardinality で facet 集計に向かず、API も submitter facet を提供しない (`db-portal-api-spec.md § scope 別 facet 集合`)。登録機関の絞り込みは cross + ES 6 DB で text 入力 (`submitter` の contains、UI ラベルは Organization)。Solr backed (ddbj / taxonomy) は degenerate のため出さない。
-- **Solr scope (ddbj / taxonomy) の `organism` facet は抑制**: taxonomy は tax_id が doc 同一性で facet が degenerate (API は taxonomy facet を rank / kingdom のみに限定)、ddbj は ARSA に taxID index が無く API が taxID を学名へ解決して照合するため organism facet 集計が無い。どちらも `organism_id` は filter から外さず、facet を per-scope 抑制して taxID 直検索の identifier 入力 (eq / wildcard) として出す。学名軸は `organism_name` (ddbj / cross / ES 6 DB) や taxonomy の `species` / `commonName` 等の text で扱う。
-- **`organism` filter は taxID と学名の 2 系統**: organism facet (cross + ES 6 DB) は bucket チェックボックス (taxID = `organism_id`、件数付き、表示は学名ラベル) の上に Taxonomy ID text box を持つ。両者は同じ選択状態 (taxID 群) の双方向同期する別表現で、text box では bucket に現れない minor な taxID もカンマ区切りで直接入力できる (bucket 外の値も sidebar から指定可能にする)。これとは別軸で学名の contains 検索を `organismName` text 行 (cross + ES 6 DB + ddbj) として持つ。AST 上は facet/Taxonomy ID box が `organism_id`、text 行が `organism_name` を emit し、Taxonomy ID box は facet 選択の表示専用エディタで AST マッピングは facet 行のまま不変 (§ AST 変換)。
-- **accessibility は 2 値 enum facet**: public-access / controlled-access。API の `_COMMON_FACET` で全 ES scope 集計可能なので、cross + ES 6 DB の sidebar に facet として出す (Solr ddbj / taxonomy は field 不在で出さない)。
-- **共通 Tier 1/2 field の網羅追加**: cross + 全 ES scope に title・name・description・organismName・organization (= `submitter`) の text 行と dateModified / dateCreated の range 行を出す。publication (text) は merge される scope (biosample 除く) + cross に出す。keyword box / Advanced builder と重複する分は許容 (sidebar = `/search/results` で唯一編集できる filter のため、横断可 field も sidebar から到達できるようにする)。`organism_name` も横断可 field として sidebar に出すことで、`organism_name:…` の DSL が Advanced builder に落ちず sidebar の学名 text 行に round-trip する。
-- **accession (`identifier`) は filter 行に出さない**: sidebar / Advanced builder のどちらも `identifier` 行を持たない。他の text 行が `contains` で段階的に絞れるのに対し identifier だけ `eq` (exact) で、絞り込みにならず単一エントリの名指しにしかならないため。accession 直打ちは keyword box の free_text 既定 field ([§ キーワードの結合規則](#キーワードの結合規則)) と cross-DB の完全一致検出 ([§ データ可視性](#データ可視性-status)) が担う。`identifier` は DSL allowlist 上は横断可 (Tier 1) なので、URL 直書きの `identifier:…` は保持 Advanced state に round-trip して再 serialize できる (§ URL → state の復元)。
-
-### 候補値・件数の出所 = API facet 集計
-
-facet の候補値と件数は **ddbj-search-api の facet 集計を呼んで実データから得る** (NCBI 風に値 + 件数を出す)。BSI 側の hardcoded 静的リストは持たない。理由:
-
-- 中カーディナリティ field (`package` ≈ 200 種、`model` ≈ 250 種、`instrumentModel` ≈ 95 種、`rank` ≈ 48 種等) は静的リストで列挙しきれず、実データ追従もできない
-- 極小 controlled-vocab (`objectType` 2 / `libraryLayout` 2 等) も、件数表示を揃えるため集計経路に一本化する
-- facet count (値ごとの件数) は静的リストでは得られず、集計でのみ出せる (NCBI 風の「値 + 件数」表示の要件)
-
-集計母集団は **self-exclusion** を使う。各 facet `F` の bucket は「`q` のうち `F` 自身に対応するフィルタだけを除外し、他の facet・free text・text 行・range 行・保持条件はすべて適用した集合」から計算する。hits（検索結果本体）は従来どおり `q` 全フィルタ適用のまま。これにより organism を選んでも organism の他候補が候補一覧に残り、続けて追加選択できる。accession 完全一致で suppressed が解禁される場合の母集団は hits と同一 `status_mode` にする (`/facets` のような public_only 固定にしない)。`organism` の bucket は taxID (`organism.identifier`) で集計し、`organism_id:<taxID>` として再注入する (表示は organism facet bucket の学名ラベル)。
-
-### API 契約: `/db-portal/*` の facet 集計
-
-`/db-portal/search` / `/db-portal/cross-search` は `facets` パラメタで `q` 連動の facet 集計をレスポンスに同梱する。raw spec は ddbj-search-api `docs/db-portal-api-spec.md § facet 集計` が SSOT。本書は BSI 側の消費規約のみを扱う。
-
-- **`facets`**: 集計する facet 名のカンマ区切り (省略時は集計なし)。BSI は scope の filter 構成 (`SCOPE_FILTERS`) の facet 行に対応する名前を送る (accessibility は送らない)。scope 外の facet は 400 `facet-not-applicable`、allowlist 外の名前は 422
-- **`facetsSize`**: bucket 上限 (1–1000、既定 100)。多値 facet (`package` / `model` / `rank` 等) の「もっと見る」で使う
-- **`facetSelfExclude`**: `true` を送ると各 facet の集計母集団から自身のフィルタを除外する (self-exclusion)。BSI は常に `true` で呼ぶ。cursor path では非適用 (cursor に焼き込んだ query を母集団にするため)
-- **レスポンス `facets`** (`DbPortalFacets` = `Facets` 拡張): 各 facet が `{value, count}` 配列 (`organism` のみ `{value, count, label}`)。「集計対象外 = `null`」「0 件 = `[]`」。横断はトップレベル 1 セット (ES 6 DB union、organism / type のみ。ddbj / taxonomy は含まれない)
-- **facet 名 → DSL field**: facet 名と再注入する DSL field 名が異なるものは API の再注入表に従う (`organism → organism_id`、`objectType → object_type`、`projectType → project_type`、`molecularType → molecular_type` 等)。BSI の facet state はこのマッピングを持つ
-- **集計失敗 / 未取得時**: サイドバーは facet 行を消さず、cache 済み match_all をプレースホルダとして描き、それも無い cold 初回は行を skeleton で保持する
-
-### AST 変換 (Sidebar ⇄ AST)
-
-`fromSidebar` の挙動:
-
-- 各行を AND 結合する
-- facet (複数選択可) は同 field の `eq` LeafValue 群を、複数なら `BoolOp(OR, [...])`、1 件なら単一 LeafValue にする (`organism` は taxID を載せる)
-- text 行は値があるとき `contains` (text field) / `eq` (identifier field) の LeafValue にする
-- range 行 (datePublished / sequenceLength) は FROM/TO 両方あるとき `between` LeafRange にする。date 行のプリセット (1y / 5y / 10y) は client の現在日から from/to を導出する ([§ date レンジの状態](#date-レンジの状態))
-- scope (`options.db`) に応じて出す行を絞る。cross は Tier 1/2 のみ (Tier 3 を出すと `field-not-available-in-cross-db` で 400)、各 DB はその DB の Tier 1/2/3 のみ。Solr degenerate の行は生成しない
-- どの行も未指定なら identityAst
-
-`splitForSidebar` の挙動:
-
-- URL 復元時、AST の top-level `BoolOp(AND)` の子から「現在の scope の Sidebar 行で表現できる leaf」 を抜き取り、残りを返す
-- 抜き取り対象は scope の filter 構成に載る field の `eq` / `contains` LeafValue と `between` LeafRange。同 field の `eq` を集めた `BoolOp(OR, [...])` は facet の複数選択に畳んで拾い上げる
-- 抜き取れない leaf / 異質な OR / NOT は Advanced builder 側に倒す
-- root 自体が単独 leaf でも対象なら抜き取る (rest は identityAst)
-- date 行の `between` は client の現在日基準でプリセット (1y / 5y / 10y) と照合し、一致すればプリセット選択として、一致しなければ custom レンジとして復元する。URL は絶対 between しか持たないため、この照合がプリセット選択をラウンドトリップ越しに保つ ([§ date レンジの状態](#date-レンジの状態))
-
-### date レンジの状態
-
-date 行 (datePublished / dateModified / dateCreated) は「すべて / 1年 / 5年 / 10年」のプリセットボタンと、FROM/TO date input を併せ持つ。内部状態は `active` (プリセット種別 or `custom`) + FROM/TO で表す。
-
-| 状態 (`active`) | FROM/TO の値 | ボタンの選択表示 | emit | 日付指定の展開 |
-|---|---|---|---|---|
-| `all` | 空 | 「すべて」 | emit しない | 閉 |
-| `1y` / `5y` / `10y` | 空 (表示時に現在日から算出) | 該当プリセット | 算出した between | 開 (算出値を表示) |
-| `custom` | ユーザ入力 | どれも非選択 | 両方あるとき between | 開 |
-
-- プリセットを選ぶと「日付指定」を自動展開し、算出した期間を FROM/TO に表示する (選択は保持)
-- FROM/TO を手編集すると `custom` になり、プリセットの選択表示は外れる
-- 「すべて」を選ぶと FROM/TO を空に戻す (フィルタ解除)
-- プリセットの状態は FROM/TO を空で持ち、emit / 表示時に現在日から都度算出する (絶対日付を state に焼き込まない)
-
-## AST merge
-
-3 経路の AST を AND で結合する純粋関数 `mergeAstAnd` と空 AST `identityAst` を `app/features/search/ast/` に置く。
-
-挙動:
-
-- 全 nodes を flat な BoolOp(AND, [...]) に AND 結合
-- 内側に既に BoolOp(AND, ...) があれば flatten (associative AND の正規化)
-- nodes が空、または全部 identityAst なら identityAst を返す
-- 単一の non-identity node はそのまま返す (BoolOp で包まない)
-
-### PBT 不変量
-
-- **結合律**: `merge(merge(a, b), c) ≡ merge(a, merge(b, c))` (canonicalize 後の構造比較)
-- **単位元**: `merge(a, identityAst) ≡ a`、`merge(identityAst, a) ≡ a`
+- **結合律**: `merge(merge(a, b), c) ≡ merge(a, merge(b, c))` (canonicalize 後)
+- **単位元**: `merge(a, identityAst) ≡ a`
 - **空消滅**: `merge() ≡ identityAst`
-- **保存性**: `merge(a, b)` の rule 集合は `a` と `b` の rule 集合の和 (重複あり) に等しい
-- **平坦化**: 結果が `BoolOp(AND, [...])` のとき、子要素に `BoolOp(AND, ...)` は現れない
+- **保存性**: 結果の rule 集合は入力の rule 集合の和 (重複あり) に等しい
+- **平坦化**: 結果が `BoolOp(AND, [...])` のとき、 子に `BoolOp(AND, ...)` は現れない
+- 冪等ではない (同じ node を 2 回渡すと重複した child が生成される)。 等価判定は構造比較 (`astEquals`)
 
-`merge` は **冪等ではない** (同じ node を 2 回渡すと重複した child を持つ AND node が生成される)。UI 側で重複を除去する場合は呼び出し側の責務。等価判定は構造比較 (`astEquals`、JSON.stringify では union 子の順序問題で false negative が出る)。
+## 公開状態と検索可視性
 
-## AST ↔ DSL の往来
+レコードの公開状態 (**INSDC status**) で検索可視性が変わる。 status の enum 値域と判定 SSOT は ddbj-search-api 側 (`db-portal-api-spec.md § データ可視性`)。 BSI は DSL を送るだけで、 解禁判定や status フィルタを持たない。
 
-DSL 文字列は 2 経路で得る。`/search` ビルダーは編集中の AST を `/db-portal/serialize` で文字列化して URL に載せる。`/search/results` は AST を検索 endpoint に **POST** して結果と一緒に `dsl` を受け取る。どちらも client に grammar を持たず ([§ BSI 側に thin serializer を持たない](#bsi-側に-thin-serializer-を持たない))、変換は API に委ねる。
-
-### scope を渡す
-
-`serialize` / `parse` / AST 駆動の検索は現在の **`db` scope を渡して呼ぶ** (per-DB は当該 DB、cross は省略)。per-DB facet は Tier 3 field (`object_type` 等) を emit するので、scope を渡さない (= cross 検証) と `field-not-available-in-cross-db` で 400 になるため。loader の URL 復元 parse も同じ理由で `db` を渡す。
-
-### `/search` ビルダーの serialize-sync
-
-`/search` はキーワードを含むため `useCrossSearchSync` を使う: keyword と構造化 AST をまとめて 300 ms debounce し、1 本の非同期チェーンで `parse → merge → serialize` し、成功で `navigate(?q=..., { replace })`、失敗で `syncStatus = "failed"`。keyword の parse 失敗は `parseError` (構文エラー) として serialize 失敗と区別する。request はキャンセルせず、単調増加トークンで古い応答を捨てる。
-
-### sync-status (`/search` のみ)
-
-`SyncStatus` (`"idle" | "syncing" | "synced" | "failed"`) を SyncStatusChip で表示する。`syncing` / `failed` のときだけ出す。chip は **状態を示すタグのみ** で操作は持たず、再試行はクエリプレビュー上の warn `<Callout>` の「再試行」に集約する ([§ parse の失敗](#parse-の失敗))。`/search/results` は serialize-sync を持たないため chip を出さない: 検索の進行は結果 skeleton、失敗は結果側の `<Callout>` が示す。
-
-### 失敗時の挙動
-
-- `/search`: 表示中の結果は古い URL のまま (URL を書き換えない)。serialize / 同期失敗 (system 側、ユーザーが直せない) は警告も disable も伴わず sync chip だけが示す。`useMutation` で retry なし
-- `/search/results`: AST 駆動の検索が最終失敗したら **URL を書き換えず直前の結果を残し**、結果側に warn `<Callout>` (「再試行」= refetch) を出す。`dsl` が返らない限り `?q=` 射影は走らないので、共有 URL は最後の成功クエリのまま留まる
-
-## AI クエリビルダー
-
-### LLM availability
-
-`/api/llm/health` を `useQuery` で取得し、`status` ごとに `ready` を導く (`app/features/search/assistant/llm-availability.ts`):
-
-- `status === "ok"` → `ready: true`
-- `status === "unset"` → `ready: false` (UI を物理的に出さない)
-- `status === "unreachable"` → `ready: true` (UI を出して、送信時に SSE error 経路で fail を伝える)
-
-`staleTime` は 5 分 (頻繁に poll しない)。
-
-AI 補助は **top / cross-DB results / per-DB results / `/search`** の検索 box で表示する (`ready` のときだけトグルを出す)。経路で扱いが分かれる:
-
-- **`/search`** (検索ビルダ): `SearchInputPanel`。提案を read-only カードで見せ、ユーザの「適用」で反映する。反映は `?q=` 復元と同じ経路で提案 AST を分割する: top-level の `free_text` は `splitFreeText` でキーワードボックスへ、構造化部分は `toAdvanced` でビルダーへ (`replaceRoot`)。ビルダーは `free_text` leaf を持てないため、この分割をしないと生成キーワードが落ちる。`new` はキーワードを提案の free text で置換、`append` は既存キーワードを保ちつつ生成 free text をマージする (append は builder AST のみをモデルに送るので、生成 free text は純粋に新規)。
-- **top / results** (`NavigableSearchInput`): 提案カードを出さず、生成された AST を serialize して即 `/search/results` へ遷移する。top は `new` 固定、results は `new` / `append` を選べる。
-
-`/search` では統合入力 (`SearchInputPanel`) が 1 つの検索ボックスを キーワード / AI の両モードで使い回す。検索ボックス内の「検索」ボタンの左に「AI クエリビルダー」トグル (pill 形・brand 着色で目立たせる) を置き、押すと AI クエリビルダー (ボックスを brand 着色して明示)、再度押すと キーワードモードへ戻す (プロンプトと未確定の提案は破棄)。AI クエリビルダーでは送信ボタンは「生成」になり、虫眼鏡アイコンは出さない (検索ではなく生成のため)。`ready === false` のときはトグル自体を出さず、キーワードモードに固定する。AI クエリビルダーの入力 (自然文プロンプト) はキーワードとは独立した state で、モード切替時に引き継がない。dev server (vitest 以外) では LLM 未設定でも `ready: true` 扱いとし、生成はスタブ提案を返す (UI 確認用、`import.meta.env.DEV && MODE !== "test"` でゲート)。
-
-### db スコープ (locked / auto)
-
-AI 生成の db スコープは **呼び出し面で決まる**。生成結果の db は SSE `done` の `{ ast, db }` が運び、client はそれに従って遷移する (詳細は `llm.md`)。
-
-| 面 | スコープ | 挙動 |
-|---|---|---|
-| top | auto | db を送らない。生成 DSL が 1 DB の Tier-3 を使えば BFF が db を導出し、`/search/results?q=…&db=<db>` へ遷移。cross なら横断 results へ。**黙って遷移** (専用バナーは出さず、scope セレクタの表示で db が分かる) |
-| cross-search ビルダー (`/search`) | auto | 同上だが反映先は results でなくビルダー。導出 db を builder の DB scope セレクタに反映し、その DB の Tier-3 を扱える ([§ Advanced builder](#advanced-builder) の scope-aware)。scope セレクタで特定 DB を選んでいれば locked 扱いで生成 |
-| cross-DB results | auto | new / append とも導出可。append は現クエリ (cross) に Tier-3 を足すとその DB へ寄る |
-| per-DB results | **locked** | 現 `db` を送る。new / append とも **その DB 内で完結** する。モデルが DB 外 Tier-3 を出した場合は `/db-portal/parse` が弾き `invalid_dsl` エラー (その DB で再入力を促す)。別 DB へは勝手に遷移しない |
-
-導出は「DSL 中の Tier-3 field がどの DB のものか」 で決まる (`llm.md` の field→DB 表)。RNA-seq → `library_strategy` → SRA、host/strain → BioSample、relevance → BioProject、のように、明確に 1 DB の構造化概念を述べた入力だけが per-DB へ寄り、汎用の topic/organism クエリは横断のまま全 DB 分布を見せる。
-
-### 生成モード (cross-search ビルダー)
-
-AI クエリビルダーには **新規生成 (new)** と **既存に追加 (append)** の 2 モードがあり、**生成 prompt がモードで変わりうるため生成前に選ぶ**。UI は検索ボックス左の scope 選択スロット (キーワードモードでは DB scope = 全データベース等) を AI クエリビルダーでそのまま流用し、`新規生成 / 既存に追加` を選ばせる。入場時の default はビルダーの件数 (= keyword 行 0/1 + 構造化条件数) で決まる:
-
-| 件数 | default | 既存に追加 |
-|---|---|---|
-| 1 以上 | append (既存に追加) | 選択可 |
-| 0 | new (新規生成) | 一覧に残すが disable (追加先が無い) |
-
-- **append**: 現在のビルダー DSL を `current` として送り、モデルが既存条件を保持したまま融合した完全な DSL を返す。反映は融合済み AST で組み直す (keyword は不変)
-- **new**: `current` を送らず、提案だけの新規クエリにする。keyword も初期化する (「新規」 の意味を保つため)
-- **例プロンプト chip**: new / append で別 set を出す (new = 一からのクエリを記述する例、append = 既存結果を絞る / 除外する例で NOT の使い方も示す)
-
-提案カード (`ProposalConditions`、`assistant/proposal-conditions.tsx`) は ParseNode AST (フルスペック DSL) を **read-only 版のクエリビルダー** として描く。leaf 節はビルダーと同じ平易な日本語 (`項目` + `述語` + 値、例: 「学名 と一致 Homo sapiens」) で表示し、`fieldLabelKey` / `predicateLabelKey` をビルダーと共有する。生の `field op value` は見せない (allowlist 外 field のみ素の field 名を fallback)。`BoolOp` のネスト・否定 (AND/OR の演算子バッジ、値/範囲 leaf を包む NOT は否定述語に畳み、group / free_text を包む NOT は除外バッジで示す) の描画規則はコードが SSOT。
-
-footer は **「再生成」** (同じプロンプトで再 `start`) + 反映ボタン。反映ボタンは選択中のモードに従う (new → 「この内容で置き換える」、append → 「クエリビルダーに追加」)。`/search` の統合入力と、results / top の切替可能プレビューが同じ `ProposalConditions` を使う (results / top は提案カードとしては出さず、preview のグラフ view としてのみ描く)。
-
-### SSE 配線
-
-`/api/llm/search-assistant` (server 側 endpoint、`llm.md`) に POST、SSE で event を受け取る:
-
-- `event: message` → BFF は出さない (モデル生出力は転送しない、`llm.md` § プロンプトインジェクション)。client も消費しない
-- `event: done` → data `{ ast, db }` を受け取り、`ast` を proposal state に、`db` を遷移/scope 反映に使う、state = "done" (BFF が `/db-portal/parse` で検証済みなので client での lift / 再 parse は不要)
-- `event: error` → state = "error"。送信側の非 OK レスポンス (429 rate limit / 接続失敗) も同じく state = "error" に倒す。失敗時は 3 つの入力面 (top / results / `/search` ビルダー) すべてで、入力ボックスをキーワード構文エラーと同じ validation-failure 表示 (warn 枠 + `aria-invalid`) にし、その直下に `role="alert"` のエラー文言 (`search.assistant.generateError`) を出す。あわせて送信ボタンのラベルを「再試行」(`search.assistant.retry`) に変え、押すと入力を保持したまま同じ内容で再生成する。入力欄は編集可能なまま残るので、言い換えての再送もできる
-
-`AbortController` で stop 可能 (stop すると state = "idle" に戻る)。SSE のため `response.body.getReader` で chunk を読み、`text/event-stream` フレーム境界 (`\n\n`) ごとに event を抽出する。
-
-### 提案の反映
-
-client は `event: done` で受け取った ParseNode AST をそのまま proposal state の SSOT とする (BFF 検証済み)。生成モードは **生成前** に決まり、融合は **モデル側** が行う:
-
-- **append**: 送信時に現在のビルダー DSL を `current` として BFF に渡す。vLLM は既存条件を保持したまま新しい要求を融合した完全な DSL を返すので、AST には既存条件が内包される
-- **new**: `current` を渡さない。vLLM は要求だけの新規 DSL を返す
-
-反映は経路で分かれる:
-
-- **`/search` (ビルダー)**: ユーザーの「適用」操作時に純粋関数 `toAdvanced(ast)` で root を組み直す (`replaceRoot`)。`done.db` が非 null なら DB scope セレクタをその db に合わせる (導出された Tier-3 を扱えるように)。append の AST は既存条件を含むため client 側の graft は不要。**new** は keyword も初期化する。`current` は keyword 行 (free_text) を含まない構造化条件の DSL。
-- **results / top**: 提案を見せず、`event: done` の AST を `serializeAstToDsl` で DSL 化し、`done.db` を `?db=` に載せて `/search/results` へ `navigate` する (`db` null なら横断)。loader が新 `?q=` (+ `db`) を再 split して keyword / facet / 保持 state を組み直す。**per-DB results は locked** で、`current`・遷移先ともその DB に固定する (別 DB へ寄らない)。cross results / top の `current` (append) は **現クエリ全体** (keyword + facet + 構造化条件 = ライブ merged AST) で free_text も含む。top は `new` 固定。
-
-per-DB results の AI クエリビルダーの「やり直す」 button は textarea を空にして stream を `stop()` する (`state` は `streaming` → `idle`)。表示中の proposal は残るので、ユーザーが入力をやり直して再 generate するまで proposal カードは可視のまま。「再生成」 button は textarea のプロンプトを保ったまま同じ入力で再 `start` する。`/search` の統合入力では「AI クエリビルダー」トグルの再押下が プロンプトと proposal を破棄して キーワードモードへ戻す役割を兼ねる。
+- 通常検索 (キーワード / facet) は `public` のみがヒットする
+- **accession 完全一致** (top-level が単一 accession の free_text / identifier、 または直下に持つ AND) のとき backend が `suppressed` を解禁する。 OR / NOT 配下・ワイルドカードは解禁しない
+- BSI が表示で区別するのは `suppressed` のみ (Suppressed バッジ)。 cross-DB 結果ではこの完全一致を **表示用にのみ** 検出する (client 側で AST top-level の形を判定)

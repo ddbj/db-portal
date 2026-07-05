@@ -58,11 +58,15 @@ const sourceConfigs = (env: ServerEnv): RepoSourceConfig[] => [
   ),
 ]
 
+type CollectResult =
+  | { ok: true; map: LangRawMap }
+  | { ok: false }
+
 const collectAll = async (
   cfg: RepoSourceConfig,
   lang: "ja" | "en",
   logger: Logger,
-): Promise<LangRawMap> => {
+): Promise<CollectResult> => {
   const dir = cfg.pathByLang[lang]
   const map: LangRawMap = new Map()
   let entries: Dirent[]
@@ -76,7 +80,7 @@ const collectAll = async (
       message: error instanceof Error ? error.message : String(error),
     })
 
-    return map
+    return { ok: false }
   }
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".md")) continue
@@ -85,10 +89,10 @@ const collectAll = async (
     if (parsed) map.set(parsed.slug, parsed)
   }
 
-  return map
+  return { ok: true, map }
 }
 
-const rebuildForSource = async (
+export const rebuildNewsForSource = async (
   cache: CacheStore,
   cfg: RepoSourceConfig,
   whitelist: FeaturedWhitelist,
@@ -99,7 +103,20 @@ const rebuildForSource = async (
     collectAll(cfg, "ja", logger),
     collectAll(cfg, "en", logger),
   ])
-  const items = pairToNewsItems(cfg, ja, en, (slug) =>
+  // docs/news.md: pull 失敗は warn にとどめ既存 cache をそのまま提供する。
+  // 両 lang dir が同時に read 不能なのは upstream の構造変化 or transient FS 障害なので、
+  // 既存 cache を消さず lastSyncSha も進めない (services/mirror.ts の早期 return と対称)。
+  if (!ja.ok && !en.ok) {
+    logger.warn("news_mirror_rebuild_skipped_both_lang_unreadable", {
+      source: cfg.source,
+      sha,
+    })
+
+    return
+  }
+  const jaMap: LangRawMap = ja.ok ? ja.map : new Map()
+  const enMap: LangRawMap = en.ok ? en.map : new Map()
+  const items = pairToNewsItems(cfg, jaMap, enMap, (slug) =>
     isFeaturedSlug(cfg.source, slug, whitelist))
   await cache.replaceItemsForSource(cfg.source, items as NewsList, sha)
   logger.info("news_mirror_full_refresh", { source: cfg.source, items: items.length })
@@ -152,7 +169,7 @@ const createSourcePoller = (
         return
       }
       const whitelist = await getWhitelist()
-      await rebuildForSource(cache, cfg, whitelist, newSha, logger)
+      await rebuildNewsForSource(cache, cfg, whitelist, newSha, logger)
     } catch (error) {
       logger.error("news_mirror_failed", {
         source: cfg.source,
@@ -188,9 +205,9 @@ export const createNewsMirror = (
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
   const tickAll = async (): Promise<void> => {
-    for (const poll of pollers) {
-      await poll()
-    }
+    // poller はそれぞれ独立した remote repo (DDBJ / DBCLS) を fetch するので順序
+    // 依存はない。 Promise.all で並列化して interval 内の総所要時間を圧縮する。
+    await Promise.all(pollers.map((poll) => poll()))
   }
 
   const mirror: NewsMirror = {

@@ -67,7 +67,15 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
 export const meta = ({ data: loaderData, location, matches }: MetaArgs<typeof loader>) => {
   const origin = loaderData?.portalOrigin ?? ""
   const path = location.pathname
-  const href = (lang: Lang): string => `${origin}${path}?lang=${lang}`
+  // hreflang alternates は query string を含めた canonical に貼る。
+  // `/search?q=xxx` 等でクエリを落とすと、 SEO 上 duplicate content 扱いに
+  // なり、 翻訳 landing で本来欲しかった query を失う。
+  const href = (lang: Lang): string => {
+    const params = new URLSearchParams(location.search)
+    params.set("lang", lang)
+
+    return `${origin}${path}?${params.toString()}`
+  }
 
   return [
     { title: resolvePageTitle(matches) },

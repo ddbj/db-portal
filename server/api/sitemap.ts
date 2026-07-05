@@ -9,34 +9,55 @@ const STATIC_PATHS = ["/", "/search", "/submit", "/news", "/docs"] as const
 
 const PAGE_CONTENTS_DIR = "page-contents"
 
-const listContentPaths = async (): Promise<readonly string[]> => {
-  const root = path.resolve(process.cwd(), PAGE_CONTENTS_DIR)
-  const paths: string[] = []
+// app/lib/content/markdown-loader.ts:extractUrlPath と同じ規約: index.md は親
+// ディレクトリの URL に畳み、 sibling foo.md は /<parent>/foo として独立した
+// URL を持つ。 .en.md は同一 URL の英語ペアなので別 entry を生まない。
+const mdRelPathToUrlPath = (relPath: string): string | null => {
+  if (relPath.endsWith(".en.md")) return null
+  if (!relPath.endsWith(".md")) return null
+  const stripped = relPath
+    .replace(/\/index\.md$/, "")
+    .replace(/\.md$/, "")
+  if (stripped === "" || stripped === "index") return "/"
+
+  return `/${stripped}`
+}
+
+// /_dev/* は dev 専用 preview の規約 (app/lib/routes-helpers.ts) で production
+// から除外する。 search-index / sitemap-loader / content-tree も同じ判定を共有。
+const isExcludedUrlPath = (urlPath: string): boolean =>
+  urlPath === "/_dev" || urlPath.startsWith("/_dev/")
+
+export const listContentPaths = async (
+  rootDir?: string,
+): Promise<readonly string[]> => {
+  const root = rootDir ?? path.resolve(process.cwd(), PAGE_CONTENTS_DIR)
+  const found = new Set<string>()
 
   const walk = async (dir: string, prefix: string): Promise<void> => {
+    let entries
     try {
-      const entries = await fs.readdir(dir, { withFileTypes: true })
-      for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const childDir = path.join(dir, entry.name)
-          const childPrefix = `${prefix}/${entry.name}`
-          try {
-            await fs.access(path.join(childDir, "index.md"))
-            paths.push(childPrefix)
-          } catch {
-            // no index.md
-          }
-          await walk(childDir, childPrefix)
-        }
-      }
+      entries = await fs.readdir(dir, { withFileTypes: true })
     } catch {
-      // dir does not exist
+      return
+    }
+    for (const entry of entries) {
+      const rel = prefix === "" ? entry.name : `${prefix}/${entry.name}`
+      if (entry.isDirectory()) {
+        await walk(path.join(dir, entry.name), rel)
+        continue
+      }
+      if (!entry.isFile()) continue
+      const urlPath = mdRelPathToUrlPath(rel)
+      if (urlPath === null) continue
+      if (isExcludedUrlPath(urlPath)) continue
+      found.add(urlPath)
     }
   }
 
   await walk(root, "")
 
-  return paths.sort()
+  return Array.from(found).sort()
 }
 
 const escapeXml = (s: string): string =>
@@ -113,9 +134,18 @@ ${body}
 `
 }
 
+// page-contents/ は build 時に固まる想定なので、 起動後に一度だけ walk して
+// 以後は memo する。 変更が要る場合は process を restart する規約。
+let cachedContentPaths: readonly string[] | null = null
+
 export const handleSitemap = (env: ServerEnv): RequestHandler =>
   async (_req, res) => {
-    const contentPaths = await listContentPaths()
-    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, contentPaths)
-    res.type("application/xml").send(renderSitemapXml(entries))
+    if (cachedContentPaths === null) {
+      cachedContentPaths = await listContentPaths()
+    }
+    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, cachedContentPaths)
+    res
+      .type("application/xml")
+      .set("Cache-Control", "public, max-age=3600, s-maxage=86400")
+      .send(renderSitemapXml(entries))
   }

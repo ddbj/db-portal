@@ -51,9 +51,13 @@ type RouterInternals = {
 
 // mountAuthRoutes が router に登録した実ハンドラを取り出す。
 // 内部実装ではなく登録結果を取得しているだけで、ハンドラ本体は実コードのまま実行する。
+// signature verifier は DI で bypass する: test は実 JWKS endpoint を叩けず、
+// この test の主眼は payload レベルの iss/aud/nonce/exp 検証と error mapping。
 const callbackHandler = (): RouteHandler => {
   const router = Router()
-  mountAuthRoutes(router, env, createLogger("error"))
+  mountAuthRoutes(router, env, createLogger("error"), {
+    signatureVerifier: async () => { /* pass */ },
+  })
   const route = (router as unknown as RouterInternals).stack.find(
     (l) => l.route?.path === "/api/auth/callback" && l.route.methods.get,
   )?.route

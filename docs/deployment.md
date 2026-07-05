@@ -1,265 +1,187 @@
 # Deployment
 
-production / staging への deploy を **podman + podman-compose による NIG インフラ上の手動運用** で扱う。本書は **運用の構造** (環境構成 / 起動アーキ / health endpoint / log event / トラブルシュート軸) のみを扱い、具体的な host / path / port / env 値 / Keycloak 設定値 / deploy script は git 管理外に持つ。
+dev / staging / production の 3 環境を同一 host に並走させる運用ガイド。 同じ image / 同じ compose 群を共有し、 `${DB_PORTAL_PREFIX}` で名前衝突を避ける。 リリース手順、 ログと監視、 CI、 トラブルシュート、 secret rotation を扱う。
 
-## 環境構成
+## 3 環境の並走
 
-| 環境 | 役割 | 起動 |
-|---|---|---|
-| dev | localhost (Docker Compose) | `npm run dev` (HMR) |
-| staging | NIG (podman + podman-compose)、main 追従 | `tsx server/index.ts` (built SSR) |
-| production | NIG (podman + podman-compose)、tag 指定 | `tsx server/index.ts` (built SSR) |
+BSI は同じ image / 同じ compose ファイル群から 3 つの環境を作る。 dev は開発機の localhost、 staging と production は NIG infra 上の **同一 host に並走** する。 ライフサイクルが違う LLM serving (vLLM) は別 host の shared infra として外に出し、 staging と production の app から同じものを叩く。
 
-`compose.yml` を **production 形 (immutable image / source bind-mount なし)** の base とし、`${DB_PORTAL_PREFIX}` を `container_name` / `image` / `volume` / `network` 名に含めることで、同一ホスト上で 3 環境を衝突なく並列に動かせる。base に override を重ねて環境差を吸収する:
-
-| override | 用途 | 載せ方 |
-|---|---|---|
-| `compose.dev.yml` | dev の source bind-mount + `node_modules` volume + HMR (`build.target: dev`) | dev は `env.dev` の `COMPOSE_FILE=compose.yml:compose.dev.yml` で自動合成 (`docker compose` がフラグなしで両方 load) |
-| `compose.podman.yml` | rootless 対応 (`userns_mode: keep-id` / `security_opt`) | staging / production は `podman-compose -f compose.yml -f compose.podman.yml` で明示指定 (dev override は読まない) |
-
-base が production 形なので、staging / production は `compose.dev.yml` を load しない限り source を bind-mount せず、image に焼き込んだ build / `node_modules` をそのまま使う。runtime に書き込むのは mirror cache だけなので、base は `./cache:/app/cache` のみ bind-mount し、deploy をまたいで news / repos / services cache を保持する。
-
-env ファイル (`env.dev` / `env.staging` / `env.production`) は git 管理。production 側の secret は `CHANGE_ME` プレースホルダで commit し、実値は deploy 先 host 上の `.env.<env>.local` を起動時に `.env` に merge して上書きする (`.gitignore` の `.env.*.local` で実値は git に出ない)。
-
-LLM serving (vLLM) は app とは別ライフサイクルの shared infra で、GPU node に BSI リポジトリを独立 checkout し `llm/` で起動する。staging / production の app は同一 vLLM インスタンスを共有する。具体的な host / path は git 管理外、構成・起動・運用は `llm.md` (SSOT) と `llm/README.md`。
-
-## 起動アーキ (production / staging 共通)
-
-```
-[Browser] HTTPS
-   │
-   ▼
-[Reverse Proxy (NIG infra)]   ← TLS terminate / X-Forwarded-* 付与
-   │
-   ▼
-[podman: ${DB_PORTAL_PREFIX}-app]
-   │  build / validate:content は image build 時に済む (runtime stage に build/ を焼き込み)
-   │  command: tsx server/index.ts  (再 build / 再 validate なし)
-   │
-   ├─ SSR: React Router v7 framework mode (build/server/index.js)
-   └─ BFF: Express endpoints
-       ├─ /api/me
-       ├─ /api/auth/*
-       ├─ /api/news
-       ├─ /api/services
-       ├─ /api/llm/health
-       ├─ POST /api/llm/search-assistant
-       ├─ /sitemap.xml
-       └─ /robots.txt
+```mermaid
+flowchart TD
+  subgraph dev_host["dev host (開発者 localhost)"]
+    dev_app["dev-app (bind-mount + HMR)"]
+  end
+  subgraph nig_host["NIG infra host"]
+    stg_app["staging-app (main 追従 / built SSR)"]
+    prod_app["production-app (tag 指定 / built SSR)"]
+  end
+  subgraph gpu_node["GPU node (shared infra)"]
+    vllm["vLLM serving"]
+  end
+  stg_app -- "HTTPS" --> vllm
+  prod_app -- "HTTPS" --> vllm
 ```
 
-`server/index.ts` が production / dev の両方をハンドルする (`NODE_ENV` で分岐)。production では **image build 時に** build した (`Dockerfile` の build stage が `npm run build`) `build/server/index.js` を `createRequestHandler` に渡し、`build/client/assets` を `immutable, max-age=1y` で静的配信する。`build/` は image build 時に runtime stage へ焼き込むので、container 起動時に build は走らない。
+| 環境 | 起点 | 起動形態 |
+|---|---|---|
+| dev | 開発者 localhost | bind-mount + HMR |
+| staging | NIG infra host | image 焼き込みの built SSR、 main 追従 |
+| production | NIG infra host | image 焼き込みの built SSR、 tag 指定 |
 
-リバースプロキシ側 (NIG infra) は `X-Forwarded-Proto` / `X-Forwarded-Host` / `X-Forwarded-For` を付与する。Express の `trust proxy` は env `DB_PORTAL_TRUST_PROXY` で設定する (`server/index.ts`)。app は container port-map 越しにプロキシの背後に居るため socket peer は loopback ではなく、`loopback` 固定だと `X-Forwarded-For` が無視され per-IP rate limit と client IP ログが壊れる。staging / production はリバースプロキシ 1 段なら `1` を設定し、実環境で `req.ip` が client IP に解決されることを確認する (ずれる場合はホップ数を調整)。
+具体的な SSH ホスト / deploy パス / 環境別 (dev / staging / production) の env 実値は本リポジトリには含めず、 host 側に置く。
 
-## 起動と停止
+## Compose と overlay
 
-- production / staging の `command` は `tsx server/index.ts` (npm を介さない)。node が PID1 (`init: true` の tini) の直接の子になり、`SIGTERM` が node に届く (npm を挟むと signal が node に forward されず `SIGKILL` timeout まで延びる)
-- **graceful shutdown**。`server/index.ts` は `SIGTERM` / `SIGINT` で背景 timer (news mirror / LLM health monitor) を止め、idle keep-alive を落とし、in-flight が drain した時点で exit する (`server_shutdown` log)。長命接続 (LLM SSE) は grace 期間内に閉じなければ force-exit
-- reverse proxy の upstream は固定 (NIG infra、BSI 側から切替不可) なので、deploy は同一 host port への in-place swap。旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる
-- session は in-memory なので swap で消失する (ユーザは再ログイン)。HTTP 可用性とは別問題
+base となる `compose.yml` は production 形 (immutable image / source bind-mount なし) で書く。 dev では `compose.dev.yml` を重ねて bind-mount と HMR を有効化し、 staging / production では `compose.podman.yml` を重ねて rootless 化する。 同一 host 上で staging と production を並走させるため、 `container_name` / `image` / `volume` / `network` 名は `${DB_PORTAL_PREFIX}` を含めて衝突を避ける。
 
-## リリースフロー
+- `compose.yml` が SSOT。 overlay は差分だけを表現する
+- `${DB_PORTAL_PREFIX}` は env ごとに別値 (例 `staging` / `production`)。 これを欠くと 2 環境間で名前が衝突して起動不能になる
+- `env.dev` / `env.staging` / `env.production` は git 管理。 secret は `CHANGE_ME` プレースホルダで commit する
+- 実値は host 側の `.env.<env>.local` に置き、 起動時に compose の `env_file` で merge する。 `.env.*.local` は `.gitignore` で git に出さない
 
-- staging deploy はリリースマネージャが手動で実施する (main 追従)
-- production deploy は git tag (`v<MAJOR>.<MINOR>.<PATCH>` SemVer) を打ってから手動で実施する
-- deploy 手順: host で対象 ref を checkout → `podman-compose -f compose.yml -f compose.podman.yml build` (旧 container は serving 継続) → `up -d --force-recreate app` で swap。具体的な host / path / コマンドは git 管理外の運用メモ
-- session store は in-memory なので、deploy / rollback で消失する (ユーザは再ログイン)
-- News disk cache は schema バージョンを内部に持ち、起動時に互換チェックが入る (`news.md`)。schema 互換性が壊れる変更は別 release note に明記する
-- Rollback は前安定 tag への checkout で行う。staging は main 追従なので、問題のある commit を `git revert` して main に push し直す方が安全 (host 上で `git checkout <prev-commit>` だと main との差分が温存される)
+## container 構成
 
-## CI 範囲
+reverse proxy 1 段の背後で podman container 1 つが **SSR + BFF を兼任** する構成。 BFF (`/api/*` / `/sitemap.xml` / `/robots.txt` を返す Express) と React Router v7 framework mode の SSR が同一プロセス内に同居する。
 
-`.github/workflows/ci.yml` は PR / `main` への push で次の最小チェックを Docker Compose 内で回す:
+```mermaid
+flowchart LR
+  browser["Browser"] -- "HTTPS" --> proxy["Reverse Proxy (NIG infra)"]
+  proxy -- "X-Forwarded-*" --> app["${DB_PORTAL_PREFIX}-app (podman)"]
+  app -- "SSR" --> rr["React Router v7 (build/server)"]
+  app -- "BFF" --> express["Express (/api, /sitemap.xml, /robots.txt)"]
+```
 
-- `npm run typecheck`
-- `npm run lint`
-- `npm test -- --run` (unit + PBT)
-- `npm audit --audit-level=high --omit=dev` (production 依存の高深刻度脆弱性で fail)
+container の `command` は npm を介さず `tsx server/index.ts` を直接 PID1 (`init: true` の tini) の子として起動する。 これは `SIGTERM` を node に直接届け、 graceful shutdown 経路 (背景 timer 停止 → idle keep-alive 落とし → in-flight drain → exit) を成立させるための規約。 npm を間に挟むと SIGTERM が node まで届かず、 強制 kill になる。
 
-deploy / e2e / openapi 差分検知 / 性能計測は CI から自動実行しない。e2e は staging deploy 後に staging ホスト上の e2e 専用コンテナ (`Dockerfile` の `e2e` stage) で deploy 済み公開 URL を叩いて手動実行する (`tests/e2e/notes.md` §1)、openapi 差分検知はリリース直前に手動で叩く。Markdown ページの `lastUpdated` は `scripts/gen-last-updated.ts` が build 時に git log から自動生成するので、author 側に整合チェックは無い。
+build と `validate:content` ([content.md](content.md)) は **image build 時に走り**、 1 件でも fail すれば image build 自体が fail-fast する。 runtime stage は焼き込み済みの `build/` をそのまま起動するため、 container 起動時に再 build / 再 validate しない。 runtime cache (news / repos / services) のみを `./cache:/app/cache` で deploy をまたいで保持する。
 
-### openapi.json 差分検知 (手動 / リリース直前)
-
-production の `openapi.json` と BSI が知っている型 (`app/lib/api/openapi-types.ts`) の差分は、リリース直前に production env で `npm run gen:api-types` を再実行して手動で確認する。差分があれば該当 API 変更を BSI 側に反映してから release tag を打つ。
+reverse proxy 1 段の背後で動くため、 `X-Forwarded-*` を信頼する trust proxy hop 数は env (`DB_PORTAL_TRUST_PROXY`) で設定する。 ホップ数を誤ると per-IP rate limit と client IP ログが壊れる。
 
 ## 起動シーケンス
 
-production の `command` (= `tsx server/index.ts`) で起動。build と `validate:content` は image build 時に済んでいる (build stage の `npm run build` が `validate:content` → `react-router build` を実行し、1 件でも fail すると image build が **fail-fast**。runtime は同一 image を起動するだけなので再 validate しない)。`validate:content` の対象は `app/content/databases/**/*.content.tsx` + `app/content/services/**/*.content.tsx` の Zod parse と submit-routing カタログ (`app/content/submit-routing/catalog.ts` の `validateSubmitRouting`)。runtime 起動は次の順で初期化する:
+container 起動から listen までの順序は固定。 env 検証が最初に走り、 失敗すると process exit する。 mirror と health monitor は listen 前に起動し、 cache hot の状態で外部 request を受ける。
 
-1. `server/lib/env.ts` の `parseServerEnv` で env を Zod 検証。必須 env が無いと exit
-2. Express server を listen (`server_listening` log)
-3. News mirror が起動 (`createNewsMirror.mirror.start`): disk cache を即時 load して以降は `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` 間隔で polling (`news.md`)
-4. LLM health monitor が起動: 5 秒後に初回 health check、以降 5 分間隔で polling (`llm.md`)
+```mermaid
+sequenceDiagram
+  participant tini as tini (PID1)
+  participant node as tsx (server/index.ts)
+  participant env as parseServerEnv
+  participant svc as Services mirror
+  participant news as News mirror
+  participant llm as LLM health monitor
+  participant ex as Express
 
-LLM health monitor が初回 check を打つまでの 5 秒間、`/api/llm/health` は `status: "unset"` を返す (URL 設定有無に関わらず)。News mirror は disk cache を即時 load するので、cache が残っていれば `/api/news` は最初から item を返す。
+  tini->>node: spawn
+  node->>env: Zod validate
+  alt env 不足
+    env-->>node: throw
+    node-->>tini: exit 1
+  else OK
+    env-->>node: ok
+    node->>svc: init (disk cache を await load)
+    node->>news: start (poll loop + onSourceSynced)
+    node->>llm: start (初回 check までは unset)
+    node->>ex: listen
+    ex-->>node: server_listening
+  end
+```
 
-## 監視
+起動時に走る subsystem は外部 upstream を local 化する mirror 群と、 外部 vLLM の up/down を見る health monitor:
 
-### Log
+- **Services mirror** ([services.md](services.md)) は init で disk cache を await load し、 News mirror の sha 変化通知を受けて該当 source を rebuild する
+- **News mirror** ([news.md](news.md)) は disk cache を即時 load するため、 cache が残っていれば `/api/news` は起動直後から item を返す
+- **LLM health monitor** ([llm.md](llm.md)) は初回 check が完了するまで `/api/llm/health` の `status` を `unset` で返す
 
-`server/lib/log.ts` の logger は **stdout に構造化 JSON** を流す。各レコードは次のフィールドを持つ:
+## リリース
 
-| Field | 型 | 説明 |
+staging deploy は **main 追従**、 production deploy は **SemVer git tag** (`v<MAJOR>.<MINOR>.<PATCH>`) を打ってから行う。 deploy は同一 host port への in-place swap で、 旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる。
+
+- session は in-memory で永続化しない (deploy / rollback / 再起動でユーザーは再ログインになる)
+- rollback は前安定 tag への checkout で行う
+- staging は問題 commit を `git revert` で main に押し戻す方が tag 戻しより安全
+- production の `openapi.json` と BSI 側型の差分はリリース直前に `npm run gen:api-types` を production env で再実行し、 差分があれば反映後に tag を打つ ([api-types.md](api-types.md))
+- News disk cache は schema 不一致時に空 cache へ fallback する ([news.md](news.md))
+
+deploy の実コマンド (SSH 接続先 / podman 操作) は git 管理外。
+
+## ログと監視
+
+監視は health endpoint 3 種を外部 uptime monitor が分単位で叩き、 連続失敗で alert を出す。 deploy 中の swap 窓と区別するため、 alert は **連続失敗閾値** で発火させ、 swap 時刻は log の `server_shutdown` / `server_listening` を突合して判定する。
+
+- `GET /api/me` — session 確認 (`Cache-Control: no-store` で必ず origin に届く)
+- `GET /api/news` — News mirror の生存
+- `GET /api/llm/health` — vLLM 疎通 (`Cache-Control: no-store`、 `status` の意味は [llm.md](llm.md))
+
+endpoint の response 形・status コードは `server/index.ts` を参照。
+
+### ログ形式
+
+`server/lib/log.ts` の logger は stdout に **構造化 JSON を 1 行 1 レコード** で流す。 reverse proxy / podman / journald は stdout をそのまま収集すれば良い。
+
+| Field | 型 | 意味 |
 |---|---|---|
 | `ts` | string (ISO8601) | log 時刻 |
-| `level` | `"debug" \| "info" \| "warn" \| "error"` | severity |
-| `msg` | string | snake_case event name (例 `server_listening` / `news_mirror_failed`) |
-| `...` | 任意 | event 固有の payload (redact 済) |
+| `level` | `debug` / `info` / `warn` / `error` | severity |
+| `msg` | string | snake_case event name |
+| ...payload | 任意 | event 固有のフィールド (redact 済み) |
 
-log level は環境ごとに切替可能 (`DB_PORTAL_LOG_LEVEL`)。
+イベント名は snake_case。 全 event の列挙は `git grep 'logger\.\(info\|warn\|error\|debug\)' server/` で取得する。 credential 系の field 名 (Authorization / Set-Cookie / token 系 / API key / password / secret 等) は `[REDACTED]` に置換する ([auth.md](auth.md))。 redact 対象 key の最終 SSOT は `server/lib/log.ts` の `REDACT_KEYS`。 session entry を丸ごと log に出すコード経路は作らない。
 
-### 主要 event 一覧
+## CI
 
-| Event | level | 意味 |
+`.github/workflows/ci.yml` は PR / `main` push のたびに Docker Compose 内で typecheck / lint / unit + PBT / `npm audit --audit-level=high --omit=dev` を回す。 **deploy・e2e・openapi 差分検知・性能計測は CI から自動実行しない**。
+
+| 種類 | 自動 (CI) | 手動 |
 |---|---|---|
-| `server_listening` | info | server 起動完了 |
-| `server_shutdown` | info | `SIGTERM` / `SIGINT` 受信、in-flight を drain して終了 (deploy swap 時刻の突合に使う) |
-| `auth_login_success` | info | OIDC code 交換が成功し session 発行 |
-| `auth_callback_invalid_state` | warn | callback の `state` が pending store に無い (replay / CSRF) |
-| `auth_callback_invalid_id_token` | warn | `id_token` の payload 検証に失敗 |
-| `auth_callback_failed` | error | token endpoint への code 交換が失敗 (502) |
-| `news_cache_loaded` | info | disk cache から item を初期 load |
-| `news_cache_read_failed` | warn | disk cache の読込に失敗 |
-| `news_cache_persist_failed` | warn | disk cache の書込に失敗 |
-| `news_cache_schema_mismatch` | warn | disk cache の schema が現行と不一致、空 cache に fallback |
-| `news_dir_read_failed` | warn | source repo の dir 読込に失敗 |
-| `news_git_head_unknown` | warn | source repo の HEAD SHA が取得できない |
-| `news_git_sync_failed` | warn | source repo の git pull / clone に失敗 |
-| `news_mirror_no_change` | debug | source repo の HEAD に変更なし、再 build なし |
-| `news_mirror_full_refresh` | info | source repo の HEAD が更新され、cache を全件 rebuild |
-| `news_mirror_failed` | error | mirror tick の例外 (network 等) |
-| `news_on_source_synced_failed` | warn | News→services 再構築フックの失敗 |
-| `featured_whitelist_read_failed` | warn | featured whitelist YAML の読込に失敗 |
-| `featured_whitelist_yaml_parse_failed` | warn | featured whitelist YAML の parse に失敗 |
-| `featured_whitelist_schema_mismatch` | warn | featured whitelist の schema が不一致 |
-| `services_cache_loaded` | info | disk cache から service item を初期 load |
-| `services_mirror_refresh` | info | News mirror の HEAD 更新フックで services を再構築 |
-| `services_cache_read_failed` / `services_cache_persist_failed` / `services_cache_schema_mismatch` | warn | services disk cache の読込 / 書込 / schema 不一致 |
-| `services_source_read_failed` / `services_ddbj_yaml_parse_failed` / `services_dbcls_json_parse_failed` | warn | services source ファイルの read / parse 失敗 (既存 items 維持) |
-| `services_ddbj_schema_mismatch` / `services_dbcls_not_array` / `services_dbcls_missing_name_en` / `services_duplicate_id` | warn | services 正規化時の不整合 (該当行を skip / fallback) |
-| `llm_health_transition` | info | vLLM 接続状態が遷移 (`ok` ↔ `unreachable` ↔ `unset`) |
-| `llm_assistant_request` | debug | search-assistant SSE 開始 (debug のため dev のみ出力) |
-| `llm_assistant_failed` | warn | search-assistant 中に upstream または parse 系の失敗 |
+| typecheck / lint / unit / PBT / audit | ◯ | — |
+| deploy (staging / production) | — | ◯ |
+| e2e (staging URL 叩き) | — | ◯ (`tests/e2e/notes.md`) |
+| openapi 差分検知 (`gen:api-types`) | — | ◯ (リリース直前) |
+| 性能計測 | — | ◯ |
 
-`accessToken` / `refreshToken` / `idToken` / `cookie` / `Cookie` / `authorization` / `Authorization` の各フィールドは `[REDACTED]` に置換されて log に出る (`auth.md`)。session entry を丸ごと log に出すケースは作らない。
+## トラブルシュート
 
-### Health endpoint
+各症状は 「切り分け軸」 を辿って原因に到達する。 具体的な podman コマンド / host 上手順は git 管理外。
 
-`server/index.ts` が以下を提供する。production / staging 両方で生存確認 / 外部監視に使う:
-
-| Endpoint | 期待 (起動成功時) | 監視で見るもの |
-|---|---|---|
-| `GET /api/me` | 401 (cookie なし) / `Cache-Control: no-store` | server が listen しているか |
-| `GET /api/news` | 200 JSON array (空可) | mirror 起動 + cache 応答 |
-| `GET /api/llm/health` | 200 `{status: "ok" \| "unreachable" \| "unset"}` / `Cache-Control: no-store` | vLLM 接続性 |
-
-外部監視ツール (NIG infra 側の uptime monitor 等) はこの 3 endpoint を 1 分間隔で叩き、連続失敗で alert を出す構成にする。`/api/llm/health` の `status` フィールドの解釈は `llm.md`。
-
-## トラブルシューティング
-
-各症状の **切り分け軸** と **原因 → 対応** の対応関係を扱う。具体的な podman コマンド / host 上の手順は git 管理外の運用メモを参照。
-
-### News mirror が動かない
-
-症状: `/api/news` が空配列を返し続ける、log に `news_mirror_failed` が頻発。
-
-| 原因 | 対応軸 |
+| 症状 | 切り分け軸 |
 |---|---|
-| network 失敗 (`git clone` / `git fetch` に到達できない) | host から直接 `git ls-remote` で疎通確認 |
-| repo URL / branch が誤設定 | `DB_PORTAL_NEWS_*_REPO_URL` / `DB_PORTAL_NEWS_MIRROR_*_BRANCH` を確認 |
-| disk cache 破損 (Zod schema mismatch) | cache file を rename して server 再起動 (再構築) |
-| repo の force-push で history が壊れた | `repos/<src>/` を消して container 再起動 (clone からやり直し) |
+| News mirror が動かない (`/api/news` 空、 `news_mirror_failed` 頻発) | host から `git ls-remote` で疎通、 env の repo URL / branch、 disk cache 整合性 (rename して再構築)、 source repo の history |
+| vLLM が unreachable | endpoint 疎通 (`/v1/models`)、 `llm_health_transition` 推移、 vLLM プロセス稼働、 timeout / base URL の env |
+| LLM rate limit 誤発火 (`429 {error: "rate_limited"}`) | per-IP / per-session limit の env、 共有 NAT の有無 |
+| 認証 callback の state 不一致 | tab の古さ / replay / Keycloak `Valid Redirect URIs` のドリフト |
+| login redirect ループ | `DB_PORTAL_PORTAL_ORIGIN` と Keycloak `Valid Redirect URIs` の一致 |
+| session が頻繁に切れる | session TTL env と Keycloak `Client Session Idle` の短い方が実効、 deploy 時の全切れは `server_shutdown` / `server_listening` の突合 |
+| CSP 違反 (ブラウザ console) | 新規 3rd-party origin の有無、 inline `<script>` / `<style>` への nonce 付与 ([architecture.md](architecture.md)) |
 
-mirror の挙動・schema migration・cache 構造は `news.md` (SSOT)。
-
-### vLLM が unreachable
-
-症状: `/api/llm/health` が `{status: "unreachable", reason: ...}` を返す、search assistant が UI に表示されない。
-
-切り分け: vLLM endpoint への疎通 (`/v1/models`)、log の `llm_health_transition` 推移。
-
-| 原因 | 対応軸 |
-|---|---|
-| vLLM プロセス停止 | GPU node の `llm/` で `podman-compose up -d` を確認・再起動 (`llm.md` / `llm/README.md`) |
-| network 障害 | NIG infra 障害を確認 |
-| timeout (`DB_PORTAL_LLM_TIMEOUT_MS` 不足) | env 上書きで増やす |
-| `DB_PORTAL_LLM_BASE_URL` 空 | env を見直す (production / staging では空にしない) |
-
-復旧後、health monitor が次の 5 分間隔で `ok` 検知 → `llm_health_transition` log を吐く → UI 側で次の health 取得で再表示。
-
-### LLM rate limit が誤発火
-
-症状: 「アシスタント生成が `429` を返す」。rate limit に当たると route は `429` + JSON `{error: "rate_limited"}` を返すのみで、専用 log event は出ない。
-
-`DB_PORTAL_LLM_RATE_LIMIT_PER_IP_MIN` (default 60) / `DB_PORTAL_LLM_RATE_LIMIT_PER_SESSION_MIN` (default 30) を env に追加して上書きする。共有 NAT 環境 (大学・研究所) からのアクセスは per-IP の上限に集中するので、必要なら per-IP を 120-300 程度まで緩める。緩める前後で `POST /api/llm/search-assistant` の `429` 応答 (`error: "rate_limited"`) の発生頻度を比較する。
-
-### 認証関連エラー
-
-- **state 不一致** (`auth_callback_invalid_state`)
-  - 想定: 攻撃者が偽 callback URL を踏ませようとした (`auth.md`) / ユーザが古い browser tab で callback に到達
-  - 対応: ユーザに最新 tab でリトライ依頼。多発する場合は Keycloak 側で redirect URI 設定変更がないか確認
-- **login が redirect ループする**
-  - 想定: `DB_PORTAL_PORTAL_ORIGIN` と Keycloak `Valid Redirect URIs` が不一致 (`auth.md`)
-  - 対応: `.env` の `DB_PORTAL_PORTAL_ORIGIN` と Keycloak 管理画面の URI を突き合わせる
-
-### session が頻繁に切れる
-
-症状: 操作中に `/api/me` が `401` を返し、UI が再ログインを促す。
-
-session TTL は default 30 分 (sliding)。操作のたびに延長されるが、ブラウザを 30 分以上放置すると expire する。BSI は id_token のみを保持し token refresh フローを持たないため (`auth.md`)、session 期限切れ・BSI 再起動・Keycloak SSO session idle 超過のいずれでも単に session が破棄されて `401` になる。これは仕様。
-
-- 「思ったより早く切れる」: `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` env で延長 (例 7200 = 2h)。Keycloak の `Client Session Idle` も同時に揃えること (短い方で実効 TTL が決まるため)
-- 「すべての user が同時に切れた」: server が再起動したため (in-memory session、永続化なし)。deploy timing と log の `server_shutdown` / `server_listening` 時刻を突合
-
-### disk cache 容量
-
-News cache 配下は単一 `news.json` (数 MB 程度) のみ。schema mismatch / 読み込みエラー時は cache を空 (`items: []`) に reset して再 build に任せる (back up は取らない)。
-
-### CSP 違反 (browser console に CSP error)
-
-CSP の仕様詳細 (header 値 / nonce 生成) は `architecture.md` の「非機能要件 / セキュリティ headers」 が SSOT。違反の典型:
-
-- 新規導入した 3rd-party script (CDN font 等) が CSP ホワイトリストに無い (BSI は外部 CDN を使わない方針、新規追加していないか確認)
-- inline `<script>` / `<style>` に nonce が付いていない (RR の `<Scripts nonce={nonce} />` で hydration script に nonce が載っているか確認)
+mirror の cache 構造と schema migration は [news.md](news.md)、 認証フローの全体像は [auth.md](auth.md) を参照。
 
 ## Secret rotation
 
-rotation 対象:
+secret は git に commit しない。 実値は host 側 `.env.<env>.local` か作業者 ssh client にのみ置く。 rotation 後は対応する log event か次回シナリオの成功で完了を確認する。
 
-| Secret | 保管場所 | rotation 頻度 |
-|---|---|---|
-| `DB_PORTAL_LLM_API_KEY` | host `.env.production.local` | vLLM 側 key 更新時 |
-| Keycloak client secret | (なし、public client) | -- |
-| `DB_PORTAL_E2E_USER_PASSWORD` | リリースマネージャの作業環境 | 半年毎 / incident 時 |
-| Deploy host への SSH 鍵 | 各リリースマネージャの `~/.ssh/` | 半年毎 / incident 時 |
+| Secret | 保管 | 周期 | 完了確認 |
+|---|---|---|---|
+| `DB_PORTAL_LLM_API_KEY` | host `.env.production.local` | vLLM 側 key 更新時 | `llm_health_transition` が `to: "ok"` |
+| Keycloak client secret | 存在しない (public client + PKCE) | — | — |
+| `DB_PORTAL_E2E_USER_PASSWORD` | リリースマネージャ作業環境 | 半年毎 / incident 時 | 次回 e2e の auth シナリオ pass |
+| Deploy host SSH 鍵 | リリースマネージャ `~/.ssh/` | 半年毎 / incident 時 | 次回 deploy の SSH 接続成功 |
 
-Keycloak client は public client (`auth.md`) のため client secret は存在しない。PKCE で代替している。News mirror は git protocol HTTPS で動くため GitHub PAT は不要 (`news.md`)。
-
-### vLLM API key 更新
-
-1. NIG 担当から新 API key を取得
-2. host 上 `.env.production.local` の `DB_PORTAL_LLM_API_KEY` を更新
-3. `.env` を再生成して container を `--force-recreate app` で再起動
-4. log で `llm_health_transition` の `to: "ok"` を確認
-
-### e2e テストユーザー password
-
-1. Keycloak 管理コンソール (staging realm) でテストユーザーの password を更新
-2. リリースマネージャの作業環境で `DB_PORTAL_E2E_USER_PASSWORD` を新値に更新
-3. 次の手動 e2e 実行で auth 系シナリオが pass することを確認
-
-### Deploy host への SSH 鍵
-
-1. リリースマネージャの開発環境で新 ssh key を発行 (`ssh-keygen -t ed25519`)
-2. host の `~/.ssh/authorized_keys` から旧 key を削除、新 public key を追加
-3. 次の手動 deploy で接続成功を確認
+News mirror は HTTPS git protocol で動くため、 GitHub PAT 等の secret を持たない。
 
 ## 定期メンテナンス
 
 | 周期 | 作業 |
 |---|---|
-| 週次 | log で `*_failed` event を集計、上位を確認 |
-| 月次 | News disk cache のサイズ確認 |
-| 半年毎 | Deploy host への SSH 鍵 rotation、e2e user password rotation |
-| リリース毎 | release announcement 公開、`gen:api-types` の production URL 差分確認 |
+| 週次 | `*_failed` event の集計上位確認 |
+| 月次 | News disk cache サイズ確認 |
+| 半年毎 | SSH 鍵 / e2e user password rotation |
+| リリース毎 | release announcement 公開、 production の `gen:api-types` 差分確認 |
+
+## 環境変数
+
+env 全体の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、 環境別の値は `env.dev` / `env.staging` / `env.production` が SSOT。 機能別の env 説明は各 docs を参照する。 deploy 時に追加で意識する env:
+
+- `DB_PORTAL_PREFIX` — container / image / volume / network 名 prefix。 同一 host 並走のため env 毎に別値
+- `DB_PORTAL_PORTAL_ORIGIN` — 自分自身の外向き origin。 Keycloak の `Valid Redirect URIs` と一致させる
+- `DB_PORTAL_TRUST_PROXY` — `X-Forwarded-*` を信頼する Express `trust proxy` 設定。 reverse proxy 段数に合わせる
+- `DB_PORTAL_LLM_API_KEY` — vLLM への認証 key (rotation 対象)

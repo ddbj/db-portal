@@ -218,7 +218,6 @@ describe("submitReducer COMMIT_ROW_EDIT", () => {
         dataForm: "assembled",
         chipTags: [{ axis: "assembly-form", value: "primary" }],
       },
-      releasedGroupId: "rel",
     })
     expect(next.submission.fileGroups[0]!.groupType).toBe("pair-end")
     expect(next.submission.fileEntries[0]!.dataForm).toBe("assembled")
@@ -233,7 +232,6 @@ describe("submitReducer COMMIT_ROW_EDIT", () => {
       type: "COMMIT_ROW_EDIT",
       entryId: "ghost",
       patch: { dataForm: "assembled" },
-      releasedGroupId: "rel",
     })
     expect(next).toBe(seeded)
   })

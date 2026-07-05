@@ -170,7 +170,6 @@ describe("rowIsConfigured / countConfiguredRows", () => {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
       patch: { chipTags: [{ axis: "spatial-platform", value: "visium" }] },
-      releasedGroupId: "rel",
     })
 
     expect(rowIsConfigured(state, "e1")).toBe(true)
@@ -188,7 +187,6 @@ describe("rowIsConfigured / countConfiguredRows", () => {
       type: "COMMIT_ROW_EDIT",
       entryId: "e1",
       patch: { groupType: "mag-sag-chain", chipTags: [{ axis: "assembly-form", value: "mag" }] },
-      releasedGroupId: "rel",
     })
 
     expect(rowIsConfigured(state, "e1")).toBe(true)

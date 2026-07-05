@@ -4,13 +4,7 @@ import type { DbPortalFacets } from "~/lib/api"
 // 集計は ES に重く (staging で ~6s) SSR の deferred budget を超えがちな一方、
 // 内容はデータ更新まで実質静的なので、長めの TTL で保持して毎リクエストの再集計を
 // 避ける。q 付き検索は対象外 (クエリ依存で多様、母集団が小さく速いため都度引く)。
-const DEFAULT_TTL_MS = 60 * 60 * 1000
-
-const ttlMs = (): number => {
-  const raw = Number(process.env.DB_PORTAL_FACET_CACHE_TTL_MS)
-
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TTL_MS
-}
+const TTL_MS = 60 * 60 * 1000
 
 type Entry = { facets: DbPortalFacets | null; expiresAt: number }
 
@@ -32,7 +26,7 @@ export const getCachedMatchAllFacets = (
 
   const pending = fetcher()
     .then((facets) => {
-      store.set(scope, { facets, expiresAt: Date.now() + ttlMs() })
+      store.set(scope, { facets, expiresAt: Date.now() + TTL_MS })
 
       return facets
     })

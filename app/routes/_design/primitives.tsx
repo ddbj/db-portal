@@ -16,6 +16,7 @@ import {
   FormGroup,
   Heading,
   IconButton,
+  InfoHint,
   Label,
   LinkCard,
   Mark,
@@ -27,26 +28,38 @@ import {
   PageTitle,
   Pagination,
   PreviewCard,
+  ResultsPagination,
   SearchBox,
   Section,
   SectionHeading,
+  Segmented,
   Select,
   SidebarGroupLabel,
   SidebarHeading,
+  StableLabel,
   Tag,
   TextArea,
   TextInput,
   TextLink,
+  Toggle,
 } from "~/ui"
 import {
+  AlertIcon,
+  ArrowLeftIcon,
+  CheckIcon,
   ChevronDownIcon,
   CloseIcon,
   ExternalIcon,
   FileTextIcon,
   FolderIcon,
+  GitHubIcon,
   GlobeIcon,
   HashIcon,
+  HelpIcon,
   InfoIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  MenuIcon,
   SearchIcon,
   UserIcon,
 } from "~/ui"
@@ -243,7 +256,7 @@ const FormsGallery = () => (
       <FmtRadio name="lib" label="single-end" sub="補足説明 (unchecked + sub)" />
       <FmtRadio name="lib" label="10x Genomics (unchecked + sub なし)" />
     </FormGroup>
-    <FormGroup num="2." label="オプション" optional hint="複数選択可">
+    <FormGroup num="2." label="オプション" optional optionalLabel="任意" hint="複数選択可">
       <FmtCheck label="hybrid assembly (checked + sub なし)" defaultChecked />
       <FmtCheck label="raw signal" sub="生波形を残す (unchecked + sub)" />
     </FormGroup>
@@ -275,6 +288,120 @@ const ComboboxRow = () => {
   )
 }
 
+const ToggleGallery = () => {
+  const [on, setOn] = useState(true)
+  const [off, setOff] = useState(false)
+  return (
+    <Block title="Toggle">
+      <Row label="checked (on)">
+        <Toggle label="通知を受け取る" checked={on} onChange={() => setOn((v) => !v)} />
+      </Row>
+      <Row label="unchecked (off)">
+        <Toggle
+          label="下書きを自動保存"
+          sub="10 秒ごとに sync"
+          checked={off}
+          onChange={() => setOff((v) => !v)}
+        />
+      </Row>
+      <Row label="disabled">
+        <Toggle label="編集をロック中" checked disabled onChange={() => undefined} />
+      </Row>
+    </Block>
+  )
+}
+
+const SegmentedGallery = () => {
+  const [value, setValue] = useState("dsl")
+  return (
+    <Block title="Segmented">
+      <Row label="3 options (selected=dsl)">
+        <Segmented
+          ariaLabel="表示形式"
+          options={[
+            { value: "dsl", label: "DSL" },
+            { value: "graph", label: "Graph" },
+            { value: "json", label: "JSON" },
+          ]}
+          value={value}
+          onChange={setValue}
+        />
+      </Row>
+    </Block>
+  )
+}
+
+const StableLabelGallery = () => (
+  <Block title="StableLabel">
+    <Row label="Copy / Copied (Copy)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["Copy", "Copied"]}>Copy</StableLabel>
+      </span>
+    </Row>
+    <Row label="Copy / Copied (Copied)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["Copy", "Copied"]}>Copied</StableLabel>
+      </span>
+    </Row>
+    <Row label="検索 / 検索中... (検索)">
+      <span className="inline-flex items-center rounded-button bg-brand px-3 py-1 text-fs-body-sm text-white">
+        <StableLabel reserve={["検索", "検索中..."]}>検索</StableLabel>
+      </span>
+    </Row>
+    <Row label="検索 / 検索中... (検索中...)">
+      <span className="inline-flex items-center rounded-button bg-brand px-3 py-1 text-fs-body-sm text-white">
+        <StableLabel reserve={["検索", "検索中..."]}>検索中...</StableLabel>
+      </span>
+    </Row>
+    <Row label="適用 / 置き換えて適用 (置き換えて適用)">
+      <span className="inline-flex items-center rounded-button border border-border-soft bg-surface px-3 py-1 text-fs-body-sm text-ink">
+        <StableLabel reserve={["適用", "置き換えて適用"]}>置き換えて適用</StableLabel>
+      </span>
+    </Row>
+  </Block>
+)
+
+const InfoHintGallery = () => (
+  <Block title="InfoHint">
+    <Row label="default (hover / focus / click で開く)">
+      <span className="inline-flex items-center gap-1.5 text-fs-body text-ink">
+        フィールド名
+        <InfoHint label="生物種の scientific name を入力する。 NCBI Taxonomy に登録済みの値のみ有効。" />
+      </span>
+    </Row>
+  </Block>
+)
+
+const ResultsPaginationGallery = () => {
+  const [page, setPage] = useState(1)
+  return (
+    <Block title="ResultsPagination">
+      <Row label="page=1 / 10 (前ボタン disabled)">
+        <ResultsPagination
+          page={page}
+          totalPages={10}
+          onPageChange={setPage}
+          ariaLabel="検索結果ページネーション"
+          prevLabel="前へ"
+          nextLabel="次へ"
+          jumpToLastLabel={(n) => `最後のページ (${n}) へ`}
+        />
+      </Row>
+      <Row label="page=5 / 10 (中間、ellipsis + 末尾ジャンプ)">
+        <ResultsPagination
+          page={5}
+          totalPages={10}
+          onPageChange={() => undefined}
+          ariaLabel="検索結果ページネーション"
+          prevLabel="前へ"
+          nextLabel="次へ"
+          jumpToLastLabel={(n) => `最後のページ (${n}) へ`}
+        />
+      </Row>
+    </Block>
+  )
+}
+
 const CardGallery = () => (
   <Block title="LinkCard">
     <Row label="internal">
@@ -291,7 +418,7 @@ const CardGallery = () => (
       </LinkCard>
     </Row>
     <Row label="external">
-      <LinkCard external href="https://www.ddbj.nig.ac.jp">
+      <LinkCard external href="https://www.ddbj.nig.ac.jp" externalSrLabel="新しいタブで開く">
         <div className="flex items-center gap-3 px-5 py-4">
           <div className="w-12 h-12 rounded-card bg-surface-subtle border border-border-soft inline-flex items-center justify-center text-brand">
             <GlobeIcon size={22} />
@@ -336,10 +463,10 @@ const FacetGallery = () => (
         <FacetRow label="WGS" mono compact sub="全ゲノム" count={42} />
         <FacetRow label="RNA-Seq" mono compact sub="トランスクリプトーム" count={31} />
       </FacetGroup>
-      <DateFacet appliedCount={0} />
-      <DateFacet active="1y" appliedCount={1} onClear={() => undefined} />
-      <DateFacet active="5y" appliedCount={1} onClear={() => undefined} />
-      <DateFacet active="10y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} appliedCount={0} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="1y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="5y" appliedCount={1} onClear={() => undefined} />
+      <DateFacet {...DATE_FACET_DEFAULTS} active="10y" appliedCount={1} onClear={() => undefined} />
       <AppliedFilters applied={[]} />
     </Block>
   </div>
@@ -507,10 +634,29 @@ const PaginationGallery = () => {
   )
 }
 
+const SEARCH_BOX_DEFAULTS = {
+  placeholder: "キーワード、accession、学名で検索",
+  ariaLabel: "検索キーワード",
+  submitLabel: "検索",
+  scopeAriaLabel: "検索対象データベース",
+} as const
+
+const DATE_FACET_DEFAULTS = {
+  label: "公開日",
+  clearLabel: "解除",
+  presetLabels: { all: "すべて", "1y": "1年", "5y": "5年", "10y": "10年" },
+  specifyLabel: "日付を指定",
+  fromLabel: "FROM",
+  toLabel: "TO",
+  fromAriaLabel: "開始日",
+  toAriaLabel: "終了日",
+} as const
+
 const SearchBoxGallery = () => (
   <Block title="SearchBox">
     <Row label="lg + showScope=false (TOP hero)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showSearchIcon
         showScope={false}
@@ -520,6 +666,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="lg + showScope (lg + scope)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showScope
         scopeOptions={["全データベース", "BioProject", "BioSample"]}
@@ -529,6 +676,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + showScope (form 統一 30px)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope
         scopeOptions={["全データベース", "BioProject", "BioSample"]}
@@ -537,6 +685,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + showScope=false">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope={false}
         onSubmit={() => undefined}
@@ -544,6 +693,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="md + invalid (構文エラー時の枠)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="md"
         showScope={false}
         invalid
@@ -552,6 +702,7 @@ const SearchBoxGallery = () => (
     </Row>
     <Row label="tone=ai + trailing + scope 流用 (生成モード、既存に追加 を disable)">
       <SearchBox
+        {...SEARCH_BOX_DEFAULTS}
         size="lg"
         showSearchIcon={false}
         maxWidth={680}
@@ -590,7 +741,7 @@ const TextLinkGallery = () => (
       <TextLink to="/news">ニュース一覧へ</TextLink>
     </Row>
     <Row label="external">
-      <TextLink href="https://www.ddbj.nig.ac.jp" external>
+      <TextLink href="https://www.ddbj.nig.ac.jp" external externalSrLabel="external link">
         DDBJ 本体サイト
       </TextLink>
     </Row>
@@ -640,6 +791,18 @@ const IconGallery = () => (
       <ExternalIcon size={12} title="外部リンク" />
       <InfoIcon size={16} title="情報" />
     </Row>
+    <Row label="ナビゲーション">
+      <ArrowLeftIcon size={16} title="戻る" />
+      <MenuIcon size={16} title="メニュー" />
+      <GitHubIcon size={16} title="GitHub" />
+    </Row>
+    <Row label="状態">
+      <AlertIcon size={16} title="警告" />
+      <CheckIcon size={16} title="完了" />
+      <HelpIcon size={16} title="ヘルプ" />
+      <LockClosedIcon size={16} title="ロック中" />
+      <LockOpenIcon size={16} title="ロック解除" />
+    </Row>
     <Row label="ドキュメント (docs hub)">
       <FolderIcon size={16} title="ディレクトリ" className="text-brand" />
       <FileTextIcon size={16} title="ドキュメント" className="text-brand" />
@@ -669,14 +832,19 @@ const DesignPrimitives = () => (
     <ExamplesGallery />
     <HeadingGallery />
     <FormsGallery />
+    <ToggleGallery />
+    <SegmentedGallery />
     <FacetGallery />
     <CalloutGallery />
     <ModalDemo />
     <PaginationGallery />
+    <ResultsPaginationGallery />
     <SearchBoxGallery />
     <CardGallery />
     <TextLinkGallery />
     <MarkGallery />
+    <StableLabelGallery />
+    <InfoHintGallery />
     <IconGallery />
   </div>
 )

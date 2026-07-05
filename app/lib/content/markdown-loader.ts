@@ -88,11 +88,19 @@ type BuildEntry = {
   en?: { frontmatter: PageFrontmatter; body: string }
 }
 
-const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } => {
+export const buildEntries = (
+  ja: RawModule = jaModules,
+  en: RawModule = enModules,
+): {
+  entries: BuildEntry[]
+  errors: ValidationFailure[]
+  orphanEnFilepaths: string[]
+} => {
   const errors: ValidationFailure[] = []
+  const orphanEnFilepaths: string[] = []
   const entryMap = new Map<string, BuildEntry>()
 
-  for (const [filepath, raw] of Object.entries(jaModules)) {
+  for (const [filepath, raw] of Object.entries(ja)) {
     const urlPath = extractUrlPath(filepath)
     const result = parseFrontmatter(raw, filepath)
     if ("error" in result) {
@@ -107,7 +115,7 @@ const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } 
     })
   }
 
-  for (const [filepath, raw] of Object.entries(enModules)) {
+  for (const [filepath, raw] of Object.entries(en)) {
     const urlPath = extractUrlPath(filepath)
     const result = parseFrontmatter(raw, filepath)
     if ("error" in result) {
@@ -118,10 +126,15 @@ const buildEntries = (): { entries: BuildEntry[]; errors: ValidationFailure[] } 
     if (existing) {
       existing.en = result
       existing.enFilepath = filepath
+    } else {
+      // 対応する JA module が無い英語ファイルを silently drop すると、 JA 側の
+      // rename / 削除 / typo を build error として検出できず production の英語
+      // ページが無音で消える。 ValidationFailure と同じ扱い (build を落とす) に揃える。
+      orphanEnFilepaths.push(filepath)
     }
   }
 
-  return { entries: Array.from(entryMap.values()), errors }
+  return { entries: Array.from(entryMap.values()), errors, orphanEnFilepaths }
 }
 
 const stripLeadingSlash = (filepath: string): string => filepath.replace(/^\//, "")
@@ -174,7 +187,7 @@ const renderEntries = (entries: BuildEntry[]): {
   return { pages, assetFailures }
 }
 
-const { entries, errors: buildErrors } = buildEntries()
+const { entries, errors: buildErrors, orphanEnFilepaths } = buildEntries()
 if (buildErrors.length > 0) {
   const messages = buildErrors.map((e) => {
     const issues = e.error.issues.map((i) => `  ${i.path.join(".") || "<root>"}: ${i.message}`)
@@ -183,6 +196,13 @@ if (buildErrors.length > 0) {
   })
   throw new Error(
     `Page content validation failed:\n\n${messages.join("\n\n")}`,
+  )
+}
+if (orphanEnFilepaths.length > 0) {
+  const messages = orphanEnFilepaths.map((fp) =>
+    `${stripLeadingSlash(fp)}\n  no matching Japanese module for the same URL path (rename / deletion drift)`)
+  throw new Error(
+    `Page content orphan English files:\n\n${messages.join("\n\n")}`,
   )
 }
 

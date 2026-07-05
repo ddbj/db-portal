@@ -4,6 +4,7 @@ import { AlertIcon, Button, Callout, cn, Heading, Tag } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { FilesBlock } from "../components/files-block"
+import { MicroHeading } from "../components/micro-heading"
 import { StepBadge } from "../components/step-badge"
 import { getSubmitMeta } from "../external-links"
 import { scrollToStep } from "./anchor"
@@ -35,8 +36,6 @@ type FlowStepCardProps = {
   externalCtaLabel: string
   sourceTagLabel: (source: "DDBJ" | "DBCLS") => string
 }
-
-const sectionHeadingClass = "text-fs-label font-bold text-ink-mid m-0"
 
 export const FlowStepCard = ({
   step,
@@ -101,7 +100,7 @@ export const FlowStepCard = ({
 
       {prerequisites.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p className={sectionHeadingClass}>{prereqHeading}</p>
+          <MicroHeading as="p">{prereqHeading}</MicroHeading>
           <ul className="flex flex-wrap gap-2 m-0 list-none p-0">
             {prerequisites.map((p) => (
               <li key={p.stepIndex}>
@@ -121,7 +120,7 @@ export const FlowStepCard = ({
 
       {prepare.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p className={sectionHeadingClass}>{prepareHeading}</p>
+          <MicroHeading as="p">{prepareHeading}</MicroHeading>
           <ul className="flex flex-col gap-1 m-0 pl-5">
             {prepare.map((p, i) => (
               <li key={i} className="text-fs-body-sm text-ink-mid leading-relaxed list-disc">
@@ -134,7 +133,7 @@ export const FlowStepCard = ({
 
       {wizardSteps.length > 0 && (
         <section className="flex flex-col gap-2">
-          <p className={sectionHeadingClass}>{wizardHeading}</p>
+          <MicroHeading as="p">{wizardHeading}</MicroHeading>
           <ol className="flex flex-col gap-1.5 m-0 list-none p-0">
             {wizardSteps.map((s, i) => (
               <li key={i} className="flex gap-2 text-fs-body-sm text-ink-mid leading-relaxed">

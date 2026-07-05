@@ -64,7 +64,6 @@ if (!serviceResult.ok) {
 
 const services: ServiceCollection[] = serviceResult.items
 
-const serviceById = new Map(services.map((i) => [i.content.id, i.content]))
 const serviceBySubmit = new Map<SubmitService, ServiceContent>()
 for (const item of services) {
   const submit = item.content.submit
@@ -78,9 +77,6 @@ for (const item of services) {
   }
   serviceBySubmit.set(submit.service, item.content)
 }
-
-export const getServiceById = (id: string): ServiceContent | undefined =>
-  serviceById.get(id)
 
 export const listServices = (): readonly ServiceContent[] =>
   services.map((i) => i.content)

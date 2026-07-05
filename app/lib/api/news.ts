@@ -1,8 +1,7 @@
 import { type NewsItem, NewsList } from "~/schemas/api-bff/news"
 
 import type { Lang } from "../i18n/use-lang"
-import { buildRequestInit, consumeJsonBody, joinUrl } from "./client"
-import { toAPIError } from "./errors"
+import { fetchBffJson } from "./client"
 
 export {
   NewsCategory,
@@ -10,6 +9,8 @@ export {
   NewsList,
   NewsSource,
 } from "~/schemas/api-bff/news"
+
+export const NEWS_QUERY_KEY = ["news"] as const
 
 export const newsItemTitle = (item: NewsItem, lang: Lang): string =>
   item.title[lang] || item.title.ja
@@ -65,15 +66,5 @@ type FetchNewsOptions = {
   query?: FetchNewsQuery
 }
 
-export const fetchNews = async (options: FetchNewsOptions = {}): Promise<NewsList> => {
-  const init = buildRequestInit({
-    method: "GET",
-    baseUrl: options.baseUrl,
-    signal: options.signal,
-    headers: options.headers,
-  })
-  const response = await fetch(joinUrl(options.baseUrl, buildNewsPath(options.query)), init)
-  if (!response.ok) throw await toAPIError(response)
-
-  return NewsList.parse(await consumeJsonBody(response))
-}
+export const fetchNews = ({ query, ...rest }: FetchNewsOptions = {}): Promise<NewsList> =>
+  fetchBffJson(buildNewsPath(query), rest, NewsList)

@@ -14,8 +14,16 @@
 !public/
 !server/
 !tests/
+# Playwright auth.setup.ts writes live Keycloak session cookies here; whitelisting
+# tests/ above would otherwise bake them into the runtime image (Dockerfile L69
+# `COPY . .`). Exclude AFTER `!tests/` so the last match wins.
+tests/e2e/.auth/
 !docs/
 !scripts/
 !page-contents/
 !README.md
 !LICENSE
+# scripts/gen-last-updated.ts は `git log --follow` で page-contents の最終更新
+# を集める。 build context に .git が無いと全 entry が undefined になり、
+# /<slug> ページの「最終更新」 / Last updated が SSR HTML から消える。
+!.git/

@@ -1,12 +1,3 @@
-import type { Logger } from "../../../../server/lib/log"
-
-export const silentLogger: Logger = {
-  debug: () => undefined,
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-}
-
 /**
  * DDBJ services.yml の最小サンプル。
  * - BioProject: provider DDBJ、tags database+submission (→ repository)、相対 URL、featuredTop

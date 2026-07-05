@@ -6,7 +6,7 @@ export type DateRangeFilter = {
   to: string
 }
 
-export type NumberRange = {
+type NumberRange = {
   from: string
   to: string
 }

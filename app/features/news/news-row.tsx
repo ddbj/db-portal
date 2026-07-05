@@ -1,6 +1,6 @@
 import { type NewsItem, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api"
 import { categoryLabelKey, formatDate, type Lang, useT } from "~/lib/i18n"
-import { Tag, TextLink } from "~/ui"
+import { NewsDate, Tag, TextLink } from "~/ui"
 
 type NewsRowProps = {
   item: NewsItem
@@ -15,13 +15,11 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
 
   return (
     <li className="flex items-start gap-4 py-4 px-2 border-b border-border-soft last:border-b-0">
-      <span className="font-mono text-fs-meta text-ink-soft shrink-0 w-20 tracking-mono pt-0.5">
-        {formatDate(item.publishedAt)}
-      </span>
+      <NewsDate className="shrink-0 w-date-col pt-0.5">{formatDate(item.publishedAt)}</NewsDate>
       <div className="flex-1 min-w-0">
         {externalUrl !== undefined
           ? (
-            <TextLink href={externalUrl} external weight="bold">
+            <TextLink href={externalUrl} external externalSrLabel={t("a11y.externalLink")} weight="bold">
               <span className="text-ink text-fs-body leading-snug">{title}</span>
             </TextLink>
           )
@@ -37,7 +35,7 @@ export const NewsRow = ({ item, lang }: NewsRowProps) => {
         )}
       </div>
       <div className="flex items-start gap-1.5 flex-wrap shrink-0 max-w-right-pane justify-end pt-0.5">
-        <Tag kind="source" name={item.source === "dbcls" ? "DBCLS" : "DDBJ"} size="sm" />
+        <Tag kind="source" source={item.source} size="sm" />
         {item.db.map((db) => (
           <Tag key={db} kind="tag" size="sm" mono>{db}</Tag>
         ))}

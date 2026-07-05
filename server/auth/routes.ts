@@ -1,13 +1,17 @@
 import crypto from "node:crypto"
 
 import type { Request, Response, Router } from "express"
+import rateLimit from "express-rate-limit"
 
+import { handleMe } from "../api/me"
 import type { ServerEnv } from "../lib/env"
 import type { Logger } from "../lib/log"
 import { clearSidCookie, getSidFromHeader, setSidCookie } from "./cookie"
 import {
   buildAuthorizeUrl,
   buildLogoutUrl,
+  buildSignatureVerifier,
+  createRealmJwks,
   exchangeCodeForTokens,
   extractUserInfo,
   generateNonce,
@@ -15,6 +19,7 @@ import {
   generateState,
   IdTokenValidationError,
   type OidcConfig,
+  type SignatureVerifier,
 } from "./oidc"
 import { pendingLogins } from "./pending-logins"
 import { normalizeReturnTo } from "./return-to"
@@ -35,11 +40,42 @@ const sendError = (res: Response, status: number, code: string): void => {
   res.status(status).json({ error: code })
 }
 
-export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger): void => {
+// /api/auth/login と /api/auth/callback は無認証。 単一 IP が pending-logins
+// store を短時間で埋めるのを止めるため per-IP hard cap を掛ける。 attacker が
+// 17 rps でも 10 分 cap の 10k を埋められないよう十分低く設定する。
+const AUTH_RATE_LIMIT_WINDOW_MS = 60_000
+const AUTH_RATE_LIMIT_PER_IP = 20
+const authRateLimit = rateLimit({
+  windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
+  limit: AUTH_RATE_LIMIT_PER_IP,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (_req, res) => sendError(res, 429, "too_many_auth_requests"),
+})
+
+export type MountAuthOptions = {
+  // test は実 JWKS endpoint を叩けないので signature verifier を DI で差し込む。
+  // production では省略して default (buildSignatureVerifier(jwks)) を使う。
+  signatureVerifier?: SignatureVerifier
+}
+
+export const mountAuthRoutes = (
+  router: Router,
+  env: ServerEnv,
+  logger: Logger,
+  options: MountAuthOptions = {},
+): void => {
   const config = oidcConfig(env)
   const cookieOpts = { secure: isSecureRuntime(env) }
+  const jwks = createRealmJwks(env.DB_PORTAL_KEYCLOAK_REALM_URL)
+  const verifySignature = options.signatureVerifier ?? buildSignatureVerifier(jwks)
 
-  router.get("/api/auth/login", (req: Request, res: Response): void => {
+  // /api/me は handler が session-store に直接触る auth surface の一部なので、
+  // docs/auth.md の SSOT 主張に従ってここに登録する (server/api/me.ts は handler
+  // の実装を持つだけ)。
+  router.get("/api/me", handleMe)
+
+  router.get("/api/auth/login", authRateLimit, (req: Request, res: Response): void => {
     const returnTo = normalizeReturnTo(
       typeof req.query.return_to === "string" ? req.query.return_to : undefined,
     )
@@ -51,7 +87,7 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
     res.redirect(302, url)
   })
 
-  router.get("/api/auth/callback", async (req: Request, res: Response): Promise<void> => {
+  router.get("/api/auth/callback", authRateLimit, async (req: Request, res: Response): Promise<void> => {
     const code = typeof req.query.code === "string" ? req.query.code : undefined
     const state = typeof req.query.state === "string" ? req.query.state : undefined
     if (!code || !state) {
@@ -68,6 +104,13 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
     }
     try {
       const tokens = await exchangeCodeForTokens(config, code, pending.codeVerifier)
+      // realm 鍵での signature 検証。 これが無いと TLS の integrity だけが
+      // 唯一の真正性根拠になり、 misconfigured proxy 経由で任意の sub での
+      // session 発行が通ってしまう。
+      await verifySignature(tokens.idToken, {
+        issuer: env.DB_PORTAL_KEYCLOAK_REALM_URL,
+        audience: env.DB_PORTAL_KEYCLOAK_CLIENT_ID,
+      })
       const userInfo = extractUserInfo(tokens.idToken, {
         issuer: env.DB_PORTAL_KEYCLOAK_REALM_URL,
         audience: env.DB_PORTAL_KEYCLOAK_CLIENT_ID,
@@ -77,7 +120,6 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
       sessionStore.set(sid, {
         tokens: { idToken: tokens.idToken },
         userInfo,
-        expiresAt: 0,
       })
       res.setHeader("Set-Cookie", setSidCookie(sid, cookieOpts))
       logger.info("auth_login_success", { sub: userInfo.sub })
@@ -96,7 +138,10 @@ export const mountAuthRoutes = (router: Router, env: ServerEnv, logger: Logger):
     }
   })
 
-  router.get("/api/auth/logout", (req: Request, res: Response): void => {
+  // logout は POST。 SameSite=Lax + POST で top-level cross-site 経由の CSRF
+  // logout を無効化する (form の action を叩けても cookie が送られない)。
+  // 呼び出し側 (LoginButton) は <form method="POST"> で叩く。
+  router.post("/api/auth/logout", (req: Request, res: Response): void => {
     const returnTo = normalizeReturnTo(
       typeof req.query.return_to === "string" ? req.query.return_to : undefined,
     )

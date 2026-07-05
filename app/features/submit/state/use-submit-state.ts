@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef } from "react"
+import { useCallback, useMemo, useReducer, useRef } from "react"
 
 import type { FileEntry, FileTypeKind, OrganismDomain } from "~/schemas/submit"
 import type { AccessSection } from "~/schemas/submit/submission"
@@ -26,6 +26,7 @@ type SubmitDispatch = {
   editRowCell: (entryId: string, patch: Partial<FileEntry>) => void
   commitRowEdit: (entryId: string, patch: RowEditPatch) => void
   removeRow: (entryId: string) => void
+  replaceState: (state: UIState) => void
 }
 
 export const useSubmitState = (
@@ -61,21 +62,32 @@ export const useSubmitState = (
   )
 
   const commitRowEdit = useCallback((entryId: string, patch: RowEditPatch) => {
-    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch, releasedGroupId: newId() })
-  }, [newId])
+    dispatch({ type: "COMMIT_ROW_EDIT", entryId, patch })
+  }, [])
 
   const removeRow = useCallback((entryId: string) => {
     dispatch({ type: "REMOVE_ROW", entryId })
   }, [])
 
-  const actions: SubmitDispatch = {
-    setOrganismDomain,
-    setAccessSection,
-    addRow,
-    editRowCell,
-    commitRowEdit,
-    removeRow,
-  }
+  const replaceState = useCallback((next: UIState) => {
+    dispatch({ type: "REPLACE_STATE", state: next })
+  }, [])
+
+  // dispatch は useCallback で稳定しているので useMemo の deps に含める。
+  // 毎 render で actions object を新規生成すると caller の useMemo/useEffect が
+  // 過剰に再走する (M31 の子 hook / route の restore effect などが影響を受ける)。
+  const actions = useMemo<SubmitDispatch>(
+    () => ({
+      setOrganismDomain,
+      setAccessSection,
+      addRow,
+      editRowCell,
+      commitRowEdit,
+      removeRow,
+      replaceState,
+    }),
+    [setOrganismDomain, setAccessSection, addRow, editRowCell, commitRowEdit, removeRow, replaceState],
+  )
 
   return { state, actions }
 }

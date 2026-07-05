@@ -29,8 +29,11 @@ const RequestBody = z.object({
   db: z.enum(ASSISTANT_DB_SLUGS).optional(),
 })
 
-const clientIp = (req: Request): string =>
-  req.ip ?? req.socket.remoteAddress ?? "0.0.0.0"
+// proxy misconfig で req.ip / socket.remoteAddress の両方が undefined になると
+// 全 IP-less traffic が同一バケットを食い合い silent 429 を起こす。 fail-loud に
+// して監視で気づけるようにする ("0.0.0.0" fallback は意図的に廃止)。
+const clientIp = (req: Request): string | null =>
+  req.ip ?? req.socket.remoteAddress ?? null
 
 export const makeHandleSearchAssistant = (
   env: ServerEnv,
@@ -54,10 +57,24 @@ export const makeHandleSearchAssistant = (
     const sid = getSidFromHeader(req.headers.cookie)
     const limiter = getActiveRateLimiter()
     if (limiter) {
-      const decision = limiter.check(clientIp(req), sid)
+      const ip = clientIp(req)
+      if (ip === null) {
+        logger.error("llm_assistant_client_ip_missing", {})
+        res.status(500).json({ error: "client_ip_missing" })
+
+        return
+      }
+      const decision = limiter.check(ip, sid)
       if (!decision.ok) {
         res.setHeader("Retry-After", decision.retryAfterSec.toString())
-        res.status(429).json({ error: "rate_limited", axis: decision.axis })
+        // Body 側にも retryAfterSec を含めることで client が Retry-After header を
+        // 読めない環境 (fetch response.headers を素通しできない middleware 経由等)
+        // でも quota 復帰時刻を UI に反映できる。
+        res.status(429).json({
+          error: "rate_limited",
+          axis: decision.axis,
+          retryAfterSec: decision.retryAfterSec,
+        })
 
         return
       }
@@ -81,11 +98,16 @@ export const makeHandleSearchAssistant = (
     let accumulated = ""
     try {
       // append mode seeds the prompt with the current builder query (serialized
-      // by ddbj-search-api); a serialize failure degrades to fresh generation.
-      const currentDsl = mode === "append" && current !== undefined
-        ? await serializeAstToDsl(current, { env })
+      // by ddbj-search-api); a serialize failure degrades to fresh generation。
+      // 過去 turn の string leaf に埋まっていた PII が currentDsl 経由で prompt
+      // に流れないよう、 redaction は seed 段階でも通す (safeInput と対称)。
+      // signal を伝播することで client disconnect / LLM timeout 後の orphaned
+      // socket を防ぐ。
+      const rawCurrentDsl = mode === "append" && current !== undefined
+        ? await serializeAstToDsl(current, { env, signal: abortController.signal })
         : undefined
-      const messages = buildAssistantMessages({ userInput: input, currentDsl, db })
+      const currentDsl = rawCurrentDsl !== undefined ? redactUserInput(rawCurrentDsl) : undefined
+      const messages = buildAssistantMessages({ userInput: safeInput, currentDsl, db })
       const upstreamResp = await callVllmStreamRaw(
         client,
         { messages, temperature: 0, stream: true, maxTokens: MAX_OUTPUT_TOKENS },
@@ -100,11 +122,18 @@ export const makeHandleSearchAssistant = (
       // Accumulate the model output server-side only; never forward raw deltas to
       // the client (the output contract is a validated DSL/AST, so a prompt
       // injection cannot turn this endpoint into an open LLM proxy). docs/llm.md.
+      // cap 到達で abort し、 upstream vLLM の generation も止める (cap を超えても
+      // MAX_OUTPUT_TOKENS まで生成し続けると GPU cost が浪費される)。
       const result = await readVllmStream(
         upstreamResp.body,
         abortController.signal,
         (delta) => {
-          if (accumulated.length < MAX_ACCUMULATED_CHARS) accumulated += delta
+          if (accumulated.length >= MAX_ACCUMULATED_CHARS) {
+            abortController.abort()
+
+            return
+          }
+          accumulated += delta
         },
       )
       if (!result.ok) {

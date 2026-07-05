@@ -59,7 +59,7 @@ export const PredicateHelpHint = () => {
         <div
           id={tooltipId}
           role="tooltip"
-          className="absolute z-30 left-0 bottom-[calc(100%+6px)] w-max max-w-sm px-3 py-2.5 rounded-button bg-ink text-white text-fs-label leading-snug shadow-card-hover"
+          className="absolute z-tooltip left-0 bottom-[calc(100%+6px)] w-max max-w-sm px-3 py-2.5 rounded-button bg-ink text-white text-fs-label leading-snug shadow-card-hover"
         >
           <dl className="m-0 flex flex-col gap-1.5">
             {PREDICATES.map((pred) => {

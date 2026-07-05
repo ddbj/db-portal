@@ -14,7 +14,7 @@ describe("SectionHeading", () => {
     expect(node).toHaveClass("pl-2.5")
     expect(node).toHaveClass("border-l-[3px]")
     expect(node).toHaveClass("border-brand")
-    expect(node).toHaveClass("leading-tight")
+    expect(node).toHaveClass("leading-none")
   })
 
   test("SectionHeading_asH3_rendersAsH3", () => {

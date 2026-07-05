@@ -1,6 +1,6 @@
-import { fc, test } from "@fast-check/vitest"
-import { describe, expect } from "vitest"
+import { describe, expect, test } from "vitest"
 
+import type { AdvancedField } from "~/features/search/advanced/field-catalog"
 import {
   fieldLabelKey,
   fieldsForScope,
@@ -11,12 +11,13 @@ import { DB_SLUGS, type DbSlug } from "~/lib/search-scope"
 
 // The Sidebar filter and the Advanced builder both derive from the single field
 // registry, so for every scope they must offer the same fields and label each the
-// same way. These properties fail if the two surfaces ever drift apart.
+// same way. Enumerate all scopes deterministically (fc.constantFrom over a 8-element
+// domain leaves gaps under random sampling).
 const SCOPES: (DbSlug | null)[] = [null, ...DB_SLUGS]
 
 describe("filter / builder field alignment", () => {
-  test.prop([fc.constantFrom(...SCOPES)])(
-    "alignment_everyScope_offersTheSameFieldSet",
+  test.each(SCOPES.map((s) => [s]))(
+    "alignment_scope_%s_offersTheSameFieldSet",
     (db) => {
       const builder = [...fieldsForScope(db)].sort()
       const sidebar = scopeFilters(db).map((row) => row.dslField).sort()
@@ -24,16 +25,16 @@ describe("filter / builder field alignment", () => {
     },
   )
 
-  test.prop([fc.constantFrom(...SCOPES)])(
-    "alignment_everyScope_sameFieldSharesOneLabelKey",
+  test.each(SCOPES.map((s) => [s]))(
+    "alignment_scope_%s_sameFieldSharesOneLabelKey",
     (db) => {
       for (const row of scopeFilters(db)) {
         // Every sidebar field is a builder field, and both resolve their label
         // through the same key (search.fields.*), so the label can never differ.
+        // `as AdvancedField` は直上の assertion が true を通した後の narrowing
+        // (`if` 分岐にすると vitest/no-conditional-expect に引っかかる)。
         expect(isAdvancedField(row.dslField)).toBe(true)
-        if (isAdvancedField(row.dslField)) {
-          expect(fieldLabelKey(row.dslField)).toBe(row.key)
-        }
+        expect(fieldLabelKey(row.dslField as AdvancedField)).toBe(row.key)
       }
     },
   )

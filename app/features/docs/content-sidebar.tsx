@@ -12,8 +12,22 @@ import { ChevronDownIcon, FileTextIcon, FolderIcon, HashIcon, SearchIcon } from 
 const FILTER_DEBOUNCE_MS = 200
 
 const EMPTY_TERMS: readonly string[] = []
+const EMPTY_HEADINGS: readonly TocHeading[] = []
 
 type Lang = "ja" | "en"
+
+type SidebarIndex = {
+  labelByPath: ReadonlyMap<string, string>
+  labelLowerByPath: ReadonlyMap<string, string>
+  headingsByPath: ReadonlyMap<string, readonly TocHeading[]>
+  headingLowersByPath: ReadonlyMap<string, readonly string[]>
+}
+
+type FilterState = {
+  visible: ReadonlySet<string>
+  headingHit: ReadonlySet<string>
+  expandOnFilter: ReadonlySet<string>
+}
 
 const labelOf = (node: NavNode, lang: Lang): string =>
   lang === "en" && node.label.en ? node.label.en : node.label.ja
@@ -36,52 +50,74 @@ const countPages = (nodes: readonly NavNode[]): number => {
   return n
 }
 
-const collectFilterAncestors = (
-  nodes: readonly NavNode[],
-  filter: string,
-  lang: Lang,
-  ancestors: string[],
-  out: Set<string>,
-): boolean => {
-  let anyMatch = false
-  for (const node of nodes) {
-    const label = labelOf(node, lang).toLowerCase()
-    const selfMatch = label.includes(filter)
-    const chain = [...ancestors, node.urlPath]
-    const childMatch = collectFilterAncestors(node.children, filter, lang, chain, out)
-    if (selfMatch || childMatch) {
-      for (const a of ancestors) out.add(a)
-      anyMatch = true
+const buildSidebarIndex = (tree: NavTree, lang: Lang): SidebarIndex => {
+  const labelByPath = new Map<string, string>()
+  const labelLowerByPath = new Map<string, string>()
+  const headingsByPath = new Map<string, readonly TocHeading[]>()
+  const headingLowersByPath = new Map<string, readonly string[]>()
+  const walk = (nodes: readonly NavNode[]): void => {
+    for (const node of nodes) {
+      const label = labelOf(node, lang)
+      labelByPath.set(node.urlPath, label)
+      labelLowerByPath.set(node.urlPath, label.toLowerCase())
+      if (node.hasPage) {
+        const headings = headingsOf(node.urlPath, lang)
+        headingsByPath.set(node.urlPath, headings)
+        headingLowersByPath.set(
+          node.urlPath,
+          headings.map((h) => h.text.toLowerCase()),
+        )
+      }
+      walk(node.children)
     }
   }
+  walk(tree)
 
-  return anyMatch
+  return { labelByPath, labelLowerByPath, headingsByPath, headingLowersByPath }
 }
 
-const nodeMatchesFilter = (
-  node: NavNode,
+// expandOnFilter は label match のみ ancestor に propagate する。
+// 自 heading 一致だけの node は visibility には効くが ancestor を開かない
+// (label 検索と h2 検索で ancestor 展開挙動を区別する既存 UX を保つ)。
+const computeFilterState = (
+  tree: NavTree,
   filter: string,
-  lang: Lang,
-): boolean => {
-  const label = labelOf(node, lang).toLowerCase()
-  if (label.includes(filter)) return true
-  if (node.hasPage) {
-    const headings = headingsOf(node.urlPath, lang)
-    if (headings.some((h) => h.text.toLowerCase().includes(filter))) return true
+  index: SidebarIndex,
+): FilterState => {
+  const visible = new Set<string>()
+  const headingHit = new Set<string>()
+  const expandOnFilter = new Set<string>()
+  const walk = (
+    nodes: readonly NavNode[],
+    ancestors: readonly string[],
+  ): { anyVisible: boolean; anyLabelTracked: boolean } => {
+    let anyVisible = false
+    let anyLabelTracked = false
+    for (const node of nodes) {
+      const labelLower = index.labelLowerByPath.get(node.urlPath) ?? ""
+      const selfLabelMatch = labelLower.includes(filter)
+      const headingLowers = index.headingLowersByPath.get(node.urlPath) ?? EMPTY_TERMS
+      const selfHeadingMatch = headingLowers.some((h) => h.includes(filter))
+      if (selfHeadingMatch) headingHit.add(node.urlPath)
+      const childRes = walk(node.children, [...ancestors, node.urlPath])
+      const nodeVisible = selfLabelMatch || selfHeadingMatch || childRes.anyVisible
+      const nodeLabelTracked = selfLabelMatch || childRes.anyLabelTracked
+      if (nodeVisible) {
+        visible.add(node.urlPath)
+        if (node.children.length > 0) expandOnFilter.add(node.urlPath)
+        anyVisible = true
+      }
+      if (nodeLabelTracked) {
+        for (const a of ancestors) expandOnFilter.add(a)
+        anyLabelTracked = true
+      }
+    }
+
+    return { anyVisible, anyLabelTracked }
   }
+  walk(tree, [])
 
-  return node.children.some((c) => nodeMatchesFilter(c, filter, lang))
-}
-
-const headingMatches = (
-  node: NavNode,
-  filter: string,
-  lang: Lang,
-): boolean => {
-  if (!node.hasPage) return false
-  const headings = headingsOf(node.urlPath, lang)
-
-  return headings.some((h) => h.text.toLowerCase().includes(filter))
+  return { visible, headingHit, expandOnFilter }
 }
 
 const useDebouncedValue = <T,>(value: T, delayMs: number): T => {
@@ -133,7 +169,7 @@ const HeadingRow = ({ urlPath, heading, activeAnchor, filterTerms }: HeadingRowP
             "flex-1 min-w-0 py-0.5 px-1.5 text-fs-body-sm leading-tight no-underline truncate rounded-button",
             isActive
               ? "font-semibold text-brand-deep"
-              : "text-ink-mid hover:text-ink hover:bg-surface-hover",
+              : "text-ink-mid hover:text-ink hover:bg-surface-subtle",
           )}
         >
           <Mark text={heading.text} terms={filterTerms} />
@@ -148,10 +184,10 @@ type NavTreeItemProps = {
   depth: number
   pathname: string
   activeAnchor: string | undefined
-  lang: Lang
   expanded: ReadonlySet<string>
   openHeadings: ReadonlySet<string>
-  filter: string
+  visiblePaths: ReadonlySet<string> | null
+  index: SidebarIndex
   filterTerms: readonly string[]
   onToggleExpand: (urlPath: string) => void
   onToggleHeadings: (urlPath: string) => void
@@ -162,23 +198,25 @@ const NavTreeItem = ({
   depth,
   pathname,
   activeAnchor,
-  lang,
   expanded,
   openHeadings,
-  filter,
+  visiblePaths,
+  index,
   filterTerms,
   onToggleExpand,
   onToggleHeadings,
 }: NavTreeItemProps) => {
   const t = useT()
-  if (filter !== "" && !nodeMatchesFilter(node, filter, lang)) return null
+  if (visiblePaths !== null && !visiblePaths.has(node.urlPath)) return null
 
   const isActive = node.hasPage && pathname === node.urlPath
   const hasChildren = node.children.length > 0
   const isExpanded = expanded.has(node.urlPath)
   const showHeadings = openHeadings.has(node.urlPath)
-  const label = labelOf(node, lang)
-  const headings = node.hasPage ? headingsOf(node.urlPath, lang) : []
+  const label = index.labelByPath.get(node.urlPath) ?? ""
+  const headings = node.hasPage
+    ? (index.headingsByPath.get(node.urlPath) ?? EMPTY_HEADINGS)
+    : EMPTY_HEADINGS
 
   return (
     <li>
@@ -232,7 +270,7 @@ const NavTreeItem = ({
                 "flex-1 min-w-0 py-1 px-1.5 text-fs-body-sm no-underline truncate leading-tight",
                 isActive
                   ? "font-bold text-brand-deep"
-                  : "text-ink-mid hover:text-ink hover:bg-surface-hover rounded-button",
+                  : "text-ink-mid hover:text-ink hover:bg-surface-subtle rounded-button",
               )}
             >
               <Mark text={label} terms={filterTerms} />
@@ -244,7 +282,11 @@ const NavTreeItem = ({
               tabIndex={0}
               onClick={() => onToggleExpand(node.urlPath)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onToggleExpand(node.urlPath)
+                if (e.key === "Enter" || e.key === " ") {
+                  // Space の default action (page scroll) を止める。
+                  e.preventDefault()
+                  onToggleExpand(node.urlPath)
+                }
               }}
               className="flex-1 min-w-0 py-1 px-1.5 text-left cursor-pointer text-fs-body-sm font-semibold text-ink truncate leading-tight"
             >
@@ -308,10 +350,10 @@ const NavTreeItem = ({
               depth={depth + 1}
               pathname={pathname}
               activeAnchor={activeAnchor}
-              lang={lang}
               expanded={expanded}
               openHeadings={openHeadings}
-              filter={filter}
+              visiblePaths={visiblePaths}
+              index={index}
               filterTerms={filterTerms}
               onToggleExpand={onToggleExpand}
               onToggleHeadings={onToggleHeadings}
@@ -335,6 +377,8 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
   const activeAnchor = hash.startsWith("#") ? hash.slice(1) : undefined
 
   const totalPages = useMemo(() => countPages(tree), [tree])
+
+  const index = useMemo(() => buildSidebarIndex(tree, lang), [tree, lang])
 
   // dir はデフォルト展開。children を持つ全ノードを最初から開き、
   // user が caret で折り畳めるようにする。
@@ -382,32 +426,27 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
     setOpenHeadings(new Set([pathname]))
   }, [pathname])
 
+  const filterState = useMemo(
+    () => debouncedFilter === "" ? null : computeFilterState(tree, debouncedFilter, index),
+    [tree, debouncedFilter, index],
+  )
+
   const effectiveExpanded = useMemo(() => {
-    if (debouncedFilter === "") return expanded
+    if (filterState === null) return expanded
     const auto = new Set(expanded)
-    collectFilterAncestors(tree, debouncedFilter, lang, [], auto)
-    // also force-expand any matching node that has children
-    for (const node of walkAll(tree)) {
-      if (nodeMatchesFilter(node, debouncedFilter, lang) && node.children.length > 0) {
-        auto.add(node.urlPath)
-      }
-    }
+    for (const p of filterState.expandOnFilter) auto.add(p)
 
     return auto
-  }, [expanded, debouncedFilter, tree, lang])
+  }, [expanded, filterState])
 
   // h2 がマッチしたページは h2 list を自動展開してヒット見出しを見えるようにする。
   const effectiveOpenHeadings = useMemo(() => {
-    if (debouncedFilter === "") return openHeadings
+    if (filterState === null) return openHeadings
     const auto = new Set(openHeadings)
-    for (const node of walkAll(tree)) {
-      if (headingMatches(node, debouncedFilter, lang)) {
-        auto.add(node.urlPath)
-      }
-    }
+    for (const p of filterState.headingHit) auto.add(p)
 
     return auto
-  }, [openHeadings, debouncedFilter, tree, lang])
+  }, [openHeadings, filterState])
 
   const handleToggleExpand = (urlPath: string) => {
     setExpanded((prev) => {
@@ -450,7 +489,7 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
         <SearchIcon
           aria-hidden
           size={14}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none z-10"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none z-sticky"
         />
         <TextInput
           ariaLabel={t("docs.sidebar.filterPlaceholder")}
@@ -471,10 +510,10 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
             depth={0}
             pathname={pathname}
             activeAnchor={activeAnchor}
-            lang={lang}
             expanded={effectiveExpanded}
             openHeadings={effectiveOpenHeadings}
-            filter={debouncedFilter}
+            visiblePaths={filterState?.visible ?? null}
+            index={index}
             filterTerms={debouncedFilter === "" ? EMPTY_TERMS : [debouncedFilter]}
             onToggleExpand={handleToggleExpand}
             onToggleHeadings={handleToggleHeadings}
@@ -483,13 +522,4 @@ export const ContentSidebar = ({ hideHeading = false }: ContentSidebarProps = {}
       </ul>
     </nav>
   )
-}
-
-const walkAll = function* (
-  nodes: readonly NavNode[],
-): IterableIterator<NavNode> {
-  for (const node of nodes) {
-    yield node
-    yield* walkAll(node.children)
-  }
 }

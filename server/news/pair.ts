@@ -2,7 +2,7 @@ import type { NewsItem, NewsSource } from "../../app/schemas/api-bff/news"
 import type { ParsedMarkdown, RawArticle, SourceNormalizeConfig } from "./normalize"
 import { parseFrontMatter, toNewsItem } from "./normalize"
 
-export type SlugStripper = (lang: "ja" | "en", filename: string) => string | undefined
+type SlugStripper = (lang: "ja" | "en", filename: string) => string | undefined
 
 export type SourceParseConfig = SourceNormalizeConfig & {
   slugFromFilename: SlugStripper

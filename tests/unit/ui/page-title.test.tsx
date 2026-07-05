@@ -12,7 +12,7 @@ describe("PageTitle", () => {
     expect(node).toHaveClass("text-ink")
     expect(node).toHaveClass("m-0")
     expect(node).toHaveClass("tracking-h1")
-    expect(node).toHaveClass("leading-tight")
+    expect(node).toHaveClass("leading-none")
   })
 
   test("PageTitle_outer_appliesPageGutterAndVerticalPadding", () => {
@@ -46,7 +46,7 @@ describe("PageTitle", () => {
     expect(sub).toHaveClass("text-fs-body")
     expect(sub).toHaveClass("text-ink-mid")
     expect(sub).toHaveClass("leading-relaxed")
-    expect(sub).toHaveClass("mt-2.5")
+    expect(sub).toHaveClass("mt-3")
     expect(sub).toHaveClass("max-w-content-narrow")
   })
 

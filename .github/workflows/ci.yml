@@ -6,6 +6,11 @@ on:
     branches:
       - main
 
+# lifecycle script / action 経由の credential theft を防ぐため、 workflow が要求
+# する最小権限だけを明示する。 個別 job で必要なら step-level で上書きする。
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -18,6 +23,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # BuildKit の layer cache を GitHub Actions cache backend に保存し、
+      # 次回 push で `docker compose up --build` が同 layer を再利用できるように
+      # する (docker compose exec で走らせている npm install / build のうち、
+      # apt-get install や npm ci が cache hit するようになる)。
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Bring up dev container
         run: |
@@ -39,3 +51,63 @@ jobs:
 
       - name: Audit production dependencies
         run: docker compose exec -T app npm audit --audit-level=high --omit=dev
+
+  # Dockerfile の runtime stage を直接 build → 起動 → 軽量 endpoint に curl。
+  # validate ジョブは dev target を build して exec するだけで runtime stage の
+  # 破壊を検出できないので、 CI で runtime image が起動可能であることを保証する。
+  runtime-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build runtime image
+        # VITE_* は client bundle に焼き込まれるので、 build ARG で smoke 用の
+        # 適当な URL を渡す。 URL の到達性は smoke 対象ではない (runtime プロセス
+        # が起動して /robots.txt を返せることを見る)。
+        run: |
+          docker buildx build \
+            --target runtime \
+            --build-arg VITE_DB_PORTAL_SEARCH_API_URL=http://search.invalid/api \
+            --build-arg VITE_DB_PORTAL_KEYCLOAK_REALM_URL=http://keycloak.invalid/realms/master \
+            --build-arg VITE_DB_PORTAL_KEYCLOAK_CLIENT_ID=smoke-test \
+            --build-arg VITE_DB_PORTAL_PORTAL_ORIGIN=http://localhost:3000 \
+            --build-arg VITE_DB_PORTAL_DEFAULT_LANG=ja \
+            --load \
+            -t db-portal:smoke \
+            .
+
+      - name: Run runtime container
+        run: |
+          docker run -d --name smoke \
+            -e NODE_ENV=production \
+            -e DB_PORTAL_ENV=staging \
+            -e DB_PORTAL_APP_INTERNAL_PORT=3000 \
+            -e DB_PORTAL_PORTAL_ORIGIN=http://localhost:3000 \
+            -e DB_PORTAL_SEARCH_API_URL=http://search.invalid/api \
+            -e DB_PORTAL_OPENAPI_URL=http://search.invalid/openapi.json \
+            -e DB_PORTAL_KEYCLOAK_REALM_URL=http://keycloak.invalid/realms/master \
+            -e DB_PORTAL_KEYCLOAK_CLIENT_ID=smoke-test \
+            -p 3000:3000 \
+            db-portal:smoke
+
+      - name: Wait for readiness and smoke test
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/robots.txt > /dev/null; then
+              echo "smoke pass on attempt $i"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "smoke fail: /robots.txt never responded"
+          docker logs smoke || true
+          exit 1
+
+      - name: Container logs (always)
+        if: always()
+        run: docker logs smoke || true

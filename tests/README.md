@@ -1,261 +1,106 @@
 # Testing
 
-テスト設計の SSOT。Vitest + fast-check + Playwright の 3 種で「バグを見つけるために」 書く。
+テストの 3 階層 (unit / PBT / e2e)、 mock の境界、 テスト間の独立性、 カバレッジの位置付け。
 
-## 目的
+## Overview
 
-テストは「通すために」 書かない。**バグを見つけるために** 書く。
+BSI のテストは目的の違う 3 階層を併走させる。 開発中は unit と PBT を保存ごとに回し、 deploy 後は staging 上で e2e を回す。 単一のピラミッドにせず、 「速いフィードバック」 と 「本物との接続」 を分けて維持する。
 
-正常系だけを薄くなぞるテストは価値が低い。境界値・エッジケース・異常系を重点的にテストする。「この入力で壊れないか」 を常に問い続ける。
-
-## テスト種別
-
-| 種別 | スコープ | 配置 | 実行頻度 |
-|---|---|---|---|
-| **unit** | 関数・コンポーネント単体。外部境界を mock | `tests/unit/` | 開発中、何度も気軽に |
-| **pbt** | 純粋関数の不変量を fast-check で検証 | `tests/pbt/` | unit と同列、何度も |
-| **e2e** | UI から外部サービスまで貫通。staging 環境で実物を叩く | `tests/e2e/` | リリース前、staging ホスト上で手動 |
-
-unit + pbt は開発のフィードバックループ。e2e は staging リリース後の検証。最初は unit + pbt を主軸にして、機能ごとに e2e シナリオを追加する。
-
-## unit テスト
-
-開発中になんども気軽に回せるもの。
-
-### ツール
-
-- Vitest (test runner)
-- @testing-library/react (component test)
-- msw (HTTP モック、Service Worker レベルで Search API / GitHub API 等を介入)
-
-### ルール
-
-- 1 ファイル数十〜数百テスト、ミリ秒単位で完走する規模に保つ
-- watch モードで保存ごとに即実行できる速度
-- ファイル名 `*.test.ts(x)` で対象ファイルの隣に配置するか、`tests/unit/` 配下にミラー
-- describe / it の入れ子は浅く
-
-### 命名規則
-
-```
-test("<対象>_<条件>_<期待結果>",  => { ... })
+```mermaid
+flowchart LR
+  dev["開発中 (watch)"] --> unit["unit<br/>tests/unit/"]
+  dev --> pbt["PBT<br/>tests/pbt/"]
+  deploy["staging deploy 後"] --> e2e["e2e<br/>tests/e2e/"]
+  unit -. "外部境界のみ mock" .-> boundary["HTTP / 認証 / FS / 時刻"]
+  pbt -. "純粋関数のみ" .-> domain["domain logic"]
+  e2e -. "実物を叩く" .-> staging["Search API / Keycloak / vLLM / GitHub"]
 ```
 
-例: `test("parseDateRange_invalidFormat_throws", ...)`、`test("FlowStepCard_openRow_rendersDraBadge", ...)`
+テストは 「バグを見つけるため」 に書く。 正常系を薄くなぞるだけの 「通すためのテスト」 は書かない。 境界値・エッジケース・異常系を必ず含める。
 
-名前を読むだけで何を検証しているか分かるようにする。
+## Unit
 
-## PBT (Property-Based Testing)
+純粋関数・component・loader / action の単体検証を、 watch モードで保存ごとに回せる速度で書く。 1 ファイル数十〜数百テストがミリ秒単位で完走する規模を保つ。
 
-入力空間を手で列挙する限界を超えるためのテスト。
+- ファイル名は `*.test.ts(x)`、 配置は対象ファイルの隣か `tests/unit/` 配下にミラー
+- describe / it の入れ子は浅く保つ。 ネストで条件分岐を表現しない
+- test 名は `<対象>_<条件>_<期待結果>` の形で、 読むだけで検証内容が分かるようにする
+- React Router の loader / action は `createRoutesStub` で route + loader / action を組んだ状態で render する。 loader 自体を mock せず、 loader 内の HTTP を msw で境界 mock する
 
-### ツール
+ツールは Vitest / @testing-library/react / msw。 msw の handler は `tests/unit/mocks/handlers.ts` に集約し、 個別 test では `server.use(...)` で override する。
 
-fast-check (`@fast-check/vitest` で Vitest 統合)
+## PBT
 
-### 対象
+純粋関数の不変量を fast-check で網羅検証する。 example-based test を置き換えるのではなく補完する位置付けで、 同じ対象に対して両方書く。 対象は `tests/pbt/` 配下、 arbitrary は `tests/pbt/arbitraries/` に集約する。
 
-- **submit サービス step 関数の不変量** (登録ナビ schema 駆動)
-  - 例: 任意の Submission state について、open 行があれば DRA か JGA の Step が必ず生成される
-  - 例: Umbrella BP は primary BP ≥ 2 のときのみ生成される
-  - 例: organism = restricted な行が存在するなら JGA Step が必ず存在する
-- **検索 AST/DSL の round-trip**
-  - portal 側 UI state (Advanced reducer / Sidebar facet) → AST → API serialize → DSL → API parse → AST の往復で等価性
-  - portal 内の AST merge (`mergeAstAnd`) の冪等性 / 結合律
-- **URL serialize / deserialize の対称性**
-  - 検索 URL `?q=` / `?db=` / `?page=` 等の往復で復元される
-- **content collection の Zod schema validation**
-  - 任意の Zod-conformant input が `parse(stringify(x)) == x`
-- **controlled vocabulary の閉包性**
-  - 任意の `ButtonType` から派生する `DataForm`、`GroupType` の default が schema 内に必ず存在する
-- **i18n リソースキーの整合**
-  - ja / en で同じキーセットを持つ (片方にだけあるキーが存在しない)
+- 「例外を投げない」 は不変量として書かない。 入出力の意味のある制約を書く
+- `fc.sample` で生成例を確認し、 入力空間がドメインを覆っているかを目視する
+- shrink で縮小された反例を debug の起点にする
+- 実行時間が許容できれば `numRuns` を default の 100 から増やして探索幅を稼ぐ
 
-### 不変量の書き方
+ツールは `@fast-check/vitest`。 vitest と同じ runner で動くため、 unit と同じ watch ループに乗る。
 
-- 「例外を投げない」 は不変量ではない (意味のある制約を書く)
-- PBT は example-based test の **代替ではなく補完**。両方書く
-- `fc.sample` で生成されるサンプル例を `console.log` して、ドメインを意図通りカバーしているか確認する
-- shrink で失敗例が縮小されることを利用してデバッグを楽にする
-- 実行時間が許容範囲なら `numRuns` を増やす (デフォルト 100、PBT 用 1000+)
+## E2E
 
-実例は `tests/pbt/` 配下を参照 (submit flow-rules / search AST round-trip / i18n resource parity 等)。
+staging に deploy 済みの実物に対して Playwright でシナリオを貫通させる。 dev コンテナや CI では回さず、 staging 上の e2e 専用コンテナから公開 URL を叩く。
 
-## e2e テスト
+- host・project 構成・外部依存 URL の SSOT は `tests/e2e/playwright.config.ts`
+- 外部境界 (Search API / Keycloak / GitHub / vLLM) を mock しない
+- シナリオは実装より先に `tests/e2e/scenarios.md` に書く。 シナリオ ID 体系・ペルソナ・必須要素 (前提 / 手順 / 期待) は同ファイルが SSOT
+- 設計上の制約・ハマりどころ・retry / wait 戦略は `tests/e2e/notes.md` に集約する
+- ペルソナの認証状態は setup project が事前に Keycloak で取得した storage state を読み込む形で実現する
 
-最初にシナリオを書いてから実装する。staging 環境にデプロイした後に実行する重いテスト。
+`*.user.spec.ts` の suffix は認証済みペルソナで走るシナリオ、 suffix なしは未認証シナリオを表す。
 
-### ツール
-
-Playwright
-
-### 環境
-
-- 対象: staging deploy 済の db-portal (`bsi-staging.nig.ac.jp`)
-- 外部依存も実物を叩く:
-  - ddbj-search-api staging (`ddbj-staging.nig.ac.jp/search/api`)
-  - Keycloak staging (`idp-staging.ddbj.nig.ac.jp`)
-  - ddbj/www mirror (GitHub API)
-  - vLLM (`l40s-03:3200`)
-- **mock しない** (外部境界の本物挙動を確認するのが e2e の役目)
-- 実行コストが重い (1 シナリオ数秒〜数分、フルスイートで数分〜数十分)
-
-### シナリオ集が SSOT
-
-`e2e/scenarios.md` をテスト実装の前に書く。
-
-#### シナリオ ID 体系
-
-- 正常系: `S-<DOMAIN>-NN` (例: `S-SEARCH-01`)
-- 異常系: `E-<DOMAIN>-NN` (例: `E-SUBMIT-03`)
-- DOMAIN: `SEARCH` / `SUBMIT` / `NEWS` / `AUTH` / `LLM` / `TOP` / `CONTENT` (機能横断は `FLOW`)
-
-#### ペルソナ
-
-| ID | 名前 | 認証 | Playwright project |
-|---|---|---|---|
-| P-ANON | 未認証ユーザー | なし | `anon` |
-| P-USER | 一般ユーザー (Keycloak login) | DDBJ Account JWT | `user` |
-
-`user` project は `setup` project (`auth.setup.ts`) が事前に Keycloak でログインして保存した storage state を読み込んで起動する。リリース時点では認証ボタンのみで専用機能なし (`docs/auth.md`)。`P-USER` シナリオはログイン動作確認に限定。
-
-#### シナリオ要素
-
-各シナリオには以下を必ず書く:
-
-- **ペルソナ** (P-ANON / P-USER)
-- **前提** (URL / 状態 / 必要データ)
-- **手順** (ユーザー操作の番号付きリスト)
-- **期待** (DOM 状態 / URL 変化 / 外部 API 呼び出し / アクセシビリティ)
-- **備考** (省略可、エッジケースの説明)
-
-例:
-
-```markdown
-#### S-SEARCH-03: 検索結果の横断ヒット数サマリ
-
-- **ペルソナ**: P-ANON
-- **前提**: dev サーバ起動済、ddbj-search-api staging に到達可能
-- **手順**:
-  1. `/` を開く
-  2. 検索ボックスに `cancer` と入力し、検索ボタンをクリック
-- **期待**:
-  - URL が `/search/results?q=cancer` に変わる
-  - 8 つの DB ヒット数カードが描画される
-  - 各カードに `count` の数値とリンクが表示される
-  - 0 件の DB はカード自体が描画されない or `0 件` で表示される (どちらかは仕様で確定する)
+```mermaid
+sequenceDiagram
+  participant Setup as auth.setup.ts
+  participant KC as Keycloak (staging)
+  participant Spec as *.user.spec.ts
+  participant App as BSI (staging)
+  Setup->>KC: OIDC login (テストアカウント)
+  KC-->>Setup: session cookie
+  Setup->>Setup: storageState を保存
+  Spec->>Spec: storageState を読み込む
+  Spec->>App: 認証済みで navigate
+  App-->>Spec: 実 response
 ```
 
-### 設計ノート
+## Mock 境界
 
-`e2e/notes.md` に設計上の制約・ハマりどころを書く。
+mock してよいのは BSI の外側にあるものだけ。 内部構造を mock した瞬間にテストは設計の鏡ではなくなる。
 
-書くべき内容:
+| 区分 | 対象 |
+|---|---|
+| mock してよい | HTTP (Search API / GitHub / vLLM) |
+| mock してよい | OIDC redirect / token validation |
+| mock してよい | ファイルシステム |
+| mock してよい | 時刻 / 乱数 |
+| mock しない | 内部関数 / module / component |
+| mock しない | Zod schema / TypeScript 型 |
+| mock しない | Tailwind config / CSS |
+| mock しない | React Router loader / action |
 
-- テスト間独立性 (どこまで session を共有するか、ログイン状態の取り扱い)
-- cleanup の順序制約 (localStorage / cookie / session)
-- 外部 API のレート制限への配慮
-- トークンリフレッシュ戦略
-- staging 環境の安定性に依存する部分の retry / wait
+内部の mock が必要に見えるなら、 テストではなく設計が悪い。 結合度を下げる側で直す。
 
-### 実行とデプロイの関係
+## Isolation
 
-- 開発中の機能追加 → unit + pbt で feedback
-- PR 単位で staging に prerelease → e2e 全シナリオ実行
-- main マージ → staging に再 deploy → e2e で本リリース確認
-- production deploy → smoke test のみ (e2e は staging で完了済)
+テスト間で状態を共有しない。 並列実行・shuffle・shard で全件通る状態を常に保つ。
 
-## Mock のルール
+- localStorage / cookie / msw handler / module-level state を test 間で共有しない
+- `vitest --shuffle` および `playwright --shard` で全件 green を維持する
+- helper や fixture は vitest の collection から外すため `_helpers.ts` / `_fixtures.ts` のように `_` prefix で配置する
+- 認証は e2e の storage state、 unit の `tests/unit/_helpers/` に閉じ込め、 spec 本体から直接 cookie を組み立てない
 
-### mock していい (外部境界)
+## 実行
 
-- ✓ HTTP (Search API / GitHub API / vLLM)
-- ✓ 認証 (OIDC redirect / token validation)
-- ✓ ファイルシステム
-- ✓ 時刻 (`Date.now`, `setTimeout`)
-- ✓ ランダム (`Math.random`, `crypto.getRandomValues`)
-
-### mock しない
-
-- ✗ 内部関数 / 内部モジュール / コンポーネント
-- ✗ Zod schema / TypeScript 型
-- ✗ Tailwind config / CSS
-- ✗ React Router の loader / action 自体は mock しない。代わりに `createRoutesStub` で route + loader/action を組んだ状態で component を render し、loader 内の fetch は msw で外部境界 mock する
-
-内部 mock が必要に見えるなら **設計が悪い**。テストではなく設計を直す。
-
-#### RR loader/action の unit テスト方針
-
-`createRoutesStub` で「route + loader/action を組んだ状態」 を再構築し、その上で component を render する。loader 内 fetch は msw で境界 mock する。
-
-- loader は実コードを直接渡す (mock しない)
-- 外部 HTTP は msw で境界 mock
-- unit テストで「loader が動いた状態の component」 を verify できる
-- e2e に出すまでもないシナリオはここで吸収
-
-実例は `tests/unit/routes/` 配下を参照。
-
-### msw の使い方
-
-`unit/mocks/handlers.ts` に Search API のレスポンス handler を集約する。各 unit test で `server.use(...)` で個別 override。staging API の OpenAPI schema から型を借りるので、handler のレスポンスも型安全。
-
-## テスト間の独立性
-
-- テスト間で state を共有しない (localStorage / cookie / mock state を必ずクリーンアップ)
-- 実行順序に依存しない
-- `vitest --shuffle` / `playwright --shard` で全テスト通ること
-
-順序依存テストを許すと壊れたテストが「たまたま通る」 状態になり、回帰を見逃す。
-
-## 実行コマンド
+unit と PBT は dev コンテナの中で回す。 ホストの node から直接叩かない。
 
 ```bash
-# unit + pbt (開発中の主力)
-docker compose exec app npm test                    # 全実行
-docker compose exec app npm run test:unit           # unit のみ
-docker compose exec app npm run test:pbt            # PBT のみ
-docker compose exec app npm test -- --watch         # watch モード
+docker compose exec app npm test                # unit + pbt 全実行
+docker compose exec app npm run test:unit       # unit のみ
+docker compose exec app npm run test:pbt        # pbt のみ
+docker compose exec app npm test -- --watch     # watch モード
 ```
 
-e2e は dev コンテナでは回さない。staging ホスト上の e2e 専用コンテナで deploy 済みの公開 URL (`https://bsi-staging.nig.ac.jp`) を叩く。手順は `tests/e2e/notes.md` §1。
-
-## ディレクトリ構造
-
-```
-tests/
-├── unit/                   ← Vitest unit tests (collect rule: tests/unit/**/*.test.{ts,tsx})
-│   ├── _helpers/           ← render-with-providers 等の共通ヘルパー
-│   ├── content/
-│   ├── features/
-│   ├── lib/
-│   ├── mocks/              ← msw handlers + server
-│   ├── routes/             ← route action / resource route のテスト (例: api.set-lang)
-│   ├── schemas/
-│   ├── server/             ← BFF 側 (api / auth / lib / llm / news)
-│   │   └── news/_fixtures.ts ← 領域別 fixture (`_` prefix)
-│   ├── setup.ts            ← Vitest setup (jsdom / msw 起動 / storage clear)
-│   ├── shell/
-│   └── ui/
-├── pbt/                    ← fast-check PBT (collect rule: tests/pbt/**/*.{test,pbt.test}.{ts,tsx})
-│   ├── arbitraries/
-│   ├── content/services/
-│   ├── features/
-│   │   ├── news/             ← news facet 不変量
-│   │   ├── search/
-│   │   ├── services/         ← services facet / facet URL state 不変量
-│   │   └── submit/
-│   ├── lib/                ← env / api / content / i18n の PBT
-│   ├── server/             ← api / auth / lib / llm / news の PBT
-│   └── submit/             ← サービス step 不変量
-└── e2e/                    ← Playwright
-    ├── auth.setup.ts       ← Playwright `setup` project (storage state 生成)
-    ├── *.spec.ts           ← anon project (cookie 無しで実行する一般 scenario)
-    ├── *.user.spec.ts      ← user project (auth.setup.ts で作った storage state を読む scenario)
-    ├── fixtures/
-    ├── helpers.ts
-    ├── notes.md
-    ├── playwright.config.ts
-    └── scenarios.md
-```
-
-ヘルパー命名規約: `_helpers.ts` / `_fixtures.ts` のように `_` prefix で始めて、`*.test.*` 命名を避けることで vitest の collection (suffix で集めている) から外す。
+e2e は staging 上で別コンテナから回す。 起動方法・対象 host・認証 storage の更新手順は `tests/e2e/notes.md` を参照する。

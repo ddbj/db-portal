@@ -1,7 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router"
 
-import { type DbSlug, readSearchParams } from "~/features/search"
+import { readSearchParams } from "~/features/search"
 import { type ParseNode, parseQuery } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 type LoaderData = {
   q: string

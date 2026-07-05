@@ -10,7 +10,9 @@ import { describe, expect, test } from "vitest"
 import { createI18nInstance, LangProvider } from "~/lib/i18n"
 import PageContentRoute, { loader } from "~/routes/page-content/route"
 
-const callLoader = (splat: string | undefined): { urlPath: string } =>
+const callLoader = (
+  splat: string | undefined,
+): { urlPath: string; translationState: "complete" | "missing" } =>
   loader({
     params: splat === undefined ? {} : { "*": splat },
     request: new Request(`http://localhost/${splat ?? ""}`),
@@ -39,12 +41,17 @@ const renderRoute = (splat: string, lang: "ja" | "en" = "ja"): RenderResult => {
 
 describe("page-content loader", () => {
   test("loader_knownPath_returnsUrlPath", () => {
-    expect(callLoader("bioproject")).toEqual({ urlPath: "/bioproject" })
-    expect(callLoader("biosample")).toEqual({ urlPath: "/biosample" })
+    expect(callLoader("bioproject").urlPath).toBe("/bioproject")
+    expect(callLoader("biosample").urlPath).toBe("/biosample")
   })
 
   test("loader_nestedKnownPath_returnsUrlPath", () => {
-    expect(callLoader("policy/term-of-use")).toEqual({ urlPath: "/policy/term-of-use" })
+    expect(callLoader("policy/term-of-use").urlPath).toBe("/policy/term-of-use")
+  })
+
+  test("loader_pageWithEnFrontmatter_returnsCompleteTranslationState", () => {
+    // biosample は index.en.md を持つ page (docs 側で確認)。 en frontmatter あり。
+    expect(callLoader("biosample").translationState).toBe("complete")
   })
 
   test("loader_unknownPath_throws404Response", () => {

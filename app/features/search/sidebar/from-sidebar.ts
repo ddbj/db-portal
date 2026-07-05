@@ -1,9 +1,9 @@
 import type { ParseNode } from "~/lib/api"
+import type { DbSlug } from "~/lib/search-scope"
 
 import { canonicalizeAst } from "../ast/canonicalize"
 import { identityAst } from "../ast/identity"
 import { mergeAstAnd } from "../ast/merge"
-import type { DbSlug } from "../types"
 import { presetRangeToDates } from "./date-preset"
 import { type FilterRow, scopeFilters } from "./facet-config"
 import type { DateRangeFilter, SearchFacetState } from "./facet-state"

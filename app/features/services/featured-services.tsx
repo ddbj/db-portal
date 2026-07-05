@@ -7,6 +7,7 @@ import {
   type ServiceItem,
   type ServiceList,
   serviceName,
+  SERVICES_QUERY_KEY,
   serviceUrl,
 } from "~/lib/api"
 import { type Lang, useLang, useT } from "~/lib/i18n"
@@ -17,6 +18,7 @@ type FeaturedServicesProps = {
 }
 
 const FeaturedRow = ({ item, lang }: { item: ServiceItem; lang: Lang }) => {
+  const t = useT()
   const name = serviceName(item, lang)
   const description = serviceDescription(item, lang)
   const url = serviceUrl(item, lang)
@@ -26,7 +28,7 @@ const FeaturedRow = ({ item, lang }: { item: ServiceItem; lang: Lang }) => {
       <span className="shrink-0">
         {url !== undefined
           ? (
-            <TextLink href={url} external weight="bold">
+            <TextLink href={url} external externalSrLabel={t("a11y.externalLink")} weight="bold">
               <span className="text-ink text-fs-body leading-snug">{name}</span>
             </TextLink>
           )
@@ -46,7 +48,7 @@ export const FeaturedServices = ({ lang: explicitLang }: FeaturedServicesProps =
   const lang = explicitLang ?? hookLang
   const t = useT()
   const query = useQuery({
-    queryKey: ["services"],
+    queryKey: SERVICES_QUERY_KEY,
     queryFn: () => fetchServices(),
     staleTime: 5 * 60_000,
   })

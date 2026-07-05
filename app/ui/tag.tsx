@@ -4,6 +4,8 @@ import { cn } from "./cn"
 
 type TagSize = "sm" | "md"
 
+type SourceKey = "ddbj" | "dbcls"
+
 type SourceName = "DDBJ" | "DBCLS"
 
 type StatusTone = "critical" | "warning" | "success" | "info"
@@ -24,6 +26,15 @@ type TagProps =
   | {
     kind: "source"
     name: SourceName
+    source?: undefined
+    size?: TagSize
+    mono?: boolean
+    children?: ReactNode
+  }
+  | {
+    kind: "source"
+    source: SourceKey
+    name?: undefined
     size?: TagSize
     mono?: boolean
     children?: ReactNode
@@ -46,6 +57,11 @@ const sourceClass: Record<SourceName, string> = {
   DBCLS: "bg-src-dbcls-soft text-src-dbcls",
 }
 
+const SOURCE_NAME: Record<SourceKey, SourceName> = {
+  ddbj: "DDBJ",
+  dbcls: "DBCLS",
+}
+
 const statusClass: Record<StatusTone, string> = {
   critical: "bg-critical-bg text-critical-fg border border-critical-border",
   warning: "bg-warn-bg text-warn-fg border border-warn-border",
@@ -61,9 +77,10 @@ export const Tag = (props: TagProps) => {
   const family = mono ? "font-mono" : "font-sans"
 
   if (props.kind === "source") {
+    const label = props.source !== undefined ? SOURCE_NAME[props.source] : props.name
     return (
-      <span className={cn(baseClass, family, sizeClass[size], sourceClass[props.name])}>
-        {props.children ?? props.name}
+      <span className={cn(baseClass, family, sizeClass[size], sourceClass[label])}>
+        {props.children ?? label}
       </span>
     )
   }

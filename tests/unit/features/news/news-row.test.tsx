@@ -129,7 +129,7 @@ describe("NewsRow", () => {
   test("NewsRow_dateColumn_appliesMonoFontAndFixedWidth", () => {
     const { container } = renderRow(buildItem())
     const dateSpan = container.querySelector("span.font-mono")
-    expect(dateSpan).toHaveClass("w-20", "text-fs-meta", "text-ink-soft", "tracking-mono")
+    expect(dateSpan).toHaveClass("w-date-col", "text-fs-meta", "text-ink-soft", "tracking-mono")
   })
 
   test("NewsRow_enFallback_picksJaWhenEnIsEmpty", () => {

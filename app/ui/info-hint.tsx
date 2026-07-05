@@ -62,7 +62,7 @@ export const InfoHint = ({ label, ariaLabel }: InfoHintProps) => {
         <span
           id={tooltipId}
           role="tooltip"
-          className="absolute z-30 left-1/2 -translate-x-1/2 top-[calc(100%+6px)] w-max max-w-[260px] px-2.5 py-1.5 rounded-button bg-ink text-white text-fs-label leading-snug shadow-card-hover whitespace-normal"
+          className="absolute z-tooltip left-1/2 -translate-x-1/2 top-[calc(100%+6px)] w-max max-w-[260px] px-2.5 py-1.5 rounded-button bg-ink text-white text-fs-label leading-snug shadow-card-hover whitespace-normal"
         >
           {label}
         </span>

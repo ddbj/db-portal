@@ -22,10 +22,16 @@ type ItemRowProps = {
 }
 
 const ItemRow = ({ item, lang }: ItemRowProps) => {
+  const t = useT()
   if (item.kind === "external") {
     return (
       <li>
-        <TextLink href={item.url} external weight="semibold">
+        <TextLink
+          href={item.url}
+          external
+          externalSrLabel={t("a11y.externalLink")}
+          weight="semibold"
+        >
           {labelOf(item.label, lang)}
         </TextLink>
       </li>
@@ -70,7 +76,7 @@ export const SitemapColumns = () => {
   return (
     <div>
       <SectionHeading>{t("docs.sections.sitemap")}</SectionHeading>
-      <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-section-block sm:grid-cols-2 lg:grid-cols-4">
         {sections.map((section) => (
           <SectionColumn key={section.id} section={section} lang={lang} />
         ))}

@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 
+import * as jose from "jose"
 import { z } from "zod"
 
 export type OidcConfig = {
@@ -7,6 +8,23 @@ export type OidcConfig = {
   clientId: string
   redirectUri: string
   fetchImpl?: typeof fetch
+}
+
+const TOKEN_ENDPOINT_TIMEOUT_MS = 10_000
+
+export type JwksResolver = jose.JWTVerifyGetKey
+
+// Keycloak の JWKS endpoint を lazy に fetch する resolver。 rotation 時は
+// jose が cache miss を検出して自動再取得するので、 呼び出し側は resolver を
+// 使い回すだけで良い。
+export const createRealmJwks = (realmUrl: string): JwksResolver =>
+  jose.createRemoteJWKSet(new URL(`${realmUrl}/protocol/openid-connect/certs`))
+
+export type SignatureVerificationSpec = {
+  jwks: JwksResolver
+  issuer: string
+  audience: string
+  clockSkewSeconds?: number
 }
 
 type Tokens = {
@@ -108,22 +126,66 @@ const callTokenEndpoint = async (
   body: URLSearchParams,
 ): Promise<Tokens> => {
   const fetcher = config.fetchImpl ?? fetch
-  const response = await fetcher(`${config.realmUrl}/protocol/openid-connect/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
+  // Slow / hung Keycloak が callback を無限に stall させるのを防ぐ hard timeout。
+  // これが無いと単一 attacker が worker + pending-logins slot を pin して
+  // 通常 login を DoS できる。 AbortSignal を fetch に渡す形は jsdom + undici
+  // の cross-realm instance check に引っかかるため、 Promise.race で app 層に
+  // hard cap を持たせる (socket は残るが Node の keep-alive TTL で回収される)。
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error(`token endpoint timeout after ${TOKEN_ENDPOINT_TIMEOUT_MS}ms`)),
+      TOKEN_ENDPOINT_TIMEOUT_MS,
+    )
   })
-  if (!response.ok) {
-    throw new Error(`token endpoint failed with status ${response.status}`)
-  }
-  const json: unknown = await response.json()
-  const parsed = TokenResponseSchema.parse(json)
-  if (!parsed.id_token) {
-    throw new Error("token endpoint did not return id_token")
-  }
+  try {
+    const response = await Promise.race([
+      fetcher(`${config.realmUrl}/protocol/openid-connect/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      }),
+      timeoutPromise,
+    ])
+    if (!response.ok) {
+      throw new Error(`token endpoint failed with status ${response.status}`)
+    }
+    const json: unknown = await response.json()
+    const parsed = TokenResponseSchema.parse(json)
+    if (!parsed.id_token) {
+      throw new Error("token endpoint did not return id_token")
+    }
 
-  return { idToken: parsed.id_token }
+    return { idToken: parsed.id_token }
+  } finally {
+    if (timeoutHandle !== undefined) clearTimeout(timeoutHandle)
+  }
 }
+
+export type SignatureVerifier = (
+  idToken: string,
+  spec: Pick<SignatureVerificationSpec, "issuer" | "audience" | "clockSkewSeconds">,
+) => Promise<void>
+
+// PKCE / state / nonce は authorization flow の順序を守る仕組み。 realm 鍵で
+// id_token の署名を検証しないと、 TLS の integrity だけが真正性の根拠になる
+// (misconfigured proxy や dev の rogue CA を経由すると任意の sub で session
+// 発行が通ってしまう)。 verify 失敗は既存の IdTokenValidationError 経路に
+// 折り畳んで route 側の分岐を保つ。 factory を通すのは test が実 JWKS を叩けない
+// ため DI で bypass する必要があるから。
+export const buildSignatureVerifier = (jwks: JwksResolver): SignatureVerifier =>
+  async (idToken, spec) => {
+    try {
+      await jose.jwtVerify(idToken, jwks, {
+        issuer: spec.issuer,
+        audience: spec.audience,
+        clockTolerance: spec.clockSkewSeconds ?? 60,
+      })
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : "verify failed"
+      throw new IdTokenValidationError(`signature: ${reason}`)
+    }
+  }
 
 export const exchangeCodeForTokens = async (
   config: OidcConfig,
@@ -183,7 +245,9 @@ export const extractUserInfo = (idToken: string, validation: IdTokenValidation):
   }
   const nowSeconds = Math.floor((validation.now?.() ?? Date.now()) / 1000)
   const clockSkew = validation.clockSkewSeconds ?? 60
-  if (parsed.exp <= nowSeconds) {
+  // clockSkew は両側に対称適用する。 BFF host 時計が Keycloak より進んでいる
+  // 場合に短寿命 id_token が発行直後に「expired」 と誤判定されるのを防ぐ。
+  if (parsed.exp + clockSkew <= nowSeconds) {
     throw new IdTokenValidationError("token expired")
   }
   if (parsed.iat > nowSeconds + clockSkew) {

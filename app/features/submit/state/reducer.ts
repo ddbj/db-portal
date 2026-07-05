@@ -56,7 +56,6 @@ const applyRowEditPatch = (
   state: UIState,
   entryId: string,
   patch: RowEditPatch,
-  _releasedGroupId: string,
 ): UIState => {
   const entry = state.submission.fileEntries.find((e) => e.id === entryId)
   if (!entry) return state
@@ -183,10 +182,13 @@ export const submitReducer = (state: UIState, action: Action): UIState => {
     }
 
     case "COMMIT_ROW_EDIT":
-      return applyRowEditPatch(state, action.entryId, action.patch, action.releasedGroupId)
+      return applyRowEditPatch(state, action.entryId, action.patch)
 
     case "REMOVE_ROW":
       return removeRow(state, action.entryId)
+
+    case "REPLACE_STATE":
+      return action.state
   }
 }
 
