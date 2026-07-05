@@ -40,6 +40,8 @@ JGAは、European Bioinformatics Institute（EBI）が運用するEuropean Genom
 
 ## 登録の流れ
 
+具体的な操作については、[こちら](/jga/submission-procedure)のページをご参照ください。
+
 ```mermaid
 flowchart TD
   S1[NBDC ヒトデータベース申請システム（推奨ブラウザ：Chrome、Firefox）にログイン] 
@@ -98,10 +100,12 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 ## データの利用
 
 ## データ利用申請に向けた事前準備
+
  [NBDC ヒトデータベースのページ](/humandbs)を参照のこと
 
 
 ## データ利用の流れ
+
 具体的な操作については、[こちら](/jga/datause-procedure)のページをご参照ください。
 
 ```mermaid
