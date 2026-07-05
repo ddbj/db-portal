@@ -102,7 +102,7 @@ JGA は [DRA](/dra) で使われる BioProject / BioSample のモデルを採用
 
 
 ## データ利用の流れ
-具体的な捜査については、こちら**ここにリンクを貼る**のページをご参照ください。
+具体的な操作については、[こちら](/jga/datause-procedure)のページをご参照ください。
 
 ```mermaid
 flowchart TD
