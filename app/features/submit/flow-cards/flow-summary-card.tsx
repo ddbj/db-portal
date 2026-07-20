@@ -1,7 +1,7 @@
 import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
-import { internalDetailHref, isCompanionService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
+import { internalDetailHref, isCompanionService, isExternalService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, ExternalIcon, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
@@ -72,7 +72,11 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
     prereqHeading, detailLinkLabel,
     validations, validationHeading, validationLabel, onJumpToRow,
   } = props
-  const showAccountStep = !isAuthenticated
+  // DDBJ アカウント誘導は destination / companion (すべて DDBJ 管轄) の step が 1 つでもあるフローだけに出す。
+  // 全 step が external (humandbs / jpost / eva) のみのフロー (例: proteome → jpost only、非ヒト variant → eva only)
+  // では DDBJ アカウントは不要なので抑制する。
+  const hasDdbjManagedStep = steps.some((s) => !isExternalService(s.service))
+  const showAccountStep = !isAuthenticated && hasDdbjManagedStep
   const lang = useLang() as "ja" | "en"
   const presentServices = new Set(steps.map((s) => s.service))
 
@@ -447,7 +451,7 @@ const navigateToLogin = () => {
 }
 
 const AccountStep = ({ labels }: { labels: AccountStepLabels }) => (
-  <div>
+  <div data-testid="account-step">
     <div className="flex items-center gap-2 mb-1">
       <StepBadge index={0} pending={true} />
       <span className="text-fs-body font-bold text-ink leading-snug">{labels.title}</span>

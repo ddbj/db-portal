@@ -1,4 +1,4 @@
-import { type FileEntry, type FlowStep, type Service, type Submission } from "~/schemas/submit"
+import { type FileEntry, type FlowStep, type Service, SERVICE_DEPENDENCIES, type Submission } from "~/schemas/submit"
 
 import { isKindEnabled } from "../cascade"
 import { type EntryRouting, routeEntries } from "./interpreter"
@@ -6,6 +6,13 @@ import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
 import { byServiceDependencyOrder } from "./ordering"
 import { expressionDraSteps, haplotypeSteps, jgaSubmissionSteps, sequenceDraSteps, spatialSteps } from "./recipes"
 import { makeStep, mergeScopes, scopeOfEntries } from "./shared"
+
+// SERVICE_DEPENDENCIES を SSOT に「BP/BS を前提とする service か」を判定する。
+// 外部エンドポイント (jpost / eva) は依存宣言が空なので companion 生成対象外になる。
+const requiresCompanion = (service: Service): boolean => {
+  const deps = SERVICE_DEPENDENCIES[service]
+  return deps.includes("bioproject") || deps.includes("biosample")
+}
 
 // 薄インタプリタ: 同一 service の per-entry routing を 1 枚にまとめる
 const buildTier1Steps = (routings: readonly EntryRouting[]): FlowStep[] => {
@@ -44,7 +51,9 @@ const mergeSameServiceSteps = (steps: readonly FlowStep[]): FlowStep[] => {
   return [...byService.values()]
 }
 
-// 既定 companion: entry が 1 つでもあれば bioproject 1 + biosample 1 (jga entry は対象外)
+// 既定 companion: BP/BS を前提とする DDBJ 内 destination を emit する entry があれば bioproject 1 + biosample 1。
+// jga entry は呼び出し側で除外済み。jpost / eva のように companion 依存を持たない external endpoint だけの
+// フローでは entries が空になり生成されない。
 const companionSteps = (entries: readonly FileEntry[]): FlowStep[] => {
   if (entries.length === 0) return []
   const scope = scopeOfEntries(entries)
@@ -68,10 +77,11 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
   const routings = routeEntries(submission, activeEntries)
   const jgaEntries = routings.filter((r) => r.service === "jga").map((r) => r.entry)
   const plainRoutings = routings.filter((r) => r.service !== "jga")
+  const companionEntries = plainRoutings.filter((r) => requiresCompanion(r.service)).map((r) => r.entry)
 
   const steps = mergeSameServiceSteps([
     ...buildTier1Steps(plainRoutings),
-    ...companionSteps(plainRoutings.map((r) => r.entry)),
+    ...companionSteps(companionEntries),
     ...jgaSubmissionSteps(jgaEntries),
     ...spatialSteps(activeEntries),
     ...expressionDraSteps(activeEntries),

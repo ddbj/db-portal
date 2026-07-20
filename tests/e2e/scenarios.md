@@ -352,9 +352,8 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   3. データ詳細 section の `質量分析` 詳細項目で `プロテオミクス` を選択 (live-commit)
   4. 同詳細項目で `メタボロミクス` に切り替える
 - **期待**:
-  - 手順 3 後、`data-service="jpost"` カードが destination として描画され、role tag `外部登録先`、note 文 `submit.jpost.proteomics` 由来 (プロテオミクスは jPOST に登録する旨) が出る
-  - 手順 4 後、jpost カードが消え `data-service="metabobank"` カードに切り替わる
-  - いずれの構成でも `bioproject` / `biosample` の随伴カードが各 1 件描画される
+  - 手順 3 後、`data-service="jpost"` カードが destination として描画され、role tag `外部登録先`、note 文 `submit.jpost.proteomics` 由来 (プロテオミクスは jPOST に登録する旨) が出る。`jpost` は `SERVICE_DEPENDENCIES` で BP/BS を宣言しないため、この構成では `bioproject` / `biosample` カードは描画されない
+  - 手順 4 後、jpost カードが消え `data-service="metabobank"` カードに切り替わる。`metabobank` は BP/BS 依存を持つので `bioproject` / `biosample` の随伴カードが各 1 件描画される
 
 ### S-SUBMIT-09: 制限公開ヒトで JGA + humandbs 前提ゲート、随伴抑制
 
@@ -418,6 +417,32 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - `data-service="dra"` の `[data-testid="flow-step"]` カードが viewport 内にスクロールイン (`scrollIntoView`、`expect(card).toBeInViewport()`)
 - **備考**: スクロール挙動は DOM 上の実描画でしか検証できないため e2e 専用。staging で常時再現可能。
+
+### S-SUBMIT-14: プロテオーム単独 (jPOST) では BP/BS も DDBJ アカウント誘導も出ない
+
+- **ペルソナ**: P-ANON (未ログイン)
+- **前提**: `/submit` 初期表示
+- **手順**:
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
+  2. `プロテオーム` をトグル
+- **期待**:
+  - `data-service="jpost"` カードが 1 件描画される (`SERVICE_ROLE.jpost = "external"`, 外部登録先バッジ)
+  - `data-service="bioproject"` / `data-service="biosample"` はいずれも 0 件 (`SERVICE_DEPENDENCIES.jpost = []` に基づき companion 抑制)
+  - `[data-testid="account-step"]` が 0 件 (全 step が role=`external` のみで DDBJ アカウントを要さないため誘導を出さない)
+- **備考**: jPOST は DDBJ 外の登録窓口。認証済みユーザーの場合も account step は常に出ない (`showAccountStep = !isAuthenticated && hasDdbjManagedStep` の第 2 条件で false)。
+
+### S-SUBMIT-15: 非ヒト variant 単独 (EVA) では BP/BS も DDBJ アカウント誘導も出ない
+
+- **ペルソナ**: P-ANON (未ログイン)
+- **前提**: `/submit` 初期表示
+- **手順**:
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
+  2. `バリアント` をトグル
+- **期待**:
+  - `data-service="eva"` カードが 1 件描画される (external 登録先)
+  - `data-service="bioproject"` / `data-service="biosample"` はいずれも 0 件 (`SERVICE_DEPENDENCIES.eva = []`。 EVA は EBI ENA / BioSamples に broker するため DDBJ 内 companion は不要)
+  - `[data-testid="account-step"]` が 0 件
+- **備考**: バリアントを他の DDBJ 系種別 (配列リード等) と混在させた場合、混在先の依存で companion と account step が復活する (S-SUBMIT-03 で回帰確認)。
 
 ### E-SUBMIT-01: 未設定の詳細行が notify Tag と warning tone で示される
 

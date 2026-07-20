@@ -107,6 +107,15 @@ graph TD
 - 同一 service の scope は union して 1 step にまとめる
 - `FlowStep.scope` は `groupIds` か `entryIds` の少なくとも一方が非空でなければならない
 
+### アカウント誘導ステップ
+
+`FlowStep[]` の外側にある UI 上のガイダンスとして、 未ログイン時に「DDBJ アカウントの取得」を促す step 0 を表示する。 表示条件は `flow-summary-card` が `SERVICE_ROLE` を参照して決める:
+
+- **表示する**: `!isAuthenticated` かつ、 `steps` に role が `destination` か `companion` の service が 1 つでもある (= DDBJ 管轄の登録先を含む)
+- **表示しない**: 全 step が role = `external` のみ (`humandbs` / `jpost` / `eva`)。 例: proteome → `jpost` only、 非ヒト variant → `eva` only。 これらの登録先は DDBJ アカウントを使わないため誘導を出さない
+
+JGA フローは humandbs (external gate) と jga (destination) を含むため、 誘導は表示される。
+
 ## controlled vocabulary の 4 層
 
 navigator が扱う語彙は DDBJ 由来の **canonical** から派生する 4 層構造を持ち、 層境界を起動時 Zod + parity test で機械検証する (codegen は使わない)。 enum を増減すると意味論が変わるため、 enum 層の編集は人間レビュー必須。
@@ -156,7 +165,7 @@ Tier1 は **KindRoute** の集合で、 1 つの KindRoute は 「1 種別の `w
 
 Tier2 は Tier1 の出力を受けて、 1 種別では完結しない構造を組み立てる。
 
-- **companion 生成**: 非 `jga` の全 entry を scope とする `bioproject + biosample` のペアを 1 組だけ足す (entry が 0 なら出さない)
+- **companion 生成**: 非 `jga` の entry のうち、 emit 先 service が `SERVICE_DEPENDENCIES` で `bioproject` / `biosample` を宣言するもの (= DDBJ 内 destination) だけを scope とする `bioproject + biosample` のペアを 1 組だけ足す (該当 entry が 0 なら出さない)。 外部エンドポイント (`jpost` / `eva`) は DDBJ 内 companion を必要としないため、 これらのみを emit するフローでは BP/BS ステップは生成しない
 - **named recipe**: 1 種別 → 複数 archive、 または submission 集約を要するケースを名前付きで宣言する純関数。 集合 (`jgaSubmissionSteps` / `spatialSteps` / `expressionDraSteps` / `sequenceDraSteps` / `haplotypeSteps`) は `RECIPE_ALLOWLIST` 内に閉じ、 勝手に増えない
 - **順序整列**: 同一 service の Step を 1 枚に union し、 § Step 依存 の `SERVICE_DEPENDENCY_ORDER` で線形に並べる
 
@@ -167,7 +176,7 @@ Tier2 は Tier1 の出力を受けて、 1 種別では完結しない構造を�
 1. 前段カスケード (`isKindEnabled(organismDomain, fileTypeKind)`) で disable された entry を落とす
 2. Tier1 の `routeEntries` で残った entry を `KindRoute` の `when` 列に通し、 first-match で `(entry, service, scope, notes)` の `EntryRouting[]` を得る
 3. `jga` 行と非 `jga` 行に分け、 非 `jga` は service ごとに 1 枚にまとめる
-4. companion を非 `jga` 全 entry を scope とする 1 ペアで足す (entry が 0 なら出さない)
+4. companion を「非 `jga` かつ emit 先 service が BP/BS を依存宣言するもの」の entry を scope とする 1 ペアで足す (該当 entry が 0 なら出さない)
 5. named recipe を順に重ねる
 6. 最後に `mergeSameServiceSteps` で同一 service のカードを 1 枚に集約し、 `SERVICE_DEPENDENCY_ORDER` の線形順で sort する
 
@@ -175,6 +184,7 @@ walk-through:
 
 - **完成ゲノムを公開**: OrganismDomain = `eukaryote`、 1 entry が `sequence` (chip = `assembly-form: genome` + `has-annotation: true`)、 Access = `open`。 Tier1 が `ddbj` (MSS) を emit、 Tier2 companion で `bioproject + biosample` が付く。 結果は `bioproject → biosample → ddbj` の 3 枚
 - **ヒトのシーケンスリードを制限公開**: OrganismDomain = `human`、 1 entry が `sequence-read`、 `hasIdentifier = Yes` の既定で全 sequence-read が `restricted`。 access 導出が `restricted ∧ human` を満たすため Tier1 が `jga` に分岐。 jga entry は companion ペア生成から除外され、 `jgaSubmissionSteps` が humandbs (Policy ゲート) + jga submission の 2 枚を生成する。 結果は `humandbs → jga` の 2 枚
+- **プロテオームを公開 (jPOST のみ)**: OrganismDomain = `eukaryote` (または非ヒト全種、 あるいはヒト × 非-restricted)、 1 entry が `proteome`、 Access = `open`。 Tier1 が `jpost` を emit。 `jpost` は `SERVICE_DEPENDENCIES` で BP/BS を宣言しないため companion 生成対象外。 結果は `jpost` の 1 枚のみ。 全 step が external ロールなので UI 側 (`flow-summary-card`) の DDBJ アカウント誘導ステップも表示されない (§ アカウント誘導ステップ)
 
 ### PBT で固定する不変量
 

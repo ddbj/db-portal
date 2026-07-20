@@ -138,12 +138,15 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
+    // eva は SERVICE_DEPENDENCIES で BP/BS を宣言しないため companion 生成対象外
+    expect(servicesOf(steps)).toEqual(["eva"])
 
     const eva = stepFor(steps, "eva")
     expect(eva.origin).toBe("tier1")
     expect(eva.notes.map((n) => n.messageKey)).toContain("submit.variant.eva.nonHuman")
     expect(steps.some((s) => s.service === "jga")).toBe(false)
+    expect(steps.some((s) => s.service === "bioproject")).toBe(false)
+    expect(steps.some((s) => s.service === "biosample")).toBe(false)
   })
 
   test("deriveFlowSteps_publicHumanVariant_routesToEva", () => {
@@ -168,7 +171,7 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
+    expect(servicesOf(steps)).toEqual(["eva"])
     const eva = stepFor(steps, "eva")
     expect(eva.origin).toBe("tier1")
   })
@@ -219,7 +222,7 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "eva"])
+    expect(servicesOf(steps)).toEqual(["eva"])
     expect(steps.some((s) => s.service === "jga")).toBe(false)
   })
 
@@ -243,8 +246,126 @@ describe("deriveFlowSteps", () => {
 
     const steps = deriveFlowSteps(submission)
 
-    expect(steps.some((s) => s.service === "eva")).toBe(true)
+    expect(servicesOf(steps)).toEqual(["eva"])
     expect(steps.some((s) => s.service === "jga")).toBe(false)
+  })
+
+  test("deriveFlowSteps_publicEukaryoteProteome_routesToJpostWithoutCompanion", () => {
+    const submission: Submission = {
+      preconditions: { organismDomain: "eukaryote" },
+      accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "proteome",
+          access: "open",
+          dataForm: "spectrum",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // jpost は SERVICE_DEPENDENCIES で BP/BS を宣言しないため companion 生成対象外
+    expect(servicesOf(steps)).toEqual(["jpost"])
+    expect(steps.some((s) => s.service === "bioproject")).toBe(false)
+    expect(steps.some((s) => s.service === "biosample")).toBe(false)
+  })
+
+  test("deriveFlowSteps_publicHumanProteome_routesToJpostWithoutCompanion", () => {
+    const submission: Submission = {
+      preconditions: { organismDomain: "human" },
+      accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: true, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "proteome",
+          access: "open",
+          dataForm: "spectrum",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // ヒト × 非-restricted の proteome も jpost に向かい、companion は付かない
+    expect(servicesOf(steps)).toEqual(["jpost"])
+    expect(steps.some((s) => s.service === "bioproject")).toBe(false)
+    expect(steps.some((s) => s.service === "biosample")).toBe(false)
+  })
+
+  test("deriveFlowSteps_restrictedHumanProteome_routesToJga", () => {
+    const submission: Submission = {
+      preconditions: { organismDomain: "human" },
+      accessSection: { restrictedPreference: true, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "e1",
+          fileTypeKind: "proteome",
+          access: "restricted",
+          dataForm: "spectrum",
+          groupId: "g1",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // 制限公開ヒトは proteome も JGA に分岐する。humandbs 前提ゲートは付くが companion は付かない
+    expect(servicesOf(steps)).toEqual(["humandbs", "jga"])
+    expect(steps.some((s) => s.service === "jpost")).toBe(false)
+    expect(steps.some((s) => s.service === "bioproject")).toBe(false)
+    expect(steps.some((s) => s.service === "biosample")).toBe(false)
+  })
+
+  test("deriveFlowSteps_proteomeAndMetabolomicsMixed_companionAttachedFromMetabobankOnly", () => {
+    const submission: Submission = {
+      preconditions: { organismDomain: "eukaryote" },
+      accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
+      fileEntries: [
+        {
+          id: "prot",
+          fileTypeKind: "proteome",
+          access: "open",
+          dataForm: "spectrum",
+          groupId: "gp",
+          chipTags: [],
+        },
+        {
+          id: "meta",
+          fileTypeKind: "metabolomics",
+          access: "open",
+          dataForm: "spectrum",
+          groupId: "gm",
+          chipTags: [],
+        },
+      ],
+      fileGroups: [
+        { id: "gp", groupType: "single", memberFileIds: ["prot"], linkedGroupIds: [] },
+        { id: "gm", groupType: "single", memberFileIds: ["meta"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    // metabobank は BP/BS 依存を持つので companion が付く。scope はメタボロミクスの entry だけを含む
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "metabobank", "jpost"])
+    const bp = stepFor(steps, "bioproject")
+    expect(bp.scope.entryIds).toEqual(["meta"])
+    const bs = stepFor(steps, "biosample")
+    expect(bs.scope.entryIds).toEqual(["meta"])
   })
 
   test("deriveFlowSteps_magChip_routesAssemblyToDdbjTradViaTier1WithDefaultCompanion", () => {

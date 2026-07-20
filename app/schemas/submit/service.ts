@@ -101,22 +101,24 @@ export const serviceBadgeColor = ({
 }
 
 // service 間の前提関係 (前提 → 依存先)。カード順序の依存順と「先に済ませること」の両方を駆動する。
-// companion (bioproject/biosample) は destination の前提、humandbs (Policy ゲート) は jga の前提、
+// companion (bioproject/biosample) は DDBJ 内 destination の前提、humandbs (Policy ゲート) は jga の前提、
 // dra は gea (sequencing 2 段) / ddbj (MAG) の前提。jga は companion を抑制するので bioproject/biosample に依存しない。
+// 外部エンドポイント (jpost / eva) は最終格納先が DDBJ 外 (jPOST / EBI ENA・BioSamples) で、
+// DDBJ 内 BioProject/BioSample を前提としないため companion 依存を持たない。
+// この宣言は companion Step 生成 (§ derive-flow-steps.companionSteps) の SSOT でもある。
 export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>> = {
   "umbrella-bioproject": [],
   "bioproject": ["umbrella-bioproject"],
   "biosample": [],
   "humandbs": [],
   "jpost": [],
+  "eva": [],
   "dra": ["bioproject", "biosample"],
   "jga": ["humandbs"],
   "ddbj": ["bioproject", "biosample", "dra"],
   "nsss": ["bioproject", "biosample"],
-
   "gea": ["bioproject", "biosample", "dra"],
   "metabobank": ["bioproject", "biosample"],
-  "eva": ["bioproject", "biosample"],
 }
 
 // SERVICE_DEPENDENCIES のトポロジカル順を実現する線形順 (前提が依存先より前)。

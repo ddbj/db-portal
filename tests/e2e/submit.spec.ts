@@ -31,6 +31,8 @@ const detailItemWith = (page: Page, radio: RegExp) =>
 
 const validationBanner = (page: Page) => page.getByText(/確認事項が \d+ 件あります/)
 
+const accountStep = (page: Page) => page.locator('[data-testid="account-step"]')
+
 const toggleAccessSwitch = async (page: Page, name: RegExp): Promise<void> => {
   await page.getByRole("switch", { name }).check()
 }
@@ -141,17 +143,19 @@ test.describe("Submit Domain", () => {
     await expect(kindButton(page, "塩基配列")).toBeEnabled()
   })
 
-  test("S-SUBMIT-08: プロテオーム→jPOST / メタボロミクス→MetaboBank", async ({ page }) => {
+  test("S-SUBMIT-08: プロテオーム→jPOST (companion 抑制) / メタボロミクス→MetaboBank", async ({ page }) => {
     await page.goto("/submit")
     await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
     await toggleKind(page, "プロテオーム")
 
+    // jpost は SERVICE_DEPENDENCIES で BP/BS を宣言しないため、companion (bioproject / biosample) は付かない
     await expect(flowStep(page, "jpost")).toHaveCount(1)
-    await expect(flowStep(page, "bioproject")).toHaveCount(1)
-    await expect(flowStep(page, "biosample")).toHaveCount(1)
+    await expect(flowStep(page, "bioproject")).toHaveCount(0)
+    await expect(flowStep(page, "biosample")).toHaveCount(0)
 
     await toggleKind(page, "プロテオーム")
     await toggleKind(page, "メタボロミクス")
+    // metabobank は BP/BS 依存を持つので companion 復活
     await expect(flowStep(page, "jpost")).toHaveCount(0)
     await expect(flowStep(page, "metabobank")).toHaveCount(1)
     await expect(flowStep(page, "bioproject")).toHaveCount(1)
@@ -174,6 +178,31 @@ test.describe("Submit Domain", () => {
 
     await expect(flowStep(page, "bioproject")).toHaveCount(0)
     await expect(flowStep(page, "biosample")).toHaveCount(0)
+    // jga は destination (DDBJ) なので DDBJ アカウント誘導は残る (未ログイン時)
+    await expect(accountStep(page)).toHaveCount(1)
+  })
+
+  test("S-SUBMIT-14: プロテオーム単独 (jPOST) では BP/BS も DDBJ アカウント誘導も出ない", async ({ page }) => {
+    await page.goto("/submit")
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
+    await toggleKind(page, "プロテオーム")
+
+    await expect(flowStep(page, "jpost")).toHaveCount(1)
+    await expect(flowStep(page, "bioproject")).toHaveCount(0)
+    await expect(flowStep(page, "biosample")).toHaveCount(0)
+    // 全 step が external (jpost) のみなので DDBJ アカウント誘導は出ない (未ログイン状態で確認)
+    await expect(accountStep(page)).toHaveCount(0)
+  })
+
+  test("S-SUBMIT-15: 非ヒト variant 単独 (EVA) では BP/BS も DDBJ アカウント誘導も出ない", async ({ page }) => {
+    await page.goto("/submit")
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
+    await toggleKind(page, "バリアント")
+
+    await expect(flowStep(page, "eva")).toHaveCount(1)
+    await expect(flowStep(page, "bioproject")).toHaveCount(0)
+    await expect(flowStep(page, "biosample")).toHaveCount(0)
+    await expect(accountStep(page)).toHaveCount(0)
   })
 
   test("S-SUBMIT-12: 種別トグル解除でフローと確認事項が解消する", async ({ page }) => {

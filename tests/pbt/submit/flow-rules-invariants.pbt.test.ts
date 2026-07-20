@@ -8,8 +8,10 @@ import {
   type FileEntry,
   type FlowStep,
   IDENTIFIABLE_KINDS,
+  isCompanionService,
   isSequencingSpatialPlatform,
   isSubmissionEndpoint,
+  SERVICE_DEPENDENCIES,
   SERVICE_DEPENDENCY_ORDER,
   type Submission,
 } from "../../../app/schemas/submit"
@@ -63,15 +65,39 @@ test.prop([arbSubmission], RUNS)(
   },
 )
 
+// step の service が BP/BS を依存宣言している (= DDBJ 内 companion が必要な destination) か
+const requiresCompanion = (s: FlowStep): boolean => {
+  if (isCompanionService(s.service)) return false
+  const deps = SERVICE_DEPENDENCIES[s.service]
+  return deps.includes("bioproject") || deps.includes("biosample")
+}
+
+// companion は Tier1 の primary routing (= ユーザーが選んだ種別の主登録先) に対して付与する。
+// recipe (jgaSubmissionSteps / expressionDraSteps 等) が追加する副次 step は、そのカード自身の依存宣言に
+// 関わらず companion 生成の起点にはならない (jga 制御下の raw DRA に DDBJ 側 BP/BS を要求しない等)。
+const isTier1CompanionSource = (s: FlowStep): boolean => s.origin === "tier1" && requiresCompanion(s)
+
 test.prop([arbSubmission], RUNS)(
-  "deriveFlowSteps_plainSubmission_yieldsExactlyOneBioprojectAndBiosample",
+  "deriveFlowSteps_hasCompanionRequiringTier1Step_yieldsExactlyOneBioprojectAndBiosample",
   (submission) => {
     const steps = deriveFlowSteps(submission)
-    const jgaIds = entryIdsOfService(steps, (s) => s.service === "jga")
-    // enable かつ非 jga の entry があるときだけ既定 companion が出る
-    fc.pre(submission.fileEntries.some((e) => isActive(submission, e) && !jgaIds.has(e.id)))
+    // Tier1 で BP/BS 依存を持つ service を emit する step が 1 つでも実在するときだけ既定 companion が出る
+    fc.pre(steps.some(isTier1CompanionSource))
     expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
     expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_noCompanionRequiringTier1Step_yieldsNoBioprojectOrBiosample",
+  (submission) => {
+    const steps = deriveFlowSteps(submission)
+    // step は生成されたが、Tier1 で BP/BS 依存を宣言する service が 1 つも無いフロー
+    // (例: proteome → jpost only、非ヒト variant → eva only、humandbs+jga+recipe-dra のみ) では companion を出さない
+    fc.pre(steps.length > 0)
+    fc.pre(!steps.some(isTier1CompanionSource))
+    expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(0)
+    expect(steps.filter((s) => s.service === "biosample")).toHaveLength(0)
   },
 )
 
