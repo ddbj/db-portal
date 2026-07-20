@@ -85,6 +85,18 @@ export const useProseEnhance = (selector: string): void => {
     // 完了を待って直列に再実行する (両関数は既強化ノードを skip するため冪等)。
     let running = false
     let pending = false
+    // SSR HTML では mermaid が未 render の `<pre>` のままで、 `<ScrollRestoration>`
+    // はこの高さを前提に hash 位置へジャンプする。 その後 client で mermaid が SVG に
+    // 差し替わって以降のセクションが下方向にずれるため、 最初の enhance loop が沈静化
+    // した時点で 1 度だけ hash target へ再スクロールし直す。
+    let rescrollPending = window.location.hash !== ""
+    const rescrollToHash = (): void => {
+      if (!rescrollPending) return
+      rescrollPending = false
+      const id = decodeURIComponent(window.location.hash.slice(1))
+      if (id === "") return
+      document.getElementById(id)?.scrollIntoView()
+    }
     const enhance = (): void => {
       if (running) {
         pending = true
@@ -98,7 +110,10 @@ export const useProseEnhance = (selector: string): void => {
         if (pending && !cancelled) {
           pending = false
           enhance()
+
+          return
         }
+        if (!cancelled) rescrollToHash()
       })
     }
 
