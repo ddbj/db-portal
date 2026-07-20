@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import type { DbPortalFacets, ParseNode } from "~/lib/api"
 import type { DbSlug } from "~/lib/search-scope"
@@ -14,17 +14,26 @@ export type SearchResultsQuery = {
   // q-aware facets from the same response, falling back to the cached match_all
   // placeholder until the first response lands.
   facets: DbPortalFacets | null
-  // No data for the active key yet: the route paints the skeleton. A key with
-  // cached data (e.g. re-toggling a facet) is not pending, so it renders at once.
+  // True only until the very first response for this hook instance lands. A
+  // subsequent edit keeps the prior data around (see keepPreviousData below), so
+  // this stays false and the route does not fall back to the skeleton.
   isPending: boolean
+  // Any fetch is currently in flight (initial or a keyed refetch). The route
+  // uses this to render a subtle "updating" indicator on the results column
+  // without unmounting the sidebar / input surfaces.
+  isFetching: boolean
   isError: boolean
   refetch: () => void
 }
 
 // Drive the results from the client-held AST: the query key is the search intent
-// (scope + AST + paging), so a facet / builder edit refetches at once with a
-// skeleton, and the URL is synced from the echoed `dsl` separately. One request
-// yields hits, q-aware facets, and the `dsl` (no serialize / parse round trips).
+// (scope + AST + paging), so an edit refetches at once and the URL is synced from
+// the echoed `dsl` separately. One request yields hits, q-aware facets, and the
+// `dsl` (no serialize / parse round trips).
+//
+// keepPreviousData keeps the last resolved response mounted while a new key
+// fetches, so the sidebar's controlled inputs never unmount mid-typing (which
+// would drop caret focus).
 export const useSearchResults = (
   db: DbSlug | null,
   ast: ParseNode,
@@ -38,6 +47,7 @@ export const useSearchResults = (
     queryFn: () => fetchSearchResults(db, ast, params, baseUrl),
     enabled,
     refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
   })
 
   return {
@@ -45,6 +55,7 @@ export const useSearchResults = (
     dsl: query.data?.dsl ?? null,
     facets: query.data?.facets ?? placeholderFacets,
     isPending: enabled && query.isPending,
+    isFetching: enabled && query.isFetching,
     isError: query.isError,
     refetch: () => void query.refetch(),
   }

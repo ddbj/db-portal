@@ -386,7 +386,14 @@ const SearchResultsRoute = () => {
               <Section padTop="sm" padBottom="lg">
                 <div className="grid gap-section-mid sm:grid-cols-[var(--spacing-sidebar)_1fr]">
                   {facetPanel}
-                  <div role="region" aria-label={t("search.a11y.resultsRegion")} className="min-w-0">
+                  <div
+                    role="region"
+                    aria-label={t("search.a11y.resultsRegion")}
+                    aria-busy={results.isFetching}
+                    className={`min-w-0 transition-opacity duration-150 ${
+                      results.isFetching ? "opacity-70" : "opacity-100"
+                    }`}
+                  >
                     {result.kind === "cross"
                       ? (
                         <>
