@@ -1,7 +1,7 @@
 import { fc, test } from "@fast-check/vitest"
 import { expect } from "vitest"
 
-import { deriveAccess } from "../../../app/features/submit/access"
+import { deriveAccess, requiresHumandbsApplication } from "../../../app/features/submit/access"
 import { isKindEnabled } from "../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
 import {
@@ -192,6 +192,28 @@ test.prop([arbSubmission], RUNS)(
       if (isActive(submission, e)) continue
       expect(inAnyScope.has(e.id)).toBe(false)
     }
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_requiresHumandbsApplication_yieldsExactlyOneHumandbsStep",
+  (submission) => {
+    const steps = deriveFlowSteps(submission)
+    fc.pre(steps.length > 0)
+    fc.pre(requiresHumandbsApplication(submission.preconditions.organismDomain, submission.accessSection))
+    // 指針対象 (ヒト × ethicsCompliance/hasIdentifier/restrictedPreference のいずれか) では
+    // destination が JGA でも非 JGA でも humandbs 前提ゲートが 1 枚出る
+    expect(steps.filter((s) => s.service === "humandbs")).toHaveLength(1)
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_notRequiresHumandbsApplication_yieldsNoHumandbsStep",
+  (submission) => {
+    const steps = deriveFlowSteps(submission)
+    fc.pre(!requiresHumandbsApplication(submission.preconditions.organismDomain, submission.accessSection))
+    // 指針対象外 (非ヒト、 または publiclyAvailable / microbialAnalysis のみ ON) では humandbs は出ない
+    expect(steps.some((s) => s.service === "humandbs")).toBe(false)
   },
 )
 

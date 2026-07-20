@@ -3,6 +3,15 @@ import { IDENTIFIABLE_KINDS } from "~/schemas/submit"
 import type { FileEntryChip } from "~/schemas/submit/file-entry"
 import type { AccessSection } from "~/schemas/submit/submission"
 
+// ヒト × 指針対象 (法令・倫理指針に沿ったヒト研究、 個人識別符号、 制限公開希望のいずれか) は
+// NBDC ヒトデータベースへの提供申請 (humandbs) を要する。 Access (open/restricted) と直交する軸。
+export const requiresHumandbsApplication = (
+  organismDomain: OrganismDomain | null,
+  section: AccessSection,
+): boolean =>
+  organismDomain === "human" &&
+  (section.restrictedPreference || section.hasIdentifier || section.ethicsCompliance)
+
 export const deriveAccess = (
   organismDomain: OrganismDomain | null,
   section: AccessSection,

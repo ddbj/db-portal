@@ -64,6 +64,16 @@ UI 構成 (上部トグル 2 + サブトグル 3 + 種別ごと ChipAxis):
 - 同一 submission 内で `restricted` / `open` の混在を許す (種別ごと導出のため)
 - `restrictedPreference` と `hasIdentifier` はいずれも全 restricted トリガだが、 主観的希望と客観的事実 (法令上の該否) を表す別軸として並置する
 
+### 指針対象 (humandbs 申請) 判定
+
+「ヒト × 指針の対象」 は NBDC ヒトデータベースへの提供申請 (humandbs) を必要とする軸で、 `Access` (`open` / `restricted`) と直交する。 判定は `app/features/submit/access.ts` の `requiresHumandbsApplication` が SSOT:
+
+`requiresHumandbsApplication = (organismDomain === "human") ∧ (restrictedPreference ∨ hasIdentifier ∨ ethicsCompliance)`
+
+- `publiclyAvailable` / `microbialAnalysis` は 「指針対象外」 として扱い、 上 3 つのいずれも false であれば humandbs 申請は不要
+- true の submission では destination (JGA / DRA / GEA / DDBJ / MetaboBank / NSSS) と独立に `humandbs` step が 1 枚出る
+- 非制限公開 (`open`) でも humandbs 申請が必要な組合せは正当な状態で、 「open = 申請不要」 の含意は持たない
+
 ## 出力 FlowStep カード
 
 下段サマリーは `FlowStep[]` を Step 依存グラフのトポロジカル順に並べたもの。 各 FlowStep の `service` enum 値・`role` 割当・accession 形式・slug 解決は `app/schemas/submit/service.ts` が SSOT、 外部 URL は `app/content/services/*.content.tsx` が SSOT。
@@ -166,7 +176,10 @@ Tier1 は **KindRoute** の集合で、 1 つの KindRoute は 「1 種別の `w
 Tier2 は Tier1 の出力を受けて、 1 種別では完結しない構造を組み立てる。
 
 - **companion 生成**: 非 `jga` の entry のうち、 emit 先 service が `SERVICE_DEPENDENCIES` で `bioproject` / `biosample` を宣言するもの (= DDBJ 内 destination) だけを scope とする `bioproject + biosample` のペアを 1 組だけ足す (該当 entry が 0 なら出さない)。 外部エンドポイント (`jpost` / `eva`) は DDBJ 内 companion を必要としないため、 これらのみを emit するフローでは BP/BS ステップは生成しない
-- **named recipe**: 1 種別 → 複数 archive、 または submission 集約を要するケースを名前付きで宣言する純関数。 集合 (`jgaSubmissionSteps` / `spatialSteps` / `expressionDraSteps` / `sequenceDraSteps` / `haplotypeSteps`) は `RECIPE_ALLOWLIST` 内に閉じ、 勝手に増えない
+- **named recipe**: 1 種別 → 複数 archive、 または submission 集約を要するケースを名前付きで宣言する純関数。 集合 (`humandbsPolicySteps` / `jgaDatasetSteps` / `spatialSteps` / `expressionDraSteps` / `sequenceDraSteps` / `haplotypeSteps`) は `RECIPE_ALLOWLIST` 内に閉じ、 勝手に増えない
+  - `humandbsPolicySteps` は § 指針対象 (humandbs 申請) 判定 が true の submission に対して、 destination に関係なく `humandbs` step を 1 枚 emit する
+  - `jgaDatasetSteps` は Tier1 で `jga` に routing された entry を scope とする `jga` step を 1 枚 emit する (前提ゲート `humandbs` は `humandbsPolicySteps` が担う)
+  - JGA フローでは両 recipe が同じ humandbs エンティティを含意しないが、 humandbs step は 1 枚に集約され `humandbsPolicySteps` の出力がそのまま採用される
 - **順序整列**: 同一 service の Step を 1 枚に union し、 § Step 依存 の `SERVICE_DEPENDENCY_ORDER` で線形に並べる
 
 ### 合成順序と walk-through
@@ -177,14 +190,15 @@ Tier2 は Tier1 の出力を受けて、 1 種別では完結しない構造を�
 2. Tier1 の `routeEntries` で残った entry を `KindRoute` の `when` 列に通し、 first-match で `(entry, service, scope, notes)` の `EntryRouting[]` を得る
 3. `jga` 行と非 `jga` 行に分け、 非 `jga` は service ごとに 1 枚にまとめる
 4. companion を「非 `jga` かつ emit 先 service が BP/BS を依存宣言するもの」の entry を scope とする 1 ペアで足す (該当 entry が 0 なら出さない)
-5. named recipe を順に重ねる
+5. named recipe を順に重ねる (`humandbsPolicySteps` は指針対象判定に基づき active entries を scope とする humandbs 1 枚を足し、 `jgaDatasetSteps` は jga entries を scope とする jga 1 枚を足す)
 6. 最後に `mergeSameServiceSteps` で同一 service のカードを 1 枚に集約し、 `SERVICE_DEPENDENCY_ORDER` の線形順で sort する
 
 walk-through:
 
 - **完成ゲノムを公開**: OrganismDomain = `eukaryote`、 1 entry が `sequence` (chip = `assembly-form: genome` + `has-annotation: true`)、 Access = `open`。 Tier1 が `ddbj` (MSS) を emit、 Tier2 companion で `bioproject + biosample` が付く。 結果は `bioproject → biosample → ddbj` の 3 枚
-- **ヒトのシーケンスリードを制限公開**: OrganismDomain = `human`、 1 entry が `sequence-read`、 `hasIdentifier = Yes` の既定で全 sequence-read が `restricted`。 access 導出が `restricted ∧ human` を満たすため Tier1 が `jga` に分岐。 jga entry は companion ペア生成から除外され、 `jgaSubmissionSteps` が humandbs (Policy ゲート) + jga submission の 2 枚を生成する。 結果は `humandbs → jga` の 2 枚
-- **プロテオームを公開 (jPOST のみ)**: OrganismDomain = `eukaryote` (または非ヒト全種、 あるいはヒト × 非-restricted)、 1 entry が `proteome`、 Access = `open`。 Tier1 が `jpost` を emit。 `jpost` は `SERVICE_DEPENDENCIES` で BP/BS を宣言しないため companion 生成対象外。 結果は `jpost` の 1 枚のみ。 全 step が external ロールなので UI 側 (`flow-summary-card`) の DDBJ アカウント誘導ステップも表示されない (§ アカウント誘導ステップ)
+- **ヒトのシーケンスリードを制限公開**: OrganismDomain = `human`、 1 entry が `sequence-read`、 `hasIdentifier = Yes` の既定で全 sequence-read が `restricted`。 access 導出が `restricted ∧ human` を満たすため Tier1 が `jga` に分岐。 jga entry は companion ペア生成から除外され、 `humandbsPolicySteps` が humandbs (Policy ゲート) を、 `jgaDatasetSteps` が jga submission を emit する。 結果は `humandbs → jga` の 2 枚
+- **ヒトの空間トランスクリプトームを非制限公開 (指針対象)**: OrganismDomain = `human`、 1 entry が `spatial-transcriptomics`、 default AccessSection (`ethicsCompliance = true`)。 per-kind default で `open` (matrix 系は `IDENTIFIABLE_KINDS` に含まれない) だが `requiresHumandbsApplication` が true なので `humandbsPolicySteps` が humandbs を emit。 Tier1 は `gea` を emit、 Tier2 companion で `bioproject + biosample` が付く。 結果は `humandbs → bioproject → biosample → gea` の 4 枚
+- **プロテオームを公開 (jPOST のみ)**: OrganismDomain = `eukaryote` (または非ヒト全種、 あるいはヒト × 非-restricted × 指針対象外)、 1 entry が `proteome`、 Access = `open`。 Tier1 が `jpost` を emit。 `jpost` は `SERVICE_DEPENDENCIES` で BP/BS を宣言しないため companion 生成対象外。 指針対象外なので humandbs も出ない。 結果は `jpost` の 1 枚のみ。 全 step が external ロールなので UI 側 (`flow-summary-card`) の DDBJ アカウント誘導ステップも表示されない (§ アカウント誘導ステップ)
 
 ### PBT で固定する不変量
 
@@ -192,6 +206,8 @@ walk-through:
 
 - **冪等性**: 同じ input に対して sort も含む同一 output
 - **JGA 排他**: 任意の種別について `restricted ∧ OrganismDomain = human` なら JGA scope、 それ以外なら公開系 destination scope。 同じ種別が両方に入らない
+- **humandbs-when-subject-to-policy**: `requiresHumandbsApplication(organismDomain, accessSection)` が true かつ active entry が 1 件以上ある submission では `humandbs` step が 1 枚出る (JGA フローかどうかに関係なく)
+- **humandbs-not-when-out-of-scope**: `requiresHumandbsApplication` が false の submission では `humandbs` step は 0 枚
 - **no-orphan-destination**: enable された全種別が bioproject / biosample 以外に最低 1 つの destination service step に入る
 - **conflict-kind-no-step**: 前段で disable された種別は step を生成せず、 その entryId はどの step scope にも現れない
 - **cascade-no-deadend**: 任意 OrganismDomain で enable された種別を選ぶと destination service が 1 枚以上出る

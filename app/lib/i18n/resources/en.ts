@@ -329,7 +329,7 @@ export const en: Resources = {
       group: {
         companion: { title: "Project & sample info", sub: "Required for all submissions" },
         restricted: { title: "Restricted-access data", sub: "A submission application is required before data submission" },
-        open: { title: "Open-access data", sub: "No application needed" },
+        open: { title: "Open-access data", sub: "Submit directly to the destination" },
         destination: { title: "Submission destinations", sub: "Per data type" },
         nhaOrientation: { title: "Outside the data type list", sub: "NHA direct submission" },
       },
@@ -337,7 +337,7 @@ export const en: Resources = {
         mixed: "This data includes both restricted and open access",
         mixedSub: "Submission is split into 2 routes.",
         allOpen: "All data is open access",
-        allOpenSub: "No application is needed. You can submit directly.",
+        allOpenSub: "You can submit directly to the destination. If your data is subject to the human data policy, a humandbs application step will also appear.",
         allRestricted: "All data is restricted access",
         allRestrictedSub: "A submission application to the NBDC Human Database is required first.",
         empty: "Add files to see the access level for each data type",

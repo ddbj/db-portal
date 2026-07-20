@@ -43,7 +43,7 @@ describe("submit routing catalog", () => {
   })
 
   test("recipeAllowlist_isFixed", () => {
-    expect([...RECIPE_ALLOWLIST]).toEqual(["jga-submission", "spatial", "sequence-dra", "expression-dra", "haplotype"])
+    expect([...RECIPE_ALLOWLIST]).toEqual(["humandbs-policy", "jga-submission", "spatial", "sequence-dra", "expression-dra", "haplotype"])
   })
 
   test("catalog_organismDomainRepos_areSubmissionEndpoints", () => {

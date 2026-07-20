@@ -40,7 +40,7 @@ vitestTest("RECIPE_ALLOWLIST_isImmutable", () => {
 test.prop([arbSubmission], RUNS)(
   "recipeStepIds_alwaysTraceToAllowedPrefixes",
   (submission) => {
-    const allowedPrefixes = ["recipe-jga", "recipe-spatial", "recipe-expression", "recipe-sequence", "recipe-umbrella"]
+    const allowedPrefixes = ["recipe-humandbs", "recipe-jga", "recipe-spatial", "recipe-expression", "recipe-sequence", "recipe-umbrella"]
     for (const s of recipeSteps(deriveFlowSteps(submission))) {
       expect(allowedPrefixes.some((p) => s.id.startsWith(p))).toBe(true)
     }

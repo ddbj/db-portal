@@ -1035,7 +1035,7 @@ export const ja: Resources = {
       group: {
         companion: { title: "プロジェクト・試料の情報", sub: "すべての登録で必要" },
         restricted: { title: "制限公開のデータ", sub: "データ登録の前にデータ提供申請が必要" },
-        open: { title: "非制限公開のデータ", sub: "申請は不要" },
+        open: { title: "非制限公開のデータ", sub: "登録先へ直接登録" },
         destination: { title: "登録先", sub: "データ種別ごと" },
         nhaOrientation: { title: "種別グリッド外のデータ", sub: "NHA への直接登録" },
       },
@@ -1043,7 +1043,7 @@ export const ja: Resources = {
         mixed: "このデータは制限公開と非制限公開の両方を含みます",
         mixedSub: "登録は下の 2 ルートに分かれます。",
         allOpen: "このデータはすべて非制限公開です",
-        allOpenSub: "申請は不要です。そのまま登録できます。",
+        allOpenSub: "登録先へ直接登録できます。指針の対象であれば humandbs 申請ステップが並びます。",
         allRestricted: "このデータはすべて制限公開です",
         allRestrictedSub: "登録前に NBDC ヒトデータベースへの提供申請が必要です。",
         empty: "ファイルを追加すると、データ種別ごとの公開区分が表示されます",

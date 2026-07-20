@@ -4,7 +4,7 @@ import { isKindEnabled } from "../cascade"
 import { type EntryRouting, routeEntries } from "./interpreter"
 import { ENGINE_MESSAGE_KEYS as MK } from "./messages"
 import { byServiceDependencyOrder } from "./ordering"
-import { expressionDraSteps, haplotypeSteps, jgaSubmissionSteps, sequenceDraSteps, spatialSteps } from "./recipes"
+import { expressionDraSteps, haplotypeSteps, humandbsPolicySteps, jgaDatasetSteps, sequenceDraSteps, spatialSteps } from "./recipes"
 import { makeStep, mergeScopes, scopeOfEntries } from "./shared"
 
 // SERVICE_DEPENDENCIES を SSOT に「BP/BS を前提とする service か」を判定する。
@@ -82,7 +82,8 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
   const steps = mergeSameServiceSteps([
     ...buildTier1Steps(plainRoutings),
     ...companionSteps(companionEntries),
-    ...jgaSubmissionSteps(jgaEntries),
+    ...humandbsPolicySteps(activeEntries, organismDomain, submission.accessSection),
+    ...jgaDatasetSteps(jgaEntries),
     ...spatialSteps(activeEntries),
     ...expressionDraSteps(activeEntries),
     ...sequenceDraSteps(activeEntries),
