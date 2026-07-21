@@ -337,7 +337,7 @@ export const en: Resources = {
         mixed: "This data includes both restricted and open access",
         mixedSub: "Submission is split into 2 routes.",
         allOpen: "All data is open access",
-        allOpenSub: "You can submit directly to the destination. If your data is subject to the human data policy, a humandbs application step will also appear.",
+        allOpenSub: "You can submit directly to the destination. If any of the data is subject to the guideline, a submission application to the NBDC Human Database is also required.",
         allRestricted: "All data is restricted access",
         allRestrictedSub: "A submission application to the NBDC Human Database is required first.",
         empty: "Add files to see the access level for each data type",
