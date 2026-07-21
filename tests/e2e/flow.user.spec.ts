@@ -34,17 +34,19 @@ test.describe("Flow (cross-cutting) Domain", () => {
     const me = await page.request.get("/api/me")
     expect(me.status()).toBe(200)
 
-    const logoutLink = page.getByRole("link", {
+    // logout は CSRF 対策で POST form の submit button。
+    const logoutButton = page.getByRole("button", {
       name: /ログアウト|Sign out/i,
     })
-    await expect(logoutLink).toBeVisible({ timeout: 10_000 })
-    await expect(logoutLink).toHaveAttribute(
-      "href",
+    await expect(logoutButton).toBeVisible({ timeout: 10_000 })
+    const logoutForm = logoutButton.locator("xpath=ancestor::form")
+    await expect(logoutForm).toHaveAttribute(
+      "action",
       "/api/auth/logout?return_to=%2Fsubmit",
     )
 
-    // 手順 5: 「ログアウト」 link をクリックして Keycloak の logout を経由する。
-    await logoutLink.click()
+    // 手順 5: 「ログアウト」 button をクリックして Keycloak の logout を経由する。
+    await logoutButton.click()
 
     // logout-callback が return_to (= /submit) に戻し、session 削除後 Header 右が「ログイン」 link に戻る。
     await page.waitForURL(/\/submit$/, { timeout: 30_000 })

@@ -34,7 +34,8 @@ const validationBanner = (page: Page) => page.getByText(/確認事項が \d+ 件
 const accountStep = (page: Page) => page.locator('[data-testid="account-step"]')
 
 const toggleAccessSwitch = async (page: Page, name: RegExp): Promise<void> => {
-  await page.getByRole("switch", { name }).check()
+  // role="switch" は sr-only <input> にあり、通常の click は wrapping <label> に intercept される。
+  await page.getByRole("switch", { name }).check({ force: true })
 }
 
 test.describe("Submit Domain", () => {

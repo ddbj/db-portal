@@ -6,7 +6,7 @@ const LOGIN_LINK = /ログイン|sign\s*in|log\s*in/i
 const LOGOUT_LINK = /ログアウト|sign\s*out|log\s*out/i
 
 test.describe("Auth Domain (authenticated)", () => {
-  test("S-AUTH-02: ログイン済 Header に user 名 + 「ログアウト」 link", async ({ page }) => {
+  test("S-AUTH-02: ログイン済 Header に user 名 + 「ログアウト」 button", async ({ page }) => {
     await page.goto("/")
 
     const meResponse = await page.request.get("/api/me")
@@ -15,10 +15,13 @@ test.describe("Auth Domain (authenticated)", () => {
     const body = (await meResponse.json()) as { user: { sub: string; name: string; email: string } }
     expect(body.user.name).toBeTruthy()
 
-    const logoutLink = page.getByRole("link", { name: LOGOUT_LINK }).first()
-    await expect(logoutLink).toBeVisible({ timeout: 10_000 })
-    await expect(logoutLink).toContainText(body.user.name)
-    await expect(logoutLink).toHaveAttribute("href", "/api/auth/logout?return_to=%2F")
+    // logout は CSRF 対策で POST form の submit button になっている。
+    const logoutButton = page.getByRole("button", { name: LOGOUT_LINK }).first()
+    await expect(logoutButton).toBeVisible({ timeout: 10_000 })
+    await expect(logoutButton).toContainText(body.user.name)
+    const logoutForm = logoutButton.locator("xpath=ancestor::form")
+    await expect(logoutForm).toHaveAttribute("action", "/api/auth/logout?return_to=%2F")
+    await expect(logoutForm).toHaveAttribute("method", /post/i)
 
     await expect(page.getByRole("link", { name: LOGIN_LINK })).toHaveCount(0)
   })
@@ -29,9 +32,9 @@ test.describe("Auth Domain (authenticated)", () => {
     await page.context().clearCookies()
     await loginViaKeycloak(page, "/")
 
-    const logoutLink = page.getByRole("link", { name: LOGOUT_LINK }).first()
-    await expect(logoutLink).toBeVisible({ timeout: 10_000 })
-    await logoutLink.click()
+    const logoutButton = page.getByRole("button", { name: LOGOUT_LINK }).first()
+    await expect(logoutButton).toBeVisible({ timeout: 10_000 })
+    await logoutButton.click()
 
     await page.waitForURL(/\/(en\/?)?$/, { timeout: 30_000 })
 
@@ -73,7 +76,7 @@ test.describe("Auth Domain (authenticated)", () => {
     expect(body.user.name).toBeTruthy()
 
     await expect(
-      page.getByRole("link", { name: LOGOUT_LINK }).first(),
+      page.getByRole("button", { name: LOGOUT_LINK }).first(),
     ).toContainText(body.user.name, { timeout: 10_000 })
   })
 
@@ -86,7 +89,8 @@ test.describe("Auth Domain (authenticated)", () => {
     await page.context().clearCookies()
     await loginViaKeycloak(page, "/")
 
-    const logoutResponse = await page.request.get("/api/auth/logout?return_to=/", {
+    // logout は CSRF 対策で POST。
+    const logoutResponse = await page.request.post("/api/auth/logout?return_to=/", {
       maxRedirects: 0,
     })
     expect(logoutResponse.status()).toBe(302)
