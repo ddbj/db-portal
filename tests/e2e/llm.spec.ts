@@ -178,8 +178,10 @@ test.describe("LLM Domain", () => {
     await expect(page).toHaveURL(/\/search\/results\?q=cancer&db=bioproject/)
     // The failure reads as a validation failure: the box turns invalid.
     await expect(input).toHaveAttribute("aria-invalid", "true")
-    // The implementation surfaces errors inline, never via a toast/status node.
-    await expect(page.getByRole("status")).toHaveCount(0)
+    // The implementation surfaces errors inline (role=alert), never via a toast/status node.
+    // Unrelated status roles on the page (per-DB hardLimit badge, "生成中" indicator while
+    // streaming) are outside this assertion's intent — filter to error text only.
+    await expect(page.getByRole("status").filter({ hasText: generateError })).toHaveCount(0)
 
     // 再試行 re-runs generation with the retained input.
     await page.getByRole("button", { name: retryGeneration }).click()
