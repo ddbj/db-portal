@@ -21,9 +21,9 @@ In the event of any inconsistency between this policy and the terms or condition
 References:
 
 - DDBJ Policies  
-  https://www.ddbj.nig.ac.jp/policies.html
+  https://www.ddbj.nig.ac.jp/policies-e.html
 - DBCLS Site Policy  
-  https://dbcls.rois.ac.jp/policy.html
+  https://dbcls.rois.ac.jp/policy-en.html
 
 ## Handling of Personal Information and Logs
 
