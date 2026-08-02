@@ -54,7 +54,7 @@ description: データ提供申請に係る申請システム上の手順につ�
   - [申請システム](https://humandbs.ddbj.nig.ac.jp/nbdc/application)へログイン後、「データ提供申請一覧」から、該当する[J-DS番号]を押下
   - 「提供データ更新申請」を選択のうえ[申請開始]を押下し、申請書を作成・申請する
     - 「研究内容（対象・方法・ICD10疾患分類コード）」「データの種類及び量（データの種類・タイプ・ファイル形式・総データ量）」については、当該申請にて追加するデータに関する情報のみを記載する
-    - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/files/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
+    - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
       -  1 ファイルにつき 1 行で記載
         - データ追加の場合は、B・E・F・H～K列は必須
         - 差し替えの場合はB・E・F・H～K列に加え、G・L列も必須
