@@ -234,6 +234,6 @@ flowchart TD
 - [NBDC ヒトデータベースの目的・意義](https://humandbs.dbcls.jp/aim)
 - [セキュリティガイドライン (利用者向け)Ver. 7.0](https://humandbs.dbcls.jp/security-guidelines-for-users-v7)
 - [FAQ](https://humandbs.dbcls.jp/faq)
-- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index-e.html)
-- [JGA 登録手順](https://www.ddbj.nig.ac.jp/jga/submission-e.html)
+- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
+- [JGA 登録手順](https://www.ddbj.nig.ac.jp/jga/submission.html)
 - 関連サービス: [JGA](/jga) / [DRA](/dra) / [DDBJ Center](/ddbj)
