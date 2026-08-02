@@ -234,6 +234,6 @@ flowchart TD
 - [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/en/aim)
 - [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users)
 - [FAQ](https://humandbs.dbcls.jp/faq)
-- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
-- [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission.html)
+- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index-e.html)
+- [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission-e.html)
 - Related services: [JGA](/jga) / [DRA](/dra) / [DDBJ Center](/ddbj)
