@@ -227,7 +227,6 @@ flowchart TD
 ## 関連リソース
 
 - [NBDC ヒトデータベース トップ](https://humandbs.dbcls.jp/)
-- [NBDC ヒトデータベース (English)](https://humandbs.dbcls.jp/en/)
 - [データ提供](https://humandbs.dbcls.jp/data-submission/)
 - [データ利用](https://humandbs.dbcls.jp/data-use/)
 - [ヒトデータ審査委員会 (DAC)](https://humandbs.dbcls.jp/dac/)
