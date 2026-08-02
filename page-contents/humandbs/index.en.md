@@ -163,7 +163,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
     - It takes about 15 minutes for DDBJ account registration details to take effect
   - Create the "public/private key pair for Dataset decryption" needed when transferring Datasets you are authorized to use
     - Registration of the "public key" is required at the time of the Data Use application
-    - Create the key pair by referring to [Creating a public/private key pair for Dataset decryption](https://www.ddbj.nig.ac.jp/jga/download.html#key-for-decryption)
+    - Create the key pair by referring to [Creating a public/private key pair for Dataset decryption](https://www.ddbj.nig.ac.jp/jga/download-e.html)
 - Create a "Data Use Group" in the NBDC Human Database application system
   - Include the principal investigator, applicants, and all data management contacts of the Data Use application in the group
   - Members granted Owner privileges can change PI privileges and invite members
