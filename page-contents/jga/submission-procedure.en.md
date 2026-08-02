@@ -49,7 +49,7 @@ description: Describes the step-by-step procedure for the Data Submission applic
 - After logging in to the [application system](https://humandbs.ddbj.nig.ac.jp/nbdc/application), click the relevant **[J-DS number]** from the "Data Submission Application List".
 - Select "Data Update Application", click **[Start Application]**, and create and submit the application form:
   - For "Research Content (subjects, methods, ICD-10 disease classification code)" and "Data Type and Volume (data type, format, file format, total data volume)", enter only the information relating to the data being added in this application.
-  - Create the "[Detailed List of Files to Be Updated or Added](https://humandbs.dbcls.jp/files/replace_filelist.xls)" and attach it in the application system:
+  - Create the "[Detailed List of Files to Be Updated or Added](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist_e.xls)" and attach it in the application system:
     - Enter one row per file.
       - For data additions, columns B, E, F, and H–K are required.
       - For replacements, columns G and L are also required in addition to B, E, F, and H–K.
