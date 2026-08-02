@@ -227,7 +227,6 @@ flowchart TD
 ## Related resources
 
 - [NBDC Human Database top](https://humandbs.dbcls.jp/en/)
-- [NBDC Human Database (English)](https://humandbs.dbcls.jp/en/)
 - [Data Submission](https://humandbs.dbcls.jp/en/data-submission/)
 - [Data Use](https://humandbs.dbcls.jp/en/data-use/)
 - [Data Access Committee (DAC)](https://humandbs.dbcls.jp/en/dac/)
