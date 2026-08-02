@@ -45,7 +45,7 @@ Submitted data is routed to and stored in the appropriate archive according to i
 
 ## Preparing for a Data Submission application
 
-- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Submitters)](https://humandbs.dbcls.jp/guidelines/security-guidelines-for-submitters), and confirm your rights and responsibilities
+- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Submitters)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-submitters), and confirm your rights and responsibilities
 - Prepare the following information required for a Data Submission application
   - Information about the data being submitted
     - Outline of the research: purpose, methods, subjects, published papers, etc.
