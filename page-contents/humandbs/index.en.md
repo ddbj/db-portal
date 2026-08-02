@@ -233,7 +233,7 @@ flowchart TD
 - [Data Access Committee (DAC)](https://humandbs.dbcls.jp/dac/)
 - [NBDC Data Sharing Policy](https://humandbs.dbcls.jp/nbdc-policy)
 - [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/aim)
-- [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines)
+- [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users)
 - [FAQ](https://humandbs.dbcls.jp/faq)
 - [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
 - [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission.html)
