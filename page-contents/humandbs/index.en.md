@@ -231,7 +231,6 @@ flowchart TD
 - [Data Submission](https://humandbs.dbcls.jp/en/data-submission/)
 - [Data Use](https://humandbs.dbcls.jp/en/data-use/)
 - [Data Access Committee (DAC)](https://humandbs.dbcls.jp/en/dac/)
-- [NBDC Data Sharing Policy](https://humandbs.dbcls.jp/en/nbdc-policy)
 - [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/en/aim)
 - [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users)
 - [FAQ](https://humandbs.dbcls.jp/faq)
