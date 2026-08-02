@@ -142,7 +142,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
   - Confirm the Dataset's access level (controlled-access Type I or Type II) and put the necessary security measures in place
     - Download the [NBDC Human Data Handling Security Guidelines Checklist (for Data Users)](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users_e.xlsx) and record the status of your security measures
     - If you plan to use an off-premise server for data storage or analysis, obtain the security checklist (for off-premise server operators) published on the site of the institution operating the off-premise server, and confirm that the off-premise server satisfies the NBDC Human Data Handling Security Guidelines
-    - For details on off-premise servers, see the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and [this site](https://humandbs.dbcls.jp/off-premise-server)
+    - For details on off-premise servers, see the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and [this site](https://humandbs.dbcls.jp/en/off-premise-server)
 - Prepare the following information required for a Data Use application: research collaborators affiliated with the same institution, as well as contractors, can be registered together in a single application
   - Information about the principal investigator and all research collaborators who wish to use the data
     - Name, affiliation information (institution name, title), contact information (phone number, email address), researcher ID, and whether ethics training has been completed
