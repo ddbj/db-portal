@@ -208,7 +208,7 @@ flowchart TD
 - **Distribution of processed data**: If you wish to distribute processed data, a **Processed Data Distribution application** is required
   - From the list of Data Use applications in the application system, click the applicable [J-DU number]
   - From the select box to the left of the [Start Application] button, select **Processed Data Distribution application** and create and submit the application form
-  - For the definition of "processed data," see Section 5-3-3, Controlled-access Data 4, of the [NBDC Human Data Sharing Guidelines](/guidelines/data-sharing-guidelines)
+  - For the definition of "processed data," see Section 5-3-3, Controlled-access Data 4, of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines)
 
 - **Data Use Termination application**: To end your use of the data, a **Data Use Termination application** is required to report the status of data use and data disposal
   - From the list of Data Use applications in the application system, click the applicable [J-DU number]
