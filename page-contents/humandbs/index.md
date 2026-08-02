@@ -233,7 +233,7 @@ flowchart TD
 - [ヒトデータ審査委員会 (DAC)](https://humandbs.dbcls.jp/dac/)
 - [NBDC データ共有ポリシー](https://humandbs.dbcls.jp/nbdc-policy)
 - [NBDC ヒトデータベースの目的・意義](https://humandbs.dbcls.jp/aim)
-- [セキュリティガイドライン (利用者向け)](https://humandbs.dbcls.jp/security-guidelines-for-users-v5)
+- [セキュリティガイドライン (利用者向け)Ver. 7.0](https://humandbs.dbcls.jp/security-guidelines-for-users-v7)
 - [FAQ](https://humandbs.dbcls.jp/faq)
 - [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
 - [JGA 登録手順](https://www.ddbj.nig.ac.jp/jga/submission.html)
