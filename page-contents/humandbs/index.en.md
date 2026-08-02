@@ -129,7 +129,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
 
 ## Data Use
 
-**Unrestricted-access data**: After reviewing the description of "unrestricted-access data" in the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines), please download it directly from the website and use it.
+**Unrestricted-access data**: After reviewing the description of "unrestricted-access data" in the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines), please download it directly from the website and use it.
 
 **Controlled-access data**: A Data Use application is required. Access to the data is granted after the Data Use application is reviewed and approved by the **Data Access Committee (DAC)**.
 
