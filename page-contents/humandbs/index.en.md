@@ -136,7 +136,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
 
 ## Preparing for a Data Use application
 
-- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Users)](https://humandbs.dbcls.jp/guidelines/security-guidelines-for-users), and confirm your rights and responsibilities
+- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Users)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users), and confirm your rights and responsibilities
 - Select the Dataset(s) you wish to use on the NBDC Human Database portal site and "add them to your cart"
   - Confirm that your intended use matches the Policy assigned to the Dataset (the intended purpose of use and user requirements described in the restrictions)
   - Confirm the Dataset's access level (controlled-access Type I or Type II) and put the necessary security measures in place
