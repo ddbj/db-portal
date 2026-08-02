@@ -100,7 +100,7 @@ flowchart TD
 
 - **Replacing or adding data**: If you want to replace deleted data, or add data under the same Policy as data already registered, a **Data Submission Update application** is required
   - For "Research content (subjects, methods, ICD-10 disease classification codes)" and "Data types and volume (data type, file format, total data volume)," describe **only the information about the data being added** in this application
-  - Prepare a "[detailed list of files to be updated or added](https://humandbs.dbcls.jp/files/replace_filelist.xls)" and attach it to the application system
+  - Prepare a "[detailed list of files to be updated or added](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist_e.xls)" and attach it to the application system
     - List one file per row
       - For data additions, columns B, E, F, and H through K are required
       - For replacements, columns G and L are also required in addition to B, E, F, and H through K
@@ -140,7 +140,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
 - Select the Dataset(s) you wish to use on the NBDC Human Database portal site and "add them to your cart"
   - Confirm that your intended use matches the Policy assigned to the Dataset (the intended purpose of use and user requirements described in the restrictions)
   - Confirm the Dataset's access level (controlled-access Type I or Type II) and put the necessary security measures in place
-    - Download the [NBDC Human Data Handling Security Guidelines Checklist (for Data Users)](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users.xlsx) and record the status of your security measures
+    - Download the [NBDC Human Data Handling Security Guidelines Checklist (for Data Users)](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users_e.xlsx) and record the status of your security measures
     - If you plan to use an off-premise server for data storage or analysis, obtain the security checklist (for off-premise server operators) published on the site of the institution operating the off-premise server, and confirm that the off-premise server satisfies the NBDC Human Data Handling Security Guidelines
     - For details on off-premise servers, see the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and [this site](https://humandbs.dbcls.jp/off-premise-server)
 - Prepare the following information required for a Data Use application: research collaborators affiliated with the same institution, as well as contractors, can be registered together in a single application
