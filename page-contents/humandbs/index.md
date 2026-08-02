@@ -140,7 +140,7 @@ flowchart TD
 - NBDCヒトデータベースポータルサイトにおいて利用を希望するデータセットを選定し「カートに追加」する
   - データセットに付与されているポリシー（制限事項に記載されている、利用目的・利用者要件）に合致するか確認する
   - データセットのアクセスレベル（制限公開 Type I または Type II）を確認し、必要なセキュリティ対策を整える
-    - [NBDCヒトデータ取り扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/files/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
+    - [NBDCヒトデータ取り扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
     - データの保管・解析に機関外サーバの利用を予定している場合は、機関外サーバ運用機関のサイトから公開されているセキュリティチェックリスト（機関外サーバ運用責任者向け）を入手した上で、当該機関外サーバがNBDCヒトデータ取扱いセキュリティガイドラインを満たしていることを確認する
     - 機関外サーバの詳細は「[NBDC ヒトデータ共有ガイドライン](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines)」ならびに[こちらのサイト](https://humandbs.dbcls.jp/off-premise-server)をご参照ください。
 - データ利用申請に必要な以下の情報を準備：同一機関に所属する研究分担者、ならびに受託者を1回の申請で登録することが可能
