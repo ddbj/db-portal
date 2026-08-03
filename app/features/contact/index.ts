@@ -1,5 +1,6 @@
 export { ContactCard } from "./contact-card"
 export {
+  DBCLS_CONTACT_URL,
   DDBJ_CONTACT_URL,
   DDBJ_FAQ_URL,
   HELPDESK_EMAIL,

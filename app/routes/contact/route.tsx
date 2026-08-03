@@ -1,5 +1,6 @@
 import {
   ContactCard,
+  DBCLS_CONTACT_URL,
   DDBJ_CONTACT_URL,
   DDBJ_FAQ_URL,
   MailDesk,
@@ -91,6 +92,13 @@ const ContactRoute = () => {
               href={DDBJ_CONTACT_URL[lang]}
               title={t("contact.otherDesks.ddbj.title")}
               description={t("contact.otherDesks.ddbj.description")}
+            />
+          </li>
+          <li className={CARD_ITEM}>
+            <ContactCard
+              href={DBCLS_CONTACT_URL[lang]}
+              title={t("contact.otherDesks.dbcls.title")}
+              description={t("contact.otherDesks.dbcls.description")}
             />
           </li>
           <li className={CARD_ITEM}>

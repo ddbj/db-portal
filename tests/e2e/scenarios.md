@@ -752,10 +752,22 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   1. `/contact` を開く
 - **期待**:
   - 「お問い合わせの前に」に `/docs` と `/services` への内部 link、DDBJ FAQ への外部 link がそれぞれ 1 件ある
-  - 「他の問い合わせ先」に DDBJ お問い合わせ と 遺伝研スーパーコンピュータ への外部 link がある
+  - 「他の問い合わせ先」に DDBJ / DBCLS / 遺伝研スーパーコンピュータ への外部 link がある
   - 外部 link は `target="_blank"` と `rel="noopener noreferrer"` を持つ
   - サイトポリシーへの link が `/policy` を指す
-- **備考**: 外部窓口 URL は ja / en で別物 (`app/features/contact/helpdesk.ts`)。ja locale では ja 側 URL が出る。
+- **備考**: header nav にも `/docs` `/services` `/contact` への link があるため、照合は `main` 配下に限定する。
+
+### S-CONTACT-05: 英語表示で外部窓口 URL が en 側に入れ替わる
+
+- **ペルソナ**: P-ANON
+- **前提**: `db_portal_lang=en` の cookie を付与
+- **手順**:
+  1. `/contact` を開く
+- **期待**:
+  - h1 が `Contact` になる
+  - 外部窓口 link がすべて en 側 URL になる (DDBJ FAQ / DDBJ お問い合わせ / DBCLS お問い合わせ / 遺伝研スパコン)
+  - ja 側 URL は 1 件も残らない
+- **備考**: 外部窓口 URL は ja / en で別物 (`app/features/contact/helpdesk.ts`)。翻訳漏れで ja 側 URL が残る回帰を両方向で止める。
 
 ### S-CONTACT-04: /docs 目次から /contact に辿れる
 

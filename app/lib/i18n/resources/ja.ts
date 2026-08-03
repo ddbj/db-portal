@@ -194,6 +194,7 @@ export type Resources = {
       heading: string
       subtitle: string
       ddbj: { title: string; description: string }
+      dbcls: { title: string; description: string }
       supercomputer: { title: string; description: string }
     }
   }
@@ -903,7 +904,7 @@ export const ja: Resources = {
   },
   contact: {
     pageTitle: "お問い合わせ",
-    pageDescription: "BSI ポータルの使い方、掲載内容、表示の不具合についてのお問い合わせを受け付けています。",
+    pageDescription: "使い方、掲載内容、表示の不具合についてのお問い合わせを受け付けています。",
     before: {
       heading: "お問い合わせの前に",
       subtitle: "以下のページで解決する場合があります。",
@@ -950,6 +951,10 @@ export const ja: Resources = {
         title: "DDBJ お問い合わせ",
         description:
           "BioProject / BioSample / DRA / GEA / MetaboBank へのデータ登録、公開、登録内容の更新について。",
+      },
+      dbcls: {
+        title: "DBCLS お問い合わせ",
+        description: "TogoVar、TogoID など DBCLS が提供するデータベースやツールについて。",
       },
       supercomputer: {
         title: "遺伝研スーパーコンピュータ",

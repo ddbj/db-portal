@@ -158,7 +158,7 @@ export const en: Resources = {
   contact: {
     pageTitle: "Contact",
     pageDescription:
-      "We answer questions about how to use the BSI portal, the content published here, and display problems you run into.",
+      "We answer questions about how to use this site, the content published here, and display problems you run into.",
     before: {
       heading: "Before you write",
       subtitle: "These pages may already answer your question.",
@@ -205,6 +205,10 @@ export const en: Resources = {
         title: "DDBJ contact",
         description:
           "Submission, release, and updates to records in BioProject / BioSample / DRA / GEA / MetaboBank.",
+      },
+      dbcls: {
+        title: "DBCLS contact",
+        description: "TogoVar, TogoID, and the other databases and tools provided by DBCLS.",
       },
       supercomputer: {
         title: "NIG supercomputer",

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  DBCLS_CONTACT_URL,
   DDBJ_CONTACT_URL,
   DDBJ_FAQ_URL,
   HELPDESK_EMAIL,
@@ -19,6 +20,7 @@ describe("external desk URLs", () => {
   const LOCALIZED = {
     DDBJ_FAQ_URL,
     DDBJ_CONTACT_URL,
+    DBCLS_CONTACT_URL,
     NIG_SUPERCOMPUTER_CONTACT_URL,
   }
 

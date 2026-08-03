@@ -12,6 +12,11 @@ export const DDBJ_CONTACT_URL: Record<Lang, string> = {
   en: "https://www.ddbj.nig.ac.jp/contact-ddbj-e.html",
 }
 
+export const DBCLS_CONTACT_URL: Record<Lang, string> = {
+  ja: "https://dbcls.rois.ac.jp/contact.html",
+  en: "https://dbcls.rois.ac.jp/contact-en.html",
+}
+
 export const NIG_SUPERCOMPUTER_CONTACT_URL: Record<Lang, string> = {
   ja: "https://sc.ddbj.nig.ac.jp/application/reference/",
   en: "https://sc.ddbj.nig.ac.jp/en/application/reference/",

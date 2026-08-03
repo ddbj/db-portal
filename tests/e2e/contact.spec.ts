@@ -5,6 +5,22 @@ const HELPDESK_EMAIL = "bsi-helpdesk@nig.ac.jp"
 const copyButton = /アドレスをコピー|Copy address/
 const copiedLabel = /コピーしました|Copied/
 
+// 外部窓口はいずれも ja / en で別 URL を持つ。 表示言語と一致しない側が出ていないか
+// を両方向で照合する。
+const JA_DESK_URLS = [
+  "https://www.ddbj.nig.ac.jp/faq/ja/",
+  "https://www.ddbj.nig.ac.jp/contact-ddbj.html",
+  "https://dbcls.rois.ac.jp/contact.html",
+  "https://sc.ddbj.nig.ac.jp/application/reference/",
+]
+
+const EN_DESK_URLS = [
+  "https://www.ddbj.nig.ac.jp/faq/en/",
+  "https://www.ddbj.nig.ac.jp/contact-ddbj-e.html",
+  "https://dbcls.rois.ac.jp/contact-en.html",
+  "https://sc.ddbj.nig.ac.jp/en/application/reference/",
+]
+
 test.describe("Contact Domain", () => {
   test("S-CONTACT-01: ヘッダー nav から /contact へ、窓口アドレスが平文で読める", async ({ page }) => {
     await page.goto("/")
@@ -48,12 +64,7 @@ test.describe("Contact Domain", () => {
     await expect(body.locator('a[href="/policy"]')).toHaveCount(1)
 
     // ja locale では ja 側の外部窓口 URL が出る
-    const externalHrefs = [
-      "https://www.ddbj.nig.ac.jp/faq/ja/",
-      "https://www.ddbj.nig.ac.jp/contact-ddbj.html",
-      "https://sc.ddbj.nig.ac.jp/application/reference/",
-    ]
-    for (const href of externalHrefs) {
+    for (const href of JA_DESK_URLS) {
       const link = body.locator(`a[href="${href}"]`)
       await expect(link).toHaveCount(1)
       await expect(link).toHaveAttribute("target", "_blank")
@@ -70,6 +81,26 @@ test.describe("Contact Domain", () => {
     // header nav の「お問い合わせ」ではなく、 目次側の link から辿ることを固定する。
     await page.locator("main").locator('a[href="/contact"]').click()
     await expect(page).toHaveURL(/\/contact$/)
+  })
+
+  test("S-CONTACT-05: 英語表示で外部窓口 URL が en 側に入れ替わる", async ({ page }) => {
+    await page.goto("/")
+    await page.context().addCookies([
+      { name: "db_portal_lang", value: "en", url: new URL(page.url()).origin },
+    ])
+    await page.goto("/contact")
+    const body = page.locator("main")
+
+    await expect(
+      page.getByRole("heading", { name: "Contact", level: 1 }),
+    ).toBeVisible()
+
+    for (const href of EN_DESK_URLS) {
+      await expect(body.locator(`a[href="${href}"]`)).toHaveCount(1)
+    }
+    for (const href of JA_DESK_URLS) {
+      await expect(body.locator(`a[href="${href}"]`)).toHaveCount(0)
+    }
   })
 
   test("E-CONTACT-01: clipboard を持たない環境でも窓口が機能する", async ({ page }) => {
