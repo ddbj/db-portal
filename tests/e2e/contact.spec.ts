@@ -40,10 +40,12 @@ test.describe("Contact Domain", () => {
 
   test("S-CONTACT-03: 各セクションのリンク先", async ({ page }) => {
     await page.goto("/contact")
+    // header nav にも /docs /services /contact への link があるため本文に限定する。
+    const body = page.locator("main")
 
-    await expect(page.locator('a[href="/docs"]')).toHaveCount(1)
-    await expect(page.locator('a[href="/services"]')).toHaveCount(1)
-    await expect(page.locator('a[href="/policy"]')).toHaveCount(1)
+    await expect(body.locator('a[href="/docs"]')).toHaveCount(1)
+    await expect(body.locator('a[href="/services"]')).toHaveCount(1)
+    await expect(body.locator('a[href="/policy"]')).toHaveCount(1)
 
     // ja locale では ja 側の外部窓口 URL が出る
     const externalHrefs = [
@@ -52,7 +54,7 @@ test.describe("Contact Domain", () => {
       "https://sc.ddbj.nig.ac.jp/application/reference/",
     ]
     for (const href of externalHrefs) {
-      const link = page.locator(`a[href="${href}"]`)
+      const link = body.locator(`a[href="${href}"]`)
       await expect(link).toHaveCount(1)
       await expect(link).toHaveAttribute("target", "_blank")
       await expect(link).toHaveAttribute("rel", "noopener noreferrer")
@@ -65,7 +67,8 @@ test.describe("Contact Domain", () => {
     const support = page.getByRole("heading", { name: /サポート|Support/ })
     await expect(support).toBeVisible()
 
-    await page.locator('a[href="/contact"]').first().click()
+    // header nav の「お問い合わせ」ではなく、 目次側の link から辿ることを固定する。
+    await page.locator("main").locator('a[href="/contact"]').click()
     await expect(page).toHaveURL(/\/contact$/)
   })
 
