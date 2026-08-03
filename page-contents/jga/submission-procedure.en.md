@@ -8,7 +8,7 @@ description: Describes the step-by-step procedure for the Data Submission applic
 > [!IMPORTANT]
 > - If you are replacing or adding data governed by the same Policy as data you have already submitted (i.e., data derived from the same informed consent explanation document, consent form, and research plan), this is a **Data Update application**.
 > - If you are registering data under a different Policy, or applying for the first time, this is a new **Data Submission application**.
-> - If you are providing data derived from human-derived specimens that clearly fall outside the scope of the "Ethical Guidelines for Medical and Biological Research Involving Human Subjects" — namely, specimens or information whose academic value is already established, that are widely used for research purposes, and that are generally available — you may submit a signed "[Simplified Review Request for the Data Submission Application (free format)](https://humandbs.dbcls.jp/files/deposit_exemption.docx)" from the principal investigator in place of the head of institution's research authorization document (approval notice, etc.).
+> - If you are providing data derived from human-derived specimens that clearly fall outside the scope of the "Ethical Guidelines for Medical and Biological Research Involving Human Subjects" — namely, specimens or information whose academic value is already established, that are widely used for research purposes, and that are generally available — you may submit a signed "[Simplified Review Request for the Data Submission Application (free format)](https://humandbs.dbcls.jp/public-files/data-submission/deposit_exemption_e.docx)" from the principal investigator in place of the head of institution's research authorization document (approval notice, etc.).
 > - You can apply for data with different access levels (unrestricted access, controlled-access) in a single application.
 
 **Creating a Data Submission Group:**
@@ -49,7 +49,7 @@ description: Describes the step-by-step procedure for the Data Submission applic
 - After logging in to the [application system](https://humandbs.ddbj.nig.ac.jp/nbdc/application), click the relevant **[J-DS number]** from the "Data Submission Application List".
 - Select "Data Update Application", click **[Start Application]**, and create and submit the application form:
   - For "Research Content (subjects, methods, ICD-10 disease classification code)" and "Data Type and Volume (data type, format, file format, total data volume)", enter only the information relating to the data being added in this application.
-  - Create the "[Detailed List of Files to Be Updated or Added](https://humandbs.dbcls.jp/files/replace_filelist.xls)" and attach it in the application system:
+  - Create the "[Detailed List of Files to Be Updated or Added](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist_e.xls)" and attach it in the application system:
     - Enter one row per file.
       - For data additions, columns B, E, F, and H–K are required.
       - For replacements, columns G and L are also required in addition to B, E, F, and H–K.

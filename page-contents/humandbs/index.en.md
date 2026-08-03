@@ -45,7 +45,7 @@ Submitted data is routed to and stored in the appropriate archive according to i
 
 ## Preparing for a Data Submission application
 
-- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Submitters)](https://humandbs.dbcls.jp/guidelines/security-guidelines-for-submitters), and confirm your rights and responsibilities
+- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Submitters)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-submitters), and confirm your rights and responsibilities
 - Prepare the following information required for a Data Submission application
   - Information about the data being submitted
     - Outline of the research: purpose, methods, subjects, published papers, etc.
@@ -100,7 +100,7 @@ flowchart TD
 
 - **Replacing or adding data**: If you want to replace deleted data, or add data under the same Policy as data already registered, a **Data Submission Update application** is required
   - For "Research content (subjects, methods, ICD-10 disease classification codes)" and "Data types and volume (data type, file format, total data volume)," describe **only the information about the data being added** in this application
-  - Prepare a "[detailed list of files to be updated or added](https://humandbs.dbcls.jp/files/replace_filelist.xls)" and attach it to the application system
+  - Prepare a "[detailed list of files to be updated or added](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist_e.xls)" and attach it to the application system
     - List one file per row
       - For data additions, columns B, E, F, and H through K are required
       - For replacements, columns G and L are also required in addition to B, E, F, and H through K
@@ -129,20 +129,20 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
 
 ## Data Use
 
-**Unrestricted-access data**: After reviewing the description of "unrestricted-access data" in the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines), please download it directly from the website and use it.
+**Unrestricted-access data**: After reviewing the description of "unrestricted-access data" in the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines), please download it directly from the website and use it.
 
 **Controlled-access data**: A Data Use application is required. Access to the data is granted after the Data Use application is reviewed and approved by the **Data Access Committee (DAC)**.
 
 
 ## Preparing for a Data Use application
 
-- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Users)](https://humandbs.dbcls.jp/guidelines/security-guidelines-for-users), and confirm your rights and responsibilities
+- Read the latest versions of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and the [NBDC Human Database Security Guidelines (for Data Users)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users), and confirm your rights and responsibilities
 - Select the Dataset(s) you wish to use on the NBDC Human Database portal site and "add them to your cart"
   - Confirm that your intended use matches the Policy assigned to the Dataset (the intended purpose of use and user requirements described in the restrictions)
   - Confirm the Dataset's access level (controlled-access Type I or Type II) and put the necessary security measures in place
-    - Download the [NBDC Human Data Handling Security Guidelines Checklist (for Data Users)](https://humandbs.dbcls.jp/files/security_checklist_for_users.xlsx) and record the status of your security measures
+    - Download the [NBDC Human Data Handling Security Guidelines Checklist (for Data Users)](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users_e.xlsx) and record the status of your security measures
     - If you plan to use an off-premise server for data storage or analysis, obtain the security checklist (for off-premise server operators) published on the site of the institution operating the off-premise server, and confirm that the off-premise server satisfies the NBDC Human Data Handling Security Guidelines
-    - For details on off-premise servers, see the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines) and [this site](https://humandbs.dbcls.jp/off-premise-server)
+    - For details on off-premise servers, see the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines) and [this site](https://humandbs.dbcls.jp/en/off-premise-server)
 - Prepare the following information required for a Data Use application: research collaborators affiliated with the same institution, as well as contractors, can be registered together in a single application
   - Information about the principal investigator and all research collaborators who wish to use the data
     - Name, affiliation information (institution name, title), contact information (phone number, email address), researcher ID, and whether ethics training has been completed
@@ -163,7 +163,7 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
     - It takes about 15 minutes for DDBJ account registration details to take effect
   - Create the "public/private key pair for Dataset decryption" needed when transferring Datasets you are authorized to use
     - Registration of the "public key" is required at the time of the Data Use application
-    - Create the key pair by referring to [Creating a public/private key pair for Dataset decryption](https://www.ddbj.nig.ac.jp/jga/download.html#key-for-decryption)
+    - Create the key pair by referring to [Creating a public/private key pair for Dataset decryption](https://www.ddbj.nig.ac.jp/jga/download-e.html#key-for-decryption)
 - Create a "Data Use Group" in the NBDC Human Database application system
   - Include the principal investigator, applicants, and all data management contacts of the Data Use application in the group
   - Members granted Owner privileges can change PI privileges and invite members
@@ -208,7 +208,7 @@ flowchart TD
 - **Distribution of processed data**: If you wish to distribute processed data, a **Processed Data Distribution application** is required
   - From the list of Data Use applications in the application system, click the applicable [J-DU number]
   - From the select box to the left of the [Start Application] button, select **Processed Data Distribution application** and create and submit the application form
-  - For the definition of "processed data," see Section 5-3-3, Controlled-access Data 4, of the [NBDC Human Data Sharing Guidelines](/guidelines/data-sharing-guidelines)
+  - For the definition of "processed data," see Section 5-3-3, Controlled-access Data 4, of the [NBDC Human Data Sharing Guidelines](https://humandbs.dbcls.jp/en/guidelines/data-sharing-guidelines)
 
 - **Data Use Termination application**: To end your use of the data, a **Data Use Termination application** is required to report the status of data use and data disposal
   - From the list of Data Use applications in the application system, click the applicable [J-DU number]
@@ -226,15 +226,13 @@ flowchart TD
 
 ## Related resources
 
-- [NBDC Human Database top](https://humandbs.dbcls.jp/)
-- [NBDC Human Database (English)](https://humandbs.dbcls.jp/en/)
-- [Data Submission](https://humandbs.dbcls.jp/data-submission/)
-- [Data Use](https://humandbs.dbcls.jp/data-use/)
-- [Data Access Committee (DAC)](https://humandbs.dbcls.jp/dac/)
-- [NBDC Data Sharing Policy](https://humandbs.dbcls.jp/nbdc-policy)
-- [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/aim)
-- [Security Guidelines for Users (Ver. 5.0)](https://humandbs.dbcls.jp/security-guidelines-for-users-v5)
+- [NBDC Human Database top](https://humandbs.dbcls.jp/en/)
+- [Data Submission](https://humandbs.dbcls.jp/en/data-submission/)
+- [Data Use](https://humandbs.dbcls.jp/en/data-use/)
+- [Data Access Committee (DAC)](https://humandbs.dbcls.jp/en/dac/)
+- [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/en/aim)
+- [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users)
 - [FAQ](https://humandbs.dbcls.jp/faq)
-- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
-- [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission.html)
+- [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index-e.html)
+- [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission-e.html)
 - Related services: [JGA](/jga) / [DRA](/dra) / [DDBJ Center](/ddbj)

@@ -100,7 +100,7 @@ flowchart TD
   
 - **データの差し替えや追加**：削除したデータの差し替えや、既に登録済みのデータと同じポリシーのデータを追加したい場合、**提供データ更新申請**が必要
   - 「研究内容（対象・方法・ICD10疾患分類コード）」「データの種類及び量（データの種類・タイプ・ファイル形式・総データ量）」については、当該申請にて**追加するデータに関する情報のみ**を記載する
-  - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/files/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
+  - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
     -  1 ファイルにつき 1 行で記載
       - データ追加の場合は、B・E・F・H～K列は必須
       - 差し替えの場合はB・E・F・H～K列に加え、G・L列も必須
@@ -140,7 +140,7 @@ flowchart TD
 - NBDCヒトデータベースポータルサイトにおいて利用を希望するデータセットを選定し「カートに追加」する
   - データセットに付与されているポリシー（制限事項に記載されている、利用目的・利用者要件）に合致するか確認する
   - データセットのアクセスレベル（制限公開 Type I または Type II）を確認し、必要なセキュリティ対策を整える
-    - [NBDCヒトデータ取り扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/files/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
+    - [NBDCヒトデータ取り扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
     - データの保管・解析に機関外サーバの利用を予定している場合は、機関外サーバ運用機関のサイトから公開されているセキュリティチェックリスト（機関外サーバ運用責任者向け）を入手した上で、当該機関外サーバがNBDCヒトデータ取扱いセキュリティガイドラインを満たしていることを確認する
     - 機関外サーバの詳細は「[NBDC ヒトデータ共有ガイドライン](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines)」ならびに[こちらのサイト](https://humandbs.dbcls.jp/off-premise-server)をご参照ください。
 - データ利用申請に必要な以下の情報を準備：同一機関に所属する研究分担者、ならびに受託者を1回の申請で登録することが可能
@@ -208,7 +208,7 @@ flowchart TD
 - **加工したデータの配布**：加工データの配布を希望する場合、**加工データ配布申請**が必要
   - 申請システムのデータ利用申請一覧から、該当する [J-DU番号] を押下
   - [申請開始] ボタンの左側にあるセレクトボックスから**加工データ配布申請**を選択し、申請書を作成・申請する
-  - 「加工データ」の定義については[NBDCヒトデータ共有ガイドライン](/guidelines/data-sharing-guidelines)の 5-3-3 制限公開データ 4 を参照のこと
+  - 「加工データ」の定義については[NBDCヒトデータ共有ガイドライン](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines)の 5-3-3 制限公開データ 4 を参照のこと
 
 - **データ利用終了申請**：データ利用を終了する場合、データの利用状況ならびにデータの破棄状況の報告のため**データ利用終了申請**が必要
   - 申請システムのデータ利用申請一覧から、該当する [J-DU番号] を押下
@@ -227,13 +227,11 @@ flowchart TD
 ## 関連リソース
 
 - [NBDC ヒトデータベース トップ](https://humandbs.dbcls.jp/)
-- [NBDC ヒトデータベース (English)](https://humandbs.dbcls.jp/en/)
 - [データ提供](https://humandbs.dbcls.jp/data-submission/)
 - [データ利用](https://humandbs.dbcls.jp/data-use/)
 - [ヒトデータ審査委員会 (DAC)](https://humandbs.dbcls.jp/dac/)
-- [NBDC データ共有ポリシー](https://humandbs.dbcls.jp/nbdc-policy)
 - [NBDC ヒトデータベースの目的・意義](https://humandbs.dbcls.jp/aim)
-- [セキュリティガイドライン (利用者向け) Ver. 5.0](https://humandbs.dbcls.jp/security-guidelines-for-users-v5)
+- [セキュリティガイドライン (利用者向け)Ver. 7.0](https://humandbs.dbcls.jp/security-guidelines-for-users-v7)
 - [FAQ](https://humandbs.dbcls.jp/faq)
 - [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index.html)
 - [JGA 登録手順](https://www.ddbj.nig.ac.jp/jga/submission.html)
