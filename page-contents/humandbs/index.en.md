@@ -14,6 +14,8 @@ It functions as **the review body for the sharing of analytical data produced by
 
 ## Data Submission
 
+A Data Submission application is required. After the application is reviewed and approved by the **Data Access Committee (DAC)**, the data is registered to the designated archive.
+
 ## Archives for data registration
 
 The archive to which your data is registered differs according to the data type, access class, and processing status. Main examples:
@@ -57,7 +59,7 @@ Submitted data is routed to and stored in the appropriate archive according to i
     - The head of institution is the person who authorizes the execution of a research plan approved by the ethics review board
   - Information about the research in which the data to be submitted was produced
     - Research plan (ethics review application)
-    - The explanatory document and consent form used for informed consent
+    - The templates (forms) of the explanatory document and consent form used for informed consent
       - Consideration of a Policy consistent with the content of the consent
     - A copy of the document (e.g., approval notice) showing that the head of institution authorized the conduct of the research after review and approval by the ethics review board of the institution
 - Preparation for logging in to the NBDC Human Database application system
@@ -98,7 +100,7 @@ flowchart TD
   - Prepare a list of the file names to be deleted
   - Contact the Data Access Committee secretariat
 
-- **Replacing or adding data**: If you want to replace deleted data, or add data under the same Policy as data already registered, a **Data Submission Update application** is required
+- **Replacing or adding data**: If you want to replace deleted data, or add data under the same Policy as data already registered, a **Data Update application** is required
   - For "Research content (subjects, methods, ICD-10 disease classification codes)" and "Data types and volume (data type, file format, total data volume)," describe **only the information about the data being added** in this application
   - Prepare a "[detailed list of files to be updated or added](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist_e.xls)" and attach it to the application system
     - List one file per row
@@ -222,17 +224,15 @@ flowchart TD
   - If you continue to conduct research using data downloaded from JGA after changing your affiliation, you will need research authorization from the head of your new institution and a Data Use application from your new institution
 
 
-
-
 ## Related resources
 
 - [NBDC Human Database top](https://humandbs.dbcls.jp/en/)
 - [Data Submission](https://humandbs.dbcls.jp/en/data-submission/)
 - [Data Use](https://humandbs.dbcls.jp/en/data-use/)
 - [Data Access Committee (DAC)](https://humandbs.dbcls.jp/en/dac/)
-- [Aims of the NBDC Human Database](https://humandbs.dbcls.jp/en/aim)
+- [Aims of the NBDC Human Database (Japanese)](https://humandbs.dbcls.jp/aim)
 - [Security Guidelines for Users (Ver. 7.0)](https://humandbs.dbcls.jp/en/guidelines/security-guidelines-for-users)
-- [FAQ](https://humandbs.dbcls.jp/faq)
+- [FAQ](https://humandbs.dbcls.jp/en/faq)
 - [JGA (DDBJ Center)](https://www.ddbj.nig.ac.jp/jga/index-e.html)
 - [JGA submission procedure](https://www.ddbj.nig.ac.jp/jga/submission-e.html)
 - Related services: [JGA](/jga) / [DRA](/dra) / [DDBJ Center](/ddbj)

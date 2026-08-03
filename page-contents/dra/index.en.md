@@ -154,4 +154,4 @@ Released DRA records propagate worldwide through the following routes.
 - [FAQ on DRA file processing](https://www.ddbj.nig.ac.jp/faq/en/data-files-sra-e.html)
 - [INSDC data release policy](https://www.ddbj.nig.ac.jp/insdc/data-release-policy.html)
 - [D-way portal](https://ddbj.nig.ac.jp/D-way/)
-- [NBDC Human Database (JGA gateway)](https://humandbs.dbcls.jp/data-submission)
+- [NBDC Human Database (JGA gateway)](https://humandbs.dbcls.jp/en/data-submission)
