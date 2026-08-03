@@ -49,12 +49,13 @@ describe("SectionHeading", () => {
     expect(screen.queryByText(/^\d+/)).toBeNull()
   })
 
-  test("SectionHeading_subtitle_rendersSubtitleParagraphWithBarAlignedPadding", () => {
+  // subtitle は section 本文と左端を揃える。 heading だけが bar の分だけ外に出る。
+  test("SectionHeading_subtitle_sharesTheLeftEdgeWithSectionBody", () => {
     render(<SectionHeading subtitle="補足説明">x</SectionHeading>)
     const sub = screen.getByText("補足説明")
     expect(sub).toHaveClass("text-fs-body-sm")
     expect(sub).toHaveClass("text-ink-mid")
-    expect(sub).toHaveClass("pl-2.5")
+    expect(sub).not.toHaveClass("pl-2.5")
   })
 
   test("SectionHeading_subtitleUndefined_doesNotRenderSubtitle", () => {

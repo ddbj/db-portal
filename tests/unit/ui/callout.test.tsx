@@ -23,4 +23,21 @@ describe("Callout", () => {
     render(<Callout role="status">status</Callout>)
     expect(screen.getByRole("status")).toHaveTextContent("status")
   })
+
+  test("Callout_defaultVariant_boxesTheMessageOnFourSides", () => {
+    render(<Callout>box</Callout>)
+    const node = screen.getByText("box")
+    expect(node).toHaveClass("border")
+    expect(node).toHaveClass("rounded-card")
+    expect(node).not.toHaveClass("border-l-[3px]")
+  })
+
+  test("Callout_barVariant_leavesOnlyTheLeftEdgeAndKeepsThePalette", () => {
+    render(<Callout variant="bar" tone="info">bar</Callout>)
+    const node = screen.getByText("bar")
+    expect(node).toHaveClass("border-l-[3px]")
+    expect(node).toHaveClass("bg-surface-subtle")
+    expect(node).toHaveClass("border-border-soft")
+    expect(node).not.toHaveClass("rounded-card")
+  })
 })

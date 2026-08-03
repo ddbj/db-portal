@@ -9,6 +9,7 @@ export default [
   route("submit", "routes/submit/route.tsx"),
   route("news", "routes/news/route.tsx"),
   route("services", "routes/services/route.tsx"),
+  route("contact", "routes/contact/route.tsx"),
   layout("routes/docs/layout.tsx", [
     route("docs", "routes/docs/index.tsx"),
     route("*", "routes/page-content/route.tsx"),

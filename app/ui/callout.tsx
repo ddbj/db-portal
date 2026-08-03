@@ -3,10 +3,12 @@ import type { ReactNode } from "react"
 import { cn } from "./cn"
 
 type CalloutTone = "info" | "warn" | "ok"
+type CalloutVariant = "box" | "bar"
 
 type CalloutProps = {
   children: ReactNode
   tone?: CalloutTone
+  variant?: CalloutVariant
   role?: "status" | "alert" | "note"
   // Rendered flush-right inside the callout (e.g. a retry button). Keeps the
   // action visually tied to the message rather than floating elsewhere.
@@ -19,11 +21,21 @@ const toneClass: Record<CalloutTone, string> = {
   ok: "bg-ok-bg border-ok-border text-ok-fg",
 }
 
-export const Callout = ({ children, tone = "info", role, action }: CalloutProps) => (
+// `bar` は Markdown ページの GitHub alert (tailwind.css `.markdown-alert`) と同じ、
+// 左に色バーだけを立てる見た目。 囲む必要のない補足はこちらを使う。
+const variantClass: Record<CalloutVariant, string> = {
+  box: "border rounded-card",
+  bar: "border-l-[3px] rounded-button",
+}
+
+export const Callout = (
+  { children, tone = "info", variant = "box", role, action }: CalloutProps,
+) => (
   <div
     role={role}
     className={cn(
-      "px-3.5 py-2.5 border rounded-card text-fs-body-sm leading-relaxed",
+      "px-3.5 py-2.5 text-fs-body-sm leading-relaxed",
+      variantClass[variant],
       toneClass[tone],
     )}
   >

@@ -5,7 +5,15 @@ import type { RequestHandler } from "express"
 
 import type { ServerEnv } from "../lib/env"
 
-const STATIC_PATHS = ["/", "/search", "/submit", "/news", "/docs"] as const
+const STATIC_PATHS = [
+  "/",
+  "/search",
+  "/submit",
+  "/news",
+  "/services",
+  "/docs",
+  "/contact",
+] as const
 
 const PAGE_CONTENTS_DIR = "page-contents"
 

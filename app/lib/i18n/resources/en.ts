@@ -30,6 +30,7 @@ export const en: Resources = {
     search: "Search",
     submit: "Submit",
     docs: "Knowledge Base",
+    contact: "Contact",
     about: "About us",
   },
   breadcrumb: {
@@ -152,6 +153,63 @@ export const en: Resources = {
       integration: "Integration & RDF",
       visualization: "Visualization & education",
       other: "Other",
+    },
+  },
+  contact: {
+    pageTitle: "Contact",
+    pageDescription:
+      "We answer questions about how to use the BSI portal, the content published here, and display problems you run into.",
+    before: {
+      heading: "Before you write",
+      subtitle: "These pages may already answer your question.",
+      docs: {
+        title: "Knowledge Base",
+        description: "Overviews of each database, submission procedures, and terminology.",
+      },
+      faq: {
+        title: "DDBJ FAQ",
+        description: "Published answers to the questions most often raised about data submission.",
+      },
+      services: {
+        title: "Services",
+        description: "Browse the databases and tools provided by DDBJ and DBCLS.",
+      },
+    },
+    mail: {
+      heading: "Contact us by email",
+      subtitle: "Write to the address below in either English or Japanese.",
+      addressLabel: "To",
+      copy: "Copy address",
+      copied: "Copied",
+      responseNote:
+        "Some inquiries take longer to answer. If no reply arrives, please check your spam folder.",
+    },
+    include: {
+      heading: "What to include",
+      subtitle: "Covering these points saves a round trip of follow-up questions.",
+      items: {
+        identity: "Your name and affiliation",
+        target: "The database concerned, and the accession number if you have one",
+        steps: "What you did, and what happened instead",
+        url: "The URL of the page in question",
+        environment: "For display problems, your browser and operating system",
+      },
+      privacyPrefix: "How we handle what you send us is described in the ",
+      privacyLink: "BSI site policy",
+      privacySuffix: ".",
+    },
+    otherDesks: {
+      heading: "Other contact points",
+      subtitle: "These topics are handled directly by the contacts below.",
+      ddbj: {
+        title: "DDBJ contact",
+        description:
+          "Submission, release, and updates to records in BioProject / BioSample / DRA / GEA / MetaboBank.",
+      },
+      supercomputer: {
+        title: "NIG supercomputer",
+        description: "Usage applications, accounts, and running jobs on the analysis system.",
+      },
     },
   },
   switchLang: {

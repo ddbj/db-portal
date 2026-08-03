@@ -21,9 +21,20 @@ describe("buildSitemapEntries", () => {
     expect(locs).toContain("https://portal.ddbj.nig.ac.jp/biosample?lang=en")
   })
 
+  // feature page は content collection から自動列挙されないので、 静的一覧の
+  // 取りこぼしがそのまま索引漏れになる。
+  test("buildSitemapEntries_coversEveryFeaturePage", () => {
+    const locs = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", []).map((e) => e.loc)
+
+    for (const path of ["/services", "/docs", "/contact"]) {
+      expect(locs).toContain(`https://portal.ddbj.nig.ac.jp${path}?lang=ja`)
+      expect(locs).toContain(`https://portal.ddbj.nig.ac.jp${path}?lang=en`)
+    }
+  })
+
   test("buildSitemapEntries_emitsTwoEntriesPerLogicalPath", () => {
     const entries = buildSitemapEntries("https://portal.ddbj.nig.ac.jp", ["/a", "/b", "/c"])
-    expect(entries).toHaveLength((5 + 3) * 2)
+    expect(entries).toHaveLength((7 + 3) * 2)
   })
 
   test("buildSitemapEntries_trimsTrailingSlashOnOrigin", () => {
@@ -34,7 +45,7 @@ describe("buildSitemapEntries", () => {
 
   test("buildSitemapEntries_emptySlugs_emitsOnlyStaticPaths", () => {
     const entries = buildSitemapEntries("https://example.com", [])
-    expect(entries).toHaveLength(5 * 2)
+    expect(entries).toHaveLength(7 * 2)
   })
 
   test("buildSitemapEntries_eachEntry_carriesJaEnXDefaultAlternates", () => {

@@ -23,7 +23,7 @@ export const SectionHeading = ({
   as = "h2",
   id,
 }: SectionHeadingProps) => (
-  <div className="flex flex-col gap-1.5 mb-3">
+  <div className="flex flex-col gap-3 mb-3">
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-2.5 min-w-0">
         <Heading as={as} size="h2" bar leading="none" id={id}>
@@ -38,8 +38,9 @@ export const SectionHeading = ({
       </div>
       {action}
     </div>
+    {/* section 本文と左端を合わせる。 heading だけが bar の分だけ外に出る。 */}
     {subtitle !== undefined && (
-      <p className="text-fs-body-sm text-ink-mid m-0 pl-2.5">{subtitle}</p>
+      <p className="text-fs-body-sm text-ink-mid m-0">{subtitle}</p>
     )}
   </div>
 )

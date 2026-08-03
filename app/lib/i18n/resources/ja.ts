@@ -28,6 +28,7 @@ export type Resources = {
     search: string
     submit: string
     docs: string
+    contact: string
     about: string
   }
   breadcrumb: {
@@ -155,6 +156,45 @@ export type Resources = {
       integration: string
       visualization: string
       other: string
+    }
+  }
+  contact: {
+    pageTitle: string
+    pageDescription: string
+    before: {
+      heading: string
+      subtitle: string
+      docs: { title: string; description: string }
+      faq: { title: string; description: string }
+      services: { title: string; description: string }
+    }
+    mail: {
+      heading: string
+      subtitle: string
+      addressLabel: string
+      copy: string
+      copied: string
+      responseNote: string
+    }
+    include: {
+      heading: string
+      subtitle: string
+      items: {
+        identity: string
+        target: string
+        steps: string
+        url: string
+        environment: string
+      }
+      privacyPrefix: string
+      privacyLink: string
+      privacySuffix: string
+    }
+    otherDesks: {
+      heading: string
+      subtitle: string
+      ddbj: { title: string; description: string }
+      supercomputer: { title: string; description: string }
     }
   }
   switchLang: {
@@ -736,6 +776,7 @@ export const ja: Resources = {
     search: "検索",
     submit: "登録",
     docs: "ナレッジベース",
+    contact: "お問い合わせ",
     about: "About us",
   },
   breadcrumb: {
@@ -858,6 +899,62 @@ export const ja: Resources = {
       integration: "統合・RDF",
       visualization: "可視化・教材",
       other: "その他",
+    },
+  },
+  contact: {
+    pageTitle: "お問い合わせ",
+    pageDescription: "BSI ポータルの使い方、掲載内容、表示の不具合についてのお問い合わせを受け付けています。",
+    before: {
+      heading: "お問い合わせの前に",
+      subtitle: "以下のページで解決する場合があります。",
+      docs: {
+        title: "ナレッジベース",
+        description: "各データベースの概要、登録の手順、用語の解説をまとめています。",
+      },
+      faq: {
+        title: "DDBJ FAQ",
+        description: "データ登録でよく寄せられる質問と回答が公開されています。",
+      },
+      services: {
+        title: "サービス一覧",
+        description: "DDBJ・DBCLS が提供するデータベースやツールを探せます。",
+      },
+    },
+    mail: {
+      heading: "メールでのお問い合わせ",
+      subtitle: "以下の窓口宛に、日本語または英語でお送りください。",
+      addressLabel: "宛先",
+      copy: "アドレスをコピー",
+      copied: "コピーしました",
+      responseNote:
+        "内容によっては回答までにお時間をいただく場合があります。返信が届かないときは、迷惑メールフォルダをご確認ください。",
+    },
+    include: {
+      heading: "お問い合わせに記載いただきたいこと",
+      subtitle: "以下が揃っていると、確認のやり取りを減らせます。",
+      items: {
+        identity: "お名前とご所属",
+        target: "対象のデータベース名と、お持ちの場合は accession 番号",
+        steps: "実際に行った操作と、そのとき起きたこと",
+        url: "該当するページの URL",
+        environment: "画面の表示に関するご相談の場合は、ブラウザと OS の種類",
+      },
+      privacyPrefix: "お送りいただいた内容の取扱いについては、",
+      privacyLink: "BSI サイトポリシー",
+      privacySuffix: "をご確認ください。",
+    },
+    otherDesks: {
+      heading: "他の問い合わせ先",
+      subtitle: "以下の内容は、それぞれの窓口が直接受け付けています。",
+      ddbj: {
+        title: "DDBJ お問い合わせ",
+        description:
+          "BioProject / BioSample / DRA / GEA / MetaboBank へのデータ登録、公開、登録内容の更新について。",
+      },
+      supercomputer: {
+        title: "遺伝研スーパーコンピュータ",
+        description: "解析システムの利用申請、アカウント、ジョブの実行について。",
+      },
     },
   },
   switchLang: {

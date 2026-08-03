@@ -15,6 +15,22 @@
       ]
     },
     {
+      "id": "support",
+      "heading": { "ja": "サポート", "en": "Support" },
+      "items": [
+        {
+          "kind": "internal",
+          "path": "/contact",
+          "label": { "ja": "お問い合わせ", "en": "Contact" }
+        },
+        {
+          "kind": "external",
+          "url": "https://www.ddbj.nig.ac.jp/contact-ddbj.html",
+          "label": { "ja": "DDBJ お問い合わせ", "en": "DDBJ contact" }
+        }
+      ]
+    },
+    {
       "id": "policy",
       "heading": { "ja": "ポリシー", "en": "Policy" },
       "items": [

@@ -59,6 +59,7 @@ docker compose exec app npm run gen:last-updated
 - [news.md](docs/news.md) — ddbj/www mirror / NotificationBar 振り分け
 - [services.md](docs/services.md) — services 一覧 mirror / featuredTop 掲載
 - [auth.md](docs/auth.md) — BFF + HttpOnly cookie / OIDC PKCE / Keycloak
+- [contact.md](docs/contact.md) — 問い合わせ窓口の振り分け / mailto 規約
 - [llm.md](docs/llm.md) — vLLM BFF / SSE / PII redaction
 
 **運用 + 品質**

@@ -20,6 +20,7 @@ export {
   CheckIcon,
   ChevronDownIcon,
   CloseIcon,
+  CopyIcon,
   ExternalIcon,
   FileTextIcon,
   FolderIcon,

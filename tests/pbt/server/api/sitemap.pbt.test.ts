@@ -4,7 +4,7 @@ import { describe, expect } from "vitest"
 
 import { buildSitemapEntries, renderSitemapXml } from "../../../../server/api/sitemap"
 
-const STATIC_PATH_COUNT = 5
+const STATIC_PATH_COUNT = 7
 
 const arbContentPath = fc.stringMatching(/^\/[a-z][a-z0-9-]{0,15}(\/[a-z][a-z0-9-]{0,15}){0,2}$/)
 const arbContentPathSet = fc.uniqueArray(arbContentPath, { maxLength: 10 })

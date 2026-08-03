@@ -18,6 +18,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 | SUBMIT | `S-SUBMIT` / `E-SUBMIT` | 登録ナビ |
 | NEWS | `S-NEWS` / `E-NEWS` | ニュース一覧 |
 | SERVICES | `S-SERVICES` / `E-SERVICES` | サービス一覧 |
+| CONTACT | `S-CONTACT` / `E-CONTACT` | 問い合わせ窓口 |
 | AUTH | `S-AUTH` / `E-AUTH` | サインイン / サインアウト |
 | LLM | `S-LLM` / `E-LLM` | AI クエリビルダー |
 | CONTENT | `S-CONTENT` / `E-CONTENT` | データベース解説 |
@@ -711,6 +712,75 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `role="alert"` の error banner (`services.list.error`) は描画されない (空 cache を error として扱わない)
   - facet サイドバーの種別 / ソース FacetGroup は値が無いため描画されない (`options.categories` / `options.sources` が空)
 - **備考**: notes.md §7 に従い `page.route()` で再現する staging 不可分シナリオ。空状態 (plain `<p>`、alert 無し) と取得失敗 (`role="alert"`) を取り違える回帰を区別して固定する。
+
+
+## Contact Domain
+
+### S-CONTACT-01: ヘッダー nav から /contact へ、窓口アドレスが平文で読める
+
+- **ペルソナ**: P-ANON
+- **前提**: portal staging が起動済
+- **手順**:
+  1. `/` を開く
+  2. ヘッダーの「お問い合わせ」 nav link をクリック
+- **期待**:
+  - URL が `/contact` に変わり、`getByRole("heading", { name: /お問い合わせ|Contact/, level: 1 })` が表示される
+  - 窓口アドレス `bsi-helpdesk@nig.ac.jp` が本文テキストとして読める (画像でも link でもない)
+  - `getByRole("button", { name: /アドレスをコピー|Copy address/ })` が 1 件ある
+  - `mailto:` を持つ link は 0 件
+- **備考**: nav 項目追加時の active 判定 (`computeActiveNav`) と、アドレスの平文露出を同時に固定する。mailto を窓口手段に置かない設計判断 ([contact.md](../../docs/contact.md)) の回帰もここで止める。
+
+### S-CONTACT-02: アドレスのコピーと一時フィードバック
+
+- **ペルソナ**: P-ANON
+- **前提**: `context.grantPermissions(["clipboard-read", "clipboard-write"])` を付与
+- **手順**:
+  1. `/contact` を開く
+  2. 「アドレスをコピー」 button をクリック
+- **期待**:
+  - clipboard の内容が `bsi-helpdesk@nig.ac.jp` になる
+  - button のラベルが「コピーしました」に変わる
+  - `role="status"` の live region が同文言を持つ
+  - 1.5 秒後にラベルが「アドレスをコピー」に戻る
+- **備考**: unit は jsdom の clipboard stub 上の検証。実ブラウザの permission と非同期解決を跨いだ挙動をここで貫通する。
+
+### S-CONTACT-03: 各セクションのリンク先
+
+- **ペルソナ**: P-ANON
+- **前提**: portal staging が起動済 (ja locale)
+- **手順**:
+  1. `/contact` を開く
+- **期待**:
+  - 「お問い合わせの前に」に `/docs` と `/services` への内部 link、DDBJ FAQ への外部 link がそれぞれ 1 件ある
+  - 「他の問い合わせ先」に DDBJ お問い合わせ と 遺伝研スーパーコンピュータ への外部 link がある
+  - 外部 link は `target="_blank"` と `rel="noopener noreferrer"` を持つ
+  - サイトポリシーへの link が `/policy` を指す
+- **備考**: 外部窓口 URL は ja / en で別物 (`app/features/contact/helpdesk.ts`)。ja locale では ja 側 URL が出る。
+
+### S-CONTACT-04: /docs 目次から /contact に辿れる
+
+- **ペルソナ**: P-ANON
+- **前提**: portal staging が起動済
+- **手順**:
+  1. `/docs` を開く
+  2. 「サポート」 セクションの「お問い合わせ」 link をクリック
+- **期待**:
+  - URL が `/contact` になる
+  - 同セクションに DDBJ お問い合わせ の外部 link も並ぶ
+- **備考**: `/contact` の入口は header nav / `/docs` 目次 / `sitemap.xml` の 3 つ。目次側の欠落をここで検出する。
+
+### E-CONTACT-01: clipboard を持たない環境でも窓口が機能する
+
+- **ペルソナ**: P-ANON
+- **前提**: `page.addInitScript` で `navigator.clipboard` を `undefined` に固定 (非セキュアコンテキスト相当)
+- **手順**:
+  1. 上記 init script を設定する
+  2. `/contact` を開き、「アドレスをコピー」 button をクリック
+- **期待**:
+  - ページが error 表示に落ちず、h1 が表示されたまま
+  - button のラベルが「アドレスをコピー」のまま変わらない (成功フィードバックを出さない)
+  - 窓口アドレスは平文で表示されたままで手動選択できる
+- **備考**: notes.md §7 の再現手段に `addInitScript` を加えたケース。clipboard API はセキュアコンテキスト前提で、http 配信の中継環境では欠落しうる。
 
 
 ## Auth Domain

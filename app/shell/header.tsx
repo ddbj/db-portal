@@ -6,12 +6,12 @@ import { cn, ExternalIcon } from "~/ui"
 import { LoginButton } from "./login-button"
 import { SwitchLang } from "./switch-lang"
 
-type NavId = "search" | "submit" | "docs" | "about"
+type NavId = "search" | "submit" | "docs" | "contact" | "about"
 
 type InternalNavItem = {
-  id: "search" | "submit" | "docs"
+  id: "search" | "submit" | "docs" | "contact"
   kind: "internal"
-  path: "search" | "submit" | "docs"
+  path: "search" | "submit" | "docs" | "contact"
 }
 type ExternalNavItem = { id: "about"; kind: "external"; href: string }
 type NavItem = InternalNavItem | ExternalNavItem
@@ -20,6 +20,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { id: "search", kind: "internal", path: "search" },
   { id: "submit", kind: "internal", path: "submit" },
   { id: "docs", kind: "internal", path: "docs" },
+  { id: "contact", kind: "internal", path: "contact" },
   { id: "about", kind: "external", href: "https://bsi.rois.ac.jp" },
 ]
 

@@ -23,6 +23,18 @@ describe("PageTitle", () => {
     expect(outer).toHaveClass("pb-6")
   })
 
+  // trimmed は breadcrumb 行を挟む page 用。 breadcrumb 自身の高さが既定の余白と
+  // 同じなので、 h1 の上に余白を積まないことで縦位置が揃う。
+  test.each([
+    ["trimmed", "pt-0"],
+    ["none", "pt-0"],
+    ["sm", "pt-6"],
+    ["md", "pt-9"],
+  ] as const)("PageTitle_padTop_%s_appliesExpectedTopPadding", (padTop, expected) => {
+    const { container } = render(<PageTitle title="x" padTop={padTop} />)
+    expect(container.firstElementChild).toHaveClass(expected)
+  })
+
   test("PageTitle_eyebrow_rendersMonoBrandEyebrow", () => {
     render(<PageTitle title="x" eyebrow="DESIGN PREVIEW" />)
     const eyebrow = screen.getByText("DESIGN PREVIEW")
