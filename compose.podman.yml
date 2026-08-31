@@ -1,5 +1,4 @@
-# Override layered on top of compose.yml for podman / podman-compose deployments
-# on the NIG infrastructure. Use:
+# Override layered on top of compose.yml for podman / podman-compose deployments. Use:
 #   podman-compose -f compose.yml -f compose.podman.yml up -d
 services:
   app:

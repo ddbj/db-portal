@@ -1,3 +1,5 @@
+import http from "node:http"
+
 import { createRequestHandler } from "@react-router/express"
 import express from "express"
 
@@ -22,7 +24,7 @@ const logger = createLogger(env.DB_PORTAL_LOG_LEVEL)
 const isProd = process.env.NODE_ENV === "production"
 
 // Express `trust proxy` accepts a hop count, a boolean, or a preset/IP list. The
-// app sits behind the NIG reverse proxy via a container port-map, so the socket
+// app sits behind a reverse proxy via a container port-map, so the socket
 // peer is the bridge gateway (not loopback); each env sets the value that makes
 // `req.ip` resolve to the real client (see docs/deployment.md).
 const parseTrustProxy = (value: string): boolean | number | string => {
@@ -34,6 +36,10 @@ const parseTrustProxy = (value: string): boolean | number | string => {
 }
 
 const app = express()
+// dev の Vite HMR を同じ listener に相乗りさせるため、 app.listen ではなく
+// 明示的に http.Server を作る。 HMR の ws が app と同一 origin になり、 CSP の
+// connect-src 'self' に収まる。
+const server = http.createServer(app)
 app.disable("x-powered-by")
 app.set("trust proxy", parseTrustProxy(env.DB_PORTAL_TRUST_PROXY))
 app.use(
@@ -92,7 +98,7 @@ if (isProd) {
 } else {
   const { createServer } = await import("vite")
   const vite = await createServer({
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: { server } },
     appType: "custom",
   })
   app.use(vite.middlewares)
@@ -120,7 +126,7 @@ const healthMonitor = startHealthMonitor(llmClient, logger)
 healthMonitor.start()
 
 const port = env.DB_PORTAL_APP_INTERNAL_PORT
-const server = app.listen(port, () => {
+server.listen(port, () => {
   logger.info("server_listening", { port, env: env.DB_PORTAL_ENV })
 })
 

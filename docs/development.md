@@ -49,6 +49,7 @@ docker compose up -d --build
 dev / typecheck / lint / test / build / 依存追加は **すべてコンテナ内** で動かす。 ホストに Node を直接入れない。 本番は podman + podman-compose で同一 `compose.yml` を起動する。
 
 - dev のみ `COMPOSE_FILE` で `compose.dev.yml` を合成し、 source bind-mount + `node_modules` named volume + `build.target: dev` を重ねる
+- publish 先の bind host は `DB_PORTAL_APP_BIND_HOST` で切り替える。 dev は loopback に閉じ、 staging / production は別ホストの reverse proxy から届く必要があるため全 interface に開く
 - staging / production は build を image に焼いた runtime stage を起動する
 - 依存解決をホスト環境に縛らないため、 ホストでの `npm install` は禁止
 - 新規依存追加後は `package.json` と `package-lock.json` を必ず一緒に commit する

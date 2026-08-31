@@ -15,7 +15,7 @@ services:
     volumes:
       - ./cache:/app/cache:rw
     ports:
-      - "${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
+      - "${DB_PORTAL_APP_BIND_HOST}:${DB_PORTAL_APP_PORT}:${DB_PORTAL_APP_INTERNAL_PORT}"
     # crash 復帰。 dev override では "no" に上書きする。
     restart: unless-stopped
     # OOM で host 全体が swap するのを止める上界。 SSR + build peak を吸収でき
