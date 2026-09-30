@@ -102,7 +102,7 @@ flowchart TD
 
 - **データの差し替えや追加**：削除したデータの差し替えや、既に登録済みのデータと同じポリシーのデータを追加したい場合、**提供データ更新申請**が必要
   - 「研究内容（対象・方法・ICD10疾患分類コード）」「データの種類及び量（データの種類・タイプ・ファイル形式・総データ量）」については、当該申請にて**追加するデータに関する情報のみ**を記載する
-  - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/public-files/data-submission/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
+  - 「[更新・追加いただくファイルに関する詳細一覧](https://humandbs.dbcls.jp/files/common/data-submission/replace_filelist.xls)」を作成のうえ、申請システムへ添付する
     - 1 ファイルにつき 1 行で記載
       - データ追加の場合は、B・E・F・H～K列は必須
       - 差し替えの場合はB・E・F・H～K列に加え、G・L列も必須
@@ -142,7 +142,7 @@ flowchart TD
 - NBDCヒトデータベースポータルサイトにおいて利用を希望するデータセットを選定し「カートに追加」する
   - データセットに付与されているポリシー（制限事項に記載されている、利用目的・利用者要件）に合致するか確認する
   - データセットのアクセスレベル（制限公開 Type I または Type II）を確認し、必要なセキュリティ対策を整える
-    - [NBDCヒトデータ取扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/public-files/guidelines/data-sharing-guidelines/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
+    - [NBDCヒトデータ取扱いセキュリティガイドラインチェックリスト（データ利用者向け）](https://humandbs.dbcls.jp/files/common/guidelines/data-sharing-guidelines/security_checklist_for_users.xlsx)をダウンロードし、セキュリティ対策実施状況を記載する
     - データの保管・解析に機関外サーバの利用を予定している場合は、機関外サーバ運用機関のサイトから公開されているセキュリティチェックリスト（機関外サーバ運用責任者向け）を入手した上で、当該機関外サーバがNBDCヒトデータ取扱いセキュリティガイドラインを満たしていることを確認する
     - 機関外サーバの詳細は「[NBDC ヒトデータ共有ガイドライン](https://humandbs.dbcls.jp/guidelines/data-sharing-guidelines)」ならびに[こちらのサイト](https://humandbs.dbcls.jp/off-premise-server)をご参照ください。
 - データ利用申請に必要な以下の情報を準備：同一機関に所属する研究分担者、ならびに受託者を1回の申請で登録することが可能
