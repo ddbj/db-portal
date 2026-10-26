@@ -52,11 +52,33 @@ describe("handleApiNotFound", () => {
     expect(captured.body).toBeUndefined()
   })
 
+  test("handleApiNotFound_setLangDataRequest_passesToReactRouter", () => {
+    // fetcher.Form の送信は `.data` 付きで届く。ここで 404 にすると言語切替が壊れる。
+    const { res, captured } = fakeResponse()
+    const next = vi.fn()
+    handleApiNotFound(requestOf("/api/set-lang.data"), res, next)
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(captured.statusCode).toBeUndefined()
+  })
+
+  test("handleApiNotFound_unknownPathWithDataSuffix_responds404", () => {
+    const { res, captured } = fakeResponse()
+    const next = vi.fn()
+    handleApiNotFound(requestOf("/api/does-not-exist.data"), res, next)
+
+    expect(next).not.toHaveBeenCalled()
+    expect(captured.statusCode).toBe(404)
+    expect(captured.body).toEqual({ error: "not_found" })
+  })
+
   test("handleApiNotFound_setLangWithSuffix_isNotPassedThrough", () => {
     // `/api/set-lang` だけが React Router の route で、その下の path は無い。
     const { res, captured } = fakeResponse()
     const next = vi.fn()
-    handleApiNotFound(requestOf("/api/set-lang/extra"), res, next)
+    for (const path of ["/api/set-lang/extra", "/api/set-lang.json", "/api/set-langx.data"]) {
+      handleApiNotFound(requestOf(path), res, next)
+    }
 
     expect(next).not.toHaveBeenCalled()
     expect(captured.statusCode).toBe(404)

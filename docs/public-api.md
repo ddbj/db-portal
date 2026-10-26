@@ -55,7 +55,7 @@ production 以外の配置では、root の `meta()` が全ページに `<meta n
 
 ### `/api/` の未知のアドレス
 
-BFF の endpoint のどれにも一致しない `/api/` 配下のアドレスには、サイトの 404 ページではなく `404 { "error": "not_found" }` を JSON で返す (`server/api/not-found.ts`)。`/api/` を呼ぶのはプログラムなので、他の BFF endpoint と同じ `{ error }` の形で返す。`/api/set-lang` は React Router の resource route なので、この handler は通す ([i18n.md](i18n.md) § 言語切替)。
+BFF の endpoint のどれにも一致しない `/api/` 配下のアドレスには、サイトの 404 ページではなく `404 { "error": "not_found" }` を JSON で返す (`server/api/not-found.ts`)。`/api/` を呼ぶのはプログラムなので、他の BFF endpoint と同じ `{ error }` の形で返す。`/api/set-lang` は React Router の resource route なので、この handler は通す ([i18n.md](i18n.md) § 言語切替)。React Router の client は fetcher から呼ぶときに path の末尾へ `.data` を付けるので、`/api/set-lang.data` も通す。
 
 ### 環境変数
 
