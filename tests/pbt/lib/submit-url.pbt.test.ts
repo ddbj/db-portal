@@ -16,6 +16,7 @@ import {
   DataForm,
   FileTypeKind,
   GroupType,
+  isMultiValueChipAxis,
   OrganismDomain,
 } from "../../../app/schemas/submit"
 import { arbAccessSection } from "../arbitraries/submission"
@@ -29,9 +30,13 @@ const allowedChipPairs: readonly { axis: ChipAxis; value: string }[] = ChipAxisE
   (axis) => ALLOWED_CHIP_VALUES[axis].map((value) => ({ axis, value })),
 )
 const arbChipTag = fc.constantFrom(...allowedChipPairs)
+// 単一値軸は 1 axis 1 chip、複数値軸は同一 (axis, value) が 1 度だけ。URL 表現が保てる形だけを生成する
 const arbChipTagsByAxis: fc.Arbitrary<{ axis: ChipAxis; value: string }[]> = fc.uniqueArray(
   arbChipTag,
-  { selector: (c) => c.axis, maxLength: ChipAxisEnum.options.length },
+  {
+    selector: (c) => (isMultiValueChipAxis(c.axis) ? `${c.axis}=${c.value}` : c.axis),
+    maxLength: allowedChipPairs.length,
+  },
 )
 
 const arbAccessSectionOrNull = fc.option(arbAccessSection, { nil: null })

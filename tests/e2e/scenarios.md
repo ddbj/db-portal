@@ -499,6 +499,23 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **備考**: ファイル名は種別ごとに `{prefix}-{NNN}.{ext}` で max+1 採番される (3 桁ゼロ埋め)。削除でギャップが生じても max ベースで採番するため一意性が保たれる。
 
 
+### E-SUBMIT-06: spatial-transcriptomics の platform 複数選択で DRA が付き GEA 分割が案内される
+
+- **ペルソナ**: P-ANON
+- **前提**: `/submit` 初期表示
+- **手順**:
+  1. OrganismDomain radiogroup で `ヒト以外の真核生物` を選択
+  2. `空間トランスクリプトーム (TSV)` を 1 件追加
+  3. データ詳細パネルで `Xenium` を選択
+  4. 続けて同じ行で `Visium` を選択
+- **期待**:
+  - 手順 3 の時点で `data-service="gea"` が 1 件、`data-service="dra"` は 0 件 (画像ベース platform は GEA のみ)
+  - 手順 4 の後も `Xenium` の checkbox は checked のまま (単一選択の radio と違い、直前の選択が外れない)
+  - `data-service="dra"` カードが 1 件描画される (Sequencing 系 platform が混ざるため)
+  - `gea` カードに GEA submission を系統ごとに分ける旨の案内が表示される
+- **備考**: platform は 1 行が複数値を持てる唯一の詳細軸で、併用しても行は分かれない。GEA は Microarray と Sequencing を 1 submission にまとめられないため、両系統が混ざったときだけ分割の案内が出る。
+
+
 ## News Domain
 
 ### S-NEWS-01: /news で一覧と 4 facet グループが表示される

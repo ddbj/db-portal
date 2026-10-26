@@ -10,6 +10,9 @@ type FmtCheckProps = {
   checked?: boolean
   defaultChecked?: boolean
   disabled?: boolean
+  // round は複数選択できる選択肢に使う。checkbox のセマンティクスを保ったまま、
+  // 同じフォーム内に並ぶ単一選択の選択肢と指標の形を揃える
+  shape?: "square" | "round"
   onChange?: ChangeEventHandler<HTMLInputElement>
 }
 
@@ -21,6 +24,7 @@ export const FmtCheck = ({
   checked,
   defaultChecked,
   disabled,
+  shape = "square",
   onChange,
 }: FmtCheckProps) => {
   const isChecked = checked ?? defaultChecked ?? false
@@ -43,7 +47,12 @@ export const FmtCheck = ({
         defaultChecked={defaultChecked}
         disabled={disabled}
         onChange={onChange}
-        className="mt-1 shrink-0 accent-brand"
+        className={cn(
+          "mt-1 shrink-0",
+          shape === "round"
+            ? "appearance-none size-[13px] rounded-full border border-ink-softer bg-surface checked:border-[3px] checked:border-brand"
+            : "accent-brand",
+        )}
       />
       <span className="flex-1 min-w-0">
         <span className={isChecked ? "font-semibold" : "font-medium"}>{label}</span>

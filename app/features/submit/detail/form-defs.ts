@@ -28,6 +28,8 @@ export type FormGroupDef = {
   labelKey: string
   sectionHeadingKey?: string
   kind: "radio" | "check"
+  // radio group に複数選択を許す。「1 つ以上必須」の扱いは単一選択の radio と変わらない
+  multiple?: true
   options: readonly FormOptionDef[]
   disabledWhenAnyChip?: readonly { axis: ChipAxis; value: string }[]
   disabledUnlessAnyChip?: readonly { axis: ChipAxis; value: string }[]
@@ -160,6 +162,7 @@ const spatialTranscriptomicsDef: RowFormDef = {
       num: "1.",
       labelKey: "submit.detail.formGroupLabels.platform",
       kind: "radio",
+      multiple: true,
       options: [
         {
           value: "visium",

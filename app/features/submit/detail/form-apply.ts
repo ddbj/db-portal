@@ -1,4 +1,5 @@
 import type { DataForm, FileEntry, FileEntryChip, FileGroup, GroupType } from "~/schemas/submit"
+import { isMultiValueChipAxis } from "~/schemas/submit"
 
 import type { FormOptionDef } from "./form-defs"
 
@@ -89,7 +90,9 @@ export const toggleCheck = (
     return { ...draft, chipTags }
   }
   if (chipAdd !== undefined) {
-    chipTags = chipTags.filter((c) => c.axis !== chipAdd.axis)
+    if (!isMultiValueChipAxis(chipAdd.axis)) {
+      chipTags = chipTags.filter((c) => c.axis !== chipAdd.axis)
+    }
     chipTags.push(chipAdd)
   }
   if (effect.chipRemoveAxes !== undefined) {

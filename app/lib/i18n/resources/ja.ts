@@ -435,7 +435,7 @@ export type Resources = {
     gea: {
       expressionMatrix: { intro: string; ngsRawToDra: string }
       microarray: { intro: string }
-      spatial: { intro: string; sequencingRawToDra: string }
+      spatial: { intro: string; sequencingRawToDra: string; mixedPlatformSubmissions: string }
       spatialImage: { intro: string; largeImageGeneralist: string }
     }
     expressionDra: { raw: string }
@@ -1036,7 +1036,7 @@ export const ja: Resources = {
         smallScale: "登録規模",
         assemblyForm: "アセンブリ形式",
         target: "対象",
-        platform: "プラットフォーム",
+        platform: "プラットフォーム (複数選択可)",
         expressionSource: "データの由来",
         domain: "分析ドメイン",
         identifiability: "個人識別性",
@@ -1250,6 +1250,7 @@ export const ja: Resources = {
       spatial: {
         intro: "空間トランスクリプトームの発現・空間対応データは GEA に登録します。",
         sequencingRawToDra: "シーケンス由来 (Visium / Stereo-seq) の生リードは、別 entry として DRA に登録してください (DRA + GEA の 2 段)。",
+        mixedPlatformSubmissions: "GEA は Microarray と Sequencing を 1 つの submission にまとめられないため、シーケンサベース (Visium / Stereo-seq) と画像ベース (Xenium / MERFISH) を併用する場合は GEA submission を分けます。",
       },
       spatialImage: {
         intro: "空間画像は GEA に登録します。",

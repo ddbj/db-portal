@@ -118,6 +118,12 @@ export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> 
   "identifiability": ["non-identifiable", "identifiable"],
 }
 
+// 同一 entry に複数値を持てる ChipAxis。空間トランスクリプトームは 1 つの研究で複数 platform を
+// 併用しうるため複数値を許す。他の軸は値どうしが排他なので単一値に閉じる
+export const MULTI_VALUE_CHIP_AXES: ReadonlySet<ChipAxis> = new Set(["spatial-platform"])
+
+export const isMultiValueChipAxis = (axis: ChipAxis): boolean => MULTI_VALUE_CHIP_AXES.has(axis)
+
 export const isAllowedChipValue = (axis: ChipAxis, value: string): boolean =>
   ALLOWED_CHIP_VALUES[axis].includes(value)
 

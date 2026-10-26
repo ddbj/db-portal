@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { Access, ChipAxis, DataForm, FileTypeKind, isAllowedChipValue } from "./vocabulary"
+import { Access, ChipAxis, DataForm, FileTypeKind, isAllowedChipValue, isMultiValueChipAxis } from "./vocabulary"
 
 export const FileEntryChip = z
   .object({
@@ -19,13 +19,18 @@ export const FileEntry = z.object({
   access: Access,
   dataForm: DataForm,
   groupId: z.string().min(1),
-  // At most one chip per axis: routing predicates match on `anyChip` by axis, so a
-  // second chip on the same axis would make the outcome depend on array order.
+  // At most one chip per single-value axis, and never the same chip twice: routing
+  // predicates match on `anyChip` by axis and value, so a duplicate would make the
+  // outcome depend on array order.
   chipTags: z
     .array(FileEntryChip)
     .refine(
-      (chips) => new Set(chips.map((c) => c.axis)).size === chips.length,
-      { message: "chipTags must not contain more than one chip per axis" },
+      (chips) => {
+        const keys = chips.map((c) => (isMultiValueChipAxis(c.axis) ? `${c.axis}=${c.value}` : c.axis))
+
+        return new Set(keys).size === keys.length
+      },
+      { message: "chipTags must not repeat a chip or hold more than one chip on a single-value axis" },
     )
     .default([]),
 })

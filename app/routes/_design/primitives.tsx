@@ -260,6 +260,11 @@ const FormsGallery = () => (
       <FmtCheck label="hybrid assembly (checked + sub なし)" defaultChecked />
       <FmtCheck label="raw signal" sub="生波形を残す (unchecked + sub)" />
     </FormGroup>
+    <FormGroup num="3." label="プラットフォーム" hint="複数選択可 (shape=round: 単一選択の radio と指標を揃える)">
+      <FmtCheck shape="round" label="Visium (checked + sub あり)" sub="シーケンサベース" defaultChecked />
+      <FmtCheck shape="round" label="Xenium (checked + sub あり)" sub="in situ 画像ベース" defaultChecked />
+      <FmtCheck shape="round" label="MERFISH (unchecked + sub なし)" />
+    </FormGroup>
   </Block>
 )
 

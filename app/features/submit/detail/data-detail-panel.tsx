@@ -171,7 +171,7 @@ export const DataDetailPanel = ({
                     const checked = optionMatches(opt, draft)
                     const label = labels.optionLabel(opt.labelKey)
                     const sub = labels.optionSub(opt.subKey)
-                    if (g.kind === "radio") {
+                    if (g.kind === "radio" && g.multiple !== true) {
                       return (
                         <FmtRadio
                           key={opt.value}
@@ -192,6 +192,7 @@ export const DataDetailPanel = ({
                         sub={sub}
                         value={opt.value}
                         checked={checked}
+                        shape={g.multiple === true ? "round" : "square"}
                         onChange={() => onCommit(entry.id, toggleCheck(draft, opt, checked))}
                       />
                     )

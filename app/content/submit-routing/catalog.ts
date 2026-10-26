@@ -247,6 +247,26 @@ const catalogData = {
               },
               {
                 kind: "warning",
+                messageKey: "submit.gea.spatial.mixedPlatformSubmissions",
+                whenAny: {
+                  and: [
+                    {
+                      or: [
+                        { anyChip: { axis: "spatial-platform", value: "visium" } },
+                        { anyChip: { axis: "spatial-platform", value: "stereo-seq" } },
+                      ],
+                    },
+                    {
+                      or: [
+                        { anyChip: { axis: "spatial-platform", value: "xenium" } },
+                        { anyChip: { axis: "spatial-platform", value: "merfish" } },
+                      ],
+                    },
+                  ],
+                },
+              },
+              {
+                kind: "warning",
                 messageKey: "submit.gea.spatialImage.largeImageGeneralist",
                 whenAny: { anyChip: { axis: "spatial-platform", value: "merfish" } },
               },

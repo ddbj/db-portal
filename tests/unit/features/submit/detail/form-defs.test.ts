@@ -3,11 +3,13 @@ import { describe, expect, test } from "vitest"
 import type { FormOptionEffect } from "../../../../../app/features/submit/detail/form-defs"
 import { getRowFormDef, hasRowDetail } from "../../../../../app/features/submit/detail/form-defs"
 import {
+  ALLOWED_CHIP_VALUES,
   ChipAxis,
   DataForm,
   FileTypeKind,
   GroupType,
   isAllowedChipValue,
+  isMultiValueChipAxis,
   OrganismDomain,
 } from "../../../../../app/schemas/submit"
 
@@ -199,5 +201,45 @@ describe("getRowFormDef_chipAddConsistency", () => {
       }
     }
     expect(invalid).toStrictEqual([])
+  })
+})
+
+describe("getRowFormDef_multipleSelection", () => {
+  test("multipleGroups_addChipsOnlyOnMultiValueAxes", () => {
+    for (const organismDomain of ALL_OrganismDomainS) {
+      for (const kind of ALL_KINDS) {
+        for (const group of getRowFormDef(kind, organismDomain, true).groups) {
+          if (group.multiple !== true) continue
+          for (const option of group.options) {
+            expect(option.effect.chipAdd).toBeDefined()
+            expect(isMultiValueChipAxis(option.effect.chipAdd!.axis)).toBe(true)
+          }
+        }
+      }
+    }
+  })
+
+  test("groupsTouchingMultiValueAxes_declareMultiple", () => {
+    // 複数値軸を単一選択で出すと、直前の選択が chip ごと消えて schema が許す状態に到達できなくなる
+    for (const organismDomain of ALL_OrganismDomainS) {
+      for (const kind of ALL_KINDS) {
+        for (const group of getRowFormDef(kind, organismDomain, true).groups) {
+          const touchesMultiValueAxis = group.options.some(
+            (o) => o.effect.chipAdd !== undefined && isMultiValueChipAxis(o.effect.chipAdd.axis),
+          )
+          if (!touchesMultiValueAxis) continue
+          expect(group.multiple).toBe(true)
+        }
+      }
+    }
+  })
+
+  test("platformGroup_isMultipleAndOffersEveryAllowedPlatform", () => {
+    const group = getRowFormDef("spatial-transcriptomics", null, true).groups
+      .find((g) => g.id === "platform")
+
+    expect(group?.multiple).toBe(true)
+    expect(new Set(group?.options.map((o) => o.effect.chipAdd?.value)))
+      .toEqual(new Set(ALLOWED_CHIP_VALUES["spatial-platform"]))
   })
 })

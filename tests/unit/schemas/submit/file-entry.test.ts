@@ -68,8 +68,8 @@ describe("FileEntry", () => {
     ).toThrow()
   })
 
-  test("FileEntry_duplicateChipAxis_throws", () => {
-    // Two individually-valid chips on the same axis: rejected because routing
+  test("FileEntry_duplicateSingleValueChipAxis_throws", () => {
+    // Two individually-valid chips on the same single-value axis: rejected because routing
     // matches by axis and a second same-axis chip makes the outcome order-dependent.
     expect(() =>
       FileEntry.parse({
@@ -77,6 +77,29 @@ describe("FileEntry", () => {
         chipTags: [
           { axis: "assembly-form", value: "mag" },
           { axis: "assembly-form", value: "sag" },
+        ],
+      }),
+    ).toThrow()
+  })
+
+  test("FileEntry_multiValueChipAxisTwoDistinctValues_parses", () => {
+    const parsed = FileEntry.parse({
+      ...validEntry,
+      chipTags: [
+        { axis: "spatial-platform", value: "visium" },
+        { axis: "spatial-platform", value: "xenium" },
+      ],
+    })
+    expect(parsed.chipTags).toHaveLength(2)
+  })
+
+  test("FileEntry_multiValueChipAxisRepeatedValue_throws", () => {
+    expect(() =>
+      FileEntry.parse({
+        ...validEntry,
+        chipTags: [
+          { axis: "spatial-platform", value: "visium" },
+          { axis: "spatial-platform", value: "visium" },
         ],
       }),
     ).toThrow()

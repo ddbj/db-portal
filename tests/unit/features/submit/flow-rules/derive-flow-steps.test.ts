@@ -15,6 +15,25 @@ const stepFor = (steps: readonly FlowStep[], service: string): FlowStep => {
 const warningKeys = (step: FlowStep): string[] =>
   step.notes.filter((n) => n.kind === "warning").map((n) => n.messageKey)
 
+const MIXED_PLATFORM_NOTE = "submit.gea.spatial.mixedPlatformSubmissions"
+
+const spatialSubmission = (platforms: readonly string[]): Submission => ({
+  preconditions: { organismDomain: "eukaryote" },
+  accessSection: { restrictedPreference: false, hasIdentifier: false, ethicsCompliance: false, publiclyAvailable: false, microbialAnalysis: false },
+  fileEntries: [
+    {
+      id: "e1",
+      fileTypeKind: "spatial-transcriptomics",
+      access: "open",
+      dataForm: "matrix",
+      groupId: "g1",
+      chipTags: platforms.map((value) => ({ axis: "spatial-platform" as const, value })),
+    },
+  ],
+  fileGroups: [{ id: "g1", groupType: "single", memberFileIds: ["e1"], linkedGroupIds: [] }],
+  notes: "",
+})
+
 describe("deriveFlowSteps", () => {
   test("deriveFlowSteps_publicHumanSequenceRead_emitsDraWithDefaultCompanions", () => {
     const submission: Submission = {
@@ -436,6 +455,36 @@ describe("deriveFlowSteps", () => {
     expect(dra.origin).toBe("recipe")
     expect(dra.scope.entryIds).toEqual(["e1"])
     expect(stepFor(steps, "gea").scope.entryIds).toContain("e1")
+  })
+
+  test("deriveFlowSteps_spatialMixesSequencingAndImagingPlatforms_emitsDraAndSplitSubmissionNote", () => {
+    const steps = deriveFlowSteps(spatialSubmission(["visium", "xenium"]))
+
+    // The sequencing-type platform still pulls raw reads into DRA even when combined
+    // with an imaging-type platform on the same entry.
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "dra", "gea"])
+    expect(warningKeys(stepFor(steps, "gea"))).toContain(MIXED_PLATFORM_NOTE)
+  })
+
+  test("deriveFlowSteps_spatialImagingPlatformsOnly_emitsNoDraAndNoSplitNote", () => {
+    const steps = deriveFlowSteps(spatialSubmission(["xenium", "merfish"]))
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "gea"])
+    expect(warningKeys(stepFor(steps, "gea"))).not.toContain(MIXED_PLATFORM_NOTE)
+  })
+
+  test("deriveFlowSteps_spatialSequencingPlatformsOnly_emitsDraWithoutSplitNote", () => {
+    const steps = deriveFlowSteps(spatialSubmission(["visium", "stereo-seq"]))
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "dra", "gea"])
+    expect(warningKeys(stepFor(steps, "gea"))).not.toContain(MIXED_PLATFORM_NOTE)
+  })
+
+  test("deriveFlowSteps_spatialPlatformOrderSwapped_producesIdenticalSteps", () => {
+    const forward = deriveFlowSteps(spatialSubmission(["visium", "xenium"]))
+    const reversed = deriveFlowSteps(spatialSubmission(["xenium", "visium"]))
+
+    expect(reversed).toEqual(forward)
   })
 
   test("deriveFlowSteps_sequenceReadAndVisiumSpatial_unionsIntoSingleDraStep", () => {

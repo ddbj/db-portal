@@ -39,9 +39,11 @@ submission は **4 軸** で表現する。 それぞれが **flow-changing** �
 - **OrganismDomain**: submission 全体に対する単一選択の生物軸。 種・属レベルの phylogeny は持たず、 BioSample の Intra-DB Tag に委ねる。 `human` のみが公開区分セクションの active 化と JGA への分岐起点になる
 - **FileTypeKind**: 真の一次登録単位だけを値域とする中段トグル単位。 附随メタデータ (表現型・サンプル属性) は BioSample の Intra-DB Tag、 付随ファイル (processed 画像・可視化オブジェクト) は主データ step の追加ファイル枠で扱い、 `FileTypeKind` には含めない
 - **Access**: `open` / `restricted` の 2 値で per-file の混合を持たず種別単位で扱う。 `restricted ∧ OrganismDomain = human` の組合せが JGA への唯一の分岐起点で、 非ヒトの非公開は INSDC が制限公開を持たないため DRA に embargo (公開予定日) を付ける
-- **ChipAxis**: 前段で表現できず、 かつ flow-changing な細部だけを種別ごとに持つ。 出る service を変えない区分は ChipAxis にせず Step カードの Intra-DB Tag に降ろす
+- **ChipAxis**: 前段で表現できず、 かつ flow-changing な細部だけを種別ごとに持つ。 出る service を変えない区分は ChipAxis にせず Step カードの Intra-DB Tag に降ろす。 軸ごとに単一値か複数値かを宣言する
 
 flow-changing 軸だけを 4 軸に持つ規約により、 答えても経路に反映されない死んだ質問と、 経路を変える要因が pulldown に隠れる事故の両方を防ぐ。
+
+ChipAxis が同一 entry に何個の値を持てるかは軸の宣言に従う。 値どうしが排他な軸は単一値で、 1 entry に 1 値しか持てない。 併用が成り立つ軸だけが複数値を名乗り、 同一 entry に複数の値を同時に持つ。 複数値軸は詳細フォームでも複数選択の control で描き、 単一値軸と同じく 1 つ以上の選択を必須とする。 どの軸が複数値かは `app/schemas/submit/vocabulary.ts` が SSOT。
 
 ### AccessSection
 

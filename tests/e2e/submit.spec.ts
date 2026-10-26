@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test"
 
 import { expect, test } from "./helpers"
 
-// FmtRadio は label と sub を 1 つの <label> に入れるため、accessible name は
+// FmtRadio / FmtCheck は label と sub を 1 つの <label> に入れるため、accessible name は
 // label + sub の連結になる。識別は部分一致 (regex) で行う。
 // "ヒト" は "ヒト以外の真核生物" の前方一致になるため sub 文言で曖昧さを排除する。
 const OrganismDomain_HUMAN = /ヒト個体・ヒト由来試料/
@@ -26,8 +26,12 @@ const flowStep = (page: Page, service: string) =>
 
 const detailItems = (page: Page) => page.locator('[data-testid="detail-item"]')
 
-const detailItemWith = (page: Page, radio: RegExp) =>
-  detailItems(page).filter({ has: page.getByRole("radio", { name: radio }) })
+// 詳細パネルの選択肢は単一選択が radio、複数選択が checkbox で描かれる
+const detailOption = (page: Page, name: RegExp) =>
+  page.getByRole("radio", { name }).or(page.getByRole("checkbox", { name }))
+
+const detailItemWith = (page: Page, option: RegExp) =>
+  detailItems(page).filter({ has: detailOption(page, option) })
 
 const validationBanner = (page: Page) => page.getByText(/確認事項が \d+ 件あります/)
 
@@ -241,10 +245,29 @@ test.describe("Submit Domain", () => {
     await toggleKind(page, "空間トランスクリプトーム")
 
     const item = detailItemWith(page, /Visium/)
-    await item.getByRole("radio", { name: /Visium/ }).check()
+    await item.getByRole("checkbox", { name: /Visium/ }).check()
 
     await expect(item.getByText("設定済み", { exact: true })).toBeVisible()
     await expect(flowStep(page, "gea")).toHaveCount(1)
     await expect(flowStep(page, "dra")).toHaveCount(1)
+  })
+
+  test("E-SUBMIT-06: spatial の platform 複数選択で DRA が付き GEA 分割が案内される", async ({ page }) => {
+    await page.goto("/submit")
+    await selectOrganismDomain(page, OrganismDomain_EUKARYOTE)
+    await toggleKind(page, "空間トランスクリプトーム")
+
+    const item = detailItemWith(page, /Visium/)
+    await item.getByRole("checkbox", { name: /Xenium/ }).check()
+
+    await expect(flowStep(page, "gea")).toHaveCount(1)
+    await expect(flowStep(page, "dra")).toHaveCount(0)
+
+    await item.getByRole("checkbox", { name: /Visium/ }).check()
+
+    await expect(item.getByRole("checkbox", { name: /Xenium/ })).toBeChecked()
+    await expect(item.getByRole("checkbox", { name: /Visium/ })).toBeChecked()
+    await expect(flowStep(page, "dra")).toHaveCount(1)
+    await expect(flowStep(page, "gea").getByText(/GEA submission を分けます/)).toBeVisible()
   })
 })

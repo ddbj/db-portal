@@ -91,3 +91,48 @@ describe("submit-url kebab key", () => {
     )
   })
 })
+
+describe("submit-url chip axes", () => {
+  const entryOf = (search: string) => readSubmitParams(new URLSearchParams(search)).entries[0]
+
+  test("readSubmitParams_multiValueAxisTwoValues_keepsBoth", () => {
+    const entry = entryOf("entry=spatial-transcriptomics:matrix::spatial-platform=visium,spatial-platform=xenium")
+
+    expect(entry?.chipTags).toEqual([
+      { axis: "spatial-platform", value: "visium" },
+      { axis: "spatial-platform", value: "xenium" },
+    ])
+  })
+
+  test("readSubmitParams_multiValueAxisRepeatedValue_dropsTheDuplicate", () => {
+    const entry = entryOf("entry=spatial-transcriptomics:matrix::spatial-platform=visium,spatial-platform=visium")
+
+    expect(entry?.chipTags).toEqual([{ axis: "spatial-platform", value: "visium" }])
+  })
+
+  test("readSubmitParams_singleValueAxisTwoValues_keepsOnlyTheFirst", () => {
+    const entry = entryOf("entry=sequence:assembled::assembly-form=genome,assembly-form=mag")
+
+    expect(entry?.chipTags).toEqual([{ axis: "assembly-form", value: "genome" }])
+  })
+
+  test("writeSubmitParams_multiValueAxis_roundTripsEveryValue", () => {
+    const state = {
+      ...EMPTY_SUBMIT_URL_STATE,
+      entries: [
+        {
+          fileTypeKind: "spatial-transcriptomics" as const,
+          dataForm: "matrix" as const,
+          groupIndex: null,
+          chipTags: [
+            { axis: "spatial-platform" as const, value: "visium" },
+            { axis: "spatial-platform" as const, value: "stereo-seq" },
+            { axis: "spatial-platform" as const, value: "merfish" },
+          ],
+        },
+      ],
+    }
+
+    expect(readSubmitParams(writeSubmitParams(state))).toEqual(state)
+  })
+})

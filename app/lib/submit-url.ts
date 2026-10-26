@@ -8,6 +8,7 @@ import {
   type GroupType,
   GroupType as GroupTypeEnum,
   isAllowedChipValue,
+  isMultiValueChipAxis,
   type OrganismDomain,
   OrganismDomain as OrganismDomainEnum,
 } from "~/schemas/submit"
@@ -90,7 +91,10 @@ const parseEntryToken = (token: string): UrlEntry | null => {
       const axis = ChipAxisEnum.safeParse(axisToken)
       if (!axis.success) continue
       if (!isAllowedChipValue(axis.data, valueToken)) continue
-      if (chipTags.some((c) => c.axis === axis.data)) continue
+      const duplicated = isMultiValueChipAxis(axis.data)
+        ? chipTags.some((c) => c.axis === axis.data && c.value === valueToken)
+        : chipTags.some((c) => c.axis === axis.data)
+      if (duplicated) continue
       chipTags.push({ axis: axis.data, value: valueToken })
     }
   }

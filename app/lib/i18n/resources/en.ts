@@ -290,7 +290,7 @@ export const en: Resources = {
         smallScale: "Submission scale",
         assemblyForm: "Assembly form",
         target: "Target",
-        platform: "Platform",
+        platform: "Platform (select all that apply)",
         expressionSource: "Data source",
         domain: "Domain",
         identifiability: "Identifiability",
@@ -504,6 +504,7 @@ export const en: Resources = {
       spatial: {
         intro: "Spatial transcriptomics expression and spatial data are deposited in GEA.",
         sequencingRawToDra: "Sequencing-based platforms (Visium / Stereo-seq) deposit their raw reads in DRA as a separate entry (DRA + GEA two-step).",
+        mixedPlatformSubmissions: "GEA does not accept microarray and sequencing data in a single submission. Split sequencing-based (Visium / Stereo-seq) and imaging-based (Xenium / MERFISH) platforms into separate GEA submissions.",
       },
       spatialImage: {
         intro: "Spatial images are deposited in GEA.",

@@ -175,6 +175,43 @@ describe("rowIsConfigured / countConfiguredRows", () => {
     expect(rowIsConfigured(state, "e1")).toBe(true)
   })
 
+  test("rowIsConfigured_spatialWithTwoPlatforms_returnsTrue", () => {
+    const seeded = addRow(initialState, "spatial-transcriptomics", "e1", "g1")
+    const state = submitReducer(seeded, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "e1",
+      patch: {
+        chipTags: [
+          { axis: "spatial-platform", value: "visium" },
+          { axis: "spatial-platform", value: "xenium" },
+        ],
+      },
+    })
+
+    expect(rowIsConfigured(state, "e1")).toBe(true)
+  })
+
+  test("rowIsConfigured_spatialWithEveryPlatformRemoved_returnsFalse", () => {
+    const seeded = addRow(initialState, "spatial-transcriptomics", "e1", "g1")
+    const withPlatforms = submitReducer(seeded, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "e1",
+      patch: {
+        chipTags: [
+          { axis: "spatial-platform", value: "visium" },
+          { axis: "spatial-platform", value: "xenium" },
+        ],
+      },
+    })
+    const state = submitReducer(withPlatforms, {
+      type: "COMMIT_ROW_EDIT",
+      entryId: "e1",
+      patch: { chipTags: [] },
+    })
+
+    expect(rowIsConfigured(state, "e1")).toBe(false)
+  })
+
   test("rowIsConfigured_freshMetabolomics_returnsTrue", () => {
     const state = addRow(initialState, "metabolomics", "e1", "g1")
 
