@@ -1,10 +1,10 @@
 # News
 
-news は ddbj/www と dbcls/website の 2 リポジトリを local clone として保持し、 `git pull` で sync して `/api/news` 1 endpoint から 3 つの表示先 (NotificationBar / NewsAside / /news 一覧) に同じ cache を配る。
+BFF が ddbj/www と dbcls/website の 2 つのリポジトリを local clone として保持し、`git pull` で sync する。BFF はその結果から作った cache を `/api/news` の 1 endpoint で返し、NotificationBar、NewsAside、`/news` 一覧の 3 つの表示先が同じ cache を使う。
 
 ## news の役割
 
-upstream を 1 次情報として外部 API を踏まないため、 BFF が ddbj/www と dbcls/website を local clone で持ち、 定期的に `git pull` して全件再構築する。 ブラウザは `/api/news` だけを叩き、 upstream / git clone / 永続 cache のいずれにも直接触れない。 同じ cache を 3 つの UI が振り分け軸を変えて引く: NotificationBar (featured のみ・上部 stack)、 NewsAside (最新 N 件)、 /news 一覧 (facet 付き全件)。
+upstream のリポジトリを 1 次情報にし、外部 API を使わないために、BFF が ddbj/www と dbcls/website を local clone で持ち、定期的に `git pull` して全件を再構築する。ブラウザは `/api/news` だけを呼び、upstream、git clone、永続 cache のいずれにも直接アクセスしない。3 つの UI が同じ cache を、それぞれ別の条件で絞り込んで表示する。NotificationBar は featured の item だけを上部に表示し、NewsAside は最新 N 件を表示し、`/news` 一覧は facet 付きで全件を表示する。
 
 ```mermaid
 flowchart LR
@@ -17,11 +17,11 @@ flowchart LR
   api --> list["/news (list + facet)"]
 ```
 
-cache レイヤーには出現順 / featured 判定 / facet グルーピングのいずれも持ち込まない。 表示軸はすべて downstream (UI / `/api/news` query) で導出する。
+cache の item は `featured` フラグを持つが、表示順と facet のグループ分けは cache に持たせず、UI と `/api/news` の query で導出する。
 
 ## mirror と sync
 
-source ごとに独立した poller が走り、 一方の失敗が他方の更新を止めない。 GitHub REST API は使わず、 HTTPS 経由の git protocol で pull するので rate limit とは別枠で運用できる。
+source ごとに独立した poller が動くので、一方の pull が失敗しても他方の更新は止まらない。poller は GitHub REST API を使わず、HTTPS 経由の git protocol で pull するので、REST API の rate limit の影響を受けない。
 
 ```mermaid
 sequenceDiagram
@@ -36,78 +36,79 @@ sequenceDiagram
   else 変化なし
     Poller->>Cache: no-op
   end
-  Note over Poller,Cache: pull 失敗時は warn のみ、 cache を保持
+  Note over Poller,Cache: pull 失敗時は warn のみ、cache を保持
 ```
 
-- 変更検出は `git rev-parse HEAD` の pull 前後比較だけを根拠とする。 差分 commit を走査しない
-- SHA 不一致のときは partial update を行わず、 当該 source の全件を再構築する
-- pull 失敗 (network / branch 不在 / 破損) は warn にとどめ、 既存 cache をそのまま提供する
-- source 別の repo URL / branch / clone 先 / file 配置は `server/news/sources.ts`、 ポーリング駆動は `server/news/mirror.ts`、 git 操作 wrapper は `server/news/git-sync.ts` が SSOT
+- poller は pull の前後で `git rev-parse HEAD` の結果を比べ、変更の有無をその比較だけで判定する。差分の commit は走査しない
+- SHA が変わっていたとき、poller は partial update を行わず、その source の全件を再構築する
+- pull に失敗したとき (network、branch 不在、破損) は、poller は warn を log に出すだけにし、既存の cache をそのまま残す
+- source 別の repo URL / branch / clone 先 / file の配置は `server/news/sources.ts`、ポーリングの実行は `server/news/mirror.ts`、git 操作の wrapper は `server/news/git-sync.ts` を SSOT とする
 
 ## cache
 
-cache は entity list 機構の 2 段 cache 規約 ([entity-list.md § 2 段 cache](entity-list.md)) に従う。 永続層の path は `<DB_PORTAL_NEWS_CACHE_DIR>/news.json`、 atomic 差し替えの単位は ddbj / dbcls の 2 source。
+cache は entity list の 2 段 cache の規約 ([entity-list.md § 2 段 cache](entity-list.md)) に従う。永続層の path は `<DB_PORTAL_NEWS_CACHE_DIR>/news.json` で、atomic に差し替える単位は ddbj / dbcls の 2 source である。
 
-`NewsCache` / `NewsItem` の schema と `schemaVersion` の値は `app/schemas/api-bff/news.ts`、 永続化と atomic 差し替えは `server/news/cache.ts` が SSOT。
+`NewsCache` / `NewsItem` の schema と `schemaVersion` の値は `app/schemas/api-bff/news.ts` を、永続化と atomic な差し替えは `server/news/cache.ts` を SSOT とする。
 
 ## NewsItem の正規化
 
-cache が持つ各 `items` 要素 (`NewsItem`) は、 ja / en の同一記事を 1 件の pair にまとめた中間構造。 front matter (`tags` / `db` / `published` 等) と本文 Markdown から組み立てる。 各 item は言語ごとの title / summary / url を持つ。
+cache の `items` の各要素 (`NewsItem`) は、ja / en の同じ記事を 1 件の pair にまとめた中間構造である。BFF は front matter (`tags` / `db` / `published` 等) と本文の Markdown から `NewsItem` を組み立てる。各 item は言語ごとの title / summary / url を持つ。
 
-### ja/en pair の束ね方
+### ja/en pair のまとめ方
 
-- source 単位で slug を key に `LangRawMap` で束ね、 `NewsItem` の `id` は `${source}-${slug}` から導出する (= 「内部 slug」)
-- 片方の言語しかない slug は、 反対側の title を空文字で持ち、 UI 側の lang fallback で表示する
-- `published: false` の slug は両言語側ともに非公開な場合に限り cache から落とす。 片方でも公開されていれば残す
-- URL は front matter に持たず、 source / lang / slug から BFF が組み立てる。 該当 file がない言語側は `url.ja` のみ / `url.en` のみで返す
+- BFF は source 単位で slug を key に `LangRawMap` で ja / en をまとめ、`NewsItem` の `id` を `${source}-${slug}` から導出する。この `id` を「内部 slug」と呼ぶ
+- 片方の言語にしかない slug では、BFF はもう一方の言語の title を空文字にする。UI 側が lang fallback で表示する
+- `published: false` の slug は、両方の言語で非公開のときだけ BFF が cache から除く。片方でも公開されていれば残す
+- URL は front matter に持たず、BFF が source / lang / slug から組み立てる。該当する file が無い言語側の url は返さず、`url.ja` だけ、または `url.en` だけになる
 
-### 分類軸 (種別とサービス)
+### 分類 (種別とサービス)
 
-`tags` は機能軸の `NewsCategory` 型に正規化し、 mapping にヒットしない tag は `other` に落とす (UI を壊さない)。 これが facet sidebar の 「種別」 軸になる。
+BFF は `tags` を機能で分類する `NewsCategory` 型に正規化し、mapping に無い tag は `other` にする。UI を壊さないためである。`NewsCategory` が facet sidebar の「種別」の軸になる。
 
-ddbj source の Database 区分 (BioProject / BioSample / DRA 等) は `tags` ではなく `db` フィールドから取り、 `NewsCategory` とは独立した 「サービス」 軸として扱う。
+ddbj source の Database 区分 (BioProject / BioSample / DRA 等) は、`tags` ではなく `db` フィールドから取り、`NewsCategory` とは独立した「サービス」の軸として扱う。
 
-front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合成は `server/news/normalize.ts` と `server/news/pair.ts` が SSOT。
+front matter の parse、pair の結合、mapping、summary の抽出、`publishedAt` の合成は `server/news/normalize.ts` と `server/news/pair.ts` を SSOT とする。
 
 ## 3 つの表示先
 
-同じ cache を引きながら、 振り分けの軸が異なる 3 つの UI がある。 3 つは同一 TanStack Query key で `/api/news` を共有 fetch する。
+同じ cache を、別の条件で絞り込んで表示する 3 つの UI がある。3 つは同じ TanStack Query key で `/api/news` を取得するので、request は共有される。
 
 ### NotificationBar
 
-`featured=true` の item を全 page 共通 layout の上部に新しい順に stack する (`app/shell/notification-bar.tsx`)。 個別 close 可能。 services 側の `featuredTop` (top page の services セクション限定) とは別軸。
+NotificationBar (`app/shell/notification-bar.tsx`) は、`featured=true` の item を全ページ共通の layout の上部に新しい順に積んで表示する。利用者は item を個別に閉じられる。この featured は、services 側の `featuredTop` (top page の services セクション限定) とは別の設定である。
 
-- featured の入力は ddbj source の `_data/global.yml` の `top_news.{ja,en}` (2 言語別の path 列)
-- dbcls source は常に `featured=false`
-- featured 軸は `NewsCategory` (tag/category 体系) と直交する。 featured なら category を問わず NotificationBar に出し、 featured でなければ category を問わず出さない
-- 判定 (path と内部 slug の照合) の SSOT は `server/news/featured.ts` の `isFeaturedSlug`
+- featured の元データは、ddbj source の `_data/global.yml` の `top_news.{ja,en}` (2 言語別の path の列) である
+- dbcls source の item は常に `featured=false` である
+- featured は `NewsCategory` (tag / category の体系) とは独立している。featured なら category を問わず NotificationBar に出し、featured でなければ category を問わず出さない
+- featured の判定は mirror の再構築時に行う。`server/news/pair.ts` が `server/news/featured.ts` の `isFeaturedSlug` で path と内部 slug を照合し、結果を item の `featured` に入れる
 
 ### NewsAside
 
-`featured` の有無を問わず、 最新 N 件を compact に並べる。
+NewsAside は、`featured` かどうかを問わず、最新 N 件を compact な一覧で表示する。
 
 ### /news 一覧
 
-`/news` route は SSR loader を持たず、 URL から facet state を組み立てて client が `/api/news` を 1 回 fetch し、 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。 page / sort も同じ URL state に乗る。
+`/news` route は SSR loader を持たない。client が URL から facet state を組み立て、`/api/news` を 1 回 fetch し、cache の全件 (当該言語で title を持つ item) から client 側で集計する。page / sort も同じ URL state に含める。
 
-facet sidebar は 4 グループ、 種別 (NewsCategory, enum) / ソース (ddbj / dbcls, enum) / 年 (publishedAt, number) / サービス (db フィールド, string) で構成する。 件数の集計、 グループ間の AND / OR、 URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う。
+facet sidebar は、種別 (NewsCategory、enum)、ソース (ddbj / dbcls、enum)、年 (publishedAt、number)、サービス (db フィールド、string) の 4 グループで構成する。件数の集計、グループ間の AND とグループ内の OR、URL の serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う。
 
-URL state の parse / serialize は `app/features/news/facet-url-state.ts` が SSOT。
+URL state の parse / serialize は `app/features/news/facet-url-state.ts` を SSOT とする。
 
 ## /api/news と環境変数
 
 ### `GET /api/news`
 
-cache を filter して返す。 全 query を AND で適用する。 lang を指定したときは 「当該言語で title を持つ item」 だけを返し、 summary の有無は判定に使わない。 response には `Cache-Control: public` を付ける (`max-age` の値は `server/api/news.ts` が SSOT)。
+endpoint は cache を filter して返す。全 query を AND で適用する。lang を指定したときは、その言語で title を持つ item だけを返し、summary の有無は判定に使わない。response には `Cache-Control: public` を付ける (`max-age` の値は `server/api/news.ts` を SSOT とする)。
 
-query 仕様 / response schema / lang fallback の規約は `server/api/news.ts` と `app/schemas/api-bff/news.ts` が SSOT。
+query の仕様、response の schema、lang fallback の規約は `server/api/news.ts` と `app/schemas/api-bff/news.ts` を SSOT とする。
 
 ### 環境変数
 
-`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 この文書は `DB_PORTAL_NEWS_*` で統一する:
+env の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT で、値は `env.staging` 等が SSOT である。この文書に関わる env は、すべて `DB_PORTAL_NEWS_` で始まる:
 
-- `DB_PORTAL_NEWS_{DDBJ,DBCLS}_REPO_URL` / `_MIRROR_{DDBJ,DBCLS}_BRANCH`: 各 source の clone 元 URL と branch
-- `DB_PORTAL_NEWS_REPOS_DIR` / `_CACHE_DIR`: local clone と永続 cache の配置先
-- `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS`: source 別 poller の周期
+- `DB_PORTAL_NEWS_DDBJ_REPO_URL` / `DB_PORTAL_NEWS_DBCLS_REPO_URL`: 各 source の clone 元 URL
+- `DB_PORTAL_NEWS_MIRROR_DDBJ_BRANCH` / `DB_PORTAL_NEWS_MIRROR_DBCLS_BRANCH`: 各 source の branch
+- `DB_PORTAL_NEWS_REPOS_DIR` / `DB_PORTAL_NEWS_CACHE_DIR`: local clone と永続 cache の配置先
+- `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS`: source 別の poller の周期
 
-`git pull` は GitHub の HTTPS git protocol で動くため、 認証なしで運用する。 services が同じ clone を借りる規約は [services.md](services.md) を参照。
+どちらの repository も public なので、`git pull` は GitHub の HTTPS git protocol で認証なしに行う。services が同じ clone を参照する規約は [services.md](services.md) を参照する。

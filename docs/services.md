@@ -1,10 +1,10 @@
 # Services
 
-services は News mirror が clone した local repo を read-only で借りて、 `/api/services` 1 endpoint で top page セクションと `/services` 一覧の両方を返す。 2 source の正規化、 cache、 featuredTop、 Facet を扱う。
+services は、News mirror が clone した local repo を read-only で参照し、`/api/services` の 1 endpoint で top page のセクションと `/services` 一覧の両方のデータを返す。2 source の正規化、cache、`featuredTop`、facet を扱う。
 
 ## services の役割
 
-services は独自の git clone もポーリングも持たず、 News mirror が維持する local clone を read-only で借りる ([news.md](news.md) 側から subscribe される)。 source ごとに正規化して in-memory + disk の両 cache に流し込み、 `/api/services` 1 endpoint で top page セクション (`featuredTop === true` のみ) と `/services` 一覧 (全件 + facet) の両方を返す。 BFF と外部 API / secret 遮蔽の一般則は [architecture.md](architecture.md) を参照。
+services は独自の git clone もポーリングも持たず、News mirror が維持する local clone を read-only で参照する。News mirror が source の HEAD の変化を services に通知する。services は source ごとに正規化して in-memory と disk の両方の cache に保存し、`/api/services` の 1 endpoint で top page のセクション (`featuredTop === true` のみ) と `/services` 一覧 (全件と facet) の両方を返す。BFF が外部 API との接続と secret を扱う一般則は [architecture.md](architecture.md) を参照する。
 
 ```mermaid
 flowchart LR
@@ -15,83 +15,83 @@ flowchart LR
   Cache --> API["/api/services<br/>(top page と /services を兼ねる)"]
 ```
 
-source ごとの実ファイル / 抽出条件は `server/services/sources.ts`、 写し方は `server/services/normalize.ts` を参照。
+source ごとの実ファイルと抽出条件は `server/services/sources.ts`、正規化の方法は `server/services/normalize.ts` を参照する。
 
 ## 入力 source と cache
 
-clone / pull は News に委譲し、 services 側は HEAD 変化通知を受けたとき当該 source 分だけ再構築する。 2 source (DDBJ `services.yml` / DBCLS `services.json`) の責務は重ねず、 重複 entry は filter で落として disjoint に保つ。
+clone / pull は News mirror が行う。services は HEAD の変化通知を受けたとき、その source の分だけを再構築する。2 source (DDBJ `services.yml` / DBCLS `services.json`) の責務は重ねず、services が重複する entry を filter で除いて disjoint に保つ。
 
-- 独自のポーリング間隔を持たない。 News mirror が出す sha 変化通知を起点にする
-- `ddbj-www/services.yml` から DBCLS 提供 entry を除外し、 source 間の disjoint 性を保つ
+- services は独自のポーリング間隔を持たず、News mirror が出す sha の変化通知を起点にする
+- services は `ddbj-www/services.yml` から DBCLS が提供する entry を除外し、source 間の disjoint 性を保つ
 
 ### cache
 
-2 段 cache (in-memory + disk) / disk cache 即 load / `schemaVersion` 不一致時の空 cache fallback / source 単位 atomic 差し替え といった汎用 mirror cache 規約は [entity-list.md § 2 段 cache](entity-list.md) に従う。 services 固有の差分は 3 点に絞る。
+2 段 cache (in-memory と disk)、起動時の disk cache の即時 load、`schemaVersion` 不一致時の空 cache への fallback、source 単位の atomic な差し替えといった共通の規約は [entity-list.md § 2 段 cache](entity-list.md) に従う。services に固有の差分は次の 3 点である。
 
-- 再構築の起点は独自 poller ではなく News mirror の sha 変化通知。 受領 sha と `lastSyncSha[source]` が一致するときは no-op
-- atomic 差し替えの単位は source (DDBJ / DBCLS) の 2 系統。 片方の再構築中に他方の items は触らない
-- ファイル read / normalize 失敗は warn にとどめ、 既存 items を維持する
+- 再構築の起点は独自の poller ではなく、News mirror の sha 変化通知である。受け取った sha と `lastSyncSha[source]` が一致するときは、services は何もしない
+- atomic に差し替える単位は source (DDBJ / DBCLS) の 2 系統である。一方の source の再構築中に、他方の source の items は変更しない
+- ファイルの read や normalize に失敗したときは、services は warn を log に出すだけにし、既存の items を維持する
 
-配置先 / `schemaVersion` の bump 規約 / 差し替え手順は `server/services/cache.ts` と `server/services/mirror.ts` が SSOT。
+cache の配置先、`schemaVersion` を上げる規約、差し替えの手順は `server/services/cache.ts` と `server/services/mirror.ts` を SSOT とする。
 
 ## 正規化
 
-各 source の生 entry は語彙が違ったり、 表記揺れがあったりするため、 同じ shape に揃えてから cache に入れる。 順序は表示名 override → ID 採番 → category 写像 → 説明文のチェーンで、 後段ほど前段の結果に乗る (ID は override 後の名前から、 category は両 source 別個に写像)。
+各 source の生の entry は語彙が違ったり表記が揺れたりするので、services は同じ shape に揃えてから cache に入れる。処理は、表示名の override、ID の採番、category の写像、説明文の順に行い、後の処理は前の処理の結果を使う。ID は override 後の名前から作り、category は source ごとに別々に写像する。
 
 ### 表示名 override
 
-upstream の英名は冗長 / 和名混在の item が混じるため、 BSI 側で override 表を持って表示名を揃える。 `id` 生成と `featuredTop` 判定は override 後の名前から行い、 表示と判定の入口を 1 つにする。 override 表は `server/services/sources.ts` が SSOT。
+upstream の英名には、冗長なものや和名が混じるものがあるので、BSI 側で override 表を持って表示名を揃える。`id` の生成と `featuredTop` の判定も override 後の名前で行い、表示と判定が同じ名前を使うようにする。override 表は `server/services/sources.ts` を SSOT とする。
 
 ### ID 採番
 
-`id` は upstream 英名から機械的に生成する slug で、 source prefix を伴う。 生成式と URL-safe 制約は `server/services/normalize.ts` が SSOT、 上流の表記揺れに対する安定性は PBT で固定する。
+`id` は override 後の英名から機械的に生成する slug で、source の prefix を伴う。生成式と URL-safe の制約は `server/services/normalize.ts` を SSOT とし、upstream の表記揺れに対して `id` が安定していることは PBT (property-based testing) で検証する。
 
 ### category 写像
 
-各 source の原語彙を BSI 共通の `ServiceCategory` (機能軸) に写像し、 結果は複数値の `categories` として持つ。 写像に乗らない語彙は UI を壊さないよう `other` に落とす。
+services は各 source の元の語彙を BSI 共通の `ServiceCategory` (機能による分類) に写像し、結果を複数値の `categories` として持つ。写像に無い語彙は、UI を壊さないように `other` にする。
 
-- `categories` は dedupe 済みの `ServiceCategory[]`、 空なら `["other"]` を返す
-- 写像前の原語彙は `rawCategories` に保持し、 デバッグ可能にする
-- domain 軸 (Genome / Gene / Gene expression / Disease 等) は機能軸の `ServiceCategory` に寄与させない
-- `ServiceCategory` enum と response Zod schema は `app/schemas/api-bff/service.ts` が SSOT
-- source 別 mapping (`DDBJ_TAG_MAP` / `DBCLS_CATEGORY_MAP` / `DBCLS_CATEGORY_OVERRIDES`) と domain 軸判定は `server/services/normalize.ts` が SSOT
+- `categories` は重複を除いた `ServiceCategory[]` で、空のときは `["other"]` になる
+- 写像前の元の語彙は `rawCategories` に保持し、デバッグに使えるようにする
+- domain の軸 (Genome / Gene / Gene expression / Disease 等) は、機能の軸である `ServiceCategory` の判定に使わない
+- `ServiceCategory` の enum と response の Zod schema は `app/schemas/api-bff/service.ts` を SSOT とする
+- source 別の mapping (`DDBJ_TAG_MAP` / `DBCLS_CATEGORY_MAP` / `DBCLS_CATEGORY_OVERRIDES`) と domain の軸の判定は `server/services/normalize.ts` を SSOT とする
 
 ### 説明文
 
-`description` は upstream で末尾句点の有無が混在する。 cache / API の生データは upstream 忠実なまま保持し、 表示時に言語別の句点 (ja `。` / en `.`) を補って統一する。 補完は表示用 helper (`app/lib/api/services.ts`) でのみ行い、 storage 層には漏らさない。
+upstream の `description` は末尾の句点の有無が混在している。cache と API の生データは upstream のまま保持し、表示時に言語別の句点 (ja は `。`、en は `.`) を補って統一する。補完は表示用の helper (`app/lib/api/services.ts`) だけで行い、storage 層では行わない。
 
 ## /api/services
 
-`/api/services` は 1 endpoint で 2 用途を兼ねる。 SSR loader は持たず、 client が TanStack Query で 1 回 fetch し、 top page と /services で同じ query key を共有する。 使い分けは client 側で `featuredTop` フラグの絞り込みや facet 選択で行い、 別 endpoint を増やさない。
+`/api/services` は 1 つの endpoint で 2 つの用途を兼ねる。route は SSR loader を持たず、client が TanStack Query で 1 回 fetch し、top page と `/services` で同じ query key を共有する。用途の使い分けは client 側で `featuredTop` フラグの絞り込みや facet の選択で行い、用途ごとの endpoint を増やさない。
 
 ### top page
 
-top page の services セクションは `featuredTop === true` の item だけを表示する。 判定規約は source ごとに異なる (DDBJ は name whitelist、 DBCLS は name prefix) が、 client から見れば boolean フラグ 1 本で扱える。 whitelist / prefix の SSOT は `server/services/sources.ts`。
+top page の services セクションは、`/api/services` を全件取得して client 側で `featuredTop === true` の item だけを表示する。`/services` と query key を共有するためである。判定の規約は source ごとに異なる (DDBJ は name の whitelist、DBCLS は name の prefix) が、client から見れば boolean フラグ 1 つで扱える。whitelist と prefix は `server/services/sources.ts` を SSOT とする。
 
 ### /services 一覧と Facet
 
-`/services` 画面の facet sidebar は `category` (`categories`, enum) と `source` (ddbj / dbcls, enum) の 2 グループで構成する。 値域は cache から実出現分のみ拾い、 サイト全体の enum を全部出して 0 件を並べることはしない。
+`/services` 画面の facet sidebar は、`category` (`categories` の値、enum) と `source` (ddbj / dbcls、enum) の 2 グループで構成する。選択肢の値域は cache に実際に出現する値だけにし、サイト全体の enum を全部出して 0 件の選択肢を並べない。
 
-- グループ間 AND / グループ内 OR / facet count の self-exclusion / URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う
-- source 色点と AppliedFilters chip の表示は [entity-list.md § source 軸](entity-list.md) に従う
-- 一覧の並びは name のアルファベット順 (Toolbar で昇順 / 降順切替)
-- 日付軸を持たないため year facet / date sort は出さない
+- グループ間の AND、グループ内の OR、facet count の self-exclusion、URL の serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う
+- source の色点と AppliedFilters の chip の表示は [entity-list.md § source 軸](entity-list.md) に従う
+- 一覧は name のアルファベット順に並べ、Toolbar で昇順 / 降順を切り替えられる
+- item は日付の軸を持たないので、year facet と date sort は出さない
 
 ### HTTP 契約
 
 | query | 動作 |
 |---|---|
-| `source` | comma separated。 いずれかに一致する item |
-| `category` | comma separated `ServiceCategory`。 `categories` がいずれかを含む (OR) |
-| `featured` | truthy (`true` または `1`) で `featuredTop === true` のみ |
+| `source` | comma separated。いずれかの source に一致する item を返す |
+| `category` | comma separated の `ServiceCategory`。`categories` がいずれかを含む item を返す (OR) |
+| `featured` | truthy (`true` または `1`) のとき、`featuredTop === true` の item だけを返す。BSI の client は使わない |
 
-- 全 query は AND で適用する
-- response に `Cache-Control` を付ける (値は `server/api/services.ts` が SSOT)
-- response 形は `app/schemas/api-bff/service.ts` の Zod schema が SSOT
+- endpoint は全 query を AND で適用する
+- endpoint は response に `Cache-Control` を付ける (値は `server/api/services.ts` を SSOT とする)
+- response の形は `app/schemas/api-bff/service.ts` の Zod schema を SSOT とする
 
 ## 環境変数
 
-`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 この文書に関わる env:
+env の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT で、値は `env.staging` 等が SSOT である。この文書に関わる env:
 
 - `DB_PORTAL_SERVICES_CACHE_DIR`: disk cache のディレクトリ
-- repo clone 先 / branch / ポーリング間隔は News mirror に委ねるため `DB_PORTAL_NEWS_*` を再利用する ([news.md](news.md))
+- repo の clone 先、branch、ポーリング間隔は News mirror が管理するので、services は `DB_PORTAL_NEWS_*` をそのまま使う ([news.md](news.md))

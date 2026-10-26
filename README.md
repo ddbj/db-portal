@@ -1,48 +1,48 @@
 # BSI
 
-BioData Science Initiative (BSI) のデータ登録とデータ検索を、ひとつの入口に統合した Web アプリケーション。研究者が「どこに登録すればよいか」「目的のデータをどう探すか」で迷わないことを目的とし、横断検索から登録手順の案内までを 1 リポジトリで提供する。
+BioData Science Initiative (BSI) のデータ登録とデータ検索を 1 つの入口にまとめた Web アプリケーション。研究者が「どこに登録すればよいか」「目的のデータをどう探すか」で迷わないことを目的とする。横断検索から登録手順の案内までを 1 つのアプリケーションで提供し、そのコードをこの 1 つのリポジトリに置く。
 
 主な機能:
 
-- 検索: 全 DB の横断検索と DB 指定検索、 条件を細かく組み立てる Advanced builder、 結果を絞り込む Sidebar facet
-- AI 検索アシスタント: 自然文の問い合わせを検索条件へ変換する LLM 連携
-- 登録ナビゲーション: データの種類から適切な登録先を導くテーブルと、 登録の流れを示す動的な FlowStep カード
-- ニュース / サービス一覧: DDBJ・DBCLS の既存サイトから情報を取り込んで掲載
-- DDBJ Account 連携: Keycloak によるログイン (BFF + HttpOnly cookie)
-- 日本語 / 英語の i18n: 言語切替に対応
+- 検索: 全データベースをまとめて検索する cross-DB と、1 つのデータベースに絞って検索する per-DB の 2 モードがある。利用者は Advanced builder で検索条件を細かく組み立て、Sidebar facet で検索結果を絞り込む
+- AI クエリビルダー: 利用者が自然言語で書いた入力を、LLM が検索条件に変換する
+- 登録ナビゲーション: 利用者がデータの性質を答えると、アプリが登録先を導出し、登録の流れを FlowStep カードで示す
+- ニュース / サービス一覧: DDBJ と DBCLS の Web サイトの git リポジトリから、BFF (Backend For Frontend) が情報を取り込んで掲載する
+- DDBJ Account 連携: 利用者は Keycloak でログインする。BFF が session を保持し、ブラウザには HttpOnly cookie だけを渡す
+- 日本語 / 英語: 利用者が表示言語を切り替えられる
 
-開発はすべて Docker Compose 内で実行する。 セットアップと開発コマンドは [development.md](docs/development.md) を参照する。
+開発コマンドはすべて Docker Compose の container 内で実行する。セットアップと開発コマンドは [development.md](docs/development.md) を参照する。
 
 ## ドキュメント
 
 ### 前提
 
-- [architecture.md](docs/architecture.md): 全体構造 / zone 分割 / SSR-CSR 境界 / routing / 性能 / セキュリティ / sitemap.xml
-- [development.md](docs/development.md): dev 環境セットアップ / env 切替 / よく使うコマンド
+- [architecture.md](docs/architecture.md): ブラウザ・BFF・外部 API の 3 段構造、zone 分割と import 方向、SSR と CSR の境界、routing、性能、セキュリティ、sitemap.xml を扱う
+- [development.md](docs/development.md): 開発環境のセットアップ、env ファイルの切り替え、container 内で実行する開発コマンド、トラブルシュートを扱う
 
-### 横断レイヤ
+### 共通の仕組み
 
-- [frontend.md](docs/frontend.md): UI primitives / 設計トークン / a11y
-- [content.md](docs/content.md): Markdown ページ / Service collection / Sidebar / breadcrumb
-- [i18n.md](docs/i18n.md): lang cookie / 翻訳なし fallback / hreflang
-- [api-types.md](docs/api-types.md): ddbj-search-api 連携 / 型生成運用
-- [entity-list.md](docs/entity-list.md): news / services mirror の共通 cache / facet / URL state / source 軸
+- [frontend.md](docs/frontend.md): `app/ui/` の primitive、設計トークン、アクセシビリティの規約を扱う
+- [content.md](docs/content.md): Markdown ページと TypeScript collection の 2 系統、Sidebar、パンくずリスト、全文検索、lastUpdated を扱う
+- [i18n.md](docs/i18n.md): 表示言語を cookie で決める仕組み、英語訳が無いときの fallback、hreflang を扱う
+- [api-types.md](docs/api-types.md): ddbj-search-api の OpenAPI 仕様から型を生成する手順と、生成した型を UI まで通す規約を扱う
+- [entity-list.md](docs/entity-list.md): news と services が共有する mirror の cache、facet の集計、URL state、source 軸の表示を扱う
 
 ### 機能
 
-- [search.md](docs/search.md): 検索の 2 モード / facet / Advanced builder / AI assistant
-- [submit.md](docs/submit.md): 登録ナビ / FlowStep / access 導出規約
-- [news.md](docs/news.md): ddbj/www mirror / NotificationBar 振り分け
-- [services.md](docs/services.md): services 一覧 mirror / featuredTop 掲載
-- [auth.md](docs/auth.md): BFF + HttpOnly cookie / OIDC PKCE / Keycloak
-- [contact.md](docs/contact.md): 問い合わせ窓口の振り分け / mailto 規約
-- [llm.md](docs/llm.md): vLLM BFF / SSE / PII redaction
+- [search.md](docs/search.md): cross-DB と per-DB の 2 モード、検索条件を AST (Abstract Syntax Tree) に集める 3 つの入力経路、Sidebar facet、Advanced builder、AI クエリビルダーによる提案を扱う
+- [submit.md](docs/submit.md): 登録ナビゲーションの入力 4 軸、公開区分の導出、FlowStep カードへの経路導出を扱う
+- [news.md](docs/news.md): BFF が ddbj/www と dbcls/website を mirror して `/api/news` で提供する仕組みと、NotificationBar / NewsAside / `/news` の 3 つの表示先を扱う
+- [services.md](docs/services.md): BFF が DDBJ と DBCLS のサービス一覧を mirror して `/api/services` で提供する仕組みと、top page に表示する `featuredTop` の判定を扱う
+- [auth.md](docs/auth.md): Keycloak との OIDC (OpenID Connect) 連携を、BFF と HttpOnly cookie と PKCE で行う仕組みを扱う
+- [contact.md](docs/contact.md): 問い合わせ窓口ページで、相談内容ごとにどの窓口を案内するかと、宛先アドレスの提示方法を扱う
+- [llm.md](docs/llm.md): vLLM を BFF 経由で使う AI クエリビルダーの SSE (Server-Sent Events) protocol、可用性の確認 (health)、rate limit、個人情報 (PII) の redaction を扱う
 
-### 運用 + 品質
+### 運用と品質
 
-- [deployment.md](docs/deployment.md): 環境構成 / 起動アーキ / log event / 監視 / トラブルシュート軸 / secret rotation
-- [llm/README.md](llm/README.md): GPU node で vLLM を起動するオペレータ向けの手順
-- [tests/README.md](tests/README.md): unit / PBT / e2e / mock のルール
+- [deployment.md](docs/deployment.md): dev / staging / production の 3 環境の構成、起動シーケンス、リリース、ログと監視、CI、トラブルシュート、secret rotation を扱う
+- [llm/README.md](llm/README.md): GPU node で vLLM を起動する手順を、オペレータ向けに扱う
+- [tests/README.md](tests/README.md): unit / PBT (property-based testing) / e2e の 3 階層と、mock してよい範囲のルールを扱う
 
 ## License
 
