@@ -39,11 +39,19 @@ describe("entryHref", () => {
 
   test("Solr hits fall back to constructed URL when url field is absent", () => {
     expect(entryHref(hit({ type: "ddbj", identifier: "U01317" })))
-      .toBe("https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
+      .toBe("https://getentry.ddbj.nig.ac.jp/getentry/na/U01317")
     expect(entryHref(hit({ type: "ddbj", identifier: "U01317", url: null })))
-      .toBe("https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=U01317")
+      .toBe("https://getentry.ddbj.nig.ac.jp/getentry/na/U01317")
     expect(entryHref(hit({ type: "taxonomy", identifier: "9606", url: null })))
       .toBe("https://ddbj.nig.ac.jp/tx_search/9606?view=info")
+  })
+
+  test("ddbj fallback resolves bulk-series accessions, which the query form cannot", () => {
+    for (const acc of ["ICXY01000001", "BAAHWZ010000001", "BAAC01000000"]) {
+      const href = entryHref(hit({ type: "ddbj", identifier: acc }))
+      expect(href).toBe(`https://getentry.ddbj.nig.ac.jp/getentry/na/${acc}`)
+      expect(href).not.toContain("?")
+    }
   })
 
   test("identifier is URL-encoded", () => {

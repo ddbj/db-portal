@@ -17,12 +17,17 @@ const ENTRY_BASE = "https://ddbj.nig.ac.jp/search/entry"
 // provides (getentry for ddbj, tx_search for taxonomy); ES-backed DBs use the
 // DDBJ Search entry path keyed by `type` (e.g. `sra-analysis`). Accepts both
 // per-DB hits and cross-search lightweight hits.
+//
+// The ddbj fallback (a hit carrying no `url`) has no molecular type to key on and
+// so assumes nucleotide. getentry's path form is required either way: its query
+// form (`?database=ddbj&accession_number=`) cannot resolve bulk-series
+// accessions (WGS / TSA / TLS and their TPA variants).
 export const entryHref = (hit: { identifier: string; type: string; url?: string | null }): string => {
   if ((hit.type === "ddbj" || hit.type === "taxonomy") && hit.url) return hit.url
 
   const id = encodeURIComponent(hit.identifier)
   if (hit.type === "ddbj") {
-    return `https://getentry.ddbj.nig.ac.jp/getentry?database=ddbj&accession_number=${id}`
+    return `https://getentry.ddbj.nig.ac.jp/getentry/na/${id}`
   }
   if (hit.type === "taxonomy") {
     return `https://ddbj.nig.ac.jp/tx_search/${id}?view=info`
