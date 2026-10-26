@@ -24,6 +24,11 @@ const flowSteps = (page: Page) => page.locator('[data-testid="flow-step"]')
 const flowStep = (page: Page, service: string) =>
   page.locator(`[data-testid="flow-step"][data-service="${service}"]`)
 
+const flowGroup = (page: Page, key: string) => page.locator(`[data-group="${key}"]`)
+
+const flowStepIn = (page: Page, groupKey: string, service: string) =>
+  flowGroup(page, groupKey).locator(`[data-testid="flow-step"][data-service="${service}"]`)
+
 const detailItems = (page: Page) => page.locator('[data-testid="detail-item"]')
 
 // 詳細パネルの選択肢は単一選択が radio、複数選択が checkbox で描かれる
@@ -227,6 +232,36 @@ test.describe("Submit Domain", () => {
     await toggleKind(page, "配列リード")
     await expect(flowSteps(page)).toHaveCount(0)
     await expect(validationBanner(page)).toHaveCount(0)
+  })
+
+  test("S-SUBMIT-16: ヒトの提供申請は公開区分に関係なく登録前の提供申請グループに出る", async ({ page }) => {
+    const AFTER_APPLICATION = "提供申請の承認後に登録先へ登録"
+    const DIRECT = "登録先へ直接登録"
+
+    await page.goto("/submit")
+    await selectOrganismDomain(page, OrganismDomain_HUMAN)
+    await toggleKind(page, "発現マトリクス")
+
+    await expect(flowStepIn(page, "gate", "humandbs")).toHaveCount(1)
+    await expect(flowGroup(page, "restricted")).toHaveCount(0)
+    await expect(flowStepIn(page, "open", "gea")).toHaveCount(1)
+    await expect(flowGroup(page, "open")).toContainText(AFTER_APPLICATION)
+    await expect(flowGroup(page, "open")).not.toContainText(DIRECT)
+
+    await toggleKind(page, "配列リード")
+
+    await expect(flowStepIn(page, "restricted", "jga")).toHaveCount(1)
+    await expect(flowGroup(page, "restricted")).toContainText(AFTER_APPLICATION)
+    const groupKeys = await page.locator("[data-group]").evaluateAll((nodes) =>
+      nodes.map((n) => n.getAttribute("data-group")),
+    )
+    expect(groupKeys).toEqual(["companion", "gate", "restricted", "open"])
+
+    await toggleAccessSwitch(page, /一般入手可能な試料/)
+
+    await expect(flowStep(page, "humandbs")).toHaveCount(0)
+    await expect(flowGroup(page, "gate")).toHaveCount(0)
+    await expect(flowGroup(page, "open")).toContainText(DIRECT)
   })
 
   test("E-SUBMIT-01: 未設定の詳細種別が notify で示される", async ({ page }) => {

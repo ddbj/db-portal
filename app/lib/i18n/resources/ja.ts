@@ -369,6 +369,8 @@ export type Resources = {
       }
       group: {
         companion: { title: string; sub: string }
+        gate: { title: string; sub: string }
+        afterApplicationSub: string
         restricted: { title: string; sub: string }
         open: { title: string; sub: string }
         destination: { title: string; sub: string }
@@ -1136,6 +1138,8 @@ export const ja: Resources = {
       },
       group: {
         companion: { title: "プロジェクト・試料の情報", sub: "すべての登録で必要" },
+        gate: { title: "登録前の提供申請", sub: "制限公開・非制限公開のどちらも必要" },
+        afterApplicationSub: "提供申請の承認後に登録先へ登録",
         restricted: { title: "制限公開のデータ", sub: "データ登録の前にデータ提供申請が必要" },
         open: { title: "非制限公開のデータ", sub: "登録先へ直接登録" },
         destination: { title: "登録先", sub: "データ種別ごと" },
@@ -1173,7 +1177,7 @@ export const ja: Resources = {
       "metabobank": { title: "MetaboBank", description: "メタボロミクスデータの登録先" },
       "humandbs": {
         title: "NBDC ヒトデータベース",
-        description: "NBDC ヒトデータベースの提供申請・承認窓口",
+        description: "提供申請を行い、ヒトデータ審査委員会の承認を受けてください",
         prereqLabel: "NBDC ヒトデータベースへの提供申請",
       },
       "jpost": { title: "jPOST", description: "プロテオミクスデータの登録先" },

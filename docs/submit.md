@@ -75,6 +75,8 @@ UI 構成 (上部トグル 2 + サブトグル 3 + 種別ごと ChipAxis):
 - `publiclyAvailable` / `microbialAnalysis` は 「指針対象外」 として扱い、 上 3 つのいずれも false であれば humandbs 申請は不要
 - true の submission では destination (JGA / DRA / GEA / DDBJ / MetaboBank / NSSS) と独立に `humandbs` step が 1 枚出る
 - 非制限公開 (`open`) でも humandbs 申請が必要な組合せは正当な状態で、 「open = 申請不要」 の含意は持たない
+- サマリーでは `humandbs` のカードを制限公開・非制限公開のどちらのグループにも入れず、 提供申請のグループに置く。 提供申請は公開区分に関係なく登録前に必要で、 制限公開のグループに置くと非制限公開のデータには不要に見える
+- `humandbs` のカードがあるサマリーでは、 制限公開・非制限公開の両グループに 「提供申請の承認後に登録する」 旨を表示し、 「直接登録」 と案内しない
 
 ## 出力 FlowStep カード
 
@@ -118,6 +120,8 @@ graph TD
 - 各 step の 「先に済ませること」 ブロックは、 依存先のうち **そのフローに実在する** 前提ステップだけを参照する
 - 同一 service の scope は union して 1 step にまとめる
 - `FlowStep.scope` は `groupIds` か `entryIds` の少なくとも一方が非空でなければならない
+
+サマリーはカードをグループに分けて表示し、 グループの中ではこのトポロジカル順を保つ。 ヒトのサマリーは 共通メタデータ → 提供申請 (`humandbs`) → 制限公開 → 非制限公開 の 4 グループ、 非ヒトのサマリーは 共通メタデータ → 登録先 の 2 グループをこの順に並べ、 カードの無いグループは出さない。 グループの並びは上の線形化より優先し、 共通メタデータのグループを先頭に置く。 グループ分けは `app/features/submit/flow-cards/group-flow-steps.ts` の `groupFlowSteps` が SSOT。
 
 ### アカウント誘導ステップ
 

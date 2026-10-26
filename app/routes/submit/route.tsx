@@ -112,6 +112,8 @@ const SubmitRoute = () => {
 
   const groupLabels = {
     companion: { title: t("submit.flow.group.companion.title"), sub: t("submit.flow.group.companion.sub") },
+    gate: { title: t("submit.flow.group.gate.title"), sub: t("submit.flow.group.gate.sub") },
+    afterApplicationSub: t("submit.flow.group.afterApplicationSub"),
     restricted: { title: t("submit.flow.group.restricted.title"), sub: t("submit.flow.group.restricted.sub") },
     open: { title: t("submit.flow.group.open.title"), sub: t("submit.flow.group.open.sub") },
     destination: { title: t("submit.flow.group.destination.title"), sub: t("submit.flow.group.destination.sub") },

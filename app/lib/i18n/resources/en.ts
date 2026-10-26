@@ -390,6 +390,8 @@ export const en: Resources = {
       },
       group: {
         companion: { title: "Project & sample info", sub: "Required for all submissions" },
+        gate: { title: "Data submission application", sub: "Required before submitting restricted-access or open-access data" },
+        afterApplicationSub: "Submit to the destination after the data submission application is approved",
         restricted: { title: "Restricted-access data", sub: "A submission application is required before data submission" },
         open: { title: "Open-access data", sub: "Submit directly to the destination" },
         destination: { title: "Submission destinations", sub: "Per data type" },
@@ -427,7 +429,7 @@ export const en: Resources = {
       "metabobank": { title: "MetaboBank", description: "Deposits mass spectrometry, NMR, and metabolite data." },
       "humandbs": {
         title: "NBDC Human Database",
-        description: "Application and approval gateway for the NBDC Human Database.",
+        description: "Submit a data submission application and get approval from the Data Access Committee.",
         prereqLabel: "Submit an application to the NBDC Human Database",
       },
       "jpost": { title: "jPOST", description: "Submit proteomics data here." },

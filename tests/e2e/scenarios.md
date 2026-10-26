@@ -445,6 +445,22 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - `[data-testid="account-step"]` が 0 件
 - **備考**: バリアントを他の DDBJ 系種別 (配列リード等) と混在させた場合、混在先の依存で companion と account step が復活する (S-SUBMIT-03 で回帰確認)。
 
+### S-SUBMIT-16: ヒトの提供申請は公開区分に関係なく登録前の提供申請グループに出る
+
+- **ペルソナ**: P-ANON
+- **前提**: `/submit` 初期表示
+- **手順**:
+  1. OrganismDomain radiogroup で `ヒト` を選択 (公開区分は初期状態で `法令・倫理指針に沿った研究` が ON)
+  2. `発現マトリクス` をトグル
+  3. `配列リード` をトグル
+  4. 公開区分の `一般入手可能な試料` を ON にする (`法令・倫理指針に沿った研究` は自動で OFF になる)
+- **期待**:
+  - 手順 2 の後、`data-service="humandbs"` カードは `[data-group="gate"]` の中にあり、`[data-group="restricted"]` は描画されない
+  - 手順 2 の後、`data-service="gea"` カードは `[data-group="open"]` の中にあり、グループの副題は `提供申請の承認後に登録先へ登録` (`登録先へ直接登録` ではない)
+  - 手順 3 の後、`data-service="jga"` カードは `[data-group="restricted"]` の中にあり、副題は `提供申請の承認後に登録先へ登録`。グループは `companion` → `gate` → `restricted` → `open` の順に並ぶ
+  - 手順 4 の後、`humandbs` カードと `[data-group="gate"]` は消え、`[data-group="open"]` の副題は `登録先へ直接登録` に戻る
+- **備考**: 提供申請は制限公開・非制限公開のどちらにも登録前に必要なので、humandbs カードを公開区分のグループに入れない。
+
 ### E-SUBMIT-01: 未設定の詳細行が notify Tag と warning tone で示される
 
 - **ペルソナ**: P-ANON

@@ -1,13 +1,14 @@
 import { buildLoginUrl } from "~/lib/auth"
 import { useLang } from "~/lib/i18n"
 import type { Access, FileEntry, FileTypeKind, FlowStep, Service } from "~/schemas/submit"
-import { internalDetailHref, isCompanionService, isExternalService, serviceRoleTagKey, stepPrerequisites } from "~/schemas/submit"
+import { internalDetailHref, isCompanionService, isExternalService, stepPrerequisites } from "~/schemas/submit"
 import { AlertIcon, Button, Callout, cn, ExternalIcon, LockClosedIcon, LockOpenIcon, Tag, TextLink, UserIcon } from "~/ui"
 
 import { ExternalLinkButton } from "../components/external-link-button"
 import { StepBadge } from "../components/step-badge"
 import { getSubmitMeta } from "../external-links"
 import type { Validation } from "../state/types"
+import { type FlowStepGroupKey, groupFlowSteps } from "./group-flow-steps"
 import { type NhaHintLabels, NhaTimelineItem } from "./nha-hint-panel"
 
 const NHA_ORIENTATION_HUMANDBS_STEP: FlowStep = {
@@ -39,6 +40,8 @@ type FlowSummaryCardProps = {
   accessOverview: { description: string; sub: string } | null
   groupLabels: {
     companion: GroupLabel
+    gate: GroupLabel
+    afterApplicationSub: string
     restricted: GroupLabel
     open: GroupLabel
     destination: GroupLabel
@@ -80,43 +83,25 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
   const lang = useLang() as "ja" | "en"
   const presentServices = new Set(steps.map((s) => s.service))
 
-  const companionSteps = steps.filter((s) => isCompanionService(s.service))
-  const nonCompanionSteps = steps.filter((s) => !isCompanionService(s.service))
+  const stepGroups = groupFlowSteps(steps, entries, isHuman)
+  // 提供申請のグループがあるときは、公開区分のどちらの登録先も承認後にしか登録できない
+  const hasGate = stepGroups.some((g) => g.key === "gate")
+  const accessGroupLabel = (label: GroupLabel): GroupLabel =>
+    hasGate ? { title: label.title, sub: groupLabels.afterApplicationSub } : label
 
-  const stepIsRestricted = (step: FlowStep): boolean => {
-    if (serviceRoleTagKey(step.service) === "gate") return true
-    const scoped = entries.filter((e) => step.scope.entryIds.includes(e.id))
-    return scoped.some((e) => e.access === "restricted")
-  }
-
-  type GroupDef = {
-    groupKey: string
-    label: GroupLabel
-    steps: readonly FlowStep[]
-    accessBadge?: { access: Access; label: string }
-  }
-  const groups: GroupDef[] = []
-  if (companionSteps.length > 0) {
-    groups.push({ groupKey: "companion", label: groupLabels.companion, steps: companionSteps })
-  }
-  if (isHuman) {
-    const restricted = nonCompanionSteps.filter(stepIsRestricted)
-    const open = nonCompanionSteps.filter((s) => !stepIsRestricted(s))
-    if (restricted.length > 0) {
-      groups.push({
-        groupKey: "restricted", label: groupLabels.restricted, steps: restricted,
-        accessBadge: { access: "restricted", label: accessLabel("restricted") },
-      })
+  const groups = stepGroups.map((g) => {
+    switch (g.key) {
+      case "restricted":
+      case "open":
+        return {
+          ...g,
+          label: accessGroupLabel(groupLabels[g.key]),
+          accessBadge: { access: g.key, label: accessLabel(g.key) },
+        }
+      default:
+        return { ...g, label: groupLabels[g.key], accessBadge: undefined }
     }
-    if (open.length > 0) {
-      groups.push({
-        groupKey: "open", label: groupLabels.open, steps: open,
-        accessBadge: { access: "open", label: accessLabel("open") },
-      })
-    }
-  } else if (nonCompanionSteps.length > 0) {
-    groups.push({ groupKey: "destination", label: groupLabels.destination, steps: nonCompanionSteps })
-  }
+  })
 
   const stepProps = {
     lang, entries, presentServices,
@@ -151,7 +136,8 @@ export const FlowSummaryCard = (props: FlowSummaryCardProps) => {
       )}
       {steps.length > 0 && groups.map((g, i) => (
         <StepGroup
-          key={g.groupKey}
+          key={g.key}
+          groupKey={g.key}
           groupIndex={i + 1}
           label={g.label}
           steps={g.steps}
@@ -281,14 +267,15 @@ type StepItemProps = {
 }
 
 const StepGroup = ({
-  groupIndex, label, steps, accessBadge, ...ip
+  groupKey, groupIndex, label, steps, accessBadge, ...ip
 }: {
+  groupKey: FlowStepGroupKey
   groupIndex: number
   label: GroupLabel
   steps: readonly FlowStep[]
   accessBadge: { access: Access; label: string } | undefined
 } & StepItemProps) => (
-  <div>
+  <div data-group={groupKey}>
     <div className="flex items-center gap-2 mb-1">
       <StepBadge index={groupIndex} pending={false} />
       <span className="text-fs-body font-bold text-ink leading-snug">{label.title}</span>
