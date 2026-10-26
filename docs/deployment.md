@@ -28,6 +28,8 @@ flowchart TD
 | staging | NIG infra host | build 済みの SSR を image に含めて動かす。main に追従する |
 | production | NIG infra host | build 済みの SSR を image に含めて動かす。tag を指定する |
 
+production だけを検索エンジンに載せる。dev と staging は robots.txt で crawler に閉じ、全ページに noindex を付け、sitemap を返さない ([public-api.md](public-api.md))。
+
 具体的な SSH ホスト、deploy パス、環境別 (dev / staging / production) の env の実値は、このリポジトリには含めず、host 側に置く。
 
 ## Compose と overlay

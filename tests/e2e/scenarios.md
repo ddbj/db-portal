@@ -1428,17 +1428,23 @@ AI 入力欄は `textbox` で accessible name は `search.a11y.assistantInput` (
   - 「About us」 (`nav.about`) は外部 `<a target="_blank">` で、内部 nav の active 判定対象外 (`aria-current` を持たない)
 - **備考**: アクセシビリティ landmark とキーボード nav はサイト全体の横断要件で、実ブラウザでしか検証できない。
 
-### E-FLOW-01: robots.txt / sitemap.xml エンドポイントの content-type と実 slug 反映
+### E-FLOW-01: robots.txt / sitemap.xml / llms.txt / noindex / `/api/` の 404 (production 以外の分岐)
 
 - **ペルソナ**: P-ANON
-- **前提**: staging (`DB_PORTAL_ENV` は production 以外)。robots は production と非 production で内容が分岐する
+- **前提**: staging (`DB_PORTAL_ENV` は production 以外)。robots.txt、sitemap.xml、noindex は production と production 以外で分岐する ([public-api.md](../../docs/public-api.md))
 - **手順**:
   1. `page.request.get("/robots.txt")` で取得する
   2. `page.request.get("/sitemap.xml")` で取得する
+  3. `page.request.get("/llms.txt")` で取得し、本文の `/api/news` へのリンク先を取得する
+  4. `page.request.get("/api/does-not-exist")` で取得する
+  5. `/` と `/bioproject` を開く
 - **期待**:
-  - `/robots.txt`: HTTP 200、`content-type` が `text/plain` を含む。本文に `User-agent: *` を含む。production では `Sitemap: <origin>/sitemap.xml` 行を含み、非 production (staging) では `Disallow: /` を含む
-  - `/sitemap.xml`: HTTP 200、`content-type` が `application/xml` を含む。`<urlset>` 配下に `app/content/databases` の実 slug を反映した `/bioproject?lang=ja` および `?lang=en` の `<loc>` を含み、各 `<url>` が `<xhtml:link rel="alternate" hreflang="ja|en|x-default">` の 3 alternates を持つ。静的 path (`/`、`/search`、`/submit`、`/news`) も ja/en 2 件ずつ含む
-- **備考**: 純関数 (`renderRobotsTxt` / `buildSitemapEntries` / `renderSitemapXml`) は unit + pbt 済だが、express handler の wiring・content-type・`listDatabaseSlugs` の実ファイルシステム読み取りは served エンドポイントを叩かないと検証できない。robots の production 分岐 (`Sitemap:` 行) は production deploy でのみ確認可能で、staging では `Disallow: /` 側を確認する (production 側は production smoke test で確認、定義のみ until production)。
+  - `/robots.txt`: HTTP 200、`content-type` が `text/plain` を含む。空行を除いた行が `User-agent: *`、`Allow: /llms.txt`、`Allow: /api/news`、`Allow: /api/services`、`Disallow: /` の順に並ぶ。`Sitemap:` 行を含まない
+  - `/sitemap.xml`: HTTP 404
+  - `/llms.txt`: HTTP 200、`content-type` が `text/markdown` を含む。先頭行が `# BSI`。`](<origin>/api/news)` のリンクを含み、そのリンク先が HTTP 200 で `application/json` を返す
+  - `/api/does-not-exist`: HTTP 404、`content-type` が `application/json` を含み、本文が `{ "error": "not_found" }`
+  - `/` と `/bioproject` の `<head>` に `<meta name="robots" content="noindex">` がある
+- **備考**: production の分岐 (`Disallow: /search/results` と `Disallow: /api/auth/`、`Sitemap:` 行、sitemap.xml の HTTP 200 と `<lastmod>`、noindex 無し) は production でしか確認できないので、production の smoke で確認する。純関数 (`renderRobotsTxt` / `renderLlmsText` / `buildSitemapEntries` / `renderSitemapXml`) は unit + pbt 済で、ここでは express の mount と content-type を確認する。
 
 ### E-FLOW-02: 未知のトップレベル route で汎用 404 ErrorBoundary
 

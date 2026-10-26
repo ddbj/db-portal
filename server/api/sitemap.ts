@@ -2,7 +2,9 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 import type { RequestHandler } from "express"
+import { z } from "zod"
 
+import { PageLastUpdated } from "../../app/schemas/content/page-content"
 import type { ServerEnv } from "../lib/env"
 
 const STATIC_PATHS = [
@@ -17,9 +19,13 @@ const STATIC_PATHS = [
 
 const PAGE_CONTENTS_DIR = "page-contents"
 
-// app/lib/content/markdown-loader.ts:extractUrlPath と同じ規約: index.md は親
-// ディレクトリの URL に畳み、 sibling foo.md は /<parent>/foo として独立した
-// URL を持つ。 .en.md は同一 URL の英語ペアなので別 entry を生まない。
+// build の前段の gen:last-updated が書く記録。Markdown ページの言語別の最終
+// 更新日時を <lastmod> に使う。
+const LAST_UPDATED_FILE = "app/lib/content/gen/last-updated.json"
+
+// app/lib/content/markdown-loader.ts の extractUrlPath と同じ規約で URL にする。
+// index.md は親ディレクトリの URL になり、同じディレクトリの foo.md は
+// /<parent>/foo になる。.en.md は同じ URL の英語版なので entry を増やさない。
 const mdRelPathToUrlPath = (relPath: string): string | null => {
   if (relPath.endsWith(".en.md")) return null
   if (!relPath.endsWith(".md")) return null
@@ -31,8 +37,8 @@ const mdRelPathToUrlPath = (relPath: string): string | null => {
   return `/${stripped}`
 }
 
-// /_dev/* は dev 専用 preview の規約 (app/lib/routes-helpers.ts) で production
-// から除外する。 search-index / sitemap-loader / content-tree も同じ判定を共有。
+// /_dev/* は dev 専用の preview (app/lib/routes-helpers.ts) なので production
+// に含めない。search-index / sitemap-loader / content-tree も同じ判定を使う。
 const isExcludedUrlPath = (urlPath: string): boolean =>
   urlPath === "/_dev" || urlPath.startsWith("/_dev/")
 
@@ -68,6 +74,24 @@ export const listContentPaths = async (
   return Array.from(found).sort()
 }
 
+const LastUpdatedMap = z.record(z.string(), PageLastUpdated)
+export type LastUpdatedMap = z.infer<typeof LastUpdatedMap>
+
+// 記録が無いときと読めないときは空にする。lastmod は任意の要素なので、記録が
+// 無くても sitemap は出す。
+export const readLastUpdated = async (filePath?: string): Promise<LastUpdatedMap> => {
+  const file = filePath ?? path.resolve(process.cwd(), LAST_UPDATED_FILE)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(await fs.readFile(file, "utf-8"))
+  } catch {
+    return {}
+  }
+  const result = LastUpdatedMap.safeParse(parsed)
+
+  return result.success ? result.data : {}
+}
+
 const escapeXml = (s: string): string =>
   s
     .replace(/&/g, "&amp;")
@@ -92,12 +116,18 @@ type SitemapAlternate = {
 
 type SitemapEntry = {
   loc: string
+  // W3C Datetime。無いページは要素ごと出さない。
+  lastmod?: string
   alternates: readonly SitemapAlternate[]
 }
+
+const withLastmod = (entry: SitemapEntry, lastmod: string | undefined): SitemapEntry =>
+  lastmod === undefined ? entry : { ...entry, lastmod }
 
 export const buildSitemapEntries = (
   origin: string,
   contentPaths: readonly string[],
+  lastUpdated: LastUpdatedMap = {},
 ): readonly SitemapEntry[] => {
   const base = trimOrigin(origin)
   const paths = [
@@ -114,25 +144,29 @@ export const buildSitemapEntries = (
       { hreflang: "en", href: enUrl },
       { hreflang: "x-default", href: jaUrl },
     ]
+    const updated = lastUpdated[normalized]
+
     return [
-      { loc: jaUrl, alternates },
-      { loc: enUrl, alternates },
+      withLastmod({ loc: jaUrl, alternates }, updated?.ja),
+      withLastmod({ loc: enUrl, alternates }, updated?.en),
     ]
   })
 }
 
 export const renderSitemapXml = (entries: readonly SitemapEntry[]): string => {
   const body = entries
-    .map((entry) => {
-      const alternates = entry.alternates
-        .map(
+    .map((entry) =>
+      [
+        "  <url>",
+        `    <loc>${escapeXml(entry.loc)}</loc>`,
+        ...(entry.lastmod === undefined ? [] : [`    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`]),
+        ...entry.alternates.map(
           (a) =>
             `    <xhtml:link rel="alternate" hreflang="${escapeXml(a.hreflang)}" href="${escapeXml(a.href)}"/>`,
-        )
-        .join("\n")
-
-      return `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>\n${alternates}\n  </url>`
-    })
+        ),
+        "  </url>",
+      ].join("\n"),
+    )
     .join("\n")
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -142,16 +176,22 @@ ${body}
 `
 }
 
-// page-contents/ は build 時に固まる想定なので、 起動後に一度だけ walk して
-// 以後は memo する。 変更が要る場合は process を restart する規約。
+// page-contents/ と last-updated.json は build 時に決まるので、最初のリクエスト
+// で一度だけ読み、以後はその値を使う。変えるときは process を再起動する。
 let cachedContentPaths: readonly string[] | null = null
+let cachedLastUpdated: LastUpdatedMap | null = null
 
 export const handleSitemap = (env: ServerEnv): RequestHandler =>
   async (_req, res) => {
-    if (cachedContentPaths === null) {
-      cachedContentPaths = await listContentPaths()
+    // 検索エンジンに載せない配置には、並べるページが無い。
+    if (env.DB_PORTAL_ENV !== "production") {
+      res.status(404).type("text/plain").send("Not Found")
+
+      return
     }
-    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, cachedContentPaths)
+    cachedContentPaths ??= await listContentPaths()
+    cachedLastUpdated ??= await readLastUpdated()
+    const entries = buildSitemapEntries(env.DB_PORTAL_PORTAL_ORIGIN, cachedContentPaths, cachedLastUpdated)
     res
       .type("application/xml")
       .set("Cache-Control", "public, max-age=3600, s-maxage=86400")

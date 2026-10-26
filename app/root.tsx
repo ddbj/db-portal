@@ -34,6 +34,10 @@ const readDefaultLang = (): Lang => {
   return value === "en" ? "en" : "ja"
 }
 
+// production 以外の配置には production と同じ内容があるので、検索結果に
+// production と並んで出ないように、全ページに noindex を付ける。
+const readNoindex = (): boolean => process.env.DB_PORTAL_ENV !== "production"
+
 export const loader = async ({ request, url: normalizedUrl }: LoaderFunctionArgs) => {
   const url = new URL(normalizedUrl)
   const hint = detectLangHint(url.searchParams)
@@ -56,7 +60,12 @@ export const loader = async ({ request, url: normalizedUrl }: LoaderFunctionArgs
     defaultLang: readDefaultLang(),
   })
 
-  const payload = { lang, cspNonce: request.headers.get(CSP_NONCE_HEADER) ?? "", portalOrigin }
+  const payload = {
+    lang,
+    cspNonce: request.headers.get(CSP_NONCE_HEADER) ?? "",
+    portalOrigin,
+    noindex: readNoindex(),
+  }
   if (cookieLang === undefined) {
     return data(payload, {
       headers: { "Set-Cookie": serializeLangCookie(lang, cookieOpts) },
@@ -83,6 +92,7 @@ export const meta = ({ loaderData, location, matches }: MetaArgs<typeof loader>)
     { name: "viewport", content: "width=device-width, initial-scale=1" },
     { charSet: "utf-8" },
     { tagName: "link", rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    ...(loaderData?.noindex === true ? [{ name: "robots", content: "noindex" }] : []),
     { tagName: "link", rel: "alternate", hrefLang: "ja", href: href("ja") },
     { tagName: "link", rel: "alternate", hrefLang: "en", href: href("en") },
     { tagName: "link", rel: "alternate", hrefLang: "x-default", href: href("ja") },

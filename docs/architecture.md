@@ -31,7 +31,7 @@ server 側で処理する endpoint:
 | `/api/services` | services mirror の集約レスポンス | [services.md](services.md) |
 | `/api/llm/*` | AI クエリビルダーの SSE | [llm.md](llm.md) |
 | `/api/set-lang` | 言語 cookie の更新 (303 redirect)。React Router の resource route | [i18n.md](i18n.md) |
-| `/sitemap.xml` / `/robots.txt` | 検索エンジン向けのリソース | § sitemap.xml と robots.txt |
+| `/llms.txt` / `/robots.txt` / `/sitemap.xml` | プログラムと crawler 向けの入口 | [public-api.md](public-api.md) |
 
 `app/lib/api/*` から呼ぶ ddbj-search-api の型生成と差分検知については、[api-types.md](api-types.md) を参照する。
 
@@ -130,7 +130,7 @@ URL の全構造は `app/routes.ts` で定義する。URL に言語識別子を�
 - 各 DB の解説ページと汎用の static page は、`routes/page-content/route.tsx` の catch-all route (`/*`) が表示する。URL の path は `page-contents/` 内の path に一致させる
 - `/auth/*` の client route には通常到達しない。BFF (`server/auth/routes.ts`) が先に 302 で redirect するためである。Keycloak 側の redirect_uri 設定の fallback として残す
 - `/api/set-lang` は action を持つ唯一の resource route で、lang cookie を更新したあと 303 redirect で Referer に戻す
-- BFF endpoint (`/api/me` / `/api/news` / `/api/services` / `/api/llm/*` / `/api/auth/*`) は `server/index.ts` で個別に mount し、React Router の catch-all より先に一致させる
+- BFF endpoint (`/api/me` / `/api/news` / `/api/services` / `/api/llm/*` / `/api/auth/*`) は `server/index.ts` で個別に mount し、React Router の catch-all より先に一致させる。どの BFF endpoint にも一致しない `/api/` 配下のアドレスは、React Router に渡さず JSON の 404 を返す ([public-api.md](public-api.md))
 - design preview (`/_design/*`) は `NODE_ENV !== "production"` のときだけ route に含める ([frontend.md](frontend.md))
 
 ### Route handle
@@ -189,10 +189,3 @@ WCAG AA 相当を `@theme` token の段階で満たし、primitive ごとに上�
 - focus ring は `*:focus-visible` に global で適用し、primitive 単位で上書きしない
 - 全ページをキーボードで操作できる。modal は focus trap を持つ
 - `<html lang>` は表示言語に合わせて動的に出力する ([i18n.md](i18n.md))
-
-## sitemap.xml と robots.txt
-
-検索エンジン向けのリソース。dev と staging では検索エンジンによる索引登録を拒否し、production だけで許可する。
-
-- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection と静的 route のそれぞれについて `?lang=ja` と `?lang=en` の 2 つの URL を出力し、hreflang で相互に宣言する ([i18n.md](i18n.md))
-- `GET /robots.txt` (`server/api/robots.ts`): production では全許可と Sitemap の場所を返し、dev と staging では全 disallow を返す

@@ -133,35 +133,45 @@ test.describe("Flow (cross-cutting) Domain", () => {
     )
   })
 
-  test("E-FLOW-01: robots.txt / sitemap.xml エンドポイントの content-type と実 slug 反映", async ({ page }) => {
-    // 手順 1: /robots.txt を取得。200 + text/plain + User-agent: *。
+  test("E-FLOW-01: robots.txt / sitemap.xml / llms.txt / noindex / /api/ の 404 (production 以外の分岐)", async ({ page }) => {
+    // 手順 1: /robots.txt。production 以外は llms.txt と公開 endpoint だけ Allow し、他を全て Disallow する。
     const robots = await page.request.get("/robots.txt")
     expect(robots.status()).toBe(200)
     expect(robots.headers()["content-type"]).toContain("text/plain")
-    const robotsBody = await robots.text()
-    expect(robotsBody).toContain("User-agent: *")
-    // 非 production (staging) では Disallow: / 側を確認する。
-    // production の Sitemap: 行分岐は production deploy でのみ確認可能。
-    expect(robotsBody).toContain("Disallow: /")
+    const robotsLines = (await robots.text()).split("\n").map((line) => line.trim()).filter((line) => line !== "")
+    expect(robotsLines).toEqual([
+      "User-agent: *",
+      "Allow: /llms.txt",
+      "Allow: /api/news",
+      "Allow: /api/services",
+      "Disallow: /",
+    ])
 
-    // 手順 2: /sitemap.xml を取得。200 + application/xml + 実 slug 反映。
-    const sitemap = await page.request.get("/sitemap.xml")
-    expect(sitemap.status()).toBe(200)
-    expect(sitemap.headers()["content-type"]).toContain("application/xml")
-    const xml = await sitemap.text()
-    expect(xml).toContain("<urlset")
-    // app/content/databases の実 slug を反映した ja/en の <loc>。
-    expect(xml).toMatch(/\/bioproject\?lang=ja/)
-    expect(xml).toMatch(/\/bioproject\?lang=en/)
-    // 各 url が ja/en/x-default の 3 alternates を持つ。
-    expect(xml).toContain('hreflang="ja"')
-    expect(xml).toContain('hreflang="en"')
-    expect(xml).toContain('hreflang="x-default"')
-    // 静的 path も ja/en 2 件ずつ含む。
-    for (const staticPath of ["/", "/search", "/submit", "/news"]) {
-      const tail = staticPath === "/" ? "" : staticPath
-      expect(xml).toContain(`${tail}?lang=ja`)
-      expect(xml).toContain(`${tail}?lang=en`)
+    // 手順 2: /sitemap.xml。検索エンジンに載せない配置では 404。
+    expect((await page.request.get("/sitemap.xml")).status()).toBe(404)
+
+    // 手順 3: /llms.txt。本文の /api/news へのリンク先が、この配置の JSON を返す。
+    const llms = await page.request.get("/llms.txt")
+    expect(llms.status()).toBe(200)
+    expect(llms.headers()["content-type"]).toContain("text/markdown")
+    const llmsText = await llms.text()
+    expect(llmsText.startsWith("# BSI\n")).toBe(true)
+    const newsLink = /\]\((https?:\/\/[^)]+\/api\/news)\)/.exec(llmsText)?.[1] ?? ""
+    expect(newsLink).not.toBe("")
+    const news = await page.request.get(newsLink)
+    expect(news.status()).toBe(200)
+    expect(news.headers()["content-type"]).toContain("application/json")
+
+    // 手順 4: /api/ の未知のアドレスは、サイトの 404 ページではなく JSON の 404。
+    const missing = await page.request.get("/api/does-not-exist")
+    expect(missing.status()).toBe(404)
+    expect(missing.headers()["content-type"]).toContain("application/json")
+    expect(await missing.json()).toEqual({ error: "not_found" })
+
+    // 手順 5: production 以外は全ページに noindex。
+    for (const path of ["/", "/bioproject"]) {
+      await page.goto(path)
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/)
     }
   })
 

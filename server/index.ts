@@ -4,7 +4,9 @@ import { createRequestHandler } from "@react-router/express"
 import express from "express"
 
 import { handleLlmHealth } from "./api/llm/health"
+import { handleLlms } from "./api/llms"
 import { handleNews } from "./api/news"
+import { handleApiNotFound } from "./api/not-found"
 import { handleRobots } from "./api/robots"
 import { handleServices } from "./api/services"
 import { handleSitemap } from "./api/sitemap"
@@ -79,7 +81,10 @@ app.get("/api/llm/health", handleLlmHealth)
 app.post("/api/llm/search-assistant", llmJsonParser, makeHandleSearchAssistant(env, logger, { client: llmClient }))
 app.get("/sitemap.xml", handleSitemap(env))
 app.get("/robots.txt", handleRobots(env))
+app.get("/llms.txt", handleLlms(env))
 mountAuthRoutes(app, env, logger)
+// BFF の endpoint を全て mount した後で、`/api/` の残りを JSON の 404 にする。
+app.all("/api/{*splat}", handleApiNotFound)
 
 if (isProd) {
   app.use(

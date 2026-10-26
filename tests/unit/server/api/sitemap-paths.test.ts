@@ -4,7 +4,7 @@ import path from "node:path"
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
-import { listContentPaths } from "../../../../server/api/sitemap"
+import { listContentPaths, readLastUpdated } from "../../../../server/api/sitemap"
 
 let root: string
 
@@ -60,7 +60,7 @@ describe("listContentPaths", () => {
   })
 
   test("listContentPaths_indexMdFile_collapsedToParentUrl", async () => {
-    // index.md は親ディレクトリ URL に畳まれ、 親 URL の単独 entry になる。
+    // index.md は親ディレクトリの URL になり、親 URL の単独 entry になる。
     await writeMd("submit/index.md")
 
     const paths = await listContentPaths(root)
@@ -84,5 +84,40 @@ describe("listContentPaths", () => {
     const paths = await listContentPaths(path.join(root, "does-not-exist"))
 
     expect(paths).toEqual([])
+  })
+})
+
+describe("readLastUpdated", () => {
+  test("readLastUpdated_missingFile_returnsEmpty", async () => {
+    expect(await readLastUpdated(path.join(root, "missing.json"))).toEqual({})
+  })
+
+  test("readLastUpdated_invalidJson_returnsEmpty", async () => {
+    const file = path.join(root, "broken.json")
+    await writeFile(file, "{ not json", "utf8")
+
+    expect(await readLastUpdated(file)).toEqual({})
+  })
+
+  test("readLastUpdated_wrongShape_returnsEmpty", async () => {
+    const file = path.join(root, "wrong.json")
+    await writeFile(file, JSON.stringify({ "/a": { ja: 123 } }), "utf8")
+
+    expect(await readLastUpdated(file)).toEqual({})
+  })
+
+  test("readLastUpdated_validFile_returnsMapWithOnlyKnownKeys", async () => {
+    const file = path.join(root, "ok.json")
+    await writeFile(file, JSON.stringify({
+      "/a": { ja: "2026-06-29T13:25:19+09:00", en: "2026-07-01T00:00:00+09:00" },
+      "/b": { ja: "2026-06-29T13:25:19+09:00", extra: "dropped" },
+      "/c": {},
+    }), "utf8")
+
+    expect(await readLastUpdated(file)).toEqual({
+      "/a": { ja: "2026-06-29T13:25:19+09:00", en: "2026-07-01T00:00:00+09:00" },
+      "/b": { ja: "2026-06-29T13:25:19+09:00" },
+      "/c": {},
+    })
   })
 })

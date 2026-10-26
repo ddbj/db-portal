@@ -149,7 +149,7 @@ shell は 2 つの resolver を定義する。`docs-root` は `/docs` の layout
 
 ## /docs 目次 (sitemap.json)
 
-`/docs` に表示する手書きの目次を扱う。crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml と robots.txt) とは別のものである。
+`/docs` に表示する手書きの目次を扱う。crawler 用の `/sitemap.xml` ([public-api.md](public-api.md)) とは別のものである。
 
 目次の内容は `page-contents/sitemap.json` に手書きし、サイドバー / 全文検索 / `/sitemap.xml` とは独立に管理する。`content-tree.ts` からの自動生成は使わない。dir 構造の alphabetical sort では意図した順序とグループ分けを表現できず、外部リンクの行も並べられないためである。ページを追加しても `sitemap.json` の更新は必須ではない。目次に出したいページだけを書く。サイドバーと検索は `page-contents/` の実ファイルから自動で生成する。
 

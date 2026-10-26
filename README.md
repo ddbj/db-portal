@@ -17,7 +17,7 @@ BioData Science Initiative (BSI) のデータ登録とデータ検索を 1 つ�
 
 ### 前提
 
-- [architecture.md](docs/architecture.md): ブラウザ・BFF・外部 API の 3 段構造、zone 分割と import 方向、SSR と CSR の境界、routing、性能、セキュリティ、sitemap.xml を扱う
+- [architecture.md](docs/architecture.md): ブラウザ・BFF・外部 API の 3 段構造、zone 分割と import 方向、SSR と CSR の境界、routing、性能、セキュリティ、アクセシビリティを扱う
 - [development.md](docs/development.md): 開発環境のセットアップ、env ファイルの切り替え、container 内で実行する開発コマンド、トラブルシュートを扱う
 
 ### 共通の仕組み
@@ -27,6 +27,7 @@ BioData Science Initiative (BSI) のデータ登録とデータ検索を 1 つ�
 - [i18n.md](docs/i18n.md): 表示言語を cookie で決める仕組み、英語訳が無いときの fallback、hreflang を扱う
 - [api-types.md](docs/api-types.md): ddbj-search-api の OpenAPI 仕様から型を生成する手順と、生成した型を UI まで通す規約を扱う
 - [entity-list.md](docs/entity-list.md): news と services が共有する mirror の cache、facet の集計、URL state、source 軸の表示を扱う
+- [public-api.md](docs/public-api.md): プログラムと crawler に向けた `/llms.txt`、`/robots.txt`、`/sitemap.xml`、production 以外の noindex、`/api/` 配下の未知のアドレスへの 404 を扱う
 
 ### 機能
 
