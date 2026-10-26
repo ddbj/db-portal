@@ -84,7 +84,12 @@ const sequenceDef: RowFormDef = {
       num: "",
       labelKey: "submit.detail.formGroupLabels.smallScale",
       kind: "check",
-      disabledWhenAnyChip: [...SPECIALIZED_ASSEMBLY_CHIPS, { axis: "tpa", value: "true" }],
+      // NSSS は遺伝子配列だけを受け付けるため、遺伝子配列以外のアセンブリ形式では選べない
+      disabledWhenAnyChip: [
+        { axis: "assembly-form", value: "genome" },
+        ...SPECIALIZED_ASSEMBLY_CHIPS,
+        { axis: "tpa", value: "true" },
+      ],
       disabledUnlessAnyChip: [{ axis: "has-annotation", value: "true" }],
       options: [
         {
@@ -102,10 +107,16 @@ const sequenceDef: RowFormDef = {
       kind: "radio",
       options: [
         {
+          value: "gene",
+          labelKey: "submit.detail.options.sequenceNucleotide.gene.label",
+          subKey: "submit.detail.options.sequenceNucleotide.gene.sub",
+          effect: { chipAdd: { axis: "assembly-form", value: "gene" } },
+        },
+        {
           value: "genome",
           labelKey: "submit.detail.options.sequenceNucleotide.genome.label",
           subKey: "submit.detail.options.sequenceNucleotide.genome.sub",
-          effect: { chipAdd: { axis: "assembly-form", value: "genome" } },
+          effect: { chipAdd: { axis: "assembly-form", value: "genome" }, chipRemoveAxes: ["small-scale"] },
         },
         {
           value: "mag-chain",

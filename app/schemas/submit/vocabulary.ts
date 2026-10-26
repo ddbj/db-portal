@@ -109,7 +109,7 @@ export const DEFAULT_CHIPS_FOR_KIND: Readonly<Partial<Record<FileTypeKind, reado
 }
 
 export const ALLOWED_CHIP_VALUES: Readonly<Record<ChipAxis, readonly string[]>> = {
-  "assembly-form": ["raw", "primary", "binned", "genome", "mag", "sag", "hybrid", "haplotype"],
+  "assembly-form": ["raw", "primary", "binned", "gene", "genome", "mag", "sag", "hybrid", "haplotype"],
   "has-annotation": ["true"],
   "tpa": ["true"],
   "small-scale": ["true"],

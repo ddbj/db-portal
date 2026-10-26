@@ -77,7 +77,7 @@ export const deriveFlowSteps = (submission: Submission): FlowStep[] => {
   const routings = routeEntries(submission, activeEntries)
   const jgaEntries = routings.filter((r) => r.service === "jga").map((r) => r.entry)
   const plainRoutings = routings.filter((r) => r.service !== "jga")
-  const companionEntries = plainRoutings.filter((r) => requiresCompanion(r.service)).map((r) => r.entry)
+  const companionEntries = plainRoutings.filter((r) => r.companion && requiresCompanion(r.service)).map((r) => r.entry)
 
   const steps = mergeSameServiceSteps([
     ...buildTier1Steps(plainRoutings),

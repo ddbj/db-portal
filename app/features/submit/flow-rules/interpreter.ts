@@ -11,6 +11,8 @@ export type EntryRouting = {
   service: Service
   scope: FlowStepScope
   notes: FlowStepNote[]
+  // false のとき、この entry を BioProject / BioSample の生成対象にしない
+  companion: boolean
 }
 
 const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
@@ -38,7 +40,7 @@ const routeEntry = (submission: Submission, entry: FileEntry): EntryRouting => {
     .filter((n) => n.whenAny === undefined || evalWhen(n.whenAny, ctx))
     .map((n) => ({ kind: n.kind, messageKey: n.messageKey }))
 
-  return { entry, service: rule.emit.service, scope, notes }
+  return { entry, service: rule.emit.service, scope, notes, companion: rule.emit.companion }
 }
 
 export const routeEntries = (

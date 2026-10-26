@@ -264,10 +264,12 @@ test.describe("Submit Domain", () => {
     await expect(flowGroup(page, "open")).toContainText(DIRECT)
   })
 
-  test("S-SUBMIT-17: 少数の短い配列 (NSSS) では BioProject / BioSample を出さず、MSS への注意を出す", async ({ page }) => {
+  test("S-SUBMIT-17: 遺伝子配列は NSSS でも MSS でも BioProject / BioSample を出さない", async ({ page }) => {
     await page.goto(
-      "/submit?organism-domain=prokaryote&entry=sequence%3Aassembled%3A0%3Aassembly-form%3Dgenome%2Chas-annotation%3Dtrue%2Csmall-scale%3Dtrue&group=single%3A0",
+      "/submit?organism-domain=prokaryote&entry=sequence%3Aassembled%3A0%3Aassembly-form%3Dgene%2Chas-annotation%3Dtrue%2Csmall-scale%3Dtrue&group=single%3A0",
     )
+    // 登録条件は role="switch" の sr-only <input> で、通常の click は wrapping <label> に intercept される
+    const smallScale = page.getByRole("switch", { name: /少数の短い配列/ })
 
     await expect(flowStep(page, "nsss")).toHaveCount(1)
     await expect(flowStep(page, "bioproject")).toHaveCount(0)
@@ -275,13 +277,19 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "nsss")).toContainText("BioProject / BioSample を登録する場合は")
     await expect(accountStep(page)).toHaveCount(1)
 
-    // 登録条件は role="switch" の sr-only <input> で、通常の click は wrapping <label> に intercept される
-    await page.getByRole("switch", { name: /少数の短い配列/ }).uncheck({ force: true })
+    await smallScale.uncheck({ force: true })
 
     await expect(flowStep(page, "nsss")).toHaveCount(0)
     await expect(flowStep(page, "ddbj")).toHaveCount(1)
+    await expect(flowStep(page, "bioproject")).toHaveCount(0)
+    await expect(flowStep(page, "biosample")).toHaveCount(0)
+    await expect(flowStep(page, "ddbj")).toContainText("BioProject / BioSample は必須ではありません")
+
+    await page.getByRole("radio", { name: /^ゲノム/ }).click()
+
     await expect(flowStep(page, "bioproject")).toHaveCount(1)
     await expect(flowStep(page, "biosample")).toHaveCount(1)
+    await expect(smallScale).toBeDisabled()
   })
 
   test("E-SUBMIT-01: 未設定の詳細種別が notify で示される", async ({ page }) => {

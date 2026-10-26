@@ -243,3 +243,39 @@ describe("getRowFormDef_multipleSelection", () => {
       .toEqual(new Set(ALLOWED_CHIP_VALUES["spatial-platform"]))
   })
 })
+
+describe("getRowFormDef_sequenceAssemblyForm", () => {
+  const sequenceGroup = (id: string) => {
+    const group = getRowFormDef("sequence", null, true).groups.find((g) => g.id === id)
+    if (group === undefined) throw new Error(`group ${id} is missing from sequence`)
+
+    return group
+  }
+
+  test("assemblyForm_offersGeneFirst", () => {
+    const first = sequenceGroup("assembly-form").options[0]
+
+    expect(first?.value).toBe("gene")
+    expect(first?.effect.chipAdd).toEqual({ axis: "assembly-form", value: "gene" })
+  })
+
+  test("smallScale_isDisabledForEveryAssemblyFormExceptGene", () => {
+    const blocking = sequenceGroup("small-scale").disabledWhenAnyChip ?? []
+    const assemblyValues = sequenceGroup("assembly-form").options
+      .map((o) => o.effect.chipAdd)
+      .filter((c) => c?.axis === "assembly-form")
+      .map((c) => c!.value)
+
+    for (const value of assemblyValues) {
+      const blocked = blocking.some((c) => c.axis === "assembly-form" && c.value === value)
+      expect(blocked).toBe(value !== "gene")
+    }
+  })
+
+  test("everyNonGeneAssemblyForm_removesSmallScale", () => {
+    for (const option of sequenceGroup("assembly-form").options) {
+      if (option.value === "gene") continue
+      expect(option.effect.chipRemoveAxes ?? []).toContain("small-scale")
+    }
+  })
+})

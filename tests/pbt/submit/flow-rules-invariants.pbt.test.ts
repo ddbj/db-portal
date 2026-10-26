@@ -4,11 +4,11 @@ import { expect } from "vitest"
 import { deriveAccess, requiresHumandbsApplication } from "../../../app/features/submit/access"
 import { isKindEnabled } from "../../../app/features/submit/cascade"
 import { deriveFlowSteps } from "../../../app/features/submit/flow-rules"
+import { type EntryRouting, routeEntries } from "../../../app/features/submit/flow-rules/interpreter"
 import {
   type FileEntry,
   type FlowStep,
   IDENTIFIABLE_KINDS,
-  isCompanionService,
   isSequencingSpatialPlatform,
   isSubmissionEndpoint,
   SERVICE_DEPENDENCIES,
@@ -65,24 +65,24 @@ test.prop([arbSubmission], RUNS)(
   },
 )
 
-// step の service が BP/BS を依存宣言している (= DDBJ 内 companion が必要な destination) か
-const requiresCompanion = (s: FlowStep): boolean => {
-  if (isCompanionService(s.service)) return false
-  const deps = SERVICE_DEPENDENCIES[s.service]
-  return deps.includes("bioproject") || deps.includes("biosample")
-}
-
 // companion は Tier1 の primary routing (= ユーザーが選んだ種別の主登録先) に対して付与する。
 // recipe (jgaSubmissionSteps / expressionDraSteps 等) が追加する副次 step は、そのカード自身の依存宣言に
 // 関わらず companion 生成の起点にはならない (jga 制御下の raw DRA に DDBJ 側 BP/BS を要求しない等)。
-const isTier1CompanionSource = (s: FlowStep): boolean => s.origin === "tier1" && requiresCompanion(s)
+// rule が emit.companion = false を宣言した routing も起点にならない。
+const isCompanionSource = (r: EntryRouting): boolean =>
+  r.service !== "jga"
+  && r.companion
+  && SERVICE_DEPENDENCIES[r.service].some((d) => d === "bioproject" || d === "biosample")
+
+const routingsOf = (submission: Submission): EntryRouting[] =>
+  routeEntries(submission, submission.fileEntries.filter((e) => isActive(submission, e)))
 
 test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_hasCompanionRequiringTier1Step_yieldsExactlyOneBioprojectAndBiosample",
   (submission) => {
     const steps = deriveFlowSteps(submission)
-    // Tier1 で BP/BS 依存を持つ service を emit する step が 1 つでも実在するときだけ既定 companion が出る
-    fc.pre(steps.some(isTier1CompanionSource))
+    // Tier1 で BP/BS 依存を持つ service に companion を外さずに routing された entry が 1 つでもあるときだけ既定 companion が出る
+    fc.pre(routingsOf(submission).some(isCompanionSource))
     expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(1)
     expect(steps.filter((s) => s.service === "biosample")).toHaveLength(1)
   },
@@ -95,18 +95,55 @@ test.prop([arbSubmission], RUNS)(
     // step は生成されたが、Tier1 で BP/BS 依存を宣言する service が 1 つも無いフロー
     // (例: proteome → jpost only、非ヒト variant → eva only、humandbs+jga+recipe-dra のみ) では companion を出さない
     fc.pre(steps.length > 0)
-    fc.pre(!steps.some(isTier1CompanionSource))
+    fc.pre(!routingsOf(submission).some(isCompanionSource))
     expect(steps.filter((s) => s.service === "bioproject")).toHaveLength(0)
     expect(steps.filter((s) => s.service === "biosample")).toHaveLength(0)
   },
 )
 
-test.prop([arbSubmission], RUNS)(
+// 遺伝子配列の entry を 1 件足した非ヒトの submission。遺伝子配列は companion を外す rule と NSSS に分岐する rule の
+// 起点で、ランダム生成だけではまれにしか現れないため、必ず含める
+const arbSubmissionWithGene: fc.Arbitrary<Submission> = fc
+  .tuple(arbSubmission, fc.boolean())
+  .map(([submission, smallScale]) => {
+    const entry: FileEntry = {
+      id: "gene-entry",
+      fileTypeKind: "sequence",
+      access: "open",
+      dataForm: "assembled",
+      groupId: "gene-group",
+      chipTags: [
+        { axis: "assembly-form", value: "gene" },
+        { axis: "has-annotation", value: "true" },
+        ...(smallScale ? [{ axis: "small-scale" as const, value: "true" }] : []),
+      ],
+    }
+
+    return {
+      ...submission,
+      preconditions: { organismDomain: "prokaryote" },
+      fileEntries: [...submission.fileEntries, entry],
+      fileGroups: [...submission.fileGroups, { id: "gene-group", groupType: "single", memberFileIds: [entry.id], linkedGroupIds: [] }],
+    }
+  })
+
+test.prop([arbSubmissionWithGene], RUNS)(
+  "deriveFlowSteps_routingWithoutCompanion_entryNeverInBioprojectOrBiosampleScope",
+  (submission) => {
+    const exempt = routingsOf(submission).filter((r) => !r.companion).map((r) => r.entry.id)
+    const companionIds = entryIdsOfService(
+      deriveFlowSteps(submission),
+      (s) => s.service === "bioproject" || s.service === "biosample",
+    )
+    for (const id of exempt) expect(companionIds.has(id)).toBe(false)
+  },
+)
+
+test.prop([arbSubmissionWithGene], RUNS)(
   "deriveFlowSteps_nsssEntry_neverInBioprojectOrBiosampleScope",
   (submission) => {
     const steps = deriveFlowSteps(submission)
     const nsssIds = entryIdsOfService(steps, (s) => s.service === "nsss")
-    fc.pre(nsssIds.size > 0)
     const companionIds = entryIdsOfService(steps, (s) => s.service === "bioproject" || s.service === "biosample")
     for (const id of nsssIds) expect(companionIds.has(id)).toBe(false)
   },

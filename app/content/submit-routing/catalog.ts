@@ -117,13 +117,31 @@ const catalogData = {
           },
         },
         {
-          when: { anyChip: { axis: "small-scale", value: "true" } },
+          // NSSS はゲノム・WGS・TSA・TLS を受け付けないため、少数の短い配列は遺伝子配列のときだけ NSSS に分岐する
+          when: {
+            and: [
+              { anyChip: { axis: "assembly-form", value: "gene" } },
+              { anyChip: { axis: "small-scale", value: "true" } },
+            ],
+          },
           emit: {
             service: "nsss",
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.nsss.intro" },
               { kind: "warning", messageKey: "submit.nsss.bioprojectBiosampleToMss" },
+            ],
+          },
+        },
+        {
+          when: { anyChip: { axis: "assembly-form", value: "gene" } },
+          emit: {
+            service: "ddbj",
+            scope: "entry",
+            companion: false,
+            notes: [
+              { kind: "info", messageKey: "submit.ddbj.mss.intro" },
+              { kind: "warning", messageKey: "submit.ddbj.gene.bioprojectBiosampleOptional" },
             ],
           },
         },

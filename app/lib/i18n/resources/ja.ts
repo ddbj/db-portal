@@ -284,6 +284,7 @@ export type Resources = {
         }
         sequenceNucleotide: {
           hasAnnotation: { label: string; sub: string }
+          gene: { label: string; sub: string }
           genome: { label: string; sub: string }
           magChain: { label: string; sub: string }
           sagChain: { label: string; sub: string }
@@ -418,6 +419,7 @@ export type Resources = {
     ddbj: {
       locusTagPrefix: string
       mss: { intro: string }
+      gene: { bioprojectBiosampleOptional: string }
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
       haplotype: { intro: string; stComment: string }
@@ -1051,7 +1053,8 @@ export const ja: Resources = {
         },
         sequenceNucleotide: {
           hasAnnotation: { label: "アノテーション付き", sub: "CDS, rRNA 等の構造・機能アノテーションを含む" },
-          genome: { label: "ゲノム", sub: "WGS, 完成ゲノム, TSA, TLS 等の一般的な配列" },
+          gene: { label: "遺伝子配列", sub: "遺伝子・mRNA・rRNA など" },
+          genome: { label: "ゲノム", sub: "WGS、完成ゲノム、TSA、TLS など" },
           magChain: { label: "MAG", sub: "メタゲノムアセンブリゲノム" },
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
           haplotype: { label: "ハプロタイプ", sub: "diploid/polyploid assembly の各ハプロタイプを個別に登録" },
@@ -1144,7 +1147,7 @@ export const ja: Resources = {
         restricted: { title: "制限公開のデータ", sub: "データ登録の前にデータ提供申請が必要" },
         open: { title: "非制限公開のデータ", sub: "登録先へ直接登録" },
         destination: { title: "登録先", sub: "データ種別ごと" },
-        nhaOrientation: { title: "種別グリッド外のデータ", sub: "NHA への直接登録" },
+        nhaOrientation: { title: "登録データ種別に無いデータ", sub: "提供申請の承認後に NHA へ登録" },
       },
       accessOverview: {
         mixed: "このデータは制限公開と非制限公開の両方を含みます",
@@ -1158,7 +1161,7 @@ export const ja: Resources = {
       },
       nha: {
         title: "NBDC ヒトデータアーカイブ (NHA)",
-        description: "DRA / GEA / JGA で扱えないデータ型 (画像・統計情報など) は、NBDC ヒトデータベースの NHA に直接登録できます。",
+        description: "DRA / GEA / JGA で扱えないデータ型 (画像・統計情報など) は、NBDC ヒトデータベースの NHA に登録できます。",
         statisticsLabel: "統計情報:",
         statisticsItems: "GWAS / メタ解析統計量、allele / genotype 頻度情報、平均 FPKM 値、エンリッチ領域ピーク情報、eQTL / sQTL 情報、平均メチル化率、PRS、mobile element 多型頻度、SV 頻度情報",
         pathologyLabel: "病理画像",
@@ -1203,6 +1206,9 @@ export const ja: Resources = {
       locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
       mss: {
         intro: "塩基配列は DDBJ (MSS: Mass Submission System) で登録します。",
+      },
+      gene: {
+        bioprojectBiosampleOptional: "遺伝子配列の登録に BioProject / BioSample は必須ではありません。メタゲノム解析や 16S rRNA の報告など、BioProject / BioSample と関連付ける場合は、BioProject / BioSample も登録してください。",
       },
       mag: {
         envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",

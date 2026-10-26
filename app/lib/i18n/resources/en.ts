@@ -302,7 +302,8 @@ export const en: Resources = {
         },
         sequenceNucleotide: {
           hasAnnotation: { label: "Annotated", sub: "Includes structural/functional annotation (CDS, rRNA, etc.)" },
-          genome: { label: "Genome", sub: "WGS, finished genome, TSA, TLS, and other general sequences" },
+          gene: { label: "Gene sequences", sub: "Genes, mRNA, rRNA, and similar" },
+          genome: { label: "Genome", sub: "WGS, finished genome, TSA, TLS, and similar" },
           magChain: { label: "MAG", sub: "Metagenome-assembled genome" },
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
           haplotype: { label: "Haplotype", sub: "Submit each haplotype of a diploid/polyploid assembly" },
@@ -395,7 +396,7 @@ export const en: Resources = {
         restricted: { title: "Restricted-access data", sub: "A submission application is required before data submission" },
         open: { title: "Open-access data", sub: "Submit directly to the destination" },
         destination: { title: "Submission destinations", sub: "Per data type" },
-        nhaOrientation: { title: "Outside the data type list", sub: "NHA direct submission" },
+        nhaOrientation: { title: "Outside the data type list", sub: "Submit to NHA after the data submission application is approved" },
       },
       accessOverview: {
         mixed: "This data includes both restricted and open access",
@@ -409,7 +410,7 @@ export const en: Resources = {
       },
       nha: {
         title: "NBDC Human Data Archive (NHA)",
-        description: "Data types that do not fit into DRA / GEA / JGA (e.g. images, summary statistics) can be submitted directly to NHA inside the NBDC Human Database.",
+        description: "Data types that do not fit into DRA / GEA / JGA (e.g. images, summary statistics) can be submitted to NHA inside the NBDC Human Database.",
         statisticsLabel: "Summary statistics:",
         statisticsItems: "GWAS / meta-analysis statistics, allele / genotype frequencies, mean FPKM, enriched region peaks, eQTL / sQTL, mean methylation rate, PRS, mobile element polymorphism frequencies, SV frequencies",
         pathologyLabel: "Pathology images",
@@ -468,6 +469,9 @@ export const en: Resources = {
       },
       mss: {
         intro: "Nucleotide sequences are submitted through DDBJ (MSS: Mass Submission System).",
+      },
+      gene: {
+        bioprojectBiosampleOptional: "A BioProject and BioSample are not required for gene sequences. If you link the sequences to a BioProject or BioSample (for example, for a metagenomic analysis or a 16S rRNA report), register the BioProject and BioSample too.",
       },
       tpa: {
         intro: "Third-party (TPA) sequences and annotation are accepted through DDBJ (MSS).",

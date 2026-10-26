@@ -149,3 +149,45 @@ describe("applyRadio", () => {
     ])
   })
 })
+
+describe("applyRadio on the sequence assembly form", () => {
+  const sequenceEntry = (chipTags: FileEntryChip[]): FileEntry => ({
+    id: "e1",
+    fileTypeKind: "sequence",
+    access: "open",
+    dataForm: "assembled",
+    groupId: "g1",
+    chipTags,
+  })
+  const options = groupDef("sequence", null, "assembly-form").options
+
+  test("applyRadio_geneToGenome_dropsSmallScaleAndKeepsAnnotation", () => {
+    const entry = sequenceEntry([
+      { axis: "assembly-form", value: "gene" },
+      { axis: "has-annotation", value: "true" },
+      { axis: "small-scale", value: "true" },
+    ])
+
+    const next = applyRadio(initDraft(entry, GROUP), optionDef("sequence", null, "assembly-form", "genome"), options)
+
+    expect(next.chipTags).toEqual([
+      { axis: "has-annotation", value: "true" },
+      { axis: "assembly-form", value: "genome" },
+    ])
+    expect(() => FileEntry.parse({ ...entry, chipTags: next.chipTags })).not.toThrow()
+  })
+
+  test("applyRadio_genomeToGene_keepsAnnotationAndAddsNoSmallScale", () => {
+    const entry = sequenceEntry([
+      { axis: "assembly-form", value: "genome" },
+      { axis: "has-annotation", value: "true" },
+    ])
+
+    const next = applyRadio(initDraft(entry, GROUP), optionDef("sequence", null, "assembly-form", "gene"), options)
+
+    expect(next.chipTags).toEqual([
+      { axis: "has-annotation", value: "true" },
+      { axis: "assembly-form", value: "gene" },
+    ])
+  })
+})

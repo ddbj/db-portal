@@ -30,6 +30,9 @@ const Emit = z
   .object({
     service: Service,
     scope: RoutingScope,
+    // false のとき、この rule に合致した entry を BioProject / BioSample の生成対象にしない。
+    // 登録先の service が BioProject / BioSample を前提としても、その登録では必須でない場合に使う
+    companion: z.boolean().default(true),
     notes: z.array(RoutingNote).default([]),
   })
   .strict()
