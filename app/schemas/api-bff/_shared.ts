@@ -13,13 +13,13 @@ export const langOptionalUrl = z.object({
 export const BsiSource = z.enum(["ddbj", "dbcls"])
 export type BsiSource = z.infer<typeof BsiSource>
 
-export const cacheWrapper = <TItems extends z.ZodTypeAny, TVersion extends number>(
+export const cacheWrapper = <TItems extends z.ZodType, TVersion extends number>(
   items: TItems,
   schemaVersion: TVersion,
 ) =>
   z.object({
     schemaVersion: z.literal(schemaVersion),
-    lastSyncSha: z.record(BsiSource, z.string().nullable()),
+    lastSyncSha: z.partialRecord(BsiSource, z.string().nullable()),
     lastFetchedAt: z.string().datetime({ offset: true }),
     items,
   })

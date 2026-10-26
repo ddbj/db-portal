@@ -4,7 +4,7 @@ services は News mirror が clone した local repo を read-only で借りて�
 
 ## services の役割
 
-services は **独自の git clone もポーリングも持たず**、 News mirror が維持する local clone を read-only で借りる ([news.md](news.md) 側から subscribe される)。 source ごとに正規化して in-memory + disk の両 cache に流し込み、 `/api/services` 1 endpoint で **top page セクション** (`featuredTop === true` のみ) と **`/services` 一覧** (全件 + facet) の両方を返す。 BFF と外部 API / secret 遮蔽の一般則は [architecture.md](architecture.md) を参照。
+services は独自の git clone もポーリングも持たず、 News mirror が維持する local clone を read-only で借りる ([news.md](news.md) 側から subscribe される)。 source ごとに正規化して in-memory + disk の両 cache に流し込み、 `/api/services` 1 endpoint で top page セクション (`featuredTop === true` のみ) と `/services` 一覧 (全件 + facet) の両方を返す。 BFF と外部 API / secret 遮蔽の一般則は [architecture.md](architecture.md) を参照。
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ clone / pull は News に委譲し、 services 側は HEAD 変化通知を受け
 
 2 段 cache (in-memory + disk) / disk cache 即 load / `schemaVersion` 不一致時の空 cache fallback / source 単位 atomic 差し替え といった汎用 mirror cache 規約は [entity-list.md § 2 段 cache](entity-list.md) に従う。 services 固有の差分は 3 点に絞る。
 
-- 再構築の起点は独自 poller ではなく **News mirror の sha 変化通知**。 受領 sha と `lastSyncSha[source]` が一致するときは no-op
+- 再構築の起点は独自 poller ではなく News mirror の sha 変化通知。 受領 sha と `lastSyncSha[source]` が一致するときは no-op
 - atomic 差し替えの単位は source (DDBJ / DBCLS) の 2 系統。 片方の再構築中に他方の items は触らない
 - ファイル read / normalize 失敗は warn にとどめ、 既存 items を維持する
 
@@ -36,7 +36,7 @@ clone / pull は News に委譲し、 services 側は HEAD 変化通知を受け
 
 ## 正規化
 
-各 source の生 entry は語彙が違ったり、 表記揺れがあったりするため、 同じ shape に揃えてから cache に入れる。 順序は **表示名 override → ID 採番 → category 写像 → 説明文** のチェーンで、 後段ほど前段の結果に乗る (ID は override 後の名前から、 category は両 source 別個に写像)。
+各 source の生 entry は語彙が違ったり、 表記揺れがあったりするため、 同じ shape に揃えてから cache に入れる。 順序は表示名 override → ID 採番 → category 写像 → 説明文のチェーンで、 後段ほど前段の結果に乗る (ID は override 後の名前から、 category は両 source 別個に写像)。
 
 ### 表示名 override
 
@@ -62,7 +62,7 @@ upstream の英名は冗長 / 和名混在の item が混じるため、 BSI 側
 
 ## /api/services
 
-`/api/services` は **1 endpoint で 2 用途を兼ねる**。 SSR loader は持たず、 client が TanStack Query で 1 回 fetch し、 top page と /services で同じ query key を共有する。 使い分けは client 側で `featuredTop` フラグの絞り込みや facet 選択で行い、 別 endpoint を増やさない。
+`/api/services` は 1 endpoint で 2 用途を兼ねる。 SSR loader は持たず、 client が TanStack Query で 1 回 fetch し、 top page と /services で同じ query key を共有する。 使い分けは client 側で `featuredTop` フラグの絞り込みや facet 選択で行い、 別 endpoint を増やさない。
 
 ### top page
 
@@ -91,7 +91,7 @@ top page の services セクションは `featuredTop === true` の item だけ�
 
 ## 環境変数
 
-`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc に関わる env:
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 この文書に関わる env:
 
-- `DB_PORTAL_SERVICES_CACHE_DIR` — disk cache のディレクトリ
+- `DB_PORTAL_SERVICES_CACHE_DIR`: disk cache のディレクトリ
 - repo clone 先 / branch / ポーリング間隔は News mirror に委ねるため `DB_PORTAL_NEWS_*` を再利用する ([news.md](news.md))

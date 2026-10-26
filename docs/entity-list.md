@@ -1,6 +1,6 @@
 # Entity list mirror
 
-BSI が DDBJ / DBCLS の上流を mirror して 1 endpoint で配る **entity list** 機構の共通規約。 [news.md](news.md) と [services.md](services.md) はこの機構の instance で、 cache 構造 / facet 集計 / URL 規約 / source 軸の表示を共有する。
+BSI が DDBJ / DBCLS の上流を mirror して 1 endpoint で配る entity list 機構の共通規約。 [news.md](news.md) と [services.md](services.md) はこの機構の instance で、 cache 構造 / facet 集計 / URL 規約 / source 軸の表示を共有する。
 
 ## データの流れ
 
@@ -12,7 +12,7 @@ cache は in-memory の `items` 配列と disk JSON ファイルの 2 段構成�
 
 - disk file 不在 / parse 失敗 / `schemaVersion` 不一致 のいずれも空 cache から start する。 cold start を待たせない
 - 永続層は temp file + rename で書き、 中途半端な JSON を read してしまう状態を作らない
-- atomic 差し替えの単位は **source**。 source A の再構築中に source B の items を喪失してはならない
+- atomic 差し替えの単位は source。 source A の再構築中に source B の items を喪失してはならない
 - 再構築失敗 (network / parse / 破損 等) は warn にとどめ、 既存 cache をそのまま提供する
 
 ## schemaVersion 契約
@@ -29,10 +29,10 @@ cache は in-memory の `items` 配列と disk JSON ファイルの 2 段構成�
 
 facet sidebar の 1 グループは「軸」 1 つに対応する。 軸は次の 4 種に分類する:
 
-- **enum** — 有限の値列 (e.g. `source`, `category`)
-- **number** — 数値 (e.g. `year`)
-- **string** — 任意の文字列 (e.g. `service`)
-- **bool** — boolean フラグ (e.g. `featured`)
+- enum: 有限の値列 (e.g. `source`, `category`)
+- number: 数値 (e.g. `year`)
+- string: 任意の文字列 (e.g. `service`)
+- bool: boolean フラグ (e.g. `featured`)
 
 各 entity が使う軸の組み合わせは entity 固有 docs を参照する。
 
@@ -43,10 +43,10 @@ facet sidebar の 1 グループは「軸」 1 つに対応する。 軸は次�
 ## URL state と件数
 
 - 同 facet グループ内の複数選択は OR、 異なる facet グループ間は AND で結ぶ
-- グループ G の option v の件数は **G を除く全 facet を適用した結果集合のうち v を持つ件数** とする (self-exclusion)
+- グループ G の option v の件数は G を除く全 facet を適用した結果集合のうち v を持つ件数とする (self-exclusion)
 - G 内での選択は G 自身の件数に影響しない。 他グループの絞り込みは G の件数に連動する
 - pagination と facet を同時に変えた場合、 URL は 1 回で更新する (履歴を分割しない)
-- 複数値は `,` separated、 順序は **enum / string 軸は alphabet 順、 number 軸は降順** で serialize する
+- 複数値は `,` separated、 順序は enum / string 軸は alphabet 順、 number 軸は降順で serialize する
 
 ## sort
 
@@ -58,7 +58,7 @@ facet sidebar の 1 グループは「軸」 1 つに対応する。 軸は次�
 - response の検証失敗 / HTTP non-2xx はすべて `APIError` で throw する
 - query param の組み立て規約 (`,` separated 等) は § URL state と件数 を参照する
 
-## 不変量
+## 制約
 
 - per-source atomic swap (source A 再構築中に source B が消えない)
 - sort は安定 (同 key の item の相対順は保たれる)

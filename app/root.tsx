@@ -26,6 +26,7 @@ import { isSecureRuntime, parseLangCookie, serializeLangCookie } from "~/lib/i18
 import { detectLangHint, resolveLang } from "~/lib/i18n/resolve-lang.server"
 import type { Lang } from "~/lib/i18n/use-lang"
 import { createQueryClient } from "~/lib/query/client"
+import { CSP_NONCE_HEADER } from "~/schemas/csp-nonce"
 import { ShellLayout } from "~/shell"
 
 const readDefaultLang = (): Lang => {
@@ -33,8 +34,8 @@ const readDefaultLang = (): Lang => {
   return value === "en" ? "en" : "ja"
 }
 
-export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-  const url = new URL(request.url)
+export const loader = async ({ request, url: normalizedUrl }: LoaderFunctionArgs) => {
+  const url = new URL(normalizedUrl)
   const hint = detectLangHint(url.searchParams)
   const cookieLang = parseLangCookie(request.headers.get("Cookie"))
   const cookieOpts = { secure: isSecureRuntime() }
@@ -55,7 +56,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     defaultLang: readDefaultLang(),
   })
 
-  const payload = { lang, cspNonce: context.cspNonce, portalOrigin }
+  const payload = { lang, cspNonce: request.headers.get(CSP_NONCE_HEADER) ?? "", portalOrigin }
   if (cookieLang === undefined) {
     return data(payload, {
       headers: { "Set-Cookie": serializeLangCookie(lang, cookieOpts) },
@@ -64,7 +65,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   return data(payload)
 }
 
-export const meta = ({ data: loaderData, location, matches }: MetaArgs<typeof loader>) => {
+export const meta = ({ loaderData, location, matches }: MetaArgs<typeof loader>) => {
   const origin = loaderData?.portalOrigin ?? ""
   const path = location.pathname
   // hreflang alternates は query string を含めた canonical に貼る。
@@ -105,7 +106,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     <html lang={lang}>
       <head>
         <Meta />
-        <Links />
+        <Links nonce={nonce} />
       </head>
       <body>
         {children}

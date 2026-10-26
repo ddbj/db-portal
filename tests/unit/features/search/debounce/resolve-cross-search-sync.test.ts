@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { describe, expect, test } from "vitest"
 
 import { identityAst, resolveCrossSearchSync } from "~/features/search"

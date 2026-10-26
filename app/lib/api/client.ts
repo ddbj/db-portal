@@ -125,7 +125,7 @@ export const apiPost = async <P extends keyof paths & string>(
   return consumeJsonBody<ResponseBody<PostOp<P>>>(response)
 }
 
-export const fetchBffJson = async <S extends z.ZodTypeAny>(
+export const fetchBffJson = async <S extends z.ZodType>(
   path: string,
   options: ApiRequestOptions,
   schema: S,

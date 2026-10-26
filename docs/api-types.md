@@ -1,10 +1,10 @@
 # API Types
 
-ddbj-search-api (検索 backend) との型連携。 BSI は backend の OpenAPI 仕様を SSOT として受け取り、 派生した型 1 本で UI 層まで通す **pass-through** に徹する。 型生成、 UI 向け alias、 fetch wrapper、 エラー正規化、 そして 「手元生成 + git diff」 の運用を扱う。
+ddbj-search-api (検索 backend) との型連携。 BSI は backend の OpenAPI 仕様を SSOT として受け取り、 派生した型 1 本で UI 層まで通す pass-through に徹する。 型生成、 UI 向け alias、 fetch wrapper、 エラー正規化、 そして 「手元生成 + git diff」 の運用を扱う。
 
 ## consume する endpoint
 
-BSI は ddbj-search-api を consume するだけで、 検索 AST / DSL の **grammar 自体は backend 側に閉じ込める** ([search.md](search.md) 参照)。 BSI 側で叩く endpoint は次の 4 つに閉じる。 method・request / response 形は `app/lib/api/openapi-types.ts` (生成物) が SSOT。
+BSI は ddbj-search-api を consume するだけで、 検索 AST / DSL の grammar 自体は backend 側に閉じ込める ([search.md](search.md) 参照)。 BSI 側で叩く endpoint は次の 4 つに閉じる。 method・request / response 形は `app/lib/api/openapi-types.ts` (生成物) が SSOT。
 
 | Path | 用途 |
 |---|---|
@@ -34,7 +34,7 @@ flowchart TD
 
 ## 型生成と差分検知
 
-検索 backend の OpenAPI 仕様を取り込んで `app/lib/api/openapi-types.ts` を上書きする pipeline。 **生成は手元で行い、 生成物を git commit する** — API 仕様変更を 「気付かないまま型不整合で壊れる」 のを避けるため、 CI 自動生成を入れず、 人間が diff を読んで wrapper / alias / feature を同一 commit で更新する規律を取る。
+検索 backend の OpenAPI 仕様を取り込んで `app/lib/api/openapi-types.ts` を上書きする pipeline。 生成は手元で行い、 生成物を git commit する。 API 仕様変更を 「気付かないまま型不整合で壊れる」 のを避けるため、 CI 自動生成を入れず、 人間が diff を読んで wrapper / alias / feature を同一 commit で更新する規律を取る。
 
 - 生成元 URL は `DB_PORTAL_OPENAPI_URL` env で切り替える
 - `docker compose exec app npm run gen:api-types` で `openapi-typescript` が走る
@@ -56,7 +56,7 @@ git diff app/lib/api/openapi-types.ts
 
 backend の検索 AST は discriminated union として定義されているが、 `openapi-typescript` はこれを Request 系 / Response 系の 2 系統 (`-Input` / `-Output` suffix) に分けて出力する。 UI 層に直接見せると import が煩雑になるため、 `app/lib/api/search-types.ts` がこの差を吸収する。
 
-- UI 層は **Response 系を SSOT** とする 1 つの alias だけを import する
+- UI 層は Response 系を SSOT とする 1 つの alias だけを import する
 - Request 系への変換は serialize 呼び出し境界 1 箇所に閉じ込める
 - ハイフン入りの生成型名 (`...-Output`) は UI 層に露出させない
 - `op` discriminator で leaf node / `BoolOp` (AND / OR / NOT) を narrow できる形を維持する
@@ -65,7 +65,7 @@ backend 側で alias 名や suffix 規約が変わっても、 影響は `search
 
 ## fetch wrapper
 
-`app/lib/api/client.ts` は `paths` 型から operation 単位の query / requestBody / response を推論する、 **型付きの fetch wrapper**。 呼び出し側は path 文字列ではなく、 `app/lib/api/search.ts` 等の thin wrapper 関数を経由する。
+`app/lib/api/client.ts` は `paths` 型から operation 単位の query / requestBody / response を推論する、 型付きの fetch wrapper。 呼び出し側は path 文字列ではなく、 `app/lib/api/search.ts` 等の thin wrapper 関数を経由する。
 
 - base URL は呼び出し側から渡す (wrapper は env を直接参照しない)
 - 同一 operation の query / body / response の整合は型で保証する
@@ -112,14 +112,14 @@ flowchart TD
   Fallback --> E
 ```
 
-TanStack Query の retry 規約もこの `APIError` を前提に組む — query は 5xx だけ retry し、 mutation は retry しない (mutation は手動再試行 UI を別途用意する)。 retry 上限と判定条件の SSOT は `app/lib/query/client.ts`。
+TanStack Query の retry 規約もこの `APIError` を前提に組む。 query は 5xx だけ retry し、 mutation は retry しない (mutation は手動再試行 UI を別途用意する)。 retry 上限と判定条件の SSOT は `app/lib/query/client.ts`。
 
 ## 環境変数
 
-`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc に関わる env:
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 この文書に関わる env:
 
-- `DB_PORTAL_OPENAPI_URL` — `openapi-typescript` の生成元 (build / dev 限定)
-- `DB_PORTAL_SEARCH_API_URL` — server 側 (SSR / BFF) から呼ぶ検索 API base URL
-- `VITE_DB_PORTAL_SEARCH_API_URL` — client bundle に焼き込む検索 API base URL (build 時に Vite が静的置換、 runtime には変更不可)
+- `DB_PORTAL_OPENAPI_URL`: `openapi-typescript` の生成元 (build / dev 限定)
+- `DB_PORTAL_SEARCH_API_URL`: server 側 (SSR / BFF) から呼ぶ検索 API base URL
+- `VITE_DB_PORTAL_SEARCH_API_URL`: client bundle に焼き込む検索 API base URL (build 時に Vite が静的置換、 runtime には変更不可)
 
 env の SSOT 規約と build-time / runtime の取り扱いは [architecture.md](architecture.md) を参照。

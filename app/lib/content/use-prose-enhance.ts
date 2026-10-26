@@ -40,6 +40,7 @@ const renderMermaid = async (
   mermaid.initialize({
     startOnLoad: false,
     theme: "default",
+    layout: "dagre",
     fontFamily: "var(--font-sans), -apple-system, sans-serif",
     themeVariables: {
       fontSize: "13px",

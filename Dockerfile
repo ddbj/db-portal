@@ -1,4 +1,4 @@
-FROM node:24.15.0-bookworm AS base
+FROM node:24.22.1-bookworm AS base
 
 LABEL org.opencontainers.image.title="db-portal" \
       org.opencontainers.image.description="DDBJ DB Portal - integrated web portal for DDBJ services" \

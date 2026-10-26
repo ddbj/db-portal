@@ -2,7 +2,7 @@
 
 DDBJ portal の AI 補助機能が使う vLLM サーバーを GPU node で起動するための構成。staging / production の portal app は、この 1 インスタンスを共有して参照する。
 
-構成方針 / ネットワーク / 環境変数 / 運用の詳細仕様は [`../docs/llm.md`](../docs/llm.md) が SSOT。本 README は GPU node オペレータ向けの最小手順だけを置く。実際の SSH host / clone 先 / HF cache パスは運用環境ごとに異なるため、ここではプレースホルダ (`<...>`) と env 参照で示す。
+構成方針、ネットワーク、環境変数、運用の詳細は [`../docs/llm.md`](../docs/llm.md) に書く。ここには GPU node オペレータ向けの最小手順だけを置く。実際の SSH host / clone 先 / HF cache パスは運用環境ごとに異なるため、ここではプレースホルダ (`<...>`) と env 参照で示す。
 
 ## 前提
 
@@ -67,7 +67,7 @@ podman-compose down && podman-compose up -d
 
 ## トラブルシューティング
 
-- **`podman compose` (docker-compose plugin) は CDI device を解釈しない**。必ず Python 製の `podman-compose` を使う
+- `podman compose` (docker-compose plugin) は CDI device を解釈しない。必ず Python 製の `podman-compose` を使う
 - 起動直後の `unhealthy` は `start_period` (600s) の間は再起動されない (cold start 許容)
 - VRAM 不足で OOM するときは `.env` の `DB_PORTAL_LLM_MAX_MODEL_LEN` を下げる、または `DB_PORTAL_LLM_GPU_MEMORY_UTILIZATION` を 0.85 程度に下げる
 - イメージタグは固定。`latest` は使わない (再現性 / 急な breaking change 回避)

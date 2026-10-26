@@ -234,7 +234,7 @@ const DbclsServiceRaw = z
     URL: z.string().optional(),
     explanation_ja: z.string().optional(),
     explanation_en: z.string().optional(),
-    掲載: z.unknown(),
+    掲載: z.unknown().optional(),
   })
   .passthrough()
 

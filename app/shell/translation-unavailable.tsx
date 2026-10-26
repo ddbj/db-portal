@@ -23,12 +23,12 @@ const stateFromLoaderData = (data: unknown): I18nState | undefined => {
 // route の handle または loader data のいずれかが「complete でない」 と主張すれば missing。
 // 静的な route 全体の状態は handle、 request-time で決まる page-content のような
 // 動的 route は loader data 経由で translationState を渡す。
-const isMissing = (match: { handle: unknown; data: unknown }): boolean => {
+const isMissing = (match: { handle: unknown; loaderData: unknown }): boolean => {
   if (isI18nHandle(match.handle)) {
     const state = match.handle.i18n.en
     if (state !== undefined && state !== "complete") return true
   }
-  const loaderState = stateFromLoaderData(match.data)
+  const loaderState = stateFromLoaderData(match.loaderData)
   if (loaderState !== undefined && loaderState !== "complete") return true
 
   return false

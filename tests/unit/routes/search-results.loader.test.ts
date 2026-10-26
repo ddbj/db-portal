@@ -1,5 +1,5 @@
-import { http, HttpResponse } from "msw"
-import type { LoaderFunctionArgs } from "react-router"
+import { http, HttpResponse } from "msw/http"
+import { type LoaderFunctionArgs, RouterContextProvider } from "react-router"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
 import {
@@ -22,7 +22,7 @@ const buildLoader = (search: string, env?: string): Promise<LoaderData> => {
   const request = new Request(url)
   if (env !== undefined) process.env.DB_PORTAL_SEARCH_API_URL = env
 
-  return loader({ request, params: {}, context: {} } as LoaderFunctionArgs)
+  return loader({ request, url: new URL(request.url), params: {}, context: new RouterContextProvider() } as unknown as LoaderFunctionArgs)
 }
 
 beforeEach(() => {

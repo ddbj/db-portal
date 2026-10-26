@@ -2,6 +2,8 @@ import crypto from "node:crypto"
 
 import type { RequestHandler } from "express"
 
+import { CSP_NONCE_HEADER } from "../../app/schemas/csp-nonce"
+
 type SecurityHeadersOptions = {
   env: "dev" | "staging" | "production"
   searchApiUrl?: string
@@ -49,9 +51,13 @@ export const securityHeaders = ({
   searchApiUrl,
   keycloakRealmUrl,
 }: SecurityHeadersOptions): RequestHandler =>
-  (_req, res, next) => {
+  (req, res, next) => {
     const nonce = crypto.randomUUID()
     res.locals.cspNonce = nonce
+    // The React Router adapter copies the incoming headers into the Fetch
+    // Request that loaders and entry.server receive, so the header is the
+    // channel that hands the nonce to the app.
+    req.headers[CSP_NONCE_HEADER] = nonce
 
     res.setHeader("X-Frame-Options", "DENY")
     res.setHeader("X-Content-Type-Options", "nosniff")

@@ -29,7 +29,7 @@ const makeRes = (): RecordedRes => {
 const runOnce = (env: Env): RecordedRes => {
   const res = makeRes()
   const next = vi.fn()
-  securityHeaders({ env })({} as Request, res as unknown as Response, next)
+  securityHeaders({ env })({ headers: {} } as unknown as Request, res as unknown as Response, next)
 
   return res
 }

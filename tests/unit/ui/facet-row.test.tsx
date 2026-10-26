@@ -35,7 +35,7 @@ describe("FacetRow", () => {
     )
     const swatch = container.querySelector("span[aria-hidden]")
     expect(swatch).not.toBeNull()
-    expect(swatch).toHaveStyle({ background: "var(--color-src-ddbj)" })
+    expect(swatch).toHaveAttribute("style", "background: var(--color-src-ddbj);")
     expect(swatch).toHaveClass("w-2")
     expect(swatch).toHaveClass("h-2")
     expect(swatch).toHaveClass("rounded-pill")

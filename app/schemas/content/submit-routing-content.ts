@@ -52,7 +52,7 @@ const KindRoute = z
   })
   .strict()
 
-const QOption = <T extends z.ZodTypeAny>(id: T) =>
+const QOption = <T extends z.ZodType>(id: T) =>
   z.object({ id, repos: z.array(Service) }).strict()
 
 const isAlways = (when: When): boolean => "always" in when && when.always === true
@@ -70,7 +70,7 @@ export const SubmitRoutingCatalog = z
   .strict()
   .superRefine((cat, ctx) => {
     const fail = (message: string, path: (string | number)[]) =>
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
+      ctx.addIssue({ code: "custom", message, path })
 
     // organismDomain カスケード repos / candidateRepos は登録エンドポイント (destination ∪ {jpost, eva})
     const checkEndpointRepos = (repos: Service[], path: (string | number)[]) => {

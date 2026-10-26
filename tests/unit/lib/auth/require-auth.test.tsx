@@ -1,5 +1,5 @@
 import { screen, waitFor } from "@testing-library/react"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import type { ReactNode } from "react"
 import { MemoryRouter } from "react-router"
 import { describe, expect, test } from "vitest"

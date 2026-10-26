@@ -4,7 +4,7 @@ dev / staging / production の 3 環境を同一 host に並走させる運用�
 
 ## 3 環境の並走
 
-BSI は同じ image / 同じ compose ファイル群から 3 つの環境を作る。 dev は開発機の localhost、 staging と production は NIG infra 上の **同一 host に並走** する。 ライフサイクルが違う LLM serving (vLLM) は別 host の shared infra として外に出し、 staging と production の app から同じものを叩く。
+BSI は同じ image / 同じ compose ファイル群から 3 つの環境を作る。 dev は開発機の localhost、 staging と production は NIG infra 上の同一 host に並走する。 ライフサイクルが違う LLM serving (vLLM) は別 host の shared infra として外に出し、 staging と production の app から同じものを叩く。
 
 ```mermaid
 flowchart TD
@@ -41,19 +41,19 @@ base となる `compose.yml` は production 形 (immutable image / source bind-m
 
 ## container 構成
 
-reverse proxy 1 段の背後で podman container 1 つが **SSR + BFF を兼任** する構成。 BFF (`/api/*` / `/sitemap.xml` / `/robots.txt` を返す Express) と React Router v7 framework mode の SSR が同一プロセス内に同居する。
+reverse proxy 1 段の背後で podman container 1 つが SSR + BFF を兼任する構成。 BFF (`/api/*` / `/sitemap.xml` / `/robots.txt` を返す Express) と React Router v8 framework mode の SSR が同一プロセス内に同居する。
 
 ```mermaid
 flowchart LR
   browser["Browser"] -- "HTTPS" --> proxy["Reverse Proxy (NIG infra)"]
   proxy -- "X-Forwarded-*" --> app["${DB_PORTAL_PREFIX}-app (podman)"]
-  app -- "SSR" --> rr["React Router v7 (build/server)"]
+  app -- "SSR" --> rr["React Router v8 (build/server)"]
   app -- "BFF" --> express["Express (/api, /sitemap.xml, /robots.txt)"]
 ```
 
 container の `command` は npm を介さず `tsx server/index.ts` を直接 PID1 (`init: true` の tini) の子として起動する。 これは `SIGTERM` を node に直接届け、 graceful shutdown 経路 (背景 timer 停止 → idle keep-alive 落とし → in-flight drain → exit) を成立させるための規約。 npm を間に挟むと SIGTERM が node まで届かず、 強制 kill になる。
 
-build と `validate:content` ([content.md](content.md)) は **image build 時に走り**、 1 件でも fail すれば image build 自体が fail-fast する。 runtime stage は焼き込み済みの `build/` をそのまま起動するため、 container 起動時に再 build / 再 validate しない。 runtime cache (news / repos / services) のみを `./cache:/app/cache` で deploy をまたいで保持する。
+build と `validate:content` ([content.md](content.md)) は image build 時に走り、 1 件でも fail すれば image build 自体が fail-fast する。 runtime stage は焼き込み済みの `build/` をそのまま起動するため、 container 起動時に再 build / 再 validate しない。 runtime cache (news / repos / services) のみを `./cache:/app/cache` で deploy をまたいで保持する。
 
 reverse proxy 1 段の背後で動くため、 `X-Forwarded-*` を信頼する trust proxy hop 数は env (`DB_PORTAL_TRUST_PROXY`) で設定する。 ホップ数を誤ると per-IP rate limit と client IP ログが壊れる。
 
@@ -88,13 +88,13 @@ sequenceDiagram
 
 起動時に走る subsystem は外部 upstream を local 化する mirror 群と、 外部 vLLM の up/down を見る health monitor:
 
-- **Services mirror** ([services.md](services.md)) は init で disk cache を await load し、 News mirror の sha 変化通知を受けて該当 source を rebuild する
-- **News mirror** ([news.md](news.md)) は disk cache を即時 load するため、 cache が残っていれば `/api/news` は起動直後から item を返す
-- **LLM health monitor** ([llm.md](llm.md)) は初回 check が完了するまで `/api/llm/health` の `status` を `unset` で返す
+- Services mirror ([services.md](services.md)) は init で disk cache を await load し、 News mirror の sha 変化通知を受けて該当 source を rebuild する
+- News mirror ([news.md](news.md)) は disk cache を即時 load するため、 cache が残っていれば `/api/news` は起動直後から item を返す
+- LLM health monitor ([llm.md](llm.md)) は初回 check が完了するまで `/api/llm/health` の `status` を `unset` で返す
 
 ## リリース
 
-staging deploy は **main 追従**、 production deploy は **SemVer git tag** (`v<MAJOR>.<MINOR>.<PATCH>`) を打ってから行う。 deploy は同一 host port への in-place swap で、 旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる。
+staging deploy は main 追従、 production deploy は SemVer git tag (`v<MAJOR>.<MINOR>.<PATCH>`) を打ってから行う。 deploy は同一 host port への in-place swap で、 旧 container 停止 → 新 container listen の窓だけ HTTP が落ちる。
 
 - session は in-memory で永続化しない (deploy / rollback / 再起動でユーザーは再ログインになる)
 - rollback は前安定 tag への checkout で行う
@@ -106,17 +106,17 @@ deploy の実コマンド (SSH 接続先 / podman 操作) は git 管理外。
 
 ## ログと監視
 
-監視は health endpoint 3 種を外部 uptime monitor が分単位で叩き、 連続失敗で alert を出す。 deploy 中の swap 窓と区別するため、 alert は **連続失敗閾値** で発火させ、 swap 時刻は log の `server_shutdown` / `server_listening` を突合して判定する。
+監視は health endpoint 3 種を外部 uptime monitor が分単位で叩き、 連続失敗で alert を出す。 deploy 中の swap 窓と区別するため、 alert は連続失敗閾値で発火させ、 swap 時刻は log の `server_shutdown` / `server_listening` を突合して判定する。
 
-- `GET /api/me` — session 確認 (`Cache-Control: no-store` で必ず origin に届く)
-- `GET /api/news` — News mirror の生存
-- `GET /api/llm/health` — vLLM 疎通 (`Cache-Control: no-store`、 `status` の意味は [llm.md](llm.md))
+- `GET /api/me`: session 確認 (`Cache-Control: no-store` で必ず origin に届く)
+- `GET /api/news`: News mirror の生存
+- `GET /api/llm/health`: vLLM 疎通 (`Cache-Control: no-store`、 `status` の意味は [llm.md](llm.md))
 
 endpoint の response 形・status コードは `server/index.ts` を参照。
 
 ### ログ形式
 
-`server/lib/log.ts` の logger は stdout に **構造化 JSON を 1 行 1 レコード** で流す。 reverse proxy / podman / journald は stdout をそのまま収集すれば良い。
+`server/lib/log.ts` の logger は stdout に構造化 JSON を 1 行 1 レコードで流す。 reverse proxy / podman / journald は stdout をそのまま収集すれば良い。
 
 | Field | 型 | 意味 |
 |---|---|---|
@@ -129,15 +129,15 @@ endpoint の response 形・status コードは `server/index.ts` を参照。
 
 ## CI
 
-`.github/workflows/ci.yml` は PR / `main` push のたびに Docker Compose 内で typecheck / lint / unit + PBT / `npm audit --audit-level=high --omit=dev` を回す。 **deploy・e2e・openapi 差分検知・性能計測は CI から自動実行しない**。
+`.github/workflows/ci.yml` は PR / `main` push のたびに Docker Compose 内で typecheck / lint / unit + PBT / `npm audit --audit-level=high --omit=dev` を回す。 deploy・e2e・openapi 差分検知・性能計測は CI から自動実行しない。
 
 | 種類 | 自動 (CI) | 手動 |
 |---|---|---|
-| typecheck / lint / unit / PBT / audit | ◯ | — |
-| deploy (staging / production) | — | ◯ |
-| e2e (staging URL 叩き) | — | ◯ (`tests/e2e/notes.md`) |
-| openapi 差分検知 (`gen:api-types`) | — | ◯ (リリース直前) |
-| 性能計測 | — | ◯ |
+| typecheck / lint / unit / PBT / audit | ◯ | - |
+| deploy (staging / production) | - | ◯ |
+| e2e (staging URL 叩き) | - | ◯ (`tests/e2e/notes.md`) |
+| openapi 差分検知 (`gen:api-types`) | - | ◯ (リリース直前) |
+| 性能計測 | - | ◯ |
 
 ## トラブルシュート
 
@@ -162,7 +162,7 @@ secret は git に commit しない。 実値は host 側 `.env.<env>.local` か
 | Secret | 保管 | 周期 | 完了確認 |
 |---|---|---|---|
 | `DB_PORTAL_LLM_API_KEY` | host `.env.production.local` | vLLM 側 key 更新時 | `llm_health_transition` が `to: "ok"` |
-| Keycloak client secret | 存在しない (public client + PKCE) | — | — |
+| Keycloak client secret | 存在しない (public client + PKCE) | - | - |
 | `DB_PORTAL_E2E_USER_PASSWORD` | リリースマネージャ作業環境 | 半年毎 / incident 時 | 次回 e2e の auth シナリオ pass |
 | Deploy host SSH 鍵 | リリースマネージャ `~/.ssh/` | 半年毎 / incident 時 | 次回 deploy の SSH 接続成功 |
 
@@ -181,7 +181,7 @@ News mirror は HTTPS git protocol で動くため、 GitHub PAT 等の secret �
 
 env 全体の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、 環境別の値は `env.dev` / `env.staging` / `env.production` が SSOT。 機能別の env 説明は各 docs を参照する。 deploy 時に追加で意識する env:
 
-- `DB_PORTAL_PREFIX` — container / image / volume / network 名 prefix。 同一 host 並走のため env 毎に別値
-- `DB_PORTAL_PORTAL_ORIGIN` — 自分自身の外向き origin。 Keycloak の `Valid Redirect URIs` と一致させる
-- `DB_PORTAL_TRUST_PROXY` — `X-Forwarded-*` を信頼する Express `trust proxy` 設定。 reverse proxy 段数に合わせる
-- `DB_PORTAL_LLM_API_KEY` — vLLM への認証 key (rotation 対象)
+- `DB_PORTAL_PREFIX`: container / image / volume / network 名 prefix。 同一 host 並走のため env 毎に別値
+- `DB_PORTAL_PORTAL_ORIGIN`: 自分自身の外向き origin。 Keycloak の `Valid Redirect URIs` と一致させる
+- `DB_PORTAL_TRUST_PROXY`: `X-Forwarded-*` を信頼する Express `trust proxy` 設定。 reverse proxy 段数に合わせる
+- `DB_PORTAL_LLM_API_KEY`: vLLM への認証 key (rotation 対象)

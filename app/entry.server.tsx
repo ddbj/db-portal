@@ -3,8 +3,10 @@ import { PassThrough } from "node:stream"
 import { createReadableStreamFromReadable } from "@react-router/node"
 import { isbot } from "isbot"
 import { renderToPipeableStream } from "react-dom/server"
-import type { AppLoadContext, EntryContext } from "react-router"
+import type { EntryContext } from "react-router"
 import { ServerRouter } from "react-router"
+
+import { CSP_NONCE_HEADER } from "~/schemas/csp-nonce"
 
 const ABORT_DELAY = 5_000
 
@@ -13,11 +15,10 @@ export default function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext,
 ) {
   return isbot(request.headers.get("user-agent") ?? "")
-    ? handleBotRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext)
-    : handleBrowserRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext)
+    ? handleBotRequest(request, responseStatusCode, responseHeaders, routerContext)
+    : handleBrowserRequest(request, responseStatusCode, responseHeaders, routerContext)
 }
 
 const handleBotRequest = (
@@ -25,11 +26,10 @@ const handleBotRequest = (
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext,
 ) => {
   return new Promise((resolve, reject) => {
     let shellRendered = false
-    const nonce = loadContext.cspNonce
+    const nonce = request.headers.get(CSP_NONCE_HEADER) ?? ""
     const { pipe, abort } = renderToPipeableStream(
       <ServerRouter context={routerContext} url={request.url} nonce={nonce} />,
       {
@@ -61,11 +61,10 @@ const handleBrowserRequest = (
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext,
 ) => {
   return new Promise((resolve, reject) => {
     let shellRendered = false
-    const nonce = loadContext.cspNonce
+    const nonce = request.headers.get(CSP_NONCE_HEADER) ?? ""
     const { pipe, abort } = renderToPipeableStream(
       <ServerRouter context={routerContext} url={request.url} nonce={nonce} />,
       {

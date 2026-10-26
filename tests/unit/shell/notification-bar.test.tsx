@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { beforeEach, describe, expect, test } from "vitest"
 
 import type { NewsItem, NewsList } from "~/lib/api/news"

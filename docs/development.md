@@ -46,7 +46,7 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-dev / typecheck / lint / test / build / 依存追加は **すべてコンテナ内** で動かす。 ホストに Node を直接入れない。 本番は podman + podman-compose で同一 `compose.yml` を起動する。
+dev / typecheck / lint / test / build / 依存追加はすべてコンテナ内で動かす。 ホストに Node を直接入れない。 本番は podman + podman-compose で同一 `compose.yml` を起動する。
 
 - dev のみ `COMPOSE_FILE` で `compose.dev.yml` を合成し、 source bind-mount + `node_modules` named volume + `build.target: dev` を重ねる
 - publish 先の bind host は `DB_PORTAL_APP_BIND_HOST` で切り替える。 dev は loopback に閉じ、 staging / production は別ホストの reverse proxy から届く必要があるため全 interface に開く
@@ -113,13 +113,13 @@ docker compose exec app npm audit --audit-level=high --omit=dev
 
 env の定義 / 型 / default は `server/lib/env.ts` の Zod schema が SSOT、 環境別の値は `env.dev` / `env.staging` / `env.production` が SSOT。 build-time と runtime の境界規約は [architecture.md](architecture.md) を参照。 開発でよく触る prefix:
 
-- `DB_PORTAL_PREFIX` — container / image / volume / network 名 namespace
-- `DB_PORTAL_PORTAL_ORIGIN` — アプリの自己 origin。 Keycloak の Valid Redirect URIs と一致させる
-- `DB_PORTAL_OPENAPI_URL` — ddbj-search-api の OpenAPI document 取得先 (`gen:api-types` 用)
-- `DB_PORTAL_KEYCLOAK_*` — Keycloak realm / client 設定 ([auth.md](auth.md))
-- `DB_PORTAL_AUTH_SESSION_TTL_SECONDS` — BSI session の sliding TTL ([auth.md](auth.md))
-- `DB_PORTAL_LLM_*` — LLM BFF 接続設定 ([llm.md](llm.md))
-- `VITE_DB_PORTAL_*` — ブラウザ bundle に焼かれる public 値 (secret を入れない)
+- `DB_PORTAL_PREFIX`: container / image / volume / network 名 namespace
+- `DB_PORTAL_PORTAL_ORIGIN`: アプリの自己 origin。 Keycloak の Valid Redirect URIs と一致させる
+- `DB_PORTAL_OPENAPI_URL`: ddbj-search-api の OpenAPI document 取得先 (`gen:api-types` 用)
+- `DB_PORTAL_KEYCLOAK_*`: Keycloak realm / client 設定 ([auth.md](auth.md))
+- `DB_PORTAL_AUTH_SESSION_TTL_SECONDS`: BSI session の sliding TTL ([auth.md](auth.md))
+- `DB_PORTAL_LLM_*`: LLM BFF 接続設定 ([llm.md](llm.md))
+- `VITE_DB_PORTAL_*`: ブラウザ bundle に焼かれる public 値 (secret を入れない)
 
 container 内で実効値を確認する:
 
@@ -130,16 +130,16 @@ docker compose exec app sh -c 'env | grep ^VITE_DB_PORTAL_ | sort'
 
 ## トラブルシュート
 
-切り分けは **env と volume を疑ってから個別事象** の順で進める。
+切り分けは env と volume を疑ってから個別事象の順で進める。
 
 env と volume の一次対応:
 
-- **依存・volume の不整合** — `docker compose down -v` で named volume を破棄し、 `up -d --build` から再構築する
-- **env 不一致** — 上の env 検証コマンドで container 内の実効値と `env.*` ファイルを突き合わせる
+- 依存・volume の不整合: `docker compose down -v` で named volume を破棄し、 `up -d --build` から再構築する
+- env 不一致: 上の env 検証コマンドで container 内の実効値と `env.*` ファイルを突き合わせる
 
 個別事象:
 
-- **zones 違反 (lint)** — `app/features/*` 横断 import や `app/lib` → `app/features` の禁止方向。 共通化が必要なら `app/lib` / `app/schemas` へ降ろす ([architecture.md](architecture.md) の zone 規約参照)
-- **API 型生成失敗** — `DB_PORTAL_OPENAPI_URL` の container 内到達と upstream の疎通を確認する ([api-types.md](api-types.md))
-- **Keycloak ログインのリダイレクトループ** — `DB_PORTAL_PORTAL_ORIGIN` と Keycloak client の Valid Redirect URIs を突き合わせる ([auth.md](auth.md))
-- **dev server の HMR が来ない** — `vite.config.ts` の `server.host` / `server.port` と compose の port mapping が dev 既定 (両端同一) になっているか確認する
+- zones 違反 (lint): `app/features/*` 横断 import や `app/lib` → `app/features` の禁止方向。 共通化が必要なら `app/lib` / `app/schemas` へ降ろす ([architecture.md](architecture.md) の zone 規約参照)
+- API 型生成失敗: `DB_PORTAL_OPENAPI_URL` の container 内到達と upstream の疎通を確認する ([api-types.md](api-types.md))
+- Keycloak ログインのリダイレクトループ: `DB_PORTAL_PORTAL_ORIGIN` と Keycloak client の Valid Redirect URIs を突き合わせる ([auth.md](auth.md))
+- dev server の HMR が来ない: `vite.config.ts` の `server.host` / `server.port` と compose の port mapping が dev 既定 (両端同一) になっているか確認する

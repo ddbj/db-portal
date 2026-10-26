@@ -1,4 +1,5 @@
 import { fc } from "@fast-check/vitest"
+import type { z } from "zod"
 
 import {
   Access,
@@ -39,17 +40,17 @@ const allowedChipPairs: readonly { axis: ChipAxis; value: string }[] = Object.en
 const arbChipTag = fc.constantFrom(...allowedChipPairs)
 
 type EntryShape = {
-  fileTypeKind: typeof FileTypeKind._type
-  access: typeof Access._type
-  dataForm: typeof DataForm._type
+  fileTypeKind: z.infer<typeof FileTypeKind>
+  access: z.infer<typeof Access>
+  dataForm: z.infer<typeof DataForm>
   groupIdx: number
-  chipTags: { axis: typeof ChipAxis._type; value: string }[]
+  chipTags: { axis: z.infer<typeof ChipAxis>; value: string }[]
 }
 
 type SubmissionShape = {
-  organismDomain: typeof OrganismDomain._type | null
+  organismDomain: z.infer<typeof OrganismDomain> | null
   accessSection: AccessSection
-  groupTypes: (typeof GroupType._type)[]
+  groupTypes: (z.infer<typeof GroupType>)[]
   entries: EntryShape[]
 }
 

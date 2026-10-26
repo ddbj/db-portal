@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
 import { fetchSearchResults, identityAst, type SearchParams } from "~/features/search"

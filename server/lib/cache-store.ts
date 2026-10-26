@@ -23,7 +23,7 @@ export type CacheStore<TSource extends string, TItem, TFilter> = {
 type LoadConfig = {
   cacheFile: string
   schemaVersion: number
-  cacheSchema: z.ZodTypeAny
+  cacheSchema: z.ZodType
   logPrefix: string
 }
 

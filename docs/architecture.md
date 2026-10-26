@@ -4,7 +4,7 @@ BSI (BioData Science Initiative) アプリ全体の構造。 ブラウザ → BF
 
 ## 全体構造
 
-**ブラウザ → BFF → 外部 API** の 3 段構造を取る。 BFF (`server/`、 Backend For Frontend) が Keycloak / vLLM / DDBJ www / GitHub などの secret を要する外部接続を遮蔽し、 client (`app/`) は同一 origin の `/api/*` だけを見れば済む。 一方で public な `ddbj-search-api` はブラウザから直接呼び、 BFF を経由しない。
+ブラウザ → BFF → 外部 API の 3 段構造を取る。 BFF (`server/`、 Backend For Frontend) が Keycloak / vLLM / DDBJ www / GitHub などの secret を要する外部接続を遮蔽し、 client (`app/`) は同一 origin の `/api/*` だけを見れば済む。 一方で public な `ddbj-search-api` はブラウザから直接呼び、 BFF を経由しない。
 
 ```mermaid
 flowchart LR
@@ -33,24 +33,24 @@ BFF endpoint の一覧:
 | `/api/services` | services mirror の集約レスポンス | [services.md](services.md) |
 | `/api/llm/*` | LLM 検索アシスタントの SSE | [llm.md](llm.md) |
 | `/api/set-lang` | 言語 cookie 更新 (303 redirect) | [i18n.md](i18n.md) |
-| `/sitemap.xml` / `/robots.txt` | 検索エンジン向け外向きリソース | 本書 § sitemap.xml と robots.txt |
+| `/sitemap.xml` / `/robots.txt` | 検索エンジン向け外向きリソース | § sitemap.xml と robots.txt |
 
 `app/lib/api/*` から呼ぶ ddbj-search-api の型生成・差分検知は [api-types.md](api-types.md) を参照する。
 
 ## Zone 分割
 
-`app/` を機能単位の **zone** に分け、 zone 間の import 方向を ESLint の `import/no-restricted-paths` で物理強制する。 許可マトリクスの SSOT は `eslint.config.ts` の同 rule で、 ここに書く依存関係はその縮約。
+`app/` を機能単位の zone に分け、 zone 間の import 方向を ESLint の `import/no-restricted-paths` で物理強制する。 許可マトリクスの SSOT は `eslint.config.ts` の同 rule で、 ここに書く依存関係はその縮約。
 
 各 zone の役割:
 
-- `schemas` — Zod による型 + runtime validation。 他 zone に依存しない
-- `lib` — 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client)。 依存は `schemas` のみ
-- `ui` — Tailwind primitive。 `@theme` token のみ参照
-- `content` — Markdown ページ collection
-- `shell` — Header / Footer / NavBar / Breadcrumb 等の画面横断 chrome
-- `features` — 画面ごとの状態管理・reducer・modal
-- `routes` — RR v7 framework mode の route component (薄い配線層)
-- `server` — BFF (Node 専用、 `app/` の外)
+- `schemas`: Zod による型 + runtime validation。 他 zone に依存しない
+- `lib`: 純粋ユーティリティ (HTTP wrapper / i18n runtime / content loader / query client)。 依存は `schemas` のみ
+- `ui`: Tailwind primitive。 `@theme` token のみ参照
+- `content`: Markdown ページ collection
+- `shell`: Header / Footer / NavBar / Breadcrumb 等の画面横断 chrome
+- `features`: 画面ごとの状態管理・reducer・modal
+- `routes`: RR v8 framework mode の route component (薄い配線層)
+- `server`: BFF (Node 専用、 `app/` の外)
 
 許可される依存方向:
 
@@ -82,9 +82,9 @@ graph TD
 
 ## SSR-CSR 境界
 
-React Router v7 framework mode (`ssr: true`) で **SSR + hydration** する。 同じ `app/` モジュールが Node とブラウザの両方で実行される前提のため、 DOM / `window` / `localStorage` に触れる処理は `useEffect` か client guard に閉じ込める。
+React Router v8 framework mode (`ssr: true`) で SSR + hydration する。 同じ `app/` モジュールが Node とブラウザの両方で実行される前提のため、 DOM / `window` / `localStorage` に触れる処理は `useEffect` か client guard に閉じ込める。
 
-どのフェーズでも import 可能な範囲は `app/` のみで共通。 ランタイムの違いは **外部 I/O 経路** にだけ現れる。
+どのフェーズでも import 可能な範囲は `app/` のみで共通。 ランタイムの違いは外部 I/O 経路にだけ現れる。
 
 | 実行フェーズ | ランタイム | 外部 I/O 経路 |
 |---|---|---|
@@ -101,21 +101,21 @@ React Router v7 framework mode (`ssr: true`) で **SSR + hydration** する。 �
 
 ## Build-time と runtime
 
-build artifact に確定するものと、 起動時 / リクエスト時に決まる状態を分ける。 **secret は build artifact に決して入れず、 すべて runtime で env から読む**。
+build artifact に確定するものと、 起動時 / リクエスト時に決まる状態を分ける。 secret は build artifact に決して入れず、 すべて runtime で env から読む。
 
 build 時に確定:
 
-- API 型 (`app/lib/api/openapi-types.ts`) — `npm run gen:api-types` で生成し commit する ([api-types.md](api-types.md))
-- Content collection (`app/content/**/*.content.tsx`) — `import.meta.glob` で列挙し Zod schema で eager validate。 1 件でも parse 失敗すれば build を落とす ([content.md](content.md))
-- i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`) — 静的 import。 キーセット乖離は PBT で検出する ([i18n.md](i18n.md))
-- Tailwind utility class — `@theme` block + JSX を Vite が走査し、 必要な class のみ出力する
+- API 型 (`app/lib/api/openapi-types.ts`): `npm run gen:api-types` で生成し commit する ([api-types.md](api-types.md))
+- Content collection (`app/content//*.content.tsx`): `import.meta.glob` で列挙し Zod schema で eager validate。 1 件でも parse 失敗すれば build を落とす ([content.md](content.md))
+- i18n リソース (`app/lib/i18n/resources/{ja,en}.ts`): 静的 import。 キーセット乖離は PBT で検出する ([i18n.md](i18n.md))
+- Tailwind utility class: `@theme` block + JSX を Vite が走査し、 必要な class のみ出力する
 
 runtime に確定:
 
-- 環境変数 — 起動時に Zod schema (`server/lib/env.ts`) で validate し、 違反すれば server を起動しない。 各機能 docs は変数名と意味の表だけを持ち、 default 値や型宣言を二重に書かない
-- BFF session store — in-memory。 プロセス再起動で揮発 ([auth.md](auth.md))
-- News / Services mirror cache — disk persist。 起動時に再 load する
-- LLM health 状態 — server memory に保持する
+- 環境変数: 起動時に Zod schema (`server/lib/env.ts`) で validate し、 違反すれば server を起動しない。 各機能 docs は変数名と意味の表だけを持ち、 default 値や型宣言を二重に書かない
+- BFF session store: in-memory。 プロセス再起動で揮発 ([auth.md](auth.md))
+- News / Services mirror cache: disk persist。 起動時に再 load する
+- LLM health 状態: server memory に保持する
 
 Client bundle と server bundle の secret 境界は接頭辞で区別する:
 
@@ -127,7 +127,7 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 `app/routes.ts` が URL 全構造の SSOT。 URL から言語識別子を排除し、 BFF endpoint と client route の優先順序は `server/index.ts` の mount 順で決まる。
 
 - URL は lang 中立とする。 言語は cookie で決まる ([i18n.md](i18n.md))
-- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の **catch-all** (`/*`) が引き受け、 path は `page-contents/` 内の path に一致させる
+- 各 DB の解説ページや汎用 static page は `routes/page-content/route.tsx` の catch-all (`/*`) が引き受け、 path は `page-contents/` 内の path に一致させる
 - `/auth/*` の client route は BFF (`server/auth/routes.ts`) が 302 で抜けるため通常到達しないが、 Keycloak 側 redirect_uri 設定の fallback として保持する
 - `/api/set-lang` は唯一の action 持ち resource route。 lang cookie 更新後 303 redirect で Referer に戻す
 - BFF endpoint (`/api/me` / `/api/news` / `/api/services` / `/api/llm/*` / `/api/auth/*`) は `server/index.ts` で個別 mount し、 RR catch-all より優先する
@@ -135,7 +135,7 @@ Client bundle と server bundle の secret 境界は接頭辞で区別する:
 
 ### Route handle
 
-各 route component module の `export const handle` で **静的 metadata** を宣言する。 loader 実行を起こさず `useMatches` から走査でき、 SSR / CSR で同値が取れる。 breadcrumb / document title / i18n 充足度などの cross-cutting metadata を route module から取り出す機構。
+各 route component module の `export const handle` で静的 metadata を宣言する。 loader 実行を起こさず `useMatches` から走査でき、 SSR / CSR で同値が取れる。 breadcrumb / document title / i18n 充足度などの cross-cutting metadata を route module から取り出す機構。
 
 宣言可能な key と pipeline の詳細 doc:
 
@@ -174,18 +174,18 @@ resolver dict は `app/shell/` 内で組み立てる。 handle key 集合の最�
 
 全 HTTP response に security header を付与する (`server/lib/security.ts`)。 CSP の directive 値の SSOT は `buildCspHeader`。
 
-- `Content-Security-Policy` — script は per-request nonce 経由で許可し inline script を排除する。 style は Tailwind v4 の inline 出力を許容する。 `connect-src` には ddbj-search-api origin を runtime で付与する。 dev 環境では送出しない
-- `Strict-Transport-Security` — production のみ
-- `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy` — 全 response に付与
+- `Content-Security-Policy`: script は per-request nonce 経由で許可し inline script を排除する。 style は Tailwind v4 の inline 出力を許容する。 `connect-src` には ddbj-search-api origin を runtime で付与する。 dev 環境では送出しない
+- `Strict-Transport-Security`: production のみ
+- `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy`: 全 response に付与
 
 CSP nonce の流通経路:
 
-- per-request に生成し `res.locals.cspNonce` を経由して root loader から `<Scripts>` / `<Links>` に渡す
+- per-request に生成し、 request header を経由して root loader と entry.server から `<Scripts>` / `<Links>` に渡す。 header 名は `app/schemas/csp-nonce.ts`
 - inline script は nonce 経由で許可し、 `'unsafe-inline'` を `script-src` に置かない
 
 ## アクセシビリティ
 
-WCAG AA 相当を **token 段階で担保** し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 機能検査は primitive 単位の unit test で role / aria 属性を assert する ([frontend.md](frontend.md) § アクセシビリティ)。
+WCAG AA 相当を token 段階で担保し、 primitive ごとに上書きしない。 視覚チェックは `/_design` route、 機能検査は primitive 単位の unit test で role / aria 属性を assert する ([frontend.md](frontend.md) § アクセシビリティ)。
 
 - 色コントラストは `@theme` token の段階で AA を満たす
 - focus ring は `*:focus-visible` に global 適用し、 primitive 単位で上書きしない
@@ -196,5 +196,5 @@ WCAG AA 相当を **token 段階で担保** し、 primitive ごとに上書き�
 
 検索エンジン向けの外向きリソース。 dev / staging では索引させず、 production のみ全面開放する。
 
-- `GET /sitemap.xml` (`server/api/sitemap.ts`) — content collection + 静的 route について `?lang=ja` / `?lang=en` 2 URL を出力し、 hreflang を相互宣言する ([i18n.md](i18n.md))
-- `GET /robots.txt` (`server/api/robots.ts`) — production は全許可 + Sitemap、 dev / staging は全 disallow
+- `GET /sitemap.xml` (`server/api/sitemap.ts`): content collection + 静的 route について `?lang=ja` / `?lang=en` 2 URL を出力し、 hreflang を相互宣言する ([i18n.md](i18n.md))
+- `GET /robots.txt` (`server/api/robots.ts`): production は全許可 + Sitemap、 dev / staging は全 disallow

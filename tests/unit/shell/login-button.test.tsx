@@ -1,5 +1,5 @@
 import { screen, waitFor } from "@testing-library/react"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { describe, expect, test } from "vitest"
 
 import { LoginButton } from "~/shell/login-button"

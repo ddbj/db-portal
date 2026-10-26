@@ -39,5 +39,5 @@ BSI ポータル自体 (使い方 / 掲載内容 / 表示の不具合) の一次
 `/contact` への入口は 3 つ。 ページを増減させたときは 3 つとも合わせる。
 
 - header の main nav
-- `/docs` 目次 — `page-contents/sitemap.json` の `support` セクション
-- `/sitemap.xml` — `server/api/sitemap.ts` の `STATIC_PATHS`
+- `/docs` 目次: `page-contents/sitemap.json` の `support` セクション
+- `/sitemap.xml`: `server/api/sitemap.ts` の `STATIC_PATHS`

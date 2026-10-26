@@ -4,7 +4,7 @@
 
 ## 2 系統と URL 構造
 
-コンテンツは 「読み物」 と 「データ的に並べる要素」 を **別系統** で扱う。 前者は Markdown (`page-contents/`)、 後者は TypeScript (`app/content/`) で書くことで、 編集者 (非エンジニア) と開発者の境界を物理的に分ける。
+コンテンツは 「読み物」 と 「データ的に並べる要素」 を別系統で扱う。 前者は Markdown (`page-contents/`)、 後者は TypeScript (`app/content/`) で書くことで、 編集者 (非エンジニア) と開発者の境界を物理的に分ける。
 
 ```mermaid
 graph TD
@@ -19,11 +19,11 @@ graph TD
   TSLoader --> Tile[Service tile / Submit CTA]
 ```
 
-Markdown ページの URL は `page-contents/<path>/index.md` → `/<path>` で素直に対応し、 著者にカテゴリ付けを要求しない。 **フォルダ構造が唯一の分類軸**。 frontmatter は `title` と `description` だけ。 更新日や外部リンク表を frontmatter に詰め込まない (理由は § lastUpdated)。
+Markdown ページの URL は `page-contents/<path>/index.md` → `/<path>` で素直に対応し、 著者にカテゴリ付けを要求しない。 フォルダ構造が唯一の分類軸。 frontmatter は `title` と `description` だけ。 更新日や外部リンク表を frontmatter に詰め込まない (理由は § lastUpdated)。
 
-TypeScript collection (`app/content/*.tsx`) は **Service tile** (top page と `/services` で並ぶサービスカード) と **submit feature の外部 CTA リンク** を束ねた内部編集物。 外部サービス一覧 (DDBJ / DBCLS) は別系統で services mirror が CMS 的に取り込む ([services.md](services.md))。
+TypeScript collection (`app/content/*.tsx`) は Service tile (top page と `/services` で並ぶサービスカード) と submit feature の外部 CTA リンクを束ねた内部編集物。 外部サービス一覧 (DDBJ / DBCLS) は別系統で services mirror が CMS 的に取り込む ([services.md](services.md))。
 
-URL は lang 中立 (言語は cookie、 詳細は [i18n.md](i18n.md)) で、 すべて **フラット** (`/databases/<slug>` 等、 nest しない)。 `/docs` ハブは pathless layout で `databases/:slug` 等の content ページと layout を共有しつつ URL はフラットのまま、 `?q=` の有無で **`map`** (目次) と **`search`** (全文検索) の 2 状態を URL から導出する。
+URL は lang 中立 (言語は cookie、 詳細は [i18n.md](i18n.md)) で、 すべてフラット (`/databases/<slug>` 等、 nest しない)。 `/docs` ハブは pathless layout で `databases/:slug` 等の content ページと layout を共有しつつ URL はフラットのまま、 `?q=` の有無で `map` (目次) と `search` (全文検索) の 2 状態を URL から導出する。
 
 routing 上の追加規約:
 
@@ -60,11 +60,11 @@ flowchart LR
 
 Markdown HTML のスタイルは `app/styles/tailwind.css` の `.prose-bsi` が SSOT。 `@tailwindcss/typography` の `prose` をベースに BSI デザイントークンで上書きし、 `max-width` は `content-narrow` で中央揃え。
 
-クライアント側拡張は `app/lib/content/use-prose-enhance.ts` が hydration 後に DOM を走査して付ける。 中身は 2 つ — コードブロックのコピーボタン (hover で右上に出現、 クリックでフィードバック) と、 ` ```mermaid ` ブロックを SVG に lazy load で描画する処理。
+クライアント側拡張は `app/lib/content/use-prose-enhance.ts` が hydration 後に DOM を走査して付ける。 中身は 2 つある。 コードブロックのコピーボタン (hover で右上に出現、 クリックでフィードバック) と、 ` ```mermaid ` ブロックを SVG に lazy load で描画する処理。
 
 ## Asset 配信
 
-著者は `.md` の隣 (同 dir / サブ dir) に画像 / PDF を置き、 **相対パス** で参照する。 著者は public/ 階層を意識せず、 ページ単位で asset が完結する。
+著者は `.md` の隣 (同 dir / サブ dir) に画像 / PDF を置き、 相対パスで参照する。 著者は public/ 階層を意識せず、 ページ単位で asset が完結する。
 
 ```mermaid
 flowchart LR
@@ -82,7 +82,7 @@ flowchart LR
 - 配信は `server/index.ts` の `/page-contents/<asset>` middleware で `page-contents/` から static serve
 - 配信対応の拡張子 whitelist は `server/index.ts` の `PAGE_ASSET_EXTENSIONS` が SSOT。 whitelist 外は 404。 `.md` 本文や非対応ファイルは露出しない
 - dev / prod とも同じ middleware
-- 未解決の相対参照 (`./not-exist.png` 等) は **build 時エラー** で fail-fast
+- 未解決の相対参照 (`./not-exist.png` 等) は build 時エラーで fail-fast
 
 ページ間リンクは絶対パス (`/databases/dra` 等) で書く。
 
@@ -94,7 +94,7 @@ flowchart LR
 - collection は起動時に `import.meta.glob` で eager load + Zod parse する。 1 件でも失敗すれば起動が止まる
 - collection の参照は `loader` 経由のみ。 features / shell から直接 import しない
 
-`app/content/` 配下の TSX ファイルは **content zone** に属し、 import 可能範囲を ESLint `no-restricted-paths` で物理強制する ([architecture.md](architecture.md))。 content fragment が features / shell の関数を呼ばないことで、 collection は副作用なく Zod parse 可能になり、 起動時の eager load が安全に終わる。
+`app/content/` 配下の TSX ファイルは content zone に属し、 import 可能範囲を ESLint `no-restricted-paths` で物理強制する ([architecture.md](architecture.md))。 content fragment が features / shell の関数を呼ばないことで、 collection は副作用なく Zod parse 可能になり、 起動時の eager load が安全に終わる。
 
 - `content` zone は `ui` / `lib` / `schemas` / `content` を import 可
 - `features` / `shell` への import は禁止
@@ -102,11 +102,11 @@ flowchart LR
 
 ## TOC と h2 anchor
 
-各 h2 見出しは `/<page>#<anchor>` の **個別 URL を持つ**。 anchor の slug 規約は `rehype-slug` + `github-slugger` (GitHub 風) を採用し、 本文 HTML の `<h2 id>` と TOC の `id` が一致することを `app/lib/content/heading-extractor.ts` が保証する。 TOC の出力は次節以降の Sidebar の h2 inline 展開と、 § 全文検索 の section 単位 doc の **両方で再利用** される。
+各 h2 見出しは `/<page>#<anchor>` の個別 URL を持つ。 anchor の slug 規約は `rehype-slug` + `github-slugger` (GitHub 風) を採用し、 本文 HTML の `<h2 id>` と TOC の `id` が一致することを `app/lib/content/heading-extractor.ts` が保証する。 TOC の出力は次節以降の Sidebar の h2 inline 展開と、 § 全文検索 の section 単位 doc の両方で再利用される。
 
 ## Sidebar
 
-全 content ページ (`/docs` 直下と `databases/:slug`) で共通の左サイドバーを使う。 操作モデルは Confluence / Notion 型 — キャレットは展開専用、 名前リンクは navigate + 自動展開という意図区別を持つ。
+全 content ページ (`/docs` 直下と `databases/:slug`) で共通の左サイドバーを使う。 操作モデルは Confluence / Notion 型で、 キャレットは展開専用、 名前リンクは navigate + 自動展開という意図区別を持つ。
 
 操作:
 
@@ -124,7 +124,7 @@ content tree は `app/lib/content/content-tree.ts` の `getNavTree()` から取�
 - 末端 doc と `index.md` を持つ dir は URL を持つ (click で navigate)
 - intermediate dir (`index.md` を持たない) は URL を持たず、 children を束ねる label だけになる
 
-### 設計判断
+### Sidebar のツリー表示
 
 - intermediate dir (URL を持たない node) は label のみ表示し、 click で navigate しない。 子はその下に並べ、 グループ間は余白だけで区切る (情報密度優先)
 - フォルダ / ドキュメント種別のアイコンを使わない。 種別はキャレットの有無で識別する
@@ -135,7 +135,7 @@ content tree は `app/lib/content/content-tree.ts` の `getNavTree()` から取�
 
 ## Breadcrumb
 
-Content 側に breadcrumb を **書かない**。 各 route module の `Route.handle` に i18n キー (static) または resolver 名 (dynamic) を持たせ、 `app/lib/content/breadcrumb.ts` の `useBreadcrumb` が `useMatches` を走査して構築する ([architecture.md](architecture.md) § Route handle 参照)。 shell (`app/shell/breadcrumb.tsx`) は hook 結果を `<nav aria-label>` で wrap するだけ。
+Content 側に breadcrumb を書かない。 各 route module の `Route.handle` に i18n キー (static) または resolver 名 (dynamic) を持たせ、 `app/lib/content/breadcrumb.ts` の `useBreadcrumb` が `useMatches` を走査して構築する ([architecture.md](architecture.md) § Route handle 参照)。 shell (`app/shell/breadcrumb.tsx`) は hook 結果を `<nav aria-label>` で wrap するだけ。
 
 ```mermaid
 flowchart LR
@@ -155,7 +155,7 @@ flowchart LR
 - `useMatches` を順に走査し、 handle に `breadcrumbI18nKey` か `breadcrumbResolver` を持つ match だけを処理する
 - 未定義の i18n キーは item を skip せず、 i18next default に従いキー文字列をラベルとして返す (dev で早期に気付かせる)
 - resolver が `null` を返した match は item を生やさない
-- hook が返すのは **handle 由来の item 列のみ**。 Home entry は shell の wrapper が prepend する
+- hook が返すのは handle 由来の item 列のみ。 Home entry は shell の wrapper が prepend する
 - prepend 後の合計が Home のみ (handle item 0 件) のとき何も render しない
 
 resolver は features / lib のヘルパに依存しない。 shell 側で `app/lib/content/loader` の database / service lookup を直接読んで組み立てる。
@@ -164,7 +164,7 @@ resolver は features / lib のヘルパに依存しない。 shell 側で `app/
 
 crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml と robots.txt) とは別物。 ここでは `/docs` のハブに描画する手書きの 「目次」 だけを扱う。
 
-`/docs` 上の 「目次」 ブロックは **`page-contents/sitemap.json` を SSOT** とする手書き構造で、 サイドバー / 全文検索 / `/sitemap.xml` とは切り離された **独立ファイル**。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。 「ページ追加 = `sitemap.json` 更新」 は強制しない — 目次に載せたいページだけ書けばよく、 サイドバー / 検索は `page-contents/` の実ファイルから自動派生で拾う。
+`/docs` 上の 「目次」 ブロックは `page-contents/sitemap.json` を SSOT とする手書き構造で、 サイドバー / 全文検索 / `/sitemap.xml` とは切り離された独立ファイル。 `content-tree.ts` の自動派生は使わない (dir 構造の alphabetical sort では意図した順序とグループ分けが表現できず、 外部リンク行も並べられないため)。 「ページ追加 = `sitemap.json` 更新」 は強制しない。 目次に載せたいページだけ書けばよく、 サイドバー / 検索は `page-contents/` の実ファイルから自動派生で拾う。
 
 - セクションは `sections[]` の順序どおりに描画する (sort なし)
 - 各 item は `kind: "internal" | "external"` の discriminated union
@@ -175,7 +175,7 @@ crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml
 - 各 section は `id` を持ち React key として固定する
 - スキーマと loader は `app/schemas/content/sitemap.ts` / `app/lib/content/sitemap-loader.ts` が SSOT
 
-### 不変量 (module-load 時に検証)
+### module-load 時の検証
 
 `sitemap.json` は JSON 内の整合性のみを検証する。 `page-contents/` との突き合わせは行わない。
 
@@ -187,7 +187,7 @@ crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml
 
 `/docs` ハブは `?q=` の有無で `mode = "map" | "search"` の 2 状態を URL から導出する (§ 2 系統と URL 構造)。 SearchBox に入力すれば `?q=xxx` で search に入り、 空にすれば map に戻る。 状態を URL に持つので reload / shareable / ブラウザの戻るが効く。
 
-`/docs` の全文検索インデックスは `app/lib/content/search-index.ts` が **MiniSearch でクライアントサイドに構築** する。 ja / en 別にインデックスを持ち、 title > description > body の優先度でランク付けし、 prefix 検索と fuzzy 検索に対応する (boost 値の SSOT は `search-index.ts`)。
+`/docs` の全文検索インデックスは `app/lib/content/search-index.ts` が MiniSearch でクライアントサイドに構築する。 ja / en 別にインデックスを持ち、 title > description > body の優先度でランク付けし、 prefix 検索と fuzzy 検索に対応する (boost 値の SSOT は `search-index.ts`)。
 
 - index の粒度はページ単位 doc と h2 セクション単位 doc を同一 index に混在させ、 `kind: "page" | "section"` で識別する
 - section hit は親ページタイトル + 見出しピル + section スニペットを 1 行にまとめ、 `/page#anchor` に直接ジャンプする
@@ -196,7 +196,7 @@ crawler 用の `/sitemap.xml` ([architecture.md](architecture.md) § sitemap.xml
 
 ## lastUpdated
 
-各 `.md` の最終更新日時は **build 時に `git log -1 --format=%cI` で取得** し、 `index.md` (ja) と `index.en.md` (en) それぞれを別行で記録する。 `markdown-loader.ts` が合成し、 `PageContent.lastUpdated?: { ja?, en? }` として page lookup の戻り値に乗る。 著者は frontmatter に日付を書かない — git commit が日付の SSOT。
+各 `.md` の最終更新日時は build 時に `git log -1 --format=%cI` で取得し、 `index.md` (ja) と `index.en.md` (en) それぞれを別行で記録する。 `markdown-loader.ts` が合成し、 `PageContent.lastUpdated?: { ja?, en? }` として page lookup の戻り値に乗る。 著者は frontmatter に日付を書かない。 git commit が日付の SSOT。
 
 - 生成スクリプト: `scripts/gen-last-updated.ts`
 - 出力: `app/lib/content/gen/last-updated.json` (gitignore 対象、 build 成果物)
@@ -214,7 +214,7 @@ i18n の実体は [i18n.md](i18n.md) が扱う。 content 側で守るべき境�
 
 ## Build と runtime
 
-content 系の Zod parse は **すべて build 時か起動時に終わる**。 Runtime に parse overhead を残さない。
+content 系の Zod parse はすべて build 時か起動時に終わる。 Runtime に parse overhead を残さない。
 
 ```mermaid
 flowchart LR

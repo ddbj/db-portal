@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { describe, expect, test } from "vitest"
 
 import { loadAuth } from "~/lib/auth/ssr-loader"

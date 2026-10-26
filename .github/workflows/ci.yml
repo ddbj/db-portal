@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -29,7 +29,7 @@ jobs:
       # する (docker compose exec で走らせている npm install / build のうち、
       # apt-get install や npm ci が cache hit するようになる)。
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Bring up dev container
         run: |
@@ -60,10 +60,10 @@ jobs:
     timeout-minutes: 20
     needs: validate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build runtime image
         # VITE_* は client bundle に焼き込まれるので、 build ARG で smoke 用の

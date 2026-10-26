@@ -1,4 +1,4 @@
-import { type z, type ZodTypeAny } from "zod"
+import { type z, type ZodType } from "zod"
 
 import { ServiceContent, type ServiceTopCategory } from "~/schemas/content/service-content"
 import type { Service as SubmitService } from "~/schemas/submit"
@@ -18,7 +18,7 @@ type WithMatchingTop<C extends ServiceTopCategory> = ServiceContent & {
 
 type ModuleRecord = Record<string, { default: unknown }>
 
-export const collectFromModules = <S extends ZodTypeAny>(
+export const collectFromModules = <S extends ZodType>(
   schema: S,
   modules: ModuleRecord,
 ): ValidationResult<z.infer<S>> => {

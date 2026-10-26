@@ -1,6 +1,6 @@
 import type { Request, Response } from "express"
 import { Router } from "express"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { beforeEach, describe, expect, test } from "vitest"
 
 import { pendingLogins } from "../../../../server/auth/pending-logins"

@@ -67,7 +67,7 @@ describe("LinkCard", () => {
       </LinkCard>,
     )
     // sr-only span が accessible name の末尾に付く。
-    expect(screen.getByRole("link", { name: "ext-card opens in new tab" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /^ext-card ?opens in new tab$/ })).toBeInTheDocument()
   })
 
   test("LinkCard_children_areRendered", () => {

@@ -81,10 +81,6 @@ app.get("/sitemap.xml", handleSitemap(env))
 app.get("/robots.txt", handleRobots(env))
 mountAuthRoutes(app, env, logger)
 
-const getLoadContext = (_req: express.Request, res: express.Response) => ({
-  cspNonce: (res.locals.cspNonce as string | undefined) ?? "",
-})
-
 if (isProd) {
   app.use(
     "/assets",
@@ -94,21 +90,20 @@ if (isProd) {
   const buildModulePath = "../build/server/index.js"
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const build = (await import(/* @vite-ignore */ buildModulePath)) as any
-  app.all("*", createRequestHandler({ build, mode: "production", getLoadContext }))
+  app.all("/{*splat}", createRequestHandler({ build, mode: "production" }))
 } else {
   const { createServer } = await import("vite")
   const vite = await createServer({
-    server: { middlewareMode: true, hmr: { server } },
+    server: { middlewareMode: true, ws: { server } },
     appType: "custom",
   })
   app.use(vite.middlewares)
   app.all(
-    "*",
+    "/{*splat}",
     createRequestHandler({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       build: () => vite.ssrLoadModule("virtual:react-router/server-build") as any,
       mode: "development",
-      getLoadContext,
     }),
   )
 }

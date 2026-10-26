@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { describe, expect, test } from "vitest"
 
 import { FeaturedServices } from "~/features/services"

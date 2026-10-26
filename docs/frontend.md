@@ -4,7 +4,7 @@
 
 ## zone 分割
 
-zone 全体の境界と依存方向は [architecture.md](architecture.md) § Zone 分割 が SSOT。 本書では `app/ui/` (primitive zone) と `app/{features,routes,content}/` (上位 zone) に課す **追加制約** だけを扱う。
+zone 全体の境界と依存方向は [architecture.md](architecture.md) § Zone 分割 が SSOT。 ここでは `app/ui/` (primitive zone) と `app/{features,routes,content}/` (上位 zone) に課す追加制約だけを扱う。
 
 ESLint (`eslint.config.ts`) で物理強制する規約:
 
@@ -21,15 +21,15 @@ ESLint (`eslint.config.ts`) で物理強制する規約:
 - 新しい色 / spacing が必要になったら、 まず `@theme` に token を追加してから token utility 経由で参照する
 - 半端値 (0.5px 刻み等) は token に置かない
 
-`app/{ui,shell}/` だけは arbitrary value を限定的に許容する — token 化する価値が薄い hairline、 1 箇所限定の layout 値、 `style={{}}` で動的に渡す値、 `app/shell/` の vh / rem 単位がここに含まれる。 「複数箇所で同じ値が出てきた」 と感じたら `@theme` へ昇格する。
+`app/{ui,shell}/` だけは arbitrary value を限定的に許容する。 token 化する価値が薄い hairline、 1 箇所限定の layout 値、 `style={{}}` で動的に渡す値、 `app/shell/` の vh / rem 単位がここに含まれる。 「複数箇所で同じ値が出てきた」 と感じたら `@theme` へ昇格する。
 
 ## primitive
 
-**primitive** は `app/ui/` 内の最小単位の UI コンポーネント。 単一の責務 (button / input / modal 等) を持ち、 上位 zone は native タグの代わりに primitive を使う。 `app/ui/*.tsx` を **1 primitive = 1 ファイル** で配置し、 `app/ui/index.ts` で re-export する。 外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。 個別 primitive の Props 型 / variant / class 構成は実装と 視覚カタログ (§ /_design) が SSOT。
+primitive は `app/ui/` 内の最小単位の UI コンポーネント。 単一の責務 (button / input / modal 等) を持ち、 上位 zone は native タグの代わりに primitive を使う。 `app/ui/*.tsx` を 1 primitive = 1 ファイルで配置し、 `app/ui/index.ts` で re-export する。 外部 module からは `import { Button, Tag, Modal } from "~/ui"` で参照する。 個別 primitive の Props 型 / variant / class 構成は実装と 視覚カタログ (§ /_design) が SSOT。
 
-### className 規約
+### className
 
-primitive は `className?` を **受けない**。 variant は `kind` / `tone` / `size` / `mono` / `selected` / `as` 等の semantic prop で表現する。 token を経由しない色 / spacing の注入は ESLint で物理禁止する。
+primitive は `className?` を受けない。 variant は `kind` / `tone` / `size` / `mono` / `selected` / `as` 等の semantic prop で表現する。 token を経由しない色 / spacing の注入は ESLint で物理禁止する。
 
 レイアウト微調整は wrapper を 1 段被せるか、 レイアウト primitive を組み合わせて表現する。 `...rest` の spread は許容するが `className` だけは pick して破棄する。
 
@@ -50,29 +50,29 @@ primitive は責務でカテゴリ分けする (役割が重複する primitive 
 
 | カテゴリ | 内容 | 詳細節 |
 |---|---|---|
-| Page chrome | ページ wrapper、 H1 + eyebrow、 Top / Search / results 共通の検索 input | — |
-| Layout wrapper | 垂直リズム + 中央寄せ + 横余白。 段階の token は `--spacing-section-*` | — |
+| Page chrome | ページ wrapper、 H1 + eyebrow、 Top / Search / results 共通の検索 input | - |
+| Layout wrapper | 垂直リズム + 中央寄せ + 横余白。 段階の token は `--spacing-section-*` | - |
 | Headings & Labels | main column 用は装飾の左バー付き、 sidebar 用はバー無しで切り分け | § Layout 系 |
 | Forms | native `<button>` / `<input>` の thin wrapper、 native `<select>` 代替の `Select` / `Combobox` | § Forms |
-| Tags & Chips | Tag は非インタラクティブ label、 Chip はインタラクティブ pill | — |
-| Facets | sidebar facet UI | — |
-| Callout | inline notice (role を consumer が制御) | — |
+| Tags & Chips | Tag は非インタラクティブ label、 Chip はインタラクティブ pill | - |
+| Facets | sidebar facet UI | - |
+| Callout | inline notice (role を consumer が制御) | - |
 | Modal | dialog 一族 (`Modal` root + Header / Body / Footer + Preview) | § Modal |
-| Pagination / LinkCard | ページ送り / カード型 link | — |
-| TextLink | 内部 link (RR `<Link>`) と外部 link を 1 primitive に統一 | — |
-| InfoHint | ⓘ トリガで補足を出す (native `title` を使わない) | — |
-| Segmented | 2 値以上の即時切替トグル | — |
-| StableLabel | 取り得るラベルの最大幅を確保し、 テキスト差替でリサイズしない | — |
+| Pagination / LinkCard | ページ送り / カード型 link | - |
+| TextLink | 内部 link (RR `<Link>`) と外部 link を 1 primitive に統一 | - |
+| InfoHint | ⓘ トリガで補足を出す (native `title` を使わない) | - |
+| Segmented | 2 値以上の即時切替トグル | - |
+| StableLabel | 取り得るラベルの最大幅を確保し、 テキスト差替でリサイズしない | - |
 
-## 個別 primitive の規約
+## 個別 primitive
 
 ### Forms
 
 入力 primitive (`Button` を除く form control) は視覚的エラーと screen reader 向けの aria 関連付けを同時に satisfy する。 入力 primitive は `state` prop に `default` / `warn` を取り、 `disabled` は別 boolean prop で表現する。
 
-- `state="warn"` 指定時に `aria-invalid=true` と `aria-describedby` を **primitive が自動付与** する
+- `state="warn"` 指定時に `aria-invalid=true` と `aria-describedby` を primitive が自動付与する
 - `aria-describedby` は consumer 側が渡せるよう prop を開ける
-- error message を表示する側は **必ず id を持ち**、 input の `aria-describedby` に流す
+- error message を表示する側は必ず id を持ち、 input の `aria-describedby` に流す
 - `FormGroup` は `<fieldset>` + `<legend>` で実装し、 radio / checkbox 群が単一の質問として announce される (1 input を子に持つ場合も `<fieldset>` で囲んで構わない)
 - `IconButton` は AA の target size を満たす default を持つ
 - placeholder は state を担わず、 surface 上でコントラスト比 4.5:1 を満たす
@@ -101,7 +101,7 @@ stateDiagram-v2
 
 ### Layout 系
 
-main column と sidebar は heading の **左バーの有無** で視覚的に切り分ける。 検索 input まわりは入力モード切替で高さがガタつかないよう固定 variant で揃える。
+main column と sidebar は heading の左バーの有無で視覚的に切り分ける。 検索 input まわりは入力モード切替で高さがガタつかないよう固定 variant で揃える。
 
 - main column 用 heading は装飾の左バー付き、 sidebar 用 heading はバー無し
 - 検索 input は入力モード切替 (キーワード / 構造化条件) でボックス高さが変わらないよう固定 variant で揃える (使い分けの主筋は [search.md](search.md) 側で扱う)
@@ -109,7 +109,7 @@ main column と sidebar は heading の **左バーの有無** で視覚的に�
 
 ## アクセシビリティ
 
-primitive 個別の aria 契約 (Forms の `aria-invalid` / Modal の `aria-modal` など) は § 個別 primitive の規約 で扱う。 ここでは **横断の土台規範** に絞る。
+primitive 個別の aria 契約 (Forms の `aria-invalid` / Modal の `aria-modal` など) は § 個別 primitive で扱う。 ここでは横断の土台規範に絞る。
 
 - 操作可能要素は § zone 分割 で列挙した native タグで実装する。 div / span に `role` を後付けしない
 - focus 表現は global `:focus-visible` の yellow ring に統一する。 primitive 個別の focus class は書かない

@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse } from "msw/http"
 import { describe, expect, test } from "vitest"
 
 import { ShellLayout } from "~/shell/shell-layout"

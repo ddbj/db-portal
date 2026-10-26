@@ -35,8 +35,8 @@ Accept: text/event-stream
 
 `mode` 省略時は `new`。 `append` のとき `current` 必須で BFF が DSL に serialize して prompt に差し込む。 `db` の有無で 2 mode に分かれ、 prompt の field 選択と DSL 検証経路が変わる ([search.md](search.md) § Sidebar facet の Tier 区分参照)。
 
-- **locked** — body に `db` がある (per-DB ページ起点)。 cross と当該 DB の **Tier-3** を使い、 その DB で valid な DSL を返す
-- **auto** — `db` 不在 (top / cross 起点)。 cross 中心で組み立て、 明確に 1 DB の構造化概念を述べた入力に限り Tier-3 を使う。 BFF が DSL 中の Tier-3 field から db を導出する
+- locked: body に `db` がある (per-DB ページ起点)。 cross と当該 DB の Tier-3 を使い、 その DB で valid な DSL を返す
+- auto: `db` 不在 (top / cross 起点)。 cross 中心で組み立て、 明確に 1 DB の構造化概念を述べた入力に限り Tier-3 を使う。 BFF が DSL 中の Tier-3 field から db を導出する
 
 ```mermaid
 flowchart TD
@@ -55,7 +55,7 @@ auto で eligible DB を選ぶときは problem `detail` の名指しを `DB_PRI
 
 ### SSE response
 
-response は `done` または `error` の **2 event のみ**。 `message` event (モデル逐次出力) は出さない。 生成中は `: heartbeat` だけを流し、 中継 proxy の idle timeout で接続が切れるのを防ぐ。
+response は `done` または `error` の 2 event のみ。 `message` event (モデル逐次出力) は出さない。 生成中は `: heartbeat` だけを流し、 中継 proxy の idle timeout で接続が切れるのを防ぐ。
 
 ```mermaid
 sequenceDiagram
@@ -108,7 +108,7 @@ vLLM 出力からコードフェンス除去 + 先頭行抽出を行い、 ddbj-
 
 ### Field availability ガード
 
-ddbj-search-api は一部 DB の Tier-1/2 cross field を index に持たない (SSOT は `_TIER12_UNAVAILABLE_DBS`)。 検索時は count=null として UI から落とすが、 parse は厳格で 400 `field-not-available-for-db` を返すため、 prompt で防ぎ切れないモデル prior 由来の取りこぼしを 0 件化させないよう、 locked / auto-解決済の db で非対応 cross field を出した top-level AND conjunct を **決定論的に落として** 同 db で 1 度だけ再 parse する。
+ddbj-search-api は一部 DB の Tier-1/2 cross field を index に持たない (SSOT は `_TIER12_UNAVAILABLE_DBS`)。 検索時は count=null として UI から落とすが、 parse は厳格で 400 `field-not-available-for-db` を返すため、 prompt で防ぎ切れないモデル prior 由来の取りこぼしを 0 件化させないよう、 locked / auto-解決済の db で非対応 cross field を出した top-level AND conjunct を決定論的に落として同 db で 1 度だけ再 parse する。
 
 - OR-group 内など bare leaf でない箇所は触らない
 - 全 conjunct が非対応なら元の 400 に degrade する
@@ -117,7 +117,7 @@ ddbj-search-api は一部 DB の Tier-1/2 cross field を index に持たない 
 
 ### Subtype plane ガード
 
-sra / jga は subtype 別の独立 doc で、 異なる plane (sample / experiment / analysis / run / study 等) の field を AND すると 0 件になる ([search.md](search.md) § subtype plane)。 db が sra / jga に確定した AST が cross-plane のとき、 sample plane (organism 等) + cross field を残し、 experiment / analysis plane の field を落とし、 **落とした主 sequencing 概念を free-text 1 語として畳み込む**。
+sra / jga は subtype 別の独立 doc で、 異なる plane (sample / experiment / analysis / run / study 等) の field を AND すると 0 件になる ([search.md](search.md) § subtype plane)。 db が sra / jga に確定した AST が cross-plane のとき、 sample plane (organism 等) + cross field を残し、 experiment / analysis plane の field を落とし、 落とした主 sequencing 概念を free-text 1 語として畳み込む。
 
 - 降格規約は system prompt のものと同形
 - 修復後の AST は `/db-portal/serialize` → 元スコープで `/db-portal/parse` し直し、 canonical な `{ ast, db }` を得る
@@ -126,7 +126,7 @@ sra / jga は subtype 別の独立 doc で、 異なる plane (sample / experime
 
 ## /api/llm/health
 
-機能が使えるか・upstream に届くかの **3 状態** (`unset` / `ok` / `unreachable`) を返す endpoint。 状態は server in-memory に保持し、 handler は記録値を返すだけで request ごとに vLLM を叩かない。 response は `Cache-Control: no-store`、 schema の SSOT は `app/schemas/api-bff/llm.ts` (client / server 共用)。
+機能が使えるか・upstream に届くかの 3 状態 (`unset` / `ok` / `unreachable`) を返す endpoint。 状態は server in-memory に保持し、 handler は記録値を返すだけで request ごとに vLLM を叩かない。 response は `Cache-Control: no-store`、 schema の SSOT は `app/schemas/api-bff/llm.ts` (client / server 共用)。
 
 初期状態は、 `DB_PORTAL_LLM_BASE_URL` が空なら即 `unset` に確定する。 設定済なら server 起動から 5 秒遅延後の最初の probe 結果で `ok` / `unreachable` に確定し、 以降は周期 probe で `ok` ↔ `unreachable` 間を遷移する。
 
@@ -150,7 +150,7 @@ stateDiagram-v2
 
 ## Rate limit
 
-per-IP と per-session の 2 軸を両方適用し、 **先に超過した軸で 429 を返す**。 SSE 開始前の HTTP 段で弾くので SSE error 経路は通らない。
+per-IP と per-session の 2 軸を両方適用し、 先に超過した軸で 429 を返す。 SSE 開始前の HTTP 段で弾くので SSE error 経路は通らない。
 
 - per-session 軸は `sid` cookie 保持時のみ追加で適用する
 - 固定 window 1 分粒度のカウンタを in-memory Map に持つ。 1 instance + in-memory store の前提で window 境界 burst は許容する
@@ -162,9 +162,9 @@ multi-instance 化や共有 store 採用のときは sliding window への切替
 
 ## PII redaction
 
-user input は **素のまま prompt に組み立てて vLLM へ送る**。 redact が走るのは server log に出す直前のみで、 モデルに渡る入力は変えない。
+user input は素のまま prompt に組み立てて vLLM へ送る。 redact が走るのは server log に出す直前のみで、 モデルに渡る入力は変えない。
 
-- 共通 log redaction (`server/lib/log.ts` の `redact`) は **key 名一致** (case-insensitive、 snake_case 表記揺れ含む) と **値パターン backstop** (`Bearer` ヘッダ形 / JWT 形) の 2 層
+- 共通 log redaction (`server/lib/log.ts` の `redact`) は key 名一致 (case-insensitive、 snake_case 表記揺れ含む) と値パターン backstop (`Bearer` ヘッダ形 / JWT 形) の 2 層
 - LLM 用は `server/llm/redaction.ts` の `redactUserInput(input)` を user input log 直前に適用する。 置換 token はカテゴリ別の `[REDACTED_*]` 形式
 - 対象カテゴリと regex pattern の SSOT は `server/llm/redaction.ts`。 新パターン追加は PBT (`tests/pbt/server/llm/redaction-coverage.pbt.test.ts`) で 「生 PII が出力に残らない」 「安全な文字列は変化しない」 の 2 不変量を足す
 

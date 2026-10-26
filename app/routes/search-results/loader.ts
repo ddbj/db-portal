@@ -61,8 +61,7 @@ const matchAllPlaceholder = (
   return peekMatchAllFacets(scope, fetcher)
 }
 
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {
-  const url = new URL(request.url)
+export const loader = async ({ url }: LoaderFunctionArgs): Promise<LoaderData> => {
   const params = readSearchParams(url.searchParams)
   // Canonical URL とズレていれば 302 で正規化する。
   // 対象: 手入力の `?page=999999` (deep-paging 上限で clamp)、 default 値の

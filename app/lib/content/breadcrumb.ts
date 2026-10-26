@@ -42,7 +42,7 @@ export const useBreadcrumb = (options: BreadcrumbOptions = {}): BreadcrumbItem[]
     if (isDynamicHandle(handle)) {
       const resolver = resolvers[handle.breadcrumbResolver]
       if (!resolver) continue
-      const result = resolver({ data: m.data, pathname: m.pathname, params: m.params })
+      const result = resolver({ data: m.loaderData, pathname: m.pathname, params: m.params })
       if (result === null) continue
       if (Array.isArray(result)) items.push(...result)
       else items.push(result)

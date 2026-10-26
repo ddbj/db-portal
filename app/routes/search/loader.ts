@@ -17,8 +17,7 @@ type LoaderData = {
 // /search/results loader and from-url.ts pass `db` for the same reason. An
 // unparseable `q` falls back to the raw string in the keyword box, which the
 // live sync then flags.
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<LoaderData> => {
-  const url = new URL(request.url)
+export const loader = async ({ url }: LoaderFunctionArgs): Promise<LoaderData> => {
   const { q, db } = readSearchParams(url.searchParams)
   if (q === "") return { q, db, ast: null }
   const envBaseUrl = process.env.DB_PORTAL_SEARCH_API_URL

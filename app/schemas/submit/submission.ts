@@ -21,8 +21,8 @@ const AccessSection = z.object({
 export type AccessSection = z.infer<typeof AccessSection>
 
 export const Submission = z.object({
-  preconditions: Preconditions.default({ organismDomain: null }),
-  accessSection: AccessSection.default({}),
+  preconditions: Preconditions.prefault({ organismDomain: null }),
+  accessSection: AccessSection.prefault({}),
   fileEntries: z.array(FileEntry).default([]),
   fileGroups: z.array(FileGroup).default([]),
   notes: z.string().default(""),

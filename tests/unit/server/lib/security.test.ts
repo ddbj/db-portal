@@ -28,13 +28,24 @@ const runMiddleware = (
   const middleware = securityHeaders({ env, ...options })
   const res = makeRes()
   const next = vi.fn()
-  middleware({} as Request, res as unknown as Response, next)
+  middleware({ headers: {} } as unknown as Request, res as unknown as Response, next)
   expect(next).toHaveBeenCalledOnce()
 
   return res
 }
 
 describe("securityHeaders", () => {
+  test("securityHeaders_perRequest_overwritesNonceHeaderOnRequest", () => {
+    // app 側は request header から nonce を読むので、 client が同名 header を
+    // 送ってきても middleware が生成した値で必ず上書きされる。
+    const req = { headers: { "x-csp-nonce": "client-supplied" } } as unknown as Request
+    const res = makeRes()
+    securityHeaders({ env: "production" })(req, res as unknown as Response, vi.fn())
+    expect(req.headers["x-csp-nonce"]).toBe(res.locals.cspNonce)
+    expect(req.headers["x-csp-nonce"]).not.toBe("client-supplied")
+    expect(res.headers["Content-Security-Policy"]).toContain(`'nonce-${req.headers["x-csp-nonce"] as string}'`)
+  })
+
   test("securityHeaders_dev_emitsCspWithNonceButOmitsHsts", () => {
     // dev でも staging/production と同じ CSP を emit する。 nonce 抜けなど CSP を
     // 壊す変更を deploy 前に開発時点で気付けるようにするため。

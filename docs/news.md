@@ -4,7 +4,7 @@ news は ddbj/www と dbcls/website の 2 リポジトリを local clone とし�
 
 ## news の役割
 
-upstream を 1 次情報として外部 API を踏まないため、 BFF が ddbj/www と dbcls/website を local clone で持ち、 定期的に `git pull` して全件再構築する。 ブラウザは `/api/news` だけを叩き、 upstream / git clone / 永続 cache のいずれにも直接触れない。 同じ cache を 3 つの UI が振り分け軸を変えて引く: **NotificationBar** (featured のみ・上部 stack)、 **NewsAside** (最新 N 件)、 **/news 一覧** (facet 付き全件)。
+upstream を 1 次情報として外部 API を踏まないため、 BFF が ddbj/www と dbcls/website を local clone で持ち、 定期的に `git pull` して全件再構築する。 ブラウザは `/api/news` だけを叩き、 upstream / git clone / 永続 cache のいずれにも直接触れない。 同じ cache を 3 つの UI が振り分け軸を変えて引く: NotificationBar (featured のみ・上部 stack)、 NewsAside (最新 N 件)、 /news 一覧 (facet 付き全件)。
 
 ```mermaid
 flowchart LR
@@ -21,7 +21,7 @@ cache レイヤーには出現順 / featured 判定 / facet グルーピング�
 
 ## mirror と sync
 
-source ごとに **独立した poller** が走り、 一方の失敗が他方の更新を止めない。 GitHub REST API は使わず、 HTTPS 経由の git protocol で pull するので rate limit とは別枠で運用できる。
+source ごとに独立した poller が走り、 一方の失敗が他方の更新を止めない。 GitHub REST API は使わず、 HTTPS 経由の git protocol で pull するので rate limit とは別枠で運用できる。
 
 ```mermaid
 sequenceDiagram
@@ -52,7 +52,7 @@ cache は entity list 機構の 2 段 cache 規約 ([entity-list.md § 2 段 cac
 
 ## NewsItem の正規化
 
-cache が持つ各 `items` 要素 (`NewsItem`) は、 ja / en の同一記事を **1 件の pair** にまとめた中間構造。 front matter (`tags` / `db` / `published` 等) と本文 Markdown から組み立てる。 各 item は言語ごとの title / summary / url を持つ。
+cache が持つ各 `items` 要素 (`NewsItem`) は、 ja / en の同一記事を 1 件の pair にまとめた中間構造。 front matter (`tags` / `db` / `published` 等) と本文 Markdown から組み立てる。 各 item は言語ごとの title / summary / url を持つ。
 
 ### ja/en pair の束ね方
 
@@ -63,9 +63,9 @@ cache が持つ各 `items` 要素 (`NewsItem`) は、 ja / en の同一記事を
 
 ### 分類軸 (種別とサービス)
 
-`tags` は機能軸の `NewsCategory` 型に正規化し、 mapping にヒットしない tag は `other` に落とす (UI を壊さない)。 これが facet sidebar の **「種別」** 軸になる。
+`tags` は機能軸の `NewsCategory` 型に正規化し、 mapping にヒットしない tag は `other` に落とす (UI を壊さない)。 これが facet sidebar の 「種別」 軸になる。
 
-ddbj source の Database 区分 (BioProject / BioSample / DRA 等) は `tags` ではなく `db` フィールドから取り、 `NewsCategory` とは独立した **「サービス」** 軸として扱う。
+ddbj source の Database 区分 (BioProject / BioSample / DRA 等) は `tags` ではなく `db` フィールドから取り、 `NewsCategory` とは独立した 「サービス」 軸として扱う。
 
 front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合成は `server/news/normalize.ts` と `server/news/pair.ts` が SSOT。
 
@@ -75,7 +75,7 @@ front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合�
 
 ### NotificationBar
 
-`featured=true` の item を **全 page 共通 layout の上部**に新しい順に stack する (`app/shell/notification-bar.tsx`)。 個別 close 可能。 services 側の `featuredTop` (top page の services セクション限定) とは別軸。
+`featured=true` の item を全 page 共通 layout の上部に新しい順に stack する (`app/shell/notification-bar.tsx`)。 個別 close 可能。 services 側の `featuredTop` (top page の services セクション限定) とは別軸。
 
 - featured の入力は ddbj source の `_data/global.yml` の `top_news.{ja,en}` (2 言語別の path 列)
 - dbcls source は常に `featured=false`
@@ -88,9 +88,9 @@ front matter parse / pair 結合 / mapping / summary 抽出 / `publishedAt` 合�
 
 ### /news 一覧
 
-`/news` route は SSR loader を持たず、 **URL から facet state を組み立てて** client が `/api/news` を 1 回 fetch し、 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。 page / sort も同じ URL state に乗る。
+`/news` route は SSR loader を持たず、 URL から facet state を組み立てて client が `/api/news` を 1 回 fetch し、 集計は cache 全件 (当該言語で title を持つ item) から client 側で行う。 page / sort も同じ URL state に乗る。
 
-facet sidebar は 4 グループ — **種別** (NewsCategory, enum) / **ソース** (ddbj / dbcls, enum) / **年** (publishedAt, number) / **サービス** (db フィールド, string) — で構成する。 件数の集計、 グループ間の AND / OR、 URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う。
+facet sidebar は 4 グループ、 種別 (NewsCategory, enum) / ソース (ddbj / dbcls, enum) / 年 (publishedAt, number) / サービス (db フィールド, string) で構成する。 件数の集計、 グループ間の AND / OR、 URL serialize の規約は [entity-list.md § URL state と件数](entity-list.md) に従う。
 
 URL state の parse / serialize は `app/features/news/facet-url-state.ts` が SSOT。
 
@@ -104,10 +104,10 @@ query 仕様 / response schema / lang fallback の規約は `server/api/news.ts`
 
 ### 環境変数
 
-`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 本 doc は `DB_PORTAL_NEWS_*` で統一する:
+`server/lib/env.ts` の Zod schema が SSOT、 値は `env.staging` 等を参照する。 この文書は `DB_PORTAL_NEWS_*` で統一する:
 
-- `DB_PORTAL_NEWS_{DDBJ,DBCLS}_REPO_URL` / `_MIRROR_{DDBJ,DBCLS}_BRANCH` — 各 source の clone 元 URL と branch
-- `DB_PORTAL_NEWS_REPOS_DIR` / `_CACHE_DIR` — local clone と永続 cache の配置先
-- `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS` — source 別 poller の周期
+- `DB_PORTAL_NEWS_{DDBJ,DBCLS}_REPO_URL` / `_MIRROR_{DDBJ,DBCLS}_BRANCH`: 各 source の clone 元 URL と branch
+- `DB_PORTAL_NEWS_REPOS_DIR` / `_CACHE_DIR`: local clone と永続 cache の配置先
+- `DB_PORTAL_NEWS_MIRROR_INTERVAL_SECONDS`: source 別 poller の周期
 
 `git pull` は GitHub の HTTPS git protocol で動くため、 認証なしで運用する。 services が同じ clone を借りる規約は [services.md](services.md) を参照。
