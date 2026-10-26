@@ -123,6 +123,7 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.nsss.intro" },
+              { kind: "warning", messageKey: "submit.nsss.bioprojectBiosampleToMss" },
             ],
           },
         },

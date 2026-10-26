@@ -51,18 +51,58 @@ describe("MSS/NSSS split", () => {
     expect(steps.some((s) => s.service === "nsss")).toBe(false)
   })
 
-  test("deriveFlowSteps_smallScaleChip_routesToNsss", () => {
+  test("deriveFlowSteps_smallScaleChip_routesToNsssWithoutBioprojectOrBiosample", () => {
     const steps = deriveFlowSteps(
       singleSequence({ organismDomain: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
     )
 
-    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "nsss"])
+    expect(servicesOf(steps)).toEqual(["nsss"])
 
     const dest = destinationOf(steps)
     expect(dest.service).toBe("nsss")
     expect(dest.origin).toBe("tier1")
     expect(dest.notes.map((n) => n.messageKey)).toContain("submit.nsss.intro")
     expect(steps.some((s) => s.service === "ddbj")).toBe(false)
+  })
+
+  test("deriveFlowSteps_smallScaleChip_warnsThatBioprojectOrBiosampleRequiresMss", () => {
+    const dest = destinationOf(
+      deriveFlowSteps(
+        singleSequence({ organismDomain: "eukaryote" }, { chipTags: [{ axis: "small-scale", value: "true" }] }),
+      ),
+    )
+
+    expect(dest.notes).toContainEqual({ kind: "warning", messageKey: "submit.nsss.bioprojectBiosampleToMss" })
+  })
+
+  test("deriveFlowSteps_nsssMixedWithMss_scopesCompanionsToTheMssEntryOnly", () => {
+    const submission: Submission = {
+      preconditions: { organismDomain: "eukaryote" },
+      accessSection: defaultAccessSection,
+      fileEntries: [
+        { id: "small", fileTypeKind: "sequence", access: "open", dataForm: "assembled", groupId: "g1", chipTags: [{ axis: "small-scale", value: "true" }] },
+        { id: "large", fileTypeKind: "sequence", access: "open", dataForm: "assembled", groupId: "g2", chipTags: [] },
+      ],
+      fileGroups: [
+        { id: "g1", groupType: "single", memberFileIds: ["small"], linkedGroupIds: [] },
+        { id: "g2", groupType: "single", memberFileIds: ["large"], linkedGroupIds: [] },
+      ],
+      notes: "",
+    }
+
+    const steps = deriveFlowSteps(submission)
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj", "nsss"])
+    for (const companion of steps.filter((s) => s.service === "bioproject" || s.service === "biosample")) {
+      expect(companion.scope.entryIds).toEqual(["large"])
+    }
+  })
+
+  test("deriveFlowSteps_mssWithoutSmallScale_keepsBioprojectAndBiosampleAndNoNsssWarning", () => {
+    const steps = deriveFlowSteps(singleSequence({ organismDomain: "eukaryote" }))
+
+    expect(servicesOf(steps)).toEqual(["bioproject", "biosample", "ddbj"])
+    expect(destinationOf(steps).notes.map((n) => n.messageKey)).not.toContain("submit.nsss.bioprojectBiosampleToMss")
   })
 
   test("deriveFlowSteps_sequenceWithTpaChip_routesToDdbjNotNsss", () => {

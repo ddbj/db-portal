@@ -485,6 +485,7 @@ export const en: Resources = {
     nsss: {
       intro: "A small number of short nucleotide sequences are submitted through the web-based NSSS (Nucleotide Sequence Submission System).",
       specialToMss: "Large-scale sequences, complete genomes, and WGS / TSA / TLS / EST / HTG / TPA are out of scope for NSSS; submit them through DDBJ (MSS).",
+      bioprojectBiosampleToMss: "NSSS cannot record a BioProject or BioSample. If you register a BioProject or BioSample, clear \"Small number of short sequences\" and submit through DDBJ (MSS).",
     },
     variant: {
       jga: {

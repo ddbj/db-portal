@@ -102,6 +102,17 @@ test.prop([arbSubmission], RUNS)(
 )
 
 test.prop([arbSubmission], RUNS)(
+  "deriveFlowSteps_nsssEntry_neverInBioprojectOrBiosampleScope",
+  (submission) => {
+    const steps = deriveFlowSteps(submission)
+    const nsssIds = entryIdsOfService(steps, (s) => s.service === "nsss")
+    fc.pre(nsssIds.size > 0)
+    const companionIds = entryIdsOfService(steps, (s) => s.service === "bioproject" || s.service === "biosample")
+    for (const id of nsssIds) expect(companionIds.has(id)).toBe(false)
+  },
+)
+
+test.prop([arbSubmission], RUNS)(
   "deriveFlowSteps_sequenceRead_partitionsByJgaOrDraExclusively",
   (submission) => {
     const steps = deriveFlowSteps(submission)

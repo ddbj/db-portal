@@ -116,7 +116,7 @@ export const SERVICE_DEPENDENCIES: Readonly<Record<Service, readonly Service[]>>
   "dra": ["bioproject", "biosample"],
   "jga": ["humandbs"],
   "ddbj": ["bioproject", "biosample", "dra"],
-  "nsss": ["bioproject", "biosample"],
+  "nsss": [],
   "gea": ["bioproject", "biosample", "dra"],
   "metabobank": ["bioproject", "biosample"],
 }

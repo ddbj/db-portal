@@ -96,7 +96,7 @@ UI 構成 (上部トグル 2 + サブトグル 3 + 種別ごと ChipAxis):
 
 | role | 担うもの |
 |---|---|
-| companion | 全 destination の前提として 1 件添付する共通メタデータ (BioProject / BioSample 等) |
+| companion | BioProject / BioSample を前提とする destination に 1 組添付する共通メタデータ (BioProject / BioSample 等) |
 | destination | データを最終的に受け入れる DDBJ の登録 service (DRA / JGA / DDBJ / GEA / MetaboBank / NSSS 等) |
 | external | DDBJ 外部の登録窓口・Policy ゲート (NBDC humandbs / jPOST / EVA 等) |
 
@@ -181,7 +181,7 @@ Tier1 は **KindRoute** の集合で、 1 つの KindRoute は 「1 種別の `w
 
 Tier2 は Tier1 の出力を受けて、 1 種別では完結しない構造を組み立てる。
 
-- **companion 生成**: 非 `jga` の entry のうち、 emit 先 service が `SERVICE_DEPENDENCIES` で `bioproject` / `biosample` を宣言するもの (= DDBJ 内 destination) だけを scope とする `bioproject + biosample` のペアを 1 組だけ足す (該当 entry が 0 なら出さない)。 外部エンドポイント (`jpost` / `eva`) は DDBJ 内 companion を必要としないため、 これらのみを emit するフローでは BP/BS ステップは生成しない
+- **companion 生成**: 非 `jga` の entry のうち、 emit 先 service が `SERVICE_DEPENDENCIES` で `bioproject` / `biosample` を宣言するものだけを scope とする `bioproject + biosample` のペアを 1 組だけ足す (該当 entry が 0 なら出さない)。 外部エンドポイント (`jpost` / `eva`) は DDBJ 内 companion を必要としないため、 これらのみを emit するフローでは BP/BS ステップは生成しない。 NSSS (`nsss`) は DDBJ 内 destination だが BioProject / BioSample を記載できないため、 BP/BS を前提にしない。 NSSS の step には、 BioProject / BioSample を登録する場合は MSS (`ddbj`) で登録する旨の warning note を付ける
 - **named recipe**: 1 種別 → 複数 archive、 または submission 集約を要するケースを名前付きで宣言する純関数。 集合 (`humandbsPolicySteps` / `jgaDatasetSteps` / `spatialSteps` / `expressionDraSteps` / `sequenceDraSteps` / `haplotypeSteps`) は `RECIPE_ALLOWLIST` 内に閉じ、 勝手に増えない
   - `humandbsPolicySteps` は § 指針対象 (humandbs 申請) 判定 が true の submission に対して、 destination に関係なく `humandbs` step を 1 枚 emit する
   - `jgaDatasetSteps` は Tier1 で `jga` に routing された entry を scope とする `jga` step を 1 枚 emit する (前提ゲート `humandbs` は `humandbsPolicySteps` が担う)
@@ -214,6 +214,7 @@ walk-through:
 - **JGA 排他**: 任意の種別について `restricted ∧ OrganismDomain = human` なら JGA scope、 それ以外なら公開系 destination scope。 同じ種別が両方に入らない
 - **humandbs-when-subject-to-policy**: `requiresHumandbsApplication(organismDomain, accessSection)` が true かつ active entry が 1 件以上ある submission では `humandbs` step が 1 枚出る (JGA フローかどうかに関係なく)
 - **humandbs-not-when-out-of-scope**: `requiresHumandbsApplication` が false の submission では `humandbs` step は 0 枚
+- nsss-no-companion: `nsss` の step に入る entry は、 `bioproject` / `biosample` の step の scope に入らない
 - **no-orphan-destination**: enable された全種別が bioproject / biosample 以外に最低 1 つの destination service step に入る
 - **conflict-kind-no-step**: 前段で disable された種別は step を生成せず、 その entryId はどの step scope にも現れない
 - **cascade-no-deadend**: 任意 OrganismDomain で enable された種別を選ぶと destination service が 1 枚以上出る

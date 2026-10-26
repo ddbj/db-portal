@@ -461,6 +461,20 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
   - 手順 4 の後、`humandbs` カードと `[data-group="gate"]` は消え、`[data-group="open"]` の副題は `登録先へ直接登録` に戻る
 - **備考**: 提供申請は制限公開・非制限公開のどちらにも登録前に必要なので、humandbs カードを公開区分のグループに入れない。
 
+### S-SUBMIT-17: 少数の短い配列 (NSSS) では BioProject / BioSample を出さず、MSS への注意を出す
+
+- **ペルソナ**: P-ANON
+- **前提**: `/submit?organism-domain=prokaryote&entry=sequence%3Aassembled%3A0%3Aassembly-form%3Dgenome%2Chas-annotation%3Dtrue%2Csmall-scale%3Dtrue&group=single%3A0` (原核生物の塩基配列 1 件、アセンブリ形式 `ゲノム`、`アノテーション付き`、`少数の短い配列`)
+- **手順**:
+  1. 前提の URL を開く
+  2. データ詳細の登録条件で `少数の短い配列` を OFF にする
+- **期待**:
+  - 手順 1 の後、`data-service="nsss"` カードが 1 件描画され、`data-service="bioproject"` / `data-service="biosample"` は 0 件
+  - 手順 1 の後、`nsss` カードに、BioProject / BioSample を登録する場合は MSS で登録する旨の注意が表示される
+  - 手順 1 の後も `[data-testid="account-step"]` は 1 件 (NSSS は DDBJ アカウントを使う)
+  - 手順 2 の後、`nsss` カードは消え、`data-service="ddbj"` / `bioproject` / `biosample` カードが各 1 件描画される
+- **備考**: NSSS では BioProject / BioSample を記載できないため、NSSS は BioProject / BioSample を前提にしない。
+
 ### E-SUBMIT-01: 未設定の詳細行が notify Tag と warning tone で示される
 
 - **ペルソナ**: P-ANON
