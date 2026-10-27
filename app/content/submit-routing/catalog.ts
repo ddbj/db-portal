@@ -76,7 +76,10 @@ const catalogData = {
           emit: {
             service: "ddbj",
             scope: "entry",
-            notes: [{ kind: "info", messageKey: "submit.ddbj.sag.misagPackage" }],
+            notes: [
+              { kind: "info", messageKey: "submit.ddbj.sag.misagPackage" },
+              { kind: "warning", messageKey: "submit.sequenceDra.sagOptional" },
+            ],
           },
         },
         {
@@ -102,6 +105,8 @@ const catalogData = {
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.ddbj.unannotated.intro" },
+              { kind: "warning", messageKey: "submit.ddbj.genome.tsaRawReadsToDra" },
+              { kind: "warning", messageKey: "submit.ddbj.genome.virusPlasmidOrganelleNoBioproject" },
             ],
           },
         },
@@ -146,12 +151,24 @@ const catalogData = {
           },
         },
         {
+          // アセンブリ形式「ゲノム」は WGS・完成ゲノム・TSA・TLS をまとめた選択肢なので、
+          // TSA の DRA 必須と、ウイルス・プラスミド単独・オルガネラ単独の BioProject / BioSample 不要を注意文で補う
           when: { always: true },
           emit: {
             service: "ddbj",
             scope: "entry",
             notes: [
               { kind: "info", messageKey: "submit.ddbj.mss.intro" },
+              {
+                kind: "warning",
+                messageKey: "submit.ddbj.genome.tsaRawReadsToDra",
+                whenAny: { anyChip: { axis: "assembly-form", value: "genome" } },
+              },
+              {
+                kind: "warning",
+                messageKey: "submit.ddbj.genome.virusPlasmidOrganelleNoBioproject",
+                whenAny: { anyChip: { axis: "assembly-form", value: "genome" } },
+              },
             ],
           },
         },

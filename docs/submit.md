@@ -112,7 +112,7 @@ graph TD
   bioproject["bioproject<br/>(共通メタデータ)"] --> dest["それを emit する全 destination"]
   biosample["biosample<br/>(共通メタデータ)"] --> dest
   dra["dra<br/>(一次データ)"] --> gea["gea (sequencing 2 段)"]
-  dra --> ddbj["ddbj (MAG/SAG)"]
+  dra --> ddbj["ddbj (MAG)"]
 ```
 
 - カードの順序はこの依存グラフのトポロジカル順で、前提の step が依存する step より前に出る
@@ -125,10 +125,10 @@ graph TD
 
 ### アカウント誘導ステップ
 
-未ログインのときは、`FlowStep[]` の外側の案内として「DDBJ アカウントの取得」を促す step 0 を表示する。表示条件は `flow-summary-card` が `SERVICE_ROLE` を参照して決める:
+未ログインのときは、`FlowStep[]` の外側の案内として「DDBJ アカウントの取得」を促す step 0 を表示する。表示条件は `flow-summary-card` が `service.ts` の `usesDdbjAccount` を参照して決める:
 
-- 表示する: `!isAuthenticated` かつ、`steps` に role が `destination` か `companion` の service が 1 つでもある (DDBJ 管轄の登録先を含む)
-- 表示しない: 全 step の role が `external` だけ (`humandbs` / `jpost` / `eva`)。例えば proteome は `jpost` だけ、非ヒトの variant は `eva` だけになる。これらの登録先は DDBJ アカウントを使わないので、誘導を出さない
+- 表示する: `!isAuthenticated` かつ、`steps` に DDBJ アカウントでログインする service (`nsss` 以外の `destination` と `companion`) が 1 つでもある
+- 表示しない: 全 step が `external` (`humandbs` / `jpost` / `eva`) か `nsss` だけ。例えば proteome は `jpost` だけ、非ヒトの variant は `eva` だけ、少数の短い遺伝子配列は `nsss` だけになる。NSSS は登録時に入力したメールアドレスへ届くリンクで続けるので、DDBJ アカウントを使わない
 
 JGA のフローは humandbs (external) と jga (destination) を含むので、誘導を表示する。
 

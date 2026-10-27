@@ -63,15 +63,15 @@ A reviewer token can optionally be issued so peer reviewers can access the submi
 
 ## Submission flow
 
-1. **Sign in with your D-way account** and create a new submission from the GEA submission page. An FTP upload directory is allocated for you.
+1. **Sign in to D-way with your DDBJ account**, select Microarray or Sequencing on the GEA submission page, and create a new submission. A submission directory is created on the file server.
 2. **Reference the prerequisite submissions**. For microarray, select a BioProject and a BioSample; for sequencing, select one DRA submission and a BioProject.
 3. **Fill in the IDF tab** with experiment-wide metadata (title / description / experiment type / design / protocol / publication / array design ref, etc.).
 4. **Fill in the SDRF tab** by completing the template auto-generated from the BioSample (or DRA submission) and array design, adding Material Type / Label / Factor Value / Array Data File entries with md5 values.
-5. **Upload data files via FTP** (raw / processed).
+5. **Upload data files to the submission directory by sftp** (raw / processed).
 6. **Undergo curation** and respond to any revision requests. Once complete, E-GEAD-n / A-GEAD-n / P-GEAD-n are issued.
 
 > [!TIP]
-> Step-by-step wizard instructions are provided by the step cards in the [Submit Navigator](/submit). This page only describes the high-level routes.
+> For screen-by-screen instructions, see the DDBJ pages [Microarray submission](https://www.ddbj.nig.ac.jp/gea/submit-array-e.html) and [Sequencing submission](https://www.ddbj.nig.ac.jp/gea/submit-sequence-e.html). This page only describes the high-level routes.
 
 ## Prerequisites (MAGE-TAB)
 
@@ -85,7 +85,7 @@ GEA metadata are centered on the MAGE-TAB format. At minimum prepare an IDF and 
 
 In addition, prepare the following beforehand.
 
-- **D-way account**: required to sign in to the GEA submission UI
+- **DDBJ account**: required to sign in to the GEA submission page in D-way and to upload by sftp (register a public key)
 - **[BioProject](/bioproject)**: one BioProject is referenced by both the microarray and the sequencing route
 - **[BioSample](/biosample)**: selected directly in the microarray route as the source for SDRF auto-generation (in the sequencing route it is referenced via the DRA submission)
 - **[DRA](/dra) submission**: pre-register raw reads in the sequencing route

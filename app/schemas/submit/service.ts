@@ -72,6 +72,16 @@ export const isExternalService = (service: Service): boolean =>
 export const isSubmissionEndpoint = (service: Service): boolean =>
   ENDPOINT_SET.has(service)
 
+// DDBJ アカウントでログインして登録する service。登録先と共通メタデータのうち、NSSS だけは
+// 登録時に入力したメールアドレスへ届くリンクで続けるのでアカウントを使わない。
+// 外部の登録先 (jpost / eva) と提供申請 (humandbs) も DDBJ アカウントの誘導には含めない。
+const DDBJ_ACCOUNT_SERVICES: ReadonlySet<Service> = new Set(
+  Service.options.filter((s) => SERVICE_ROLE[s] !== "external" && s !== "nsss"),
+)
+
+export const usesDdbjAccount = (service: Service): boolean =>
+  DDBJ_ACCOUNT_SERVICES.has(service)
+
 // 役割タグの表示キー。external のうち登録エンドポイント (jpost/eva) は「外部登録先」、
 // エンドポイントでない前提ゲート (humandbs) は「申請窓口」として表示語を分ける。
 type ServiceRoleTagKey = ServiceRole | "gate"

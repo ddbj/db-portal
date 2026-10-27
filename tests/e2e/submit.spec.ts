@@ -275,7 +275,8 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "bioproject")).toHaveCount(0)
     await expect(flowStep(page, "biosample")).toHaveCount(0)
     await expect(flowStep(page, "nsss")).toContainText("BioProject / BioSample を登録する場合は")
-    await expect(accountStep(page)).toHaveCount(1)
+    // NSSS は DDBJ アカウントを使わないので、NSSS だけのフローでは誘導を出さない
+    await expect(accountStep(page)).toHaveCount(0)
 
     await smallScale.uncheck({ force: true })
 
@@ -284,6 +285,8 @@ test.describe("Submit Domain", () => {
     await expect(flowStep(page, "bioproject")).toHaveCount(0)
     await expect(flowStep(page, "biosample")).toHaveCount(0)
     await expect(flowStep(page, "ddbj")).toContainText("BioProject / BioSample は必須ではありません")
+    // MSS は DDBJ アカウントを使うので、MSS に切り替わると誘導が出る
+    await expect(accountStep(page)).toHaveCount(1)
 
     await page.getByRole("radio", { name: /^ゲノム/ }).click()
 

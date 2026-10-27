@@ -472,7 +472,7 @@ Playwright を staging URL に対して回す。各シナリオはペルソナ /
 - **期待**:
   - 手順 1 の後、`data-service="nsss"` カードが 1 件描画され、`data-service="bioproject"` / `data-service="biosample"` は 0 件
   - 手順 1 の後、`nsss` カードに、BioProject / BioSample を登録する場合は MSS で登録する旨の注意が表示される
-  - 手順 1 の後も `[data-testid="account-step"]` は 1 件 (NSSS は DDBJ アカウントを使う)
+  - 手順 1 の後は `[data-testid="account-step"]` が 0 件 (NSSS は DDBJ アカウントを使わない)。手順 2 の後は 1 件 (MSS は DDBJ アカウントを使う)
   - 手順 2 の後、`nsss` カードは消えて `data-service="ddbj"` カードが 1 件描画され、`bioproject` / `biosample` は 0 件のまま。`ddbj` カードに、遺伝子配列の登録に BioProject / BioSample は必須ではない旨の注意が表示される
   - 手順 3 の後、`bioproject` / `biosample` カードが各 1 件描画され、登録条件の `少数の短い配列` は選べなくなる
 - **備考**: NSSS では BioProject / BioSample を記載できず、遺伝子配列は MSS でも BioProject / BioSample を必須としない。NSSS はゲノム・WGS・TSA・TLS を受け付けないため、`少数の短い配列` は遺伝子配列のときだけ選べる。

@@ -63,15 +63,15 @@ publication 前の査読者アクセス用に、任意で reviewer token を発�
 
 ## 登録の流れ
 
-1. **D-way アカウントでログイン** し、GEA submission ページから新規 submission を作成します。FTP アップロード用のディレクトリが払い出されます。
+1. **DDBJ アカウントで D-way にログイン** し、GEA 登録ページで Microarray / Sequencing を選んで新規 submission を作成します。ファイルサーバに登録用ディレクトリが作られます。
 2. **事前登録物を参照** します。Microarray の場合は BioProject と BioSample を選択、Sequencing の場合は DRA submission と BioProject を選択します。
 3. **IDF タブ** で実験全体のメタデータ (title / description / experiment type / design / protocol / publication / array design ref など) を入力します。
 4. **SDRF タブ** で、BioSample または DRA submission と array design から自動生成されたテンプレートに、Material Type / Label / Factor Value / Array Data File と md5 値などを補完します。
-5. **FTP でデータファイルをアップロード** します (raw / processed)。
+5. **登録用ディレクトリに sftp でデータファイルをアップロード** します (raw / processed)。
 6. **curation を受け**、必要なら修正対応を行います。完了後に E-GEAD-n / A-GEAD-n / P-GEAD-n が発行されます。
 
 > [!TIP]
-> 個別のウィザード手順は [登録ナビ](/submit) のステップカードで案内されます。本ページでは経路の全体像のみを示します。
+> 画面ごとの操作手順は DDBJ の [Microarray submission](https://www.ddbj.nig.ac.jp/gea/submit-array.html) と [Sequencing submission](https://www.ddbj.nig.ac.jp/gea/submit-sequence.html) を参照してください。本ページでは経路の全体像のみを示します。
 
 ## 事前準備 (MAGE-TAB)
 
@@ -85,7 +85,7 @@ GEA のメタデータは MAGE-TAB 形式が中心です。最低限 IDF と SDR
 
 加えて、以下の登録物を先に準備しておきます。
 
-- **D-way アカウント**: GEA submission UI にログインするために必要
+- **DDBJ アカウント**: D-way の GEA 登録ページにログインし、sftp でアップロードするために必要 (公開鍵を登録する)
 - **[BioProject](/bioproject)**: Microarray・Sequencing どちらの経路でも 1 つ参照
 - **[BioSample](/biosample)**: Microarray 経路で直接選択し、SDRF 自動生成の元になる (Sequencing 経路では DRA submission 経由で参照)
 - **[DRA](/dra) submission**: Sequencing 経路で raw read を事前登録

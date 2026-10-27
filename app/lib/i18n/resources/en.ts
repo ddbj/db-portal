@@ -308,7 +308,7 @@ export const en: Resources = {
           sagChain: { label: "SAG", sub: "Single-amplified genome" },
           haplotype: { label: "Haplotype", sub: "Submit each haplotype of a diploid/polyploid assembly" },
           tpa: { label: "TPA (Third Party Data)", sub: "Sequence and annotation based on third-party data" },
-          smallScale: { label: "Small number of short sequences", sub: "Few short sequences (guideline: under 100, each under ~500 kb)" },
+          smallScale: { label: "Small number of short sequences", sub: "Few short sequences (guideline: up to 100 sequences, each under 500 kb)" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "With sequence", sub: "Paired with a nucleotide sequence" },
@@ -443,16 +443,16 @@ export const en: Resources = {
     },
     sequenceRead: {
       jga: {
-        intro: "Restricted-access human individual data and human-related metagenome reads are deposited in JGA.",
+        intro: "Restricted-access human individual reads are deposited in JGA.",
         dbclsPolicy: "JGA submission requires policy approval (JGAP) obtained through DBCLS.",
       },
       dra: {
         intro: "Public reads, or reads from non-human samples, are deposited in DRA.",
-        restrictedNonHumanEmbargo: "Restricted non-human reads use a scheduled release date (embargo) in DRA to keep them private until then.",
+        restrictedNonHumanEmbargo: "Non-human data cannot be restricted-access. To keep data private until publication, set a release date in DRA; this is separate from restricted access.",
       },
     },
     ddbj: {
-      locusTagPrefix: "You will need to obtain a locus_tag prefix.",
+      locusTagPrefix: "If you annotate a whole-genome-scale sequence, you need to obtain a locus_tag prefix.",
       mag: {
         envGenomeEntry: "MAG genomes are submitted as ENV (environmental) genome entries in MSS.",
         rawReadsToDraRequired: "The underlying raw reads must already be deposited in DRA before submitting a MAG.",
@@ -471,7 +471,11 @@ export const en: Resources = {
         intro: "Nucleotide sequences are submitted through DDBJ (MSS: Mass Submission System).",
       },
       gene: {
-        bioprojectBiosampleOptional: "A BioProject and BioSample are not required for gene sequences. If you link the sequences to a BioProject or BioSample (for example, for a metagenomic analysis or a 16S rRNA report), register the BioProject and BioSample too.",
+        bioprojectBiosampleOptional: "A BioProject and BioSample are not required for gene sequences. If you link the sequences to a BioProject or BioSample (for example, for a metagenomic or environmental profiling analysis, or a 16S rRNA report for the same strain as a registered whole genome), register the BioProject and BioSample too.",
+      },
+      genome: {
+        tsaRawReadsToDra: "If you submit a TSA (transcriptome shotgun assembly), the underlying raw reads must be deposited in DRA.",
+        virusPlasmidOrganelleNoBioproject: "Virus or phage genomes, plasmid-only, and organelle-only submissions do not require a BioProject or BioSample.",
       },
       tpa: {
         intro: "Third-party (TPA) sequences and annotation are accepted through DDBJ (MSS).",
@@ -515,7 +519,7 @@ export const en: Resources = {
       },
       spatialImage: {
         intro: "Spatial images are deposited in GEA.",
-        largeImageGeneralist: "Very large images (such as MERFISH) are not accepted by GEA; consider a general-purpose archive instead.",
+        largeImageGeneralist: "MERFISH image data are too large for GEA; deposit them in a general-purpose archive.",
       },
     },
     jga: {

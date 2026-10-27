@@ -420,6 +420,7 @@ export type Resources = {
       locusTagPrefix: string
       mss: { intro: string }
       gene: { bioprojectBiosampleOptional: string }
+      genome: { tsaRawReadsToDra: string; virusPlasmidOrganelleNoBioproject: string }
       mag: { envGenomeEntry: string; rawReadsToDraRequired: string }
       sag: { misagPackage: string }
       haplotype: { intro: string; stComment: string }
@@ -1059,7 +1060,7 @@ export const ja: Resources = {
           sagChain: { label: "SAG", sub: "単一増幅ゲノム" },
           haplotype: { label: "ハプロタイプ", sub: "diploid/polyploid assembly の各ハプロタイプを個別に登録" },
           tpa: { label: "TPA (Third Party Data)", sub: "第三者データに基づく配列・アノテーション" },
-          smallScale: { label: "少数の短い配列", sub: "配列数が少なく短い（目安: 100 件未満、各 500 kb 未満）" },
+          smallScale: { label: "少数の短い配列", sub: "配列数が少なく短い（目安: 100 件以下、各 500 kb 未満）" },
         },
         sequenceAnnotation: {
           assemblyPair: { label: "配列ペア", sub: "配列と対になるアノテーション" },
@@ -1194,21 +1195,25 @@ export const ja: Resources = {
     },
     sequenceRead: {
       jga: {
-        intro: "制限公開のヒト個人データやヒト関連メタゲノムの配列リードは、JGA に登録します。",
+        intro: "制限公開のヒト個人データの配列リードは、JGA に登録します。",
         dbclsPolicy: "JGA への登録には、DBCLS で Policy 承認 (JGAP) を取得する必要があります。",
       },
       dra: {
         intro: "公開データ、または非ヒトの配列リードは DRA に登録します。",
-        restrictedNonHumanEmbargo: "非ヒトの制限公開リードは、DRA の公開予定日 (embargo) を設定して非公開期間を扱います。",
+        restrictedNonHumanEmbargo: "非ヒトのデータは制限公開にできません。論文公表までの非公開期間は、制限公開とは別に DRA の公開予定日で設定します。",
       },
     },
     ddbj: {
-      locusTagPrefix: "登録には locus_tag prefix の取得が必要です。",
+      locusTagPrefix: "全長規模のゲノム配列にアノテーションを記載する場合は、locus_tag prefix の取得が必要です。",
       mss: {
         intro: "塩基配列は DDBJ (MSS: Mass Submission System) で登録します。",
       },
       gene: {
-        bioprojectBiosampleOptional: "遺伝子配列の登録に BioProject / BioSample は必須ではありません。メタゲノム解析や 16S rRNA の報告など、BioProject / BioSample と関連付ける場合は、BioProject / BioSample も登録してください。",
+        bioprojectBiosampleOptional: "遺伝子配列の登録に BioProject / BioSample は必須ではありません。メタゲノム解析や環境プロファイル解析、登録済みの全長ゲノムと同じ菌株の 16S rRNA の報告など、BioProject / BioSample と関連付ける場合は、BioProject / BioSample も登録してください。",
+      },
+      genome: {
+        tsaRawReadsToDra: "TSA (転写産物アセンブリ) を登録する場合は、元の生リードの DRA 登録が必須です。",
+        virusPlasmidOrganelleNoBioproject: "ウイルス・ファージのゲノム、プラスミド単独、オルガネラ単独の登録では、BioProject / BioSample は不要です。",
       },
       mag: {
         envGenomeEntry: "MAG ゲノムは、MSS の ENV (environmental) division のゲノムエントリとして登録します。",
@@ -1266,7 +1271,7 @@ export const ja: Resources = {
       },
       spatialImage: {
         intro: "空間画像は GEA に登録します。",
-        largeImageGeneralist: "MERFISH などの大容量画像は GEA で受け入れられないため、汎用アーカイブの利用を検討してください。",
+        largeImageGeneralist: "MERFISH の画像データは非常に大きく GEA で受け入れられないため、汎用アーカイブに登録してください。",
       },
     },
     jga: {
