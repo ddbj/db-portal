@@ -34,7 +34,8 @@ jobs:
       - name: Bring up dev container
         run: |
           cp env.dev .env
-          docker compose up -d --build
+          docker compose build --pull
+          docker compose up -d
           docker compose exec -T app npm install
 
       - name: Typecheck
@@ -71,6 +72,7 @@ jobs:
         # が起動して /robots.txt を返せることを見る)。
         run: |
           docker buildx build \
+            --pull \
             --target runtime \
             --build-arg VITE_DB_PORTAL_SEARCH_API_URL=http://search.invalid/api \
             --build-arg VITE_DB_PORTAL_KEYCLOAK_REALM_URL=http://keycloak.invalid/realms/master \

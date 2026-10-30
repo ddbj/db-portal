@@ -64,6 +64,11 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // Existing components sync props into local state inside effects and read
+      // refs during render, which these React Compiler rules reject.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/use-memo": "off",
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react/function-component-definition": ["error", {

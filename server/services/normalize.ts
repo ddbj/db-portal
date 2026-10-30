@@ -1,4 +1,4 @@
-import yaml from "js-yaml"
+import { JSON_SCHEMA, load } from "js-yaml"
 import { z } from "zod"
 
 import type { ServiceCategory, ServiceItem } from "../../app/schemas/api-bff/service"
@@ -174,7 +174,7 @@ const DdbjYaml = z
 export const normalizeDdbjServices = (yamlText: string, logger: Logger): ServiceItem[] => {
   let parsed: unknown
   try {
-    parsed = yaml.load(yamlText, { schema: yaml.JSON_SCHEMA })
+    parsed = load(yamlText, { schema: JSON_SCHEMA })
   } catch (error) {
     logger.warn("services_ddbj_yaml_parse_failed", {
       message: error instanceof Error ? error.message : String(error),

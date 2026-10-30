@@ -1,4 +1,4 @@
-import { parse, serialize } from "cookie"
+import { parseCookie, stringifySetCookie } from "cookie"
 
 import type { Lang } from "./use-lang"
 
@@ -19,7 +19,9 @@ const isLang = (value: string | undefined): value is Lang =>
 export const isSecureRuntime = (): boolean => process.env.DB_PORTAL_ENV !== "dev"
 
 export const serializeLangCookie = (lang: Lang, opts: LangCookieOptions): string =>
-  serialize(LANG_COOKIE_NAME, lang, {
+  stringifySetCookie({
+    name: LANG_COOKIE_NAME,
+    value: lang,
     sameSite: "lax",
     secure: opts.secure,
     path: "/",
@@ -28,6 +30,6 @@ export const serializeLangCookie = (lang: Lang, opts: LangCookieOptions): string
 
 export const parseLangCookie = (cookieHeader: string | null | undefined): Lang | undefined => {
   if (!cookieHeader) return undefined
-  const value = parse(cookieHeader)[LANG_COOKIE_NAME]
+  const value = parseCookie(cookieHeader)[LANG_COOKIE_NAME]
   return isLang(value) ? value : undefined
 }

@@ -1,4 +1,4 @@
-import { parse, serialize } from "cookie"
+import { parseCookie, stringifySetCookie } from "cookie"
 
 // __Host- prefix は Secure + Path=/ + Domain 未指定を要求する (WICG spec)。
 // dev (HTTP) では Secure=false なため prefix 付き名は set できず、 前置なしの
@@ -14,7 +14,9 @@ const cookieName = (secure: boolean): string =>
   secure ? COOKIE_NAME_SECURE : COOKIE_NAME_INSECURE
 
 export const setSidCookie = (sid: string, opts: CookieOptions): string =>
-  serialize(cookieName(opts.secure), sid, {
+  stringifySetCookie({
+    name: cookieName(opts.secure),
+    value: sid,
     httpOnly: true,
     secure: opts.secure,
     sameSite: "lax",
@@ -22,7 +24,9 @@ export const setSidCookie = (sid: string, opts: CookieOptions): string =>
   })
 
 export const clearSidCookie = (opts: CookieOptions): string =>
-  serialize(cookieName(opts.secure), "", {
+  stringifySetCookie({
+    name: cookieName(opts.secure),
+    value: "",
     httpOnly: true,
     secure: opts.secure,
     sameSite: "lax",
@@ -32,7 +36,7 @@ export const clearSidCookie = (opts: CookieOptions): string =>
 
 export const getSidFromHeader = (cookieHeader: string | undefined): string | undefined => {
   if (!cookieHeader) return undefined
-  const parsed = parse(cookieHeader)
+  const parsed = parseCookie(cookieHeader)
 
   return parsed[COOKIE_NAME_SECURE] ?? parsed[COOKIE_NAME_INSECURE]
 }

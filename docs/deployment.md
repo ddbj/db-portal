@@ -53,9 +53,16 @@ flowchart LR
   app -- "BFF" --> express["Express (/api, /sitemap.xml, /robots.txt)"]
 ```
 
-container の `command` は npm を介さず、`tsx server/index.ts` を PID1 (`init: true` の tini) の子プロセスとして直接起動する。`SIGTERM` を node に直接届け、graceful shutdown の経路 (背景 timer の停止、idle な keep-alive 接続の切断、処理中の request の完了待ち、exit) を成立させるためである。npm を間に挟むと SIGTERM が node に届かず、強制 kill になる。
+container の `command` は npm を介さず、`node build/bff/index.js` を PID1 (`init: true` の tini) の子プロセスとして直接起動する。`SIGTERM` を node に直接届け、graceful shutdown の経路 (背景 timer の停止、idle な keep-alive 接続の切断、処理中の request の完了待ち、exit) を成立させるためである。npm を間に挟むと SIGTERM が node に届かず、強制 kill になる。
 
-build と `validate:content` ([content.md](content.md)) は image の build 時に実行し、どちらかが 1 件でも失敗すると image の build が止まる。runtime stage は build 済みの `build/` をそのまま起動し、container の起動時に再 build も再 validate もしない。runtime の cache (news / repos / services) のみを `./cache:/app/cache` に置き、deploy をまたいで保持する。
+build と `validate:content` ([content.md](content.md)) は image の build 時に実行し、どちらかが 1 件でも失敗すると image の build が止まる。`npm run build` は React Router の SSR と client を `build/server` と `build/client` に出力し、esbuild で `server/` を `build/bff/index.js` にまとめる。runtime stage は build 済みの `build/` をそのまま起動し、container の起動時に再 build も再 validate もしない。runtime の cache (news / repos / services) のみを `./cache:/app/cache` に置き、deploy をまたいで保持する。
+
+image は `Dockerfile` の multi-stage build で作り、全 stage を Node.js の LTS の Debian slim image から作る。runtime stage には、production の依存 (`npm ci --omit=dev`)、`build/`、`page-contents/`、`app/lib/content/gen/last-updated.json` だけをコピーする。
+
+- base image の tag には Node.js の major、Debian の codename、variant だけを書き、patch version と digest では固定しない。tag の image は Debian と Node.js の更新のたびに rebuild されるので、image を build するときは `--pull` を付けて最新の base image を取得する。`--pull` を付けないと、手元に残っている古い base image で build する
+- runtime の image には npm・tsx・curl を入れない。runtime で実行するのは node と git だけで、compose の healthcheck も node の fetch で `/robots.txt` を取得する
+- git は News mirror ([news.md](news.md)) が upstream の repo を clone するのに使う。clone は https なので、ca-certificates も入れる
+- `build/server/index.js` と `build/bff/index.js` は、`node_modules` の package を bundle せずに import する。runtime で import する package を `devDependencies` に置くと、runtime の image に入らず、起動に失敗する
 
 container は reverse proxy 1 段の背後で動くので、`X-Forwarded-*` を信頼する trust proxy の hop 数を env (`DB_PORTAL_TRUST_PROXY`) で設定する。hop 数を誤ると、per-IP の rate limit と client IP の log が正しく動かない。
 
@@ -66,7 +73,7 @@ container の起動から listen までの順序は固定である。最初に e
 ```mermaid
 sequenceDiagram
   participant tini as tini (PID1)
-  participant node as tsx (server/index.ts)
+  participant node as node (build/bff/index.js)
   participant env as parseServerEnv
   participant svc as Services mirror
   participant news as News mirror
@@ -131,11 +138,12 @@ event 名は snake_case にする。全 event の一覧は `git grep 'logger\.\(
 
 ## CI
 
-`.github/workflows/ci.yml` は PR と `main` への push のたびに、Docker Compose 内で typecheck / lint / unit + PBT / `npm audit --audit-level=high --omit=dev` を実行する。deploy、e2e、openapi の差分検知、性能計測は CI から自動実行せず、人が手動で行う。
+`.github/workflows/ci.yml` は PR と `main` への push のたびに、Docker Compose 内で typecheck / lint / unit + PBT / build / `npm audit --audit-level=high --omit=dev` を実行し、runtime stage の image を build して `/robots.txt` が応答するかを確かめる。deploy、e2e、openapi の差分検知、性能計測は CI から自動実行せず、人が手動で行う。
 
 | 種類 | 自動 (CI) | 手動 |
 |---|---|---|
-| typecheck / lint / unit / PBT / audit | ◯ | - |
+| typecheck / lint / unit / PBT / build / audit | ◯ | - |
+| runtime の image の起動確認 | ◯ | - |
 | deploy (staging / production) | - | ◯ |
 | e2e (staging の URL に対して実行) | - | ◯ (`tests/e2e/notes.md`) |
 | openapi 差分検知 (`gen:api-types`) | - | ◯ (リリース直前) |

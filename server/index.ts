@@ -1,4 +1,6 @@
 import http from "node:http"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import { createRequestHandler } from "@react-router/express"
 import express from "express"
@@ -92,7 +94,9 @@ if (isProd) {
     express.static("./build/client/assets", { immutable: true, maxAge: "1y" }),
   )
   app.use(express.static("./build/client", { maxAge: "1h" }))
-  const buildModulePath = "../build/server/index.js"
+  // Resolve from the working directory like the static paths above, because
+  // this module runs both as server/index.ts and as the bundled build/bff/index.js.
+  const buildModulePath = pathToFileURL(path.resolve("build/server/index.js")).href
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const build = (await import(/* @vite-ignore */ buildModulePath)) as any
   app.all("/{*splat}", createRequestHandler({ build, mode: "production" }))

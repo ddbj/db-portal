@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 
-import yaml from "js-yaml"
+import { JSON_SCHEMA, load } from "js-yaml"
 import { z } from "zod"
 
 import type { NewsSource } from "../../app/schemas/api-bff/news"
@@ -44,7 +44,7 @@ export const loadFeaturedWhitelist = async (
   try {
     // JSON_SCHEMA keeps ISO-like date scalars (e.g. `path: 2026-05-01`) as plain strings
     // instead of constructing Date objects, which zod's z.string() rejects.
-    parsed = yaml.load(raw, { schema: yaml.JSON_SCHEMA })
+    parsed = load(raw, { schema: JSON_SCHEMA })
   } catch (error) {
     logger.warn("featured_whitelist_yaml_parse_failed", {
       message: error instanceof Error ? error.message : String(error),

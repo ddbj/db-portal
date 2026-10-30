@@ -22,9 +22,10 @@ services:
     # つつ暴走時に host を巻き込まない値。
     mem_limit: 4g
     # /robots.txt は auth も i18n も不要な軽量エンドポイント。 200 が返れば
-    # request pipeline は生きている。 dev 用 compose では disable する。
+    # request pipeline は生きている。 runtime の image には curl が無いので
+    # node の fetch で叩く。 dev 用 compose では disable する。
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${DB_PORTAL_APP_INTERNAL_PORT}/robots.txt || exit 1"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:${DB_PORTAL_APP_INTERNAL_PORT}/robots.txt').then((res) => process.exit(res.ok ? 0 : 1), () => process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 3

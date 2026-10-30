@@ -11,7 +11,8 @@ git clone git@github.com:ddbj/db-portal ~/git/github.com/ddbj/db-portal
 cd ~/git/github.com/ddbj/db-portal
 
 cp env.dev .env
-docker compose up -d --build
+docker compose build --pull
+docker compose up -d
 docker compose exec app npm install
 docker compose exec app npm run gen:api-types
 ```
@@ -36,14 +37,16 @@ git に commit する env ファイルは `env.dev` / `env.staging` / `env.produ
 - env の値域、default、型は `server/lib/env.ts` の Zod schema を SSOT とする。env を build 時に読むか runtime に読むかの境界は [architecture.md](architecture.md) を参照する
 - 開発者が使う credential は staging までである。production の実値は `.env.production.local` から merge する ([deployment.md](deployment.md))
 - `VITE_DB_PORTAL_` prefix の変数はブラウザ bundle に埋め込まれるので、secret に相当する値を入れていないことを必ず確認する
-- `.env` を差し替えたら `docker compose down -v` の後に `docker compose up -d --build` を実行する。`restart` では新しい env が反映されない
+- `.env` を差し替えたら `docker compose down -v` の後に `docker compose build --pull` と `docker compose up -d` を実行する。`restart` では新しい env が反映されない
+- image を build するときは `--pull` を付けて、最新の base image を取得する。base image の tag は patch version で固定しない ([deployment.md](deployment.md) § container 構成)
 
 切替例:
 
 ```bash
 cp env.staging .env
 docker compose down -v
-docker compose up -d --build
+docker compose build --pull
+docker compose up -d
 ```
 
 dev / typecheck / lint / test / build / 依存の追加は、すべて container 内で実行する。ホストに Node を直接 install しない。本番は podman と podman-compose で同じ `compose.yml` を起動する。
@@ -93,7 +96,7 @@ dev では、`tsx watch` が server を監視して再起動し、Vite middlewar
 | `page-contents/**/*.md` の frontmatter `title` | パンくずリストのタイトルは `npm run dev` の前段で `gen:breadcrumb-titles` が生成するので、`npm run dev` を実行し直す ([content.md](content.md)) |
 | `app/lib/api/openapi-types.ts` | `npm run gen:api-types` を手動で再実行する |
 | `package.json` | `docker compose exec app npm install` を実行する |
-| `Dockerfile` / `compose*.yml` / `env.*` / `.env` | `docker compose down -v` の後に `docker compose up -d --build` を実行する |
+| `Dockerfile` / `compose*.yml` / `env.*` / `.env` | `docker compose down -v` の後に `docker compose build --pull` と `docker compose up -d` を実行する |
 
 `.md` の `lastUpdated` は、build 時のスクリプトが git の commit 日時から生成する ([content.md](content.md))。著者は手で書かない。
 
@@ -135,7 +138,7 @@ docker compose exec app sh -c 'env | grep ^VITE_DB_PORTAL_ | sort'
 
 env と volume の確認:
 
-- 依存や volume の不整合: `docker compose down -v` で named volume を破棄し、`docker compose up -d --build` で再構築する
+- 依存や volume の不整合: `docker compose down -v` で named volume を破棄し、`docker compose build --pull` と `docker compose up -d` で再構築する
 - env の不一致: § 環境変数 のコマンドで container 内の実効値を表示し、`env.*` ファイルの値と比べる
 
 個別の症状:
