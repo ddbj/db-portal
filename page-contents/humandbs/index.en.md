@@ -82,14 +82,16 @@ flowchart TD
   S1["Log in to the NBDC Human Database application system (recommended browsers: Chrome, Firefox)"]
   S2[Create a Data Submission Group]
   S3[Enter the information required for the Data Submission application and attach ethics-related documents]
-  S4["Review by the Data Access Committee (about 2 weeks)"]
-  S5[After approval, receive notice of the registration method for each archive]
-  S6["Prepare metadata (in English)* and data files"]
-  S7[Upload metadata and data files]
-  S8[Accession numbers issued after curator verification]
-  S9[Notify the Data Access Committee secretariat once the data release date is decided]
-  S10[Publish the NBDC Human Database dedicated site and release the data]
-  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10
+  S4[Preliminary check by the Data Access Committee secretariat]
+  S5["Review by the Data Access Committee (about 2 weeks)"]
+  S6[After approval, receive notice of the registration method for each archive]
+  S7["Prepare metadata (in English)* and data files"]
+  S8[Upload metadata and data files]
+  S9[Accession numbers issued after curator verification]
+  S10[Notify the Data Access Committee secretariat once the data release date is decided]
+  S11[Publish the NBDC Human Database dedicated site and release the data]
+  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10 --> S11
+  S4 -..->|"* Please note that we may request additional documents or confirmation if necessary to satisfy the review requirements."| S3
 ```
 
 \* If you, as the data submitter, want to validate the XML in advance, you can run `excel2xml` via Singularity.
