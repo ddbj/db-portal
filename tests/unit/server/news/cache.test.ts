@@ -5,6 +5,7 @@ import path from "node:path"
 import { describe, expect, test } from "vitest"
 
 import type { NewsList } from "~/schemas/api-bff/news"
+import { NEWS_CACHE_SCHEMA_VERSION } from "~/schemas/api-bff/news"
 
 import { createCacheStore, loadCacheFromDisk } from "../../../../server/news/cache"
 import { silentLogger } from "../../_helpers/silent-logger"
@@ -107,6 +108,58 @@ describe("createCacheStore", () => {
       await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
       const jaOnly = cache.list({ lang: "ja" })
       expect(jaOnly.map((n) => n.id)).toEqual(["a-2024", "c-2024", "b-2023"])
+    })
+  })
+
+  test("cacheList_featuredTrue_returnsOnlyFeaturedItems", async () => {
+    await withTempDir(async (dir) => {
+      const cache = createCacheStore(dir, silentLogger)
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
+      expect(cache.list({ featured: true }).map((n) => n.id)).toEqual(["c-2024"])
+    })
+  })
+
+  test("cacheList_featuredFalse_doesNotFilter", async () => {
+    await withTempDir(async (dir) => {
+      const cache = createCacheStore(dir, silentLogger)
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
+      expect(cache.list({ featured: false })).toHaveLength(4)
+    })
+  })
+
+  test("cacheList_featuredWithOtherFilters_appliesAllAsAnd", async () => {
+    await withTempDir(async (dir) => {
+      const cache = createCacheStore(dir, silentLogger)
+      await cache.replaceItemsForSource("ddbj", makeItems(), "sha")
+      expect(cache.list({ featured: true, year: [2024] }).map((n) => n.id)).toEqual(["c-2024"])
+      expect(cache.list({ featured: true, year: [2023] })).toEqual([])
+      expect(cache.list({ featured: true, category: ["data-release"] })).toEqual([])
+    })
+  })
+
+  test("initFromDisk_unsortedFile_listsNewestFirst", async () => {
+    await withTempDir(async (dir) => {
+      const oldestFirst = [...makeItems()].sort(
+        (a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt),
+      )
+      await writeFile(
+        path.join(dir, "news.json"),
+        JSON.stringify({
+          schemaVersion: NEWS_CACHE_SCHEMA_VERSION,
+          lastSyncSha: { ddbj: "sha" },
+          lastFetchedAt: "2026-01-01T00:00:00Z",
+          items: oldestFirst,
+        }),
+        "utf8",
+      )
+      const cache = createCacheStore(dir, silentLogger)
+      await cache.initFromDisk()
+      expect(cache.list().map((n) => n.id)).toEqual([
+        "a-2024",
+        "d-2024-en-only",
+        "c-2024",
+        "b-2023",
+      ])
     })
   })
 

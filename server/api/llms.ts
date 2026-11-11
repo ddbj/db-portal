@@ -11,7 +11,7 @@ export const PUBLIC_ENDPOINTS = [
     method: "GET",
     path: "/api/news",
     summary:
-      "News items from the DDBJ and DBCLS sites, as JSON. Filter with `lang`, `source`, `category`, `year`, and `service`.",
+      "News items from the DDBJ and DBCLS sites, as JSON, newest first. Filter with `lang`, `source`, `category`, `year`, `service`, and `featured`. Use `limit` to get only the first N items.",
   },
   {
     method: "GET",

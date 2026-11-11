@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useId } from "react"
 
-import { fetchNews, NEWS_QUERY_KEY, newsItemSummary, newsItemTitle, newsItemUrl } from "~/lib/api/news"
+import { fetchNews, newsItemSummary, newsItemTitle, newsItemUrl, newsLatestQueryKey } from "~/lib/api/news"
 import { categoryLabelKey, formatDate, useLang, useT } from "~/lib/i18n"
 import { NewsDate, SectionHeading, Tag, TextLink } from "~/ui"
 
@@ -13,12 +13,12 @@ export const NewsAside = () => {
   const headingId = useId()
 
   const query = useQuery({
-    queryKey: NEWS_QUERY_KEY,
-    queryFn: () => fetchNews(),
+    queryKey: newsLatestQueryKey(NEWS_LIMIT),
+    queryFn: () => fetchNews({ query: { limit: NEWS_LIMIT } }),
     staleTime: 5 * 60_000,
   })
 
-  const items = (query.data ?? []).slice(0, NEWS_LIMIT)
+  const items = query.data ?? []
 
   return (
     <aside aria-labelledby={headingId} className="w-full">

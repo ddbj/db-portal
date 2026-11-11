@@ -20,10 +20,12 @@ export type NewsFilter = {
   category?: readonly NewsCategory[]
   year?: readonly number[]
   service?: readonly string[]
+  featured?: boolean
 }
 
 const matchesFilter = (item: NewsItem, filter: NewsFilter | undefined): boolean => {
   if (!filter) return true
+  if (filter.featured && !item.featured) return false
   if (filter.lang) {
     const title = item.title[filter.lang]
     if (!title || title.trim() === "") return false

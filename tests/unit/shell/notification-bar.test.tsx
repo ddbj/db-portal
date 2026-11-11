@@ -43,18 +43,8 @@ const ann2: NewsItem = {
   rawTags: { ja: ["お知らせ"], en: ["Announcement"] },
 }
 
-const release1: NewsItem = {
-  id: "release-1",
-  source: "ddbj",
-  category: "data-release",
-  featured: false,
-  publishedAt: "2026-05-22T12:00:00Z",
-  title: { ja: "リリース", en: "Release" },
-  db: [],
-  rawTags: { ja: [], en: [] },
-}
-
-const announcementList: NewsList = [ann1, ann2, release1]
+// The BFF returns only featured items for `featured=true`.
+const announcementList: NewsList = [ann1, ann2]
 
 const closeArticle = (title: string) => {
   const article = screen.getByRole("article", { name: title })
@@ -76,7 +66,6 @@ describe("NotificationBar", () => {
     expect(articles).toHaveLength(2)
     expect(articles[0]).toHaveAccessibleName("アナウンス 2")
     expect(articles[1]).toHaveAccessibleName("アナウンス 1")
-    expect(screen.queryByText("リリース")).toBeNull()
   })
 
   test("NotificationBar_dismissOne_keepsOthersVisible", async () => {
@@ -127,10 +116,8 @@ describe("NotificationBar", () => {
     expect(remaining[1]).toHaveAccessibleName("アナウンス 3")
   })
 
-  test("NotificationBar_noAnnouncements_rendersNothing", async () => {
-    server.use(http.get("*/api/news", () =>
-      HttpResponse.json([release1])),
-    )
+  test("NotificationBar_noFeatured_rendersNothing", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json([])))
     const { container } = renderBar()
     await waitFor(() => {
       expect(container.textContent).toBe("")
@@ -184,24 +171,33 @@ describe("NotificationBar", () => {
     expect(screen.queryByRole("region")).toBeNull()
   })
 
-  test("NotificationBar_nonFeaturedItem_isFilteredOut", async () => {
-    server.use(http.get("*/api/news", () =>
-      HttpResponse.json([release1])),
-    )
-    const { container } = renderBar()
-    await waitFor(() => {
-      expect(container.textContent).toBe("")
-    })
-    expect(screen.queryByText("リリース")).toBeNull()
+  test("NotificationBar_topPath_requestsFeaturedOnlyWithoutLimit", async () => {
+    const urls: URL[] = []
+    server.use(http.get("*/api/news", ({ request }) => {
+      urls.push(new URL(request.url))
+
+      return HttpResponse.json(announcementList)
+    }))
+    renderBar()
+    await waitFor(() => screen.getByText("アナウンス 2"))
+    expect(urls).toHaveLength(1)
+    expect(urls[0]?.searchParams.get("featured")).toBe("true")
+    expect(urls[0]?.searchParams.has("limit")).toBe(false)
   })
 
-  test("NotificationBar_nonTopPath_rendersNothing", async () => {
-    server.use(http.get("*/api/news", () => HttpResponse.json(announcementList)))
+  test("NotificationBar_nonTopPath_rendersNothingAndSkipsFetch", async () => {
+    let requests = 0
+    server.use(http.get("*/api/news", () => {
+      requests += 1
+
+      return HttpResponse.json(announcementList)
+    }))
     const { container } = renderBar("ja", "/search")
     await act(async () => {
-      await Promise.resolve()
+      await new Promise((resolve) => setTimeout(resolve, 50))
     })
     expect(container.textContent).toBe("")
     expect(screen.queryByRole("region")).toBeNull()
+    expect(requests).toBe(0)
   })
 })

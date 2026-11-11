@@ -43,6 +43,60 @@ describe("fetchNews", () => {
     await expect(fetchNews({ baseUrl: "http://localhost" })).rejects.toThrow()
   })
 
+  test("fetchNews_noQuery_requestsWithoutSearchParams", async () => {
+    const urls: string[] = []
+    server.use(
+      http.get("http://localhost/api/news", ({ request }) => {
+        urls.push(request.url)
+
+        return HttpResponse.json([])
+      }),
+    )
+    await fetchNews({ baseUrl: "http://localhost" })
+    expect(urls).toEqual(["http://localhost/api/news"])
+  })
+
+  test("fetchNews_featuredTrue_sendsFeaturedTrue", async () => {
+    const urls: URL[] = []
+    server.use(
+      http.get("http://localhost/api/news", ({ request }) => {
+        urls.push(new URL(request.url))
+
+        return HttpResponse.json([])
+      }),
+    )
+    await fetchNews({ baseUrl: "http://localhost", query: { featured: true } })
+    expect(urls[0]?.searchParams.get("featured")).toBe("true")
+    expect(urls[0]?.searchParams.has("limit")).toBe(false)
+  })
+
+  test("fetchNews_featuredFalse_omitsFeatured", async () => {
+    const urls: URL[] = []
+    server.use(
+      http.get("http://localhost/api/news", ({ request }) => {
+        urls.push(new URL(request.url))
+
+        return HttpResponse.json([])
+      }),
+    )
+    await fetchNews({ baseUrl: "http://localhost", query: { featured: false } })
+    expect(urls[0]?.search).toBe("")
+  })
+
+  test("fetchNews_limit_sendsLimit", async () => {
+    const urls: URL[] = []
+    server.use(
+      http.get("http://localhost/api/news", ({ request }) => {
+        urls.push(new URL(request.url))
+
+        return HttpResponse.json([])
+      }),
+    )
+    await fetchNews({ baseUrl: "http://localhost", query: { limit: 5 } })
+    expect(urls[0]?.searchParams.get("limit")).toBe("5")
+    expect(urls[0]?.searchParams.has("featured")).toBe(false)
+  })
+
   test("fetchNews_responseError_throwsAPIError", async () => {
     server.use(
       http.get("http://localhost/api/news", () =>

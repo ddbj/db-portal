@@ -12,6 +12,10 @@ export {
 
 export const NEWS_QUERY_KEY = ["news"] as const
 
+export const NEWS_FEATURED_QUERY_KEY = [...NEWS_QUERY_KEY, { featured: true }] as const
+
+export const newsLatestQueryKey = (limit: number) => [...NEWS_QUERY_KEY, { limit }] as const
+
 export const newsItemTitle = (item: NewsItem, lang: Lang): string =>
   item.title[lang] || item.title.ja
 
@@ -35,6 +39,8 @@ type FetchNewsQuery = {
   category?: readonly string[]
   year?: readonly number[]
   service?: readonly string[]
+  featured?: boolean
+  limit?: number
 }
 
 const buildNewsPath = (query: FetchNewsQuery | undefined): string => {
@@ -54,6 +60,8 @@ const buildNewsPath = (query: FetchNewsQuery | undefined): string => {
   if (query.service && query.service.length > 0) {
     params.set("service", [...query.service].sort().join(","))
   }
+  if (query.featured) params.set("featured", "true")
+  if (query.limit !== undefined) params.set("limit", String(query.limit))
   const qs = params.toString()
 
   return qs ? `${base}?${qs}` : base

@@ -35,6 +35,16 @@ const parseYears = (raw: string | null): readonly number[] =>
 const parseServices = (raw: string | null): readonly string[] =>
   splitList(raw).map((entry) => entry.toLowerCase())
 
+const parseFeatured = (raw: string | null): boolean =>
+  raw === "true" || raw === "1"
+
+const parseLimit = (raw: string | null): number | undefined => {
+  if (raw === null || !/^[1-9][0-9]*$/.test(raw)) return undefined
+  const limit = Number(raw)
+
+  return Number.isSafeInteger(limit) ? limit : undefined
+}
+
 export const handleNews = (req: Request, res: Response): void => {
   res.setHeader("Cache-Control", "public, max-age=60")
   const cache = getActiveNewsCache()
@@ -51,6 +61,8 @@ export const handleNews = (req: Request, res: Response): void => {
     category: parseCategories(url.searchParams.get("category")),
     year: parseYears(url.searchParams.get("year")),
     service: parseServices(url.searchParams.get("service")),
+    featured: parseFeatured(url.searchParams.get("featured")),
   })
-  res.status(200).json(items)
+  const limit = parseLimit(url.searchParams.get("limit"))
+  res.status(200).json(limit === undefined ? items : items.slice(0, limit))
 }

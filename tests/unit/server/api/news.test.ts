@@ -169,6 +169,18 @@ describe("handleNews query parsing", () => {
     expect(filter.category).toEqual([])
     expect(filter.year).toEqual([])
     expect(filter.service).toEqual([])
+    expect(filter.featured).toBe(false)
+  })
+
+  test("handleNews_featuredTrueOrOne_setsFeaturedFilter", () => {
+    expect(filterFor("?featured=true").featured).toBe(true)
+    expect(filterFor("?featured=1").featured).toBe(true)
+  })
+
+  test("handleNews_featuredOtherValues_leavesFeaturedOff", () => {
+    for (const value of ["false", "0", "TRUE", "True", "yes", "", "true,1", " true"]) {
+      expect(filterFor(`?featured=${encodeURIComponent(value)}`).featured).toBe(false)
+    }
   })
 })
 
@@ -216,6 +228,76 @@ describe("handleNews response envelope", () => {
       category: ["event", "maintenance"],
       year: [2024],
       service: ["dra", "jga"],
+      featured: false,
     })
+  })
+})
+
+const makeList = (count: number): NewsList =>
+  Array.from({ length: count }, (_, i) => ({
+    ...SENTINEL_ITEMS[0]!,
+    id: `n-${i + 1}`,
+  }))
+
+const responseFor = (search: string, items: NewsList): NewsList => {
+  cacheHolder.current = { list: () => items }
+  const out = fakeResponse()
+  handleNews(fakeRequest(`/api/news${search}`), out.res)
+  expect(out.statusCode).toBe(200)
+
+  return out.body as NewsList
+}
+
+describe("handleNews limit", () => {
+  test("handleNews_limitPositiveInteger_returnsFirstNItemsInOrder", () => {
+    const items = makeList(8)
+    expect(responseFor("?limit=5", items)).toEqual(items.slice(0, 5))
+  })
+
+  test("handleNews_limitOne_returnsOnlyFirstItem", () => {
+    const items = makeList(3)
+    expect(responseFor("?limit=1", items)).toEqual([items[0]])
+  })
+
+  test("handleNews_limitEqualToCount_returnsAllItems", () => {
+    const items = makeList(5)
+    expect(responseFor("?limit=5", items)).toEqual(items)
+  })
+
+  test("handleNews_limitAboveCount_returnsAllItems", () => {
+    const items = makeList(3)
+    expect(responseFor("?limit=100", items)).toEqual(items)
+  })
+
+  test("handleNews_limitOnEmptyList_returnsEmpty", () => {
+    expect(responseFor("?limit=5", [])).toEqual([])
+  })
+
+  test("handleNews_limitNotPositiveInteger_isIgnored", () => {
+    const items = makeList(4)
+    for (const value of ["0", "-1", "1.5", "abc", "", "05", "1e2", " 5", "5abc", "+3", "0x2"]) {
+      expect(responseFor(`?limit=${encodeURIComponent(value)}`, items)).toEqual(items)
+    }
+  })
+
+  test("handleNews_limitBeyondSafeInteger_isIgnored", () => {
+    const items = makeList(4)
+    expect(responseFor("?limit=99999999999999999999", items)).toEqual(items)
+  })
+
+  test("handleNews_limitWithFilters_slicesFilteredResult", () => {
+    const filtered = makeList(6)
+    const calls: (NewsFilter | undefined)[] = []
+    cacheHolder.current = {
+      list: (filter) => {
+        calls.push(filter)
+
+        return filtered
+      },
+    }
+    const out = fakeResponse()
+    handleNews(fakeRequest("/api/news?featured=true&limit=2"), out.res)
+    expect(calls[0]?.featured).toBe(true)
+    expect(out.body).toEqual(filtered.slice(0, 2))
   })
 })

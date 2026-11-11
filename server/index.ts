@@ -13,12 +13,14 @@ import { handleRobots } from "./api/robots"
 import { handleServices } from "./api/services"
 import { handleSitemap } from "./api/sitemap"
 import { mountAuthRoutes } from "./auth/routes"
+import { compressResponses } from "./lib/compression"
 import { parseServerEnv } from "./lib/env"
 import { createLogger } from "./lib/log"
 import { securityHeaders } from "./lib/security"
 import { makeHandleSearchAssistant } from "./llm/assistant/route"
 import { createLlmClient } from "./llm/client"
 import { startHealthMonitor } from "./llm/health"
+import { llmJsonParser } from "./llm/json-parser"
 import { createRateLimiter, setActiveRateLimiter } from "./llm/rate-limit"
 import { createNewsMirror } from "./news/mirror"
 import { createServicesMirror } from "./services/mirror"
@@ -46,6 +48,8 @@ const app = express()
 const server = http.createServer(app)
 app.disable("x-powered-by")
 app.set("trust proxy", parseTrustProxy(env.DB_PORTAL_TRUST_PROXY))
+// Mount before every handler that writes a response body.
+app.use(compressResponses())
 app.use(
   securityHeaders({
     env: env.DB_PORTAL_ENV,
@@ -53,12 +57,6 @@ app.use(
     keycloakRealmUrl: env.DB_PORTAL_KEYCLOAK_REALM_URL,
   }),
 )
-
-// LLM prompt body は短い自然文なので 32KB で十分。 global で 1MB を許すと、
-// route handler 内の LLM rate-limit に到達する前に毎リクエストが parse コストを
-// 生んで amplification 経路になる (`docs/llm.md` の rate-limit 不変量)。 narrow
-// に POST /api/llm/* だけに mount する。
-const llmJsonParser = express.json({ limit: "32kb" })
 
 const llmClient = createLlmClient(env)
 setActiveRateLimiter(

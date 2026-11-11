@@ -54,14 +54,25 @@ const newsItem = (o: {
   rawTags: { ja: [], en: [] },
 })
 
-const mockNews = async (page: Page, items: readonly unknown[]): Promise<void> => {
-  await page.route("**/api/news", (route) =>
-    route.fulfill({
+// The fixture answers `featured` and `limit` like the BFF does, because
+// NotificationBar and NewsAside request only the items that they show.
+const mockNews = async (page: Page, items: readonly Record<string, unknown>[]): Promise<void> => {
+  const newestFirst = [...items].sort(
+    (a, b) => Date.parse(String(b.publishedAt)) - Date.parse(String(a.publishedAt)),
+  )
+  await page.route("**/api/news**", (route) => {
+    const params = new URL(route.request().url()).searchParams
+    const featured = params.get("featured") === "true"
+    const limit = Number(params.get("limit") ?? Number.NaN)
+    const filtered = featured ? newestFirst.filter((n) => n.featured === true) : newestFirst
+    const body = Number.isInteger(limit) && limit > 0 ? filtered.slice(0, limit) : filtered
+
+    return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(items),
-    }),
-  )
+      body: JSON.stringify(body),
+    })
+  })
 }
 
 test.describe("News Domain", () => {

@@ -98,7 +98,9 @@ export const createCacheStore = <TSource extends string, TItem, TFilter>(
 
   const initFromDisk = async (): Promise<void> => {
     const loaded = await loadCacheFromDisk<TSource, TItem>(cacheDir, logger, config)
-    state = loaded.state
+    // list() returns items in stored order. A cache file that another build wrote
+    // can hold a different order, so sort on load too.
+    state = { ...loaded.state, items: config.sortMerged(loaded.state.items) }
     logger.info(`${config.logPrefix}_cache_loaded`, {
       source: loaded.source,
       items: state.items.length,

@@ -12,12 +12,12 @@ flowchart LR
   dbcls["dbcls/website<br/>(_posts)"] -- "git pull" --> mirror
   mirror["BFF mirror"] --> cache["in-memory + disk cache"]
   cache --> api["/api/news"]
-  api --> bar["NotificationBar (featured)"]
-  api --> aside["NewsAside (latest)"]
-  api --> list["/news (list + facet)"]
+  api -- "featured=true" --> bar["NotificationBar"]
+  api -- "limit=N" --> aside["NewsAside"]
+  api -- "all items" --> list["/news (list + facet)"]
 ```
 
-cache の item は `featured` フラグを持つが、表示順と facet のグループ分けは cache に持たせず、UI と `/api/news` の query で導出する。
+`/api/news` は item を `publishedAt` の新しい順に返す。facet のグループ分けは cache に持たせず、`/news` 一覧が client 側で導出する。
 
 ## mirror と sync
 
@@ -71,11 +71,11 @@ front matter の parse、pair の結合、mapping、summary の抽出、`publish
 
 ## 3 つの表示先
 
-同じ cache を、別の条件で絞り込んで表示する 3 つの UI がある。3 つは同じ TanStack Query key で `/api/news` を取得するので、request は共有される。
+同じ cache を、別の条件で絞り込んで表示する 3 つの UI がある。全件の応答は数 MB あり、回線が遅いと受け取るのに数十秒かかる。そのため、全件を取得するのは `/news` 一覧だけにし、NotificationBar と NewsAside は表示する item だけを `/api/news` の query で絞り込んで取得する。3 つは query が違うので、別の TanStack Query key で取得する。
 
 ### NotificationBar
 
-NotificationBar (`app/shell/notification-bar.tsx`) は、`featured=true` の item を全ページ共通の layout の上部に新しい順に積んで表示する。利用者は item を個別に閉じられる。この featured は、services 側の `featuredTop` (top page の services セクション限定) とは別の設定である。
+NotificationBar (`app/shell/notification-bar.tsx`) は全ページ共通の layout に置かれ、トップページでだけ、`featured=true` の item を上部に新しい順に積んで表示する。トップページ以外では `/api/news` を取得しない。トップページでは `featured=true` を付けて取得し、featured でない item を受け取らない。利用者は item を個別に閉じられる。この featured は、services 側の `featuredTop` (top page の services セクション限定) とは別の設定である。
 
 - featured の元データは、ddbj source の `_data/global.yml` の `top_news.{ja,en}` (2 言語別の path の列) である
 - dbcls source の item は常に `featured=false` である
@@ -84,7 +84,7 @@ NotificationBar (`app/shell/notification-bar.tsx`) は、`featured=true` の ite
 
 ### NewsAside
 
-NewsAside は、`featured` かどうかを問わず、最新 N 件を compact な一覧で表示する。
+NewsAside は、`featured` かどうかを問わず、最新 N 件を compact な一覧で表示する。`limit=N` を付けて取得し、表示しない item を受け取らない。N は `app/shell/news-aside.tsx` を SSOT とする。
 
 ### /news 一覧
 
@@ -98,7 +98,7 @@ URL state の parse / serialize は `app/features/news/facet-url-state.ts` を S
 
 ### `GET /api/news`
 
-endpoint は cache を filter して返す。全 query を AND で適用する。lang を指定したときは、その言語で title を持つ item だけを返し、summary の有無は判定に使わない。response には `Cache-Control: public` を付ける (`max-age` の値は `server/api/news.ts` を SSOT とする)。
+endpoint は cache を filter して、`publishedAt` の新しい順に返す。絞り込みの query (`lang` / `source` / `category` / `year` / `service` / `featured`) は全て AND で適用する。lang を指定したときは、その言語で title を持つ item だけを返し、summary の有無は判定に使わない。`limit` を指定したときは、絞り込んだ結果の先頭から指定の件数だけを返す。query の中の解釈できない値は無視する。response には `Cache-Control: public` を付ける (`max-age` の値は `server/api/news.ts` を SSOT とする)。
 
 query の仕様、response の schema、lang fallback の規約は `server/api/news.ts` と `app/schemas/api-bff/news.ts` を SSOT とする。
 

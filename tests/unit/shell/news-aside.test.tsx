@@ -32,14 +32,30 @@ const makeNews = (count: number): NewsList =>
   }))
 
 describe("NewsAside", () => {
-  test("NewsAside_top5_areShown_evenWhenMoreAvailable", async () => {
-    server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(12))))
+  test("NewsAside_mount_requestsLatestFiveWithLimit", async () => {
+    const urls: URL[] = []
+    server.use(http.get("*/api/news", ({ request }) => {
+      urls.push(new URL(request.url))
+
+      return HttpResponse.json(makeNews(5))
+    }))
     renderAside()
-    await waitFor(() => {
-      expect(screen.getByText("お知らせ 1")).toBeInTheDocument()
+    await waitFor(() => screen.getByText("お知らせ 1"))
+    expect(urls).toHaveLength(1)
+    expect(urls[0]?.searchParams.get("limit")).toBe("5")
+    expect(urls[0]?.searchParams.has("featured")).toBe(false)
+  })
+
+  test("NewsAside_fiveItems_rendersAllInResponseOrder", async () => {
+    server.use(http.get("*/api/news", () => HttpResponse.json(makeNews(5))))
+    const { container } = renderAside()
+    await waitFor(() => screen.getByText("お知らせ 5"))
+    const titles = [...container.querySelectorAll("aside ul > li")].map((li) =>
+      li.textContent ?? "")
+    expect(titles).toHaveLength(5)
+    titles.forEach((text, i) => {
+      expect(text).toContain(`お知らせ ${i + 1}`)
     })
-    expect(screen.getByText("お知らせ 5")).toBeInTheDocument()
-    expect(screen.queryByText("お知らせ 6")).toBeNull()
   })
 
   test("NewsAside_empty_showsEmptyMessage", async () => {

@@ -60,6 +60,7 @@ build と `validate:content` ([content.md](content.md)) は image の build 時�
 image は `Dockerfile` の multi-stage build で作り、全 stage を Node.js の LTS の Debian slim image から作る。runtime stage には、production の依存 (`npm ci --omit=dev`)、`build/`、`page-contents/`、`app/lib/content/gen/last-updated.json` だけをコピーする。
 
 - base image の tag には Node.js の major、Debian の codename、variant だけを書き、patch version と digest では固定しない。tag の image は Debian と Node.js の更新のたびに rebuild されるので、image を build するときは `--pull` を付けて最新の base image を取得する。`--pull` を付けないと、手元に残っている古い base image で build する
+- `package.json` の `engines.node` に、既知の脆弱性が修正された Node.js の最小の版を書く。image の build は最初に `scripts/check-node-version.ts` で node の版を確かめ、`engines.node` より古いと build を止める。tag を patch version で固定しないので、古い base image で build しても気づけないためである
 - runtime の image には npm・tsx・curl を入れない。runtime で実行するのは node と git だけで、compose の healthcheck も node の fetch で `/robots.txt` を取得する
 - git は News mirror ([news.md](news.md)) が upstream の repo を clone するのに使う。clone は https なので、ca-certificates も入れる
 - `build/server/index.js` と `build/bff/index.js` は、`node_modules` の package を bundle せずに import する。runtime で import する package を `devDependencies` に置くと、runtime の image に入らず、起動に失敗する

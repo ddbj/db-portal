@@ -23,6 +23,12 @@ WORKDIR /app
 ENV HOME=/home/app
 RUN mkdir -p /home/app && chmod 777 /home/app
 
+# The base image tag does not pin the patch version. Stop the build if the
+# pulled image has a Node.js older than engines.node in package.json.
+COPY package.json scripts/check-node-version.ts /tmp/node-version-check/
+RUN node /tmp/node-version-check/check-node-version.ts /tmp/node-version-check/package.json && \
+    rm -rf /tmp/node-version-check
+
 # --- deps: full install (incl dev) shared by dev / e2e / build. Made
 #     world-writable so an arbitrary host UID can run `npm install` inside the
 #     dev container. ---

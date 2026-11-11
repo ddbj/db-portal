@@ -165,6 +165,13 @@ route が存在しないとき、または loader が `throw new Response("Not F
 - Tailwind v4 による CSS の最適化
 - Noto Sans JP Variable の self-host と `font-display: swap`
 - TanStack Query の `staleTime` の調整
+- BFF による応答の圧縮
+
+BFF は `compression` middleware で、HTML・JSON・JS・CSS の応答を brotli か gzip で圧縮する。reverse proxy の圧縮の設定には頼らない。圧縮の設定と、圧縮しない応答の判定は `server/lib/compression.ts` を SSOT とする。
+
+- brotli の品質は低い値に固定する。高い品質では数 MB の応答 1 つの圧縮に秒単位の CPU を使うので、同じ request を繰り返されると CPU を使い切る
+- SSE (`text/event-stream`) は圧縮しない。圧縮すると middleware が出力をため込むので、heartbeat と結果が client に届かなくなる
+- session に依存する応答 (`/api/me`、`/api/auth/*`) は圧縮しない。秘密の値と攻撃者が送り込んだ値が同じ応答に入ると、圧縮後の長さから秘密の値を推測される (BREACH)。SSR の HTML は session に依存する値を持たないので圧縮する。session に依存する値を HTML に入れるときは、その応答も圧縮の対象から外す
 
 計測は Playwright e2e で `performance.getEntriesByType("navigation")` を取得し、staging で複数回試行して平均する。
 
@@ -180,6 +187,8 @@ CSP nonce の受け渡し:
 
 - server が request ごとに nonce を生成し、request header で root loader と entry.server に渡す。root loader と entry.server は、その nonce を `<Scripts>` / `<Links>` に渡す。header 名は `app/schemas/csp-nonce.ts` で定義する
 - inline script は nonce で許可し、`script-src` に `'unsafe-inline'` を置かない
+
+BFF は、`Content-Encoding` の付いた (圧縮された) request body を受け付けず、415 を返す。外から届いた圧縮データを展開すると、展開処理 (zlib / brotli の decoder) の脆弱性に外から届く経路ができるためである。ブラウザは request body を圧縮しないので、BSI の client は影響を受けない。
 
 ## アクセシビリティ
 

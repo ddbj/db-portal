@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router"
 
-import { fetchNews, NEWS_QUERY_KEY, newsItemTitle, newsItemUrl } from "~/lib/api/news"
+import { fetchNews, NEWS_FEATURED_QUERY_KEY, newsItemTitle, newsItemUrl } from "~/lib/api/news"
 import { formatDate, useLang, useT } from "~/lib/i18n"
 import { CloseIcon, IconButton, NewsDate, Tag, TextLink } from "~/ui"
 
@@ -44,17 +44,18 @@ export const NotificationBar = () => {
     setHydrated(true)
   }, [])
 
+  const isTop = isTopPath(pathname)
   const query = useQuery({
-    queryKey: NEWS_QUERY_KEY,
-    queryFn: () => fetchNews(),
+    queryKey: NEWS_FEATURED_QUERY_KEY,
+    queryFn: () => fetchNews({ query: { featured: true } }),
     staleTime: 5 * 60_000,
+    enabled: isTop,
   })
 
-  if (!isTopPath(pathname)) return null
+  if (!isTop) return null
   if (query.isError || !query.data) return null
 
   const visible = query.data
-    .filter((n) => n.featured)
     .filter((n) => !hydrated || !dismissed.includes(n.id))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
 
