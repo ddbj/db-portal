@@ -159,6 +159,21 @@ sequenceDiagram
   App-->>User: Success
 ```
 
+手順を縦に並べる図は、frontmatter の `config:` で `minNodeWidth` を折り返し幅と同じ 400 にして、四角形の幅を揃える。
+
+```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
+flowchart TD
+  S1[申請システムにログインし、申請に必要な情報を入力して書類を添付する]
+  S2[事務局による確認]
+  S3[審査委員会による審査]
+  S1 --> S2 --> S3
+```
+
 ## Tables
 
 | Left-aligned | Center-aligned | Right-aligned |

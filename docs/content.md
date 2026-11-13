@@ -59,6 +59,8 @@ Markdown から生成した HTML のスタイルは、`app/styles/tailwind.css` 
 
 クライアント側では、`app/lib/content/use-prose-enhance.ts` が hydration 後に DOM を走査して 2 つの機能を加える。コードブロックのコピーボタンと、` ```mermaid ` ブロックを lazy load で SVG に描画する処理である。
 
+flowchart のノードの文字は、サイト全体の mermaid 設定で 400px で折り返す。mermaid の既定の 120px では、手順の 1 文が何行にも折り返されて図が縦長になるためである。図ごとの設定は、ブロックの先頭に書く mermaid の frontmatter (`config:`) で上書きできる。手順を縦に並べる図は、`flowchart.minNodeWidth` を折り返し幅と同じ 400 にして四角形の幅を揃える (例は `page-contents/_dev/markdown-showcase/index.md`)。
+
 ## Asset 配信
 
 著者は画像 / PDF を `.md` と同じ dir かそのサブ dir に置き、相対パスで参照する。著者は `public/` の階層を意識しなくてよく、asset はページ単位で完結する。

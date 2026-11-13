@@ -43,6 +43,11 @@ See the [NBDC Human Database](/humandbs) page.
 See [here](/jga/submission-procedure) for the detailed procedure.
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1["Log in to the NBDC Human Database application system (recommended browsers: Chrome, Firefox)"]
   S2[Create a Data Submission Group]
@@ -109,6 +114,11 @@ See the [NBDC Human Database](/humandbs) page.
 See [here](/jga/datause-procedure) for the detailed procedure.
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1["Log in to the NBDC Human Database application system (recommended browsers: Chrome, Firefox)"]
   S2[Create a Data Use Group]

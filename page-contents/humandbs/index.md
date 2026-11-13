@@ -78,6 +78,11 @@ NBDC ヒトデータベース (NBDC Human Database) は、ヒトに関する様�
 具体的な操作については、[こちら](/jga/submission-procedure)のページをご参照ください。
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1[NBDC ヒトデータベース申請システム（推奨ブラウザ：Chrome、Firefox）にログイン]
   S2[データ提供申請グループの作成]
@@ -178,6 +183,11 @@ flowchart TD
 具体的な操作については、[こちら](/jga/datause-procedure)のページをご参照ください。
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1[NBDC ヒトデータベース申請システム（推奨ブラウザ：Chrome、Firefox）にログイン]
   S2[データ利用申請グループの作成]

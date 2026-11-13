@@ -49,6 +49,9 @@ const renderMermaid = async (
       nodeSpacing: 24,
       rankSpacing: 32,
       padding: 8,
+      // 既定の 120px では手順の 1 文が 3〜6 行に折り返されて縦長になる。
+      // 400px なら本文幅 (880px) に収まり、ほぼ 1〜2 行で済む。
+      wrappingWidth: 400,
     },
   })
 

@@ -78,6 +78,11 @@ Submitted data is routed to and stored in the appropriate archive according to i
 See [here](/jga/submission-procedure) for the detailed procedure.
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1["Log in to the NBDC Human Database application system (recommended browsers: Chrome, Firefox)"]
   S2[Create a Data Submission Group]
@@ -178,6 +183,11 @@ For controlled-access data, one Policy is linked to each Dataset. Even for data 
 See [here](/jga/datause-procedure) for the detailed procedure.
 
 ```mermaid
+---
+config:
+  flowchart:
+    minNodeWidth: 400
+---
 flowchart TD
   S1["Log in to the NBDC Human Database application system (recommended browsers: Chrome, Firefox)"]
   S2[Create a Data Use Group]
